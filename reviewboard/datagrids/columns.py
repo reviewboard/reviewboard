@@ -442,6 +442,7 @@ class ReviewSubmitterColumn(Column):
             shrink=True,
             sortable=True,
             link=True,
+            css_class='submitter-column',
             *args, **kwargs)
 
     def render_data(self, state, review):
@@ -488,6 +489,7 @@ class SubmitterColumn(Column):
             shrink=True,
             sortable=True,
             link=True,
+            css_class='submitter-column',
             *args, **kwargs)
 
     def augment_queryset(self, state, queryset):
