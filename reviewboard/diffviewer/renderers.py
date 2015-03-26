@@ -1,12 +1,15 @@
 from __future__ import unicode_literals
 
+import hashlib
+
 from django.conf import settings
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseNotModified
 from django.template import Context
 from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.translation import ugettext as _, get_language
 from djblets.cache.backend import cache_memoize
+from djblets.util.http import etag_if_none_match, set_etag
 
 from reviewboard.diffviewer.chunk_generator import compute_chunk_last_header
 from reviewboard.diffviewer.errors import UserVisibleError
@@ -57,9 +60,18 @@ class DiffRenderer(object):
                 raise UserVisibleError(
                     _('Invalid chunk index %s specified.') % self.chunk_index)
 
-    def render_to_response(self):
+    def render_to_response(self, request):
         """Renders the diff to an HttpResponse."""
-        return HttpResponse(self.render_to_string())
+        etag = self.make_etag()
+
+        if etag_if_none_match(request, etag):
+            response = HttpResponseNotModified()
+        else:
+            response = HttpResponse(self.render_to_string())
+
+        set_etag(response, etag)
+
+        return response
 
     def render_to_string(self):
         """Returns the diff as a string.
@@ -90,6 +102,13 @@ class DiffRenderer(object):
         return render_to_string(self.template_name,
                                 Context(self.make_context()))
 
+    def make_etag(self):
+        """Create an ETag for responses from this renderer."""
+        hasher = hashlib.sha1()
+        hasher.update(self.make_cache_key().encode('utf-8'))
+
+        return hasher.hexdigest()
+
     def make_cache_key(self):
         """Creates and returns a cache key representing the diff to render."""
         filediff = self.diff_file['filediff']
@@ -118,7 +137,7 @@ class DiffRenderer(object):
         if self.highlighting:
             key += '-highlighting'
 
-        key += '-%s-%s' % (get_language(), settings.AJAX_SERIAL)
+        key += '-%s-%s' % (get_language(), settings.TEMPLATE_SERIAL)
 
         return key
 

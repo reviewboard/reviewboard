@@ -4,6 +4,7 @@ import bz2
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponse
+from django.test import RequestFactory
 from django.utils.six.moves import zip_longest
 from djblets.cache.backend import cache_memoize
 from djblets.db.fields import Base64DecodedValue
@@ -2485,11 +2486,15 @@ class DiffRendererTests(SpyAgency, TestCase):
 
         renderer = DiffRenderer(diff_file)
         self.spy_on(renderer.render_to_string, call_fake=lambda self: 'Foo')
+        self.spy_on(renderer.make_etag, call_fake=lambda self: 'ETag')
 
-        response = renderer.render_to_response()
+        request_factory = RequestFactory()
+        request = request_factory.get('/')
+        response = renderer.render_to_response(request)
 
         self.assertTrue(renderer.render_to_string.called)
         self.assertTrue(isinstance(response, HttpResponse))
+        self.assertTrue(renderer.make_etag.called)
         self.assertEqual(response.content, 'Foo')
 
     def test_render_to_string(self):
@@ -2501,15 +2506,20 @@ class DiffRendererTests(SpyAgency, TestCase):
         renderer = DiffRenderer(diff_file)
         self.spy_on(renderer.render_to_string_uncached,
                     call_fake=lambda self: 'Foo')
+        self.spy_on(renderer.make_etag,
+                    call_fake=lambda self: 'ETag')
         self.spy_on(renderer.make_cache_key,
                     call_fake=lambda self: 'my-cache-key')
         self.spy_on(cache_memoize)
 
-        response = renderer.render_to_response()
+        request_factory = RequestFactory()
+        request = request_factory.get('/')
+        response = renderer.render_to_response(request)
 
         self.assertEqual(response.content, 'Foo')
         self.assertTrue(renderer.render_to_string_uncached.called)
         self.assertTrue(renderer.make_cache_key.called)
+        self.assertTrue(renderer.make_etag.called)
         self.assertTrue(cache_memoize.spy.called)
 
     def test_render_to_string_uncached(self):
@@ -2521,14 +2531,19 @@ class DiffRendererTests(SpyAgency, TestCase):
         renderer = DiffRenderer(diff_file, lines_of_context=[5, 5])
         self.spy_on(renderer.render_to_string_uncached,
                     call_fake=lambda self: 'Foo')
+        self.spy_on(renderer.make_etag,
+                    call_fake=lambda self: 'ETag')
         self.spy_on(renderer.make_cache_key,
                     call_fake=lambda self: 'my-cache-key')
         self.spy_on(cache_memoize)
 
-        response = renderer.render_to_response()
+        request_factory = RequestFactory()
+        request = request_factory.get('/')
+        response = renderer.render_to_response(request)
 
         self.assertEqual(response.content, 'Foo')
         self.assertTrue(renderer.render_to_string_uncached.called)
+        self.assertTrue(renderer.make_etag.called)
         self.assertFalse(renderer.make_cache_key.called)
         self.assertFalse(cache_memoize.spy.called)
 

@@ -77,7 +77,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                     'fragments/diff-comments/';
         urlSuffix = '/?queue=' + queueName +
                     '&container_prefix=' + this.options.containerPrefix +
-                    '&' + AJAX_SERIAL;
+                    '&' + TEMPLATE_SERIAL;
 
         _.each(this._queue, function(comments) {
             var url = urlPrefix + comments.join(',') + urlSuffix;

@@ -36,7 +36,7 @@ suite('rb/views/DiffFragmentQueueView', function() {
             expect(fragmentQueue._addScript.mostRecentCall.args[0]).toBe(
                 '/r/123/fragments/diff-comments/' +
                 '123,124/?queue=diff_fragments&' +
-                'container_prefix=container1&' + AJAX_SERIAL
+                'container_prefix=container1&' + TEMPLATE_SERIAL
             );
         });
     });
