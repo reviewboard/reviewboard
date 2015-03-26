@@ -238,7 +238,7 @@ class DiffFragmentView(View):
         try:
             renderer = self.create_renderer(context, *args, **kwargs)
 
-            return renderer.render_to_response()
+            return renderer.render_to_response(request)
         except Http404:
             raise
         except Exception as e:
