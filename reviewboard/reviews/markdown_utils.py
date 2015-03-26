@@ -177,6 +177,14 @@ def normalize_text_for_edit(user, text, rich_text, escape_html=True):
     return text
 
 
+def markdown_render_conditional(text, rich_text):
+    """Return the escaped HTML content based on the rich_text flag."""
+    if rich_text:
+        return render_markdown(text)
+    else:
+        return escape(text)
+
+
 def is_rich_text_default_for_user(user):
     """Returns whether the user edits in Markdown by default."""
     if user.is_authenticated():

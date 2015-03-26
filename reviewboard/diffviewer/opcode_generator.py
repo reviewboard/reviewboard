@@ -42,10 +42,10 @@ class DiffOpcodeGenerator(object):
 
     TAB_SIZE = 8
 
-    def __init__(self, differ, filediff=None, interfilediff=None):
+    def __init__(self, differ, diff=None, interdiff=None):
         self.differ = differ
-        self.filediff = filediff
-        self.interfilediff = interfilediff
+        self.diff = diff
+        self.interdiff = interdiff
 
     def __iter__(self):
         """Returns opcodes from the differ with extra metadata.
@@ -74,11 +74,11 @@ class DiffOpcodeGenerator(object):
             yield opcodes
 
     def _apply_processors(self, opcodes):
-        if self.interfilediff:
+        if self.diff and self.interdiff:
             # Filter out any lines unrelated to these changes from the
             # interdiff. This will get rid of any merge information.
-            opcodes = filter_interdiff_opcodes(opcodes, self.filediff.diff,
-                                               self.interfilediff.diff)
+            opcodes = filter_interdiff_opcodes(opcodes, self.diff,
+                                               self.interdiff)
 
         for opcode in opcodes:
             yield opcode
@@ -127,7 +127,7 @@ class DiffOpcodeGenerator(object):
             yield tag, i1, i2, j1, j2, meta
 
     def _apply_meta_processors(self, opcodes):
-        if self.interfilediff:
+        if self.interdiff:
             # When filtering out opcodes, we may have converted chunks into
             # "filtered-equal" chunks. This allowed us to skip any additional
             # processing, particularly the indentation highlighting. It's

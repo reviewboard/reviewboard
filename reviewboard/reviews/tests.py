@@ -23,6 +23,7 @@ from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
 from reviewboard.reviews.markdown_utils import (get_markdown_element_tree,
                                                 iter_markdown_lines,
                                                 markdown_escape,
+                                                markdown_render_conditional,
                                                 markdown_unescape,
                                                 normalize_text_for_edit,
                                                 render_markdown)
@@ -3270,6 +3271,21 @@ class MarkdownUtilsTests(TestCase):
                                        rich_text=True, escape_html=False)
         self.assertEqual(text, '&lt; "test" **foo**')
         self.assertFalse(isinstance(text, SafeText))
+
+    def test_get_html_for_display_rich_text(self):
+        """Testing get_html_for_display with rich text"""
+        text = markdown_render_conditional(text='## <script>alert();</script>',
+                                           rich_text=True)
+        self.assertEqual(text,
+                         '<h2>&lt;script&gt;alert();&lt;/script&gt;</h2>')
+        self.assertFalse(isinstance(text, SafeText))
+
+    def test_get_html_for_display_plain_text(self):
+        """Testing get_html_for_display with plain text"""
+        text = markdown_render_conditional(text='## <script>alert();</script>',
+                                           rich_text=False)
+        self.assertEqual(text, r'## &lt;script&gt;alert();&lt;/script&gt;')
+        self.assertTrue(isinstance(text, SafeText))
 
 
 class MarkdownRenderTests(TestCase):

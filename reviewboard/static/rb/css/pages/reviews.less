@@ -1907,18 +1907,19 @@
   border: 1px #a58600 solid;
   padding: 4px;
   position: absolute;
+  max-width: 60em;
 
   &.comments {
     border: 1px black solid;
     border-bottom: 0;
     padding: 0;
 
-    ul {
+    > ul {
       list-style: none;
       margin: 0;
       padding: 0;
 
-      li {
+      > li {
         background-color: #a1c0e3;
         border-bottom: 1px #5170b3 solid;
         margin: 0;
@@ -1929,9 +1930,15 @@
           border-bottom: 1px black solid;
         }
 
+        div {
+          &.reviewer {
+            font-weight: bold;
+          }
+        }
+
         pre {
           .pre-wrap;
-          font-size: 90%;
+          font-size: 8pt;
           margin: 0;
           padding: 0;
         }

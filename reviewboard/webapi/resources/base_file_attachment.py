@@ -72,6 +72,11 @@ class BaseFileAttachmentResource(WebAPIResource):
             'description': 'The URL to a review UI for this file.',
             'added_in': '1.7',
         },
+        'revision': {
+            'type': int,
+            'description': 'The revision of the file attachment.',
+            'added_in': '2.5',
+        },
         'attachment_history_id': {
             'type': int,
             'description': 'ID of the corresponding FileAttachmentHistory.',
@@ -137,6 +142,9 @@ class BaseFileAttachmentResource(WebAPIResource):
                 })
 
         return ''
+
+    def serialize_revision_field(self, obj, *args, **kwargs):
+        return obj.attachment_revision
 
     def has_access_permissions(self, request, obj, *args, **kwargs):
         return obj.get_review_request().is_accessible_by(request.user)

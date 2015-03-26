@@ -1,10 +1,10 @@
 from __future__ import unicode_literals
 
 import bz2
-import os
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponse
+from django.test import RequestFactory
 from django.utils.six.moves import zip_longest
 from djblets.cache.backend import cache_memoize
 from djblets.db.fields import Base64DecodedValue
@@ -16,7 +16,8 @@ import nose
 import reviewboard.diffviewer.diffutils as diffutils
 import reviewboard.diffviewer.parser as diffparser
 from reviewboard.admin.import_utils import has_module
-from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
+from reviewboard.diffviewer.chunk_generator import (DiffChunkGenerator,
+                                                    RawDiffChunkGenerator)
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import (DiffSet, FileDiff,
@@ -2027,67 +2028,56 @@ class ProcessorsTests(TestCase):
             prev_j2 = j2
 
 
-class DiffChunkGeneratorTests(TestCase):
-    """Unit tests for DiffChunkGenerator."""
-    fixtures = ['test_scmtools']
+class RawDiffChunkGeneratorTests(TestCase):
+    """Unit tests for RawDiffChunkGenerator."""
 
-    def setUp(self):
-        self.repository = self.create_repository()
-        self.diffset = self.create_diffset(repository=self.repository)
-        self.filediff = self.create_filediff(diffset=self.diffset)
-        self.generator = DiffChunkGenerator(None, self.filediff)
+    @property
+    def generator(self):
+        """Create a dummy generator for tests that need it.
 
-    def test_get_chunks_with_empty_added_file(self):
-        """Testing DiffChunkGenerator.get_chunks with empty added file"""
-        self.filediff.source_revision = PRE_CREATION
-        self.filediff.extra_data.update({
-            'raw_insert_count': 0,
-            'raw_delete_count': 0,
-        })
-
-        self.assertEqual(len(self.generator.get_chunks()), 0)
-
-    def test_get_chunks_with_replace_in_added_file_with_parent_diff(self):
-        """Testing DiffChunkGenerator.get_chunks with replace chunks in
-        added file with parent diff
+        This generator will be void of any content. It's intended for
+        use in tests that need to operate on its utility functions.
         """
-        self.filediff.diff = (
-            b'--- README\n'
-            b'+++ README\n'
-            b'@@ -1,1 +1,1 @@\n'
-            b'-line\n'
-            b'+line.\n'
-        )
-        self.filediff.parent_diff = (
-            b'--- README\n'
-            b'+++ README\n'
-            b'@@ -0,0 +1,1 @@\n'
-            b'+line\n'
-        )
-        self.filediff.source_revision = PRE_CREATION
-        self.filediff.extra_data.update({
-            'raw_insert_count': 1,
-            'raw_delete_count': 1,
-            'insert_count': 0,
-            'delete_count': 0,
-        })
+        return RawDiffChunkGenerator('', '', '', '')
 
-        self.assertEqual(len(self.generator.get_chunks()), 1)
+    def test_get_chunks(self):
+        """Testing RawDiffChunkGenerator.get_chunks"""
+        old = (
+            b'This is line 1\n'
+            b'Another line\n'
+            b'Line 3.\n'
+            b'la de da.\n'
+        )
+
+        new = (
+            b'This is line 1\n'
+            b'Line 3.\n'
+            b'la de doo.\n'
+        )
+
+        generator = RawDiffChunkGenerator(old, new, 'file1', 'file2')
+        chunks = list(generator.get_chunks())
+
+        self.assertEqual(len(chunks), 4)
+        self.assertEqual(chunks[0]['change'], 'equal')
+        self.assertEqual(chunks[1]['change'], 'delete')
+        self.assertEqual(chunks[2]['change'], 'equal')
+        self.assertEqual(chunks[3]['change'], 'replace')
 
     def test_indent_spaces(self):
-        """Testing DiffChunkGenerator._serialize_indentation with spaces"""
+        """Testing RawDiffChunkGenerator._serialize_indentation with spaces"""
         self.assertEqual(
             self.generator._serialize_indentation('    ', 4),
             ('&gt;&gt;&gt;&gt;', ''))
 
     def test_indent_tabs(self):
-        """Testing DiffChunkGenerator._serialize_indentation with tabs"""
+        """Testing RawDiffChunkGenerator._serialize_indentation with tabs"""
         self.assertEqual(
             self.generator._serialize_indentation('\t', 8),
             ('&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&gt;|', ''))
 
     def test_indent_spaces_and_tabs(self):
-        """Testing DiffChunkGenerator._serialize_indentation
+        """Testing RawDiffChunkGenerator._serialize_indentation
         with spaces and tabs
         """
         self.assertEqual(
@@ -2095,7 +2085,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('&gt;&gt;&gt;&mdash;&mdash;&mdash;&gt;|', ''))
 
     def test_indent_tabs_and_spaces(self):
-        """Testing DiffChunkGenerator._serialize_indentation
+        """Testing RawDiffChunkGenerator._serialize_indentation
         with tabs and spaces
         """
         self.assertEqual(
@@ -2104,7 +2094,7 @@ class DiffChunkGeneratorTests(TestCase):
              ''))
 
     def test_indent_9_spaces_and_tab(self):
-        """Testing DiffChunkGenerator._serialize_indentation
+        """Testing RawDiffChunkGenerator._serialize_indentation
         with 9 spaces and tab
         """
         self.assertEqual(
@@ -2112,7 +2102,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('&gt;&gt;&gt;&gt;&gt;&gt;&gt;|', ''))
 
     def test_indent_8_spaces_and_tab(self):
-        """Testing DiffChunkGenerator._serialize_indentation
+        """Testing RawDiffChunkGenerator._serialize_indentation
         with 8 spaces and tab
         """
         self.assertEqual(
@@ -2120,7 +2110,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('&gt;&gt;&gt;&gt;&gt;&gt;&gt;|', ''))
 
     def test_indent_7_spaces_and_tab(self):
-        """Testing DiffChunkGenerator._serialize_indentation
+        """Testing RawDiffChunkGenerator._serialize_indentation
         with 7 spaces and tab
         """
         self.assertEqual(
@@ -2128,19 +2118,20 @@ class DiffChunkGeneratorTests(TestCase):
             ('&gt;&gt;&gt;&gt;&gt;&mdash;&gt;|', ''))
 
     def test_unindent_spaces(self):
-        """Testing DiffChunkGenerator._serialize_unindentation with spaces"""
+        """Testing RawDiffChunkGenerator._serialize_unindentation with spaces
+        """
         self.assertEqual(
             self.generator._serialize_unindentation('    ', 4),
             ('&lt;&lt;&lt;&lt;', ''))
 
     def test_unindent_tabs(self):
-        """Testing DiffChunkGenerator._serialize_unindentation with tabs"""
+        """Testing RawDiffChunkGenerator._serialize_unindentation with tabs"""
         self.assertEqual(
             self.generator._serialize_unindentation('\t', 8),
             ('|&lt;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;', ''))
 
     def test_unindent_spaces_and_tabs(self):
-        """Testing DiffChunkGenerator._serialize_unindentation
+        """Testing RawDiffChunkGenerator._serialize_unindentation
         with spaces and tabs
         """
         self.assertEqual(
@@ -2148,7 +2139,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('&lt;&lt;&lt;|&lt;&mdash;&mdash;&mdash;', ''))
 
     def test_unindent_tabs_and_spaces(self):
-        """Testing DiffChunkGenerator._serialize_unindentation
+        """Testing RawDiffChunkGenerator._serialize_unindentation
         with tabs and spaces
         """
         self.assertEqual(
@@ -2157,7 +2148,7 @@ class DiffChunkGeneratorTests(TestCase):
              ''))
 
     def test_unindent_9_spaces_and_tab(self):
-        """Testing DiffChunkGenerator._serialize_unindentation
+        """Testing RawDiffChunkGenerator._serialize_unindentation
         with 9 spaces and tab
         """
         self.assertEqual(
@@ -2165,7 +2156,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('&lt;&lt;&lt;&lt;&lt;&lt;&lt;|', ''))
 
     def test_unindent_8_spaces_and_tab(self):
-        """Testing DiffChunkGenerator._serialize_unindentation
+        """Testing RawDiffChunkGenerator._serialize_unindentation
         with 8 spaces and tab
         """
         self.assertEqual(
@@ -2173,7 +2164,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('&lt;&lt;&lt;&lt;&lt;&lt;|&lt;', ''))
 
     def test_unindent_7_spaces_and_tab(self):
-        """Testing DiffChunkGenerator._serialize_unindentation
+        """Testing RawDiffChunkGenerator._serialize_unindentation
         with 7 spaces and tab
         """
         self.assertEqual(
@@ -2181,7 +2172,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('&lt;&lt;&lt;&lt;&lt;|&lt;&mdash;', ''))
 
     def test_highlight_indent(self):
-        """Testing DiffChunkGenerator._highlight_indentation
+        """Testing RawDiffChunkGenerator._highlight_indentation
         with indentation
         """
         self.assertEqual(
@@ -2192,7 +2183,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('', '<span class="indent">&gt;&gt;&gt;&gt;</span>    foo'))
 
     def test_highlight_indent_with_adjacent_tag(self):
-        """Testing DiffChunkGenerator._highlight_indentation
+        """Testing RawDiffChunkGenerator._highlight_indentation
         with indentation and adjacent tag wrapping whitespace
         """
         self.assertEqual(
@@ -2204,7 +2195,7 @@ class DiffChunkGeneratorTests(TestCase):
              '<span class="s"><span class="indent">&gt;</span></span>foo'))
 
     def test_highlight_indent_with_unexpected_chars(self):
-        """Testing DiffChunkGenerator._highlight_indentation
+        """Testing RawDiffChunkGenerator._highlight_indentation
         with indentation and unexpected markup chars
         """
         self.assertEqual(
@@ -2215,7 +2206,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('', ' <span>  </span> foo'))
 
     def test_highlight_unindent(self):
-        """Testing DiffChunkGenerator._highlight_indentation
+        """Testing RawDiffChunkGenerator._highlight_indentation
         with unindentation
         """
         self.assertEqual(
@@ -2226,7 +2217,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('<span class="unindent">&lt;&lt;&lt;&lt;</span>    foo', ''))
 
     def test_highlight_unindent_with_adjacent_tag(self):
-        """Testing DiffChunkGenerator._highlight_indentation
+        """Testing RawDiffChunkGenerator._highlight_indentation
         with unindentation and adjacent tag wrapping whitespace
         """
         self.assertEqual(
@@ -2238,7 +2229,7 @@ class DiffChunkGeneratorTests(TestCase):
              ''))
 
     def test_highlight_unindent_with_unexpected_chars(self):
-        """Testing DiffChunkGenerator._highlight_indentation
+        """Testing RawDiffChunkGenerator._highlight_indentation
         with unindentation and unexpected markup chars
         """
         self.assertEqual(
@@ -2249,7 +2240,7 @@ class DiffChunkGeneratorTests(TestCase):
             (' <span>  </span> foo', ''))
 
     def test_highlight_unindent_with_replacing_last_tab_with_spaces(self):
-        """Testing DiffChunkGenerator._highlight_indentation
+        """Testing RawDiffChunkGenerator._highlight_indentation
         with unindentation and replacing last tab with spaces
         """
         self.assertEqual(
@@ -2263,7 +2254,7 @@ class DiffChunkGeneratorTests(TestCase):
              '</span>        </span> foo', ''))
 
     def test_highlight_unindent_with_replacing_3_tabs_with_tab_spaces(self):
-        """Testing DiffChunkGenerator._highlight_indentation
+        """Testing RawDiffChunkGenerator._highlight_indentation
         with unindentation and replacing 3 tabs with 1 tab and 8 spaces
         """
         self.assertEqual(
@@ -2412,6 +2403,55 @@ class DiffOpcodeGeneratorTests(TestCase):
             (False, 3, 8))
 
 
+class DiffChunkGeneratorTests(TestCase):
+    """Unit tests for DiffChunkGenerator."""
+
+    fixtures = ['test_scmtools']
+
+    def setUp(self):
+        self.repository = self.create_repository()
+        self.diffset = self.create_diffset(repository=self.repository)
+        self.filediff = self.create_filediff(diffset=self.diffset)
+        self.generator = DiffChunkGenerator(None, self.filediff)
+
+    def test_get_chunks_with_empty_added_file(self):
+        """Testing DiffChunkGenerator.get_chunks with empty added file"""
+        self.filediff.source_revision = PRE_CREATION
+        self.filediff.extra_data.update({
+            'raw_insert_count': 0,
+            'raw_delete_count': 0,
+        })
+
+        self.assertEqual(len(list(self.generator.get_chunks())), 0)
+
+    def test_get_chunks_with_replace_in_added_file_with_parent_diff(self):
+        """Testing DiffChunkGenerator.get_chunks with replace chunks in
+        added file with parent diff
+        """
+        self.filediff.diff = (
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -1,1 +1,1 @@\n'
+            b'-line\n'
+            b'+line.\n'
+        )
+        self.filediff.parent_diff = (
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -0,0 +1,1 @@\n'
+            b'+line\n'
+        )
+        self.filediff.source_revision = PRE_CREATION
+        self.filediff.extra_data.update({
+            'raw_insert_count': 1,
+            'raw_delete_count': 1,
+            'insert_count': 0,
+            'delete_count': 0,
+        })
+
+        self.assertEqual(len(list(self.generator.get_chunks())), 1)
+
+
 class DiffRendererTests(SpyAgency, TestCase):
     """Unit tests for DiffRenderer."""
     def test_construction_with_invalid_chunks(self):
@@ -2446,11 +2486,15 @@ class DiffRendererTests(SpyAgency, TestCase):
 
         renderer = DiffRenderer(diff_file)
         self.spy_on(renderer.render_to_string, call_fake=lambda self: 'Foo')
+        self.spy_on(renderer.make_etag, call_fake=lambda self: 'ETag')
 
-        response = renderer.render_to_response()
+        request_factory = RequestFactory()
+        request = request_factory.get('/')
+        response = renderer.render_to_response(request)
 
         self.assertTrue(renderer.render_to_string.called)
         self.assertTrue(isinstance(response, HttpResponse))
+        self.assertTrue(renderer.make_etag.called)
         self.assertEqual(response.content, 'Foo')
 
     def test_render_to_string(self):
@@ -2462,15 +2506,20 @@ class DiffRendererTests(SpyAgency, TestCase):
         renderer = DiffRenderer(diff_file)
         self.spy_on(renderer.render_to_string_uncached,
                     call_fake=lambda self: 'Foo')
+        self.spy_on(renderer.make_etag,
+                    call_fake=lambda self: 'ETag')
         self.spy_on(renderer.make_cache_key,
                     call_fake=lambda self: 'my-cache-key')
         self.spy_on(cache_memoize)
 
-        response = renderer.render_to_response()
+        request_factory = RequestFactory()
+        request = request_factory.get('/')
+        response = renderer.render_to_response(request)
 
         self.assertEqual(response.content, 'Foo')
         self.assertTrue(renderer.render_to_string_uncached.called)
         self.assertTrue(renderer.make_cache_key.called)
+        self.assertTrue(renderer.make_etag.called)
         self.assertTrue(cache_memoize.spy.called)
 
     def test_render_to_string_uncached(self):
@@ -2482,14 +2531,19 @@ class DiffRendererTests(SpyAgency, TestCase):
         renderer = DiffRenderer(diff_file, lines_of_context=[5, 5])
         self.spy_on(renderer.render_to_string_uncached,
                     call_fake=lambda self: 'Foo')
+        self.spy_on(renderer.make_etag,
+                    call_fake=lambda self: 'ETag')
         self.spy_on(renderer.make_cache_key,
                     call_fake=lambda self: 'my-cache-key')
         self.spy_on(cache_memoize)
 
-        response = renderer.render_to_response()
+        request_factory = RequestFactory()
+        request = request_factory.get('/')
+        response = renderer.render_to_response(request)
 
         self.assertEqual(response.content, 'Foo')
         self.assertTrue(renderer.render_to_string_uncached.called)
+        self.assertTrue(renderer.make_etag.called)
         self.assertFalse(renderer.make_cache_key.called)
         self.assertFalse(cache_memoize.spy.called)
 

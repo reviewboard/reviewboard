@@ -47,6 +47,7 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
                     comment_attr['text'] = comment.text;
                     comment_attr['issueOpened'] = comment.issue_opened;
                     comment_attr['issueStatus'] = comment.issue_status;
+                    comment_attr['html'] = comment.html;
 
                     this.ensureDraftComment(comment.comment_id, comment_attr);
                 } else {

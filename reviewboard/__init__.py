@@ -114,6 +114,14 @@ def initialize():
         # Generate the AJAX serial, used for AJAX request caching.
         generate_ajax_serial()
 
+        # Store the AJAX serial as a template serial, so we have a reference
+        # to the real serial last modified timestamp of our templates. This
+        # is useful since the extension manager will be modifying AJAX_SERIAL
+        # to prevent stale caches for templates using hooks. Not all templates
+        # use hooks, and may want to base cache keys off TEMPLATE_SERIAL
+        # instead.
+        settings.TEMPLATE_SERIAL = settings.AJAX_SERIAL
+
         # Load all extensions
         try:
             get_extension_manager().load()

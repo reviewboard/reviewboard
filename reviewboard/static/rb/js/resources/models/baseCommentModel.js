@@ -74,7 +74,8 @@ RB.BaseComment = RB.BaseResource.extend({
     deserializedAttrs: [
         'issueOpened',
         'issueStatus',
-        'text'
+        'text',
+        'html'
     ],
 
     serializers: {
@@ -131,6 +132,10 @@ RB.BaseComment = RB.BaseResource.extend({
             data.markdownTextFields = {
                 text: rsp.markdown_text_fields.text
             };
+        }
+
+        if (rsp.html_text_fields) {
+            data.html = rsp.html_text_fields.text;
         }
 
         return data;

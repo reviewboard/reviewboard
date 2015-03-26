@@ -55,6 +55,7 @@ suite('rb/resources/models/FileAttachment', function() {
                     filename: 'filename',
                     icon_url: 'iconURL',
                     review_url: 'reviewURL',
+                    revision: 123,
                     thumbnail: 'thumbnailHTML'
                 }
             });
@@ -66,6 +67,7 @@ suite('rb/resources/models/FileAttachment', function() {
             expect(data.filename).toBe('filename');
             expect(data.iconURL).toBe('iconURL');
             expect(data.reviewURL).toBe('reviewURL');
+            expect(data.revision).toBe(123);
             expect(data.thumbnailHTML).toBe('thumbnailHTML');
         });
     });

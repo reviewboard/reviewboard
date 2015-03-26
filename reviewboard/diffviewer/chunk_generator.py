@@ -17,7 +17,7 @@ from pygments import highlight
 from pygments.lexers import get_lexer_for_filename
 from pygments.formatters import HtmlFormatter
 
-from reviewboard.diffviewer.differ import get_differ
+from reviewboard.diffviewer.differ import DiffCompatVersion, get_differ
 from reviewboard.diffviewer.diffutils import (get_line_changed_regions,
                                               get_original_file,
                                               get_patched_file,
@@ -45,44 +45,16 @@ class NoWrapperHtmlFormatter(HtmlFormatter):
                 yield tup
 
 
-class DiffChunkGenerator(object):
-    """Generates chunks for a diff that can be used for rendering.
+class RawDiffChunkGenerator(object):
+    """A generator for chunks for a diff that can be used for rendering.
 
-    Each chunk represents an insert, delete or equal section. It contains
-    all the data needed to render the portion of the diff.
+    Each chunk represents an insert, delete, replace, or equal section. It
+    contains all the data needed to render the portion of the diff.
 
-    There are three ways this can operate, based on provided parameters.
-
-    1) filediff, no interfilediff
-       - Returns chunks for a single filediff. This is the usual way
-         people look at diffs in the diff viewer.
-
-         In this mode, we get the original file based on the filediff
-         and then patch it to get the resulting file.
-
-         This is also used for interdiffs where the source revision
-         has no equivalent modified file but the interdiff revision
-         does. It's no different than a standard diff.
-
-    2) filediff, interfilediff
-       - Returns chunks showing the changes between a source filediff
-         and the interdiff.
-
-         This is the typical mode used when showing the changes
-         between two diffs. It requires that the file is included in
-         both revisions of a diffset.
-
-    3) filediff, no interfilediff, force_interdiff
-       - Returns chunks showing the changes between a source
-         diff and an unmodified version of the diff.
-
-         This is used when the source revision in the diffset contains
-         modifications to a file which have then been reverted in the
-         interdiff revision. We don't actually have an interfilediff
-         in this case, so we have to indicate that we are indeed in
-         interdiff mode so that we can special-case this and not
-         grab a patched file for the interdiff version.
+    This is general-purpose and meant to operate on strings consisting of
+    one or more lines of text.
     """
+
     NEWLINES_RE = re.compile(r'\r?\n')
 
     # The maximum size a line can be before we start shutting off styling.
@@ -92,103 +64,67 @@ class DiffChunkGenerator(object):
     # Default tab size used in browsers.
     TAB_SIZE = DiffOpcodeGenerator.TAB_SIZE
 
-    def __init__(self, request, filediff, interfilediff=None,
-                 force_interdiff=False, enable_syntax_highlighting=True):
-        assert filediff
-
-        self.request = request
-        self.diffset = filediff.diffset
-        self.filediff = filediff
-        self.interfilediff = interfilediff
-        self.force_interdiff = force_interdiff
+    def __init__(self, old, new, orig_filename, modified_filename,
+                 enable_syntax_highlighting=True, encoding_list=None,
+                 diff_compat=DiffCompatVersion.DEFAULT):
+        self.old = old
+        self.new = new
+        self.orig_filename = orig_filename
+        self.modified_filename = modified_filename
         self.enable_syntax_highlighting = enable_syntax_highlighting
+        self.encoding_list = encoding_list
+        self.diff_compat = diff_compat
         self.differ = None
-
-        self.filename = filediff.source_file
 
         # Chunk processing state.
         self._last_header = [None, None]
         self._last_header_index = [0, 0]
         self._chunk_index = 0
 
-    def make_cache_key(self):
-        """Creates a cache key for any generated chunks."""
-        key = 'diff-sidebyside-'
+    def get_opcode_generator(self):
+        """Return the DiffOpcodeGenerator used to generate diff opcodes."""
+        return get_diff_opcode_generator(self.differ)
 
-        if self.enable_syntax_highlighting:
-            key += 'hl-'
+    def get_chunks(self, cache_key=None):
+        """Return the chunks for the given diff information.
 
-        if not self.force_interdiff:
-            key += six.text_type(self.filediff.pk)
-        elif self.interfilediff:
-            key += 'interdiff-%s-%s' % (self.filediff.pk,
-                                        self.interfilediff.pk)
-        else:
-            key += 'interdiff-%s-none' % self.filediff.pk
-
-        key += '-%s' % get_language()
-
-        return key
-
-    def get_chunks(self):
-        """Returns the chunks for the given diff information.
-
-        If the file is binary or is an added or deleted 0-length file, or if
-        the file has moved with no additional changes, then an empty list of
-        chunks will be returned.
-
-        If there are chunks already computed in the cache, they will be
-        returned. Otherwise, new chunks will be generated, stored in cache,
-        and returned.
+        If a cache key is provided and there are chunks already computed in the
+        cache, they will be yielded. Otherwise, new chunks will be generated,
+        stored in cache (given a cache key), and yielded.
         """
-        counts = self.filediff.get_line_counts()
+        if cache_key:
+            chunks = cache_memoize(cache_key,
+                                   lambda: list(self.get_chunks_uncached()),
+                                   large_data=True)
+        else:
+            chunks = self.get_chunks_uncached()
 
-        if (self.filediff.binary or
-            self.filediff.source_revision == '' or
-            ((self.filediff.is_new or self.filediff.deleted or
-              self.filediff.moved) and
-             counts['raw_insert_count'] == 0 and
-             counts['raw_delete_count'] == 0)):
-            return []
+        for chunk in chunks:
+            yield chunk
 
-        return cache_memoize(self.make_cache_key(),
-                             lambda: list(self._get_chunks_uncached()),
-                             large_data=True)
+    def get_chunks_uncached(self):
+        """Yield the list of chunks, bypassing the cache."""
+        for chunk in self.generate_chunks(self.old, self.new):
+            yield chunk
 
-    def _get_chunks_uncached(self):
-        """Returns the list of chunks, bypassing the cache."""
-        encoding_list = self.diffset.repository.get_encoding_list()
+    def generate_chunks(self, old, new):
+        """Generate chunks for the difference between two strings.
 
-        old = get_original_file(self.filediff, self.request, encoding_list)
-        new = get_patched_file(old, self.filediff, self.request)
+        The strings will be normalized, ensuring they're of the proper
+        encoding and ensuring they have consistent newlines. They're then
+        syntax-highlighted (if requested).
 
-        if self.filediff.orig_sha1 is None:
-            self.filediff.extra_data.update({
-                'orig_sha1': self._get_checksum(old),
-                'patched_sha1': self._get_checksum(new),
-            })
-            self.filediff.save(update_fields=['extra_data'])
+        Once the strings are ready, chunks are built from the strings and
+        yielded to the caller. Each chunk represents information on an
+        equal, inserted, deleted, or replaced set of lines.
 
-        if self.interfilediff:
-            old = new
-            interdiff_orig = get_original_file(self.interfilediff,
-                                               self.request,
-                                               encoding_list)
-            new = get_patched_file(interdiff_orig, self.interfilediff,
-                                   self.request)
-
-            if self.interfilediff.orig_sha1 is None:
-                self.interfilediff.extra_data.update({
-                    'orig_sha1': self._get_checksum(interdiff_orig),
-                    'patched_sha1': self._get_checksum(new),
-                })
-                self.interfilediff.save(update_fields=['extra_data'])
-        elif self.force_interdiff:
-            # Basically, revert the change.
-            old, new = new, old
-
-        old = convert_to_unicode(old, encoding_list)[1]
-        new = convert_to_unicode(new, encoding_list)[1]
+        The number of lines of each chunk type are stored in the
+        :py:attr:`counts` dictionary, which can then be accessed after
+        yielding all chunks.
+        """
+        if self.encoding_list:
+            old = convert_to_unicode(old, self.encoding_list)[1]
+            new = convert_to_unicode(new, self.encoding_list)[1]
 
         # Normalize the input so that if there isn't a trailing newline, we add
         # it.
@@ -212,12 +148,10 @@ class DiffChunkGenerator(object):
         markup_a = markup_b = None
 
         if self._get_enable_syntax_highlighting(old, new, a, b):
-            repository = self.filediff.diffset.repository
-            tool = repository.get_scmtool()
             source_file = \
-                tool.normalize_path_for_display(self.filediff.source_file)
+                self.normalize_path_for_display(self.orig_filename)
             dest_file = \
-                tool.normalize_path_for_display(self.filediff.dest_file)
+                self.normalize_path_for_display(self.modified_filename)
 
             try:
                 # TODO: Try to figure out the right lexer for these files
@@ -237,33 +171,19 @@ class DiffChunkGenerator(object):
         ignore_space = True
 
         for pattern in siteconfig.get('diffviewer_include_space_patterns'):
-            if fnmatch.fnmatch(self.filename, pattern):
+            if fnmatch.fnmatch(self.orig_filename, pattern):
                 ignore_space = False
                 break
 
         self.differ = get_differ(a, b, ignore_space=ignore_space,
-                                 compat_version=self.diffset.diffcompat)
-        self.differ.add_interesting_lines_for_headers(self.filename)
+                                 compat_version=self.diff_compat)
+        self.differ.add_interesting_lines_for_headers(self.orig_filename)
 
         context_num_lines = siteconfig.get("diffviewer_context_num_lines")
         collapse_threshold = 2 * context_num_lines + 3
 
-        if self.interfilediff:
-            log_timer = log_timed(
-                "Generating diff chunks for interdiff ids %s-%s (%s)" %
-                (self.filediff.id, self.interfilediff.id,
-                 self.filediff.source_file),
-                request=self.request)
-        else:
-            log_timer = log_timed(
-                "Generating diff chunks for self.filediff id %s (%s)" %
-                (self.filediff.id, self.filediff.source_file),
-                request=self.request)
-
         line_num = 1
-        opcodes_generator = get_diff_opcode_generator(self.differ,
-                                                      self.filediff,
-                                                      self.interfilediff)
+        opcodes_generator = self.get_opcode_generator()
 
         counts = {
             'equal': 0,
@@ -306,21 +226,15 @@ class DiffChunkGenerator(object):
 
             line_num += num_lines
 
-        log_timer.done()
+        self.counts = counts
 
-        if not self.interfilediff:
-            insert_count = counts['insert']
-            delete_count = counts['delete']
-            replace_count = counts['replace']
-            equal_count = counts['equal']
+    def normalize_path_for_display(self, filename):
+        """Normalize a file path for display to the user.
 
-            self.filediff.set_line_counts(
-                insert_count=insert_count,
-                delete_count=delete_count,
-                replace_count=replace_count,
-                equal_count=equal_count,
-                total_line_count=(insert_count + delete_count +
-                                  replace_count + equal_count))
+        By default, this returns the filename as-is. Subclasses can override
+        the behavior to return a variant of the filename.
+        """
+        return filename
 
     def _get_enable_syntax_highlighting(self, old, new, a, b):
         """Returns whether or not we'll be enabling syntax highlighting.
@@ -647,6 +561,188 @@ class DiffChunkGenerator(object):
 
         return split_line_endings(
             highlight(data, lexer, NoWrapperHtmlFormatter()))
+
+
+class DiffChunkGenerator(RawDiffChunkGenerator):
+    """A generator for chunks for a FileDiff that can be used for rendering.
+
+    Each chunk represents an insert, delete, replace, or equal section. It
+    contains all the data needed to render the portion of the diff.
+
+    There are three ways this can operate, based on provided parameters.
+
+    1) filediff, no interfilediff
+       - Returns chunks for a single filediff. This is the usual way
+         people look at diffs in the diff viewer.
+
+         In this mode, we get the original file based on the filediff
+         and then patch it to get the resulting file.
+
+         This is also used for interdiffs where the source revision
+         has no equivalent modified file but the interdiff revision
+         does. It's no different than a standard diff.
+
+    2) filediff, interfilediff
+       - Returns chunks showing the changes between a source filediff
+         and the interdiff.
+
+         This is the typical mode used when showing the changes
+         between two diffs. It requires that the file is included in
+         both revisions of a diffset.
+
+    3) filediff, no interfilediff, force_interdiff
+       - Returns chunks showing the changes between a source
+         diff and an unmodified version of the diff.
+
+         This is used when the source revision in the diffset contains
+         modifications to a file which have then been reverted in the
+         interdiff revision. We don't actually have an interfilediff
+         in this case, so we have to indicate that we are indeed in
+         interdiff mode so that we can special-case this and not
+         grab a patched file for the interdiff version.
+    """
+
+    def __init__(self, request, filediff, interfilediff=None,
+                 force_interdiff=False, enable_syntax_highlighting=True):
+        assert filediff
+
+        self.request = request
+        self.diffset = filediff.diffset
+        self.filediff = filediff
+        self.interfilediff = interfilediff
+        self.force_interdiff = force_interdiff
+        self.repository = self.diffset.repository
+        self.tool = self.repository.get_scmtool()
+
+        super(DiffChunkGenerator, self).__init__(
+            old=None,
+            new=None,
+            orig_filename=filediff.source_file,
+            modified_filename=filediff.dest_file,
+            enable_syntax_highlighting=enable_syntax_highlighting,
+            encoding_list=self.repository.get_encoding_list(),
+            diff_compat=filediff.diffset.diffcompat)
+
+    def make_cache_key(self):
+        """Create a cache key for any generated chunks."""
+        key = 'diff-sidebyside-'
+
+        if self.enable_syntax_highlighting:
+            key += 'hl-'
+
+        if not self.force_interdiff:
+            key += six.text_type(self.filediff.pk)
+        elif self.interfilediff:
+            key += 'interdiff-%s-%s' % (self.filediff.pk,
+                                        self.interfilediff.pk)
+        else:
+            key += 'interdiff-%s-none' % self.filediff.pk
+
+        key += '-%s' % get_language()
+
+        return key
+
+    def get_opcode_generator(self):
+        """Return the DiffOpcodeGenerator used to generate diff opcodes."""
+        diff = self.filediff.diff
+
+        if self.interfilediff:
+            interdiff = self.interfilediff.diff
+        else:
+            interdiff = None
+
+        return get_diff_opcode_generator(self.differ, diff, interdiff)
+
+    def get_chunks(self):
+        """Return the chunks for the given diff information.
+
+        If the file is binary or is an added or deleted 0-length file, or if
+        the file has moved with no additional changes, then an empty list of
+        chunks will be returned.
+
+        If there are chunks already computed in the cache, they will be
+        yielded. Otherwise, new chunks will be generated, stored in cache,
+        and yielded.
+        """
+        counts = self.filediff.get_line_counts()
+
+        if (self.filediff.binary or
+            self.filediff.source_revision == '' or
+            ((self.filediff.is_new or self.filediff.deleted or
+              self.filediff.moved) and
+             counts['raw_insert_count'] == 0 and
+             counts['raw_delete_count'] == 0)):
+            raise StopIteration
+
+        cache_key = self.make_cache_key()
+
+        for chunk in super(DiffChunkGenerator, self).get_chunks(cache_key):
+            yield chunk
+
+    def get_chunks_uncached(self):
+        """Yield the list of chunks, bypassing the cache."""
+        old = get_original_file(self.filediff, self.request,
+                                self.encoding_list)
+        new = get_patched_file(old, self.filediff, self.request)
+
+        if self.filediff.orig_sha1 is None:
+            self.filediff.extra_data.update({
+                'orig_sha1': self._get_checksum(old),
+                'patched_sha1': self._get_checksum(new),
+            })
+            self.filediff.save(update_fields=['extra_data'])
+
+        if self.interfilediff:
+            old = new
+            interdiff_orig = get_original_file(self.interfilediff,
+                                               self.request,
+                                               self.encoding_list)
+            new = get_patched_file(interdiff_orig, self.interfilediff,
+                                   self.request)
+
+            if self.interfilediff.orig_sha1 is None:
+                self.interfilediff.extra_data.update({
+                    'orig_sha1': self._get_checksum(interdiff_orig),
+                    'patched_sha1': self._get_checksum(new),
+                })
+                self.interfilediff.save(update_fields=['extra_data'])
+        elif self.force_interdiff:
+            # Basically, revert the change.
+            old, new = new, old
+
+        if self.interfilediff:
+            log_timer = log_timed(
+                "Generating diff chunks for interdiff ids %s-%s (%s)" %
+                (self.filediff.id, self.interfilediff.id,
+                 self.filediff.source_file),
+                request=self.request)
+        else:
+            log_timer = log_timed(
+                "Generating diff chunks for self.filediff id %s (%s)" %
+                (self.filediff.id, self.filediff.source_file),
+                request=self.request)
+
+        for chunk in self.generate_chunks(old, new):
+            yield chunk
+
+        log_timer.done()
+
+        if not self.interfilediff:
+            insert_count = self.counts['insert']
+            delete_count = self.counts['delete']
+            replace_count = self.counts['replace']
+            equal_count = self.counts['equal']
+
+            self.filediff.set_line_counts(
+                insert_count=insert_count,
+                delete_count=delete_count,
+                replace_count=replace_count,
+                equal_count=equal_count,
+                total_line_count=(insert_count + delete_count +
+                                  replace_count + equal_count))
+
+    def normalize_path_for_display(self, filename):
+        return self.tool.normalize_path_for_display(filename)
 
     def _get_checksum(self, content):
         hasher = hashlib.sha1()
