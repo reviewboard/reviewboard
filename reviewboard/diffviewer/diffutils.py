@@ -414,7 +414,7 @@ def populate_diff_chunks(files, enable_syntax_highlighting=True,
                                              diff_file['interfilediff'],
                                              diff_file['force_interdiff'],
                                              enable_syntax_highlighting)
-        chunks = generator.get_chunks()
+        chunks = list(generator.get_chunks())
 
         diff_file.update({
             'chunks': chunks,
