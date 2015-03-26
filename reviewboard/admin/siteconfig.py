@@ -153,7 +153,6 @@ defaults.update({
     'search_index_file': os.path.join(settings.SITE_DATA_DIR,
                                       'search-index'),
     'search_results_per_page': 20,
-    'max_search_results': 200,
 
     # Overwrite this.
     'site_media_url': settings.SITE_ROOT + "media/",
@@ -181,11 +180,13 @@ defaults.update({
 
 
 def load_site_config(full_reload=False):
-    """
-    Loads any stored site configuration settings and populates the Django
-    settings object with any that need to be there.
+    """Load stored site configuration settings.
+
+    This populates the Django settings object with any keys that need to be
+    there.
     """
     def apply_setting(settings_key, db_key, default=None):
+        """Apply the given siteconfig value to the Django settings object."""
         db_value = siteconfig.settings.get(db_key)
 
         if db_value:
@@ -194,7 +195,7 @@ def load_site_config(full_reload=False):
             setattr(settings, settings_key, default)
 
     def update_haystack_settings():
-        """Updates the haystack settings with settings in site config."""
+        """Update the haystack settings with settings in site config."""
         apply_setting("HAYSTACK_CONNECTIONS", None, {
             'default': {
                 'ENGINE': settings.HAYSTACK_CONNECTIONS['default']['ENGINE'],

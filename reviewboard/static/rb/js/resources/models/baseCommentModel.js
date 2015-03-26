@@ -41,7 +41,7 @@ RB.BaseComment = RB.BaseResource.extend({
         rawTextFields: {},
 
         /* Whether the comment is saved in rich-text (Markdown) format. */
-        richText: false,
+        richText: null,
 
         /* The text entered for the comment. */
         text: ''

@@ -141,7 +141,12 @@ class MimetypeHandler(object):
         if not attachment.mimetype:
             return None
 
-        mimetype = mimeparse.parse_mime_type(attachment.mimetype)
+        try:
+            mimetype = mimeparse.parse_mime_type(attachment.mimetype)
+        except:
+            logging.warning('Unable to parse MIME type "%s" for %s',
+                            attachment, attachment.mimetype)
+            mimetype = ('application', 'octet-stream', {})
 
         # Override the mimetype if mimeparse is known to misinterpret this
         # type of file as `octet-stream`

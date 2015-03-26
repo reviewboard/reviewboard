@@ -361,7 +361,8 @@ class ReviewRequest(BaseReviewRequestDetails):
         """Returns all public top-level reviews for this review request."""
         return self.reviews.filter(public=True, base_reply_to__isnull=True)
 
-    def is_accessible_by(self, user, local_site=None, request=None):
+    def is_accessible_by(self, user, local_site=None, request=None,
+                         silent=False):
         """Returns whether or not the user can read this review request.
 
         This performs several checks to ensure that the user has access.
@@ -383,24 +384,33 @@ class ReviewRequest(BaseReviewRequestDetails):
             return True
 
         if not self.public and not self.is_mutable_by(user):
-            logging.warning('Review Request pk=%d (display_id=%d) is not '
-                            'accessible by user %s because it has not yet '
-                            'been published.',
-                            self.pk, self.display_id, user, request=request)
+            if not silent:
+                logging.warning('Review Request pk=%d (display_id=%d) is not '
+                                'accessible by user %s because it has not yet '
+                                'been published.',
+                                self.pk, self.display_id, user,
+                                request=request)
+
             return False
 
         if self.repository and not self.repository.is_accessible_by(user):
-            logging.warning('Review Request pk=%d (display_id=%d) is not '
-                            'accessible by user %s because its repository is '
-                            'not accessible by that user.',
-                            self.pk, self.display_id, user, request=request)
+            if not silent:
+                logging.warning('Review Request pk=%d (display_id=%d) is not '
+                                'accessible by user %s because its repository '
+                                'is not accessible by that user.',
+                                self.pk, self.display_id, user,
+                                request=request)
+
             return False
 
         if local_site and not local_site.is_accessible_by(user):
-            logging.warning('Review Request pk=%d (display_id=%d) is not '
-                            'accessible by user %s because its local_site is '
-                            'not accessible by that user.',
-                            self.pk, self.display_id, user, request=request)
+            if not silent:
+                logging.warning('Review Request pk=%d (display_id=%d) is not '
+                                'accessible by user %s because its local_site '
+                                'is not accessible by that user.',
+                                self.pk, self.display_id, user,
+                                request=request)
+
             return False
 
         if (user.is_authenticated() and
@@ -420,14 +430,15 @@ class ReviewRequest(BaseReviewRequestDetails):
         # to. If they can access any of the groups, then they have access
         # to the review request.
         for group in groups:
-            if group.is_accessible_by(user):
+            if group.is_accessible_by(user, silent=silent):
                 return True
 
-        logging.warning('Review Request pk=%d (display_id=%d) is not '
-                        'accessible by user %s because they are not directly '
-                        'listed as a reviewer, and none of the target groups '
-                        'are accessible by that user.',
-                        self.pk, self.display_id, user, request=request)
+        if not silent:
+            logging.warning('Review Request pk=%d (display_id=%d) is not '
+                            'accessible by user %s because they are not '
+                            'directly listed as a reviewer, and none of '
+                            'the target groups are accessible by that user.',
+                            self.pk, self.display_id, user, request=request)
 
         return False
 
@@ -791,7 +802,17 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         if draft is not None:
             # This will in turn save the review request, so we'll be done.
-            changes = draft.publish(self, send_notification=False)
+            try:
+                changes = draft.publish(self, send_notification=False)
+            except Exception:
+                # The draft failed to publish, for one reason or another.
+                # Check if we need to re-increment those counters we
+                # previously decremented.
+                if self.public:
+                    self._increment_reviewer_counts()
+
+                raise
+
             draft.delete()
         else:
             changes = None

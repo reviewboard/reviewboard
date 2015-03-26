@@ -7,11 +7,11 @@ from __future__ import unicode_literals
 #
 #   (Major, Minor, Micro, Patch, alpha/beta/rc/final, Release Number, Released)
 #
-VERSION = (2, 5, 0, 0, 'alpha', 0, False)
+VERSION = (2, 5, 0, 0, 'beta', 1, True)
 
 
 # Required version of Django
-django_version = 'Django>=1.6.9,<1.7'
+django_version = 'Django>=1.6.10,<1.7'
 
 
 def get_version_string():
@@ -81,6 +81,7 @@ def initialize():
     os.environ['RBSITE_PYTHONPATH'] = \
         os.path.dirname(settings_local.__file__)
 
+    from Crypto import Random
     from django.conf import settings
     from django.db import DatabaseError
     from djblets import log
@@ -97,6 +98,9 @@ def initialize():
     is_running_test = getattr(settings, 'RUNNING_TEST', False)
 
     if not is_running_test:
+        # Force PyCrypto to re-initialize the random number generator.
+        Random.atfork()
+
         # Set up logging.
         log.init_logging()
 

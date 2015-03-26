@@ -75,7 +75,7 @@ class BaseFileAttachmentResource(WebAPIResource):
         'attachment_history_id': {
             'type': int,
             'description': 'ID of the corresponding FileAttachmentHistory.',
-            'added_in': '2.1',
+            'added_in': '2.5',
         },
     }
 
@@ -168,7 +168,7 @@ class BaseFileAttachmentResource(WebAPIResource):
                 'type': int,
                 'description': 'ID of the corresponding '
                                'FileAttachmentHistory.',
-                'added_in': '2.1',
+                'added_in': '2.5',
             },
         },
     )

@@ -41,6 +41,8 @@ class RBUserCreationForm(UserCreationForm):
 
 
 class ProfileInline(admin.StackedInline):
+    """Admin definitions for showing Profile information inline."""
+
     model = Profile
     raw_id_fields = ('user', 'starred_review_requests', 'starred_groups')
     fieldsets = (
@@ -78,6 +80,8 @@ class ProfileInline(admin.StackedInline):
 
 
 class LocalSiteProfileInline(admin.StackedInline):
+    """Admin definitions for showing LocalSiteProfile information inline."""
+
     model = LocalSiteProfile
     exclude = ('profile',)
     readonly_fields = ('local_site',)
@@ -98,6 +102,8 @@ class LocalSiteProfileInline(admin.StackedInline):
 
 
 class RBUserAdmin(UserAdmin):
+    """Admin definitions for the User model."""
+
     form = RBUserChangeForm
     add_form = RBUserCreationForm
     filter_vertical = ('user_permissions',)
@@ -110,16 +116,22 @@ class RBUserAdmin(UserAdmin):
 
 
 class ReviewRequestVisitAdmin(admin.ModelAdmin):
+    """Admin definitions for the ReviewRequestVisit model."""
+
     list_display = ('review_request', 'user', 'timestamp')
     raw_id_fields = ('review_request',)
 
 
 class ProfileAdmin(admin.ModelAdmin):
+    """Admin definitions for the Profile model."""
+
     list_display = ('__str__', 'first_time_setup_done')
     raw_id_fields = ('user', 'starred_review_requests', 'starred_groups')
 
 
 class LocalSiteProfileAdmin(admin.ModelAdmin):
+    """Admin definitions for the LocalSiteProfile model."""
+
     list_display = ('__str__',)
     raw_id_fields = ('user', 'profile', 'local_site')
 

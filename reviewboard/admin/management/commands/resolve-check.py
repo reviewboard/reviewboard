@@ -7,9 +7,12 @@ from djblets.siteconfig.models import SiteConfiguration
 
 
 class Command(BaseCommand):
+    """Management command to manually update the state of an update check."""
+
     help = 'Resolves a manual update check'
 
     def handle(self, *args, **options):
+        """Handle the command."""
         if len(args) != 1:
             self.stderr.write('You must specify a check to resolve')
             sys.exit(1)

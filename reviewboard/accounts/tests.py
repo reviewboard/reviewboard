@@ -82,6 +82,7 @@ class AccountPageTests(TestCase):
                          'api-tokens'])
 
     def tearDown(self):
+        """Uninitialize this test case."""
         # Force the next request to re-populate the list of default pages.
         _clear_page_defaults()
 
@@ -193,6 +194,8 @@ class AccountPageTests(TestCase):
 
 
 class UsernameTests(TestCase):
+    """Unit tests for username rules."""
+
     cases = [
         ('spaces  ', 'spaces'),
         ('spa ces', 'spaces'),
@@ -277,6 +280,8 @@ class TrophyTests(TestCase):
 
 
 class SandboxAuthBackend(AuthBackend):
+    """Mock authentication backend to test extension sandboxing."""
+
     backend_id = 'test-id'
     name = 'test'
     supports_change_name = True
@@ -284,15 +289,19 @@ class SandboxAuthBackend(AuthBackend):
     supports_change_password = True
 
     def authenticate(self, username, password):
+        """Raise an exception to test sandboxing."""
         raise Exception
 
     def update_password(self, user, password):
+        """Raise an exception to test sandboxing."""
         raise Exception
 
     def update_name(self, user):
+        """Raise an exception to test sandboxing."""
         raise Exception
 
     def update_email(self, user):
+        """Raise an exception to test sandboxing."""
         raise Exception
 
 
@@ -300,6 +309,7 @@ class SandboxTests(SpyAgency, TestCase):
     """Test extension sandboxing."""
 
     def setUp(self):
+        """Initialize this test case."""
         super(SandboxTests, self).setUp()
 
         self.factory = RequestFactory()
@@ -315,6 +325,7 @@ class SandboxTests(SpyAgency, TestCase):
                     call_fake=lambda x, y, z: None)
 
     def tearDown(self):
+        """Uninitialize this test case."""
         super(SandboxTests, self).tearDown()
 
     def test_authenticate_auth_backend(self):

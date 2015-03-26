@@ -53,6 +53,10 @@ class ReviewGroupManager(Manager):
 
         return qs.filter(local_site=local_site)
 
+    def accessible_ids(self, *args, **kwargs):
+        """Return IDs of groups that are accessible by the given user."""
+        return self.accessible(*args, **kwargs).values_list('pk', flat=True)
+
     def can_create(self, user, local_site=None):
         """Returns whether the user can create groups."""
         return (user.is_superuser or
@@ -290,7 +294,8 @@ class ReviewRequestManager(ConcurrencyManager):
 
     def _query(self, user=None, status='P', with_counts=False,
                extra_query=None, local_site=None, filter_private=False,
-               show_inactive=False, show_all_unpublished=False):
+               show_inactive=False, show_all_unpublished=False,
+               show_all_local_sites=False):
         from reviewboard.reviews.models import Group
 
         is_authenticated = (user is not None and user.is_authenticated())
@@ -309,23 +314,26 @@ class ReviewRequestManager(ConcurrencyManager):
         if status:
             query = query & Q(status=status)
 
-        query = query & Q(local_site=local_site)
+        if show_all_local_sites:
+            assert local_site is None
+        else:
+            query = query & Q(local_site=local_site)
 
         if extra_query:
             query = query & extra_query
 
         if filter_private and (not user or not user.is_superuser):
-            repo_query = (Q(repository=None) |
-                          Q(repository__public=True))
-            group_query = (Q(target_groups=None) |
-                           Q(target_groups__invite_only=False))
+            # This must always be kept in sync with RBSearchView.get_results.
+            repo_query = Q(repository=None)
+            group_query = Q(target_groups=None)
 
             if is_authenticated:
-                accessible_repo_ids = Repository.objects.filter(
-                    Q(users=user) |
-                    Q(review_groups__users=user)).values_list('pk', flat=True)
-                accessible_group_ids = Group.objects.filter(
-                    users=user).values_list('pk', flat=True)
+                accessible_repo_ids = \
+                    Repository.objects.accessible_ids(user, visible_only=False,
+                                                      local_site=local_site)
+                accessible_group_ids = \
+                    Group.objects.accessible(user, visible_only=False,
+                                             local_site=local_site)
 
                 repo_query = repo_query | Q(repository__in=accessible_repo_ids)
                 group_query = (group_query |
@@ -335,6 +343,9 @@ class ReviewRequestManager(ConcurrencyManager):
                                  (repo_query &
                                   (Q(target_people=user) | group_query)))
             else:
+                repo_query |= Q(repository__public=True)
+                group_query |= Q(target_groups__invite_only=False)
+
                 query = query & repo_query & group_query
 
         query = self.filter(query).distinct()

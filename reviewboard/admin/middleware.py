@@ -5,20 +5,14 @@ import os
 
 from django.conf import settings
 from django.contrib import auth
+from django.core.handlers.wsgi import WSGIRequest
+from djblets.siteconfig.models import SiteConfiguration
 
 try:
     from django.core.handlers.modpython import ModPythonRequest
 except ImportError:
     class ModPythonRequest:
-        pass
-
-try:
-    from django.core.handlers.wsgi import WSGIRequest
-except ImportError:
-    class WSGIRequest:
-        pass
-
-from djblets.siteconfig.models import SiteConfiguration
+        """Mock definition."""
 
 from reviewboard import initialize
 from reviewboard.admin.checks import check_updates_required
@@ -27,22 +21,25 @@ from reviewboard.admin.views import manual_updates_required
 
 
 class InitReviewBoardMiddleware(object):
-    """Handles the initialization of Review Board."""
+    """Handle the initialization of Review Board."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the middleware."""
         super(InitReviewBoardMiddleware, self).__init__(*args, **kwargs)
         self._initialized = False
 
     def process_request(self, request):
+        """Ensure that Review Board initialization code has run."""
         if not self._initialized:
             initialize()
             self._initialized = True
 
 
 class LoadSettingsMiddleware(object):
-    """
-    Middleware that loads the settings on each request.
-    """
+    """Middleware that loads the settings on each request."""
+
     def process_request(self, request):
+        """Ensure that the latest siteconfig is loaded."""
         try:
             siteconfig = SiteConfiguration.objects.get_current()
         except Exception as e:
@@ -62,21 +59,22 @@ class LoadSettingsMiddleware(object):
 
 
 class CheckUpdatesRequiredMiddleware(object):
+    """Middleware that checks if manual updates need to be done.
+
+    If updates are required, all attempts to access a URL will be redirected to
+    the updates page (or an appropriate error response for API calls).
     """
-    Middleware that checks if manual updates need to be made on the
-    installation. If updates are required, all attempts to access a
-    URL will be redirected to the updates page (or an appropriate
-    error response for API calls.
-    """
+
     ALLOWED_PATHS = (
         settings.STATIC_URL,
         settings.SITE_ROOT + 'jsi18n/',
     )
 
     def process_view(self, request, view_func, view_args, view_kwargs):
-        """
-        Checks whether updates are required and returns the appropriate
-        response if they are.
+        """Check whether updates are required.
+
+        This returns the appropriate response if any updates are required,
+        otherwise it allows the normal code to run.
         """
         path_info = request.META['PATH_INFO']
 
@@ -90,13 +88,20 @@ class CheckUpdatesRequiredMiddleware(object):
 
 
 class ExtraExceptionInfoMiddleware(object):
-    """Adds extra debugging information to exception e-mails.
+    """Add extra debugging information to exception e-mails.
 
     If an exception occurs, the META field will be updated to contain
     the username and e-mail address of the user who triggered the error
     (if any), and the Local Site name (if any).
     """
+
     def process_exception(self, request, exception):
+        """Process an exception.
+
+        Exceptions from views are handled by sending the admin users an e-mail
+        with the traceback. This adds additional information to the META
+        dictionary before that happens.
+        """
         if request.user.is_authenticated():
             request.META['USERNAME'] = request.user.username
             request.META['USER_EMAIL'] = request.user.email
@@ -106,9 +111,11 @@ class ExtraExceptionInfoMiddleware(object):
 
 
 class X509AuthMiddleware(object):
-    """
-    Middleware that authenticates a user using the environment variables set by
-    mod_ssl.
+    """Middleware that authenticates a user using X509 certificates.
+
+    If Review Board is configured to use the X509 authentication backend, this
+    will automatically authenticate the user using the environment variables
+    set by mod_ssl.
 
     Apache needs to be configured with mod_ssl. For Review Board to be usable
     with X.509 client certificate authentication, the 'SSLVerifyClient'
@@ -116,7 +123,9 @@ class X509AuthMiddleware(object):
     basic authentication will still work, allowing the post-review tool to work
     with a username and password.
     """
+
     def process_request(self, request):
+        """If using X509 authentication, log users in by their certificate."""
         if ('reviewboard.accounts.backends.X509Backend'
                 not in settings.AUTHENTICATION_BACKENDS):
             return None

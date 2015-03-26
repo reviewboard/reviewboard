@@ -4,7 +4,7 @@
 WebAPICapabilitiesHook
 ======================
 
-.. versionadded:: 2.1
+.. versionadded:: 2.5
 
 :py:class:`reviewboard.extensions.hooks.WebAPICapabilitiesHook` allows
 extensions to register new capabilities with the web API.

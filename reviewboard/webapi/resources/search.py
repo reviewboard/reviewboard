@@ -41,27 +41,39 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
         """
         search_q = request.GET.get('q', None)
         local_site = self._get_local_site(local_site_name)
+
         if local_site:
-            query = local_site.users.filter(is_active=True)
+            query_users = local_site.users.filter(is_active=True)
         else:
-            query = self.model.objects.filter(is_active=True)
+            query_users = self.model.objects.filter(is_active=True)
+
+        query_groups = Group.objects.filter(local_site=local_site)
+        query_review_requests = \
+            ReviewRequest.objects.filter(local_site=local_site)
 
         if search_q:
-            q = (Q(username__istartswith=search_q) |
-                 Q(first_name__istartswith=search_q) |
-                 Q(last_name__istartswith=search_q))
+            # Try to match users.
+            parts = search_q.split(' ', 1)
+
+            q = Q()
+
+            if len(parts) > 1:
+                q |= ((Q(first_name__istartswith=parts[0]) &
+                       Q(last_name__istartswith=parts[1])) |
+                      (Q(first_name__istartswith=parts[1]) &
+                       Q(last_name__istartswith=parts[0])))
+            else:
+                q |= (Q(username__istartswith=search_q) |
+                      Q(first_name__istartswith=search_q) |
+                      Q(last_name__istartswith=search_q))
 
             if request.GET.get('fullname', None):
                 q = q | (Q(first_name__istartswith=search_q) |
                          Q(last_name__istartswith=search_q))
 
-            query = query.filter(q)
+            query_users = query_users.filter(q)
 
-        search_q = request.GET.get('q', None)
-        local_site = self._get_local_site(local_site_name)
-        query_groups = Group.objects.filter(local_site=local_site)
-
-        if search_q:
+            # Try to match groups.
             q = (Q(name__istartswith=search_q) |
                  Q(display_name__istartswith=search_q))
 
@@ -70,11 +82,7 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
 
             query_groups = query_groups.filter(q)
 
-        search_q = request.GET.get('q', None)
-        query_review_requests = \
-            ReviewRequest.objects.filter(local_site=local_site)
-
-        if search_q:
+            # Try to match summaries or IDs.
             q = Q(id__istartswith=search_q)
 
             if len(search_q) >= self.MIN_SUMMARY_LEN:
@@ -87,7 +95,7 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
 
         return 200, {
             self.name: {
-                'users': query,
+                'users': query_users,
                 'groups': query_groups,
                 'review_requests': query_review_requests,
             },

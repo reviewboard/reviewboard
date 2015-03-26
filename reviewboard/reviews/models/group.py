@@ -69,13 +69,14 @@ class Group(models.Model):
 
     objects = ReviewGroupManager()
 
-    def is_accessible_by(self, user, request=None):
+    def is_accessible_by(self, user, request=None, silent=False):
         """Returns true if the user can access this group."""
         if self.local_site and not self.local_site.is_accessible_by(user):
-            logging.warning('Group pk=%d (%s) is not accessible by user %s '
-                            'because its local_site is not accessible by '
-                            'that user.',
-                            self.pk, self.name, user, request=request)
+            if not silent:
+                logging.warning('Group pk=%d (%s) is not accessible by user '
+                                '%s because its local_site is not accessible '
+                                'by that user.',
+                                self.pk, self.name, user, request=request)
             return False
 
         if not self.invite_only or user.is_superuser:
@@ -84,10 +85,11 @@ class Group(models.Model):
         if user.is_authenticated() and self.users.filter(pk=user.pk).exists():
             return True
 
-        logging.warning('Group pk=%d (%s) is not accessible by user %s '
-                        'because it is invite only, and the user is not a '
-                        'member.',
-                        self.pk, self.name, user, request=request)
+        if not silent:
+            logging.warning('Group pk=%d (%s) is not accessible by user %s '
+                            'because it is invite only, and the user is not a '
+                            'member.',
+                            self.pk, self.name, user, request=request)
 
         return False
 

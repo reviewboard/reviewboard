@@ -145,6 +145,7 @@ class RBTestRunner(DjangoTestSuiteRunner):
 
         settings.STATIC_ROOT = os.path.join(self.tempdir, 'static')
         settings.MEDIA_ROOT = os.path.join(self.tempdir, 'media')
+        settings.SITE_DATA_DIR = os.path.join(self.tempdir, 'data')
         images_dir = os.path.join(settings.MEDIA_ROOT, "uploaded", "images")
         legacy_extensions_media = os.path.join(settings.MEDIA_ROOT, 'ext')
         extensions_media = os.path.join(settings.STATIC_ROOT, 'ext')

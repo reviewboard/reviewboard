@@ -102,32 +102,16 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
         $fileHeader = this.$('.review-ui-header');
 
         if (this.model.get('numRevisions') > 1) {
-            $tr = $('<tr />')
-                .prependTo($fileHeader);
-            $td = $('<td />')
-                .attr('colspan', hasDiff ? 4 : 2)
-                .appendTo($tr);
-
-            $revisionSelector = $('<div id="attachment_revision_selector" />')
-                .appendTo($td);
             this._revisionSelectorView = new RB.FileAttachmentRevisionSelectorView({
-                el: $revisionSelector,
+                el: $fileHeader.find('#attachment_revision_selector'),
                 model: this.model
             });
             this._revisionSelectorView.render();
             this.listenTo(this._revisionSelectorView, 'revisionSelected',
                           this._onRevisionSelected);
 
-            $tr = $('<tr />')
-                .prependTo($fileHeader);
-            $td = $('<td />')
-                .attr('colspan', hasDiff ? 4 : 2)
-                .appendTo($tr);
-
-            $revisionLabel = $('<div id="revision_label" />')
-                .prependTo($td);
             this._revisionLabelView = new RB.FileAttachmentRevisionLabelView({
-                el: $revisionLabel,
+                el: $fileHeader.find('#revision_label'),
                 model: this.model
             });
             this._revisionLabelView.render();
@@ -140,14 +124,13 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
         });
     },
 
-        /*
+    /*
      * Callback for when a new file revision is selected.
      *
      * This supports single revisions and diffs. If `base is 0, a
      * single revision is selected, If not, the diff between `base` and
      * `tip` will be shown.
      */
-
     _onRevisionSelected: function(revisions) {
         var revisionIDs = this.model.get('attachmentRevisionIDs'),
             base = revisions[0],
@@ -186,8 +169,7 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
             $row;
 
         /* Normalize this to a valid row index. */
-        lineNum--;
-        lineNum = Math.max(0, Math.min(lineNum, rows.length - 1));
+        lineNum = RB.MathUtils.clip(lineNum, 1, rows.length) - 1;
 
         $row = $($table[0].tBodies[0].rows[lineNum]);
         $(window).scrollTop($row.offset().top);

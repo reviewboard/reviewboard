@@ -29,8 +29,9 @@ from reviewboard.ssh.utils import humanize_key
 
 @staff_member_required
 def dashboard(request, template_name="admin/dashboard.html"):
-    """
-    Displays the administration dashboard, containing news updates and
+    """Display the administration dashboard.
+
+    This is the entry point to the admin site, containing news updates and
     useful administration tasks.
     """
     profile = Profile.objects.get_or_create(user=request.user)[0]
@@ -95,9 +96,10 @@ def dashboard(request, template_name="admin/dashboard.html"):
 
 @staff_member_required
 def cache_stats(request, template_name="admin/cache_stats.html"):
-    """
-    Displays statistics on the cache. This includes such pieces of
-    information as memory used, cache misses, and uptime.
+    """Display statistics on the cache.
+
+    This includes such pieces of information as memory used, cache misses, and
+    uptime.
     """
     cache_stats = get_cache_stats()
     cache_info = settings.CACHES[DEFAULT_FORWARD_CACHE_ALIAS]
@@ -112,6 +114,7 @@ def cache_stats(request, template_name="admin/cache_stats.html"):
 
 @staff_member_required
 def security(request, template_name="admin/security.html"):
+    """Run security checks and report the results."""
     runner = SecurityCheckRunner()
     results = runner.run()
     return render_to_response(template_name, RequestContext(request, {
@@ -124,6 +127,7 @@ def security(request, template_name="admin/security.html"):
 @staff_member_required
 def site_settings(request, form_class,
                   template_name="siteconfig/settings.html"):
+    """Render the general site settings page."""
     return djblets_site_settings(request, form_class, template_name, {
         'root_path': settings.SITE_ROOT + "admin/db/"
     })
@@ -132,6 +136,7 @@ def site_settings(request, form_class,
 @csrf_protect
 @staff_member_required
 def ssh_settings(request, template_name='admin/ssh_settings.html'):
+    """Render the SSH settings page."""
     client = SSHClient()
     key = client.get_user_key()
 
@@ -171,10 +176,7 @@ def ssh_settings(request, template_name='admin/ssh_settings.html'):
 def manual_updates_required(
         request, updates,
         template_name="admin/manual_updates_required.html"):
-    """
-    Checks for required manual updates and displays informational pages on
-    performing the necessary updates.
-    """
+    """Render the "manual updates required" page."""
     return render_to_response(template_name, RequestContext(request, {
         'updates': [render_to_string(update_template_name,
                                      RequestContext(request, extra_context))
@@ -183,9 +185,10 @@ def manual_updates_required(
 
 
 def widget_toggle(request):
-    """
-    Controls the state of widgets - collapsed or expanded.
-    Saves the state into site settings.
+    """Toggle a widget's collapsed state.
+
+    This will update the saved state of the admin widgets based on a user's
+    activity in the dashboard.
     """
     collapsed = request.GET.get('collapse', None)
     widget = request.GET.get('widget', None)
@@ -202,7 +205,11 @@ def widget_toggle(request):
 
 
 def widget_move(request):
-    """Saves state of widget positions in account profile"""
+    """Handle moving of admin widgets.
+
+    This will update the saved position of the admin widgets based on a user's
+    activity in the dashboard.
+    """
     profile = Profile.objects.get_or_create(user=request.user)[0]
     profile_data = profile.extra_data
 
@@ -231,7 +238,11 @@ def widget_move(request):
 
 
 def widget_select(request):
-    """Saves added widgets in account profile"""
+    """Handle selection of admin widgets.
+
+    This will enable or disable widgets based on a user's activity in the
+    dashboard.
+    """
     profile = Profile.objects.get_or_create(user=request.user)[0]
     profile_data = profile.extra_data
 
@@ -261,10 +272,7 @@ def widget_select(request):
 
 
 def widget_activity(request):
-    """
-    Receives an AJAX request, sends the data to the widget controller and
-    returns JSON data
-    """
+    """Return JSON data for the admin activity widget."""
     activity_data = dynamic_activity_data(request)
 
     return HttpResponse(json.dumps(activity_data),
@@ -272,5 +280,5 @@ def widget_activity(request):
 
 
 def support_redirect(request, **kwargs):
-    """Redirects to the Beanbag support page for Review Board."""
+    """Return an HttpResponseRedirect to the Beanbag support page."""
     return HttpResponseRedirect(get_support_url(request))

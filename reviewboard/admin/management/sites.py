@@ -10,9 +10,10 @@ from reviewboard.admin.siteconfig import settings_map, defaults
 
 
 def init_siteconfig(app, created_models, verbosity, db=None, **kwargs):
-    """
-    Initializes the site configuration with the current version of the
-    software.
+    """Initialize the site configuration.
+
+    This will create a SiteConfiguration object if one does not exist, or
+    update the existing one with the current version number.
     """
     try:
         site = Site.objects.get_current()
@@ -79,9 +80,7 @@ auth_backend_map = {
 
 
 def migrate_settings(siteconfig):
-    """
-    Migrates any settings we want in the database from the settings file.
-    """
+    """Migrate any settings we want in the database from the settings file."""
     # Convert everything in the table.
     for siteconfig_key, setting_data in six.iteritems(migration_table):
         if isinstance(setting_data, dict):

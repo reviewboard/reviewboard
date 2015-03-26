@@ -1,0 +1,58 @@
+{% load i18n %}
+
+<table class="sidebyside {% block table_class %}text-review-ui-text-table{% endblock %}"{% if hide %} style="display: none;"{% endif %}>
+ <colgroup>
+{% if is_diff %}
+  <col class="line" />
+  <col class="left" />
+{% endif %}
+  <col class="line" />
+  <col class="right" />
+ </colgroup>
+
+ <thead>
+  <tr class="revision-row">
+{% if is_diff %}
+   <th></th>
+   <th>
+     {{diff_caption|default:diff_filename}}
+{%  blocktrans %}
+     (revision {{diff_revision}})
+{%  endblocktrans %}
+   </th>
+{% endif %}
+
+   <th></th>
+   <th>
+     {{caption|default:filename}}
+{% if num_revisions > 1 %}
+{%  blocktrans %}
+     (revision {{revision}})
+{%  endblocktrans %}
+{% endif %}
+   </th>
+  </tr>
+ </thead>
+
+{% block table_content %}
+ <tbody>
+{%  if is_diff %}
+{%   for line1, line2 in lines %}
+  <tr line="{{forloop.counter}}">
+   <th>{{forloop.counter}}</th>
+   <td class="l">{{line1}}</td>
+   <th>{{forloop.counter}}</th>
+   <td class="r">{{line2}}</td>
+  </tr>
+{%   endfor %}
+{%  else %}
+{%   for line in lines %}
+  <tr line="{{forloop.counter}}">
+   <th>{{forloop.counter}}</th>
+   <td class="l">{{line}}</td>
+  </tr>
+{%   endfor %}
+{%  endif %}
+ </tbody>
+{% endblock %}
+</table>

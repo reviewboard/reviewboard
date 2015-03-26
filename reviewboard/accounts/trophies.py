@@ -20,12 +20,14 @@ class TrophyType(object):
     """
 
     def __init__(self, title, image_url, image_width=32, image_height=48):
+        """Initialize the trophy."""
         self.title = title
         self.image_url = image_url
         self.image_width = image_width
         self.image_height = image_height
 
     def get_display_text(self, trophy):
+        """Get the text to display in the trophy banner."""
         raise NotImplementedError
 
     @staticmethod
@@ -47,17 +49,20 @@ class MilestoneTrophy(TrophyType):
     category = 'milestone'
 
     def __init__(self):
+        """Initialize the trophy."""
         super(MilestoneTrophy, self).__init__(
             title=_('Milestone Trophy'),
             image_url=static('rb/images/trophy.png'))
 
     def get_display_text(self, trophy):
+        """Get the text to display in the trophy banner."""
         return _('%(user)s got review request #%(rid)s!') % {
             'user': trophy.user.get_full_name() or trophy.user.username,
             'rid': trophy.review_request.display_id
         }
 
     def qualifies(self, review_request):
+        """Get whether or not the given review request deserves this trophy."""
         id_str = unicode(review_request.display_id)
         return (review_request.display_id >= 1000
                 and re.match(r'^[1-9]0+$', id_str))
@@ -72,16 +77,19 @@ class FishTrophy(TrophyType):
     category = 'fish'
 
     def __init__(self):
+        """Initialize the trophy."""
         super(FishTrophy, self).__init__(
             title=_('Fish Trophy'),
             image_url=static('rb/images/fish-trophy.png'))
 
     def qualifies(self, review_request):
+        """Get whether or not the given review request deserves this trophy."""
         id_str = unicode(review_request.display_id)
         return (review_request.display_id >= 1000
                 and id_str == ''.join(reversed(id_str)))
 
     def get_display_text(self, trophy):
+        """Get the text to display in the trophy banner."""
         return _('%(user)s got a fish trophy!') % {
             'user': trophy.user.get_full_name() or trophy.user.username,
         }
@@ -95,6 +103,7 @@ class UnknownTrophy(TrophyType):
     """
 
     def __init__(self):
+        """Initialize the trophy."""
         super(UnknownTrophy, self).__init__(
             title=_('Unknown Trophy'),
             image_url=None)

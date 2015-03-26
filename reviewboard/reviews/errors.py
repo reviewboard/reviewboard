@@ -19,6 +19,9 @@ class PublishError(Exception):
         return 'Publish error: %s' % self.msg
 
 
-class NotModifiedError(Exception):
+class NotModifiedError(PublishError):
     """Error when a review's state is not modified."""
-    pass
+
+    def __init__(self):
+        super(NotModifiedError, self).__init__(
+            'The draft has no modifications.')

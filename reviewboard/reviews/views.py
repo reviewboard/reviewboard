@@ -31,8 +31,6 @@ from djblets.util.dates import get_latest_timestamp
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import (set_last_modified, get_modified_since,
                                set_etag, etag_if_none_match)
-from haystack.query import SearchQuerySet
-from haystack.views import SearchView
 
 from reviewboard.accounts.decorators import (check_login_required,
                                              valid_prefs_required)
@@ -1008,6 +1006,11 @@ def raw_diff(request, review_request_id, revision=None, local_site=None):
     else:
         filename = six.text_type(diffset.name).encode('ascii', 'ignore')
 
+        # Content-Disposition headers containing commas break on Chrome 16 and
+        # newer. To avoid this, replace any commas in the filename with an
+        # underscore. Was bug 3704.
+        filename = filename.replace(',', '_')
+
     resp['Content-Disposition'] = 'attachment; filename=%s' % filename
     set_last_modified(resp, diffset.timestamp)
 
@@ -1557,84 +1560,6 @@ def view_screenshot(request, review_request_id, screenshot_id,
     review_ui = LegacyScreenshotReviewUI(review_request, screenshot)
 
     return review_ui.render_to_response(request)
-
-
-class ReviewRequestSearchView(SearchView):
-    template = 'reviews/search.html'
-
-    @method_decorator(check_login_required)
-    @method_decorator(check_local_site_access)
-    def __call__(self, request, local_site=None):
-        self.request = request
-
-        query = self.get_query()
-
-        # If the query is an integer, then assume that it's a review request
-        # ID that we'll want to redirect to. This mirrors behavior we've had
-        # since Review Board 1.7.
-        if query.isdigit():
-            try:
-                review_request = ReviewRequest.objects.for_id(query,
-                                                              local_site)
-                return HttpResponseRedirect(review_request.get_absolute_url())
-            except ReviewRequest.DoesNotExist:
-                pass
-
-        siteconfig = SiteConfiguration.objects.get_current()
-
-        if not siteconfig.get("search_enable"):
-            return render(request, 'search/search_disabled.html')
-
-        self.max_search_results = siteconfig.get("max_search_results")
-        ReviewRequestSearchView.results_per_page = \
-            siteconfig.get("search_results_per_page")
-
-        return super(ReviewRequestSearchView, self).__call__(request)
-
-    def get_query(self):
-        return self.request.GET.get('q', '').strip()
-
-    def get_results(self):
-        # XXX: SearchQuerySet does not provide an API to limit the number of
-        # results returned. Unlike QuerySet, slicing a SearchQuerySet does not
-        # limit the number of results pulled from the database. There is a
-        # potential performance issue with this that needs to be addressed.
-        if self.query.isdigit():
-            sqs = SearchQuerySet().filter(
-                review_request_id=self.query).load_all()
-        else:
-            sqs = SearchQuerySet().raw_search(self.query).load_all()
-
-        self.total_hits = len(sqs)
-        return sqs[:self.max_search_results]
-
-    def extra_context(self):
-        return {
-            'hits_returned': len(self.results),
-            'total_hits': self.total_hits,
-        }
-
-    def create_response(self):
-        if not self.query:
-            return HttpResponseRedirect(
-                local_site_reverse('all-review-requests',
-                                   request=self.request))
-
-        if self.query.isdigit() and self.results:
-            return HttpResponseRedirect(
-                self.results[0].object.get_absolute_url())
-
-        paginator, page = self.build_page()
-        context = {
-            'query': self.query,
-            'page': page,
-            'paginator': paginator,
-        }
-        context.update(self.extra_context())
-
-        return render_to_response(
-            self.template, context,
-            context_instance=self.context_class(self.request))
 
 
 @check_login_required
