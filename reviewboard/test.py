@@ -62,6 +62,7 @@ class RBTestRunner(DjangoTestSuiteRunner):
         settings.SITE_ROOT = "/"
 
         settings.AJAX_SERIAL = 123
+        settings.TEMPLATE_SERIAL = 123
         settings.STATIC_URL = settings.SITE_ROOT + 'static/'
         settings.MEDIA_URL = settings.SITE_ROOT + 'media/'
         settings.PASSWORD_HASHERS = (

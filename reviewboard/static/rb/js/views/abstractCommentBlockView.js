@@ -100,27 +100,38 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
      * the draft comment, if any.
      */
     _updateTooltip: function() {
-        var list = $('<ul/>'),
-            draftComment = this.model.get('draftComment');
-
-        function addEntry(text) {
-            return $('<li>')
-                .text(text.truncate())
-                .appendTo(list);
-        }
+        var $list = $('<ul/>'),
+            draftComment = this.model.get('draftComment'),
+            userSession = RB.UserSession.instance,
+            tooltipTemplate = _.template([
+                '<li>',
+                ' <div class="reviewer">',
+                '  <%- user %>:',
+                ' </div>',
+                ' <pre class="rich-text"><%= html %></pre>',
+                '</li>'
+            ].join(''));
 
         if (draftComment) {
-            addEntry(draftComment.get('text'))
-                .addClass("draft");
+            $(tooltipTemplate({
+                user: userSession.get('fullName'),
+                html: draftComment.get('html')
+            }))
+            .addClass('draft')
+            .appendTo($list);
         }
 
         _.each(this.model.get('serializedComments'), function(comment) {
-            addEntry(comment.text);
+            $(tooltipTemplate({
+                user: comment.user.name,
+                html: comment.html
+            }))
+            .appendTo($list);
         });
 
         this._$tooltip
             .empty()
-            .append(list);
+            .append($list);
     },
 
     /*

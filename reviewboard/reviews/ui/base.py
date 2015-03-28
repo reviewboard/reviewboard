@@ -18,6 +18,7 @@ from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.context import make_review_request_context
+from reviewboard.reviews.markdown_utils import markdown_render_conditional
 from reviewboard.reviews.models import FileAttachmentComment, Review
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -277,6 +278,8 @@ class ReviewUI(object):
         return {
             'comment_id': comment.pk,
             'text': escape(comment.text),
+            'html': markdown_render_conditional(comment.text,
+                                                comment.rich_text),
             'user': {
                 'username': review.user.username,
                 'name': review.user.get_full_name() or review.user.username,

@@ -12,6 +12,9 @@ RB.FileAttachmentComment = RB.BaseComment.extend({
          */
         diffAgainstFileAttachmentID: null,
 
+        /* The file attachment diffed against for this comment. */
+        diffAgainstFileAttachment: null,
+
         /* The ID of the file attachment the comment is on. */
         fileAttachmentID: null,
 

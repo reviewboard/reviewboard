@@ -31,6 +31,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
     def compare_item(self, item_rsp, attachment):
         self.assertEqual(item_rsp['id'], attachment.pk)
         self.assertEqual(item_rsp['filename'], attachment.filename)
+        self.assertEqual(item_rsp['revision'], attachment.attachment_revision)
 
     #
     # HTTP GET tests
@@ -220,6 +221,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
     def compare_item(self, item_rsp, attachment):
         self.assertEqual(item_rsp['id'], attachment.pk)
         self.assertEqual(item_rsp['filename'], attachment.filename)
+        self.assertEqual(item_rsp['revision'], attachment.attachment_revision)
         self.assertEqual(item_rsp['absolute_url'],
                          attachment.get_absolute_url())
 

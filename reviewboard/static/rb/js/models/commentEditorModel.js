@@ -192,7 +192,8 @@ RB.CommentEditor = Backbone.Model.extend({
             text: this.get('text'),
             issueOpened: this.get('openIssue'),
             extraData: _.clone(this.get('extraData')),
-            richText: this.get('richText')
+            richText: this.get('richText'),
+            includeTextTypes: 'html'
         });
 
         comment.save({

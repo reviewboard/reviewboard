@@ -917,6 +917,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                                     localdraft: false,
                                     text: 'Comment 1',
                                     comment_id: 1,
+                                    user: { name: 'testuser' },
                                     line: 2
                                 }]
                             },
@@ -930,6 +931,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                                         localdraft: false,
                                         text: 'Comment 2',
                                         comment_id: 1,
+                                        user: { name: 'testuser' },
                                         line: 4
                                     },
                                     {
@@ -938,6 +940,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                                         localdraft: false,
                                         text: 'Comment 3',
                                         comment_id: 1,
+                                        user: { name: 'testuser' },
                                         line: 4
                                     }
                                 ]
@@ -952,6 +955,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                                     localdraft: false,
                                     text: 'Comment 4',
                                     comment_id: 1,
+                                    user: { name: 'testuser' },
                                     line: 12
                                 }]
                             }
