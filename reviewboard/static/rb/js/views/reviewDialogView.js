@@ -561,7 +561,7 @@ RB.ReviewDialogView = Backbone.View.extend({
         '</div>',
         '<div class="edit-field body-top"></div>',
         '<ul class="comments"></ul>',
-        '<div class="spinner"></div>',
+        '<div class="spinner"><span class="fa fa-spinner fa-pulse"></span></div>',
         '<div class="edit-field body-bottom"></div>'
     ].join('')),
 

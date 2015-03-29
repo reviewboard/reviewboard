@@ -26,7 +26,9 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
                     totalLines: $row.data('total-line-count')
                 });
 
-            iconView.$el.appendTo($row.find('.diff-file-icon'));
+            $row.find('.diff-file-icon')
+                .empty()
+                .append(iconView.$el);
             iconView.render();
         });
 

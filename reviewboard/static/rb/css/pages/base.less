@@ -119,21 +119,28 @@ textarea {
  * The "Loading..." indicator shown during AJAX operations.
  */
 #activity-indicator {
+  display: none;
   position: fixed;
-  top: 0;
   left: 50%;
+  top: 0;
   text-align: center;
   font-weight: bold;
   background-color: #fce94f;
-  background-image: url("@{img_base}/spinner.gif");
-  background-position: 0.4em 0.4em;
-  background-repeat: no-repeat;
   border: 1px #c4a000 solid;
   border-top: 0;
-  margin-left: -3em;
-  padding: 0.5em 0.6em 0.5em 2.2em;
-  width: 6em;
+  width: 8em;
+  margin-left: -4em;
+  padding: 0.5em 0.5em;
   z-index: @z-index-spinner;
+
+  span {
+    vertical-align: middle;
+    line-height: 16px;
+  }
+
+  .fa-spinner {
+    font-size: 16px;
+  }
 
   &.error {
     background-color: #ffcd9c;

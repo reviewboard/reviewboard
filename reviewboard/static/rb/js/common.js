@@ -172,7 +172,6 @@ $.fn.infobox = function(id) {
     function showInfobox(url, $target) {
         $infobox
             .empty()
-            .addClass('loading')
             .html(gInfoBoxCache[url])
             .positionToSide($target, {
                 side: 'tb',
@@ -240,15 +239,10 @@ $.fn.bug_infobox = function() {
 
 
 $(document).ready(function() {
-    $('<div id="activity-indicator" />')
-        .text(gettext("Loading..."))
-        .hide()
-        .appendTo("body");
-
-    $("#search_field").searchAutoComplete();
+    $('#search_field').searchAutoComplete();
     $('.user').user_infobox();
     $('.bug').bug_infobox();
-    $("time.timesince").timesince();
+    $('time.timesince').timesince();
 
     $('.gravatar').retinaGravatar();
 
