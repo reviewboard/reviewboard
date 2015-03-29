@@ -206,26 +206,25 @@ class DiffCommitResource(WebAPIResource):
 
         return '%scommit-id=%s' % (url, commit_id)
 
-    def _get_files_links(self, commit, request, diff_resource,
+    def _get_files_link(self, commit, request, diff_resource,
                          filediff_resource, files_key, *args, **kwargs):
         """Build the files link for the given commit."""
-        links = diff_resource.get_links([filediff_resource],
-                                        commit.diffset,
-                                        request,
-                                        *args,
-                                        **kwargs)
+        files_link = diff_resource.get_links([filediff_resource],
+                                             commit.diffset,
+                                             request,
+                                             *args,
+                                             **kwargs)[files_key]
 
-        links[files_key]['href'] = self._add_commit_id_query_parameter(
-            links[files_key]['href'],
-            commit.commit_id)
+        files_link['href'] = self._add_commit_id_query_parameter(
+            files_link['href'], commit.commit_id)
 
-        return links
+        return {files_key: files_link}
 
     def get_related_links(self, obj=None, request=None, *args, **kwargs):
         if obj and request:
-            return self._get_files_links(obj, request, resources.diff,
-                                         resources.filediff, 'files', *args,
-                                         **kwargs)
+            return self._get_files_link(obj, request, resources.diff,
+                                        resources.filediff, 'files', *args,
+                                        **kwargs)
         else:
             return {}
 

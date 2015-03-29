@@ -252,9 +252,9 @@ class DraftDiffCommitResource(DiffCommitResource):
 
     def get_related_links(self, obj=None, request=None, *args, **kwargs):
         if obj and request:
-            return self._get_files_links(obj, request, resources.draft_diff,
-                                         resources.draft_filediff,
-                                         'draft_files', *args, **kwargs)
+            return self._get_files_link(obj, request, resources.draft_diff,
+                                        resources.draft_filediff,
+                                        'draft_files', *args, **kwargs)
         else:
             return {}
 
