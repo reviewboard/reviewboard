@@ -701,6 +701,9 @@ class DiffCommit(DiffLineCountsMixin, models.Model):
     #: SCM tools to re-create commits.
     extra_data = JSONField(null=True)
 
+    #: A timestamp used for generating HTTP caching headers.
+    timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
+
     @property
     def author_date(self):
         """Get the author date with its original timezone information."""
