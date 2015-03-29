@@ -2,7 +2,10 @@ from __future__ import unicode_literals
 
 import logging
 
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import HttpResponse
 from django.utils import six
+from djblets.util.http import get_http_requested_mimetype, set_last_modified
 from djblets.webapi.decorators import webapi_request_fields
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
@@ -101,6 +104,10 @@ class DiffCommitResource(WebAPIResource):
         },
     }
 
+    allowed_mimetypes = WebAPIResource.allowed_mimetypes + [
+        {'item': 'text/x-patch'}
+    ]
+
     def get_queryset(self, request, *args, **kwargs):
         try:
             diffset = resources.diff.get_object(request, *args, **kwargs)
@@ -153,11 +160,49 @@ class DiffCommitResource(WebAPIResource):
     def get(self, request, *args, **kwargs):
         """Return the information on a particular commit in a diff revision.
 
-        This provides the metadota associated the the commit, such as the
-        commit message, author, revisions, and other information available on
-        the commit.
+        If :mimetype:`application/json` or :mimetype:`application/xml` is used,
+        then the fields for the commit are returned, like with any other
+        resource.
+
+        If :mimetype:`text/x-patch` is used, then the actual diff file itself
+        is returned. This diff should be as it was when uploaded originally,
+        with potentially some extra SCM-specific headers stripped. The contents
+        will contain all of the per-file diffs that make up this commit.
         """
-        return super(DiffCommitResource, self).get(request, *args, **kwargs)
+        mimetype = get_http_requested_mimetype(
+            request,
+            [
+                mimetype['item']
+                for mimetype in self.allowed_mimetypes
+            ])
+
+        if mimetype == 'text/x-patch':
+            return self._get_patch(request, *args, **kwargs)
+        else:
+            return super(DiffCommitResource, self).get(request, *args,
+                                                       **kwargs)
+
+    def _get_patch(self, request, *args, **kwargs):
+        """Get the patch file for all FileDiffs in the DiffCommit."""
+        try:
+            review_request = resources.review_request.get_object(request,
+                                                                 *args,
+                                                                 **kwargs)
+            diff_commit = self.get_object(request, *args, **kwargs)
+        except ObjectDoesNotExist:
+            return DOES_NOT_EXIST
+
+        tool = review_request.repository.get_scmtool()
+        data = tool.get_parser('').raw_diff(diff_commit)
+
+        resp = HttpResponse(data, content_type='text/x-patch')
+
+        resp['Content-Disposition'] = ('inline; filename=%s.patch'
+                                       % diff_commit.commit_id)
+
+        set_last_modified(resp, diff_commit.timestamp)
+
+        return resp
 
     @webapi_check_login_required
     @webapi_check_local_site
