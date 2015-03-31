@@ -13,7 +13,6 @@ from django.views.generic.base import TemplateView, View
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.diffviewer.diffutils import (get_diff_files,
-                                              populate_diff_chunks,
                                               get_enable_highlighting)
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.models import DiffSet, FileDiff
@@ -245,7 +244,7 @@ class DiffFragmentView(View):
             return exception_traceback(
                 self.request, e, self.error_template_name,
                 extra_context={
-                    'file': self._get_requested_diff_file(False),
+                    'file': self._get_requested_diff_file(),
                 })
 
     def create_renderer(self, context, diffset_or_id, filediff_id,
@@ -353,23 +352,18 @@ class DiffFragmentView(View):
         """
         return {}
 
-    def _get_requested_diff_file(self, get_chunks=True):
+    def _get_requested_diff_file(self):
         """Fetches information on the requested diff.
 
         This will look up information on the diff that's to be rendered
         and return it, if found. It may also augment it with additional
         data.
 
-        If get_chunks is True, the diff file information will include chunks
-        for rendering. Otherwise, it will just contain generic information
-        from the database.
+        The file will not contain chunk information. That must be specifically
+        populated later.
         """
         files = get_diff_files(self.diffset, self.filediff, self.interdiffset,
                                request=self.request)
-
-        if get_chunks:
-            populate_diff_chunks(files, self.highlighting,
-                                 request=self.request)
 
         if files:
             assert len(files) == 1
