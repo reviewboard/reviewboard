@@ -284,7 +284,8 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
     # Filediffs that were created with leading slashes stripped won't match
     # those created with them present, so we need to compare them without in
     # order for the filenames to match up properly.
-    parser = diffset.repository.get_scmtool().get_parser('')
+    tool = diffset.repository.get_scmtool()
+    parser = tool.get_parser('')
 
     def _normfile(filename):
         return parser.normalize_diff_filename(filename)
@@ -364,7 +365,6 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
             else:
                 dest_revision = _("New Change")
 
-        tool = filediff.diffset.repository.get_scmtool()
         depot_filename = tool.normalize_path_for_display(filediff.source_file)
         dest_filename = tool.normalize_path_for_display(filediff.dest_file)
 
@@ -395,7 +395,10 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
 
     log_timer.done()
 
-    return get_sorted_filediffs(files, key=lambda f: f['filediff'])
+    if len(files) == 1:
+        return files
+    else:
+        return get_sorted_filediffs(files, key=lambda f: f['filediff'])
 
 
 def populate_diff_chunks(files, enable_syntax_highlighting=True,
