@@ -162,7 +162,7 @@ class MimetypeHandler(object):
                 return handler(attachment, mimetype)
             except Exception as e:
                 logging.error('Unable to load Mimetype Handler for %s: %s',
-                              attachment, e, exc_info=1)
+                              attachment, e)
 
         return MimetypeHandler(attachment, mimetype)
 
