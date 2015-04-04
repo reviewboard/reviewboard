@@ -70,6 +70,19 @@
         <img src="{{comment.file_attachment.icon_url}}" />
         <span class="filename">{{comment.get_link_text}}</span>
        </a>
+{%    if comment.file_attachment.attachment_revision %}
+        <span class="diffrevision">
+{%     if comment.diff_against_file_attachment %}
+{%      blocktrans with revision1=comment.diff_against_file_attachment.attachment_revision revision2=comment.file_attachment.attachment_revision %}
+         (Revisions {{revision1}} - {{revision2}})
+{%      endblocktrans %}
+{%     else %}
+{%      blocktrans with revision=comment.file_attachment.attachment_revision %}
+          (Revision {{revision}})
+{%      endblocktrans %}
+{%     endif %}
+        </span>
+{%    endif %}
 {%    if draft and comment.file_attachment.draft_caption %}
        <p class="caption">{{comment.file_attachment.draft_caption}}</p>
 {%    elif comment.file_attachment.caption %}

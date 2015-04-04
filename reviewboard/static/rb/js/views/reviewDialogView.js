@@ -290,6 +290,7 @@ FileAttachmentCommentView = BaseCommentView.extend({
         '  <img src="<%- fileAttachment.iconURL %>" />',
         '  <a href="<%- reviewURL %>"><%- linkText %></a>',
         ' </span>',
+        ' <span class="diffrevision"><%- revisionsStr %></span>',
         ' <div class="thumbnail"><%= thumbnailHTML %></div>',
         '</div>'
     ].join('')),
@@ -298,8 +299,30 @@ FileAttachmentCommentView = BaseCommentView.extend({
      * Renders the thumbnail.
      */
     renderThumbnail: function() {
+        var fileAttachment = this.model.get('fileAttachment'),
+            diffAgainstFileAttachment =
+                this.model.get('diffAgainstFileAttachment'),
+            revision = fileAttachment.get('revision'),
+            revisionsStr;
+
+        if (!revision) {
+            /* This predates having a revision. Don't show anything. */
+            revisionsStr = '';
+        } else if (diffAgainstFileAttachment) {
+            revisionsStr = interpolate(
+                gettext('(Revisions %(revision1)s - %(revision2)s)'),
+                {
+                    revision1: diffAgainstFileAttachment.get('revision'),
+                    revision2: revision
+                },
+                true);
+        } else {
+            revisionsStr = interpolate(gettext('(Revision %s)'), [revision]);
+        }
+
         return $(this.thumbnailTemplate(_.defaults({
-            fileAttachment: this.model.get('fileAttachment').attributes
+            fileAttachment: this.model.get('fileAttachment').attributes,
+            revisionsStr: revisionsStr
         }, this.model.attributes)));
     }
 });
