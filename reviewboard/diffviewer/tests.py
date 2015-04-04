@@ -2309,24 +2309,34 @@ class DiffRendererTests(SpyAgency, TestCase):
     def test_construction_with_invalid_chunks(self):
         """Testing DiffRenderer construction with invalid chunks"""
         diff_file = {
-            'chunks': [{}]
+            'chunks': [{}],
+            'filediff': None,
+            'interfilediff': None,
+            'force_interdiff': False,
+            'chunks_loaded': True,
         }
 
-        self.assertRaises(
-            UserVisibleError,
-            lambda: DiffRenderer(diff_file, chunk_index=-1))
-        self.assertRaises(
-            UserVisibleError,
-            lambda: DiffRenderer(diff_file, chunk_index=1))
+        renderer = DiffRenderer(diff_file, chunk_index=-1)
+        self.assertRaises(UserVisibleError,
+                          lambda: renderer.render_to_string_uncached(None))
+
+        renderer = DiffRenderer(diff_file, chunk_index=1)
+        self.assertRaises(UserVisibleError,
+                          lambda: renderer.render_to_string_uncached(None))
 
     def test_construction_with_valid_chunks(self):
         """Testing DiffRenderer construction with valid chunks"""
         diff_file = {
-            'chunks': [{}]
+            'chunks': [{}],
+            'chunks_loaded': True,
         }
 
         # Should not assert.
         renderer = DiffRenderer(diff_file, chunk_index=0)
+        self.spy_on(renderer.render_to_string, call_original=False)
+        self.spy_on(renderer.make_context, call_original=False)
+
+        renderer.render_to_string_uncached(None)
         self.assertEqual(renderer.num_chunks, 1)
         self.assertEqual(renderer.chunk_index, 0)
 
@@ -2337,7 +2347,8 @@ class DiffRendererTests(SpyAgency, TestCase):
         }
 
         renderer = DiffRenderer(diff_file)
-        self.spy_on(renderer.render_to_string, call_fake=lambda self: 'Foo')
+        self.spy_on(renderer.render_to_string,
+                    call_fake=lambda self, request: 'Foo')
         self.spy_on(renderer.make_etag, call_fake=lambda self: 'ETag')
 
         request_factory = RequestFactory()
@@ -2357,7 +2368,7 @@ class DiffRendererTests(SpyAgency, TestCase):
 
         renderer = DiffRenderer(diff_file)
         self.spy_on(renderer.render_to_string_uncached,
-                    call_fake=lambda self: 'Foo')
+                    call_fake=lambda self, request: 'Foo')
         self.spy_on(renderer.make_etag,
                     call_fake=lambda self: 'ETag')
         self.spy_on(renderer.make_cache_key,
@@ -2382,7 +2393,7 @@ class DiffRendererTests(SpyAgency, TestCase):
 
         renderer = DiffRenderer(diff_file, lines_of_context=[5, 5])
         self.spy_on(renderer.render_to_string_uncached,
-                    call_fake=lambda self: 'Foo')
+                    call_fake=lambda self, request: 'Foo')
         self.spy_on(renderer.make_etag,
                     call_fake=lambda self: 'ETag')
         self.spy_on(renderer.make_cache_key,
