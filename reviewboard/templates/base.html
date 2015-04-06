@@ -15,8 +15,7 @@
         MANUAL_URL = '{{RB_MANUAL_URL}}',
         STATIC_URLS = {
             'rb/images/favicon_notify.ico': '{% static "rb/images/favicon_notify.ico" %}',
-            'rb/images/resize-grip.png': '{% static "rb/images/resize-grip.png" %}',
-            'rb/images/spinner.gif': '{% static "rb/images/spinner.gif" %}'
+            'rb/images/resize-grip.png': '{% static "rb/images/resize-grip.png" %}'
         };
 {% block jsconsts %}{% endblock %}
   </script>
@@ -78,7 +77,7 @@
 {%  endbox %}
     </noscript>
     <div id="error"></div>
-	<div id="container">
+    <div id="container">
      {% block contenttag %}<div id="content">{% endblock %}
 {% template_hook_point "base-before-content" %}
 {% block main_content %}
@@ -88,6 +87,10 @@
      </div>
     </div>
    </div>
+  </div>
+  <div id="activity-indicator">
+   <span class="fa fa-spinner fa-pulse"></span>
+   <span class="indicator-text">{% trans "Loading..." %}</span>
   </div>
   <script src="{% url 'js-catalog' %}"></script>
   {% include "js/jquery-ui.html" %}

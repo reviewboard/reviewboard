@@ -412,11 +412,11 @@ class FileAttachmentReviewUI(ReviewUI):
                     return handler(attachment.get_review_request(), attachment)
                 except ObjectDoesNotExist as e:
                     logging.error('Unable to load review UI for %s: %s',
-                                  attachment, e, exc_info=1)
+                                  attachment, e)
                 except Exception as e:
                     logging.error('Error instantiating '
                                   'FileAttachmentReviewUI %r: %s',
-                                  handler, e, exc_info=1)
+                                  handler, e)
 
         return None
 
