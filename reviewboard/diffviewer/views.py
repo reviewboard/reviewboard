@@ -3,20 +3,24 @@ from __future__ import unicode_literals
 import logging
 import traceback
 
+from django.conf import settings
 from django.core.paginator import InvalidPage, Paginator
-from django.http import HttpResponseServerError, Http404
+from django.http import (HttpResponse, HttpResponseNotModified,
+                         HttpResponseServerError, Http404)
 from django.shortcuts import get_object_or_404
 from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils.translation import ugettext as _
 from django.views.generic.base import TemplateView, View
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.http import encode_etag, etag_if_none_match, set_etag
 
 from reviewboard.diffviewer.diffutils import (get_diff_files,
                                               get_enable_highlighting)
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.models import DiffSet, FileDiff
-from reviewboard.diffviewer.renderers import get_diff_renderer
+from reviewboard.diffviewer.renderers import (get_diff_renderer,
+                                              get_diff_renderer_class)
 
 
 def get_collapse_diff(request):
@@ -232,52 +236,84 @@ class DiffFragmentView(View):
         If there's an error when rendering the diff fragment, an error page
         will be rendered and returned instead.
         """
-        context = self.get_context_data(**kwargs)
-
         try:
-            renderer = self.create_renderer(context, *args, **kwargs)
+            renderer_settings = self._get_renderer_settings(**kwargs)
+            etag = self.make_etag(renderer_settings)
 
-            return renderer.render_to_response(request)
+            if etag_if_none_match(request, etag):
+                return HttpResponseNotModified()
+
+            diff_info_or_response = self.process_diffset_info(**kwargs)
+
+            if isinstance(diff_info_or_response, HttpResponse):
+                return diff_info_or_response
         except Http404:
             raise
+        except Exception as e:
+            return exception_traceback(self.request, e,
+                                       self.error_template_name)
+
+        kwargs.update(diff_info_or_response)
+
+        try:
+            context = self.get_context_data(**kwargs)
+
+            renderer = self.create_renderer(
+                context=context,
+                renderer_settings=renderer_settings,
+                *args, **kwargs)
+            response = renderer.render_to_response(request)
         except Exception as e:
             return exception_traceback(
                 self.request, e, self.error_template_name,
                 extra_context={
-                    'file': self._get_requested_diff_file(),
+                    'file': diff_info_or_response['diff_file'],
                 })
 
-    def create_renderer(self, context, diffset_or_id, filediff_id,
-                        interdiffset_or_id=None, chunkindex=None,
-                        *args, **kwargs):
-        """Creates the renderer for the diff.
+        if response.status_code == 200:
+            set_etag(response, etag)
 
-        This calculates all the state and data needed for rendering, and
-        constructs a DiffRenderer with that data. That renderer is then
-        returned, ready for rendering.
+        return response
 
-        If there's an error in looking up the necessary information, this
-        may raise a UserVisibleError (best case), or some other form of
-        Exception.
+    def make_etag(self, renderer_settings):
+        """Return an ETag identifying this render."""
+        etag = '%s:%s:%s:%s' % (
+            get_diff_renderer_class(),
+            renderer_settings['collapse_all'],
+            renderer_settings['highlighting'],
+            settings.TEMPLATE_SERIAL)
+
+        return encode_etag(etag)
+
+    def process_diffset_info(self, diffset_or_id, filediff_id,
+                             interdiffset_or_id=None):
+        """Process and return information on the desired diff.
+
+        The diff IDs and other data passed to the view can be processed and
+        converted into DiffSets. A dictionary with the DiffSet and FileDiff
+        information will be returned.
+
+        A subclass may instead return a HttpResponse to indicate an error
+        with the DiffSets.
         """
         # Depending on whether we're invoked from a URL or from a wrapper
         # with precomputed diffsets, we may be working with either IDs or
         # actual objects. If they're objects, just use them as-is. Otherwise,
         # if they're IDs, we want to grab them both (if both are provided)
         # in one go, to save on an SQL query.
-        self.diffset = None
-        self.interdiffset = None
+        diffset = None
+        interdiffset = None
 
         diffset_ids = []
 
         if isinstance(diffset_or_id, DiffSet):
-            self.diffset = diffset_or_id
+            diffset = diffset_or_id
         else:
             diffset_ids.append(diffset_or_id)
 
         if interdiffset_or_id:
             if isinstance(interdiffset_or_id, DiffSet):
-                self.interdiffset = interdiffset_or_id
+                interdiffset = interdiffset_or_id
             else:
                 diffset_ids.append(interdiffset_or_id)
 
@@ -289,60 +325,51 @@ class DiffFragmentView(View):
 
             for temp_diffset in diffsets:
                 if temp_diffset.pk == diffset_or_id:
-                    self.diffset = temp_diffset
+                    diffset = temp_diffset
                 elif temp_diffset.pk == interdiffset_or_id:
-                    self.interdiffset = temp_diffset
+                    interdiffset = temp_diffset
                 else:
                     assert False
 
-        self.highlighting = get_enable_highlighting(self.request.user)
-        self.filediff = get_object_or_404(FileDiff, pk=filediff_id,
-                                          diffset=self.diffset)
+        filediff = get_object_or_404(FileDiff, pk=filediff_id, diffset=diffset)
 
         # Store this so we don't end up causing an SQL query later when looking
         # this up.
-        self.filediff.diffset = self.diffset
+        filediff.diffset = diffset
 
-        try:
-            lines_of_context = self.request.GET.get('lines-of-context', '')
-            lines_of_context = [int(i) for i in lines_of_context.split(',', 1)]
-        except (TypeError, ValueError):
-            lines_of_context = None
+        diff_file = self._get_requested_diff_file(diffset, filediff,
+                                                  interdiffset)
 
-        if chunkindex is not None:
-            try:
-                chunkindex = int(chunkindex)
-            except (TypeError, ValueError):
-                chunkindex = None
-
-        if lines_of_context:
-            collapseall = True
-        elif chunkindex is not None:
-            # If we're currently expanding part of a chunk, we want to render
-            # the entire chunk without any lines collapsed. In the case of
-            # showing a range of lines, we're going to get all chunks and then
-            # only show the range. This is so that we won't have separate
-            # cached entries for each range.
-            collapseall = False
-        else:
-            collapseall = get_collapse_diff(self.request)
-
-        self.diff_file = self._get_requested_diff_file()
-
-        if not self.diff_file:
+        if not diff_file:
             raise UserVisibleError(
                 _('Internal error. Unable to locate file record for '
                   'filediff %s')
-                % self.filediff.pk)
+                % filediff.pk)
 
+        return {
+            'diffset': diffset,
+            'interdiffset': interdiffset,
+            'filediff': filediff,
+            'diff_file': diff_file,
+        }
+
+    def create_renderer(self, context, renderer_settings, diff_file,
+                        *args, **kwargs):
+        """Creates the renderer for the diff.
+
+        This calculates all the state and data needed for rendering, and
+        constructs a DiffRenderer with that data. That renderer is then
+        returned, ready for rendering.
+
+        If there's an error in looking up the necessary information, this
+        may raise a UserVisibleError (best case), or some other form of
+        Exception.
+        """
         return get_diff_renderer(
-            self.diff_file,
-            chunk_index=chunkindex,
-            highlighting=self.highlighting,
-            collapse_all=collapseall,
-            lines_of_context=lines_of_context,
+            diff_file,
             extra_context=context,
-            template_name=self.template_name)
+            template_name=self.template_name,
+            **renderer_settings)
 
     def get_context_data(self, *args, **kwargs):
         """Returns context data used for rendering the view.
@@ -352,7 +379,47 @@ class DiffFragmentView(View):
         """
         return {}
 
-    def _get_requested_diff_file(self):
+    def _get_renderer_settings(self, chunk_index=None, **kwargs):
+        """Calculate the render settings for the display of a diff.
+
+        This will calculate settings based on user preferences and URL
+        parameters. It does not calculate the state of any DiffSets or
+        FileDiffs.
+        """
+        highlighting = get_enable_highlighting(self.request.user)
+
+        try:
+            lines_of_context = self.request.GET.get('lines-of-context', '')
+            lines_of_context = [int(i) for i in lines_of_context.split(',', 1)]
+        except (TypeError, ValueError):
+            lines_of_context = None
+
+        if chunk_index is not None:
+            try:
+                chunk_index = int(chunk_index)
+            except (TypeError, ValueError):
+                chunk_index = None
+
+        if lines_of_context:
+            collapse_all = True
+        elif chunk_index is not None:
+            # If we're currently expanding part of a chunk, we want to render
+            # the entire chunk without any lines collapsed. In the case of
+            # showing a range of lines, we're going to get all chunks and then
+            # only show the range. This is so that we won't have separate
+            # cached entries for each range.
+            collapse_all = False
+        else:
+            collapse_all = get_collapse_diff(self.request)
+
+        return {
+            'chunk_index': chunk_index,
+            'collapse_all': collapse_all,
+            'highlighting': highlighting,
+            'lines_of_context': lines_of_context,
+        }
+
+    def _get_requested_diff_file(self, diffset, filediff, interdiffset):
         """Fetches information on the requested diff.
 
         This will look up information on the diff that's to be rendered
@@ -362,7 +429,7 @@ class DiffFragmentView(View):
         The file will not contain chunk information. That must be specifically
         populated later.
         """
-        files = get_diff_files(self.diffset, self.filediff, self.interdiffset,
+        files = get_diff_files(diffset, filediff, interdiffset,
                                request=self.request)
 
         if files:
