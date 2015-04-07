@@ -10,14 +10,17 @@
  *                           (POST) information
  */
 RB.setActivityIndicator = function(status, options) {
-    var $activityIndicator = $("#activity-indicator");
+    var $activityIndicator = $("#activity-indicator"),
+        $indicatorText = $activityIndicator.children('.indicator-text');
 
     if (status) {
         if (RB.ajaxOptions.enableIndicator && !options.noActivityIndicator) {
+            $indicatorText
+                .text((options.type || options.type === "GET")
+                      ? gettext("Loading...") : gettext("Saving..."));
+
             $activityIndicator
                 .removeClass("error")
-                .text((options.type || options.type === "GET")
-                      ? gettext("Loading...") : gettext("Saving..."))
                 .show();
         }
     } else if (RB.ajaxOptions.enableIndicator &&

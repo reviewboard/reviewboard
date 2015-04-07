@@ -342,12 +342,7 @@ RB.DashboardView = Backbone.View.extend({
 
         $editCols
             .width($editCols.width() - 1)  // Account for border
-            .children('img')
-                .attr({
-                    src: STATIC_URLS['rb/images/spinner.gif'],
-                    width: 'auto',
-                    height: 'auto'
-                });
+            .html('<span class="fa fa-spinner fa-pulse"></span>');
 
         this._$wrapper.load(window.location + ' #dashboard-wrapper',
                             _.bind(function() {

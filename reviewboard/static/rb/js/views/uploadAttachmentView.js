@@ -19,7 +19,7 @@ RB.UploadAttachmentView = Backbone.View.extend({
         '     <td class="label">',
         '      <label class="required"><%- pathText %></label>',
         '     </td>',
-        '     <td><input name="path" type="file"></td>',
+        '     <td><input name="path" id="path" type="file"></td>',
         '     <td><ul class="errorlist" style="display: none;"></ul></td>',
         '    </tr>',
         '   </tbody>',
@@ -31,6 +31,10 @@ RB.UploadAttachmentView = Backbone.View.extend({
         ' </form>',
         '</div>'
     ].join('')),
+
+    events: {
+        'change #path': 'updateUploadButtonEnabledState'
+    },
 
     /*
      * Initializes the view. New attachments don't have attachmentHistoryID
@@ -108,7 +112,7 @@ RB.UploadAttachmentView = Backbone.View.extend({
                 buttons: [
                     $('<input type="button"/>')
                         .val(gettext("Cancel")),
-                    $('<input type="button"/>')
+                    $('<input id="upload" type="button" disabled/>')
                         .val(gettext("Upload"))
                         .click(function() {
                             self.send();
@@ -117,6 +121,16 @@ RB.UploadAttachmentView = Backbone.View.extend({
                 ]
             });
 
+        this._$path = $('#path');
+        this._$uploadBtn = $('#upload');
+
         return this;
+    },
+
+    /*
+     * Set the upload button to be clickable or not based on context.
+     */
+    updateUploadButtonEnabledState: function() {
+        this._$uploadBtn.enable(this._$path.val());
     }
 });

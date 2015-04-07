@@ -15,7 +15,7 @@ from django.http import (Http404,
                          HttpResponseNotFound,
                          HttpResponseNotModified,
                          HttpResponseRedirect)
-from django.shortcuts import (get_object_or_404, get_list_or_404, render,
+from django.shortcuts import (get_object_or_404, get_list_or_404,
                               render_to_response)
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
@@ -636,6 +636,12 @@ def review_detail(request,
                         file_attachment_id_map[comment.file_attachment_id]
                     comment.file_attachment = file_attachment
                     file_attachment._comments.append(comment)
+
+                diff_against_id = comment.diff_against_file_attachment_id
+
+                if diff_against_id in file_attachment_id_map:
+                    file_attachment = file_attachment_id_map[diff_against_id]
+                    comment.diff_against_file_attachment = file_attachment
 
             uncollapse = False
 
