@@ -51,8 +51,12 @@ class RawDiffChunkGenerator(object):
     Each chunk represents an insert, delete, replace, or equal section. It
     contains all the data needed to render the portion of the diff.
 
-    This is general-purpose and meant to operate on strings consisting of
-    one or more lines of text.
+    This is general-purpose and meant to operate on strings each consisting of
+    at least one line of text, or lists of lines of text.
+
+    If the caller passes lists of lines instead of strings, then the
+    caller will also be responsible for applying any syntax highlighting and
+    dealing with newline differences.
     """
 
     NEWLINES_RE = re.compile(r'\r?\n')
@@ -122,50 +126,49 @@ class RawDiffChunkGenerator(object):
         :py:attr:`counts` dictionary, which can then be accessed after
         yielding all chunks.
         """
-        if self.encoding_list:
-            old = convert_to_unicode(old, self.encoding_list)[1]
-            new = convert_to_unicode(new, self.encoding_list)[1]
+        is_lists = isinstance(old, list)
+        assert is_lists == isinstance(new, list)
 
-        # Normalize the input so that if there isn't a trailing newline, we add
-        # it.
-        if old and old[-1] != '\n':
-            old += '\n'
+        if is_lists:
+            if self.encoding_list:
+                old = self.normalize_source_list(old)
+                new = self.normalize_source_list(new)
 
-        if new and new[-1] != '\n':
-            new += '\n'
-
-        a = self.NEWLINES_RE.split(old or '')
-        b = self.NEWLINES_RE.split(new or '')
-
-        # Remove the trailing newline, now that we've split this. This will
-        # prevent a duplicate line number at the end of the diff.
-        del a[-1]
-        del b[-1]
+            a = old
+            b = new
+        else:
+            old, a = self.normalize_source_string(old)
+            new, b = self.normalize_source_string(new)
 
         a_num_lines = len(a)
         b_num_lines = len(b)
 
-        markup_a = markup_b = None
+        if is_lists:
+            markup_a = a
+            markup_b = b
+        else:
+            markup_a = None
+            markup_b = None
 
-        if self._get_enable_syntax_highlighting(old, new, a, b):
-            source_file = \
-                self.normalize_path_for_display(self.orig_filename)
-            dest_file = \
-                self.normalize_path_for_display(self.modified_filename)
+            if self._get_enable_syntax_highlighting(old, new, a, b):
+                source_file = \
+                    self.normalize_path_for_display(self.orig_filename)
+                dest_file = \
+                    self.normalize_path_for_display(self.modified_filename)
 
-            try:
-                # TODO: Try to figure out the right lexer for these files
-                #       once instead of twice.
-                markup_a = self._apply_pygments(old or '', source_file)
-                markup_b = self._apply_pygments(new or '', dest_file)
-            except:
-                pass
+                try:
+                    # TODO: Try to figure out the right lexer for these files
+                    #       once instead of twice.
+                    markup_a = self._apply_pygments(old or '', source_file)
+                    markup_b = self._apply_pygments(new or '', dest_file)
+                except:
+                    pass
 
-        if not markup_a:
-            markup_a = self.NEWLINES_RE.split(escape(old))
+            if not markup_a:
+                markup_a = self.NEWLINES_RE.split(escape(old))
 
-        if not markup_b:
-            markup_b = self.NEWLINES_RE.split(escape(new))
+            if not markup_b:
+                markup_b = self.NEWLINES_RE.split(escape(new))
 
         siteconfig = SiteConfiguration.objects.get_current()
         ignore_space = True
@@ -228,6 +231,58 @@ class RawDiffChunkGenerator(object):
 
         self.counts = counts
 
+    def normalize_source_string(self, s):
+        """Normalize a source string of text to use for the diff.
+
+        This will normalize the encoding of the string and the newlines,
+        returning a tuple containing the normalized string and a list of
+        lines split from the source.
+
+        Both the original and modified strings used for the diff will be
+        normalized independently.
+
+        This is only used if the caller passes a string instead of a list for
+        the original or new values.
+
+        Subclasses can override this to provide custom behavior.
+        """
+        if self.encoding_list:
+            s = convert_to_unicode(s, self.encoding_list)[1]
+
+        # Normalize the input so that if there isn't a trailing newline, we
+        # add it.
+        if s and not s.endswith('\n'):
+            s += '\n'
+
+        lines = self.NEWLINES_RE.split(s or '')
+
+        # Remove the trailing newline, now that we've split this. This will
+        # prevent a duplicate line number at the end of the diff.
+        del lines[-1]
+
+        return s, lines
+
+    def normalize_source_list(self, l):
+        """Normalize a list of source lines to use for the diff.
+
+        This will normalize the encoding of the lines.
+
+        Both the original and modified lists of lines used for the diff will be
+        normalized independently.
+
+        This is only used if the caller passes a list instead of a string for
+        the original or new values.
+
+        Subclasses can override this to provide custom behavior.
+        """
+        if self.encoding_list:
+            l = [
+                convert_to_unicode(s, self.encoding_list)[1]
+                for s in l
+            ]
+
+        return l
+
     def normalize_path_for_display(self, filename):
         """Normalize a file path for display to the user.
 
@@ -235,6 +290,19 @@ class RawDiffChunkGenerator(object):
         the behavior to return a variant of the filename.
         """
         return filename
+
+    def get_line_changed_regions(self, old_line_num, old_line,
+                                 new_line_num, new_line):
+        """Return information on changes between two lines.
+
+        This returns a tuple containing a list of tuples of ranges in the
+        old line, and a list of tuples of ranges in the new line, that
+        should be highlighted.
+
+        This defaults to simply wrapping get_line_changed_regions() from
+        diffutils. Subclasses can override to provide custom behavior.
+        """
+        return get_line_changed_regions(old_line, new_line)
 
     def _get_enable_syntax_highlighting(self, old, new, a, b):
         """Returns whether or not we'll be enabling syntax highlighting.
@@ -289,7 +357,8 @@ class RawDiffChunkGenerator(object):
             # Generate information on the regions that changed between the
             # two lines.
             old_region, new_region = \
-                get_line_changed_regions(old_line, new_line)
+                self.get_line_changed_regions(old_line_num, old_line,
+                                              new_line_num, new_line)
         else:
             old_region = new_region = []
 

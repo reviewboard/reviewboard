@@ -24,10 +24,14 @@
    </div>
 
 {%  if review_ui.can_render_text %}
-{%   include "reviews/ui/_text_rendered_table.html" with lines=rendered_lines %}
+{%   block rendered_text_content %}
+{%    include "reviews/ui/_text_rendered_table.html" with lines=rendered_lines chunks=rendered_chunks %}
+{%   endblock rendered_text_content %}
 {%  endif %}
 
-{%  include "reviews/ui/_text_table.html" with hide=review_ui.can_render_text lines=text_lines %}
+{%  block text_content %}
+{%   include "reviews/ui/_text_table.html" with hide=review_ui.can_render_text lines=text_lines chunks=source_chunks %}
+{%  endblock text_content %}
 
   </div>
  </div>

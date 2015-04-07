@@ -1,15 +1,12 @@
 from __future__ import unicode_literals
 
-import hashlib
-
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseNotModified
+from django.http import HttpResponse
 from django.template import Context
 from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.translation import ugettext as _, get_language
 from djblets.cache.backend import cache_memoize
-from djblets.util.http import etag_if_none_match, set_etag
 
 from reviewboard.diffviewer.chunk_generator import compute_chunk_last_header
 from reviewboard.diffviewer.diffutils import populate_diff_chunks
@@ -34,10 +31,11 @@ class DiffRenderer(object):
     DiffRenderer. It will alter the state of the renderer, possibly
     disrupting future render calls.
     """
+    default_template_name = 'diffviewer/diff_file_fragment.html'
+
     def __init__(self, diff_file, chunk_index=None, highlighting=False,
                  collapse_all=True, lines_of_context=None, extra_context=None,
-                 allow_caching=True,
-                 template_name='diffviewer/diff_file_fragment.html'):
+                 allow_caching=True, template_name=default_template_name):
         self.diff_file = diff_file
         self.chunk_index = chunk_index
         self.highlighting = highlighting
@@ -55,16 +53,7 @@ class DiffRenderer(object):
 
     def render_to_response(self, request):
         """Renders the diff to an HttpResponse."""
-        etag = self.make_etag()
-
-        if etag_if_none_match(request, etag):
-            response = HttpResponseNotModified()
-        else:
-            response = HttpResponse(self.render_to_string(request))
-
-        set_etag(response, etag)
-
-        return response
+        return HttpResponse(self.render_to_string(request))
 
     def render_to_string(self, request):
         """Returns the diff as a string.
@@ -109,13 +98,6 @@ class DiffRenderer(object):
 
         return render_to_string(self.template_name,
                                 Context(self.make_context()))
-
-    def make_etag(self):
-        """Create an ETag for responses from this renderer."""
-        hasher = hashlib.sha1()
-        hasher.update(self.make_cache_key().encode('utf-8'))
-
-        return hasher.hexdigest()
 
     def make_cache_key(self):
         """Creates and returns a cache key representing the diff to render."""

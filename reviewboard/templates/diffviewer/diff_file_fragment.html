@@ -207,7 +207,7 @@
 {%  for chunk in file.chunks %}
 {%   if not chunk.collapsable or not collapseall %}
  <tbody id="chunk{{file.index}}.{{chunk.index}}"{% attr "class" %}{% if chunk.change != "equal" %}{{chunk.change}}{% if chunk.meta.whitespace_chunk%} whitespace-chunk{% endif %}{% else %}{% if chunk.collapsable %} collapsable{% endif %}{% endif %}{% if standalone %} loaded{% endif %}{% endattr %}>
-{%    diff_lines file chunk standalone line_fmt anchor_fmt begin_collapse_fmt end_collapse_fmt moved_fmt %}
+{%    diff_lines file.index chunk standalone line_fmt anchor_fmt begin_collapse_fmt end_collapse_fmt moved_fmt %}
  </tbody>
 {%   else %}
  <tbody class="diff-header" id="collapsed-chunk{{file.index}}.{{chunk.index}}">

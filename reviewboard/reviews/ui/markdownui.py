@@ -5,6 +5,7 @@ import logging
 from django.utils.translation import ugettext as _
 from pygments.lexers import TextLexer
 
+from reviewboard.reviews.chunk_generators import MarkdownDiffChunkGenerator
 from reviewboard.reviews.ui.text import TextBasedReviewUI
 from reviewboard.reviews.markdown_utils import (iter_markdown_lines,
                                                 render_markdown_from_file)
@@ -19,6 +20,7 @@ class MarkdownReviewUI(TextBasedReviewUI):
     supported_mimetypes = ['text/x-markdown']
     object_key = 'markdown'
     can_render_text = True
+    rendered_chunk_generator_cls = MarkdownDiffChunkGenerator
 
     extra_css_classes = ['markdown-review-ui']
 
