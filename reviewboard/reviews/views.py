@@ -24,7 +24,7 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.decorators import augment_method_from
-from djblets.util.http import (set_last_modified, get_modified_since,
+from djblets.util.http import (encode_etag, set_last_modified,
                                set_etag, etag_if_none_match)
 
 from reviewboard.accounts.decorators import (check_login_required,
@@ -423,13 +423,13 @@ def review_detail(request,
 
     blocks = review_request.get_blocks()
 
-    etag = "%s:%s:%s:%s:%s:%s:%s:%s:%s" % (
-        request.user, last_activity_time, draft_timestamp,
-        review_timestamp, review_request.last_review_activity_timestamp,
-        is_rich_text_default_for_user(request.user),
-        ','.join([six.text_type(r.pk) for r in blocks]),
-        int(starred), settings.AJAX_SERIAL
-    )
+    etag = encode_etag(
+        '%s:%s:%s:%s:%s:%s:%s:%s:%s'
+        % (request.user, last_activity_time, draft_timestamp,
+           review_timestamp, review_request.last_review_activity_timestamp,
+           is_rich_text_default_for_user(request.user),
+           [r.pk for r in blocks],
+           starred, settings.AJAX_SERIAL))
 
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()
@@ -982,41 +982,48 @@ def comment_diff_fragments(
     of these diff fragments based on filediffs, since they may not be cached
     and take time to generate.
     """
-    # While we don't actually need the review request, we still want to do this
-    # lookup in order to get the permissions checking.
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site)
-
-    if not review_request:
-        return response
-
     comments = get_list_or_404(Comment, pk__in=comment_ids.split(","))
-    latest_timestamp = get_latest_timestamp([comment.timestamp
-                                             for comment in comments])
+    latest_timestamp = get_latest_timestamp(comment.timestamp
+                                            for comment in comments)
 
-    if get_modified_since(request, latest_timestamp):
-        return HttpResponseNotModified()
+    etag = encode_etag(
+        '%s:%s:%s'
+        % (comment_ids, latest_timestamp, settings.TEMPLATE_SERIAL))
 
-    context = RequestContext(request, {
-        'comment_entries': [],
-        'container_prefix': request.GET.get('container_prefix'),
-        'queue_name': request.GET.get('queue'),
-    })
+    if etag_if_none_match(request, etag):
+        response = HttpResponseNotModified()
+    else:
+        # While we don't actually need the review request, we still want to do
+        # this lookup in order to get the permissions checking.
+        review_request, response = \
+            _find_review_request(request, review_request_id, local_site)
 
-    had_error, context['comment_entries'] = \
-        build_diff_comment_fragments(comments,
-                                     context,
-                                     comment_template_name,
-                                     error_template_name)
+        if not review_request:
+            return response
 
-    page_content = render_to_string(template_name, context)
+        context = RequestContext(request, {
+            'comment_entries': [],
+            'container_prefix': request.GET.get('container_prefix'),
+            'queue_name': request.GET.get('queue'),
+        })
 
-    if had_error:
-        return HttpResponse(page_content)
+        had_error, context['comment_entries'] = \
+            build_diff_comment_fragments(comments,
+                                         context,
+                                         comment_template_name,
+                                         error_template_name)
 
-    response = HttpResponse(page_content)
-    set_last_modified(response, comment.timestamp)
+        page_content = render_to_string(template_name, context)
+
+        response = HttpResponse(page_content)
+
+        if had_error:
+            return response
+
+        set_etag(response, etag)
+
     response['Expires'] = http_date(time.time() + 60 * 60 * 24 * 365)  # 1 year
+
     return response
 
 
@@ -1491,13 +1498,14 @@ def user_infobox(request, username,
     user = get_object_or_404(User, username=username)
     show_profile = user.is_profile_visible(request.user)
 
-    etag = ':'.join([user.first_name,
-                     user.last_name,
-                     user.email,
-                     six.text_type(user.last_login),
-                     six.text_type(settings.AJAX_SERIAL),
-                     six.text_type(show_profile)])
-    etag = etag.encode('ascii', 'replace')
+    etag = encode_etag(':'.join([
+        user.first_name,
+        user.last_name,
+        user.email,
+        six.text_type(user.last_login),
+        six.text_type(settings.TEMPLATE_SERIAL),
+        six.text_type(show_profile)
+    ]))
 
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()
