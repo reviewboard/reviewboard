@@ -28,7 +28,7 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.decorators import augment_method_from
-from djblets.util.http import (set_last_modified, get_modified_since,
+from djblets.util.http import (encode_etag, set_last_modified,
                                set_etag, etag_if_none_match)
 
 from reviewboard.accounts.decorators import (check_login_required,
@@ -470,13 +470,13 @@ def review_detail(request,
 
     blocks = review_request.get_blocks()
 
-    etag = "%s:%s:%s:%s:%s:%s:%s:%s:%s" % (
-        request.user, last_activity_time, draft_timestamp,
-        review_timestamp, review_request.last_review_activity_timestamp,
-        is_rich_text_default_for_user(request.user),
-        ','.join([six.text_type(r.pk) for r in blocks]),
-        int(starred), settings.AJAX_SERIAL
-    )
+    etag = encode_etag(
+        '%s:%s:%s:%s:%s:%s:%s:%s:%s'
+        % (request.user, last_activity_time, draft_timestamp,
+           review_timestamp, review_request.last_review_activity_timestamp,
+           is_rich_text_default_for_user(request.user),
+           [r.pk for r in blocks],
+           starred, settings.AJAX_SERIAL))
 
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()
@@ -1033,65 +1033,70 @@ def comment_diff_fragments(
     of these diff fragments based on filediffs, since they may not be cached
     and take time to generate.
     """
-    # While we don't actually need the review request, we still want to do this
-    # lookup in order to get the permissions checking.
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site)
-
-    if not review_request:
-        return response
-
     comments = get_list_or_404(Comment, pk__in=comment_ids.split(","))
-    latest_timestamp = get_latest_timestamp([comment.timestamp
-                                             for comment in comments])
+    latest_timestamp = get_latest_timestamp(comment.timestamp
+                                            for comment in comments)
 
-    if get_modified_since(request, latest_timestamp):
-        return HttpResponseNotModified()
+    etag = encode_etag(
+        '%s:%s:%s'
+        % (comment_ids, latest_timestamp, settings.TEMPLATE_SERIAL))
 
-    lines_of_context = request.GET.get('lines_of_context', '0,0')
-    container_prefix = request.GET.get('container_prefix')
+    if etag_if_none_match(request, etag):
+        response = HttpResponseNotModified()
+    else:
+        # While we don't actually need the review request, we still want to do
+        # this lookup in order to get the permissions checking.
+        review_request, response = \
+            _find_review_request(request, review_request_id, local_site)
 
-    try:
-        lines_of_context = [int(i) for i in lines_of_context.split(',')]
+        if not review_request:
+            return response
 
-        # Ensure that we have 2 values for lines_of_context. If only one is
-        # given, assume it is both the before and after context. If more than
-        # two are given, only consider the first two. If somehow we get no
-        # lines of context value, we will default to [0, 0].
+        lines_of_context = request.GET.get('lines_of_context', '0,0')
+        container_prefix = request.GET.get('container_prefix')
 
-        if len(lines_of_context) == 1:
-            lines_of_context.append(lines_of_context[0])
-        elif len(lines_of_context) > 2:
-            lines_of_context = lines_of_context[0:2]
-        elif len(lines_of_context) == 0:
-            raise ValueError
-    except ValueError:
-        lines_of_context = [0, 0]
+        try:
+            lines_of_context = [int(i) for i in lines_of_context.split(',')]
 
-    context = RequestContext(request, {
-        'comment_entries': [],
-        'container_prefix': container_prefix,
-        'queue_name': request.GET.get('queue'),
-        'show_controls': request.GET.get('show_controls', False),
-    })
+            # Ensure that we have 2 values for lines_of_context. If only one is
+            # given, assume it is both the before and after context. If more than
+            # two are given, only consider the first two. If somehow we get no
+            # lines of context value, we will default to [0, 0].
 
-    had_error, context['comment_entries'] = (
-        build_diff_comment_fragments(
-            comments,
-            context,
-            comment_template_name,
-            error_template_name,
-            lines_of_context=lines_of_context,
-            show_controls='draft' not in container_prefix))
+            if len(lines_of_context) == 1:
+                lines_of_context.append(lines_of_context[0])
+            elif len(lines_of_context) > 2:
+                lines_of_context = lines_of_context[0:2]
+            elif len(lines_of_context) == 0:
+                raise ValueError
+        except ValueError:
+            lines_of_context = [0, 0]
 
-    page_content = render_to_string(template_name, context)
+        context = RequestContext(request, {
+            'comment_entries': [],
+            'container_prefix': container_prefix,
+            'queue_name': request.GET.get('queue'),
+            'show_controls': request.GET.get('show_controls', False),
+        })
 
-    if had_error:
-        return HttpResponse(page_content)
+        had_error, context['comment_entries'] = (
+            build_diff_comment_fragments(
+                comments,
+                context,
+                comment_template_name,
+                error_template_name,
+                lines_of_context=lines_of_context,
+                show_controls='draft' not in container_prefix))
 
-    response = HttpResponse(page_content)
-    set_last_modified(response, comment.timestamp)
+        response = HttpResponse(page_content)
+
+        if had_error:
+            return response
+
+        set_etag(response, etag)
+
     response['Expires'] = http_date(time.time() + 60 * 60 * 24 * 365)  # 1 year
+
     return response
 
 
@@ -1133,64 +1138,66 @@ class ReviewsDiffFragmentView(DiffFragmentView):
     def dispatch(self, *args, **kwargs):
         pass
 
-    def get(self, request, review_request_id, revision, filediff_id,
-            interdiff_revision=None, chunkindex=None,
-            local_site=None, *args, **kwargs):
-        """Handles GET requests for this view.
+    def process_diffset_info(self, review_request_id, revision,
+                             interdiff_revision=None, local_site=None,
+                             *args, **kwargs):
+        """Process and return information on the desired diff.
 
-        This will look up the review request and DiffSets, given the
-        provided information, and pass them to the parent class for rendering.
+        The diff IDs and other data passed to the view can be processed and
+        converted into DiffSets. A dictionary with the DiffSet and FileDiff
+        information will be returned.
+
+        If the review request cannot be accessed by the user, an HttpResponse
+        will be returned instead.
         """
         self.review_request, response = \
-            _find_review_request(request, review_request_id, local_site)
+            _find_review_request(self.request, review_request_id, local_site)
 
         if not self.review_request:
             return response
 
-        draft = self.review_request.get_draft(request.user)
+        user = self.request.user
+        draft = self.review_request.get_draft(user)
 
         if interdiff_revision is not None:
-            interdiffset = _query_for_diff(self.review_request, request.user,
+            interdiffset = _query_for_diff(self.review_request, user,
                                            interdiff_revision, draft)
         else:
             interdiffset = None
 
-        diffset = _query_for_diff(self.review_request, request.user,
-                                  revision, draft)
+        diffset = _query_for_diff(self.review_request, user, revision, draft)
 
-        return super(ReviewsDiffFragmentView, self).get(
-            request,
+        return super(ReviewsDiffFragmentView, self).process_diffset_info(
             diffset_or_id=diffset,
-            filediff_id=filediff_id,
             interdiffset_or_id=interdiffset,
-            chunkindex=chunkindex)
+            **kwargs)
 
-    def create_renderer(self, *args, **kwargs):
+    def create_renderer(self, diff_file, *args, **kwargs):
         """Creates the DiffRenderer for this fragment.
 
         This will augment the renderer for binary files by looking up
         file attachments, if review UIs are involved, disabling caching.
         """
         renderer = super(ReviewsDiffFragmentView, self).create_renderer(
-            *args, **kwargs)
+            diff_file=diff_file, *args, **kwargs)
 
-        if self.diff_file['binary']:
+        if diff_file['binary']:
             # Determine the file attachments to display in the diff viewer,
             # if any.
-            filediff = self.diff_file['filediff']
-            interfilediff = self.diff_file['interfilediff']
+            filediff = diff_file['filediff']
+            interfilediff = diff_file['interfilediff']
 
             orig_attachment = None
             modified_attachment = None
 
-            if self.diff_file['force_interdiff']:
+            if diff_file['force_interdiff']:
                 orig_attachment = self._get_diff_file_attachment(filediff)
                 modified_attachment = \
                     self._get_diff_file_attachment(interfilediff)
             else:
                 modified_attachment = self._get_diff_file_attachment(filediff)
 
-                if not self.diff_file['is_new_file']:
+                if not diff_file['is_new_file']:
                     orig_attachment = \
                         self._get_diff_file_attachment(filediff, False)
 
@@ -1242,7 +1249,8 @@ class ReviewsDiffFragmentView(DiffFragmentView):
                 'diff_attachment_review_ui_html': diff_review_ui_html,
             })
 
-        renderer.extra_context.update(self._get_download_links(renderer))
+        renderer.extra_context.update(
+            self._get_download_links(renderer, diff_file))
 
         return renderer
 
@@ -1251,8 +1259,8 @@ class ReviewsDiffFragmentView(DiffFragmentView):
             'review_request': self.review_request,
         }
 
-    def _get_download_links(self, renderer):
-        if self.diff_file['binary']:
+    def _get_download_links(self, renderer, diff_file):
+        if diff_file['binary']:
             orig_attachment = \
                 renderer.extra_context['orig_diff_file_attachment']
             modified_attachment = \
@@ -1268,8 +1276,8 @@ class ReviewsDiffFragmentView(DiffFragmentView):
             else:
                 download_modified_url = None
         else:
-            filediff = self.diff_file['filediff']
-            interfilediff = self.diff_file['interfilediff']
+            filediff = diff_file['filediff']
+            interfilediff = diff_file['interfilediff']
             diffset = filediff.diffset
 
             if interfilediff:
@@ -1575,13 +1583,14 @@ def user_infobox(request, username,
     user = get_object_or_404(User, username=username)
     show_profile = user.is_profile_visible(request.user)
 
-    etag = ':'.join([user.first_name,
-                     user.last_name,
-                     user.email,
-                     six.text_type(user.last_login),
-                     six.text_type(settings.AJAX_SERIAL),
-                     six.text_type(show_profile)])
-    etag = etag.encode('ascii', 'replace')
+    etag = encode_etag(':'.join([
+        user.first_name,
+        user.last_name,
+        user.email,
+        six.text_type(user.last_login),
+        six.text_type(settings.TEMPLATE_SERIAL),
+        six.text_type(show_profile)
+    ]))
 
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()

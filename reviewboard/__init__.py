@@ -120,7 +120,11 @@ def initialize():
         # to prevent stale caches for templates using hooks. Not all templates
         # use hooks, and may want to base cache keys off TEMPLATE_SERIAL
         # instead.
-        settings.TEMPLATE_SERIAL = settings.AJAX_SERIAL
+        #
+        # We only want to do this once, so we don't end up replacing it
+        # later with a modified AJAX_SERIAL later.
+        if not getattr(settings, 'TEMPLATE_SERIAL', None):
+            settings.TEMPLATE_SERIAL = settings.AJAX_SERIAL
 
         # Load all extensions
         try:
