@@ -466,7 +466,7 @@ class DiffSetManager(models.Manager):
                                          repository, base_commit_id, request,
                                          check_existence=True,
                                          limit_to=diff_filenames):
-                parent_files[f.origFile] = f
+                parent_files[f.newFile] = f
 
             # This will return a non-None value only for tools that use
             # commit IDs to identify file versions as opposed to file revision
@@ -531,40 +531,58 @@ class DiffSetManager(models.Manager):
 
         return diffset
 
+    def _normalize_filename(self, filename, basedir):
+        """Normalize a file name to be relative to the repository root."""
+        if filename.startswith('/'):
+            return filename
+
+        return os.path.join(basedir, filename).replace('\\', '/')
+
     def _process_files(self, parser, basedir, repository, base_commit_id,
                        request, check_existence=False, limit_to=None):
         tool = repository.get_scmtool()
 
         for f in parser.parse():
-            f2, revision = tool.parse_diff_revision(f.origFile, f.origInfo,
-                                                    moved=f.moved,
-                                                    copied=f.copied)
+            dest_filename, dest_revision = tool.parse_diff_revision(
+                f.newFile,
+                f.newInfo,
+                moved=f.moved,
+                copied=f.copied)
 
-            if f2.startswith("/"):
-                filename = f2
-            else:
-                filename = os.path.join(basedir, f2).replace("\\", "/")
+            source_filename, source_revision = tool.parse_diff_revision(
+                f.origFile,
+                f.origInfo,
+                moved=f.moved,
+                copied=f.copied)
 
-            if limit_to is not None and filename not in limit_to:
+            dest_filename = self._normalize_filename(dest_filename, basedir)
+            source_filename = self._normalize_filename(source_filename,
+                                                       basedir)
+
+            if limit_to is not None and dest_filename not in limit_to:
                 # This file isn't actually needed for the diff, so save
                 # ourselves a remote file existence check and some storage.
                 continue
 
             # FIXME: this would be a good place to find permissions errors
-            if (revision != PRE_CREATION and
-                revision != UNKNOWN and
+            if (source_revision != PRE_CREATION and
+                source_revision != UNKNOWN and
                 not f.binary and
                 not f.deleted and
                 not f.moved and
                 not f.copied and
                 (check_existence and
-                 not repository.get_file_exists(filename, revision,
+                 not repository.get_file_exists(source_filename,
+                                                source_revision,
                                                 base_commit_id=base_commit_id,
                                                 request=request))):
-                raise FileNotFoundError(filename, revision, base_commit_id)
+                raise FileNotFoundError(source_filename, source_revision,
+                                        base_commit_id)
 
-            f.origFile = filename
-            f.origInfo = revision
+            f.origFile = source_filename
+            f.origInfo = source_revision
+            f.newFile = dest_filename
+            f.newInfo = dest_revision
 
             yield f
 
