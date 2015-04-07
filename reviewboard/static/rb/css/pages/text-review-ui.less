@@ -63,7 +63,7 @@
       font-weight: bold;
     }
 
-    tr:last-child {
+    tbody:last-child tr:last-child {
       td:last-child {
         .border-radius(0 0 @box-inner-border-radius 0);
       }
@@ -98,14 +98,22 @@
 
   td, th {
     border-right: 1px #DDD solid;
+
+    &:first-child {
+      border-left: 1px #DDD solid;
+    }
   }
 
-  tr:first-child td {
-    border-top: 1px #DDD solid;
+  tr:first-child {
+    td, th {
+      border-top: 1px #DDD solid;
+    }
   }
 
-  tr:last-child td {
-    border-bottom: 1px #DDD solid;
+  tr:last-child {
+    td, th {
+      border-bottom: 1px #DDD solid;
+    }
   }
 }
 

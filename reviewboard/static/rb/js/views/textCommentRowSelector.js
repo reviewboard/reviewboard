@@ -97,6 +97,183 @@ RB.TextCommentRowSelector = Backbone.View.extend({
     },
 
     /*
+     * Return the beginning and end rows for a given line number range.
+     *
+     * If the first line number corresponds to a valid row within the table,
+     * an array will be returned containing the DOM elements for the
+     * two rows matching the two line numbers. If the second line number
+     * could not be found, its entry in the array will be null.
+     *
+     * If the first line number could not be found, null is returned instead
+     * of an array.
+     *
+     * A minimum rowIndex can be provided in order to constrain the search.
+     * No rows prior to that minimum rowIndex will be searched.
+     */
+    getRowsForRange: function(beginLineNum, endLineNum, minRowIndex) {
+        var beginRowEl = this.findLineNumRow(beginLineNum, minRowIndex),
+            endRowEl,
+            rowIndex;
+
+        if (beginRowEl) {
+            rowIndex = beginRowEl.rowIndex;
+
+            endRowEl = (endLineNum === beginLineNum
+                        ? beginRowEl
+                        : this.findLineNumRow(
+                            endLineNum,
+                            rowIndex,
+                            rowIndex + endLineNum - beginLineNum));
+
+            return [beginRowEl, endRowEl];
+        } else {
+            return null;
+        }
+    },
+
+    /*
+     * Finds the row in a table matching the specified line number.
+     *
+     * This will perform a binary search of the lines trying to find
+     * the matching line number. It will then return the row element,
+     * if found.
+     */
+    findLineNumRow: function(lineNum, startRow, endRow) {
+        var row = null,
+            table = this.el,
+            rowOffset = 1, // Get past the headers.
+            guessRowNum,
+            guessRow,
+            oldHigh,
+            oldLow,
+            high,
+            low,
+            value,
+            found,
+            i,
+            j;
+
+        if (table.rows.length - rowOffset > lineNum) {
+            row = table.rows[rowOffset + lineNum];
+
+            // Account for the "x lines hidden" row.
+            if (row && this.getLineNum(row) === lineNum) {
+                return row;
+            }
+        }
+
+        if (startRow) {
+            // startRow already includes the offset, so we need to remove it.
+            startRow -= rowOffset;
+        }
+
+        low = startRow || 0;
+        high = Math.min(endRow || table.rows.length, table.rows.length);
+
+        if (endRow !== undefined && endRow < table.rows.length) {
+            // See if we got lucky and found it in the last row.
+            if (this.getLineNum(table.rows[endRow]) === lineNum) {
+                return table.rows[endRow];
+            }
+        } else if (row) {
+            /*
+             * We collapsed the rows (unless someone mucked with the DB),
+             * so the desired row is less than the row number retrieved.
+             */
+            high = Math.min(high, rowOffset + lineNum);
+        }
+
+        // Binary search for this cell.
+        for (i = Math.round((low + high) / 2); low < high - 1;) {
+            row = table.rows[rowOffset + i];
+
+            if (!row) {
+                // This should not happen, unless we miscomputed high.
+                high--;
+
+                /*
+                 * This won't do much if low + high is odd, but we'll catch
+                 * up on the next iteration.
+                 */
+                i = Math.round((low + high) / 2);
+                continue;
+            }
+
+            value = this.getLineNum(row);
+
+            if (!value) {
+                /*
+                 * Bad luck, let's look around.
+                 *
+                 * We'd expect to find a value on the first try, but the
+                 * following makes sure we explore all rows.
+                 */
+                found = false;
+
+                for (j = 1; j <= (high - low) / 2; j++) {
+                    row = table.rows[rowOffset + i + j];
+
+                    if (row && this.getLineNum(row)) {
+                        i = i + j;
+                        found = true;
+                        break;
+                    } else {
+                        row = table.rows[rowOffset + i - j];
+
+                        if (row && this.getLineNum(row)) {
+                            i = i - j;
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (found) {
+                    value = this.getLineNum(row);
+                } else {
+                    return null;
+                }
+            }
+
+            // See if we can use simple math to find the row quickly.
+            guessRowNum = lineNum - value + rowOffset + i;
+
+            if (guessRowNum >= 0 && guessRowNum < table.rows.length) {
+                guessRow = table.rows[guessRowNum];
+
+                if (guessRow && this.getLineNum(guessRow) === lineNum) {
+                    // We found it using maths!
+                    return guessRow;
+                }
+            }
+
+            oldHigh = high;
+            oldLow = low;
+
+            if (value > lineNum) {
+                high = i;
+            } else if (value < lineNum) {
+                low = i;
+            } else {
+                return row;
+            }
+
+            /*
+             * Make sure we don't get stuck in an infinite loop. This can happen
+             * when a comment is placed in a line that isn't being shown.
+             */
+            if (oldHigh === high && oldLow === low) {
+                break;
+            }
+
+            i = Math.round((low + high) / 2);
+        }
+
+        // Well.. damn. Ignore this then.
+        return null;
+    },
+
+    /*
      * Begins the selection of line numbers.
      */
     _begin: function($row) {

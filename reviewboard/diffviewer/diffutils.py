@@ -569,6 +569,23 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
     in order to improve performance and reduce lookup times for files that have
     already been fetched.
 
+    See :py:func:`get_chunks_in_range` for information on the returned state
+    of the chunks.
+    """
+    f = get_file_from_filediff(context, filediff, interfilediff)
+
+    if f:
+        return get_chunks_in_range(f['chunks'], first_line, num_lines)
+    else:
+        return []
+
+
+def get_chunks_in_range(chunks, first_line, num_lines):
+    """Generate the chunks within a range of lines of a larger list of chunks.
+
+    This takes a list of chunks, computes a subset of those chunks from the
+    line ranges provided, and generates a new set of those chunks.
+
     Each returned chunk is a dictionary with the following fields:
 
       ============= ========================================================
@@ -596,12 +613,7 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
       7        True if line consists of only whitespace changes
       ======== =============================================================
     """
-    f = get_file_from_filediff(context, filediff, interfilediff)
-
-    if not f:
-        raise StopIteration
-
-    for chunk in f['chunks']:
+    for i, chunk in enumerate(chunks):
         lines = chunk['lines']
 
         if lines[-1][0] >= first_line >= lines[0][0]:
@@ -613,6 +625,7 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
                 last_index = len(lines)
 
             new_chunk = {
+                'index': i,
                 'lines': chunk['lines'][start_index:last_index],
                 'numlines': last_index - start_index,
                 'change': chunk['change'],
