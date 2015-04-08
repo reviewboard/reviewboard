@@ -1088,6 +1088,8 @@ def comment_diff_fragments(
                 lines_of_context=lines_of_context,
                 show_controls='draft' not in container_prefix))
 
+        page_content = render_to_string(template_name, context)
+
         response = HttpResponse(page_content)
 
         if had_error:
