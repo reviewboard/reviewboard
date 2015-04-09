@@ -134,17 +134,16 @@ class SandboxTests(SpyAgency, TestCase):
         """Testing FileAttachmentReviewUI sandboxes get_comment_thumbnail"""
         comment = "Comment"
 
-        review_ui = self.file_attachment2.review_ui
-
-        self.spy_on(review_ui.get_comment_thumbnail)
-
         review = Review.objects.create(review_request=self.review_request,
                                        user=self.user)
-        file_attachment_comments = review.file_attachment_comments.create(
+        file_attachment_comment = review.file_attachment_comments.create(
             file_attachment=self.file_attachment2,
             text=comment)
 
-        file_attachment_comments.thumbnail
+        review_ui = file_attachment_comment.review_ui
+        self.spy_on(review_ui.get_comment_thumbnail)
+
+        file_attachment_comment.thumbnail
 
         self.assertTrue(review_ui.get_comment_thumbnail.called)
 
@@ -152,17 +151,16 @@ class SandboxTests(SpyAgency, TestCase):
         """Testing FileAttachmentReviewUI sandboxes get_comment_link_url"""
         comment = "Comment"
 
-        review_ui = self.file_attachment2.review_ui
-
-        self.spy_on(review_ui.get_comment_link_url)
-
         review = Review.objects.create(review_request=self.review_request,
                                        user=self.user)
-        file_attachment_comments = review.file_attachment_comments.create(
+        file_attachment_comment = review.file_attachment_comments.create(
             file_attachment=self.file_attachment2,
             text=comment)
 
-        file_attachment_comments.get_absolute_url()
+        review_ui = file_attachment_comment.review_ui
+        self.spy_on(review_ui.get_comment_link_url)
+
+        file_attachment_comment.get_absolute_url()
 
         self.assertTrue(review_ui.get_comment_link_url.called)
 
@@ -170,17 +168,16 @@ class SandboxTests(SpyAgency, TestCase):
         """Testing FileAttachmentReviewUI sandboxes get_comment_link_text"""
         comment = "Comment"
 
-        review_ui = self.file_attachment2.review_ui
-
-        self.spy_on(review_ui.get_comment_link_text)
-
         review = Review.objects.create(review_request=self.review_request,
                                        user=self.user)
-        file_attachment_comments = review.file_attachment_comments.create(
+        file_attachment_comment = review.file_attachment_comments.create(
             file_attachment=self.file_attachment2,
             text=comment)
 
-        file_attachment_comments.get_link_text()
+        review_ui = file_attachment_comment.review_ui
+        self.spy_on(review_ui.get_comment_link_text)
+
+        file_attachment_comment.get_link_text()
 
         self.assertTrue(review_ui.get_comment_link_text.called)
 
@@ -241,14 +238,14 @@ class SandboxTests(SpyAgency, TestCase):
 
         review = Review.objects.create(review_request=self.review_request,
                                        user=self.user, public=True)
-        file_attachment_comments = review.file_attachment_comments.create(
+        file_attachment_comment = review.file_attachment_comments.create(
             file_attachment=self.file_attachment3,
             text=comment)
 
         self.spy_on(review_ui.serialize_comment)
 
         serial_comments = review_ui.serialize_comments(
-            comments=[file_attachment_comments])
+            comments=[file_attachment_comment])
         self.assertEqual(len(serial_comments), 0)
 
         self.assertTrue(review_ui.serialize_comment.called)
