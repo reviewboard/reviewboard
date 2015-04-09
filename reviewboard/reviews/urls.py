@@ -43,7 +43,7 @@ diffviewer_interdiff_urls = patterns(
     url(r'^fragment/(?P<filediff_id>[0-9]+)/$',
         ReviewsDiffFragmentView.as_view()),
 
-    url(r'^fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunkindex>[0-9]+)/$',
+    url(r'^fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunk_index>[0-9]+)/$',
         ReviewsDiffFragmentView.as_view()),
 )
 
