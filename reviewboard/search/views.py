@@ -73,7 +73,11 @@ class RBSearchView(SearchView):
             try:
                 review_request = ReviewRequest.objects.for_id(query,
                                                               local_site)
-                return HttpResponseRedirect(review_request.get_absolute_url())
+
+                if review_request.is_accessible_by(self.request.user,
+                                                   local_site=self.local_site,
+                                                   request=self.request):
+                    return HttpResponseRedirect(review_request.get_absolute_url())
             except ReviewRequest.DoesNotExist:
                 pass
 
@@ -90,24 +94,21 @@ class RBSearchView(SearchView):
         """Return a set of results matching the query."""
         sqs = self.searchqueryset()
 
-        if self.query.isdigit():
-            sqs = sqs.filter(review_request_id=self.query)
-        else:
-            sqs = sqs.filter(content=Raw(self.query))
+        sqs = sqs.filter(content=Raw(self.query))
 
-            # Filter the results by the user-requested set of models, if any.
-            self.active_filters = \
-                self.request.GET.get('filter', '').strip().split(',')
+        # Filter the results by the user-requested set of models, if any.
+        self.active_filters = \
+            self.request.GET.get('filter', '').strip().split(',')
 
-            filter_models = [
-                filter_type['model']
-                for filter_type in self.FILTER_TYPES
-                if ('model' in filter_type and
-                    filter_type['id'] in self.active_filters)
-            ]
+        filter_models = [
+            filter_type['model']
+            for filter_type in self.FILTER_TYPES
+            if ('model' in filter_type and
+                filter_type['id'] in self.active_filters)
+        ]
 
-            if filter_models:
-                sqs = sqs.models(*filter_models)
+        if filter_models:
+            sqs = sqs.models(*filter_models)
 
         if self.local_site:
             local_site_id = self.local_site.pk
@@ -187,10 +188,6 @@ class RBSearchView(SearchView):
             return HttpResponseRedirect(
                 local_site_reverse('all-review-requests',
                                    request=self.request))
-
-        if self.query.isdigit() and self.results:
-            return HttpResponseRedirect(
-                self.results[0].object.get_absolute_url())
 
         paginator, page = self.build_page()
         page_nums = range(max(1, page.number - self.ADJACENT_PAGES),

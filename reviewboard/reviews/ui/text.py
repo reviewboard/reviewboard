@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-import itertools
 import logging
 
 from django.template.context import Context
@@ -12,7 +11,9 @@ from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
                              TextLexer)
 
 from reviewboard.attachments.models import FileAttachment
-from reviewboard.diffviewer.chunk_generator import NoWrapperHtmlFormatter
+from reviewboard.diffviewer.chunk_generator import (NoWrapperHtmlFormatter,
+                                                    RawDiffChunkGenerator)
+from reviewboard.diffviewer.diffutils import get_chunks_in_range
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 
 
@@ -29,6 +30,9 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
     comment_thumbnail_template_name = 'reviews/ui/text_comment_thumbnail.html'
     can_render_text = False
     supports_diffing = True
+
+    source_chunk_generator_cls = RawDiffChunkGenerator
+    rendered_chunk_generator_cls = RawDiffChunkGenerator
 
     extra_css_classes = []
 
@@ -47,49 +51,41 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
         return data
 
     def get_extra_context(self, request):
-        file_line_list = [
-            mark_safe(line)
-            for line in self.get_text_lines()
-        ]
-
-        rendered_line_list = [
-           mark_safe(line)
-           for line in self.get_rendered_lines()
-        ]
-
-        diff_filename = None
-        diff_caption = None
-        diff_revision = None
-
+        context = {}
         diff_type_mismatch = False
 
         if self.diff_against_obj:
-            diff_caption = self.diff_against_obj.caption
-            diff_filename = self.diff_against_obj.filename
-            diff_revision = self.diff_against_obj.attachment_revision
+            diff_against_review_ui = self.diff_against_obj.review_ui
 
-            if type(self) != type(self.diff_against_obj.review_ui):
+            context.update({
+                'diff_caption': self.diff_against_obj.caption,
+                'diff_filename': self.diff_against_obj.filename,
+                'diff_revision': self.diff_against_obj.attachment_revision,
+            })
+
+            if type(self) != type(diff_against_review_ui):
                 diff_type_mismatch = True
             else:
-                diff_line_list = [
-                    mark_safe(line)
-                    for line in self.diff_against_obj.review_ui.get_text_lines()
-                ]
+                chunk_generator = self._get_source_diff_chunk_generator()
+                context['source_chunks'] = chunk_generator.get_chunks()
 
-                rendered_diff_line_list = [
-                    mark_safe(line)
-                    for line in
-                    self.diff_against_obj.review_ui.get_rendered_lines()
-                ]
+                chunk_generator = self._get_rendered_diff_chunk_generator()
+                context['rendered_chunks'] = chunk_generator.get_chunks()
+        else:
+            file_line_list = [
+                mark_safe(line)
+                for line in self.get_text_lines()
+            ]
 
-                # Interleave the two arrays of file lines together, so a template
-                # for-loop can access the contents of both files with two
-                # iterators.
-                file_line_list = itertools.izip_longest(
-                    diff_line_list, file_line_list, fillvalue="")
+            rendered_line_list = [
+                mark_safe(line)
+                for line in self.get_rendered_lines()
+            ]
 
-                rendered_line_list = itertools.izip_longest(
-                    rendered_diff_line_list, rendered_line_list, fillvalue="")
+            context.update({
+                'text_lines': file_line_list,
+                'rendered_lines': rendered_line_list,
+            })
 
         if self.obj.attachment_history is not None:
             num_revisions = FileAttachment.objects.filter(
@@ -97,18 +93,23 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
         else:
             num_revisions = 1
 
-        return {
+        context.update({
             'filename': self.obj.filename,
             'revision': self.obj.attachment_revision,
-            'text_lines': file_line_list,
-            'rendered_lines': rendered_line_list,
             'is_diff': self.diff_against_obj is not None,
-            'diff_caption': diff_caption,
-            'diff_filename': diff_filename,
-            'diff_revision': diff_revision,
             'num_revisions': num_revisions,
             'diff_type_mismatch': diff_type_mismatch,
-        }
+        })
+
+        return context
+
+    def get_text(self):
+        """Return the file contents as a string.
+
+        This will fetch the file and then cache it for future renders.
+        """
+        return cache_memoize('text-attachment-%d-string' % self.obj.pk,
+                             self._get_text_uncached)
 
     def get_text_lines(self):
         """Return the file contents as syntax-highlighted lines.
@@ -134,6 +135,15 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
         else:
             return []
 
+    def _get_text_uncached(self):
+        """Return the text from the file."""
+        self.obj.file.open()
+
+        with self.obj.file as f:
+            data = f.read()
+
+        return data
+
     def generate_highlighted_text(self):
         """Generates syntax-highlighted text for the file.
 
@@ -141,9 +151,7 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
         highlighting that's appropriate. The contents will be split into
         reviewable lines and will be cached for future renders.
         """
-        self.obj.file.open()
-        data = self.obj.file.read()
-        self.obj.file.close()
+        data = self.get_text()
 
         lexer = self.get_source_lexer(self.obj.filename, data)
         lines = highlight(data, lexer, NoWrapperHtmlFormatter()).splitlines()
@@ -224,39 +232,59 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
 
         Subclasses can override to do more specialized thumbnail rendering.
         """
-        try:
-            if view_mode == 'source':
-                lines = self.get_text_lines()
-            elif view_mode == 'rendered':
-                lines = self.get_rendered_lines()
-            else:
-                logging.warning('Unexpected view mode "%s" when rendering '
-                                'comment thumbnail.',
-                                view_mode)
-                return ''
-        except Exception as e:
-            logging.error('Unable to generate text attachment comment '
-                          'thumbnail for comment %s: %s',
-                          comment, e)
+        if view_mode not in ('source', 'rendered'):
+            logging.warning('Unexpected view mode "%s" when rendering '
+                            'comment thumbnail.',
+                            view_mode)
             return ''
 
-        # Grab only the lines we care about.
-        #
-        # The line numbers are stored 1-indexed, so normalize to 0.
-        lines = lines[begin_line_num - 1:end_line_num]
+        context = {
+            'is_diff': self.diff_against_obj is not None,
+            'review_ui': self,
+            'revision': self.obj.attachment_revision,
+        }
 
-        return render_to_string(
-            self.comment_thumbnail_template_name,
-            Context({
-                'review_ui': self,
-                'lines': [
-                    {
-                        'line_num': begin_line_num + i,
-                        'text': mark_safe(line),
-                    }
-                    for i, line in enumerate(lines)
-                ],
-            }))
+        if self.diff_against_obj:
+            if view_mode == 'source':
+                chunk_generator = self._get_source_diff_chunk_generator()
+            elif view_mode == 'rendered':
+                chunk_generator = self._get_rendered_diff_chunk_generator()
+
+            chunks = get_chunks_in_range(chunk_generator.get_chunks(),
+                                         begin_line_num,
+                                         end_line_num - begin_line_num + 1)
+
+            context.update({
+                'chunks': chunks,
+                'diff_revision': self.diff_against_obj.attachment_revision,
+            })
+        else:
+            try:
+                if view_mode == 'source':
+                    lines = self.get_text_lines()
+                elif view_mode == 'rendered':
+                    lines = self.get_rendered_lines()
+            except Exception as e:
+                logging.error('Unable to generate text attachment comment '
+                              'thumbnail for comment %s: %s',
+                              comment, e)
+                return ''
+
+            # Grab only the lines we care about.
+            #
+            # The line numbers are stored 1-indexed, so normalize to 0.
+            lines = lines[begin_line_num - 1:end_line_num]
+
+            context['lines'] = [
+                {
+                    'line_num': begin_line_num + i,
+                    'text': mark_safe(line),
+                }
+                for i, line in enumerate(lines)
+            ]
+
+        return render_to_string(self.comment_thumbnail_template_name,
+                                Context(context))
 
     def get_comment_link_url(self, comment):
         """Returns the URL to the file and line commented on.
@@ -275,3 +303,34 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
             return base_url
 
         return '%s#%s/line%s' % (base_url, view_mode, begin_line_num)
+
+    def _get_diff_chunk_generator(self, chunk_generator_cls, orig, modified):
+        """Return a chunk generator showing a diff for the text.
+
+        The chunk generator will diff the text of this attachment against
+        the text of the attachment being diffed against.
+
+        This is used both for displaying the file attachment and
+        rendering the thumbnail.
+        """
+        assert self.diff_against_obj
+
+        return chunk_generator_cls(
+            orig,
+            modified,
+            self.obj.filename,
+            self.diff_against_obj.filename)
+
+    def _get_source_diff_chunk_generator(self):
+        """Return a chunk generator for diffing source text."""
+        return self._get_diff_chunk_generator(
+            self.source_chunk_generator_cls,
+            self.diff_against_obj.review_ui.get_text(),
+            self.get_text())
+
+    def _get_rendered_diff_chunk_generator(self):
+        """Return a chunk generator for diffing rendered text."""
+        return self._get_diff_chunk_generator(
+            self.rendered_chunk_generator_cls,
+            self.diff_against_obj.review_ui.get_rendered_lines(),
+            self.get_rendered_lines())

@@ -375,8 +375,8 @@ class TestCase(DjbletsTestCase):
                               description='Test Description',
                               testing_done='Testing',
                               submitter='doc', local_id=1001,
-                              status='P', public=False, publish=False,
-                              commit_id=None, changenum=None,
+                              bugs_closed='', status='P', public=False,
+                              publish=False, commit_id=None, changenum=None,
                               repository=None, id=None,
                               create_repository=False):
         """Creates a ReviewRequest for testing.
@@ -421,6 +421,7 @@ class TestCase(DjbletsTestCase):
             public=public,
             commit_id=commit_id,
             changenum=changenum,
+            bugs_closed=bugs_closed,
             status=status)
 
         # Set this separately to avoid issues with CounterField updates.

@@ -166,148 +166,6 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     },
 
     /*
-     * Finds the row in a table matching the specified line number.
-     *
-     * This will perform a binary search of the lines trying to find
-     * the matching line number. It will then return the row element,
-     * if found.
-     */
-    _findLineNumRow: function(lineNum, startRow, endRow) {
-        var row = null,
-            table = this.el,
-            rowOffset = 1, // Get past the headers.
-            guessRowNum,
-            guessRow,
-            oldHigh,
-            oldLow,
-            high,
-            low,
-            value,
-            found,
-            i,
-            j;
-
-        if (table.rows.length - rowOffset > lineNum) {
-            row = table.rows[rowOffset + lineNum];
-
-            // Account for the "x lines hidden" row.
-            if (row && this.getLineNum(row) === lineNum) {
-                return row;
-            }
-        }
-
-        if (startRow) {
-            // startRow already includes the offset, so we need to remove it.
-            startRow -= rowOffset;
-        }
-
-        low = startRow || 1;
-        high = Math.min(endRow || table.rows.length, table.rows.length);
-
-        if (endRow !== undefined && endRow < table.rows.length) {
-            /* See if we got lucky and found it in the last row. */
-            if (this.getLineNum(table.rows[endRow]) === lineNum) {
-                return table.rows[endRow];
-            }
-        } else if (row) {
-            /*
-             * We collapsed the rows (unless someone mucked with the DB),
-             * so the desired row is less than the row number retrieved.
-             */
-            high = Math.min(high, rowOffset + lineNum);
-        }
-
-        /* Binary search for this cell. */
-        for (i = Math.round((low + high) / 2); low < high - 1;) {
-            row = table.rows[rowOffset + i];
-
-            if (!row) {
-                /* This should not happen, unless we miscomputed high. */
-                high--;
-
-                /*
-                 * This won't do much if low + high is odd, but we'll catch
-                 * up on the next iteration.
-                 */
-                i = Math.round((low + high) / 2);
-                continue;
-            }
-
-            value = this.getLineNum(row);
-
-            if (!value) {
-                /*
-                 * Bad luck, let's look around.
-                 *
-                 * We'd expect to find a value on the first try, but the
-                 * following makes sure we explore all rows.
-                 */
-                found = false;
-
-                for (j = 1; j <= (high - low) / 2; j++) {
-                    row = table.rows[rowOffset + i + j];
-
-                    if (row && this.getLineNum(row)) {
-                        i = i + j;
-                        found = true;
-                        break;
-                    } else {
-                        row = table.rows[rowOffset + i - j];
-
-                        if (row && this.getLineNum(row)) {
-                            i = i - j;
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (found) {
-                    value = this.getLineNum(row);
-                } else {
-                    return null;
-                }
-            }
-
-            /* See if we can use simple math to find the row quickly. */
-            guessRowNum = lineNum - value + rowOffset + i;
-
-            if (guessRowNum >= 0 && guessRowNum < table.rows.length) {
-                guessRow = table.rows[guessRowNum];
-
-                if (guessRow && this.getLineNum(guessRow) === lineNum) {
-                    /* We found it using maths! */
-                    return guessRow;
-                }
-            }
-
-            oldHigh = high;
-            oldLow = low;
-
-            if (value > lineNum) {
-                high = i;
-            } else if (value < lineNum) {
-                low = i;
-            } else {
-                return row;
-            }
-
-            /*
-             * Make sure we don't get stuck in an infinite loop. This can happen
-             * when a comment is placed in a line that isn't being shown.
-             */
-            if (oldHigh === high && oldLow === low) {
-                break;
-            }
-
-            i = Math.round((low + high) / 2);
-        }
-
-        // Well.. damn. Ignore this then.
-        return null;
-    },
-
-    /*
      * Places a CommentBlockView on the page.
      *
      * This will compute the row range for the CommentBlockView and then
@@ -316,24 +174,18 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * If it doesn't exist yet, the CommentBlockView will be stored in the
      * list of hidden comment blocks for later rendering.
      */
-    _placeCommentBlockView: function(commentBlockView) {
+    _placeCommentBlockView: function(commentBlockView, prevBeginRowIndex) {
         var commentBlock = commentBlockView.model,
-            numLines = commentBlock.getNumLines(),
-            beginLineNum = commentBlock.get('beginLineNum'),
-            endLineNum = commentBlock.get('endLineNum'),
-            beginRowEl = this._findLineNumRow(beginLineNum),
-            prevBeginRowIndex,
+            rowEls = this._selector.getRowsForRange(
+                commentBlock.get('beginLineNum'),
+                commentBlock.get('endLineNum'),
+                prevBeginRowIndex),
+            beginRowEl,
             endRowEl;
 
-        if (beginRowEl) {
-            prevBeginRowIndex = beginRowEl.rowIndex;
-
-            endRowEl = (endLineNum === beginLineNum
-                        ? beginRowEl
-                        : this._findLineNumRow(
-                            endLineNum,
-                            prevBeginRowIndex,
-                            prevBeginRowIndex + numLines - 1));
+        if (rowEls) {
+            beginRowEl = rowEls[0];
+            endRowEl = rowEls[1];
 
             /*
              * Note that endRow might be null if it exists in a collapsed
@@ -344,6 +196,8 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             commentBlockView.$el.appendTo(
                 commentBlockView.$beginRow[0].cells[0]);
             this._visibleCommentBlockViews.push(commentBlockView);
+
+            prevBeginRowIndex = beginRowEl.rowIndex;
         } else {
             this._hiddenCommentBlockViews.push(commentBlockView);
         }
@@ -780,13 +634,6 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         e.preventDefault();
         this._expandOrCollapse($target, false);
-    },
-
-    /*
-     * Returns the line number for a row.
-     */
-    getLineNum: function(row) {
-        return parseInt(row.getAttribute('line'), 10);
     }
 });
 

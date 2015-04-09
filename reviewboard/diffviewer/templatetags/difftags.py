@@ -185,8 +185,8 @@ def diff_chunk_header(context, header):
 
 
 @register.simple_tag
-def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
-               begin_collapse_fmt, end_collapse_fmt, moved_fmt):
+def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
+               begin_collapse_fmt='', end_collapse_fmt='', moved_fmt=''):
     """Renders the lines of a diff.
 
     This will render each line in the diff viewer. The function expects
@@ -234,7 +234,7 @@ def diff_lines(file, chunk, standalone, line_fmt, anchor_fmt,
         if not is_equal:
             if i == 0:
                 row_classes.append('first')
-                anchor = '%s.%s' % (file['index'], chunk_index)
+                anchor = '%s.%s' % (index, chunk_index)
 
             if i == num_lines - 1:
                 row_classes.append('last')

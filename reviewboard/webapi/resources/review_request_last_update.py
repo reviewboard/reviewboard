@@ -4,7 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseNotModified
 from django.utils import six
 from django.utils.translation import ugettext as _
-from djblets.util.http import get_modified_since, http_date
+from djblets.util.http import encode_etag, etag_if_none_match
 from djblets.webapi.errors import DOES_NOT_EXIST
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import Review, ReviewRequest
@@ -78,7 +78,9 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
 
         timestamp, updated_object = review_request.get_last_activity()
 
-        if get_modified_since(request, timestamp):
+        etag = encode_etag('%s:%s' % (timestamp, updated_object.pk))
+
+        if etag_if_none_match(request, etag):
             return HttpResponseNotModified()
 
         user = None
@@ -121,7 +123,7 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
                 'type': update_type,
             }
         }, {
-            'Last-Modified': http_date(timestamp)
+            'ETag': etag,
         }
 
 
