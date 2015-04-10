@@ -23,7 +23,7 @@
                          2 * @headerbar-logo-padding-horiz;
 @headerbar-bg: #333333;
 @headerbar-bg-active: #555555;
-@headerbar-padding: 0.5em;
+@headerbar-padding: 5px;
 @headerbar-menu-min-width: 9em;
 
 @navbar-bg: @light-blue;
@@ -202,6 +202,16 @@
 @dashboard-sidebar-count-zero-border-color: darken(@dashboard-sidebar-bg, 5%);
 @dashboard-sidebar-count-vert-padding: 0px;
 @dashboard-sidebar-count-horiz-padding: 8px;
+
+// Mobile
+@mobile-navbar-hide-margin-left: -160px;
+@mobile-medium-width-720: 720px;
+.on-mobile-medium-screen-720(@rules) {
+  @media screen and (max-width: @mobile-medium-width-720),
+         screen and (max-device-width: @mobile-medium-width-720) and (orientation: landscape) {
+    @rules();
+  }
+}
 
 
 @import (reference) "mixins/gradients.less";
