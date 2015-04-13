@@ -220,22 +220,27 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
 
             file_attachment = form.create()
 
-            self.assertEqual(file_attachment.thumbnail,
-                             '<div class="file-thumbnail-clipped"><pre>'
-                             'UTF-16le encoded sample plain-text file</pre>'
-                             '<pre>\u203e\u203e\u203e\u203e\u203e\u203e'
-                             '\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
-                             '\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
-                             '\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
-                             '\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
-                             '\u203e\u203e\u203e\u203e\u203e</pre><pre>'
-                             '</pre><pre>Markus Kuhn [\u02c8ma\u02b3k\u028as'
-                             ' ku\u02d0n] &lt;http://www.cl.cam.ac.uk/~mgk25/'
-                             '&gt; \u2014 2002-07-25</pre><pre></pre><pre>'
-                             '</pre><pre>The ASCII compatible UTF-8 encoding '
-                             'used in this plain-text file</pre><pre>is '
-                             'defined in Unicode, ISO 10646-1, and RFC 2279.'
-                             '</pre></div>')
+            self.assertEqual(
+                file_attachment.thumbnail,
+                '<div class="file-thumbnail"> <div class="file-thumbnail-clipp'
+                'ed"><pre>UTF-16le encoded sample plain-text file</pre><pre>'
+                '\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                '\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                '\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                '\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e</pre>'
+                '<pre></pre><pre>Markus Kuhn [\u02c8ma\u02b3k\u028as ku\u02d0'
+                'n] &lt;http://www.cl.cam.ac.uk/~mgk25/&gt; \u2014 2002-07-25'
+                '</pre><pre></pre><pre></pre><pre>The ASCII compatible UTF-8 '
+                'encoding used in this plain-text file</pre><pre>is defined '
+                'in Unicode, ISO 10646-1, and RFC 2279.</pre><pre></pre><pre>'
+                '</pre><pre>Using Unicode/UTF-8, you can write in emails and '
+                'source code things such as</pre><pre></pre><pre>Mathematics '
+                'and sciences:</pre><pre></pre><pre>  \u222e E\u22c5da = Q,  '
+                'n \u2192 \u221e, \u2211 f(i) = \u220f g(i),      \u23a7\u23a1'
+                '\u239b\u250c\u2500\u2500\u2500\u2500\u2500\u2510\u239e\u23a4'
+                '\u23ab</pre><pre>                                           '
+                ' \u23aa\u23a2\u239c\u2502a\xb2+b\xb3 \u239f\u23a5\u23aa'
+                '</pre><pre>  \u2200x\u2208</pre></div></div>')
 
 
 class MimetypeTest(MimetypeHandler):

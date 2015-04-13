@@ -1297,118 +1297,62 @@
 .file-container {
   float: left;
 
-  &.editing .file {
-    .border-radius(@box-border-radius @box-border-radius 0 0);
-
-    .file-caption-container {
-      padding-left: 0;
-      padding-right: 0;
-
-      .file-caption {
-        text-overflow: initial;
-      }
-    }
+  .file:hover .file-actions {
+    visibility: visible;
   }
 
   .file {
     @file-attachment-bg: white;
+    @file-attachment-height: 150px;
     @file-attachment-width: 300px;
     @file-attachment-border-color: #CCCCCC;
+    @file-attachment-caption-height: 31px;
 
-    background-color: #FEFEFE;
     border: 1px @file-attachment-border-color solid;
     display: block;
     position: relative;
     margin: 0 1.5em 1.5em 0;
     max-width: @file-attachment-width;
     width: @file-attachment-width;
-    .border-radius(@box-border-radius);
     .box-shadow(@box-shadow);
     .box-sizing(border-box);
 
-    .actions {
-      li {
-        line-height: 16px;
-
-        &:last-child a {
-          .border-radius(0 @box-inner-border-radius 0 0);
-        }
-
-        &:hover {
-          background: transparent;
-        }
-
-        .file-attachment-menu {
-          border: 1px @file-attachment-border-color solid;
-          float: none;
-          list-style: none;
-          margin: -1px 0 0;
-          padding: 0;
-          position: absolute;
-          right: -1px;
-          z-index: @z-index-menu;
-          .border-radius(0 0 @box-border-radius @box-border-radius);
-          .box-shadow(none);
-
-          li {
-            background: white;
-            border: 0;
-            float: none;
-            margin: 0;
-            padding: 0;
-
-            &:last-child {
-              .border-radius(0 0 @box-inner-border-radius @box-inner-border-radius);
-            }
-
-            a, a:hover {
-              border: 0;
-              border-radius: inherit;
-            }
-          }
-        }
-
-        a {
-          border-left: 1px #DDD solid;
-          border-bottom: 1px #DDD solid;
-          color: black;
-          padding: 6px 8px;
-
-          &:hover {
-            background: #EEEEEE;
-            text-decoration: none;
-          }
-        }
-      }
+    .fa-spinner {
+      font-size: @file-attachment-height / 4;
+      line-height: @file-attachment-height;
+      vertical-align: middle;
+      text-align: center;
     }
 
-    .file-header {
-      @file-header-height: 2.5em;
+    .file-actions {
+      .box-sizing(border-box);
+      .opacity(95);
+      background-color: @dark-grey;
+      height: @file-attachment-height - @file-attachment-caption-height - 1px;
+      left: 0;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      position: absolute;
+      text-shadow: black 0px 0px 4px;
+      top: 0;
+      visibility: hidden;
+      z-index: @z-index-menu;
 
-      background: @file-attachment-bg;
-      padding: 0 0.5em;
-      line-height: @file-header-height;
-      height: @file-header-height;
-      .border-radius(@box-border-radius @box-border-radius 0 0);
-      .ellipsize();
+      li {
+        .opacity(100);
+        margin: 1em;
 
-      a {
-        color: blue;
-        font-weight: bold;
-        text-decoration: none;
-      }
-
-      img {
-        vertical-align: middle;
+        a {
+          color: white;
+          text-decoration: none;
+        }
       }
     }
 
     .file-thumbnail-container {
-      @thumbnail-height: 100px;
-
       background: @file-attachment-bg;
-      height: @thumbnail-height;
-      padding: 1em;
+      height: @file-attachment-height;
       text-align: center;
 
       a {
@@ -1421,10 +1365,11 @@
       }
 
       .thumbnail-properties () {
-        max-height: @thumbnail-height;
+        max-height: @file-attachment-height;
         max-width: 100%;
         margin: 0;
         padding: 0;
+        .box-sizing(border-box);
       }
 
       .file-thumbnail-overlay {
@@ -1440,16 +1385,17 @@
         .thumbnail-properties();
         border: 0;
         overflow: hidden;
-        text-align: left;
+        text-align: center;
         white-space: nowrap;
         vertical-align: middle;
+        margin: auto;
       }
 
       .file-thumbnail-clipped {
-        .thumbnail-properties();
         border: 0;
         overflow: hidden;
         text-align: left;
+        padding: 1em 0 0 1em;
         font-size: 8pt;
 
         /* Override the styling used for the <pre>s for fields. */
@@ -1463,14 +1409,21 @@
     }
 
     .file-caption-container {
-      @caption-height: 31px;
+      @file-caption-padding: 30px;
 
+      .box-sizing(border-box);
+      .opacity(90);
+      background-color: #FEFEFE;
       border-top: 1px #EEEEEE solid;
+      bottom: 0;
       line-height: 2.5em;
-      padding: 0 30px;
-      position: relative;
+      padding: 0 @file-caption-padding;
+      position: absolute;
       text-align: center;
-      .border-radius(0 0 7px 7px);
+      z-index: @z-index-subevent-overlay;
+      // The 2px here is to make it fit within the border of the parent element
+      max-width: @file-attachment-width - 2px;
+      width: @file-attachment-width - 2px;
 
       a {
         color: black;
@@ -1483,9 +1436,11 @@
       }
 
       .file-caption {
-        line-height: @caption-height;
-        height: @caption-height;
         .ellipsize();
+        .opacity(100);
+        line-height: @file-attachment-caption-height;
+        height: @file-attachment-caption-height;
+        text-shadow: 0px 0px 2px white;
 
         .buttons {
           /*
@@ -1498,7 +1453,7 @@
           padding: @buttons-padding-vert 0;
 
           /* Line up with .file's side borders. */
-          margin: 0 0 0 -1px;
+          margin: 0 0 0 (-1px - @file-caption-padding);
 
           text-align: center;
           background: darken(@file-attachment-bg, 5%);
@@ -1518,7 +1473,7 @@
         border: 0;
         font-family: inherit;
         font-size: inherit;
-        height: @caption-height;
+        height: @file-attachment-caption-height;
         margin: 0;
         padding-top: 0;
         padding-bottom: 0;

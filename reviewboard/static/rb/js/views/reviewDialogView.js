@@ -287,7 +287,6 @@ FileAttachmentCommentView = BaseCommentView.extend({
     thumbnailTemplate: _.template([
         '<div class="file-attachment">',
         ' <span class="filename">',
-        '  <img src="<%- fileAttachment.iconURL %>" />',
         '  <a href="<%- reviewURL %>"><%- linkText %></a>',
         ' </span>',
         ' <span class="diffrevision"><%- revisionsStr %></span>',

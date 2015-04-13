@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import uuid
+
 from django.contrib.auth.models import User
 from django.core.urlresolvers import NoReverseMatch
 from django.db import models
@@ -626,7 +628,7 @@ class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
     locals_vars = ['file_attachment_id_map']
     model = FileAttachment
 
-    thumbnail_template = 'reviews/parts/file_attachment_thumbnail.html'
+    thumbnail_template = 'reviews/changedesc_file_attachment.html'
 
     def get_change_entry_sections_html(self, info):
         sections = []
@@ -651,6 +653,7 @@ class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
         # Fetch the template ourselves only once and render it for each item,
         # instead of calling render_to_string() in the loop, so we don't
         # have to locate and parse/fetch from cache for every item.
+
         template = get_template(self.thumbnail_template)
         review_request = self.review_request_details.get_review_request()
 
@@ -673,6 +676,7 @@ class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
                 'file': attachment,
                 'review_request': review_request,
                 'local_site_name': local_site_name,
+                'uuid': uuid.uuid4(),
             })))
 
         return ''.join(items)

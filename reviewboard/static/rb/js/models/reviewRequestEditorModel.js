@@ -10,29 +10,40 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         editable: false,
         editCount: 0,
         hasDraft: false,
+        fileAttachments: null,
         fileAttachmentComments: {},
         mutableByUser: false,
         pendingSaveCount: 0,
         publishing: false,
         reviewRequest: null,
+        screenshots: null,
         statusEditable: false,
         statusMutableByUser: false
     },
 
     initialize: function() {
-        var reviewRequest = this.get('reviewRequest');
+        var reviewRequest = this.get('reviewRequest'),
+            fileAttachments = this.get('fileAttachments'),
+            screenshots = this.get('screenshots');
 
-        this.fileAttachments = new Backbone.Collection([], {
-            model: RB.FileAttachment
-        });
-        this.fileAttachments.on('add', this._onFileAttachmentOrScreenshotAdded,
-                                this);
+        if (fileAttachments === null) {
+            fileAttachments = new Backbone.Collection([], {
+                model: RB.FileAttachment
+            });
+            this.set('fileAttachments', fileAttachments);
+        }
 
-        this.screenshots = new Backbone.Collection([], {
-            model: RB.Screenshot
-        });
-        this.screenshots.on('add', this._onFileAttachmentOrScreenshotAdded,
-                            this);
+        fileAttachments.on('add', this._onFileAttachmentOrScreenshotAdded,
+                           this);
+
+        if (screenshots === null) {
+            screenshots = new Backbone.Collection([], {
+                model: RB.Screenshot
+            });
+            this.set('screenshots', screenshots);
+        }
+
+        screenshots.on('add', this._onFileAttachmentOrScreenshotAdded, this);
 
         reviewRequest.draft.on('saving', function() {
             this.trigger('saving');
@@ -57,9 +68,10 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      */
     createFileAttachment: function(attributes) {
         var draft = this.get('reviewRequest').draft,
+            fileAttachments = this.get('fileAttachments'),
             fileAttachment = draft.createFileAttachment(attributes);
 
-        this.fileAttachments.add(fileAttachment);
+        fileAttachments.add(fileAttachment);
 
         return fileAttachment;
     },

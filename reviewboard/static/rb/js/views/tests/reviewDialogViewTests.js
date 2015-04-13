@@ -357,8 +357,6 @@ suite('rb/views/ReviewDialogView', function() {
                             .toBe(fileAttachmentCommentPayload.text);
                         expect(commentView.$issueOpened.prop('checked')).toBe(
                             fileAttachmentCommentPayload.issue_opened);
-                        expect(commentView.$('img').attr('src')).toBe(
-                            fileAttachmentCommentPayload.file_attachment.icon_url);
                         expect(commentView.$('.filename a').attr('href')).toBe(
                             fileAttachmentCommentPayload.review_url);
                         expect(commentView.$('.filename a').text()).toBe(

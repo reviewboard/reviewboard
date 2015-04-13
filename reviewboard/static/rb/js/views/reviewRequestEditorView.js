@@ -518,6 +518,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      */
     render: function() {
         var reviewRequest = this.model.get('reviewRequest'),
+            fileAttachments = this.model.get('fileAttachments'),
             draft = reviewRequest.draft,
             extraData = draft.get('extraData');
 
@@ -648,9 +649,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 this.issueSummaryTableView.render();
             }
 
-            this.model.fileAttachments.on('add',
-                                          this.buildFileAttachmentThumbnail,
-                                          this);
+            fileAttachments.each(function(fileAttachment) {
+                this.buildFileAttachmentThumbnail(
+                    fileAttachment, fileAttachments, { noAnimation: true });
+            }, this);
+            fileAttachments.on('add', this.buildFileAttachmentThumbnail, this);
 
             /*
              * Import all the screenshots and file attachments rendered onto
@@ -658,9 +661,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
              */
             _.each(this._$screenshots.find('.screenshot-container'),
                    this._importScreenshotThumbnail,
-                   this);
-            _.each(this._$attachments.find('.file-container'),
-                   this._importFileAttachmentThumbnail,
                    this);
             _.each($('.binary'),
                    this._importFileAttachmentThumbnail,
@@ -923,7 +923,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             /* This is a newly added file attachment. */
             this._$attachmentsContainer.show();
             view.$el.insertBefore(this._$attachments.children('br'));
-            view.fadeIn();
+
+            if (!options.noAnimation) {
+                view.fadeIn();
+            }
         }
 
         view.on('beginEdit', function() {
@@ -958,7 +961,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             fileAttachment.set('caption', $caption.text());
         }
 
-        this.model.fileAttachments.add(fileAttachment, {
+        this.model.get('fileAttachments').add(fileAttachment, {
             $el: $thumbnail
         });
     },
@@ -980,7 +983,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
         view.render();
 
-        this.model.screenshots.add(screenshot);
+        this.model.get('screenshots').add(screenshot);
 
         view.on('beginEdit', function() {
             this.model.incr('editCount');

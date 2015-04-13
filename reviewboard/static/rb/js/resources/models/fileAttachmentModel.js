@@ -18,9 +18,6 @@ RB.FileAttachment = RB.BaseResource.extend({
         /* The name of the file, for existing file attachments. */
         filename: null,
 
-        /* The URL to an icon for this file type. */
-        iconURL: null,
-
         /* The URL to the review UI for this file attachment. */
         reviewURL: null,
 
@@ -38,7 +35,6 @@ RB.FileAttachment = RB.BaseResource.extend({
         attachmentHistoryID: 'attachment_history_id',
         downloadURL: 'url',
         file: 'path',
-        iconURL: 'icon_url',
         reviewURL: 'review_url',
         thumbnailHTML: 'thumbnail'
     },
@@ -54,7 +50,6 @@ RB.FileAttachment = RB.BaseResource.extend({
         'caption',
         'downloadURL',
         'filename',
-        'iconURL',
         'reviewURL',
         'revision',
         'thumbnailHTML'
