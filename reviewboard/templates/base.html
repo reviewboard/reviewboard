@@ -49,6 +49,7 @@
  </head>
 {% block bodytag %}
  <body>
+  <div id="mobile-menu-mask"></div>
 {% endblock %}
   <div id="container">
 
@@ -118,6 +119,8 @@
         loginURL: "{% url 'login' %}"
 {% endif %}
     });
+
+    new RB.HeaderView({ el: $('#headerbar') });
   </script>
 {% block scripts-post %}{% endblock %}
 {% block js_extensions %}

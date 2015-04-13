@@ -1,0 +1,35 @@
+{% load djblets_utils i18n gravatars rb_extensions %}
+
+<li>
+ <a href="#">{% trans "Support" %} &#9662;</a>
+  <ul>
+   <li><a href="{{RB_MANUAL_URL}}">{% trans "Documentation" %}</a></li>
+   <li><a href="{% url 'support' %}">{% trans "Get Support" %}</a></li>
+  </ul>
+  </li>
+{% if request.user.is_authenticated %}
+  <li>
+{%  spaceless %}
+   <a class="user-nav-item" href="{% url 'user' request.user.username %}">
+{%   if siteconfig_settings.integration_gravatars %}
+    {% gravatar user 32 %}
+{%   endif %}
+     {{request.user.username}} &#9662;
+   </a>
+{%  endspaceless %}
+   <ul>
+    <li><a href="{% url 'user-preferences' %}">{% trans "My account" %}</a></li>
+{%  if request.user.is_staff %}
+    <li><a href="{% url 'reviewboard.admin.views.dashboard' %}">{% trans "Admin" %}</a></li>
+{%  endif %}
+    <li><a href="{% url 'logout' %}">{% trans "Log out" %}</a></li>
+   </ul>
+  </li>
+{% else %}
+  <li><a href="{% url 'login' %}?next={{request.path}}">{% trans "Log in" %}</a></li>
+{#  XXX Using default sucks, but siteconfig defaults don't #}
+{#      work from templates.                               #}
+{%  if auth_backends.0.supports_registration and siteconfig_settings.auth_enable_registration|default_if_none:1 %}
+  <li><a href="{% url 'register' %}">{% trans "Register" %}</a></li>
+{%  endif %}
+{% endif %}{# !is_authenticated #}

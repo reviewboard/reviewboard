@@ -46,6 +46,10 @@ textarea {
   z-index: @z-index-base;
   float: right;
 
+  .on-mobile-medium-screen-720({
+    display: none;
+  });
+
   li {
     display: block;
     float: right;
@@ -197,6 +201,8 @@ textarea {
   color: white;
   margin: 0;
   padding: @headerbar-padding;
+  height: 22px;
+  vertical-align: middle;
 
   br {
     clear: both;
@@ -207,6 +213,13 @@ textarea {
     position: absolute;
     top: -2px;
     left: @headerbar-logo-padding-horiz;
+    cursor: pointer;
+    z-index: @z-index-menu;
+
+    .on-mobile-medium-screen-720({
+      height: 24px;
+      width: 24px;
+    });
   }
 
   #title {
@@ -214,35 +227,67 @@ textarea {
     display: inline;
     font-weight: normal;
     font-size: 120%;
-    vertical-align: middle;
     margin: 0;
     padding: 0;
+
+    .on-mobile-medium-screen-720({
+      line-height: 23px;
+    });
 
     a {
       color: white;
       font-size: 120%;
       text-decoration: none;
+
+      .on-mobile-medium-screen-720({
+        padding-left: 35px;
+      });
     }
 
     .version {
       color: #E0E0E0;
       font-weight: normal;
       font-size: 90%;
+
+      .on-mobile-medium-screen-720({
+        display: none;
+      });
     }
   }
 
-  #search {
-   float: right;
-   margin: 0 1em;
+  #search-icon {
+    display: none;
+    float: right;
+    cursor: pointer;
+    padding: 5px;
 
-   input {
-     border: 1px black solid;
-     margin: 0;
-     padding: 2px;
-     .border-radius(6px);
-     background-color: #EEEEEE;
-     font-size: 1.2em;
-   }
+    .on-mobile-medium-screen-720({
+      position: relative;
+      padding: 0;
+      top: 0;
+      right: 0;
+      display: block;
+    });
+  }
+
+  #search {
+    float: right;
+    margin: 0 1em;
+
+    .on-mobile-medium-screen-720({
+      position: absolute;
+      right: 25px;
+      display: none;
+    });
+
+    input {
+      border: 1px black solid;
+      margin: 0;
+      padding: 2px;
+      .border-radius(6px);
+      background-color: #EEEEEE;
+      font-size: 1.2em;
+    }
   }
 }
 
@@ -258,20 +303,65 @@ textarea {
   padding-top: 0.2em;
   padding-left: @headerbar-padding-left;
 
+  .on-mobile-medium-screen-720({
+    padding: 0;
+  });
+
   img {
     display: inline;
     vertical-align: middle;
   }
 }
 
+#mobile-menu-mask {
+  display: none;
+  background-color: black;
+  .opacity(50);
+  width: 100%;
+  height: 100%;
+  z-index: @z-index-base;
+  position: absolute;
+  top: 32px;
+  left: 0;
+}
 
 /*
  * The container for the navigation bar.
  */
 #navbar-container {
   margin: 0 0 1em 0;
+  .on-mobile-medium-screen-720({
+    position: absolute;
+    z-index: @z-index-menu;
+    left: @mobile-navbar-hide-margin-left;
+    height: 100%;
+    background: @light-blue;
+  });
 }
 
+#mobile-account-nav {
+  display: none;
+  padding-left: 0px;
+
+  .on-mobile-medium-screen-720({
+    display: block;
+  });
+
+  > li > a {
+    display: none;
+  }
+
+  ul {
+    padding-left: 10px;
+  }
+
+  li {
+    list-style: none;
+    display: block;
+    margin: 0px 1em 0px 0px;
+    line-height: 30px;
+  }
+}
 
 /*
  * The navigation bar.
@@ -288,10 +378,18 @@ textarea {
   padding: @headerbar-padding;
   padding-left: @headerbar-padding-left;
 
+  .on-mobile-medium-screen-720({
+    padding-left: 10px;
+    margin-top: 10px;
+  });
+
   li {
     display: inline;
     height: 30px;
     margin: 0 1em 0 0;
+    .on-mobile-medium-screen-720({
+      display: block;
+    });
   }
 
   a {
@@ -311,6 +409,9 @@ textarea {
 #page-container {
   padding: 0 @page-container-padding @page-container-padding
            @page-container-padding;
+  .on-mobile-medium-screen-720({
+    margin-top: 10px;
+  });
 }
 
 /*
