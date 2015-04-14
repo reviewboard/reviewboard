@@ -283,6 +283,7 @@ RB.ReviewDialogView = Backbone.View.extend({
         ' <input id="id_shipit" type="checkbox" />',
         ' <label for="id_shipit"><%- shipItText %></label>',
         '</div>',
+        '<div class="review-dialog-hooks-container"></div>',
         '<div class="edit-field">',
         ' <div class="body-top"></div>',
         ' <span class="enable-markdown">',
@@ -319,6 +320,7 @@ RB.ReviewDialogView = Backbone.View.extend({
         this._$bodyBottomFields = null;
 
         this._commentViews = [];
+        this._hookViews = [];
 
         this._diffQueue = new RB.DiffFragmentQueueView({
             containerPrefix: 'review_draft_comment_container',
@@ -389,6 +391,22 @@ RB.ReviewDialogView = Backbone.View.extend({
     },
 
     /*
+     * Removes the dialog from the DOM.
+     *
+     * This will remove all the extension hook views from the dialog,
+     * and then remove the dialog itself.
+     */
+    remove: function() {
+        _.each(this._hookViews, function(hookView) {
+            hookView.remove();
+        });
+
+        this._hookViews = [];
+
+        _super(this).remove.call(this);
+    },
+
+    /*
      * Closes the review dialog.
      *
      * The dialog will be removed from the screen, and the "closed"
@@ -409,7 +427,8 @@ RB.ReviewDialogView = Backbone.View.extend({
      * the server will begin loading and rendering.
      */
     render: function() {
-        var data;
+        var data,
+            $hooksContainer;
 
         this.$el.html(this.template({
             shipItText: gettext('Ship It'),
@@ -422,6 +441,20 @@ RB.ReviewDialogView = Backbone.View.extend({
         this._$comments = this.$el.children('.comments');
         this._$spinner = this.$el.children('.spinner');
         this._$bodyBottomFields = this.$el.children('#body_bottom_fields');
+
+        $hooksContainer = this.$('.review-dialog-hooks-container');
+
+        RB.ReviewDialogHook.each(function(hook) {
+            var HookView = hook.get('viewType'),
+                hookView = new HookView({
+                    model: this.model
+                });
+
+            this._hookViews.push(hookView);
+
+            $hooksContainer.append(hookView.$el);
+            hookView.render();
+        }, this);
 
         this._bodyTopEditor = new RB.TextEditorView({
             el: this.$('.body-top'),

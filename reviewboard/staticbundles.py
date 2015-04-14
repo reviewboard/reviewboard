@@ -102,6 +102,7 @@ PIPELINE_JS = dict({
             'rb/js/extensions/models/aliases.js',
             'rb/js/extensions/models/commentDialogHookModel.js',
             'rb/js/extensions/models/reviewDialogCommentHookModel.js',
+            'rb/js/extensions/models/reviewDialogHookModel.js',
             'rb/js/pages/models/pageManagerModel.js',
             'rb/js/resources/utils/serializers.js',
             'rb/js/resources/models/baseResourceModel.js',
