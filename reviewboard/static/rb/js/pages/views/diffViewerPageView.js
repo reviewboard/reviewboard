@@ -228,7 +228,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         '    </tr>',
         '   </thead>',
         '   <tbody>',
-        '    <tr><td><pre>&nbsp;</pre></td></tr>',
+        '    <tr><td><span class="fa fa-spinner fa-pulse"></span></td></tr>',
         '   </tbody>',
         '  </table>',
         ' </div>',
