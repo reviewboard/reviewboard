@@ -43,7 +43,6 @@ suite('rb/resources/models/ReviewRequest', function() {
     });
 
     it('parse', function() {
-        console.log(reviewRequest);
         var data = reviewRequest.parse({
             stat: 'ok',
             review_request: {

@@ -123,6 +123,8 @@ RB.ReviewablePageView = Backbone.View.extend({
      *       - The type of updates to look for.
      */
     initialize: function() {
+        var fileAttachments;
+
         console.assert(this.options.reviewRequestData);
         console.assert(this.options.editorData);
 
@@ -137,10 +139,21 @@ RB.ReviewablePageView = Backbone.View.extend({
             reviewRequest: this.reviewRequest
         });
 
+        fileAttachments = _.map(
+            this.options.editorData.fileAttachments,
+            this.options.editorData.mutableByUser
+            ? _.bind(this.reviewRequest.draft.createFileAttachment,
+                     this.reviewRequest.draft)
+            : _.bind(this.reviewRequest.createFileAttachment,
+                     this.reviewRequest));
+
         this.reviewRequestEditor = new RB.ReviewRequestEditor(
             _.defaults({
                 commentIssueManager: this.commentIssueManager,
-                reviewRequest: this.reviewRequest
+                reviewRequest: this.reviewRequest,
+                fileAttachments: new Backbone.Collection(
+                    fileAttachments,
+                    { model: RB.FileAttachment })
             }, this.options.editorData));
 
         this.reviewRequestEditorView = new RB.ReviewRequestEditorView({

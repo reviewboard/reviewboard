@@ -147,6 +147,7 @@ PIPELINE_JS = dict({
             'rb/js/ui/views/dialogView.js',
             'rb/js/ui/views/textEditorView.js',
             'rb/js/models/userSessionModel.js',
+            'rb/js/views/headerView.js'
         ),
         'output_filename': 'rb/js/base.min.js',
     },

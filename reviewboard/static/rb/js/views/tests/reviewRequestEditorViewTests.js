@@ -39,9 +39,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
             '         class="field field-text-area editable"></pre>',
             '   </div>',
             '   <div class="content">',
-            '    <pre id="field_my_custom"',
-            '         data-field-id="my_custom"',
-            '         class="field editable"></pre>',
+            '    <div class="field-container">',
+            '     <pre id="field_my_custom"',
+            '          data-field-id="my_custom"',
+            '          class="field editable"></pre>',
+            '    </div>',
             '   </div>',
             '  </div>',
             ' </div>',
@@ -806,75 +808,6 @@ suite('rb/views/ReviewRequestEditorView', function() {
             expect($filesContainer.find('.file-container').length).toBe(1);
         });
 
-        describe('Importing on render', function() {
-            it('No file attachments', function() {
-                view.render();
-
-                expect(editor.fileAttachments.length).toBe(0);
-            });
-
-            describe('With file attachments', function() {
-                var $thumbnail,
-                    fileAttachment;
-
-                beforeEach(function() {
-                    $thumbnail = $('<div/>')
-                        .addClass(
-                            RB.FileAttachmentThumbnail.prototype.className)
-                        .data('file-id', 42)
-                        .html(RB.FileAttachmentThumbnail.prototype.template(
-                            {
-                                downloadURL: '',
-                                iconURL: '',
-                                deleteImageURL: '',
-                                filename: '',
-                                caption: '',
-                                deleteFileText: 'Delete File',
-                                noCaptionText: 'No caption'
-                            }))
-                        .appendTo($filesContainer);
-
-                    spyOn(RB.FileAttachmentThumbnail.prototype, 'render')
-                        .andCallThrough();
-
-                    expect($filesContainer.find('.file-container').length)
-                        .toBe(1);
-                });
-
-                it('Without caption', function() {
-                    view.render();
-
-                    expect(RB.FileAttachmentThumbnail.prototype.render)
-                        .toHaveBeenCalled();
-                    expect(editor.fileAttachments.length).toBe(1);
-
-                    fileAttachment = editor.fileAttachments.at(0);
-                    expect(fileAttachment.id).toBe(42);
-                    expect(fileAttachment.get('caption')).toBe(null);
-                    expect($filesContainer.find('.file-container').length)
-                        .toBe(1);
-                });
-
-                it('With caption', function() {
-                    $thumbnail.find('.file-caption .edit')
-                        .removeClass('empty-caption')
-                        .text('my caption');
-
-                    view.render();
-
-                    expect(RB.FileAttachmentThumbnail.prototype.render)
-                        .toHaveBeenCalled();
-                    expect(editor.fileAttachments.length).toBe(1);
-
-                    fileAttachment = editor.fileAttachments.at(0);
-                    expect(fileAttachment.id).toBe(42);
-                    expect(fileAttachment.get('caption')).toBe('my caption');
-                    expect($filesContainer.find('.file-container').length)
-                        .toBe(1);
-                });
-            });
-        });
-
         describe('Events', function() {
             var $thumbnail,
                 fileAttachment;
@@ -939,10 +872,12 @@ suite('rb/views/ReviewRequestEditorView', function() {
             it('No screenshots', function() {
                 view.render();
 
-                expect(editor.screenshots.length).toBe(0);
+                expect(editor.get('screenshots').length).toBe(0);
             });
 
             it('With screenshots', function() {
+                var screenshots = editor.get('screenshots');
+
                 $screenshotsContainer.append(
                     screenshotThumbnailTemplate({
                         id: 42
@@ -955,8 +890,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 expect(RB.ScreenshotThumbnail.prototype.render)
                     .toHaveBeenCalled();
-                expect(editor.screenshots.length).toBe(1);
-                expect(editor.screenshots.at(0).id).toBe(42);
+                expect(screenshots.length).toBe(1);
+                expect(screenshots.at(0).id).toBe(42);
             });
         });
 
@@ -972,7 +907,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 view.render();
 
-                screenshot = editor.screenshots.at(0);
+                screenshot = editor.get('screenshots').at(0);
             });
 
             describe('beginEdit', function() {

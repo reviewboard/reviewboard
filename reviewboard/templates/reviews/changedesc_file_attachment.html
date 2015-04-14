@@ -1,0 +1,33 @@
+{% load djblets_utils i18n reviewtags %}
+
+{% has_usable_review_ui request.user review_request file as use_review_ui %}
+{% definevar "file_attachment_url" %}{% if use_review_ui %}{% url "file-attachment" review_request.display_id file.pk %}{% endif %}{% enddefinevar %}
+
+<div id="change-entry-file-attachment-{{uuid}}"></div>
+
+<script type="text/javascript" charset="utf-8">
+$(document).ready(function() {
+    RB.PageManager.ready(function(page) {
+        var thumbnail = new RB.FileAttachmentThumbnail({
+            model: new RB.FileAttachment({
+                id: {{file.pk}},
+                loaded: true,
+                attachmentHistoryID: {{file.attachment_history_id}},
+                caption: '{{file.caption|escapejs}}',
+                downloadURL: '{{file.get_absolute_url|escapejs}}',
+                filename: '{{file.filename}}|escapejs}}',
+                reviewURL: '{{file_attachment_url|escapejs}}',
+                revision: {{file.attachment_revision}},
+                thumbnailHTML: '{{file.thumbnail|escapejs}}'
+            }),
+            comments: [],
+            renderThumbnail: true,
+            reviewRequest: page.reviewRequest,
+            canEdit: false
+        });
+
+        thumbnail.render().$el
+            .appendTo($('#change-entry-file-attachment-{{uuid}}'));
+    });
+});
+</script>

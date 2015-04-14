@@ -15,13 +15,14 @@ suite('rb/models/ReviewRequestEditor', function() {
     describe('Methods', function() {
         describe('createFileAttachment', function() {
             it('With new FileAttachment', function() {
-                var fileAttachment;
+                var fileAttachments = editor.get('fileAttachments'),
+                    fileAttachment;
 
-                expect(editor.fileAttachments.length).toBe(0);
+                expect(fileAttachments.length).toBe(0);
                 fileAttachment = editor.createFileAttachment();
-                expect(editor.fileAttachments.length).toBe(1);
+                expect(fileAttachments.length).toBe(1);
 
-                expect(editor.fileAttachments.at(0)).toBe(fileAttachment);
+                expect(fileAttachments.at(0)).toBe(fileAttachment);
             });
         });
 
@@ -422,7 +423,8 @@ suite('rb/models/ReviewRequestEditor', function() {
     describe('Reviewed objects', function() {
         describe('File attachments', function() {
             it('Removed when destroyed', function() {
-                var fileAttachment = editor.createFileAttachment(),
+                var fileAttachments = editor.get('fileAttachments'),
+                    fileAttachment = editor.createFileAttachment(),
                     draft = editor.get('reviewRequest').draft;
 
                 spyOn(draft, 'ensureCreated')
@@ -430,24 +432,25 @@ suite('rb/models/ReviewRequestEditor', function() {
                         options.success.call(context);
                     });
 
-                expect(editor.fileAttachments.at(0)).toBe(fileAttachment);
+                expect(fileAttachments.at(0)).toBe(fileAttachment);
 
                 fileAttachment.destroy();
 
-                expect(editor.fileAttachments.length).toBe(0);
+                expect(fileAttachments.length).toBe(0);
             });
         });
 
         describe('Screenshots', function() {
             it('Removed when destroyed', function() {
-                var screenshot = reviewRequest.createScreenshot();
+                var screenshots = editor.get('screenshots'),
+                    screenshot = reviewRequest.createScreenshot();
 
-                editor.screenshots.add(screenshot);
-                expect(editor.screenshots.at(0)).toBe(screenshot);
+                screenshots.add(screenshot);
+                expect(screenshots.at(0)).toBe(screenshot);
 
                 screenshot.destroy();
 
-                expect(editor.screenshots.length).toBe(0);
+                expect(screenshots.length).toBe(0);
             });
         });
     });

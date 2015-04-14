@@ -30,28 +30,23 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
     className: 'file-container',
 
     events: {
-        'click .delete': '_onDeleteClicked',
+        'click .file-delete': '_onDeleteClicked',
         'click .file-add-comment a': '_onAddCommentClicked',
-        'click .update a': '_onUpdateClicked'
+        'click .file-update a': '_onUpdateClicked'
     },
 
     template: _.template([
         '<div class="file">',
-        ' <ul class="actions" />',
-        ' <div class="file-header">',
-        '  <a class="download">',
-        '   <img class="icon" />',
-        '   <span class="filename"><%- filename %></span>',
-        '  </a>',
-        ' </div>',
-        ' <div class="file-thumbnail-container" />',
+        ' <ul class="file-actions"></ul>',
+        ' <div class="file-thumbnail-container"></div>',
         ' <div class="file-caption-container">',
-        '  <div class="file-caption can-edit">', /* spaceless */
-        '<a href="<%- downloadURL %>"',
-        '   class="edit <% if (!caption) { %>empty-caption<% } %>">',
-        '<% if (caption) { %><%- caption %><% } else { %><%- noCaptionText %><% } %>',
+        // spaceless
+        '<div class="file-caption can-edit">',
+        '<a href="<%- downloadURL %>" class="<%- captionClass %>">',
+        '<%- caption %>',
         '</a>',
-        '</div>', /* endspaceless */
+        '</div>',
+        // end spaceless
         ' </div>',
         '</div>'
     ].join('')),
@@ -59,36 +54,38 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
     actionsTemplate: _.template([
         '<% if (loaded) { %>',
         '<%  if (reviewURL) { %>',
-        '   <li class="file-review"><a href="<%- reviewURL %>"><%- reviewText %></a></li>',
+        '<li><a class="file-review" href="<%- reviewURL %>">',
+        '<span class="fa fa-comment-o"></span> <%- reviewText %></a>',
+        '</li>',
         '<%  } else { %>',
-        '   <li class="file-add-comment"><a href="#"><%- commentText %></a></li>',
+        '<li class="file-add-comment">',
+        '<a href="#"><span class="fa fa-comment-o"></span> <%- commentText %></a>',
+        '</li>',
         '<%  } %>',
-        ' <li>',
-        '  <a class="thumbnail-actions" href="#">&#9662;</a>',
-        '  <ul class="file-attachment-menu" style="display: none;">',
+        '<li><a class="file-download" href="<%- downloadURL %>">',
+        '<span class="fa fa-download"></span> <%- downloadText %>',
+        '</a></li>',
+        '<%  if (canEdit) { %>',
         '<%   if (attachmentHistoryID) { %>',
-        '   <li class="update">',
-        '    <a href="#" data-attachment-history-id="<%- attachmentHistoryID %>"',
-        '       ><%- updateText %></a>',
-        '   </li>',
+        '<li class="file-update">',
+        '<a href="#" data-attachment-history-id="<%- attachmentHistoryID %>">',
+        '<span class="fa fa-upload"></span> <%- updateText %>',
+        '</a></li>',
         '<%   } %>',
-        '   <li class="delete">',
-        '    <a href="#"><%- deleteText %></a>',
-        '   </li>',
-        '  </ul>',
-        ' </li>',
+        '<li class="file-delete"><a href="#">',
+        '<span class="fa fa-trash-o"></span> <%- deleteText %>',
+        '</a></li>',
+        '<%  } %>',
         '<% } %>'
     ].join('')),
 
     thumbnailContainerTemplate: _.template([
         '<% if (!loaded) { %>',
-        ' <img class="file-thumbnail spinner" width="16" height="16" ',
-              'src="<%- spinnerURL %>" />',
+        '<span class="fa fa-spinner fa-pulse"></span>',
         '<% } else { %>',
-        '<%   if (reviewURL) { %>',
-        ' <a href="<%- reviewURL %>" class="file-thumbnail-overlay"',
-        '    alt="<%- reviewAltText %>" title="<%- reviewAltText %>"> </a>',
-        '<%   } %>',
+        '<%     if (reviewURL) { %>',
+        '<a href="<%- reviewURL %>" class="file-thumbnail-overlay"></a>',
+        '<%     } %>',
         '<%=  thumbnailHTML %>',
         '<% } %>'
     ].join('')),
@@ -99,6 +96,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         this._draftComment = null;
         this._comments = [];
         this._commentsProcessed = false;
+        this._scrollingThumbnail = false;
     },
 
     /*
@@ -128,7 +126,6 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
 
         this._$captionContainer = this.$('.file-caption');
         this._$caption = this._$captionContainer.find('a.edit');
-        this._$addCommentButton = this.$('.file-add-comment a');
 
         this.listenTo(this.model, 'destroy', function() {
             this.$el.fadeOut(function() {
@@ -139,24 +136,16 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         this.listenTo(this.model, 'change:caption', this._onCaptionChanged);
         this._onCaptionChanged();
 
+        this.$el.hover(_.bind(this._onHoverIn, this),
+                       _.bind(this._stopAnimating, this));
+
         if (this.options.renderThumbnail) {
-            this._$actions = this.$('.actions');
-            this._$fileHeader = this.$('.file-header');
+            this._$actions = this.$('.file-actions');
             this._$captionContainer = this.$('.file-caption-container');
             this._$thumbnailContainer = this.$('.file-thumbnail-container');
 
-            this._$fileHeader.find('.download')
+            this._$actions.find('.file-download')
                 .bindProperty('href', this.model, 'downloadURL', {
-                    elementToModel: false
-                });
-
-            this._$fileHeader.find('.icon')
-                .bindProperty('src', this.model, 'iconURL', {
-                    elementToModel: false
-                });
-
-            this._$fileHeader.find('.filename')
-                .bindProperty('text', this.model, 'filename', {
                     elementToModel: false
                 });
 
@@ -181,6 +170,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
                 .on({
                     beginEditPreShow: function() {
                         self.$el.addClass('editing');
+                        self._stopAnimating();
                     },
                     beginEdit: function() {
                         var $this = $(this);
@@ -244,8 +234,8 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
             publishedCommentsType: 'file_attachment_comments',
             position: {
                 beside: {
-                    el: this._$addCommentButton,
-                    side: 'b',
+                    el: this.$el,
+                    side: 'br',
                     fitOnScreen: true
                 }
             }
@@ -315,9 +305,14 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
      * This is only done when requested by the caller.
      */
     _renderContents: function() {
+        var caption = this.model.get('caption'),
+            captionText = caption ? caption : gettext('No caption'),
+            captionClass = caption ? 'edit' : 'edit empty-caption';
+
         this.$el
             .html(this.template(_.defaults({
-                noCaptionText: gettext('No caption')
+                caption: captionText,
+                captionClass: captionClass
             }, this.model.attributes)))
             .addClass(this.className);
     },
@@ -327,10 +322,12 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
      */
     _renderThumbnail: function() {
         this._$thumbnailContainer.html(
-            this.thumbnailContainerTemplate(_.extend({
-                reviewAltText: gettext('Click to review'),
-                spinnerURL: STATIC_URLS['rb/images/spinner.gif']
-            }, this.model.attributes)));
+            this.thumbnailContainerTemplate(this.model.attributes));
+
+        // Disable tabbing to any <a> elements inside the thumbnail.
+        this._$thumbnailContainer.find('a').each(function() {
+            this.tabIndex = -1;
+        });
     },
 
     /*
@@ -340,20 +337,10 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
      * blank spinner thumbnail will be shown, or a full thumbnail.
      */
     _onLoadedChanged: function() {
-        var $fileHeaderChildren = this._$fileHeader.children();
-
-        if (this.model.get('loaded')) {
-            $fileHeaderChildren.show();
-            this._$actions.show();
-            this._$captionContainer.css('visibility', 'visible');
-        } else {
-            $fileHeaderChildren.hide();
-            this._$actions.hide();
-            this._$captionContainer.css('visibility', 'hidden');
-        }
-
         this._$actions.html(this.actionsTemplate(_.defaults({
+            canEdit: this.options.canEdit,
             deleteText: gettext('Delete'),
+            downloadText: gettext('Download'),
             reviewText: gettext('Review'),
             commentText: gettext('Comment'),
             updateText: gettext('Update')
@@ -421,5 +408,66 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         e.stopPropagation();
 
         this.model.destroy();
+    },
+
+    /*
+     * Handler for when the mouse hovers over the thumbnail.
+     *
+     * Determines if we should scroll the thumbnail or not.
+     */
+    _onHoverIn: function() {
+        var self = this,
+            $thumbnail = this.$('.file-thumbnail').children(),
+            elHeight,
+            thumbnailHeight,
+            distance,
+            duration;
+
+        if (!this.$el.hasClass('editing') && $thumbnail.length === 1) {
+            elHeight = this.$el.height();
+            thumbnailHeight = $thumbnail.height() || 0;
+
+            if (thumbnailHeight > elHeight) {
+                distance = elHeight - thumbnailHeight;
+                duration = (Math.abs(distance) / 200) * 1000; // 200 pixels/s
+
+                this._scrollingThumbnail = true;
+                $thumbnail
+                    .delay(1000)
+                    .animate(
+                        { 'margin-top': distance + 'px' },
+                        {
+                            duration: duration,
+                            easing: 'linear'
+                        })
+                    .delay(500)
+                    .animate(
+                        { 'margin-top': 0 },
+                        {
+                            duration: duration,
+                            easing: 'linear',
+                            complete: function() {
+                                self._scrollingThumbnail = false;
+                            }
+                        });
+            }
+        }
+    },
+
+    /*
+     * Stop animating this thumbnail.
+     *
+     * This is when moving the mouse outside of the thumbnail, or when the
+     * caption editor is opened.
+     */
+    _stopAnimating: function() {
+        if (this._scrollingThumbnail) {
+            this._scrollingThumbnail = false;
+            this.$('.file-thumbnail').children()
+                .stop(true)
+                .animate(
+                    { 'margin-top': 0 },
+                    { duration: 100 });
+        }
     }
 });

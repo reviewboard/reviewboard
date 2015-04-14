@@ -1,6 +1,6 @@
 {% load staticfiles %}
 <div id="rbinfo">
- <a href="{% url 'root' %}"><img id="logo" src="{% static "rb/images/logo.png" %}" data-at2x="{% static "rb/images/logo@2x.png" %}" alt="" border="0" /></a>
+ <img id="logo" src="{% static "rb/images/logo.png" %}" data-at2x="{% static "rb/images/logo@2x.png" %}" alt="" border="0" />
  <h1 id="title">
   <a href="{% url 'root' %}">Review Board</a>
   <span class="version">{{version}}{% if section_title %} - <strong>{{section_title}}</strong>{% endif %}</span>

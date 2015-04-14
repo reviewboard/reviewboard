@@ -302,7 +302,7 @@ class DiffFragmentView(View):
         return encode_etag(etag)
 
     def process_diffset_info(self, diffset_or_id, filediff_id,
-                             interdiffset_or_id=None):
+                             interdiffset_or_id=None, **kwargs):
         """Process and return information on the desired diff.
 
         The diff IDs and other data passed to the view can be processed and
