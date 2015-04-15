@@ -34,6 +34,11 @@ def dashboard(request, template_name="admin/dashboard.html"):
     useful administration tasks.
     """
     profile = Profile.objects.get_or_create(user=request.user)[0]
+
+    if profile.extra_data is None:
+        profile.extra_data = {}
+        profile.save(update_fields=('extra_data',))
+
     profile_data = profile.extra_data
 
     primary_widget_positions = profile_data.get('primary_widget_positions')
