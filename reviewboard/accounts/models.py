@@ -135,7 +135,7 @@ class Profile(models.Model):
     timezone = models.CharField(choices=TIMEZONE_CHOICES, default='UTC',
                                 max_length=30)
 
-    extra_data = JSONField(null=True)
+    extra_data = JSONField(null=True, default=dict)
 
     objects = ProfileManager()
 
