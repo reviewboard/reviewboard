@@ -22,7 +22,7 @@ _registered_mimetype_handlers = []
 
 
 def register_mimetype_handler(handler):
-    """Registers a MimetypeHandler class.
+    """Register a MimetypeHandler class.
 
     This will register a Mimetype Handler used by Review Board to render
     thumbnails for the file attachements across different mimetypes.
@@ -36,7 +36,7 @@ def register_mimetype_handler(handler):
 
 
 def unregister_mimetype_handler(handler):
-    """Unregisters a MimetypeHandler class.
+    """Unregister a MimetypeHandler class.
 
     This will unregister a previously registered mimetype handler.
 
@@ -55,7 +55,7 @@ def unregister_mimetype_handler(handler):
 
 
 def score_match(pattern, mimetype):
-    """Returns a score for how well the pattern matches the mimetype.
+    """Return a score for how well the pattern matches the mimetype.
 
     This is an ordered list of precedence (_ indicates non-match):
        Type/Vendor+Subtype   2
@@ -118,13 +118,14 @@ class MimetypeHandler(object):
     use_hd_thumbnails = True
 
     def __init__(self, attachment, mimetype):
+        """Initialize the handler."""
         self.attachment = attachment
         self.mimetype = mimetype
         self.storage = default_storage
 
     @classmethod
     def get_best_handler(cls, mimetype):
-        """Returns the handler and score that that best fit the mimetype."""
+        """Return the handler and score that that best fit the mimetype."""
         best_score, best_fit = (0, None)
 
         for mimetype_handler in _registered_mimetype_handlers:
@@ -142,7 +143,7 @@ class MimetypeHandler(object):
 
     @classmethod
     def for_type(cls, attachment):
-        """Returns the handler that is the best fit for provided mimetype."""
+        """Return the handler that is the best fit for provided mimetype."""
         if not attachment.mimetype:
             return None
 
@@ -172,6 +173,7 @@ class MimetypeHandler(object):
         return MimetypeHandler(attachment, mimetype)
 
     def get_icon_url(self):
+        """Return the appropriate icon URL for this mimetype."""
         mimetype_string = self.mimetype[0] + '/' + self.mimetype[1]
 
         if mimetype_string in MIMETYPE_ICON_ALIASES:
@@ -190,7 +192,7 @@ class MimetypeHandler(object):
         return static(path)
 
     def get_thumbnail(self):
-        """Returns HTML that represents a preview of the attachment.
+        """Return HTML that represents a preview of the attachment.
 
         The outer-most object should have the class 'file-thubmnail'.
         """
@@ -200,7 +202,8 @@ class MimetypeHandler(object):
         """Set the thumbnail data.
 
         This should be implemented by subclasses if they need the thumbnail to
-        be generated client-side."""
+        be generated client-side.
+        """
         raise NotImplementedError
 
     def _get_mimetype_file(self, name):
@@ -235,7 +238,7 @@ class TextMimetype(MimetypeHandler):
     TEXT_CROP_NUM_HEIGHT = 50
 
     def _generate_preview_html(self, data):
-        """Returns the first few truncated lines of the text file."""
+        """Return the first few truncated lines of the text file."""
         from reviewboard.diffviewer.chunk_generator import \
             NoWrapperHtmlFormatter
 
@@ -261,7 +264,7 @@ class TextMimetype(MimetypeHandler):
         ])
 
     def _generate_thumbnail(self):
-        """Returns the HTML for a thumbnail preview for a text file."""
+        """Return the HTML for a thumbnail preview for a text file."""
         try:
             f = self.attachment.file.file
         except IOError as e:
@@ -286,7 +289,7 @@ class TextMimetype(MimetypeHandler):
             % self._generate_preview_html(data))
 
     def get_thumbnail(self):
-        """Returns the thumbnail of the text file as rendered as html"""
+        """Return the thumbnail of the text file as rendered as html."""
         # Caches the generated thumbnail to eliminate the need on each page
         # reload to:
         # 1) re-read the file attachment
@@ -298,10 +301,11 @@ class TextMimetype(MimetypeHandler):
 
 class ReStructuredTextMimetype(TextMimetype):
     """Handles ReStructuredText (.rst) mimetypes."""
+
     supported_mimetypes = ['text/x-rst', 'text/rst']
 
     def _generate_preview_html(self, data_string):
-        """Returns html of the ReST file as produced by docutils."""
+        """Return html of the ReST file as produced by docutils."""
         # Use safe filtering against injection attacks
         docutils_settings = {
             'file_insertion_enabled': False,
@@ -318,11 +322,12 @@ class ReStructuredTextMimetype(TextMimetype):
 
 
 class MarkDownMimetype(TextMimetype):
-    """Handles MarkDown (.md) mimetypes."""
+    """Handle MarkDown (.md) mimetypes."""
+
     supported_mimetypes = ['text/x-markdown', 'text/markdown']
 
     def _generate_preview_html(self, data_string):
-        """Returns html of the MarkDown file as produced by markdown."""
+        """Return html of the MarkDown file as produced by markdown."""
         # Use safe filtering against injection attacks
         return markdown.markdown(
             force_unicode(data_string), safe_mode='escape',

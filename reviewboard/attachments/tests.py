@@ -24,10 +24,14 @@ from reviewboard.testing import TestCase
 
 
 class BaseFileAttachmentTestCase(TestCase):
+    """Base functionality for FileAttachment test cases."""
+
     def setUp(self):
+        """Set up this test case."""
         initialize()
 
     def make_uploaded_file(self):
+        """Create a return a file to use for mocking in forms."""
         filename = os.path.join(settings.STATIC_ROOT,
                                 'rb', 'images', 'trophy.png')
         f = open(filename, 'r')
@@ -40,6 +44,7 @@ class BaseFileAttachmentTestCase(TestCase):
     def make_filediff(self, is_new=False, diffset_history=None,
                       diffset_revision=1, source_filename='file1',
                       dest_filename='file2'):
+        """Create and return a FileDiff with the given data."""
         if is_new:
             source_revision = PRE_CREATION
             dest_revision = ''
@@ -68,6 +73,8 @@ class BaseFileAttachmentTestCase(TestCase):
 
 
 class FileAttachmentTests(BaseFileAttachmentTestCase):
+    """Tests for the FileAttachment model."""
+
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_upload_file(self):
         """Testing uploading a file attachment"""
@@ -244,43 +251,64 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
 
 
 class MimetypeTest(MimetypeHandler):
+    """Handler for all test mimetypes."""
+
     supported_mimetypes = ['test/*']
 
 
 class TestAbcMimetype(MimetypeHandler):
+    """Handler for the test/abc mimetype."""
+
     supported_mimetypes = ['test/abc']
 
 
 class TestXmlMimetype(MimetypeHandler):
+    """Handler for the test/xml mimetype."""
+
     supported_mimetypes = ['test/xml']
 
 
 class Test2AbcXmlMimetype(MimetypeHandler):
+    """Handler for the test/abc+xml mimetype."""
+
     supported_mimetypes = ['test2/abc+xml']
 
 
 class StarDefMimetype(MimetypeHandler):
+    """Handler for all /def mimetypes."""
+
     supported_mimetypes = ['*/def']
 
 
 class StarAbcDefMimetype(MimetypeHandler):
+    """Handler for all /abc+def mimetypes."""
+
     supported_mimetypes = ['*/abc+def']
 
 
 class Test3XmlMimetype(MimetypeHandler):
+    """Handler for the test3/xml mimetype."""
+
     supported_mimetypes = ['test3/xml']
 
 
 class Test3AbcXmlMimetype(MimetypeHandler):
+    """Handler for the test3/abc+xml mimetype."""
+
     supported_mimetypes = ['test3/abc+xml']
 
 
 class Test3StarMimetype(MimetypeHandler):
+    """Handler for all test3 mimetypes."""
+
     supported_mimetypes = ['test3/*']
 
 
 class MimetypeHandlerTests(TestCase):
+    """Tests for mimetype handlers."""
+
     def setUp(self):
+        """Set up this test case."""
         super(MimetypeHandlerTests, self).setUp()
 
         # Register test cases in same order as they are defined
@@ -296,6 +324,7 @@ class MimetypeHandlerTests(TestCase):
         register_mimetype_handler(Test3StarMimetype)
 
     def tearDown(self):
+        """Tear down this test case."""
         super(MimetypeHandlerTests, self).tearDown()
 
         # Unregister test cases in same order as they are defined
@@ -341,7 +370,8 @@ class MimetypeHandlerTests(TestCase):
 
 
 class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
-    """Tests for FileAttachmentManager"""
+    """Tests for FileAttachmentManager."""
+
     fixtures = ['test_scmtools']
 
     def test_create_from_filediff_with_new_and_modified_true(self):
@@ -479,9 +509,11 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
 
 class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
     """Tests for inline diff file attachments in the diff viewer."""
+
     fixtures = ['test_users', 'test_scmtools', 'test_site']
 
     def setUp(self):
+        """Set up this test case."""
         super(DiffViewerFileAttachmentTests, self).setUp()
 
         # The diff viewer's caching breaks the result of these tests,
@@ -561,21 +593,28 @@ class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
 
 
 class SandboxMimetypeHandler(MimetypeHandler):
+    """Handler for image/png mimetypes, used for testing sandboxing."""
+
     supported_mimetypes = ['image/png']
 
     def get_icon_url(self):
+        """Raise an exception to test sandboxing."""
         raise Exception
 
     def get_thumbnail(self):
+        """Raise an exception to test sandboxing."""
         raise Exception
 
     def set_thumbnail(self, data):
+        """Raise an exception to test sandboxing."""
         raise Exception
 
 
 class SandboxTests(SpyAgency, BaseFileAttachmentTestCase):
     """Testing MimetypeHandler sandboxing."""
+
     def setUp(self):
+        """Set up this test case."""
         super(SandboxTests, self).setUp()
 
         register_mimetype_handler(SandboxMimetypeHandler)
@@ -588,6 +627,7 @@ class SandboxTests(SpyAgency, BaseFileAttachmentTestCase):
             review_request=review_request)
 
     def tearDown(self):
+        """Tear down this test case."""
         super(SandboxTests, self).tearDown()
 
         unregister_mimetype_handler(SandboxMimetypeHandler)
