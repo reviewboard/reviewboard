@@ -102,16 +102,33 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']), 6)
 
-        self._login_user(admin=True)
-        rsp = self.api_get(
-            url,
-            {
-                'status': 'all',
-                'show-all-unpublished': True,
-            },
-            expected_mimetype=review_request_list_mimetype)
+    @add_fixtures(['test_site'])
+    def test_get_unpublished(self):
+        """Testing the GET review-requests/?show-all-unpublished API"""
+        self.create_review_request(publish=True, status='P')
+        self.create_review_request(public=False, status='P')
+
+        url = get_review_request_list_url()
+        unpublished_params = {'status': 'all', 'show-all-unpublished': True}
+
+        rsp = self.api_get(url, unpublished_params,
+                           expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']), 7)
+        self.assertEqual(len(rsp['review_requests']), 1)
+
+        self.user.user_permissions.add(
+            Permission.objects.get(codename='can_submit_as_another_user'))
+
+        rsp = self.api_get(url, unpublished_params,
+                           expected_mimetype=review_request_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']), 2)
+
+        self._login_user(admin=True)
+        rsp = self.api_get(url, unpublished_params,
+                           expected_mimetype=review_request_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']), 2)
 
     def test_get_with_counts_only(self):
         """Testing the GET review-requests/?counts-only=1 API"""
