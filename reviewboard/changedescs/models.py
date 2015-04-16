@@ -9,9 +9,7 @@ from djblets.db.fields import JSONField
 
 @python_2_unicode_compatible
 class ChangeDescription(models.Model):
-    """
-    The recorded set of changes, containing optional description text
-    and fields that have changed.
+    """The recorded set of changes, with a description and the changed fields.
 
     This is a general model that can be used in applications for recording
     changes how they see fit. A helper function, 'record_field_changed',
@@ -34,6 +32,7 @@ class ChangeDescription(models.Model):
        * 'removed': The fields that were removed, if any.
        * 'added': The fields that were added, if any.
     """
+
     timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
     public = models.BooleanField(_("public"), default=False)
     text = models.TextField(_("change text"), blank=True)
@@ -42,8 +41,7 @@ class ChangeDescription(models.Model):
 
     def record_field_change(self, field, old_value, new_value,
                             name_field=None):
-        """
-        Records a field change.
+        """Record a field change.
 
         This will encode field changes following the rules in the overlying
         'ChangeDescription' documentation.
@@ -94,10 +92,11 @@ class ChangeDescription(models.Model):
             }
 
     def __str__(self):
+        """Return a string representation of the object."""
         return self.text
 
     def has_modified_fields(self):
-        """Determines if the 'fields_changed' variable is non-empty
+        """Determine if the 'fields_changed' variable is non-empty.
 
         Uses the 'fields_changed' variable to determine if there are any
         current modifications being tracked to this ChangedDescription object.
