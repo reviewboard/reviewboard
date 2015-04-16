@@ -9,9 +9,10 @@ class FileAttachmentManager(Manager):
     Adds utility functions for looking up FileAttachments based on other
     objects.
     """
+
     def create_from_filediff(self, filediff, from_modified=True, save=True,
                              **kwargs):
-        """Creates a new FileAttachment for a FileDiff.
+        """Create a new FileAttachment for a FileDiff.
 
         FileAttachments created from a FileDiff are used to represent changes
         to binary files which would otherwise not be displayed with the diff.
@@ -44,13 +45,13 @@ class FileAttachmentManager(Manager):
         return attachment
 
     def filter_for_repository(self, repository):
-        """Filters results for those on a given repository."""
+        """Filter results for those on a given repository."""
         return self.filter(
             Q(repository=repository) |
             Q(added_in_filediff__diffset__repository=repository))
 
     def get_for_filediff(self, filediff, modified=True):
-        """Returns the FileAttachment matching a DiffSet.
+        """Return the FileAttachment matching a DiffSet.
 
         The FileAttachment associated with the path, revision and repository
         matching the DiffSet will be returned, if it exists.

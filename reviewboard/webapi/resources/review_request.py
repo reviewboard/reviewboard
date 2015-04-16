@@ -405,15 +405,25 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
 
             status = string_to_status(request.GET.get('status', 'pending'))
 
+            can_submit_as = request.user.has_perm(
+                'reviews.can_submit_as_another_user', local_site)
+
+            request_unpublished = request.GET.get('show-all-unpublished', '0')
+            if request_unpublished in ('0', 'false', 'False'):
+                request_unpublished = False
+            else:
+                request_unpublished = True
+
+            show_all_unpublished = (request_unpublished and
+                                    (can_submit_as or
+                                     request.user.is_superuser))
+
             queryset = self.model.objects.public(
                 user=request.user,
                 status=status,
                 local_site=local_site,
                 extra_query=q,
-                show_all_unpublished=(
-                    'show-all-unpublished' in request.GET and
-                    request.user.is_superuser
-                ))
+                show_all_unpublished=show_all_unpublished)
         else:
             queryset = self.model.objects.filter(local_site=local_site)
 
@@ -957,10 +967,11 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             },
             'show-all-unpublished': {
                 'type': bool,
-                'description': 'If set, and if the user is an admin, '
-                               'unpublished review requests will also '
-                               'be returned.',
-                'aded_in': '2.0.8',
+                'description': 'If set, and if the user is an admin or has '
+                               'the "reviews.can_submit_as_another_user" '
+                               'permission, unpublished review requests '
+                               'will also be returned.',
+                'added_in': '2.0.8',
             },
             'issue-dropped-count': {
                 'type': bool,
