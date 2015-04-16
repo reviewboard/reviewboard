@@ -19,6 +19,7 @@ class UploadFileForm(forms.Form):
 
     A file takes a path argument and optionally a caption.
     """
+
     DEFAULT_MIMETYPE = 'application/octet-stream'
     READ_BUF_SIZE = 1024
 
@@ -29,11 +30,13 @@ class UploadFileForm(forms.Form):
         required=False)
 
     def __init__(self, review_request, *args, **kwargs):
+        """Initialize the form."""
         super(UploadFileForm, self).__init__(*args, **kwargs)
 
         self.review_request = review_request
 
     def clean_attachment_history(self):
+        """Validate that the specified file attachment history exists."""
         history = self.cleaned_data['attachment_history']
 
         if (history is not None and
@@ -46,6 +49,7 @@ class UploadFileForm(forms.Form):
         return history
 
     def create(self, filediff=None):
+        """Create a FileAttachment based on this form."""
         file = self.files['path']
         caption = self.cleaned_data['caption'] or file.name
 
@@ -166,12 +170,14 @@ class UploadFileForm(forms.Form):
 
 class CommentFileForm(forms.Form):
     """A form that handles commenting on a file."""
+
     review = forms.CharField(widget=forms.Textarea(attrs={
         'rows': '8',
         'cols': '70'
     }))
 
     def create(self, file_attachment, review_request):
+        """Create a FileAttachmentComment based on this form."""
         comment = FileAttachmentComment(text=self.cleaned_data['review'],
                                         file_attachment=file_attachment)
 

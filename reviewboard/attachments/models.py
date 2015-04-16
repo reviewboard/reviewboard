@@ -23,11 +23,12 @@ class FileAttachmentHistory(models.Model):
     This tracks multiple revisions of the same file attachment (for instance,
     when someone replaces a screenshot with an updated version).
     """
+
     display_position = models.IntegerField()
     latest_revision = RelationCounterField('file_attachments')
 
     def get_revision_to_id_map(self):
-        """Returns a map from revision number to FileAttachment ID."""
+        """Return a map from revision number to FileAttachment ID."""
         results = {}
 
         for attachment in self.file_attachments.all():
@@ -57,6 +58,7 @@ class FileAttachment(models.Model):
     Like diffs, a file can have comments associated with it.
     These comments are of type :model:`reviews.FileComment`.
     """
+
     caption = models.CharField(_("caption"), max_length=256, blank=True)
     draft_caption = models.CharField(_("draft caption"),
                                      max_length=256, blank=True)
@@ -101,6 +103,7 @@ class FileAttachment(models.Model):
 
     @property
     def mimetype_handler(self):
+        """Return the mimetype handler for this file."""
         if not hasattr(self, '_thumbnail'):
             self._thumbnail = MimetypeHandler.for_type(self)
 
@@ -108,6 +111,7 @@ class FileAttachment(models.Model):
 
     @property
     def review_ui(self):
+        """Return the review UI for this file."""
         if not hasattr(self, '_review_ui'):
             from reviewboard.reviews.ui.base import FileAttachmentReviewUI
             self._review_ui = FileAttachmentReviewUI.for_type(self)
@@ -115,7 +119,7 @@ class FileAttachment(models.Model):
         return self._review_ui
 
     def _get_thumbnail(self):
-        """Returns the thumbnail for display."""
+        """Return the thumbnail for display."""
         try:
             return self.mimetype_handler.get_thumbnail()
         except Exception as e:
@@ -138,7 +142,7 @@ class FileAttachment(models.Model):
 
     @property
     def filename(self):
-        """Returns the filename for display purposes."""
+        """Return the filename for display purposes."""
         # Older versions of Review Board didn't store the original filename,
         # instead just using the FileField's name. Newer versions have
         # a dedicated filename field.
@@ -146,7 +150,7 @@ class FileAttachment(models.Model):
 
     @property
     def display_name(self):
-        """Returns a display name for the file."""
+        """Return a display name for the file."""
         if self.caption:
             return self.caption
         else:
@@ -154,7 +158,7 @@ class FileAttachment(models.Model):
 
     @property
     def icon_url(self):
-        """Returns the icon URL for this file."""
+        """Return the icon URL for this file."""
         try:
             return self.mimetype_handler.get_icon_url()
         except Exception as e:
@@ -165,20 +169,22 @@ class FileAttachment(models.Model):
 
     @property
     def is_from_diff(self):
-        """Returns if this file attachment is associated with a diff."""
+        """Return if this file attachment is associated with a diff."""
         return (self.repository_id is not None or
                 self.added_in_filediff_id is not None)
 
     @property
     def num_revisions(self):
-        """Returns the number of revisions of this attachment."""
+        """Return the number of revisions of this attachment."""
         return FileAttachment.objects.filter(
             attachment_history=self.attachment_history_id).count() - 1
 
     def __str__(self):
+        """Return a string representation of this file for the admin list."""
         return self.caption
 
     def get_review_request(self):
+        """Return the ReviewRequest that this file is attached to."""
         if hasattr(self, '_review_request'):
             return self._review_request
 
@@ -197,13 +203,14 @@ class FileAttachment(models.Model):
                 return draft.review_request
 
     def get_comments(self):
-        """Returns all the comments made on this file attachment."""
+        """Return all the comments made on this file attachment."""
         if not hasattr(self, '_comments'):
             self._comments = list(self.comments.all())
 
         return self._comments
 
     def get_absolute_url(self):
+        """Return the absolute URL to download this file."""
         url = self.file.url
 
         if url.startswith('http:') or url.startswith('https:'):
