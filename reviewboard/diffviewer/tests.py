@@ -2735,3 +2735,116 @@ class DiffUtilsTests(TestCase):
         # The line numbers start at 1 and not 0.
         self.assertEqual(header['left']['text'],
                          lines[header['left']['line'] - 1][2])
+
+
+class DiffExpansionHeaderTests(TestCase):
+    """Testing generation of diff expansion headers."""
+
+    def test_find_header_with_filtered_equal(self):
+        """Testing finding a header in a file that has filtered equals
+        chunks
+        """
+        # See diffviewer.diffutils.get_file_chunks_in_range for a description
+        # of chunks and its elements. We fake the elements of lines here
+        # because we only need elements 0, 1, and 4 (of what would be a list).
+        chunks = [
+            {
+                'change': 'equal',
+                'meta': {
+                    'left_headers': [(1, 'foo')],
+                    'right_headers': [],
+                },
+                'lines': [
+                    {
+                        0: 1,
+                        1: 1,
+                        4: '',
+                    },
+                    {
+                        0: 2,
+                        1: 2,
+                        4: 1,
+                    },
+                ]
+            },
+            {
+                'change': 'equal',
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [(2, 'bar')],
+                },
+                'lines': [
+                    {
+                        0: 3,
+                        1: '',
+                        4: 2,
+                    },
+                    {
+                        0: 4,
+                        1: 3,
+                        4: 3,
+                    },
+                ]
+            }
+        ]
+
+        left_header = {
+            'line': 1,
+            'text': 'foo',
+        }
+        right_header = {
+            'line': 3,
+            'text': 'bar',
+        }
+
+        self.assertEqual(
+            diffutils._get_last_header_in_chunks_before_line(chunks, 2),
+            {
+                'left': left_header,
+                'right': None,
+            })
+
+        self.assertEqual(
+            diffutils._get_last_header_in_chunks_before_line(chunks, 4),
+            {
+                'left': left_header,
+                'right': right_header,
+            })
+
+    def test_find_header_with_header_oustside_chunk(self):
+        """Testing finding a header in a file where the header in a chunk does
+        not belong to the chunk it is in
+        """
+        chunks = [
+            {
+                'change': 'equal',
+                'meta': {
+                    'left_headers': [
+                        (1, 'foo'),
+                        (100, 'bar'),
+                    ],
+                },
+                'lines': [
+                    {
+                        0: 1,
+                        1: 1,
+                        4: 1,
+                    },
+                    {
+                        0: 2,
+                        1: 2,
+                        4: 1,
+                    },
+                ]
+            }
+        ]
+
+        self.assertEqual(
+            diffutils._get_last_header_in_chunks_before_line(chunks, 2),
+            {
+                'left': {
+                    'line': 1,
+                    'text': 'foo',
+                },
+                'right': None,
+            })

@@ -480,9 +480,9 @@ def get_file_from_filediff(context, filediff, interfilediff):
 
 
 def get_last_line_number_in_diff(context, filediff, interfilediff):
-    """Determine the last line of the filediff/interfilediff.
+    """Determine the last virtual line number in the filediff/interfilediff.
 
-    This returns the unified line number to be used in expandable diff
+    This returns the virtual line number to be used in expandable diff
     fragments.
     """
     f = get_file_from_filediff(context, filediff, interfilediff)
@@ -493,7 +493,97 @@ def get_last_line_number_in_diff(context, filediff, interfilediff):
     return last_line[0]
 
 
-def get_last_header_before_line(context, filediff, interfilediff, line):
+def _get_last_header_in_chunks_before_line(chunks, target_line):
+    """Find the last header in the list of chunks before the target line."""
+    def find_last_line_numbers(lines):
+        """Return a tuple of the last line numbers in the given list of lines.
+
+        The last line numbers are not always contained in the last element of
+        the ``lines`` list. This is the case when dealing with interdiffs that
+        have filtered out opcodes.
+
+        See :py:func:`get_chunks_in_range` for a description of what is
+        contained in each element of ``lines``.
+        """
+        last_left = None
+        last_right = None
+
+        for line in reversed(lines):
+            if not last_right and line[4]:
+                last_right = line[4]
+
+            if not last_left and line[1]:
+                last_left = line[1]
+
+            if last_left and last_right:
+                break
+
+        return last_left, last_right
+
+    def find_header(headers, offset, last_line):
+        """Return the last header that occurs before a line.
+
+        The offset parameter is the difference between the virtual number and
+        and actual line number in the chunk. This is required because the
+        header line numbers are original or patched line numbers, not virtual
+        line numbers.
+        """
+        # In the case of interdiffs, it is possible that there will be headers
+        # in the chunk that don't belong to it, but were put there due to
+        # chunks being merged together. We must therefore ensure that the
+        # header we're looking at is actually in the chunk.
+        end_line = min(last_line, target_line)
+
+        for header in reversed(headers):
+            virtual_line = header[0] + offset
+
+            if virtual_line < end_line:
+                return {
+                    'line': virtual_line,
+                    'text': header[1]
+                }
+
+    # The most up-to-date header information
+    header = {
+        'left': None,
+        'right': None
+    }
+
+    for chunk in chunks:
+        lines = chunk['lines']
+        virtual_first_line = lines[0][0]
+
+        if virtual_first_line <= target_line:
+            if virtual_first_line == target_line:
+                # The given line number is the first line of a new chunk so
+                # there can't be any relevant header information here.
+                break
+
+            last_left, last_right = find_last_line_numbers(lines)
+
+            if 'left_headers' in chunk['meta'] and lines[0][1]:
+                offset = virtual_first_line - lines[0][1]
+
+                left_header = find_header(chunk['meta']['left_headers'],
+                                          offset, last_left + offset)
+
+                header['left'] = left_header or header['left']
+
+            if 'right_headers' in chunk['meta'] and lines[0][4]:
+                offset = virtual_first_line - lines[0][4]
+
+                right_header = find_header(chunk['meta']['right_headers'],
+                                           offset, last_right + offset)
+
+                header['right'] = right_header or header['right']
+        else:
+            # We've gone past the given line number.
+            break
+
+    return header
+
+
+def get_last_header_before_line(context, filediff, interfilediff, target_line):
     """Get the last header that occurs before the given line.
 
     This returns a dictionary of ``left`` header and ``right`` header. Each
@@ -506,58 +596,9 @@ def get_last_header_before_line(context, filediff, interfilediff, line):
       ``text`` The header text
       ======== ==============================================================
     """
-    def find_header(headers, offset):
-        """Get the last header that occurs before a line.
-
-        The :param:`offset` parameter is the difference between the virtual
-        line number and actual line number in the chunk. This is required
-        because the header line numbers are original or patched line numbers,
-        not virtual line numbers.
-        """
-        for header in reversed(headers):
-            if header[0] + offset < line:
-                return {
-                    'line': header[0] + offset,
-                    'text': header[1]
-                }
-
-    # The most up-to-date header information
-    header = {
-        'left': None,
-        'right': None
-    }
-
     f = get_file_from_filediff(context, filediff, interfilediff)
 
-    for chunk in f['chunks']:
-        lines = chunk['lines']
-        unified_first_line = lines[0][0]
-
-        if unified_first_line <= line:
-            if unified_first_line == line:
-                # The given line number is the first line of a new chunk so
-                # there can't be any relevant header information here.
-                break
-
-            # An insert chunk won't have original line numbers.
-            if 'left_headers' in chunk['meta'] and chunk['change'] != 'insert':
-                left_header = find_header(chunk['meta']['left_headers'],
-                                          unified_first_line - lines[0][1])
-
-                header['left'] = left_header or header['left']
-
-            # A delete chunk won't have patched line numbers.
-            if ('right_headers' in chunk['meta'] and
-                chunk['change'] != 'delete'):
-                right_header = find_header(chunk['meta']['right_headers'],
-                                           unified_first_line - lines[0][4])
-
-                header['right'] = right_header or header['right']
-        else:
-            # We've gone past the given line number.
-            break
-
-    return header
+    return _get_last_header_in_chunks_before_line(f['chunks'], target_line)
 
 
 def get_file_chunks_in_range(context, filediff, interfilediff,
