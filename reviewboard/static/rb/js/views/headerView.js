@@ -2,6 +2,8 @@
  * Site Header
  */
 RB.HeaderView = Backbone.View.extend({
+    MOBILE_MENU_MAX_WIDTH: 720,
+
     events: {
         'click #logo': '_handleLogoClick',
         'click #search-icon': '_toggleSearchBar'
@@ -11,12 +13,14 @@ RB.HeaderView = Backbone.View.extend({
      * Initializes the header.
      */
     initialize: function() {
-        var e = this;
-        $(window).on("resize", _.throttle(function(){
-            if ($(window).width() > 720) {
-                e._closeMobileMenu();
+        this._mobileMenuOpened = false;
+        this._$window = $(window);
+
+        this._$window.on('resize', _.throttle(_.bind(function() {
+            if (this._$window.width() > this.MOBILE_MENU_MAX_WIDTH) {
+                this._closeMobileMenu();
             }
-        }, 100));
+        }, this), 100));
 
         this._$mobileMenuMask = $('#mobile-menu-mask')
             .click(_.bind(this._closeMobileMenu, this));
@@ -25,11 +29,11 @@ RB.HeaderView = Backbone.View.extend({
     },
 
     _handleLogoClick: function() {
-        if ($(window).width() <= 720) {
+        if (this._$window.width() <= this.MOBILE_MENU_MAX_WIDTH) {
             this._mobileMenuToggle(
                 !$('#navbar-container').hasClass('menu-active'));
         } else {
-            window.location.href = '/';
+            window.location.href = SITE_ROOT;
         }
     },
 
@@ -48,6 +52,10 @@ RB.HeaderView = Backbone.View.extend({
      * @param {bool} toggle   To open or close the menu
      */
     _mobileMenuToggle: function(toggle) {
+        if (toggle === this._mobileMenuOpened) {
+            return;
+        }
+
         if (toggle) {
             this._$navbarContainer.animate({
                 left: '0px'
@@ -58,7 +66,7 @@ RB.HeaderView = Backbone.View.extend({
             this._$mobileMenuMask.show();
             this._$body.css('overflow', 'hidden');
         } else {
-            this._$body.css('overflow', 'auto');
+            this._$body.css('overflow', '');
             this._$mobileMenuMask.hide();
 
             this._$navbarContainer.animate({
@@ -67,5 +75,7 @@ RB.HeaderView = Backbone.View.extend({
                 $(this).removeClass('menu-active');
             });
         }
+
+        this._mobileMenuOpened = toggle;
     }
 });

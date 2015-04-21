@@ -312,6 +312,7 @@ PIPELINE_CSS = dict({
             'rb/css/ui/banners.less',
             'rb/css/ui/boxes.less',
             'rb/css/ui/buttons.less',
+            'rb/css/ui/datagrids.less',
             'rb/css/ui/forms.less',
             'rb/css/common.less',
         ),
