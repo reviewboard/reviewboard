@@ -39,14 +39,14 @@
 {%  if header.left or header.right %}
   <tr>
    <td colspan="1"></td>
-{%   if header.left.text == header.right.text and header.left.virtual == header.right.virtual %}
+{%   if header.left.text == header.right.text and header.left.line == header.right.line %}
    <td colspan="3"><div>
     {% expand_fragment_header_link header.left %}
    </div></td>
 {%   else %}
 {%    if not comment.filediff.is_new %}
    <td><div>
-{%      if header.left %}
+{%     if header.left %}
        {% expand_fragment_header_link header.left %}
 {%     endif %}
    </div></td>
