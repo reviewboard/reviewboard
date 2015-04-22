@@ -18,8 +18,8 @@ RB.DiffCommitIndexView = Backbone.View.extend({
     _itemTemplate: _.template([
         '<tr>',
         ' <td class="diff-file-icon"></td>',
-        ' <td><%- summary %></td>',
-        ' <td><%- authorName %></td>',
+        ' <td class="diff-commit-summary"><%- summary %></td>',
+        ' <td class="diff-commit-author"><%- authorName %></td>',
         '</tr>'
     ].join('')),
 

@@ -618,11 +618,73 @@
   }
 }
 
-#diff_index,
-.diff-index {
+td.diff-file-icon {
   @icon-size: 20px;
   @icon-offset: 2px;
 
+  padding: @icon-offset 0 0 @icon-offset;
+
+  .rb-icon {
+    width: @icon-size;
+    height: @icon-size;
+  }
+
+  .fa-spinner {
+    font-size: @icon-size - 4px;
+    margin: 2px;
+  }
+}
+
+/* Styling for DiffCommit listings. */
+.diff-commits {
+  border: 1px @review-request-table-border-color solid;
+  margin: 1em 0;
+
+  table {
+    border-collapse: collapse;
+    padding: 0;
+    width: 100%;
+
+    tr {
+      &.commit-entry-added td {
+        background: @diff-insert-color;
+      }
+
+      &.commit-entry-removed td {
+        background: @diff-delete-color;
+      }
+
+      td, th {
+        background: @diff-table-background;
+        margin: 0;
+        padding: 0.6em;
+
+        &.diff-commit-author {
+          white-space: nowrap;
+        }
+
+        &.diff-commit-summary {
+          width: 100%;
+        }
+      }
+
+      td {
+        border-top: 1px @diff-table-border-color solid;
+
+        &.commit-entry-type {
+          font-weight: bold;
+        }
+      }
+
+      th {
+        text-align: left;
+      }
+    }
+  }
+}
+
+#diff_index,
+.diff-index {
   border: 1px #BBB solid;
   margin: 1em 0;
 
@@ -638,30 +700,16 @@
     }
 
     td {
-      background: #FDFDFD;
+      background: @diff-table-background;
       padding: 0.6em;
       margin: 0;
-      border-top: 1px #DDD solid;
+      border-top: 1px @diff-table-border-color solid;
       vertical-align: top;
 
       &.diff-chunks-cell {
         color: #888;
         text-align: right;
         width: 70%;
-      }
-
-      &.diff-file-icon {
-        padding: @icon-offset 0 0 @icon-offset;
-
-        .rb-icon {
-          width: @icon-size;
-          height: @icon-size;
-        }
-
-        .fa-spinner {
-          font-size: @icon-size - 4px;
-          margin: 2px;
-        }
       }
 
       &.diff-file-info {

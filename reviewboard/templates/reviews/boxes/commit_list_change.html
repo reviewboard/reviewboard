@@ -4,8 +4,8 @@
   <thead>
    <tr>
     <th></th>
-    <th>{% trans "Summary" %}</th>
-    <th>{% trans "Author" %}</th>
+    <th class="diff-commit-summary">{% trans "Summary" %}</th>
+    <th class="diff-commit-author">{% trans "Author" %}</th>
    </tr>
   </thead>
   <tbody>
@@ -20,8 +20,8 @@
      ~
 {%  endif %}
     </td>
-    <td>{{commit.summary}}</td>
-    <td>{{commit.author_name}}</td>
+    <td class="diff-commit-summary">{{commit.summary}}</td>
+    <td class="diff-commit-author">{{commit.author_name}}</td>
    </tr>
 {% endfor %}
   </tbody>
