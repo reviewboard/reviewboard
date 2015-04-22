@@ -28,6 +28,9 @@ class AccountPage(ConfigPage):
     Extensions can provide custom pages in order to offer per-user
     customization.
     """
+
+    _default_form_classes = None
+
     @classmethod
     def add_form(cls, form_cls):
         """Adds a form class to this page."""
@@ -147,6 +150,14 @@ def register_account_page_class(page_cls):
     # list.
     if page_cls.form_classes is None:
         page_cls.form_classes = []
+
+    # Set _default_form_classes when an account page class first registers.
+    if page_cls._default_form_classes is None:
+        page_cls._default_form_classes = list(page_cls.form_classes)
+
+    # If form_classes is empty, reload the list from _default_form_classes.
+    if not page_cls.form_classes:
+        page_cls.form_classes = list(page_cls._default_form_classes)
 
     for form_cls in page_cls.form_classes:
         _register_form_class(form_cls)
