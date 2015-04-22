@@ -192,6 +192,41 @@ class AccountPageTests(TestCase):
         register_account_page_class(MyPage)
         self.assertRaises(KeyError, lambda: MyPage.remove_form(MyForm))
 
+    def test_default_form_classes_for_page(self):
+        """Testing AccountPage._default_form_classes persistence"""
+        class MyForm(AccountPageForm):
+            form_id = 'test-form'
+
+        class MyPage(AccountPage):
+            page_id = 'test-page'
+            page_title = 'Test Page'
+            form_classes = [MyForm]
+
+        register_account_page_class(MyPage)
+        self.assertEqual(MyPage.form_classes, [MyForm])
+        unregister_account_page_class(MyPage)
+        self.assertEqual(MyPage.form_classes, [])
+        register_account_page_class(MyPage)
+        self.assertEqual(MyPage.form_classes, [MyForm])
+
+    def test_empty_default_form_classes_for_page(self):
+        """Testing AccountPage._default_form_classes with no form_classes"""
+        class MyPage(AccountPage):
+            page_id = 'test-page'
+            page_title = 'Test Page'
+
+        class MyForm(AccountPageForm):
+            form_id = 'test-form'
+
+        register_account_page_class(MyPage)
+        self.assertEqual(MyPage.form_classes, [])
+        MyPage.add_form(MyForm)
+        self.assertEqual(MyPage.form_classes, [MyForm])
+        unregister_account_page_class(MyPage)
+        self.assertEqual(MyPage.form_classes, [])
+        register_account_page_class(MyPage)
+        self.assertEqual(MyPage.form_classes, [])
+
 
 class UsernameTests(TestCase):
     """Unit tests for username rules."""
