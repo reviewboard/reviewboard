@@ -2617,9 +2617,39 @@ class DiffChunkGeneratorTests(TestCase):
 
         self.assertEqual(len(list(self.generator.get_chunks())), 1)
 
+    def test_line_counts_unmodified_by_interdiff(self):
+        """Testing that line counts are not modified by interdiffs where the
+        changes are reverted
+        """
+        self.filediff.source_revision = PRE_CREATION
+        self.filediff.diff = (
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -0,0 +1,1 @@\n'
+            b'+line\n'
+        )
+
+        # We have to consume everything from the get_chunks generator in order
+        # for the line counts to be set on the FileDiff.
+        self.assertEqual(len(list(self.generator.get_chunks())), 1)
+
+        line_counts = self.filediff.get_line_counts()
+
+        # Simulate an interdiff where the changes are reverted.
+        interdiff_generator = DiffChunkGenerator(request=None,
+                                                 filediff=self.filediff,
+                                                 interfilediff=None,
+                                                 force_interdiff=True)
+
+        # Again, just consuming the generator.
+        self.assertEqual(len(list(interdiff_generator.get_chunks())), 1)
+
+        self.assertEqual(line_counts, self.filediff.get_line_counts())
+
 
 class DiffRendererTests(SpyAgency, TestCase):
     """Unit tests for DiffRenderer."""
+
     def test_construction_with_invalid_chunks(self):
         """Testing DiffRenderer construction with invalid chunks"""
         diff_file = {
