@@ -51,6 +51,8 @@ textarea {
   });
 
   li {
+    border: 1px transparent solid;
+    border-top: 0;
     display: block;
     float: right;
     margin: -@headerbar-padding 0;
@@ -59,18 +61,24 @@ textarea {
     white-space: nowrap;
 
     &:hover {
-      background: @headerbar-bg-active;
+      border-color: #888;
 
       ul {
+        border: 1px #888 solid;
         display: block;
+        margin-right: -1px;
         z-index: @z-index-menu;
+
+        li {
+          border: 0;
+        }
       }
     }
 
     a {
-      color: white;
+      color: inherit;
       display: block;
-      font-size: 120%;
+      font-size: 110%;
       margin: 0;
       padding: 0 1em;
       text-decoration: none;
@@ -91,7 +99,6 @@ textarea {
     }
 
     ul {
-      background-color: @headerbar-bg;
       display: none;
       margin: 0;
       min-width: @headerbar-menu-min-width;
@@ -196,9 +203,6 @@ textarea {
  *    * #search
  */
 #headerbar {
-  background: @headerbar-bg;
-  border-bottom: 1px #DDDDDD solid;
-  color: white;
   margin: 0;
   padding: @headerbar-padding;
   height: 22px;
@@ -211,7 +215,7 @@ textarea {
 
   #logo {
     position: absolute;
-    top: -2px;
+    top: 3px;
     left: @headerbar-logo-padding-horiz;
     cursor: pointer;
     z-index: @z-index-menu;
@@ -223,10 +227,10 @@ textarea {
   }
 
   #title {
-    color: white;
+    color: inherit;
     display: inline;
     font-weight: normal;
-    font-size: 120%;
+    font-size: 125%;
     margin: 0;
     padding: 0;
 
@@ -235,7 +239,7 @@ textarea {
     });
 
     a {
-      color: white;
+      color: inherit;
       font-size: 120%;
       text-decoration: none;
 
@@ -245,7 +249,6 @@ textarea {
     }
 
     .version {
-      color: #E0E0E0;
       font-weight: normal;
       font-size: 90%;
 
@@ -281,7 +284,7 @@ textarea {
     });
 
     input {
-      border: 1px black solid;
+      border: 1px #CCC solid;
       margin: 0;
       padding: 2px;
       .border-radius(6px);
@@ -329,7 +332,8 @@ textarea {
  * The container for the navigation bar.
  */
 #navbar-container {
-  margin: 0 0 1em 0;
+  margin: 0 0 @page-container-padding 0;
+
   .on-mobile-medium-screen-720({
     position: absolute;
     z-index: @z-index-menu;
@@ -370,8 +374,7 @@ textarea {
  * etc.
  */
 #navbar {
-  background: @navbar-bg;
-  border-bottom: 1px @navbar-border-color solid;
+  border-bottom: 1px #CCC solid;
   list-style: none;
   margin: 0;
   min-height: 1.5em;
@@ -393,7 +396,6 @@ textarea {
   }
 
   a {
-    color: @navbar-text-color;
     font-size: 110%;
     text-decoration: none;
   }
@@ -419,4 +421,29 @@ textarea {
  */
 .server-error-box .response-data {
   margin-top: 2em;
+}
+
+
+/****************************************************************************
+ * Page themes
+ ****************************************************************************/
+
+/*
+ * Default color scheme, used for the dashboard, My Account page, and others
+ * featuring largely blue-ish colors.
+ */
+.default-page,
+.full-datagrid-page {
+  .page-colors(@topbar-bg: #DAEBFF,
+               @topbar-faded-text-color: #5A646E);
+}
+
+.admin {
+  .page-colors(@topbar-bg: #CCC,
+               @topbar-faded-text-color: #555);
+}
+
+.reviewable-page {
+  .page-colors(@topbar-bg: #EDE1B2,
+               @topbar-link-color: #0700E8);
 }

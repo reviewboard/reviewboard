@@ -5,7 +5,7 @@
 @light-grey: #EAEAEA;
 @grey: #D0D0D0;
 @dark-grey: #5C5C5C;
-@light-blue: #C6DCF3;
+@light-blue: #D0E6FF;
 @dark-blue: #3465A4;
 
 @link-color: #0000C0;
@@ -17,18 +17,12 @@
 
 @page-container-padding: 1em;
 
-@headerbar-logo-padding-horiz: 6px;
+@headerbar-logo-padding-horiz: 8px;
 @headerbar-logo-width: 60px;
 @headerbar-padding-left: @headerbar-logo-width +
                          2 * @headerbar-logo-padding-horiz;
-@headerbar-bg: #333333;
-@headerbar-bg-active: #555555;
 @headerbar-padding: 5px;
 @headerbar-menu-min-width: 9em;
-
-@navbar-bg: @light-blue;
-@navbar-border-color: @dark-blue;
-@navbar-text-color: #0000AA;
 
 @box-border-color: #888A85;
 @box-border-radius: 6px;
@@ -222,6 +216,9 @@
 @summary-label-discarded-border-color: darken(@summary-label-discarded-bg, 25%);
 @summary-label-discarded-text-color: #555555;
 
+// New review request page
+@new-review-request-sidebar-bg: #333333;
+
 // Mobile
 @mobile-navbar-hide-margin-left: -160px;
 @mobile-medium-width-720: 720px;
@@ -235,6 +232,4 @@
 
 @import (reference) "mixins/gradients.less";
 @import (reference) "mixins/style.less";
-
-
-// vim: set et ts=2 sw=2:
+@import (reference) "mixins/theme.less";
