@@ -555,12 +555,12 @@ class SummaryColumn(Column):
         })
 
     def render_data(self, state, review_request):
-        summary = conditional_escape(review_request.summary)
+        summary = review_request.summary
         labels = {}
 
         if review_request.submitter_id == state.datagrid.request.user.id:
             if review_request.draft_summary is not None:
-                summary = conditional_escape(review_request.draft_summary)
+                summary = review_request.draft_summary
                 labels.update({_('Draft'): 'label-draft'})
             elif (not review_request.public and
                   review_request.status == ReviewRequest.PENDING_REVIEW):
@@ -574,12 +574,16 @@ class SummaryColumn(Column):
         display_data = ''
 
         if not summary:
-            summary = '&nbsp;<i>%s</i>' % _('No Summary')
+            summary = format_html('<span class="no-summary">{}</span>',
+                                  _('No Summary'))
 
-        for label in labels:
-            display_data += '<span class="%s">[%s] </span>' % (
-                labels[label], label)
-        display_data += summary
+        display_data += format_html_join('', '<label class="{}">{}</label>', (
+            (labels[label], label)
+            for label, label_class in six.iteritems(labels)
+        ))
+
+        display_data += format_html('<span>{}</span>', summary)
+
         return display_data
 
 

@@ -646,6 +646,55 @@ body.full-datagrid-page {
 
   .summary {
     cursor: pointer;
+    position: relative;
+
+    .no-summary {
+      color: #888;
+      font-style: italic;
+    }
+
+    label {
+      .border-radius(4px);
+      display: inline;
+      float: left;
+      margin-right: 0.6em;
+      padding: 0 4px;
+      line-height: 1.4;
+
+      &.label-draft {
+        background: @summary-label-draft-bg;
+        border: 1px @summary-label-draft-border-color solid;
+        color: @summary-label-text-color;
+      }
+
+      &.label-submitted {
+        background: @summary-label-submitted-bg;
+        border: 1px @summary-label-submitted-border-color solid;
+        color: @summary-label-submitted-text-color;
+      }
+
+      &.label-discarded {
+        background: @summary-label-discarded-bg;
+        border: 1px @summary-label-discarded-border-color solid;
+        color: @summary-label-discarded-text-color;
+      }
+    }
+
+    /*
+     * The summary text.
+     *
+     * We're forcing this to be a block, and then setting overflow: hidden,
+     * which, along with the float: left in the label above, will cause the
+     * text to stay together and wrap as a cohesive block, without part of
+     * the text wrapping below the label.
+     *
+     * Yes, CSS is weird.
+     */
+    span {
+      display: block;
+      overflow: hidden;
+      line-height: 1.5;
+    }
   }
 }
 
