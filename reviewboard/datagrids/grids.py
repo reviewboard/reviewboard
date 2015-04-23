@@ -5,8 +5,11 @@ import pytz
 from django.contrib.auth.models import User
 from django.http import Http404
 from django.utils.translation import ugettext_lazy as _
-from djblets.datagrid.grids import (Column, DateTimeColumn, DataGrid,
-                                    AlphanumericDataGrid)
+from djblets.datagrid.grids import (
+    Column,
+    DateTimeColumn,
+    DataGrid as DjbletsDataGrid,
+    AlphanumericDataGrid as DjbletsAlphanumericDataGrid)
 from djblets.util.templatetags.djblets_utils import ageid
 
 from reviewboard.accounts.models import Profile, LocalSiteProfile
@@ -71,6 +74,45 @@ class ShowClosedReviewRequestsMixin(object):
             return True
 
         return False
+
+
+class DataGridJSMixin(object):
+    """Mixin that provides enhanced JavaScript support for datagrids.
+
+    This contains additional information on the JavaScript views/models
+    to load for the page, allowing for enhanced functionality in datagrids.
+    """
+
+    #: A list of extra CSS static bundles to load on the page.
+    css_bundle_names = []
+
+    #: A list of extra JavaScript static bundles to load on the page.
+    js_bundle_names = []
+
+    #: The JavaScript Model to use for the page state.
+    js_model_class = 'RB.DatagridPage'
+
+    #: The JavaScript View to use for the page rendering.
+    js_view_class = 'RB.DatagridPageView'
+
+    #: Whether or not to periodically reload the contents of the datagrid.
+    periodic_reload = False
+
+
+class DataGrid(DataGridJSMixin, DjbletsDataGrid):
+    """Base class for a datagrid in Review Board.
+
+    This contains additional information on JavaScript views/models
+    to load for the page.
+    """
+
+
+class AlphanumericDataGrid(DataGridJSMixin, DjbletsAlphanumericDataGrid):
+    """Base class for an alphanumeric datagrid in Review Board.
+
+    This contains additional information on JavaScript views/models
+    to load for the page.
+    """
 
 
 class ReviewRequestDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
@@ -230,8 +272,11 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
             OutgoingSection,
             IncomingSection,
         ],
-        default_view_id='incoming',
-        css_classes=['scrollable'])
+        default_view_id='incoming')
+
+    js_model_class = 'RB.Dashboard'
+    js_view_class = 'RB.DashboardView'
+    periodic_reload = True
 
     def __init__(self, *args, **kwargs):
         local_site = kwargs.get('local_site', None)

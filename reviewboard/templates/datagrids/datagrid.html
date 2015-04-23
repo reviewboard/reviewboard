@@ -8,13 +8,18 @@
 {% block css %}
 {{block.super}}
 {%  compressed_css "djblets-datagrid" %}
+{%  for css_bundle in datagrid.css_bundle_names %}
+{%   compressed_css css_bundle %}
+{%  endfor %}
 {% endblock %}
 
+{% block bodytag %}<body class="full-datagrid-page">{% endblock %}
+
 {% block content %}
-{%  if datagrid.sidebar %}
-<div id="datagrid_page_container">
+<div id="datagrid_page_container"{% if datagrid.sidebar %} class="has-sidebar"{% endif %}>
  <div id="datagrid_page_content">
-  <div class="datagrid-sidebar{% if datagrid.sidebar.css_classes %} {{datagrid.sidebar.css_classes|join:' '}}"{% endif %}>
+{%  if datagrid.sidebar %}
+  <div class="datagrid-sidebar{% if datagrid.sidebar.css_classes %} {{datagrid.sidebar.css_classes|join:' '}}{% endif %}">
    <ul class="datagrid-sidebar-items">
 {%   for item in datagrid.sidebar_items %}
 {%    if item.is_visible %}
@@ -23,16 +28,33 @@
 {%   endfor %}
    </ul>
   </div>
+{%  endif %}
   <div id="datagrid_page_main" class="clearfix">
 {{datagrid.render_listview}}
   </div>
  </div>
 </div>
-{%  else %}
-{{datagrid.render_listview}}
-{%  endif %}
 {% endblock content %}
 
 {% block scripts-post %}
 {%  compressed_js "djblets-datagrid" %}
+{%  compressed_js "datagrid-pages" %}
+{%  for js_bundle in datagrid.js_bundle_names %}
+{%   compressed_js js_bundle %}
+{%  endfor %}
+
+<script>
+    $(document).ready(function() {
+        var view = new {{datagrid.js_view_class}}({
+            el: $('#datagrid_page_container'),
+            periodicReload: {{datagrid.periodic_reload|yesno:"true,false"}},
+            model: new {{datagrid.js_model_class}}({
+{%  if local_site_name %}
+                localSiteName: '{{local_site_name|escapejs}}'
+{%  endif %}
+            })
+        });
+        view.render();
+    });
+</script>
 {% endblock %}

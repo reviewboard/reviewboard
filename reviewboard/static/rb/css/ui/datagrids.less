@@ -20,6 +20,12 @@ body.full-datagrid-page {
 
     // This helps compensate for the shadow on the box.
     padding-bottom: 3px;
+
+    &.has-sidebar {
+      #datagrid_page_main {
+        margin-left: @datagrid-sidebar-width;
+      }
+    }
   }
 
   #datagrid_page_content {
@@ -32,7 +38,7 @@ body.full-datagrid-page {
     display: block;
     height: 100%;
     vertical-align: top;
-    margin-left: @datagrid-sidebar-width;
+    margin-left: @page-container-padding;
     .border-radius(0 @box-inner-border-radius @box-inner-border-radius 0);
 
     table:after {
@@ -45,6 +51,7 @@ body.full-datagrid-page {
     }
 
     .datagrid-body-container {
+      background: @datagrid-bg;
       overflow-y: auto;
     }
 
@@ -76,7 +83,7 @@ body.full-datagrid-page {
     }
 
     tbody tr {
-      background: #FFFFFF;
+      background: @datagrid-bg;
     }
   }
 
@@ -206,20 +213,16 @@ body.full-datagrid-page {
   }
 
   .datagrid-sidebar {
-    float: left;
+    direction: rtl;  /* Position the scrollbar on the left. */
+    float: none;
+    overflow-y: auto;
     padding: 1em 0 1em 1em;
+    position: absolute;
     top: 0;
     bottom: 1px;
     margin: 3em -1px 0 1px;
     width: @datagrid-sidebar-width - 1em;
     z-index: @z-index-deco;
-
-    &.scrollable {
-      direction: rtl;  /* Position the scrollbar on the left. */
-      float: none;
-      overflow-y: auto;
-      position: absolute;
-    }
 
     .datagrid-sidebar-items {
       list-style: none;

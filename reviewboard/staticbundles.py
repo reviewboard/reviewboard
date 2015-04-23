@@ -167,10 +167,12 @@ PIPELINE_JS = dict({
         ),
         'output_filename': 'rb/js/config-forms.min.js',
     },
-    'dashboard': {
+    'datagrid-pages': {
         'source_filenames': (
-            'rb/js/dashboard/models/dashboardModel.js',
-            'rb/js/dashboard/views/dashboardView.js',
+            'rb/js/pages/models/datagridPageModel.js',
+            'rb/js/pages/models/dashboardModel.js',
+            'rb/js/pages/views/datagridPageView.js',
+            'rb/js/pages/views/dashboardView.js',
         ),
         'output_filename': 'rb/js/dashboard.min.js',
     },
