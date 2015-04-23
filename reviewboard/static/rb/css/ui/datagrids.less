@@ -26,6 +26,22 @@
   }
 
   /*
+   * Wrap the actions, resetting back to left-to-right text (which was set to
+   * put the scrollbar on the left) and offsetting the right to prevent
+   * overlapping the datagrid border.
+   */
+  .datagrid-actions-container {
+    direction: ltr;
+    display: none;
+    position: absolute;
+    top: 0;
+    right: 1px;
+    left: 0;
+    bottom: 0;
+    overflow: hidden;
+  }
+
+  /*
    * Give both the fixed header table and the (eventually) hidden headers
    * row in the body table a matching background and border style.
    */
@@ -175,8 +191,8 @@
     }
 
     .paginator {
-      background: #EEE;
-      border-top: 1px #BBB solid;
+      background: @datagrid-paginator-bg;
+      border-top: 1px @datagrid-paginator-border-color solid;
       .border-radius(0 0 @box-border-radius @box-border-radius);
       padding: 0 0 0 1em;
 

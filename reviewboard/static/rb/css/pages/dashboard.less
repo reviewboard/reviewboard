@@ -54,19 +54,22 @@
 
 
 #dashboard_actions {
-  background: #333333;
-  color: white;
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  padding: 5.5em 0 0 0;
-  width: 100%;
+  background: @datagrid-actions-bg;
+  border: 1px @dashboard-border-color solid;
+  border-right: 0;
+  color: #555;
   .border-radius(@box-inner-border-radius 0 0 @box-inner-border-radius);
   .box-sizing(border-box);
-  .opacity(98);
+  .box-shadow(@box-shadow);
+  position: absolute;
+  left: @datagrid-actions-offset-left;
+  top: 4em;
+  bottom: 3.8em;
+  padding: 2em 2em 0 0;
+  width: @dashboard-sidebar-width - @datagrid-actions-offset-left;
 
   a {
-    color: white;
+    color: inherit;
     font-size: 110%;
     text-decoration: none;
   }
@@ -95,8 +98,7 @@
 
 #dashboard_actions_content {
   padding: 8px;
-  position: fixed;
-  width: @dashboard-sidebar-width;
+  width: @dashboard-sidebar-width - @datagrid-actions-offset-left;
   .box-sizing(border-box);
 }
 

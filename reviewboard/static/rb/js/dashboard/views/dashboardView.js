@@ -29,6 +29,7 @@ var DashboardActionsView = Backbone.View.extend({
     initialize: function() {
         this._$content = null;
         this._$count = null;
+        this._origLeft = null;
     },
 
     /*
@@ -60,14 +61,31 @@ var DashboardActionsView = Backbone.View.extend({
      * Shows the actions pane.
      */
     show: function() {
-        this.$el.fadeIn('fast');
+        if (this._origLeft === null) {
+            this._origLeft = this.$el.css('left');
+        }
+
+        this.$el
+            .css('left', this.$el.outerWidth())
+            .show()
+            .animate({
+                left: this._origLeft
+            });
     },
 
     /*
      * Hides the actions pane.
      */
-    hide: function() {
-        this.$el.fadeOut('fast');
+    hide: function(onHide, context) {
+        this.$el
+            .animate({
+                left: this.$el.outerWidth()
+            }, {
+                complete: _.bind(function() {
+                    this.$el.hide();
+                    onHide.call(context);
+                }, this)
+            });
     },
 
     /*
@@ -201,6 +219,7 @@ RB.DashboardView = Backbone.View.extend({
         this._$datagridBody = null;
         this._$datagridBodyContainer = null;
         this._$window = null;
+        this._menuShown = false;
     },
 
     /*
@@ -210,8 +229,16 @@ RB.DashboardView = Backbone.View.extend({
         this._$window = $(window);
 
         this.listenTo(this.model, 'change:count', function(model, count) {
-            if (count > 0) {
+            var showMenu = (count > 0);
+
+            if (showMenu === this._menuShown) {
+                return;
+            }
+
+            if (showMenu) {
+                this._$actionsContainer.show();
                 this._actionsView.show();
+                this._$navbar.fadeOut('fast');
 
                 /*
                  * Don't reload the dashboard while the user is
@@ -219,9 +246,14 @@ RB.DashboardView = Backbone.View.extend({
                  */
                 this._stopReloadTimer();
             } else {
-                this._actionsView.hide();
+                this._$navbar.fadeIn('slow');
+                this._actionsView.hide(function() {
+                    this._$actionsContainer.hide();
+                }, this);
                 this._startReloadTimer();
             }
+
+            this._menuShown = showMenu;
         });
 
         this.listenTo(this.model, 'refresh', function() {
@@ -253,8 +285,13 @@ RB.DashboardView = Backbone.View.extend({
         this._$datagrid = this._$wrapper.find('.datagrid-wrapper');
         this._datagrid = this._$datagrid.data('datagrid');
         this._$main = this._$wrapper.find('.datagrid-main');
+        this._$navbar = this.$('#dashboard-navbar');
 
-        this._actionsView.$el.appendTo(this.$('#dashboard_sidebar'));
+        this._$actionsContainer = $('<div/>')
+            .addClass('datagrid-actions-container')
+            .append(this._actionsView.$el)
+            .appendTo(this.$('#dashboard_sidebar'));
+
         this._actionsView.delegateEvents();
 
         this.$('time.timesince').timesince();
