@@ -3,7 +3,7 @@
 
 {% block title %}{% trans "My Dashboard" %}{% endblock %}
 
-{% block bodytag %}<body id="dashboard_page">{% endblock %}
+{% block bodytag %}<body class="full-datagrid-page">{% endblock %}
 
 {% block scripts-post %}
 {{block.super}}
@@ -11,7 +11,7 @@
 <script type="text/javascript">
     $(document).ready(function() {
         var dashboardView = new RB.DashboardView({
-            el: $('#dashboard_container'),
+            el: $('#datagrid_page_container'),
             model: new RB.Dashboard({
 {%  if local_site_name %}
                 localSiteName: '{{local_site_name|escapejs}}'

@@ -6,10 +6,10 @@
  * The actions will appear in a layer above the sidebar.
  */
 var DashboardActionsView = Backbone.View.extend({
-    id: 'dashboard_actions',
+    className: 'datagrid-actions',
 
     template: _.template([
-        '<div id="dashboard_actions_content">',
+        '<div class="datagrid-actions-content">',
         ' <p class="count"></p>',
         ' <ul>',
         '  <li><a class="discard" href="#"><%= close_discarded_text %></li>',
@@ -43,7 +43,7 @@ var DashboardActionsView = Backbone.View.extend({
                 close_submitted_text: gettext('<b>Close</b> Submitted')
             }));
 
-        this._$content = this.$('#dashboard_actions_content');
+        this._$content = this.$('.datagrid-actions-content');
         this._$count = this.$('.count');
 
         this.listenTo(this.model, 'change:count', function(model, count) {
@@ -238,7 +238,7 @@ RB.DashboardView = Backbone.View.extend({
             if (showMenu) {
                 this._$actionsContainer.show();
                 this._actionsView.show();
-                this._$navbar.fadeOut('fast');
+                this._$sidebarItems.fadeOut('fast');
 
                 /*
                  * Don't reload the dashboard while the user is
@@ -246,7 +246,7 @@ RB.DashboardView = Backbone.View.extend({
                  */
                 this._stopReloadTimer();
             } else {
-                this._$navbar.fadeIn('slow');
+                this._$sidebarItems.fadeIn('slow');
                 this._actionsView.hide(function() {
                     this._$actionsContainer.hide();
                 }, this);
@@ -281,16 +281,16 @@ RB.DashboardView = Backbone.View.extend({
      * the datagrid is reloaded from the server.
      */
     _setupDashboard: function() {
-        this._$wrapper = this.$('#dashboard-wrapper');
+        this._$wrapper = this.$('#datagrid_page_content');
         this._$datagrid = this._$wrapper.find('.datagrid-wrapper');
         this._datagrid = this._$datagrid.data('datagrid');
         this._$main = this._$wrapper.find('.datagrid-main');
-        this._$navbar = this.$('#dashboard-navbar');
+        this._$sidebarItems = this.$('.datagrid-sidebar-items');
 
         this._$actionsContainer = $('<div/>')
             .addClass('datagrid-actions-container')
             .append(this._actionsView.$el)
-            .appendTo(this.$('#dashboard_sidebar'));
+            .appendTo(this.$('.datagrid-sidebar'));
 
         this._actionsView.delegateEvents();
 
@@ -381,7 +381,7 @@ RB.DashboardView = Backbone.View.extend({
             .width($editCols.width() - $editCols.getExtents('b', 'lr'))
             .html('<span class="fa fa-spinner fa-pulse"></span>');
 
-        this._$wrapper.load(window.location + ' #dashboard-wrapper',
+        this._$wrapper.load(window.location + ' #datagrid_page_content',
                             _.bind(function() {
             this.$('.datagrid-wrapper').datagrid();
 

@@ -12,10 +12,10 @@
 
 {% block content %}
 {%  if datagrid.sidebar %}
-<div id="dashboard_container">
- <div id="dashboard-wrapper">
-  <div id="dashboard_sidebar"{% if datagrid.sidebar.css_classes %} class="{{datagrid.sidebar.css_classes|join:' '}}"{% endif %}>
-   <ul id="dashboard-navbar">
+<div id="datagrid_page_container">
+ <div id="datagrid_page_content">
+  <div class="datagrid-sidebar{% if datagrid.sidebar.css_classes %} {{datagrid.sidebar.css_classes|join:' '}}"{% endif %}>
+   <ul class="datagrid-sidebar-items">
 {%   for item in datagrid.sidebar_items %}
 {%    if item.is_visible %}
 {{item.render}}
@@ -23,7 +23,7 @@
 {%   endfor %}
    </ul>
   </div>
-  <div id="dashboard-main" class="clearfix">
+  <div id="datagrid_page_main" class="clearfix">
 {{datagrid.render_listview}}
   </div>
  </div>
