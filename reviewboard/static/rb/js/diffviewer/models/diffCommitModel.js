@@ -30,11 +30,14 @@ RB.DiffCommit = Backbone.Model.extend({
      * Get the total line count.
      */
     getTotalLineCount: function() {
-        var sum = 0;
+        var sum = 0,
+            property;
 
-        _.each(this.attributes.lineCounts, function(lineType, count) {
-            sum += count;
-        });
+        for (property in this.attributes.lineCounts) {
+            if (this.attributes.lineCounts.hasOwnProperty(property)) {
+                sum += this.attributes.lineCounts[property];
+            }
+        }
 
         return sum;
     },
