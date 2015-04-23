@@ -60,7 +60,11 @@ RB.DiffComplexityIconView = Backbone.View.extend({
                         pie: {
                             show: true,
                             innerRadius: innerRadius,
-                            radius: 0.8
+                            radius: 0.8,
+                            stroke: {
+                                color: iconColors.strokeColor,
+                                width: 2
+                            }
                         }
                     }
                 }
@@ -102,6 +106,12 @@ RB.DiffComplexityIconView = Backbone.View.extend({
 
             $iconColor[0].className = 'diff-changes-icon-delete';
             this._iconColors.deleteColor = $iconColor.css('color');
+
+            $iconColor[0].className = 'diff-index';
+            $('<table><tr><td/></tr></table>').appendTo($iconColor);
+            this._iconColors.strokeColor = $iconColor
+                .find('td')
+                .css('background-color');
 
             $iconColor.remove();
         }

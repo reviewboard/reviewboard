@@ -1,6 +1,50 @@
 from __future__ import unicode_literals
 
 
+def generate_commit_history_diff(old_history, new_history):
+    """Generate the difference between the old and new commit histories.
+
+    Each entry in the generated diff is a dict with the following keys:
+
+     * ``type``, which has a value of of ``unmodified``, ``added``,
+       or ``removed``;
+     * ``old_commit``, which is the old :class:`DiffCommit` instance
+       (or ``None`` if the entry is an addition); and
+     * ``new_commit``, which is the new :class:`DiffCommit` instance
+       (or ``None`` if the entry is a removal).
+
+    This function assumes that both histories are linear (i.e., they
+    contain no merges).
+    """
+    i = 0
+    j = 0
+
+    while (i < len(old_history) and
+           j < len(new_history) and
+           old_history[i].commit_id == new_history[j].commit_id):
+        yield {
+            'type': 'unmodified',
+            'old_commit': old_history[i],
+            'new_commit': new_history[j],
+        }
+        i += 1
+        j += 1
+
+    for old_commit in old_history[i:]:
+        yield {
+            'type': 'removed',
+            'old_commit': old_commit,
+            'new_commit': None,
+        }
+
+    for new_commit in new_history[j:]:
+        yield {
+            'type': 'added',
+            'old_commit': None,
+            'new_commit': new_commit,
+        }
+
+
 class DiffCommitFileExistenceChecker(object):
     """A file existence checker for review requests with commit history."""
 

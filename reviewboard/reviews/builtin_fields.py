@@ -11,9 +11,11 @@ from django.template.loader import Context, get_template, render_to_string
 from django.utils import six
 from django.utils.html import escape, format_html, format_html_join
 from django.utils.safestring import mark_safe
+from django.utils.six.moves import map
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.diffviewer.commitutils import generate_commit_history_diff
 from reviewboard.diffviewer.diffutils import get_sorted_filediffs
 from reviewboard.diffviewer.models import DiffCommit, DiffSet
 from reviewboard.reviews.fields import (BaseCommaEditableField,
@@ -703,64 +705,56 @@ class DiffCommitListField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
             })
 
     def render_change_entry_html(self, info):
-        old_commits = []
-        new_commits = []
-        i = 0
-        j = 0
+        def extract_commit_info(commit_dict):
+            commit_type = commit_dict['type']
+
+            if commit_type in ('unmodified', 'added'):
+                key = 'new_commit'
+            elif commit_type == 'removed':
+                key = 'old_commit'
+            else:
+                raise ValueError('Unexpected history entry type: %r'
+                                 % commit_type)
+
+            commit = commit_dict[key]
+
+            return {
+                'type': commit_type,
+                'author_name': commit.author_name,
+                'summary': commit.summary,
+            }
 
         commit_list = list(
-            DiffCommit.objects.select_related('diffset').filter(
-                diffset__pk__in=info.values()))
-
-        commits = []
+            DiffCommit.objects.filter(diffset__pk__in=info.values()))
 
         if 'old' in info:
+            old_diffset_id = info['old']
+
             old_commits = [
-                c
-                for c in commit_list
-                if c.diffset.pk == info['old']
+                commit
+                for commit in commit_list
+                if commit.diffset_id == old_diffset_id
             ]
+        else:
+            old_commits = []
 
         if 'new' in info:
+            new_diffset_id = info['new']
+
             new_commits = [
-                c
-                for c in commit_list
-                if c.diffset.pk == info['new']
+                commit
+                for commit in commit_list
+                if commit.diffset_id == new_diffset_id
             ]
-
-        while (i < len(old_commits) and
-               j < len(new_commits) and
-               old_commits[i].commit_id == new_commits[j].commit_id):
-            commits.append({
-                'type': 'unmodified',
-                'author_name': new_commits[j].author_name,
-                'summary': new_commits[j].summary,
-            })
-            i += 1
-            j += 1
-
-        commits.extend(
-            {
-                'type': 'removed',
-                'author_name': old_commit.author_name,
-                'summary': old_commit.summary,
-            }
-            for old_commit in old_commits[i:]
-        )
-
-        commits.extend(
-            {
-                'type': 'added',
-                'author_name': new_commit.author_name,
-                'summary': new_commit.summary,
-            }
-            for new_commit in new_commits[j:]
-        )
+        else:
+            new_commits = []
 
         return render_to_string(
             'reviews/boxes/commit_list_change.html',
             {
-                'commits': commits,
+                'commits': map(extract_commit_info,
+                               generate_commit_history_diff(old_commits,
+                                                            new_commits))
             })
 
     def serialize_change_entry(self, changedesc):

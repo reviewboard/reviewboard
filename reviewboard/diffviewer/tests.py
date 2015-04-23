@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import bz2
+from collections import namedtuple
 
 import dateutil.parser
 import nose
@@ -20,6 +21,7 @@ import reviewboard.diffviewer.parser as diffparser
 from reviewboard.admin.import_utils import has_module
 from reviewboard.diffviewer.chunk_generator import (DiffChunkGenerator,
                                                     RawDiffChunkGenerator)
+from reviewboard.diffviewer.commitutils import generate_commit_history_diff
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.forms import UploadDiffCommitForm, UploadDiffForm
 from reviewboard.diffviewer.models import (DiffCommit, DiffSet, FileDiff,
@@ -2862,6 +2864,94 @@ class DiffSetTests(TestCase):
                     merge_ordinal=1).save()
 
         self.assertDictEqual(dag, diffset.build_dag())
+
+
+class CommitUtilsTests(TestCase):
+    """Unit tests for commitutils."""
+
+    # A "fake" DiffCommit class for working with generate_commit_history_diff.
+    commit_type = namedtuple('FakeCommit', ('commit_id',))
+
+    def test_history_diffing_added(self):
+        """Testing generate_commit_history_diff with added commits"""
+        old_history = []
+        new_history = [self.commit_type('r0')]
+        expected_result = [
+            {
+                'type': 'added',
+                'old_commit': None,
+                'new_commit': new_history[0],
+            }
+        ]
+
+        self.assertEqual(expected_result,
+                         list(generate_commit_history_diff(old_history,
+                                                           new_history)))
+
+    def test_history_diffing_removed(self):
+        """Testing generate_commit_history_diff with removed commits"""
+        old_history = [self.commit_type('r0')]
+        new_history = []
+        expected_result = [
+            {
+                'type': 'removed',
+                'old_commit': old_history[0],
+                'new_commit': None,
+            }
+        ]
+
+        self.assertEqual(expected_result,
+                         list(generate_commit_history_diff(old_history,
+                                                           new_history)))
+
+    def test_history_diffing_added_and_removed(self):
+        """Testing generate_commit_history_diff with added and removed
+        commits"""
+        old_history = [self.commit_type('r0')]
+        new_history = [self.commit_type('r1')]
+        expected_result = [
+            {
+                'type': 'removed',
+                'old_commit': old_history[0],
+                'new_commit': None,
+            },
+            {
+                'type': 'added',
+                'old_commit': None,
+                'new_commit': new_history[0],
+            }
+        ]
+
+        self.assertEqual(expected_result,
+                         list(generate_commit_history_diff(old_history,
+                                                           new_history)))
+
+    def test_history_diffing_unmodified_added_and_removed(self):
+        """Testing generate_commit_history_diff with unmodified, added, and
+        removed commits"""
+        old_history = [self.commit_type('r0'), self.commit_type('r1')]
+        new_history = [self.commit_type('r0'), self.commit_type('r2')]
+        expected_result = [
+            {
+                'type': 'unmodified',
+                'old_commit': old_history[0],
+                'new_commit': new_history[0],
+            },
+            {
+                'type': 'removed',
+                'old_commit': old_history[1],
+                'new_commit': None,
+            },
+            {
+                'type': 'added',
+                'old_commit': None,
+                'new_commit': new_history[1],
+            }
+        ]
+        self.assertEqual(expected_result,
+                         list(generate_commit_history_diff(old_history,
+                                                           new_history)))
+
 
 class DiffUtilsTests(TestCase):
     """Unit tests for diffutils."""

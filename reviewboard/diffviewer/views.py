@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import logging
 import traceback
+from collections import defaultdict
 
 from django.conf import settings
 from django.core.paginator import InvalidPage, Paginator
@@ -15,10 +16,11 @@ from django.views.generic.base import TemplateView, View
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.http import encode_etag, etag_if_none_match, set_etag
 
+from reviewboard.diffviewer.commitutils import generate_commit_history_diff
 from reviewboard.diffviewer.diffutils import (get_diff_files,
                                               get_enable_highlighting)
 from reviewboard.diffviewer.errors import UserVisibleError
-from reviewboard.diffviewer.models import DiffSet, FileDiff
+from reviewboard.diffviewer.models import DiffCommit, DiffSet, FileDiff
 from reviewboard.diffviewer.renderers import (get_diff_renderer,
                                               get_diff_renderer_class)
 
@@ -177,18 +179,64 @@ class DiffViewerView(TemplateView):
             'diff_commits': [],
         }
 
-        if diffset.diff_commit_count > 0:
+        interdiffset_has_commits = (interdiffset and
+                                    interdiffset.diff_commit_count)
+
+        if diffset.diff_commit_count or interdiffset_has_commits:
+            diffset_pks = []
+
+            if diffset.diff_commit_count:
+                diffset_pks.append(diffset.pk)
+
+            if interdiffset_has_commits:
+                diffset_pks.append(interdiffset.pk)
+
             # Minimize the number of queries we have to perform to get the line
             # counts from the child FileDiffs.
-            commits = diffset.diff_commits.prefetch_related('files')
+            commits = DiffCommit.objects.prefetch_related('files').filter(
+                diffset_id__in=diffset_pks)
+
+            diffcommits_by_diffset_id = defaultdict(list)
 
             for commit in commits.all():
+                diffcommits_by_diffset_id[commit.diffset_id].append(commit)
+
+            if diffset.diff_commit_count and not interdiffset:
+                # When we are not viewing an interdiff, we do not want to
+                # show any commits as added or removed.
+                old_history = diffcommits_by_diffset_id[diffset.pk]
+                new_history = diffcommits_by_diffset_id[diffset.pk]
+            else:
+                old_history = diffcommits_by_diffset_id[diffset.pk]
+
+                if interdiffset:
+                    new_history = diffcommits_by_diffset_id[interdiffset.pk]
+                else:
+                    new_history = []
+
+            commit_diff = generate_commit_history_diff(old_history,
+                                                       new_history)
+
+            for history_entry in commit_diff:
+                entry_type = history_entry['type']
+
+                if entry_type in ('unmodified', 'added'):
+                    key = 'new_commit'
+                elif entry_type == 'removed':
+                    key = 'old_commit'
+                else:
+                    raise ValueError('Unexpected history entry type: %r'
+                                     % entry_type)
+
+                commit = history_entry[key]
+
                 entry = {
+                    'type': entry_type,
                     'author_name': commit.author_name,
-                    'commit_id': commit.commit_id,
                     'description': commit.description,
                 }
-                entry.update(commit.get_total_line_counts())
+
+                entry.update(history_entry[key].get_total_line_counts())
 
                 diff_context['diff_commits'].append(entry)
 
