@@ -1,7 +1,7 @@
 @import (reference) "../defs.less";
 
 
-@dashboard-sidebar-width: 18em;
+@dashboard-sidebar-width: 19em;
 
 
 /****************************************************************************
@@ -19,17 +19,12 @@
 }
 
 #dashboard_container {
-  .box-container, .box, .box-inner, #dashboard-wrapper {
-    margin-bottom: 0;
-    height: 100%;
-  }
+  margin-left: -1em;
 
   .box-sizing(border-box);
 }
 
 #dashboard-main {
-  background: white;
-  border-left: 1px @box-border-color solid;
   height: 100%;
   vertical-align: top;
   margin-left: @dashboard-sidebar-width;
@@ -46,15 +41,6 @@
 
   .datagrid-body-container {
     overflow-y: auto;
-    margin-right: 1px;
-  }
-
-  .datagrid-titlebox {
-    .border-radius(0 @box-inner-border-radius 0 0);
-  }
-
-  .datagrid-title {
-    background: transparent;
   }
 
   .datagrid-wrapper {
@@ -116,13 +102,15 @@
 
 #dashboard_sidebar {
   float: left;
-  position: left;
+  padding: 1em 0 1em 1em;
   top: 0;
   bottom: 1px;
-  position: left;
-  width: @dashboard-sidebar-width;
+  margin: 3em -1px 0 1px;
+  width: @dashboard-sidebar-width - 1em;
+  z-index: @z-index-deco;
 
   &.scrollable {
+    direction: rtl;  /* Position the scrollbar on the left. */
     float: none;
     overflow-y: auto;
     position: absolute;
@@ -145,10 +133,26 @@
       cursor: pointer;
     }
 
+    &.active,
+    &.active.has-url:hover {
+      .datagrid-sidebar-row {
+        background: @dashboard-sidebar-active-bg;
+        border: 1px @dashboard-sidebar-active-border-color solid;
+        border-right: 1px transparent solid;
+      }
+    }
+
+    &.has-url:hover .datagrid-sidebar-row {
+      background: @dashboard-sidebar-hover-bg;
+      border: 1px @dashboard-sidebar-hover-border-color solid;
+      border-right: 1px @dashboard-border-color solid;
+    }
+
     &.has-url:hover,
     &.active {
       .datagrid-sidebar-row {
-        background: @dashboard-sidebar-active-bg;
+        .border-radius(15px 0 0 15px);
+        .box-shadow(@box-shadow);
       }
     }
 
@@ -156,8 +160,10 @@
       margin: 0 0 1em 0;
 
       & > .datagrid-sidebar-row .label {
+        color: #444;
         font-size: 110%;
         font-weight: bold;
+        text-transform: uppercase;
       }
     }
 
@@ -198,28 +204,27 @@
     }
 
     .count {
+      color: @dashboard-sidebar-count-color;
       position: absolute;
-      top: @dashboard-sidebar-vert-padding;
-      right: @dashboard-sidebar-horiz-padding;
-      background: @dashboard-sidebar-count-bg;
-      border: 1px @dashboard-sidebar-count-border-color solid;
-      font-size: 90%;
+      top: 0.3em;
+      right: 2 * @dashboard-sidebar-horiz-padding;
+      font-size: 95%;
       padding: @dashboard-sidebar-count-vert-padding
                @dashboard-sidebar-count-horiz-padding;
       margin-top: -@dashboard-sidebar-count-vert-padding;
-      .border-radius(@dashboard-sidebar-count-border-radius);
 
       &.count-zero {
-        color: #666666;
-        background: @dashboard-sidebar-count-zero-bg;
-        border-color: @dashboard-sidebar-count-zero-border-color;
+        color: @dashboard-sidebar-count-zero-color;
       }
     }
 
     .datagrid-sidebar-row {
-      line-height: 16px;
+      line-height: 20px;
       padding: @dashboard-sidebar-vert-padding @dashboard-sidebar-horiz-padding;
       position: relative;
+
+      /* Match the border on the active row, to prevent content jumps. */
+      border: 1px transparent solid;
 
       .rb-icon {
         vertical-align: middle;
@@ -229,9 +234,10 @@
 }
 
 #dashboard-wrapper {
-  background-color: @dashboard-sidebar-bg;
+  background: none;
+  margin-bottom: 0;
   position: relative;
-  .border-radius(@box-inner-border-radius);
+  height: 100%;
 }
 
 #dashboard-navbar #user_page_profile {

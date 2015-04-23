@@ -13,7 +13,6 @@
 {% block content %}
 {%  if datagrid.sidebar %}
 <div id="dashboard_container">
-{%  box "dashboard" %}
  <div id="dashboard-wrapper">
   <div id="dashboard_sidebar"{% if datagrid.sidebar.css_classes %} class="{{datagrid.sidebar.css_classes|join:' '}}"{% endif %}>
    <ul id="dashboard-navbar">
@@ -28,10 +27,9 @@
 {{datagrid.render_listview}}
   </div>
  </div>
-{%  endbox %}
 </div>
 {%  else %}
-{{block.super}}
+{{datagrid.render_listview}}
 {%  endif %}
 {% endblock content %}
 

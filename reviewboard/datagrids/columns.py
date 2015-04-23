@@ -4,10 +4,12 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import NoReverseMatch
 from django.template.defaultfilters import date
 from django.utils import six
-from django.utils.html import conditional_escape, escape, format_html
+from django.utils.html import (conditional_escape, escape, format_html,
+                               format_html_join)
 from django.utils.six.moves import reduce
 from django.utils.translation import ugettext_lazy as _, ugettext
 from djblets.datagrid.grids import CheckboxColumn, Column, DateTimeColumn
+from djblets.gravatars import get_gravatar_url
 
 from reviewboard.accounts.models import Profile
 from reviewboard.reviews.models import ReviewRequest
@@ -36,6 +38,44 @@ class BaseStarColumn(Column):
     def render_data(self, state, obj):
         obj.starred = obj.pk in state.all_starred
         return render_star(state.datagrid.request.user, obj)
+
+
+class BaseSubmitterColumn(Column):
+    """Base class for the Submitter column.
+
+    We have two versions of this column: One for review request datagrids,
+    and one for review datagrids. This columns contains all the common
+    rendering logic between the two.
+    """
+
+    GRAVATAR_SIZE = 24
+
+    def __init__(self, *args, **kwargs):
+        super(BaseSubmitterColumn, self).__init__(
+            label=_('Submitter'),
+            field_name='review_request',
+            css_class='submitter-column',
+            shrink=True,
+            sortable=True,
+            link=True,
+            *args, **kwargs)
+
+    def render_user(self, state, user):
+        """Render the user's name and gravatar as HTML."""
+        gravatar_url = get_gravatar_url(state.datagrid.request, user,
+                                        self.GRAVATAR_SIZE)
+
+        if gravatar_url:
+            gravatar_html = format_html(
+                '<img src="{0}" width="{1}" height="{1}" alt="{2}" '
+                'class="gravatar" /> ',
+                gravatar_url, self.GRAVATAR_SIZE, user.username)
+        else:
+            gravatar_html = ''
+
+        return format_html(
+            '<a class="user" href="{0}">{1}{2}</a>',
+            user.get_absolute_url(), gravatar_html, user.username)
 
 
 class BugsColumn(Column):
@@ -433,20 +473,10 @@ class ReviewRequestStarColumn(BaseStarColumn):
         return queryset
 
 
-class ReviewSubmitterColumn(Column):
+class ReviewSubmitterColumn(BaseSubmitterColumn):
     """Shows the submitter of the review request for a review."""
-    def __init__(self, *args, **kwargs):
-        super(ReviewSubmitterColumn, self).__init__(
-            label=_('Submitter'),
-            field_name='review_request',
-            shrink=True,
-            sortable=True,
-            link=True,
-            css_class='submitter-column',
-            *args, **kwargs)
-
     def render_data(self, state, review):
-        return conditional_escape(review.review_request.submitter)
+        return self.render_user(state, review.review_request.submitter)
 
     def augment_queryset(self, state, queryset):
         return queryset.select_related('reviews')
@@ -480,17 +510,15 @@ class ShipItColumn(Column):
             return ''
 
 
-class SubmitterColumn(Column):
+class SubmitterColumn(BaseSubmitterColumn):
     """Shows the username of the user who submitted the review request."""
     def __init__(self, *args, **kwargs):
         super(SubmitterColumn, self).__init__(
-            label=_('Submitter'),
             db_field='submitter__username',
-            shrink=True,
-            sortable=True,
-            link=True,
-            css_class='submitter-column',
             *args, **kwargs)
+
+    def render_data(self, state, review_request):
+        return self.render_user(state, review_request.submitter)
 
     def augment_queryset(self, state, queryset):
         return queryset.select_related('submitter')

@@ -188,20 +188,24 @@
 @inline-actions-bg: darken(@diff-file-color, 3%);
 @inline-actions-hover-bg: darken(@inline-actions-bg, 5%);
 
+// Datagrids
+@datagrid-header-bg: #D0E6FF;
+
 // Dashboard
+@dashboard-border-color: #999999;
 @dashboard-sidebar-bg: #E9E9E9;
+@dashboard-sidebar-count-color: #A02222;
+@dashboard-sidebar-count-zero-color: #BBBBBB;
 @dashboard-sidebar-horiz-padding: 0.8em;
 @dashboard-sidebar-vert-padding: 0.4em;
 @dashboard-sidebar-item-vert-padding: 6px;
 @dashboard-sidebar-section-vert-padding: 8px;
-@dashboard-sidebar-active-bg: darken(@dashboard-sidebar-bg, 5%);
-@dashboard-sidebar-count-border-radius: 2 * @box-border-radius;
-@dashboard-sidebar-count-bg: lighten(@dashboard-sidebar-bg, 15%);
-@dashboard-sidebar-count-border-color: darken(@dashboard-sidebar-bg, 10%);
-@dashboard-sidebar-count-zero-bg: lighten(@dashboard-sidebar-bg, 3%);
-@dashboard-sidebar-count-zero-border-color: darken(@dashboard-sidebar-bg, 5%);
+@dashboard-sidebar-active-bg: #FFFFFF;
+@dashboard-sidebar-active-border-color: @dashboard-border-color;
 @dashboard-sidebar-count-vert-padding: 0px;
 @dashboard-sidebar-count-horiz-padding: 8px;
+@dashboard-sidebar-hover-bg: lighten(@dashboard-sidebar-active-bg, 30%);
+@dashboard-sidebar-hover-border-color: lighten(@dashboard-sidebar-active-border-color, 30%);
 
 // Mobile
 @mobile-navbar-hide-margin-left: -160px;

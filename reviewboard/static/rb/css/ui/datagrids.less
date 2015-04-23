@@ -3,96 +3,245 @@
 
 #page-container {
   .datagrid {
-    tr:last-child {
-      td:first-child {
-        .border-radius(0 0 0 @box-border-radius);
-      }
+    tr {
+      background: transparent;
 
-      td:last-child {
-        .border-radius(0 0 @box-border-radius 0);
+      &.even {
+        background: #FBFBFB;
       }
     }
 
-    td:last-child {
-      border-right: 0;
+    td {
+      border-bottom: 1px #F0F0F0 solid;
+      padding: 5px;
+
+      &:last-child {
+        border-right: 0;
+      }
+    }
+
+    tbody tr {
+      background: #FFFFFF;
     }
   }
 
+  /*
+   * Give both the fixed header table and the (eventually) hidden headers
+   * row in the body table a matching background and border style.
+   */
+  .datagrid-head,
+  .datagrid-body .datagrid-headers {
+    background: @datagrid-header-bg;
+    border-bottom: 1px @dashboard-border-color solid;
+    .border-radius(@box-border-radius @box-border-radius 0 0);
+  }
+
+  .datagrid-headers {
+    border-collapse: collapse;
+    border-spacing: 0;
+    overflow: hidden;
+  }
+
   .datagrid-header {
-    border-top: 0 !important;
+    /* Add rounded corners to the top-left and top-right of the header. */
+    &:first-child {
+      border-top-left-radius: @box-border-radius;
+    }
 
     &:last-child {
-      border-right: 0;
+      border-top-right-radius: @box-border-radius;
     }
   }
 
   .datagrid-main {
+    border: 1px @dashboard-border-color solid;
     .border-radius(@box-border-radius);
+    .box-shadow(@box-shadow);
+    .box-sizing(border-box);
+    overflow: hidden;
+    z-index: @z-index-base;
   }
 
   .datagrid-menu {
-    border: 1px #888A85 solid;
+    /*
+     * Override the Edit Columns menu to only show a border on the left.
+     * The menu should be flush with the top, bottom, and right of the
+     * table.
+     */
+    border: 0;
+    border-left: 1px @dashboard-border-color solid;
+    margin-top: 1px;
+
+    /*
+     * Override the default style for the "checkboxes" to not show a border.
+     * The actual checkmarks will be indication enough.
+     *
+     * Note that we still retain a faint hover style, showing a light grey
+     * box where the checkbox is.
+     */
+    .datagrid-menu-checkbox {
+      border: 0;
+    }
   }
 
   .datagrid-title-tabs {
-    display: block;
-    height: 1.5em;
+    display: inline-block;
     list-style: none;
 
+    /*
+     * Position the tabs immediately above the header, so that the active
+     * tab can sit directly on top of the border.
+     */
+    margin: 0.5em 0.5em 0 4em;
+    padding: 0;
+    position: relative;
+    vertical-align: bottom;
+    z-index: @z-index-deco;
+
     .datagrid-tab {
+      background: white;
+      border: 1px @dashboard-border-color solid;
+      border-right-width: 0;
       float: left;
+      padding: 0;
 
-      &.active {
-        &:hover {
-          .datagrid-title {
-            background: darken(@box-title-bg, 20%);
-          }
-        }
+      /*
+       * Position the bottom of the tab so it's sitting right on the header's
+       * border. We'll then turn off the border for the active tab below,
+       * so it's flush with the header.
+       */
+      margin: 0 0 -1px 0;
 
-        .datagrid-title {
-          background: darken(@box-title-bg, 10%);
-        }
+      &:first-child {
+        border-top-left-radius: @box-border-radius;
       }
 
-      .datagrid-title {
-        border-radius: 0;
-        border-right: 1px solid gray;
+      &:last-child {
+        border-top-right-radius: @box-border-radius;
+        border-right-width: 1px;
+      }
 
-        &:hover {
-          background: darken(@box-title-bg, 10%);
-        }
+      &.active {
+        background: @datagrid-header-bg;
+        border-bottom-color: transparent;
+      }
 
-        a {
-          text-decoration: none;
-          color: black;
-        }
+      a {
+        color: black;
+        display: inline-block;
+        font-size: 110%;
+        text-decoration: none;
+        padding: 0.8em 1em;
       }
     }
 
     .datagrid-showclosed {
-      padding: 2px 0px 0px 10px ;
+      padding: 2px 0 0 10px;
     }
   }
 
   .datagrid-wrapper {
     .datagrid-titlebox {
-      padding-left: 0px;
+      /* Turn off the default styles from Djblet's datagrid stylesheet. */
+      background: none;
+      border-bottom: 0;
+
+      /*
+       * Set the titlebox to be aligned properly with any content that
+       * comes immediately before it in .datagrid-main. This may be tabs,
+       * for instance.
+       */
+      display: inline-block;
+      margin: 1em 0.5em;
+      padding: 0;
+      vertical-align: middle;
 
       .datagrid-title {
-        padding-left: 10px;
+        background: transparent;
+        border-bottom: 0;
+        color: #444;
+        text-transform: uppercase;
       }
 
-      .datagrid-showclosed {
+      .datagrid-top-filters {
+        a {
+          text-decoration: none;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+      }
+    }
+
+    .paginator {
+      background: #EEE;
+      border-top: 1px #BBB solid;
+      .border-radius(0 0 @box-border-radius @box-border-radius);
+      padding: 0 0 0 1em;
+
+      a:hover {
+        background: none;
+        color: black;
+      }
+
+      a, span {
         display: inline-block;
       }
-    }
 
-    .datagrid-title,
-    .datagrid-titlebox {
-      background: @box-title-bg;
-      .border-radius(@box-border-radius @box-border-radius 0 0);
+      a, .current-page {
+        border: 0;
+        color: #999;
+        font-weight: bold;
+        padding: 0.7em;
+        min-width: 1em;
+        text-align: center;
+      }
+
+      .current-letter {
+        background: none;
+        border: 0;
+        padding: 0;
+      }
+
+      .current-letter,
+      .current-page {
+        background: none;
+        color: black;
+      }
+
+      .current-page {
+        border-bottom: 3px #777 solid;
+      }
+
+      .page-count {
+        color: #666;
+        font-weight: normal;
+      }
     }
   }
+}
+
+
+/*
+ * Set some common styles for the datagrid header cells.
+ *
+ * Borders will be turned off by default and the background will match that
+ * of the header. When a header is being dragged, the left and right borders
+ * will turn on again, to help provide a guide as to boundaries of the
+ * column.
+ */
+#page-container .datagrid-header,
+.datagrid-header-drag.datagrid-header {
+  background: @datagrid-header-bg;
+  border: 0;
+}
+
+.datagrid-header-drag.datagrid-header {
+  border: 1px @dashboard-border-color solid;
+  border-top: 0;
+  border-bottom: 0;
+  z-index: @z-index-deco;
 }
 
 
@@ -100,6 +249,76 @@
  * Column-specific styles
  ****************************************************************************/
 #page-container .datagrid {
+  .age1 {
+    background-color: #beedbc;
+    border: 1px #8bbd5c solid;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: #a1cb9f;
+    }
+  }
+
+  tr.even .age1 {
+    background-color: #b4e3b2;
+  }
+
+  .age2 {
+    background-color: #ddfa8e;
+    border: 1px #a3e266 solid;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: #bcd675;
+    }
+  }
+
+  tr.even .age2 {
+    background-color: #d3f084;
+  }
+
+  .age3 {
+    background-color: #fdf18c;
+    border: 1px #d8c158 solid;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: #d9ce74;
+    }
+  }
+
+  tr.even .age3 {
+    background-color: #f3e782;
+  }
+
+  .age4 {
+    background-color: #fed3a9;
+    border: 1px #d49659 solid;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: #dab38e;
+    }
+  }
+
+  tr.even .age4 {
+    background-color: #f4c99f;
+  }
+
+  .age5 {
+    background-color: lighten(#fab6b6, 3%);
+    border: 1px lighten(#f56363, 17%) solid;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: #d69999;
+    }
+  }
+
+  tr.even .age5 {
+    background-color: lighten(#f0acac, 3%);
+  }
+
   .diff-size-column {
     font-size: 90%;
 
@@ -110,6 +329,10 @@
     &.insert {
       color: @diff-insert-line-count-color;
     }
+  }
+
+  .month {
+    background-color: #E9E9E9;
   }
 
   .issue-count,
@@ -136,7 +359,7 @@
   }
 
   .shipit-count {
-    background-image: url("../images/shipit_bg.png");
+    background-image: url("../../images/shipit_bg.png");
     background-position: top left;
     background-repeat: repeat-x;
     background-color: #6bc810;
@@ -144,7 +367,22 @@
     color: #205003;
   }
 
-  .repository-column, .submitter-column {
+  .repository-column,
+  .submitter-column {
     white-space: nowrap;
+  }
+
+  .submitter-column {
+    padding-top: 0;
+    padding-bottom: 0;
+
+    img {
+      .border-radius(50%);
+      vertical-align: middle;
+    }
+  }
+
+  .summary {
+    cursor: pointer;
   }
 }

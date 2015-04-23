@@ -341,7 +341,7 @@ RB.DashboardView = Backbone.View.extend({
         this.model.clearSelection();
 
         $editCols
-            .width($editCols.width() - 1)  // Account for border
+            .width($editCols.width() - $editCols.getExtents('b', 'lr'))
             .html('<span class="fa fa-spinner fa-pulse"></span>');
 
         this._$wrapper.load(window.location + ' #dashboard-wrapper',
