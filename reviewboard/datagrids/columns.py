@@ -24,7 +24,9 @@ class BaseStarColumn(Column):
 
     The star is interactive, allowing the user to star or unstar the item.
     """
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(BaseStarColumn, self).__init__(
             image_class='rb-icon rb-icon-star-on',
             image_alt=_('Starred'),
@@ -33,9 +35,11 @@ class BaseStarColumn(Column):
             *args, **kwargs)
 
     def setup_state(self, state):
+        """Set up the state for this column."""
         state.all_starred = set()
 
     def render_data(self, state, obj):
+        """Return the rendered contents of the column."""
         obj.starred = obj.pk in state.all_starred
         return render_star(state.datagrid.request.user, obj)
 
@@ -51,6 +55,7 @@ class BaseSubmitterColumn(Column):
     GRAVATAR_SIZE = 24
 
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(BaseSubmitterColumn, self).__init__(
             label=_('Submitter'),
             field_name='review_request',
@@ -84,7 +89,9 @@ class BugsColumn(Column):
     The list of bugs will be linked to the bug tracker, if a bug tracker
     was configured for the repository the review request's change is on.
     """
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(BugsColumn, self).__init__(
             label=_('Bugs'),
             css_class='bugs',
@@ -94,9 +101,11 @@ class BugsColumn(Column):
             *args, **kwargs)
 
     def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset."""
         return queryset.select_related('repository')
 
     def render_data(self, state, review_request):
+        """Return the rendered contents of the column."""
         bugs = review_request.get_bug_list()
         repository = review_request.repository
         local_site_name = None
@@ -123,7 +132,10 @@ class BugsColumn(Column):
 
 
 class ReviewRequestCheckboxColumn(CheckboxColumn):
+    """A column containing a check-box."""
+
     def render_data(self, state, obj):
+        """Return the rendered contents of the column."""
         if self.is_selectable(state, obj):
             checked = ''
 
@@ -143,7 +155,9 @@ class DateTimeSinceColumn(DateTimeColumn):
     These columns will dynamically update as the page is shown, so that the
     number of minutes, hours, days, etc. ago is correct.
     """
+
     def render_data(self, state, obj):
+        """Return the rendered contents of the column."""
         return '<time class="timesince" datetime="%s">%s</time>' % (
             date(getattr(obj, self.field_name), 'c'),
             super(DateTimeSinceColumn, self).render_data(state, obj))
@@ -151,7 +165,9 @@ class DateTimeSinceColumn(DateTimeColumn):
 
 class DiffUpdatedColumn(DateTimeColumn):
     """Shows the date/time that the diff was last updated."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(DiffUpdatedColumn, self).__init__(
             label=_('Diff Updated'),
             db_field='diffset_history__last_diff_updated',
@@ -161,9 +177,11 @@ class DiffUpdatedColumn(DateTimeColumn):
             *args, **kwargs)
 
     def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset."""
         return queryset.select_related('diffset_history')
 
     def render_data(self, state, obj):
+        """Return the rendered contents of the column."""
         if obj.diffset_history.last_diff_updated:
             return super(DiffUpdatedColumn, self).render_data(
                 state, obj.diffset_history)
@@ -173,7 +191,9 @@ class DiffUpdatedColumn(DateTimeColumn):
 
 class DiffUpdatedSinceColumn(DateTimeSinceColumn):
     """Shows the elapsed time since the diff was last updated."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(DiffUpdatedSinceColumn, self).__init__(
             label=_('Diff Updated'),
             db_field='diffset_history__last_diff_updated',
@@ -183,9 +203,11 @@ class DiffUpdatedSinceColumn(DateTimeSinceColumn):
             *args, **kwargs)
 
     def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset."""
         return queryset.select_related('diffset_history')
 
     def render_data(self, state, obj):
+        """Return the rendered contents of the column."""
         if obj.diffset_history.last_diff_updated:
             return super(DiffUpdatedSinceColumn, self).render_data(
                 state, obj.diffset_history)
@@ -195,16 +217,20 @@ class DiffUpdatedSinceColumn(DateTimeSinceColumn):
 
 class GroupMemberCountColumn(Column):
     """Shows the number of users that are part of a review group."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(GroupMemberCountColumn, self).__init__(
             link=True,
             link_func=self.link_to_object,
             *args, **kwargs)
 
     def render_data(self, state, group):
+        """Return the rendered contents of the column."""
         return six.text_type(group.users.count())
 
     def link_to_object(self, state, group, value):
+        """Return the link to the object in the column."""
         return local_site_reverse('group-members',
                                   request=state.datagrid.request,
                                   args=[group.name])
@@ -212,7 +238,9 @@ class GroupMemberCountColumn(Column):
 
 class GroupsColumn(Column):
     """Shows the list of groups requested to review the review request."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(GroupsColumn, self).__init__(
             label=_('Groups'),
             detailed_label=_('Target Groups'),
@@ -221,16 +249,20 @@ class GroupsColumn(Column):
             *args, **kwargs)
 
     def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset."""
         return queryset.prefetch_related('target_groups')
 
     def render_data(self, state, review_request):
+        """Return the rendered contents of the column."""
         groups = review_request.target_groups.all()
         return reduce(lambda a, d: a + d.name + ' ', groups, '')
 
 
 class MyCommentsColumn(Column):
     """Shows if the current user has reviewed the review request."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(MyCommentsColumn, self).__init__(
             image_class='rb-icon rb-icon-datagrid-comment-draft',
             image_alt=_('My Comments'),
@@ -243,6 +275,7 @@ class MyCommentsColumn(Column):
         # values.
 
     def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset."""
         user = state.datagrid.request.user
 
         if user.is_anonymous():
@@ -279,6 +312,7 @@ class MyCommentsColumn(Column):
         })
 
     def render_data(self, state, review_request):
+        """Return the rendered contents of the column."""
         user = state.datagrid.request.user
 
         if user.is_anonymous() or review_request.mycomments_my_reviews == 0:
@@ -310,7 +344,9 @@ class NewUpdatesColumn(Column):
     This will show an icon if the review request has had any new updates
     or reviews since the user last saw it.
     """
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(NewUpdatesColumn, self).__init__(
             image_class='rb-icon rb-icon-datagrid-new-updates',
             image_alt=_('New Updates'),
@@ -319,6 +355,7 @@ class NewUpdatesColumn(Column):
             *args, **kwargs)
 
     def render_data(self, state, review_request):
+        """Return the rendered contents of the column."""
         if review_request.new_review_count > 0:
             return '<div class="%s" title="%s" />' % \
                    (self.image_class, self.image_alt)
@@ -332,7 +369,9 @@ class PendingCountColumn(Column):
     This will show the pending number of review requests for the given
     review group or user. It only applies to group or user lists.
     """
+
     def render_data(self, state, obj):
+        """Return the rendered contents of the column."""
         return six.text_type(
             getattr(obj, self.field_name).filter(
                 public=True, status='P').count())
@@ -340,7 +379,9 @@ class PendingCountColumn(Column):
 
 class PeopleColumn(Column):
     """Shows the list of people requested to review the review request."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(PeopleColumn, self).__init__(
             label=_('People'),
             detailed_label=_('Target People'),
@@ -349,16 +390,20 @@ class PeopleColumn(Column):
             *args, **kwargs)
 
     def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset."""
         return queryset.prefetch_related('target_people')
 
     def render_data(self, state, review_request):
+        """Return the rendered contents of the column."""
         people = review_request.target_people.all()
         return reduce(lambda a, d: a + d.username + ' ', people, '')
 
 
 class RepositoryColumn(Column):
     """Shows the name of the repository the review request's change is on."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(RepositoryColumn, self).__init__(
             label=_('Repository'),
             db_field='repository__name',
@@ -369,15 +414,19 @@ class RepositoryColumn(Column):
             *args, **kwargs)
 
     def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset."""
         return queryset.select_related('repository')
 
     def render_data(self, state, obj):
+        """Return the rendered contents of the column."""
         return super(RepositoryColumn, self).render_data(state, obj) or ''
 
 
 class ReviewCountColumn(Column):
     """Shows the number of published reviews for a review request."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(ReviewCountColumn, self).__init__(
             label=_('Reviews'),
             detailed_label=_('Number of Reviews'),
@@ -387,9 +436,11 @@ class ReviewCountColumn(Column):
             *kwargs, **kwargs)
 
     def render_data(self, state, review_request):
+        """Return the rendered contents of the column."""
         return six.text_type(review_request.publicreviewcount_count)
 
     def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset."""
         return queryset.extra(select={
             'publicreviewcount_count': """
                 SELECT COUNT(*)
@@ -402,6 +453,7 @@ class ReviewCountColumn(Column):
         })
 
     def link_to_object(self, state, review_request, value):
+        """Return the link to the object in the column."""
         return '%s#last-review' % review_request.get_absolute_url()
 
 
@@ -410,7 +462,9 @@ class ReviewGroupStarColumn(BaseStarColumn):
 
     The star is interactive, allowing the user to star or unstar the group.
     """
+
     def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset."""
         user = state.datagrid.request.user
 
         if user.is_anonymous():
@@ -430,7 +484,9 @@ class ReviewGroupStarColumn(BaseStarColumn):
 
 class ReviewRequestIDColumn(Column):
     """Displays the ID of the review request."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(ReviewRequestIDColumn, self).__init__(
             label=_('ID'),
             detailed_label=_('Review Request ID'),
@@ -440,12 +496,14 @@ class ReviewRequestIDColumn(Column):
             *args, **kwargs)
 
     def get_sort_field(self, state):
+        """Return the model field for sorting this column."""
         if state.datagrid.local_site:
             return 'local_id'
         else:
             return 'id'
 
     def render_data(self, state, review_request):
+        """Return the rendered contents of the column."""
         return review_request.display_id
 
 
@@ -455,7 +513,9 @@ class ReviewRequestStarColumn(BaseStarColumn):
     The star is interactive, allowing the user to star or unstar the
     review request.
     """
+
     def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset."""
         user = state.datagrid.request.user
 
         if user.is_anonymous():
@@ -475,16 +535,21 @@ class ReviewRequestStarColumn(BaseStarColumn):
 
 class ReviewSubmitterColumn(BaseSubmitterColumn):
     """Shows the submitter of the review request for a review."""
+
     def render_data(self, state, review):
+        """Return the rendered contents of the column."""
         return self.render_user(state, review.review_request.submitter)
 
     def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset."""
         return queryset.select_related('reviews')
 
 
 class ShipItColumn(Column):
     """Shows the "Ship It" count for a review request."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(ShipItColumn, self).__init__(
             image_class='rb-icon rb-icon-shipit',
             image_alt=_('Ship It!'),
@@ -495,6 +560,7 @@ class ShipItColumn(Column):
             *args, **kwargs)
 
     def render_data(self, state, review_request):
+        """Return the rendered contents of the column."""
         if review_request.issue_open_count > 0:
             return ('<span class="issue-count">'
                     ' <span class="issue-icon">!</span> %s'
@@ -512,15 +578,19 @@ class ShipItColumn(Column):
 
 class SubmitterColumn(BaseSubmitterColumn):
     """Shows the username of the user who submitted the review request."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(SubmitterColumn, self).__init__(
             db_field='submitter__username',
             *args, **kwargs)
 
     def render_data(self, state, review_request):
+        """Return the rendered contents of the column."""
         return self.render_user(state, review_request.submitter)
 
     def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset."""
         return queryset.select_related('submitter')
 
 
@@ -530,7 +600,9 @@ class SummaryColumn(Column):
     This will also prepend the draft/submitted/discarded state, if any,
     to the summary.
     """
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(SummaryColumn, self).__init__(
             label=_('Summary'),
             expand=True,
@@ -540,6 +612,7 @@ class SummaryColumn(Column):
             *args, **kwargs)
 
     def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset."""
         user = state.datagrid.request.user
 
         if user.is_anonymous():
@@ -555,6 +628,7 @@ class SummaryColumn(Column):
         })
 
     def render_data(self, state, review_request):
+        """Return the rendered contents of the column."""
         summary = review_request.summary
         labels = {}
 
@@ -593,7 +667,9 @@ class ReviewSummaryColumn(SummaryColumn):
     This does not (yet) prepend the draft/submitted/discarded state, if any,
     to the summary.
     """
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(SummaryColumn, self).__init__(
             label=_('Review Request Summary'),
             expand=True,
@@ -602,9 +678,11 @@ class ReviewSummaryColumn(SummaryColumn):
             *args, **kwargs)
 
     def render_data(self, state, review):
+        """Return the rendered contents of the column."""
         return conditional_escape(review.review_request.summary)
 
     def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset."""
         return queryset.select_related('reviews')
 
 
@@ -614,7 +692,9 @@ class ToMeColumn(Column):
     This will show an indicator if the user is on the Target People reviewers
     list.
     """
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         raquo = '\u00BB'
 
         super(ToMeColumn, self).__init__(
@@ -625,6 +705,7 @@ class ToMeColumn(Column):
             *args, **kwargs)
 
     def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset."""
         user = state.datagrid.request.user
 
         if user.is_authenticated():
@@ -638,6 +719,7 @@ class ToMeColumn(Column):
         return queryset
 
     def render_data(self, state, review_request):
+        """Return the rendered contents of the column."""
         if review_request.pk in state.all_to_me:
             return ('<div title="%s"><b>&raquo;</b></div>'
                     % (self.detailed_label))
@@ -647,7 +729,9 @@ class ToMeColumn(Column):
 
 class DiffSizeColumn(Column):
     """Indicates line add/delete counts for the latest diffset."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the column."""
         super(DiffSizeColumn, self).__init__(
             label=_('Diff Size'),
             sortable=False,
@@ -655,6 +739,7 @@ class DiffSizeColumn(Column):
             *args, **kwargs)
 
     def render_data(self, state, review_request):
+        """Return the rendered contents of the column."""
         try:
             diffset = review_request.diffset_history.diffsets.latest()
         except ObjectDoesNotExist:

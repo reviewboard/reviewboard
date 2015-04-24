@@ -47,7 +47,9 @@ from reviewboard.site.urlresolvers import local_site_reverse
 
 class ShowClosedReviewRequestsMixin(object):
     """A mixin for showing or hiding closed review requests."""
+
     def load_extra_state(self, profile, allow_hide_closed=True):
+        """Load extra state for the datagrid."""
         if profile:
             self.show_closed = profile.show_closed
 
@@ -121,6 +123,7 @@ class ReviewRequestDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
     This datagrid accepts the show_closed parameter in the URL, allowing
     submitted review requests to be filtered out or displayed.
     """
+
     my_comments = MyCommentsColumn()
     star = ReviewRequestStarColumn()
     ship_it = ShipItColumn()
@@ -181,6 +184,7 @@ class ReviewRequestDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
     site_query_field = 'local_site'
 
     def __init__(self, *args, **kwargs):
+        """Initialize the datagrid."""
         self.local_site = kwargs.pop('local_site', None)
 
         super(ReviewRequestDataGrid, self).__init__(*args, **kwargs)
@@ -205,14 +209,17 @@ class ReviewRequestDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
             self.diff_updated.timezone = self.timezone
 
     def load_extra_state(self, profile, allow_hide_closed=True):
+        """Load extra state for the datagrid."""
         return super(ReviewRequestDataGrid, self).load_extra_state(
             profile, allow_hide_closed)
 
     def post_process_queryset(self, queryset):
+        """Add additional data to the queryset."""
         q = queryset.with_counts(self.request.user)
         return super(ReviewRequestDataGrid, self).post_process_queryset(q)
 
     def link_to_object(self, state, obj, value):
+        """Return a link to the given object."""
         if value and isinstance(value, User):
             return local_site_reverse('user', request=self.request,
                                       args=[value])
@@ -226,6 +233,7 @@ class ReviewDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
     This datagrid accepts the show_closed parameter in the URL, allowing
     submitted review requests to be filtered out or displayed.
     """
+
     timestamp = DateTimeColumn(
         label=_('Date Reviewed'),
         format='F jS, Y',
@@ -237,6 +245,7 @@ class ReviewDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
     site_query_field = 'review_request__local_site'
 
     def __init__(self, *args, **kwargs):
+        """Initialize the datagrid."""
         self.local_site = kwargs.pop('local_site', None)
 
         super(ReviewDataGrid, self).__init__(*args, **kwargs)
@@ -263,6 +272,7 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
     The dashboard is the main place where users see what review requests
     are out there that may need their attention.
     """
+
     new_updates = NewUpdatesColumn()
     my_comments = MyCommentsColumn()
     selected = ReviewRequestCheckboxColumn()
@@ -279,6 +289,7 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
     periodic_reload = True
 
     def __init__(self, *args, **kwargs):
+        """Initialize the datagrid."""
         local_site = kwargs.get('local_site', None)
 
         super(DashboardDataGrid, self).__init__(*args, **kwargs)
@@ -303,6 +314,7 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
             profile=self.profile)[0]
 
     def load_extra_state(self, profile):
+        """Load extra state for the datagrid."""
         group_name = self.request.GET.get('group', '')
         view = self.request.GET.get('view', self.default_view)
         user = self.request.user
@@ -357,6 +369,7 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
 
 class UsersDataGrid(AlphanumericDataGrid):
     """A datagrid showing a list of users registered on Review Board."""
+
     username = Column(_('Username'), link=True, sortable=True)
     fullname = Column(_('Full Name'), field_name='get_full_name',
                       link=True, expand=True)
@@ -368,6 +381,7 @@ class UsersDataGrid(AlphanumericDataGrid):
                  queryset=User.objects.filter(is_active=True),
                  title=_('All users'),
                  local_site=None):
+        """Initialize the datagrid."""
         if local_site:
             qs = queryset.filter(local_site=local_site)
         else:
@@ -385,12 +399,14 @@ class UsersDataGrid(AlphanumericDataGrid):
         ]
 
     def link_to_object(self, state, obj, value):
+        """Return a link to the given object."""
         return local_site_reverse('user', request=self.request,
                                   args=[obj.username])
 
 
 class GroupDataGrid(DataGrid):
     """A datagrid showing a list of review groups accessible by the user."""
+
     star = ReviewGroupStarColumn()
     name = Column(_('Group ID'), link=True, sortable=True)
     displayname = Column(_('Group Name'), field_name='display_name',
@@ -404,6 +420,7 @@ class GroupDataGrid(DataGrid):
                                           shrink=True)
 
     def __init__(self, request, title=_('All groups'), *args, **kwargs):
+        """Initialize the datagrid."""
         local_site = kwargs.pop('local_site', None)
         queryset = Group.objects.accessible(request.user,
                                             local_site=local_site)
@@ -420,6 +437,7 @@ class GroupDataGrid(DataGrid):
 
     @staticmethod
     def link_to_object(state, obj, value):
+        """Return a link to the given object."""
         return obj.get_absolute_url()
 
 
@@ -428,6 +446,7 @@ class UserPageDataGridMixin(DataGridSidebarMixin):
 
     This will display information about the user on the side.
     """
+
     sidebar = Sidebar([
         UserProfileItem,
         UserGroupsItem,
@@ -440,7 +459,9 @@ class UserPageReviewRequestDataGrid(UserPageDataGridMixin,
 
     This will show the review requests the user has out for review.
     """
+
     def __init__(self, request, user, *args, **kwargs):
+        """Initialize the datagrid."""
         queryset = ReviewRequest.objects.from_user(
             user.username,
             user=request.user,
@@ -461,6 +482,7 @@ class UserPageReviewRequestDataGrid(UserPageDataGridMixin,
 
     @staticmethod
     def tab_title(username):
+        """Return the localized title for the tab."""
         return _("%s's review requests") % username
 
 
@@ -469,7 +491,9 @@ class UserPageReviewsDataGrid(UserPageDataGridMixin, ReviewDataGrid):
 
     This will show reviews the user has made on other review requests.
     """
+
     def __init__(self, request, user, *args, **kwargs):
+        """Initialize the datagrid."""
         queryset = Review.objects.from_user(
             user.username,
             user=request.user,
@@ -489,4 +513,5 @@ class UserPageReviewsDataGrid(UserPageDataGridMixin, ReviewDataGrid):
 
     @staticmethod
     def tab_title(username):
+        """Return the localized title for the tab."""
         return _("%s's reviews") % username

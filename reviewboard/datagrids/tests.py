@@ -15,7 +15,10 @@ from reviewboard.testing import TestCase
 
 
 class BaseViewTestCase(TestCase):
+    """Base class for tests of dashboard views."""
+
     def setUp(self):
+        """Set up the test case."""
         super(BaseViewTestCase, self).setUp()
 
         self.siteconfig = SiteConfiguration.objects.get_current()
@@ -23,6 +26,7 @@ class BaseViewTestCase(TestCase):
         self.siteconfig.save()
 
     def _get_context_var(self, response, varname):
+        """Return a variable from the view context."""
         for context in response.context:
             if varname in context:
                 return context[varname]
@@ -32,6 +36,7 @@ class BaseViewTestCase(TestCase):
 
 class AllReviewRequestViewTests(BaseViewTestCase):
     """Unit tests for the all_review_requests view."""
+
     @add_fixtures(['test_users'])
     def test_with_access(self):
         """Testing all_review_requests view"""
@@ -134,6 +139,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
 
 class DashboardViewTests(BaseViewTestCase):
     """Unit tests for the dashboard view."""
+
     @add_fixtures(['test_users'])
     def test_incoming(self):
         """Testing dashboard view (incoming)"""
@@ -376,6 +382,7 @@ class DashboardViewTests(BaseViewTestCase):
 
 class GroupListViewTests(BaseViewTestCase):
     """Unit tests for the group_list view."""
+
     @add_fixtures(['test_users'])
     def test_with_access(self):
         """Testing group_list view"""
@@ -407,6 +414,7 @@ class GroupListViewTests(BaseViewTestCase):
 
 class SubmitterListViewTests(BaseViewTestCase):
     """Unit tests for the users_list view."""
+
     @add_fixtures(['test_users'])
     def test_with_access(self):
         """Testing users_list view"""
@@ -450,6 +458,7 @@ class SubmitterListViewTests(BaseViewTestCase):
 
 class SubmitterViewTests(BaseViewTestCase):
     """Unit tests for the submitter view."""
+
     @add_fixtures(['test_users'])
     def test_with_private_review_requests(self):
         """Testing submitter view with private review requests"""
