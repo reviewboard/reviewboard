@@ -96,6 +96,9 @@
 @z-index-dialog: 120;
 @z-index-page-overlay: 130;
 @z-index-spinner: 140;
+@z-index-nav-menu-mask: 199;
+@z-index-nav-menu: 200;
+@z-index-nav-menu-logo: 201;
 
 // Icon dimensions
 @rb-icon-edit-width: 20px;
@@ -222,9 +225,11 @@
 // Mobile
 @mobile-navbar-hide-margin-left: -160px;
 @mobile-medium-width-720: 720px;
+
 .on-mobile-medium-screen-720(@rules) {
   @media screen and (max-width: @mobile-medium-width-720),
-         screen and (max-device-width: @mobile-medium-width-720) and (orientation: landscape) {
+         screen and (max-device-width: @mobile-medium-width-720) and
+                     (orientation: landscape) {
     @rules();
   }
 }

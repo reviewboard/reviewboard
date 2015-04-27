@@ -44,9 +44,13 @@
     }
   }
 
-  #navbar {
-    border-bottom-color: @topbar-border-color;
+  #navbar-container {
+    background: @topbar-bg;
+    border-color: @topbar-border-color;
+  }
 
+  #mobile-account-nav,
+  #navbar {
     a {
       color: @topbar-link-color;
     }
@@ -54,6 +58,7 @@
 
   #topbar {
     background: @topbar-bg;
+    border-bottom-color: @topbar-border-color;
     color: @topbar-text-color;
 
     .version {

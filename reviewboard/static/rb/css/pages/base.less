@@ -218,11 +218,12 @@ textarea {
     top: 3px;
     left: @headerbar-logo-padding-horiz;
     cursor: pointer;
-    z-index: @z-index-menu;
+    z-index: @z-index-nav-menu-logo;
 
     .on-mobile-medium-screen-720({
-      height: 24px;
-      width: 24px;
+      top: 0;
+      height: 32px;
+      width: 32px;
     });
   }
 
@@ -236,6 +237,7 @@ textarea {
 
     .on-mobile-medium-screen-720({
       line-height: 23px;
+      margin-left: 0.8em;
     });
 
     a {
@@ -322,7 +324,7 @@ textarea {
   .opacity(50);
   width: 100%;
   height: 100%;
-  z-index: @z-index-base;
+  z-index: @z-index-nav-menu-mask;
   position: absolute;
   top: 32px;
   left: 0;
@@ -332,15 +334,18 @@ textarea {
  * The container for the navigation bar.
  */
 #navbar-container {
-  margin: 0 0 @page-container-padding 0;
-
   .on-mobile-medium-screen-720({
+    border-right: 1px solid;
     position: absolute;
-    z-index: @z-index-menu;
+    z-index: @z-index-nav-menu;
     left: @mobile-navbar-hide-margin-left;
     height: 100%;
-    background: @light-blue;
   });
+
+  a {
+    font-size: 110%;
+    text-decoration: none;
+  }
 }
 
 #mobile-account-nav {
@@ -374,7 +379,6 @@ textarea {
  * etc.
  */
 #navbar {
-  border-bottom: 1px #CCC solid;
   list-style: none;
   margin: 0;
   min-height: 1.5em;
@@ -395,11 +399,6 @@ textarea {
     });
   }
 
-  a {
-    font-size: 110%;
-    text-decoration: none;
-  }
-
   .newreviewrequest {
     text-align: right;
   }
@@ -415,6 +414,12 @@ textarea {
     margin-top: 10px;
   });
 }
+
+#topbar {
+  border-bottom: 1px solid;
+  margin: 0 0 @page-container-padding 0;
+}
+
 
 /*
  * The box containing information on an AJAX error.
