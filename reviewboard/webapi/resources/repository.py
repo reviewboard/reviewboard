@@ -79,6 +79,13 @@ class RepositoryResource(WebAPIResource):
                            'communication class used to talk to the '
                            'repository. This is generally the type of the '
                            'repository.',
+        },
+        'bug_tracker': {
+            'type': six.text_type,
+            'description': 'The URL to a bug in the bug tracker for '
+                           'this repository, with ``%s`` in place of the '
+                           'bug ID.',
+            'added_in': '2.5',
         }
     }
     uri_object_key = 'repository_id'
