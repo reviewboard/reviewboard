@@ -171,13 +171,13 @@ class FileDiff(models.Model):
             return None
 
     def _set_parent_diff(self, parent_diff):
-        if parent_diff != "":
+        if parent_diff != b'':
             hashkey = self._hash_hexdigest(parent_diff)
 
             # Add hash to table if it doesn't exist, and set diff_hash to this.
             self.parent_diff_hash, is_new = FileDiffData.objects.get_or_create(
                 binary_hash=hashkey, defaults={'binary': parent_diff})
-            self.parent_diff64 = ""
+            self.parent_diff64 = ''
 
             return is_new
         else:
