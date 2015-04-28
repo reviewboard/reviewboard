@@ -63,11 +63,21 @@ RB.HeaderView = Backbone.View.extend({
                 $(this).addClass('menu-active');
             });
 
-            this._$mobileMenuMask.show();
+            this._$mobileMenuMask
+                .css('opacity', 0)
+                .show()
+                .animate({
+                    opacity: 0.5
+                });
             this._$body.css('overflow', 'hidden');
         } else {
             this._$body.css('overflow', '');
-            this._$mobileMenuMask.hide();
+            this._$mobileMenuMask
+                .animate({
+                    opacity: 0
+                }, function() {
+                    $(this).hide();
+                });
 
             this._$navbarContainer.animate({
                 left: '-160px'

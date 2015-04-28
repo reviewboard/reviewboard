@@ -59,16 +59,25 @@ options = None
 
 
 class PlatformHandler(object):
+    """A generic base class for wrapping platform-specific operations.
+
+    This should be subclassed for each major platform.
+    """
+
     def __init__(self, channel):
+        """Initialize the handler."""
         self.channel = channel
 
     def shell(self):
+        """Open a shell."""
         raise NotImplementedError
 
     def transfer(self):
+        """Transfer data over the channel."""
         raise NotImplementedError
 
     def process_channel(self, channel):
+        """Process the given channel."""
         if channel.closed:
             return False
 
@@ -100,6 +109,7 @@ class PlatformHandler(object):
         return True
 
     def process_stdin(self, channel):
+        """Read data from stdin and send it over the channel."""
         logging.debug('!! process_stdin\n')
 
         try:
@@ -117,7 +127,10 @@ class PlatformHandler(object):
 
 
 class PosixHandler(PlatformHandler):
+    """A platform handler for POSIX-type platforms."""
+
     def shell(self):
+        """Open a shell."""
         import termios
         import tty
 
@@ -132,6 +145,7 @@ class PosixHandler(PlatformHandler):
             termios.tcsetattr(sys.stdin, termios.TCSADRAIN, oldtty)
 
     def transfer(self):
+        """Transfer data over the channel."""
         import fcntl
 
         fd = sys.stdin.fileno()
@@ -141,6 +155,7 @@ class PosixHandler(PlatformHandler):
         self.handle_communications()
 
     def handle_communications(self):
+        """Handle any pending data over the channel or stdin."""
         while True:
             rl, wl, el = select.select([self.channel, sys.stdin], [], [])
 
@@ -155,13 +170,18 @@ class PosixHandler(PlatformHandler):
 
 
 class WindowsHandler(PlatformHandler):
+    """A platform handler for Microsoft Windows platforms."""
+
     def shell(self):
+        """Open a shell."""
         self.handle_communications()
 
     def transfer(self):
+        """Transfer data over the channel."""
         self.handle_communications()
 
     def handle_communications(self):
+        """Handle any pending data over the channel or stdin."""
         import threading
 
         logging.debug('!! begin_windows_transfer\n')
@@ -189,11 +209,13 @@ class WindowsHandler(PlatformHandler):
 
 
 def print_version(option, opt, value, parser):
+    """Print the current version and exit."""
     parser.print_version()
     sys.exit(0)
 
 
 def parse_options(args):
+    """Parse the given arguments into the global ``options`` dictionary."""
     global options
 
     hostname = None
@@ -254,6 +276,7 @@ def parse_options(args):
 
 
 def main():
+    """Run the application."""
     if DEBUG:
         pid = os.getpid()
         log_filename = 'rbssh-%s.log' % pid

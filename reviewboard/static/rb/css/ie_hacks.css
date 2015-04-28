@@ -65,7 +65,7 @@ table.sidebyside tbody.insert td:first-child {
 }
 
 /* IE can't seem to do fixed height for the two columns, so force a minimum. */
-#dashboard-main .datagrid-main {
+#datagrid_page_main .datagrid-main {
   height: 35em;
 }
 

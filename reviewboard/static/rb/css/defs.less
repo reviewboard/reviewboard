@@ -5,7 +5,7 @@
 @light-grey: #EAEAEA;
 @grey: #D0D0D0;
 @dark-grey: #5C5C5C;
-@light-blue: #C6DCF3;
+@light-blue: #D0E6FF;
 @dark-blue: #3465A4;
 
 @link-color: #0000C0;
@@ -17,18 +17,12 @@
 
 @page-container-padding: 1em;
 
-@headerbar-logo-padding-horiz: 6px;
+@headerbar-logo-padding-horiz: 8px;
 @headerbar-logo-width: 60px;
 @headerbar-padding-left: @headerbar-logo-width +
                          2 * @headerbar-logo-padding-horiz;
-@headerbar-bg: #333333;
-@headerbar-bg-active: #555555;
 @headerbar-padding: 5px;
 @headerbar-menu-min-width: 9em;
-
-@navbar-bg: @light-blue;
-@navbar-border-color: @dark-blue;
-@navbar-text-color: #0000AA;
 
 @box-border-color: #888A85;
 @box-border-radius: 6px;
@@ -102,6 +96,9 @@
 @z-index-dialog: 120;
 @z-index-page-overlay: 130;
 @z-index-spinner: 140;
+@z-index-nav-menu-mask: 199;
+@z-index-nav-menu: 200;
+@z-index-nav-menu-logo: 201;
 
 // Icon dimensions
 @rb-icon-edit-width: 20px;
@@ -188,27 +185,51 @@
 @inline-actions-bg: darken(@diff-file-color, 3%);
 @inline-actions-hover-bg: darken(@inline-actions-bg, 5%);
 
-// Dashboard
-@dashboard-sidebar-bg: #E9E9E9;
-@dashboard-sidebar-horiz-padding: 0.8em;
-@dashboard-sidebar-vert-padding: 0.4em;
-@dashboard-sidebar-item-vert-padding: 6px;
-@dashboard-sidebar-section-vert-padding: 8px;
-@dashboard-sidebar-active-bg: darken(@dashboard-sidebar-bg, 5%);
-@dashboard-sidebar-count-border-radius: 2 * @box-border-radius;
-@dashboard-sidebar-count-bg: lighten(@dashboard-sidebar-bg, 15%);
-@dashboard-sidebar-count-border-color: darken(@dashboard-sidebar-bg, 10%);
-@dashboard-sidebar-count-zero-bg: lighten(@dashboard-sidebar-bg, 3%);
-@dashboard-sidebar-count-zero-border-color: darken(@dashboard-sidebar-bg, 5%);
-@dashboard-sidebar-count-vert-padding: 0px;
-@dashboard-sidebar-count-horiz-padding: 8px;
+// Datagrids
+@datagrid-bg: #FFFFFF;
+@datagrid-border-color: #999999;
+@datagrid-paginator-bg: #EEE;
+@datagrid-paginator-border-color: #BBB;
+@datagrid-actions-bg: @datagrid-paginator-bg;
+@datagrid-actions-offset-left: 1em;
+@datagrid-header-bg: #D0E6FF;
+@datagrid-sidebar-bg: #E9E9E9;
+@datagrid-sidebar-count-color: #A02222;
+@datagrid-sidebar-count-zero-color: #BBBBBB;
+@datagrid-sidebar-horiz-padding: 0.8em;
+@datagrid-sidebar-vert-padding: 0.4em;
+@datagrid-sidebar-item-vert-padding: 6px;
+@datagrid-sidebar-section-vert-padding: 8px;
+@datagrid-sidebar-active-bg: #FFFFFF;
+@datagrid-sidebar-active-border-color: @datagrid-border-color;
+@datagrid-sidebar-count-vert-padding: 0px;
+@datagrid-sidebar-count-horiz-padding: 8px;
+@datagrid-sidebar-hover-bg: lighten(@datagrid-sidebar-active-bg, 30%);
+@datagrid-sidebar-hover-border-color: lighten(@datagrid-sidebar-active-border-color, 30%);
+@datagrid-sidebar-width: 19em;
+
+// Review request labels in datagrids.
+@summary-label-draft-bg: #AAE29B;
+@summary-label-draft-border-color: darken(@summary-label-draft-bg, 28%);
+@summary-label-text-color: #005500;
+@summary-label-submitted-bg: #FFFFD0;
+@summary-label-submitted-border-color: darken(@summary-label-submitted-bg, 55%);
+@summary-label-submitted-text-color: #777700;
+@summary-label-discarded-bg: #DDDDDD;
+@summary-label-discarded-border-color: darken(@summary-label-discarded-bg, 25%);
+@summary-label-discarded-text-color: #555555;
+
+// New review request page
+@new-review-request-sidebar-bg: #333333;
 
 // Mobile
 @mobile-navbar-hide-margin-left: -160px;
 @mobile-medium-width-720: 720px;
+
 .on-mobile-medium-screen-720(@rules) {
   @media screen and (max-width: @mobile-medium-width-720),
-         screen and (max-device-width: @mobile-medium-width-720) and (orientation: landscape) {
+         screen and (max-device-width: @mobile-medium-width-720) and
+                     (orientation: landscape) {
     @rules();
   }
 }
@@ -216,6 +237,4 @@
 
 @import (reference) "mixins/gradients.less";
 @import (reference) "mixins/style.less";
-
-
-// vim: set et ts=2 sw=2:
+@import (reference) "mixins/theme.less";

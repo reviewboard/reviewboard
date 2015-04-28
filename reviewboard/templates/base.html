@@ -48,22 +48,24 @@
 {% template_hook_point "base-scripts" %}
  </head>
 {% block bodytag %}
- <body>
-  <div id="mobile-menu-mask"></div>
+ <body class="{% block page_class %}default-page{% endblock %}">
 {% endblock %}
+  <div id="mobile-menu-mask"></div>
   <div id="container">
 
+   <div id="topbar">
 {% block headerbar %}
 {%  include "base/headerbar.html" %}
 {%  template_hook_point "base-before-navbar" %}
-   <div id="navbar-container">
+    <div id="navbar-container">
 {%  block navbar %}
 {%   include "base/navbar.html" %}
 {%  endblock %}
 {%  template_hook_point "base-after-navbar" %}
 {%  block navbar_post %}{% endblock %}
-   </div>
+    </div>
 {% endblock %}
+   </div>
 
    <div id="page-container">
     <noscript>

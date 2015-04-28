@@ -17,9 +17,11 @@ class OutgoingSection(BaseSidebarSection):
     "Open" links to a Dashboard view showing only open outgoing review
     requests made by the user.
     """
+
     label = _('Outgoing')
 
     def get_items(self):
+        """Yield each of the items within this section."""
         site_profile = self.datagrid.site_profile
 
         yield SidebarNavItem(self,
@@ -51,9 +53,11 @@ class IncomingSection(BaseSidebarSection):
     Each group links to a Dashboard view showing all open review requests
     made to that group.
     """
+
     label = _('Incoming')
 
     def get_items(self):
+        """Yield each of the items within this section."""
         profile = self.datagrid.profile
         site_profile = self.datagrid.site_profile
 
@@ -121,9 +125,11 @@ class UserProfileItem(BaseSidebarItem):
     This will display information such as the name, e-mail address,
     gravatar, and dates logged in and joined.
     """
+
     template_name = 'datagrids/sidebar_user_info.html'
 
     def get_extra_context(self):
+        """Return extra data to include in the template render context."""
         request = self.datagrid.request
         user = self.datagrid.user
 
@@ -139,9 +145,11 @@ class UserGroupsItem(BaseSidebarSection):
     Each group will be clickable, and will navigate to the corresponding
     group page.
     """
+
     label = _('Groups')
 
     def get_items(self):
+        """Yield each of the items within this section."""
         request = self.datagrid.request
 
         groups = (
