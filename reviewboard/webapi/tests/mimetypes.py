@@ -9,6 +9,9 @@ api_token_list_mimetype = _build_mimetype('api-tokens')
 api_token_item_mimetype = _build_mimetype('api-token')
 
 
+archived_item_mimetype = _build_mimetype('archived-review-request')
+
+
 change_list_mimetype = _build_mimetype('review-request-changes')
 change_item_mimetype = _build_mimetype('review-request-change')
 

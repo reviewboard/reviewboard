@@ -30,6 +30,8 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     """
     item_child_resources = [
         resources.api_token,
+        resources.archived_review_request,
+        resources.muted_review_request,
         resources.watched,
     ]
 
