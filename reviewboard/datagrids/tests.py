@@ -6,6 +6,7 @@ from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.datagrids.builtin_items import UserGroupsItem, UserProfileItem
 from reviewboard.reviews.models import (Group,
                                         ReviewRequest,
@@ -313,6 +314,84 @@ class DashboardViewTests(BaseViewTestCase):
                                    {'view': 'to-group',
                                     'group': 'devgroup'})
         self.assertEqual(response.status_code, 404)
+
+    @add_fixtures(['test_users'])
+    def test_show_archived(self):
+        """Testing dashboard view with show-archived"""
+        visible = self.create_review_request(summary='Test 1', publish=True)
+        archived = self.create_review_request(summary='Test 2', publish=True)
+        muted = self.create_review_request(summary='Test 3', publish=True)
+
+        self.client.login(username='doc', password='doc')
+        user = User.objects.get(username='doc')
+
+        visible.target_people.add(user)
+        archived.target_people.add(user)
+        muted.target_people.add(user)
+
+        self.client.get(visible.get_absolute_url())
+        self.client.get(archived.get_absolute_url())
+        self.client.get(muted.get_absolute_url())
+
+        visit = ReviewRequestVisit.objects.get(user__username=user,
+                                               review_request=archived.id)
+        visit.visibility = ReviewRequestVisit.ARCHIVED
+        visit.save()
+
+        visit = ReviewRequestVisit.objects.get(user__username=user,
+                                               review_request=muted.id)
+        visit.visibility = ReviewRequestVisit.MUTED
+        visit.save()
+
+        response = self.client.get('/dashboard/', {'show-archived': '1'})
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self._get_context_var(response, 'datagrid')
+        self.assertTrue(datagrid)
+        self.assertEqual(len(datagrid.rows), 3)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 3')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[2]['object'].summary, 'Test 1')
+
+        response = self.client.get('/dashboard/', {'show-archived': '0'})
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self._get_context_var(response, 'datagrid')
+        self.assertTrue(datagrid)
+        self.assertEqual(len(datagrid.rows), 1)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 1')
+
+        self.client.logout()
+        self.client.login(username='grumpy', password='grumpy')
+        user = User.objects.get(username='grumpy')
+
+        visible.target_people.add(user)
+        archived.target_people.add(user)
+        muted.target_people.add(user)
+
+        self.client.get(visible.get_absolute_url())
+        self.client.get(archived.get_absolute_url())
+        self.client.get(muted.get_absolute_url())
+
+        response = self.client.get('/dashboard/', {'show-archived': '1'})
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self._get_context_var(response, 'datagrid')
+        self.assertTrue(datagrid)
+        self.assertEqual(len(datagrid.rows), 3)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 3')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[2]['object'].summary, 'Test 1')
+
+        response = self.client.get('/dashboard/', {'show-archived': '0'})
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self._get_context_var(response, 'datagrid')
+        self.assertTrue(datagrid)
+        self.assertEqual(len(datagrid.rows), 3)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 3')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[2]['object'].summary, 'Test 1')
 
     @add_fixtures(['test_users'])
     def test_sidebar(self):

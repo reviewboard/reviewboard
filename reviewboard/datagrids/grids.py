@@ -12,7 +12,8 @@ from djblets.datagrid.grids import (
     AlphanumericDataGrid as DjbletsAlphanumericDataGrid)
 from djblets.util.templatetags.djblets_utils import ageid
 
-from reviewboard.accounts.models import Profile, LocalSiteProfile
+from reviewboard.accounts.models import (LocalSiteProfile, Profile,
+                                         ReviewRequestVisit)
 from reviewboard.datagrids.columns import (BugsColumn,
                                            DateTimeSinceColumn,
                                            DiffSizeColumn,
@@ -294,11 +295,12 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
 
         super(DashboardDataGrid, self).__init__(*args, **kwargs)
 
-        self.listview_template = 'datagrid/listview.html'
+        self.listview_template = 'datagrids/hideable_listview.html'
         self.profile_sort_field = 'sort_dashboard_columns'
         self.profile_columns_field = 'dashboard_columns'
         self.default_view = 'incoming'
         self.show_closed = False
+        self.show_archived = False
         self.default_sort = ['-last_updated']
         self.default_columns = [
             'selected', 'new_updates', 'ship_it', 'my_comments', 'summary',
@@ -363,8 +365,34 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
         else:
             raise Http404
 
-        return super(DashboardDataGrid, self).load_extra_state(
-            profile, allow_hide_closed=False)
+        if profile and 'show_archived' in profile.extra_data:
+            self.show_archived = profile.extra_data['show_archived']
+
+        try:
+            show = self.request.GET.get('show-archived', self.show_archived)
+            self.show_archived = int(show) != 0
+        except ValueError:
+            pass
+
+        if not self.show_archived:
+            hidden_q = ReviewRequestVisit.objects.filter(
+                user=user).exclude(visibility=ReviewRequestVisit.VISIBLE)
+            hidden_q = hidden_q.values_list('review_request_id', flat=True)
+
+            self.queryset = self.queryset.exclude(pk__in=hidden_q)
+
+        if (profile and
+            self.show_archived != profile.extra_data.get('show_archived')):
+            profile.extra_data['show_archived'] = self.show_archived
+            profile_changed = True
+        else:
+            profile_changed = False
+
+        parent_profile_changed = \
+            super(DashboardDataGrid, self).load_extra_state(
+                profile, allow_hide_closed=False)
+
+        return profile_changed or parent_profile_changed
 
 
 class UsersDataGrid(AlphanumericDataGrid):
