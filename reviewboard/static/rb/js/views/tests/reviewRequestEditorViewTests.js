@@ -329,6 +329,108 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
             });
         });
+
+        describe('Archived banner', function() {
+            var url = '/api/users/testuser/archived-review-requests/',
+                session;
+
+            beforeEach(function() {
+                RB.UserSession.instance = null;
+                session = RB.UserSession.create({
+                    username: 'testuser',
+                    archivedReviewRequestsURL: url
+                });
+
+                reviewRequest.set('visibility', RB.UserSession.ARCHIVED);
+
+                spyOn(session.archivedReviewRequests, 'addImmediately')
+                .andCallThrough();
+            });
+
+            it('Visibility', function() {
+                expect(view.banner).toBe(null);
+
+                view.showBanner();
+
+                expect(view.banner).not.toBe(null);
+                expect(view.banner.el.id).toBe('archived-banner');
+                expect(view.banner.$el.is(':visible')).toBe(true);
+            });
+
+            describe('Buttons actions', function() {
+                beforeEach(function() {
+                    expect(view.banner).toBe(null);
+                    RB.UserSession.instance = null;
+                    session = RB.UserSession.create({
+                        username: 'testuser',
+                        archivedReviewRequestsURL: url
+                    });
+
+                    reviewRequest.set('visibility', RB.UserSession.ARCHIVED);
+                    view.showBanner();
+                });
+
+                it('Unarchive', function() {
+                    spyOn(session.archivedReviewRequests,
+                        'removeImmediately');
+
+                    $('#btn-review-request-unarchive').click();
+
+                    expect(session.archivedReviewRequests.removeImmediately).toHaveBeenCalled();
+                });
+            });
+        });
+
+        describe('Muted banner', function() {
+            var url = '/api/users/testuser/muted-review-requests/',
+                session;
+
+            beforeEach(function() {
+                RB.UserSession.instance = null;
+                session = RB.UserSession.create({
+                    username: 'testuser',
+                    mutedReviewRequestsURL: url
+                });
+
+                reviewRequest.set('visibility', RB.UserSession.MUTED);
+
+                spyOn(session.mutedReviewRequests, 'addImmediately')
+                .andCallThrough();
+            });
+
+            it('Visibility', function() {
+                expect(view.banner).toBe(null);
+
+                view.showBanner();
+
+                expect(view.banner).not.toBe(null);
+                expect(view.banner.el.id).toBe('muted-banner');
+                expect(view.banner.$el.is(':visible')).toBe(true);
+            });
+
+            describe('Buttons actions', function() {
+                beforeEach(function() {
+                    expect(view.banner).toBe(null);
+                    RB.UserSession.instance = null;
+                    session = RB.UserSession.create({
+                        username: 'testuser',
+                        mutedReviewRequestsURL: url
+                    });
+
+                    reviewRequest.set('visibility', RB.UserSession.MUTED);
+                    view.showBanner();
+                });
+
+                it('Unmute', function() {
+                    spyOn(session.mutedReviewRequests,
+                        'removeImmediately');
+
+                    $('#btn-review-request-unmute').click();
+
+                    expect(session.mutedReviewRequests.removeImmediately).toHaveBeenCalled();
+                });
+            });
+        });
     });
 
     describe('Fields', function() {

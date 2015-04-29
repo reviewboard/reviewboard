@@ -46,7 +46,8 @@
                 }{% if not forloop.last %},{% endif %}
 {% endfor %}{% endspaceless %}],
             testingDone: "{% normalize_text_for_edit review_request_details.testing_done review_request_details.testing_done_rich_text True %}",
-            testingDoneRichText: {{review_request_details.testing_done_rich_text|yesno:'true,false'}}
+            testingDoneRichText: {{review_request_details.testing_done_rich_text|yesno:'true,false'}},
+            visibility: "{{review_request_visit.visibility}}"
         },
         extraReviewRequestDraftData: {
 {% if draft.changedesc %}

@@ -165,6 +165,68 @@ SubmittedBannerView = ClosedBannerView.extend({
 
 
 /*
+ * A banner representing an archived review request. This provides a button
+ * for unarchiving the review request.
+ */
+ArchivedBannerView = BannerView.extend({
+    id: 'archived-banner',
+    title: gettext('This review request has been marked as archived.'),
+
+    actions: [
+        {
+            id: 'btn-review-request-unarchive',
+            label: gettext('Unarchive')
+        }
+    ],
+
+    events: {
+        'click #btn-review-request-unarchive': '_onUnarchiveClicked'
+    },
+
+    /*
+     * Handler for Unarchive Review Request.
+     */
+    _onUnarchiveClicked: function() {
+        var archived = RB.UserSession.instance.archivedReviewRequests;
+        archived.removeImmediately(this.reviewRequest);
+
+        return false;
+    }
+});
+
+
+/*
+ * A banner representing a muted review request. This provides a button
+ * for unmuting the review request.
+ */
+MutedBannerView = BannerView.extend({
+    id: 'muted-banner',
+    title: gettext('This review request has been marked as muted.'),
+
+    actions: [
+        {
+            id: 'btn-review-request-unmute',
+            label: gettext('Unmute')
+        }
+    ],
+
+    events: {
+        'click #btn-review-request-unmute': '_onUnmuteClicked'
+    },
+
+    /*
+     * Handler for Unmute Review Request.
+     */
+    _onUnmuteClicked: function() {
+        var muted = RB.UserSession.instance.mutedReviewRequests;
+        muted.removeImmediately(this.reviewRequest);
+
+        return false;
+    }
+});
+
+
+/*
  * A banner representing a draft of a review request.
  *
  * Depending on the public state of the review request, this will
@@ -417,7 +479,9 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
         _.bindAll(this, '_checkResizeLayout', '_scheduleResizeLayout',
                   '_onCloseDiscardedClicked', '_onCloseSubmittedClicked',
-                  '_onDeleteReviewRequestClicked', '_onUpdateDiffClicked');
+                  '_onDeleteReviewRequestClicked', '_onUpdateDiffClicked',
+                  '_onArchiveReviewRequestClicked',
+                  '_onMuteReviewRequestClicked');
 
         this._fieldEditors = {};
         this._hasFields = (this.$('.editable').length > 0);
@@ -680,6 +744,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this.model.on('published', this._refreshPage, this);
         reviewRequest.on('closed reopened', this._refreshPage, this);
         draft.on('destroyed', this._refreshPage, this);
+        RB.UserSession.instance.archivedReviewRequests.on(
+            'archived', this._refreshPage, this);
+        RB.UserSession.instance.mutedReviewRequests.on(
+            'archived', this._refreshPage, this);
 
         /*
          * Warn the user if they try to navigate away with unsaved comments.
@@ -747,6 +815,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         var BannerClass,
             reviewRequest = this.model.get('reviewRequest'),
             state = reviewRequest.get('state'),
+            visibility = reviewRequest.get('visibility'),
             $existingBanner = this._$bannersContainer.children();
 
         if (this.banner) {
@@ -759,7 +828,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             $existingBanner = undefined;
         }
 
-        if (state === RB.ReviewRequest.CLOSE_SUBMITTED) {
+        if (visibility === RB.UserSession.ARCHIVED) {
+            BannerClass = ArchivedBannerView;
+        } else if (visibility === RB.UserSession.MUTED) {
+            BannerClass = MutedBannerView;
+        } else if (state === RB.ReviewRequest.CLOSE_SUBMITTED) {
             BannerClass = SubmittedBannerView;
         } else if (state === RB.ReviewRequest.CLOSE_DISCARDED) {
             BannerClass = DiscardedBannerView;
@@ -876,7 +949,9 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         var $closeDiscarded = this.$('#discard-review-request-link'),
             $closeSubmitted = this.$('#link-review-request-close-submitted'),
             $deletePermanently = this.$('#delete-review-request-link'),
-            $updateDiff = this.$('#upload-diff-link');
+            $updateDiff = this.$('#upload-diff-link'),
+            $archive = this.$('#archive-review-request-link'),
+            $mute = this.$('#mute-review-request-link');
 
         /*
          * We don't want the click event filtering from these down to the
@@ -886,6 +961,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         $closeSubmitted.click(this._onCloseSubmittedClicked);
         $deletePermanently.click(this._onDeleteReviewRequestClicked);
         $updateDiff.click(this._onUpdateDiffClicked);
+        $archive.click(this._onArchiveReviewRequestClicked);
+        $mute.click(this._onMuteReviewRequestClicked);
     },
 
     /*
@@ -1401,6 +1478,44 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             });
 
         updateDiffView.render();
+    },
+
+    /*
+     * Handler for when Hide -> Archive is clicked.
+     *
+     * The user will be asked for confirmation before the review request is
+     * archived.
+     */
+    _onArchiveReviewRequestClicked: function() {
+        var reviewRequest = this.model.get('reviewRequest'),
+            confirmText = gettext('Are you sure you want to archive this review request?'),
+            archived;
+
+        if (confirm(confirmText)) {
+            archived = RB.UserSession.instance.archivedReviewRequests;
+            archived.addImmediately(reviewRequest);
+        }
+
+        return false;
+    },
+
+    /*
+     * Handler for when Hide -> Muted is clicked.
+     *
+     * The user will be asked for confirmation before the review request is
+     * muted.
+     */
+    _onMuteReviewRequestClicked: function() {
+        var reviewRequest = this.model.get('reviewRequest'),
+            confirmText = gettext('Are you sure you want to mute this review request?'),
+            muted;
+
+        if (confirm(confirmText)) {
+            muted = RB.UserSession.instance.mutedReviewRequests;
+            muted.addImmediately(reviewRequest);
+        }
+
+        return false;
     },
 
     /*

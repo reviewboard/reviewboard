@@ -28,6 +28,20 @@
 {%  endif %}
  </div>
 
+{%  elif review_request_visit.visibility == 'A' %}
+ <div class="banner" id="archived-banner">
+  <h1>{% trans "This review request has been marked as archived." %}</h1>
+  <input type="submit" id="btn-review-request-unarchive"
+         value="{% trans "Unarchive" %}" />
+ </div>
+
+{%  elif review_request_visit.visibility == 'M' %}
+ <div class="banner" id="muted-banner">
+  <h1>{% trans "This review request has been marked as muted." %}</h1>
+  <input type="submit" id="btn-review-request-unmute"
+         value="{% trans "Unmute" %}" />
+ </div>
+
 {% else %}{# pending review #}
 {%  if request.user.pk == review_request.submitter_id or perms.reviews.can_edit_reviewrequest %}
  <div class="banner" id="draft-banner" style="display:none;">
