@@ -35,7 +35,7 @@
 
   <div class="actions-container">
    {% star review_request %}
-   <ul class="actions">
+   <ul class="actions actions-right">
 {%    include "reviews/review_request_actions_secondary.html" %}
 {%    diffviewer_action_hooks %}
     <li id="download-diff" {% if interdiffset %}style="display: none;"{% endif %}><a href="raw/">{% trans "Download Diff" %}</a></li>

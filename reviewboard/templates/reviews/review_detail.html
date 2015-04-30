@@ -29,7 +29,15 @@
 
   <div class="actions-container">
    {% star review_request %}
-   <ul class="actions">
+   <ul class="actions actions-left">
+{%   if review_request.status == 'P' %}
+    <li class="has-menu">
+     <a class="menu-title" id="hide-review-request-link" href="#"></a>
+     <ul class="menu" id="hide-review-request-menu" style="display: none;"></ul>
+    </li>
+{%   endif %}
+   </ul>
+   <ul class="actions actions-right">
 {%   review_request_action_hooks %}
 {%   review_request_dropdown_action_hooks %}
 {%   include "reviews/review_request_actions_secondary.html" %}

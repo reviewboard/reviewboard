@@ -29,7 +29,7 @@
 
   <div class="actions-container">
    {% star review_request %}
-   <ul class="actions">
+   <ul class="actions actions-right">
 {%   include "reviews/review_request_actions_secondary.html" %}
 {%   if has_diffs %}
     <li><a href="{% url 'raw-diff' review_request.display_id %}">{% trans "Download Diff" %}</a></li>

@@ -136,6 +136,14 @@
   padding: 0;
   white-space: nowrap;
 
+  &.actions-left {
+    float: left;
+
+    #hide-review-request-link {
+      padding: 0.6em;
+    }
+  }
+
   a {
     color: black;
     cursor: pointer;
@@ -239,7 +247,7 @@
   }
 }
 
-.actions>li:last-child {
+.actions-right>li:last-child {
   .border-radius(0 @box-inner-border-radius 0 0);
 }
 

@@ -72,19 +72,7 @@ StoredItems = RB.BaseResource.extend({
                 baseURL: url
             });
 
-            item.save(
-                _.defaults({
-                    success: _.bind(function() {
-                        this.trigger('itemAdded', options);
-
-                        if (options) {
-                            if (options && _.isFunction(options.success)) {
-                                options.success.apply(context, arguments);
-                            }
-                        }
-                    }, this),
-                }, options),
-            context);
+            item.save(options, context);
         } else if (options && _.isFunction(options.error)) {
             options.error.call({
                 errorText: this.addError
@@ -106,19 +94,7 @@ StoredItems = RB.BaseResource.extend({
                 stored: true
             });
 
-            item.destroy(
-                _.defaults({
-                    success: _.bind(function() {
-                        this.trigger('itemRemoved', options);
-
-                        if (options) {
-                            if (options && _.isFunction(options.success)) {
-                                options.success.apply(context, arguments);
-                            }
-                        }
-                    }, this),
-                }, options),
-            context);
+            item.destroy(options, context);
         } else if (options && _.isFunction(options.error)) {
             options.error.call({
                 errorText: this.removeError
@@ -178,16 +154,6 @@ RB.UserSession = Backbone.Model.extend({
             url: this.get('mutedReviewRequestsURL'),
             removeError: gettext('Must log in to remove a muted item.'),
             addError: gettext('Must log in to add a muted item.')
-        });
-
-        this.listenTo(this.archivedReviewRequests, 'itemAdded itemRemoved',
-                      function() {
-            this.archivedReviewRequests.trigger('archived');
-        });
-
-        this.listenTo(this.mutedReviewRequests, 'itemAdded itemRemoved',
-                      function() {
-            this.archivedReviewRequests.trigger('archived');
         });
 
         this._bindCookie({

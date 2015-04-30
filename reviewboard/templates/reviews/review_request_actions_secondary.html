@@ -29,12 +29,3 @@
  </li>
 {%  endif %}
 {% endif %}
-{%  if review_request_visit.visibility == 'V' and review_request.status == 'P' %}
-<li class="has-menu">
-  <a class="menu-title" id="hide-review-request-link" href="#">{% trans "Hide" %} &#9662;</a>
-  <ul class="menu" style="display: none;">
-    <li><a id="archive-review-request-link" href="#">{% trans "Archive" %}</a></li>
-    <li><a id="mute-review-request-link" href="#">{% trans "Mute" %}</a></li>
-  </ul>
-</li>
-{% endif %}
