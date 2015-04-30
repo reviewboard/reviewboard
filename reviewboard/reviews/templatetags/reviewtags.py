@@ -220,7 +220,8 @@ def reply_list(context, entry, comment, context_type, context_id):
 
 @register.inclusion_tag('reviews/review_reply_section.html',
                         takes_context=True)
-def reply_section(context, entry, comment, context_type, context_id):
+def reply_section(context, entry, comment, context_type, context_id,
+                  reply_to_text=''):
     """
     Renders a template for displaying a reply.
 
@@ -244,6 +245,7 @@ def reply_section(context, entry, comment, context_type, context_id):
         'context_id': context_id,
         'user': context.get('user', None),
         'local_site_name': context.get('local_site_name'),
+        'reply_to_is_empty': reply_to_text == '',
         'request': context['request'],
     }
 

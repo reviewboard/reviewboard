@@ -142,7 +142,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         $reviewRequest = this.$('.review-request');
 
-        this._$controls = $reviewRequest.find('ul.controls');
+        this._$controls = $('#view_controls');
 
         this._diffFileIndexView = new RB.DiffFileIndexView({
             el: $('#diff_index'),
