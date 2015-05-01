@@ -21,9 +21,17 @@ body.full-datagrid-page {
     // This helps compensate for the shadow on the box.
     padding-bottom: 3px;
 
+    .on-mobile-medium-screen-720({
+      margin-left: 0;
+    });
+
     &.has-sidebar {
       #datagrid_page_main {
         margin-left: @datagrid-sidebar-width;
+
+        .on-mobile-medium-screen-720({
+          margin-left: 0;
+        });
       }
     }
   }
@@ -40,6 +48,10 @@ body.full-datagrid-page {
     vertical-align: top;
     margin-left: @page-container-padding;
     .border-radius(0 @box-inner-border-radius @box-inner-border-radius 0);
+
+    .on-mobile-medium-screen-720({
+      margin-left: 0;
+    });
 
     table:after {
       clear: both;
@@ -73,17 +85,48 @@ body.full-datagrid-page {
       }
     }
 
-    td {
-      border-bottom: 1px #F0F0F0 solid;
-      padding: 5px;
+    tbody {
+      td, th {
+        border-bottom: 1px #F0F0F0 solid;
+        padding: 5px;
 
-      &:last-child {
-        border-right: 0;
+        &:last-child {
+          border-right: 0;
+        }
       }
-    }
 
-    tbody tr {
-      background: @datagrid-bg;
+      tr {
+        background: @datagrid-bg;
+
+        .on-mobile-medium-screen-720({
+          &.even th {
+            background: #E3E3E3;
+          }
+
+          &.odd th {
+            background: #EEE;
+          }
+
+          td, th {
+            padding-top: 10px;
+            border-bottom-width: 2px;
+          }
+
+          th {
+            border-right: 1px #CCC solid;
+            border-bottom: 0;
+            font-weight: normal;
+            color: #444;
+            padding-left: 10px;
+          }
+
+          &.mobile-only-row {
+            td, th {
+              padding-top: 5px;
+            }
+          }
+        });
+      }
     }
   }
 
@@ -224,6 +267,8 @@ body.full-datagrid-page {
     width: @datagrid-sidebar-width - 1em;
     z-index: @z-index-deco;
 
+    .desktop-only();
+
     .datagrid-sidebar-items {
       list-style: none;
       margin: 0;
@@ -270,6 +315,8 @@ body.full-datagrid-page {
             color: #444;
             font-size: 110%;
             font-weight: bold;
+            margin: 0;
+            padding: 0;
             text-transform: uppercase;
           }
         }

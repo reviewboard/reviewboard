@@ -3,6 +3,8 @@
 
 {% block extrahead %}
 {# Empty this out. We use "scripts" and "scripts-post" in Review Board. #}
+{# Also, add some meta tags for the viewport. #}
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 {% endblock %}
 
 {% block css %}
@@ -11,6 +13,14 @@
 {%  for css_bundle in datagrid.css_bundle_names %}
 {%   compressed_css css_bundle %}
 {%  endfor %}
+{% endblock %}
+
+{% block mobile_nav %}
+{%   for item in datagrid.sidebar_items %}
+{%    if item.is_visible %}
+{{item.render}}
+{%    endif %}
+{%   endfor %}
 {% endblock %}
 
 {% block bodytag %}<body class="full-datagrid-page">{% endblock %}
