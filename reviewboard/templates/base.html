@@ -86,6 +86,7 @@
     </noscript>
     <div id="error"></div>
     <div id="content_container">
+{% block sidebar %}{% endblock %}
      {% block contenttag %}<div id="content">{% endblock %}
 {% template_hook_point "base-before-content" %}
 {% block main_content %}

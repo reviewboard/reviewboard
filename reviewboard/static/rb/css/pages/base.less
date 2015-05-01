@@ -40,6 +40,21 @@ body {
       }
     }
   });
+
+  /*
+   * Set the page to not scroll and have all content take up the maximum
+   * height.
+   */
+  &.full-page-content {
+    overflow: hidden;
+
+    #content_container,
+    #content {
+      height: 100%;
+      margin-bottom: 0;
+      vertical-align: top;
+    }
+  }
 }
 
 h1 {
@@ -201,6 +216,10 @@ textarea {
 
     .mobile-menu-animation();
   });
+}
+
+#content_container {
+  position: relative;
 }
 
 /*
@@ -704,7 +723,7 @@ textarea {
  * featuring largely blue-ish colors.
  */
 .default-page,
-.full-datagrid-page {
+.datagrid-page {
   .page-colors(@topbar-bg: #DAEBFF,
                @topbar-faded-text-color: #5A646E);
 }
