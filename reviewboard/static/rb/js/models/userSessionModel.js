@@ -146,6 +146,13 @@ RB.UserSession = Backbone.Model.extend({
     },
 
     /*
+     * Return a gravatar for the user with the given size.
+     */
+    getGravatarURL: function(size) {
+        return this.get('gravatarURL') + '&s=' + size;
+    },
+
+    /*
      * Binds a cookie to an attribute.
      *
      * The initial value of the attribute will be set to that of the cookie.

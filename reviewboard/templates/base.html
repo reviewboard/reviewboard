@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-{% load compressed djblets_deco djblets_extensions djblets_utils i18n %}
-{% load staticfiles %}
+{% load compressed djblets_deco djblets_extensions djblets_utils gravatars %}
+{% load i18n staticfiles %}
 
 <html>
  <head>
@@ -116,6 +116,7 @@
 {%  endif %}
         defaultUseRichText: {{user_profile.should_use_rich_text|yesno:"true,false"}},
         fullName: "{{request.user|user_displayname|escapejs}}",
+        gravatarURL: "{% filter escapejs %}{% gravatar_url request.user.email %}{% endfilter %}",
         username: "{{request.user.username|escapejs}}",
         userPageURL: "{% url 'user' request.user %}",
         sessionURL: "{% url 'session-resource' %}",

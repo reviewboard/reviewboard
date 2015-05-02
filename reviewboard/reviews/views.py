@@ -524,6 +524,7 @@ def review_detail(request,
                 'class': state,
                 'collapsed': state == 'collapsed',
                 'issue_open_count': 0,
+                'has_issues': False,
             }
             reviews_entry_map[review.pk] = entry
             entries.append(entry)
@@ -664,6 +665,7 @@ def review_detail(request,
                         comment.issue_status_to_string(comment.issue_status)
                     issues[status_key] += 1
                     issues['total'] += 1
+                    entry['has_issues'] = True
 
                     if comment.issue_status == BaseComment.OPEN:
                         entry['issue_open_count'] += 1

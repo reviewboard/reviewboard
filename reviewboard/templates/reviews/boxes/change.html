@@ -1,14 +1,24 @@
-{% load djblets_deco djblets_utils i18n reviewtags tz %}
+{% load djblets_deco djblets_utils gravatars i18n reviewtags tz %}
 
 <div class="changedesc">
  <a name="changedesc{{entry.changedesc.id}}"></a>
+ <div class="box-statuses">
+  <div class="box-status">
+   <div class="gravatar-container">
+{% if siteconfig_settings.integration_gravatars %}
+    {% gravatar review_request.submitter 48 %}
+{% endif %}
+   </div>
+  </div>
+ </div>
+
 {% definevar "boxclass" %}changedesc {{entry.class}}{% enddefinevar %}
 {% box boxclass %}
  <div class="box-main">
   <div class="header">
    <div class="collapse-button btn"><div class="rb-icon {% if entry.collapsed %}rb-icon-expand-review{% else %}rb-icon-collapse-review{% endif %}"></div></div>
    <div class="reviewer"><b>{% trans "Review request changed" %}</b></div>
-   <div class="posted_time">{% localtime on %}{% blocktrans with entry.changedesc.timestamp as timestamp and entry.changedesc.timestamp|date:"c" as timestamp_raw %}Updated <time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time> ({{timestamp}}){% endblocktrans %}{% endlocaltime %}</div>
+   <div class="posted_time">{% localtime on %}{% blocktrans with entry.changedesc.timestamp as timestamp and entry.changedesc.timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</div>
   </div>
   <div class="body">
 {%  if entry.new_status %}
