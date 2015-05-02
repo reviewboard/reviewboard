@@ -263,6 +263,7 @@ textarea {
   z-index: @z-index-mobile-headerbar;
 
   .on-mobile-medium-screen-720({
+    border-bottom: 1px solid;
     height: auto;
     position: relative;
     text-align: center;
@@ -643,8 +644,6 @@ textarea {
  * mobile mode.
  */
 #navbar-container {
-  .desktop-only();
-
   a {
     font-size: 110%;
     text-decoration: none;
@@ -658,6 +657,7 @@ textarea {
  * etc.
  */
 #navbar {
+  border-bottom: 1px solid;
   list-style: none;
   margin: 0;
   min-height: 1.5em;
@@ -665,6 +665,7 @@ textarea {
   padding-left: @headerbar-padding-left;
 
   .on-mobile-medium-screen-720({
+    display: none;
     padding-left: 10px;
     margin-top: 10px;
   });
@@ -698,7 +699,6 @@ textarea {
 }
 
 #topbar {
-  border-bottom: 1px solid;
   margin: 0 0 @page-container-padding 0;
 
   .on-mobile-medium-screen-720({
@@ -723,11 +723,8 @@ textarea {
  * Default color scheme, used for the dashboard, My Account page, and others
  * featuring largely blue-ish colors.
  */
-.default-page,
-.datagrid-page {
-  .page-colors(@topbar-bg: #DAEBFF,
-               @topbar-faded-text-color: #5A646E);
-}
+.page-colors(@topbar-bg: #DAEBFF,
+             @topbar-faded-text-color: #5A646E);
 
 .admin {
   .page-colors(@topbar-bg: #CCC,
