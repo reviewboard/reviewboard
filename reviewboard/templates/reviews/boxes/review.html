@@ -9,7 +9,9 @@
  <div class="box-statuses">
   <div class="box-status{% if entry.review.ship_it %} ship-it{% endif %}{% if entry.issue_open_count > 0 %} has-issues{% endif %}">
    <div class="gravatar-container">
+{% if siteconfig_settings.integration_gravatars %}
     {% gravatar entry.review.user 48 %}
+{% endif %}
    </div>
    <div class="labels-container">
 {%  if entry.review.ship_it %}

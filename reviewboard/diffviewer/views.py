@@ -238,7 +238,7 @@ class DiffFragmentView(View):
         """
         try:
             renderer_settings = self._get_renderer_settings(**kwargs)
-            etag = self.make_etag(renderer_settings)
+            etag = self.make_etag(renderer_settings, **kwargs)
 
             if etag_if_none_match(request, etag):
                 return HttpResponseNotModified()
@@ -275,12 +275,18 @@ class DiffFragmentView(View):
 
         return response
 
-    def make_etag(self, renderer_settings):
+    def make_etag(self, renderer_settings, filediff_id,
+                  interdiffset_or_id=None, **kwargs):
         """Return an ETag identifying this render."""
-        etag = '%s:%s:%s:%s' % (
+        if interdiffset_or_id and isinstance(interdiffset_or_id, DiffSet):
+            interdiffset_or_id = interdiffset_or_id.pk
+
+        etag = '%s:%s:%s:%s:%s:%s' % (
             get_diff_renderer_class(),
             renderer_settings['collapse_all'],
             renderer_settings['highlighting'],
+            filediff_id,
+            interdiffset_or_id,
             settings.TEMPLATE_SERIAL)
 
         return encode_etag(etag)

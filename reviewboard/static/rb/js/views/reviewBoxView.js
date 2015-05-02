@@ -226,8 +226,11 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
      *
      * If there are open issues, there will be a "Fix it!" label.
      *
-     * if there's a Ship It, there will be a "Ship it!" label, below
-     * the "Fix it" label if there are also open issues.
+     * If there's a Ship It, there will be a "Ship it!" label.
+     *
+     * If there's both a Ship It and open issues, the "Fix it!" label will
+     * be shown overlaid on top of the "Ship it!" label, and will go away
+     * once the issues are resolved.
      */
     _updateLabels: function() {
         if (this._openIssueCount === 0) {

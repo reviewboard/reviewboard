@@ -50,9 +50,14 @@
 {% block bodytag %}
  <body class="{% block page_class %}default-page{% endblock %}">
 {% endblock %}
-  <div id="mobile-menu-mask"></div>
-  <div id="container">
+  <div id="mobile_navbar_container">
+{%  block mobile-navbar %}
+{%   definevar "mobile_nav_content" %}{% block mobile_nav %}{% endblock %}{% enddefinevar %}
+{%   include "base/_mobile_navbar.html" %}
+{%  endblock mobile-navbar %}
+  </div>
 
+  <div id="container">
    <div id="topbar">
 {% block headerbar %}
 {%  include "base/headerbar.html" %}
@@ -80,7 +85,8 @@
 {%  endbox %}
     </noscript>
     <div id="error"></div>
-    <div id="container">
+    <div id="content_container">
+{% block sidebar %}{% endblock %}
      {% block contenttag %}<div id="content">{% endblock %}
 {% template_hook_point "base-before-content" %}
 {% block main_content %}

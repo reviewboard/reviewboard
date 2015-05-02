@@ -1260,6 +1260,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
          * pane (where the issue summary table and stuff live).
          */
         this._$main.outerHeight(this._$extra.offset().top -
+                                this._$extra.getExtents('mp', 't') -
                                 this._$main.offset().top);
         height = this._$main.height();
 
@@ -1272,8 +1273,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
              * padding at the top. This ensures we get a height that matches
              * the content area of the content box.
              */
-            contentHeight = $lastContent.height() +
-                            $lastContent.getExtents('p', 't') -
+            contentHeight = $lastContent.height() -
                             Math.ceil($lastFieldContainer.position().top);
 
             /*

@@ -5,7 +5,9 @@
      <dt>
       <label for="{% if draft %}draft{% endif %}comment_{{context_id}}-{{id}}">
        <div class="gravatar-container">
+{% if siteconfig_settings.integration_gravatars %}
         {% gravatar reply_user 32 %}
+{% endif %}
        </div>
        <div class="user-reply-info">
         <a href="{% url 'user' reply_user %}" class="user">{{reply_user|user_displayname}}</a>

@@ -112,7 +112,8 @@
 @z-index-spinner: 140;
 @z-index-nav-menu-mask: 199;
 @z-index-nav-menu: 200;
-@z-index-nav-menu-logo: 201;
+@z-index-mobile-headerbar: 201;
+@z-index-logo: @z-index-mobile-headerbar;
 
 // Icon dimensions
 @rb-icon-edit-width: 20px;
@@ -207,20 +208,22 @@
 @datagrid-actions-bg: @datagrid-paginator-bg;
 @datagrid-actions-offset-left: 1em;
 @datagrid-header-bg: #D0E6FF;
-@datagrid-sidebar-bg: #E9E9E9;
-@datagrid-sidebar-count-color: #A02222;
-@datagrid-sidebar-count-zero-color: #BBBBBB;
-@datagrid-sidebar-horiz-padding: 0.8em;
-@datagrid-sidebar-vert-padding: 0.4em;
-@datagrid-sidebar-item-vert-padding: 6px;
-@datagrid-sidebar-section-vert-padding: 8px;
-@datagrid-sidebar-active-bg: #FFFFFF;
-@datagrid-sidebar-active-border-color: @datagrid-border-color;
-@datagrid-sidebar-count-vert-padding: 0px;
-@datagrid-sidebar-count-horiz-padding: 8px;
-@datagrid-sidebar-hover-bg: lighten(@datagrid-sidebar-active-bg, 30%);
-@datagrid-sidebar-hover-border-color: lighten(@datagrid-sidebar-active-border-color, 30%);
-@datagrid-sidebar-width: 19em;
+
+// Page Sidebar
+@page-sidebar-bg: #E9E9E9;
+@page-sidebar-count-color: #A02222;
+@page-sidebar-count-zero-color: #BBBBBB;
+@page-sidebar-horiz-padding: 0.8em;
+@page-sidebar-vert-padding: 0.4em;
+@page-sidebar-item-vert-padding: 6px;
+@page-sidebar-section-vert-padding: 8px;
+@page-sidebar-active-bg: #FFFFFF;
+@page-sidebar-active-border-color: @datagrid-border-color;
+@page-sidebar-count-vert-padding: 0px;
+@page-sidebar-count-horiz-padding: 8px;
+@page-sidebar-hover-bg: lighten(@page-sidebar-active-bg, 30%);
+@page-sidebar-hover-border-color: lighten(@page-sidebar-active-border-color, 30%);
+@page-sidebar-width: 19em;
 
 // Review request labels in datagrids.
 @summary-label-draft-bg: #AAE29B;
@@ -237,16 +240,17 @@
 @new-review-request-sidebar-bg: #333333;
 
 // Mobile
-@mobile-navbar-hide-margin-left: -160px;
+@mobile-menu-animate-duration: 0.3s;
+@mobile-menu-animate-timing-func: ease-out;
+@mobile-menu-bg-color: #383A46;
+@mobile-menu-text-color: #EEE;
+@mobile-menu-border-color: darken(@mobile-menu-bg-color, 20%);
+@mobile-menu-header-bg-color: darken(@mobile-menu-bg-color, 5%);
+@mobile-menu-header-border-color: darken(@mobile-menu-header-bg-color, 5%);
+@mobile-menu-footer-height: 40px;
+@mobile-menu-header-height: 32px;
+@mobile-navbar-width: 300px;
 @mobile-medium-width-720: 720px;
-
-.on-mobile-medium-screen-720(@rules) {
-  @media screen and (max-width: @mobile-medium-width-720),
-         screen and (max-device-width: @mobile-medium-width-720) and
-                     (orientation: landscape) {
-    @rules();
-  }
-}
 
 
 @import (reference) "mixins/gradients.less";

@@ -253,12 +253,11 @@
 
 .actions.page-tabs {
   background: @review-request-action-bg;
-  border: 1px @review-request-action-border-color solid;
+  border: 1px @review-request-border-color solid;
   border-bottom: 0;
   .border-radius(@box-border-radius @box-border-radius 0 0);
   margin-left: 1.5em;
   overflow: hidden;
-  position: relative;
 
   .review-ui-box & {
     .active {
@@ -273,7 +272,7 @@
 
     &.active {
       background: @review-request-bg-gradient-start;
-      border: 1px @review-request-action-border-color solid;
+      border: 1px @review-request-border-color solid;
       border-bottom-color: transparent;
       border-top: 0;
 
@@ -523,6 +522,7 @@
   }
 
   #review_request_extra {
+    .box-sizing(border-box);
     clear: both;
     margin-top: 1em;
 

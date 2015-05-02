@@ -83,6 +83,28 @@
 }
 
 /*
+ * Sets the CSS3 transition on an element, handling transitions of
+ * transform() across browsers.
+ */
+.transition-transform(@duration, @rest...) {
+  -webkit-transition: @duration -webkit-transform @rest;
+  -moz-transition: @duration -moz-transform @rest,
+                   @duration transform @rest;
+  transition: @duration -webkit-transform @rest,
+              @duration -moz-transform @rest,
+              @duration transform @rest;
+}
+
+/*
+ * Sets the CSS3 transformation on an element.
+ */
+.transform(...) {
+  -webkit-transform: @arguments;
+  -moz-transform: @arguments;
+  transform: @arguments;
+}
+
+/*
  * Sets whether selection of text is allowed on an element.
  */
 .user-select(@arg) {
@@ -111,3 +133,34 @@
   }
 }
 
+/*
+ * Only apply the given styles if on a mobile display with a width
+ * <= 720px.
+ */
+.on-mobile-medium-screen-720(@rules) {
+  @media screen and (max-width: @mobile-medium-width-720),
+         screen and (max-device-width: @mobile-medium-width-720) and
+                     (orientation: landscape) {
+    @rules();
+  }
+}
+
+/*
+ * Display the element only in mobile mode.
+ */
+.mobile-only(@display-mode: block) {
+  display: none;
+
+  .on-mobile-medium-screen-720({
+    display: @display-mode;
+  });
+}
+
+/*
+ * Display the element only in desktop mode.
+ */
+.desktop-only() {
+  .on-mobile-medium-screen-720({
+    display: none;
+  });
+}
