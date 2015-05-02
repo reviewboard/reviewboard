@@ -36,9 +36,11 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     initialize: function() {
         var revisionInfo = this.model.get('revision'),
             curRevision = revisionInfo.get('revision'),
+            curInterdiffRevision = revisionInfo.get('interdiffRevision'),
             url = document.location.toString(),
             hash = document.location.hash || '',
-            search = document.location.search || '';
+            search = document.location.search || '',
+            revisionRange;
 
         _super(this).initialize.call(this);
 
@@ -115,7 +117,13 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
          * We won't be invoking any routes or storing new history. The back
          * button will correctly bring the user to the previous page.
          */
-        this.router.navigate(curRevision + '/' + search + hash, {
+        revisionRange = curRevision;
+
+        if (curInterdiffRevision) {
+            revisionRange += '-' + curInterdiffRevision;
+        }
+
+        this.router.navigate(revisionRange + '/' + search + hash, {
             replace: true,
             trigger: false
         });
