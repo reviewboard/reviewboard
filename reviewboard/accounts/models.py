@@ -8,14 +8,17 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import CounterField, JSONField
-from djblets.db.managers import ConcurrencyManager
 from djblets.forms.fields import TIMEZONE_CHOICES
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.accounts.managers import ProfileManager, TrophyManager
+from reviewboard.accounts.managers import (ProfileManager,
+                                           ReviewRequestVisitManager,
+                                           TrophyManager)
 from reviewboard.accounts.trophies import TrophyType
 from reviewboard.reviews.models import Group, ReviewRequest
-from reviewboard.reviews.signals import review_request_published
+from reviewboard.reviews.signals import (reply_published,
+                                         review_published,
+                                         review_request_published)
 from reviewboard.site.models import LocalSite
 
 
@@ -46,8 +49,9 @@ class ReviewRequestVisit(models.Model):
     visibility = models.CharField(max_length=1, choices=VISIBILITY,
                                   default=VISIBLE)
 
-    # Set this up with a ConcurrencyManager to help prevent race conditions.
-    objects = ConcurrencyManager()
+    # Set this up with a ReviewRequestVisitManager, which inherits from
+    # ConcurrencyManager to help prevent race conditions.
+    objects = ReviewRequestVisitManager()
 
     def __str__(self):
         """Return a string used for the admin site listing."""
@@ -415,3 +419,18 @@ User._meta.ordering = ('username',)
 def _call_compute_trophies(sender, review_request, **kwargs):
     if review_request.changedescs.count() == 0 and review_request.public:
         Trophy.objects.compute_trophies(review_request)
+
+
+@receiver(review_request_published)
+def _call_unarchive_all_for_review_request(sender, review_request, **kwargs):
+    ReviewRequestVisit.objects.unarchive_all(review_request)
+
+
+@receiver(review_published)
+def _call_unarchive_all_for_review(sender, review, **kwargs):
+    ReviewRequestVisit.objects.unarchive_all(review.review_request_id)
+
+
+@receiver(reply_published)
+def _call_unarchive_all_for_reply(sender, reply, **kwargs):
+    ReviewRequestVisit.objects.unarchive_all(reply.review_request_id)
