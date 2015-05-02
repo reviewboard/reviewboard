@@ -30,19 +30,32 @@ class ReviewRequestVisit(models.Model):
     inform them that new discussions have taken place.
     """
 
-    user = models.ForeignKey(User, related_name="review_request_visits")
-    review_request = models.ForeignKey(ReviewRequest, related_name="visits")
+    VISIBLE = 'V'
+    ARCHIVED = 'A'
+    MUTED = 'M'
+
+    VISIBILITY = (
+        (VISIBLE, 'Visible'),
+        (ARCHIVED, 'Archived'),
+        (MUTED, 'Muted'),
+    )
+
+    user = models.ForeignKey(User, related_name='review_request_visits')
+    review_request = models.ForeignKey(ReviewRequest, related_name='visits')
     timestamp = models.DateTimeField(_('last visited'), default=timezone.now)
+    visibility = models.CharField(max_length=1, choices=VISIBILITY,
+                                  default=VISIBLE)
 
     # Set this up with a ConcurrencyManager to help prevent race conditions.
     objects = ConcurrencyManager()
 
     def __str__(self):
         """Return a string used for the admin site listing."""
-        return "Review request visit"
+        return 'Review request visit'
 
     class Meta:
-        unique_together = ("user", "review_request")
+        unique_together = ('user', 'review_request')
+        index_together = [('user', 'visibility')]
 
 
 @python_2_unicode_compatible

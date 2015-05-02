@@ -12,7 +12,7 @@ RB.ReviewRequestPageView = RB.ReviewablePageView.extend({
         RB.ReviewablePageView.prototype.initialize.call(this);
 
         this._reviewBoxListView = new RB.ReviewBoxListView({
-            el: $('#content'),
+            el: $('#reviews'),
             pageEditState: this.reviewRequestEditor,
             reviewRequestEditorView: this.reviewRequestEditorView,
             reviewRequest: this.reviewRequest

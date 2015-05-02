@@ -17,6 +17,7 @@ $.widget("ui.rbautocomplete", {
         inputClass: "ui-autocomplete-input",
         resultsClass: "ui-autocomplete-results",
         loadingClass: "ui-autocomplete-loading",
+        resultsParentEl: document.body,
         minChars: 1,
         ajaxDelay: 400,
         localDelay: 10,
@@ -621,7 +622,7 @@ $.ui.rbautocomplete.select = function (options, input, select, config) {
         .hide()
         .addClass(options.resultsClass)
         .css("position", "absolute")
-        .appendTo(document.body);
+        .appendTo(options.resultsParentEl);
 
         list = $("<ul/>").appendTo(element).mouseover( function(event) {
             if(target(event).nodeName && target(event).nodeName.toUpperCase() == 'LI') {

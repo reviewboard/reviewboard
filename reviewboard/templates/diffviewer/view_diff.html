@@ -27,16 +27,22 @@
 {%   include "reviews/review_header.html" %}
 
 {%   box "review-request" %}
-<div class="actions-container">
-{%    star review_request %}
- <ul class="actions">
+ <div class="review-request-header">
+  <ul class="actions page-tabs">
+   <li><a href="{{review_request.get_absolute_url}}">{% trans "Reviews" %}</a></li>
+   <li class="active"><a href="{% url 'view-diff' review_request.display_id %}#index_header">{% trans "Diff" %}</a></li>
+  </ul>
+
+  <div class="actions-container">
+   {% star review_request %}
+   <ul class="actions actions-right">
 {%    include "reviews/review_request_actions_secondary.html" %}
 {%    diffviewer_action_hooks %}
-  <li class="primary" id="download-diff" {% if interdiffset %}style="display: none;"{% endif %}><a href="raw/">{% trans "Download Diff" %}</a></li>
+    <li id="download-diff" {% if interdiffset %}style="display: none;"{% endif %}><a href="raw/">{% trans "Download Diff" %}</a></li>
 {%    include "reviews/review_request_actions_primary.html" %}
-  <li class="primary"><a href="{{review_request.get_absolute_url}}">{% trans "View Reviews" %}</a></li>
- </ul>
-</div>
+   </ul>
+  </div>
+ </div>
 
 <div class="main">
 {%    include "reviews/review_request_box.html" %}
@@ -52,21 +58,21 @@
   <div id="pagination1"></div>
  </div>
 </div>
+{%   endbox %}
 
-<ul class="controls">
+<ul id="view_controls">
 {%    if collapseall %}
- <li><a href=".?expand=1"><div class="rb-icon rb-icon-expand"></div> {% trans "Expand changes" %}</a></li>
+ <li><a href=".?expand=1"><span class="fa fa-plus"></span> {% trans "Expand changes" %}</a></li>
 {%    else %}
- <li><a href=".?collapse=1"><div class="rb-icon rb-icon-collapse"></div> {% trans "Collapse changes" %}</a></li>
+ <li><a href=".?collapse=1"><span class="fa fa-minus"></span> {% trans "Collapse changes" %}</a></li>
 {%    endif %}
 {%    if siteconfig_settings.diffviewer_show_trailing_whitespace %}
- <li class="ew" style="display:none;"><a href="#" class="toggle-show-whitespace"><div class="rb-icon rb-icon-collapse"></div> {% trans "Hide extra whitespace" %}</a></li>
- <li class="ew"><a href="#" class="toggle-show-whitespace"><div class="rb-icon rb-icon-expand"></div> {% trans "Show extra whitespace" %}</a></li>
+ <li class="ew" style="display:none;"><a href="#" class="toggle-show-whitespace"><span class="fa fa-minus"></span> {% trans "Hide extra whitespace" %}</a></li>
+ <li class="ew"><a href="#" class="toggle-show-whitespace"><span class="fa fa-plus"></span> {% trans "Show extra whitespace" %}</a></li>
 {%    endif %}
- <li class="ws"><a href="#" class="toggle-whitespace-only-chunks"><div class="rb-icon rb-icon-collapse"></div> {% trans "Hide whitespace changes" %}</a></li>
- <li  class="ws" style="display:none;"><a href="#" class="toggle-whitespace-only-chunks"><div class="rb-icon rb-icon-expand"></div> {% trans "Show whitespace changes" %}</a></li>
+ <li class="ws"><a href="#" class="toggle-whitespace-only-chunks"><span class="fa fa-minus"></span> {% trans "Hide whitespace changes" %}</a></li>
+ <li  class="ws" style="display:none;"><a href="#" class="toggle-whitespace-only-chunks"><span class="fa fa-plus"></span> {% trans "Show whitespace changes" %}</a></li>
 </ul>
-{%   endbox %}
 
 <div id="diffs"></div>
 <div id="pagination2"></div>

@@ -18,19 +18,25 @@
 {%  include "reviews/review_header.html" %}
 
 {%  box "review-request" %}
- <div class="actions-container">
- {% star review_request %}
-  <ul class="actions">
-{%   include "reviews/review_request_actions_secondary.html" %}
+ <div class="review-request-header">
+  <ul class="actions page-tabs">
+   <li><a href="{{review_request.get_absolute_url}}">{% trans "Reviews" %}</a></li>
+   <li class="active"><a href=".">{% trans "File" %}</a></li>
 {%   if has_diffs %}
-   <li class="primary"><a href="{% url 'raw-diff' review_request.display_id %}">{% trans "Download Diff" %}</a></li>
-{%   endif %}
-{%   include "reviews/review_request_actions_primary.html" %}
-   <li class="primary"><a href="{{review_request.get_absolute_url}}">{% trans "View Reviews" %}</a></li>
-{%   if has_diffs %}
-   <li class="primary"><a href="{{review_request.get_absolute_url}}diff/#index_header">{% trans "View Diff" %}</a></li>
+   <li><a href="{% url 'view-diff' review_request.display_id %}#index_header">{% trans "Diff" %}</a></li>
 {%   endif %}
   </ul>
+
+  <div class="actions-container">
+   {% star review_request %}
+   <ul class="actions actions-right">
+{%   include "reviews/review_request_actions_secondary.html" %}
+{%   if has_diffs %}
+    <li><a href="{% url 'raw-diff' review_request.display_id %}">{% trans "Download Diff" %}</a></li>
+{%   endif %}
+{%   include "reviews/review_request_actions_primary.html" %}
+   </ul>
+  </div>
  </div>
  <div class="content review-ui-box-content">
   {{review_ui_box_content}}

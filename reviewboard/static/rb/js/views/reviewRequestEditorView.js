@@ -409,15 +409,32 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     ],
 
     events: {
-        'click .has-menu': '_onMenuClicked'
+        'click .has-menu': '_onMenuClicked',
+        'click #archive-review-request-link': '_onArchiveClicked',
+        'click #unarchive-review-request-link': '_onUnarchiveClicked',
+        'click #mute-review-request-link': '_onMuteClicked',
+        'click #unmute-review-request-link': '_onUnmuteClicked'
     },
+
+    _archiveActionsTemplate: _.template([
+        '<% if (visibility === RB.ReviewRequest.VISIBILITY_VISIBLE) { %>',
+        '<li><a id="archive-review-request-link" href="#"><%- archiveText %></a></li>',
+        '<li><a id="mute-review-request-link" href="#"><%- muteText %></a></li>',
+        '<% } else if (visibility === RB.ReviewRequest.VISIBILITY_ARCHIVED) { %>',
+        '<li><a id="unarchive-review-request-link" href="#"><%- unarchiveText %></a></li>',
+        '<% } else if (visibility === RB.ReviewRequest.VISIBILITY_MUTED) { %>',
+        '<li><a id="unmute-review-request-link" href="#"><%- unmuteText %></a></li>',
+        '<% } %>'
+    ].join('')),
 
     initialize: function() {
         var $issueSummary = $('#issue-summary');
 
         _.bindAll(this, '_checkResizeLayout', '_scheduleResizeLayout',
                   '_onCloseDiscardedClicked', '_onCloseSubmittedClicked',
-                  '_onDeleteReviewRequestClicked', '_onUpdateDiffClicked');
+                  '_onDeleteReviewRequestClicked', '_onUpdateDiffClicked',
+                  '_onArchiveClicked', '_onUnarchiveClicked',
+                  '_onMuteClicked', '_onUnmuteClicked');
 
         this._fieldEditors = {};
         this._hasFields = (this.$('.editable').length > 0);
@@ -530,6 +547,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this._$bannersContainer = $('#review_request_banners');
         this._$main = $('#review_request_main');
         this._$extra = $('#review_request_extra');
+
+        this.listenTo(reviewRequest, 'change:visibility',
+                      this._updateArchiveVisibility);
+        this._updateArchiveVisibility();
 
         /*
          * Find any editors that weren't registered. These may be from
@@ -1239,6 +1260,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
          * pane (where the issue summary table and stuff live).
          */
         this._$main.outerHeight(this._$extra.offset().top -
+                                this._$extra.getExtents('mp', 't') -
                                 this._$main.offset().top);
         height = this._$main.height();
 
@@ -1251,8 +1273,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
              * padding at the top. This ensures we get a height that matches
              * the content area of the content box.
              */
-            contentHeight = $lastContent.height() +
-                            $lastContent.getExtents('p', 't') -
+            contentHeight = $lastContent.height() -
                             Math.ceil($lastFieldContainer.position().top);
 
             /*
@@ -1401,6 +1422,88 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             });
 
         updateDiffView.render();
+    },
+
+    /*
+     * Handler for when Archive -> Archive is clicked.
+     */
+    _onArchiveClicked: function() {
+        return this._updateArchiveState(
+            RB.UserSession.instance.archivedReviewRequests,
+            true,
+            RB.ReviewRequest.VISIBILITY_ARCHIVED);
+    },
+
+    /*
+     * Handler for when Archive -> Unarchive is clicked.
+     */
+    _onUnarchiveClicked: function() {
+        return this._updateArchiveState(
+            RB.UserSession.instance.archivedReviewRequests,
+            false,
+            RB.ReviewRequest.VISIBILITY_VISIBLE);
+    },
+
+    /*
+     * Handler for when Archive -> Mute is clicked.
+     */
+    _onMuteClicked: function() {
+        return this._updateArchiveState(
+            RB.UserSession.instance.mutedReviewRequests,
+            true,
+            RB.ReviewRequest.VISIBILITY_MUTED);
+    },
+
+    /*
+     * Handler for when Archive -> Unmute is clicked.
+     */
+    _onUnmuteClicked: function() {
+        return this._updateArchiveState(
+            RB.UserSession.instance.mutedReviewRequests,
+            false,
+            RB.ReviewRequest.VISIBILITY_VISIBLE);
+    },
+
+    /*
+     * Helper for updating archive/mute state.
+     */
+    _updateArchiveState: function(collection, add, newState) {
+        var reviewRequest = this.model.get('reviewRequest'),
+            options = {
+                success: function() {
+                    reviewRequest.set('visibility', newState);
+                }
+            };
+
+        if (add) {
+            collection.addImmediately(reviewRequest, options, this);
+        } else {
+            collection.removeImmediately(reviewRequest, options, this);
+        }
+
+        return false;
+    },
+
+    /*
+     * Update the visibility of the archive/mute menu items.
+     */
+    _updateArchiveVisibility: function() {
+        var visibility = this.model.get('reviewRequest').get('visibility'),
+            iconClass;
+
+        this.$('#hide-review-request-menu').html(this._archiveActionsTemplate({
+            visibility: visibility,
+            archiveText: gettext('Archive'),
+            muteText: gettext('Mute'),
+            unarchiveText: gettext('Unarchive'),
+            unmuteText: gettext('Unmute')
+        }));
+
+        iconClass = (visibility === RB.ReviewRequest.VISIBILITY_VISIBLE
+                     ? 'rb-icon-archive-off' : 'rb-icon-archive-on');
+
+        this.$('#hide-review-request-link')
+            .html('<span class="rb-icon ' + iconClass + '"></span>');
     },
 
     /*

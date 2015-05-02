@@ -1,5 +1,5 @@
 {% extends "datagrid/listview.html" %}
-{% load i18n reviewtags %}
+{% load djblets_utils i18n reviewtags %}
 
 {% block datagrid_titlebox %}
 {%  if datagrid.group %}{% star datagrid.group %}{% endif %}
@@ -24,9 +24,9 @@
 <ul class="datagrid-top-filters">
  <li class="datagrid-showclosed">
 {%  if datagrid.show_closed %}
-  <a href="?show-closed=0">{% trans "Hide closed" %}</a></li>
+  <a href="{% querystring_with 'show-closed' '0' %}">{% trans "Hide closed" %}</a></li>
 {%  else %}
-  <a href="?show-closed=1">{% trans "Show closed" %}</a></li>
+  <a href="{% querystring_with 'show-closed' '1' %}">{% trans "Show closed" %}</a></li>
 {%  endif %}
  </li>
 </ul>

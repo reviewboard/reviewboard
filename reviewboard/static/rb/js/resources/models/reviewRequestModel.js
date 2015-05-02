@@ -412,5 +412,9 @@ RB.ReviewRequest = RB.BaseResource.extend({
 
     CLOSE_DISCARDED: 1,
     CLOSE_SUBMITTED: 2,
-    PENDING: 3
+    PENDING: 3,
+
+    VISIBILITY_VISIBLE: 1,
+    VISIBILITY_ARCHIVED: 2,
+    VISIBILITY_MUTED: 3
 });

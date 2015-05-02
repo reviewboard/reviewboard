@@ -35,6 +35,23 @@ def get_api_token_item_url(token, local_site_name=None):
 
 
 #
+# ArchivedReviewRequestResource
+#
+def get_archived_review_request_list_url(username, local_site_name=None):
+    return resources.archived_review_request.get_list_url(
+        local_site_name=local_site_name,
+        username=username)
+
+
+def get_archived_review_request_item_url(username, object_id,
+                                         local_site_name=None):
+    return resources.archived_review_request.get_item_url(
+        local_site_name=local_site_name,
+        username=username,
+        review_request_id=object_id)
+
+
+#
 # ChangeResource
 #
 def get_change_list_url(review_request, local_site_name=None):

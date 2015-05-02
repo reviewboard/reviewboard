@@ -3,6 +3,8 @@
 
 {% block extrahead %}
 {# Empty this out. We use "scripts" and "scripts-post" in Review Board. #}
+{# Also, add some meta tags for the viewport. #}
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 {% endblock %}
 
 {% block css %}
@@ -13,27 +15,32 @@
 {%  endfor %}
 {% endblock %}
 
-{% block bodytag %}<body class="full-datagrid-page">{% endblock %}
-
-{% block content %}
-<div id="datagrid_page_container"{% if datagrid.sidebar %} class="has-sidebar"{% endif %}>
- <div id="datagrid_page_content">
-{%  if datagrid.sidebar %}
-  <div class="datagrid-sidebar{% if datagrid.sidebar.css_classes %} {{datagrid.sidebar.css_classes|join:' '}}{% endif %}">
-   <ul class="datagrid-sidebar-items">
+{% block mobile_nav %}
 {%   for item in datagrid.sidebar_items %}
 {%    if item.is_visible %}
 {{item.render}}
 {%    endif %}
 {%   endfor %}
-   </ul>
-  </div>
-{%  endif %}
-  <div id="datagrid_page_main" class="clearfix">
-{{datagrid.render_listview}}
-  </div>
- </div>
+{% endblock %}
+
+{% block bodytag %}<body class="datagrid-page full-page-content{% if datagrid.sidebar %} has-sidebar{% endif %}">{% endblock %}
+
+{% block sidebar %}
+{%  if datagrid.sidebar %}
+<div id="page_sidebar"{% if datagrid.sidebar.css_classes %} class="{{datagrid.sidebar.css_classes|join:' '}}{% endif %}">
+ <ul class="page-sidebar-items">
+{%   for item in datagrid.sidebar_items %}
+{%    if item.is_visible %}
+{{item.render}}
+{%    endif %}
+{%   endfor %}
+ </ul>
 </div>
+{%  endif %}
+{% endblock sidebar %}
+
+{% block content %}
+{{datagrid.render_listview}}
 {% endblock content %}
 
 {% block scripts-post %}
@@ -46,7 +53,7 @@
 <script>
     $(document).ready(function() {
         var view = new {{datagrid.js_view_class}}({
-            el: $('#datagrid_page_container'),
+            el: $('#page-container'),
             periodicReload: {{datagrid.periodic_reload|yesno:"true,false"}},
             model: new {{datagrid.js_model_class}}({
 {%  if local_site_name %}

@@ -105,7 +105,7 @@ RB.DatagridPageView = Backbone.View.extend({
      * the datagrid is reloaded from the server.
      */
     _setupDatagrid: function() {
-        this._$wrapper = this.$('#datagrid_page_content');
+        this._$wrapper = this.$('#content_container');
         this._$datagrid = this._$wrapper.find('.datagrid-wrapper');
         this._datagrid = this._$datagrid.data('datagrid');
         this._$main = this._$wrapper.find('.datagrid-main');
@@ -244,7 +244,7 @@ RB.DatagridPageView = Backbone.View.extend({
             .width($editCols.width() - $editCols.getExtents('b', 'lr'))
             .html('<span class="fa fa-spinner fa-pulse"></span>');
 
-        this._$wrapper.load(window.location + ' #datagrid_page_content',
+        this._$wrapper.load(window.location + ' #content_container',
                             _.bind(function() {
             this.$('.datagrid-wrapper').datagrid();
 

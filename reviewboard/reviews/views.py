@@ -359,6 +359,7 @@ def review_detail(request,
     reviews_entry_map = {}
     reviews_id_map = {}
     review_timestamp = 0
+    visited = None
 
     # Start by going through all reviews that point to this review request.
     # This includes draft reviews. We'll be separating these into a list of
@@ -423,23 +424,25 @@ def review_detail(request,
     starred = False
 
     if request.user.is_authenticated():
+        try:
+            visited, visited_is_new = \
+                ReviewRequestVisit.objects.get_or_create(
+                    user=request.user, review_request=review_request)
+            last_visited = visited.timestamp.replace(tzinfo=utc)
+        except ReviewRequestVisit.DoesNotExist:
+            # Somehow, this visit was seen as created but then not
+            # accessible. We need to log this and then continue on.
+            logging.error('Unable to get or create ReviewRequestVisit '
+                          'for user "%s" on review request at %s',
+                          request.user.username,
+                          review_request.get_absolute_url())
+
         # If the review request is public and pending review and if the user
         # is logged in, mark that they've visited this review request.
-        if review_request.public and review_request.status == "P":
-            try:
-                visited, visited_is_new = \
-                    ReviewRequestVisit.objects.get_or_create(
-                        user=request.user, review_request=review_request)
-                last_visited = visited.timestamp.replace(tzinfo=utc)
-                visited.timestamp = timezone.now()
-                visited.save()
-            except ReviewRequestVisit.DoesNotExist:
-                # Somehow, this visit was seen as created but then not
-                # accessible. We need to log this and then continue on.
-                logging.error('Unable to get or create ReviewRequestVisit '
-                              'for user "%s" on review request at %s',
-                              request.user.username,
-                              review_request.get_absolute_url())
+        if (review_request.public and
+            review_request.status == review_request.PENDING_REVIEW):
+            visited.timestamp = timezone.now()
+            visited.save()
 
         try:
             profile = request.user.get_profile()
@@ -468,15 +471,20 @@ def review_detail(request,
     else:
         draft_timestamp = ""
 
+    if visited:
+        visibility = visited.visibility
+    else:
+        visibility = None
+
     blocks = review_request.get_blocks()
 
     etag = encode_etag(
-        '%s:%s:%s:%s:%s:%s:%s:%s:%s'
+       '%s:%s:%s:%s:%s:%s:%s:%s:%s:%s'
         % (request.user, last_activity_time, draft_timestamp,
            review_timestamp, review_request.last_review_activity_timestamp,
            is_rich_text_default_for_user(request.user),
            [r.pk for r in blocks],
-           starred, settings.AJAX_SERIAL))
+           starred, visibility, settings.AJAX_SERIAL))
 
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()
@@ -524,6 +532,7 @@ def review_detail(request,
                 'class': state,
                 'collapsed': state == 'collapsed',
                 'issue_open_count': 0,
+                'has_issues': False,
             }
             reviews_entry_map[review.pk] = entry
             entries.append(entry)
@@ -664,6 +673,7 @@ def review_detail(request,
                         comment.issue_status_to_string(comment.issue_status)
                     issues[status_key] += 1
                     issues['total'] += 1
+                    entry['has_issues'] = True
 
                     if comment.issue_status == BaseComment.OPEN:
                         entry['issue_open_count'] += 1
@@ -754,6 +764,7 @@ def review_detail(request,
         'blocks': blocks,
         'draft': draft,
         'review_request_details': review_request_details,
+        'review_request_visit': visited,
         'entries': entries,
         'last_activity_time': last_activity_time,
         'review': pending_review,

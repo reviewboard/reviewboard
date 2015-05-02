@@ -46,7 +46,14 @@
                 }{% if not forloop.last %},{% endif %}
 {% endfor %}{% endspaceless %}],
             testingDone: "{% normalize_text_for_edit review_request_details.testing_done review_request_details.testing_done_rich_text True %}",
-            testingDoneRichText: {{review_request_details.testing_done_rich_text|yesno:'true,false'}}
+            testingDoneRichText: {{review_request_details.testing_done_rich_text|yesno:'true,false'}},
+{% if review_request_visit.visibility == 'V' %}
+            visibility: RB.ReviewRequest.VISIBILITY_VISIBLE
+{% elif review_request_visit.visibility == 'A' %}
+            visibility: RB.ReviewRequest.VISIBILITY_ARCHIVED
+{% elif review_request_visit.visibility == 'M' %}
+            visibility: RB.ReviewRequest.VISIBILITY_MUTED
+{% endif %}
         },
         extraReviewRequestDraftData: {
 {% if draft.changedesc %}

@@ -2,34 +2,34 @@
 
 <li id="user_page_profile">
 {% if siteconfig_settings.integration_gravatars %}
- <div class="datagrid-sidebar-row">
+ <div class="page-sidebar-row">
   {% gravatar profile_user 175 %}
  </div>
 {% endif %}
 
- <div class="datagrid-sidebar-row">
+ <div class="page-sidebar-row">
   <h2 class="nickname">{{profile_user.username}}</h2>
  </div>
 
 {% if show_profile %}
- <div class="datagrid-sidebar-row fn">
+ <div class="page-sidebar-row fn">
   {{profile_user.first_name}} {{profile_user.last_name}}
  </div>
 
 {%  if request.user.is_authenticated %}
- <div class="datagrid-sidebar-row">
+ <div class="page-sidebar-row">
   <a class="email" href="mailto:{{profile_user.email}}">{{profile_user.email}}</a>
  </div>
 {%  endif %}
 
 {%  localtime on %}
- <div class="datagrid-sidebar-row logged-in">
+ <div class="page-sidebar-row logged-in">
 {%   blocktrans with profile_user.last_login|localtime|date as last_login_date %}
   Last logged in {{last_login_date}}
 {%   endblocktrans %}
  </div>
 
- <div class="datagrid-sidebar-row joined">
+ <div class="page-sidebar-row joined">
 {%   blocktrans with profile_user.date_joined|localtime|date as joined_date %}
   Joined {{joined_date}}
 {%   endblocktrans %}

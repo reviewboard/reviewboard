@@ -1,26 +1,36 @@
-{% load djblets_deco djblets_extensions djblets_utils i18n rb_extensions %}
-{% load reviewtags tz %}
+{% load djblets_deco djblets_extensions djblets_utils gravatars i18n %}
+{% load rb_extensions reviewtags tz %}
 
 <a name="review{{entry.review.id}}"></a>
 <div id="review{{entry.review.id}}" class="review" data-review-id="{{entry.review.id}}" data-ship-it="{{entry.review.ship_it|yesno:'true,false'}}">
 {% if forloop.last %}
  <a name="last-review"></a>
 {% endif %}
+ <div class="box-statuses">
+  <div class="box-status{% if entry.review.ship_it %} ship-it{% endif %}{% if entry.issue_open_count > 0 %} has-issues{% endif %}">
+   <div class="gravatar-container">
+{% if siteconfig_settings.integration_gravatars %}
+    {% gravatar entry.review.user 48 %}
+{% endif %}
+   </div>
+   <div class="labels-container">
+{%  if entry.review.ship_it %}
+    <label class="ship-it-label">{% trans "Ship it!" %}</label>
+{%  endif %}
+{%  if entry.has_issues %}
+    <label class="fix-it-label"{% if entry.issue_open_count == 0 %} style="display: none;"{% endif %}>{% trans "Fix it!" %}</label>
+{%  endif %}
+   </div>
+  </div>
+ </div>
 {% box entry.class %}
  <div class="box-main">
 
   <div class="header">
 {%  template_hook_point "review-summary-header-pre" %}
-{%  if entry.review.ship_it %}
-{%   if entry.issue_open_count > 0 %}
-   <div class="shipit with-issues">{% trans "Fix it, then Ship it!" %}</div>
-{%   else %}
-   <div class="shipit">{% trans "Ship it!" %}</div>
-{%   endif %}
-{%  endif %}
    <div class="collapse-button btn"><div class="rb-icon {% if entry.collapsed %}rb-icon-expand-review{% else %}rb-icon-collapse-review{% endif %}"></div></div>
    <div class="reviewer"><a href="{% url 'user' entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></div>
-   <div class="posted_time">{% localtime on %}{% blocktrans with entry.review.timestamp as timestamp and entry.review.timestamp|date:"c" as timestamp_raw %}Posted <time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time> ({{timestamp}}){% endblocktrans %}{% endlocaltime %}</div>
+   <div class="posted_time">{% localtime on %}{% blocktrans with entry.review.timestamp as timestamp and entry.review.timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</div>
 {%  template_hook_point "review-summary-header-post" %}
   </div>
 
@@ -28,7 +38,9 @@
 
   <div class="body">
    <pre class="body_top reviewtext {% rich_text_classname entry.review.body_top_rich_text %}">{{entry.review.body_top|render_markdown:entry.review.body_top_rich_text}}</pre>
-{%  reply_section entry "" "body_top" "rcbt" %}
+   <div class="body-top-comment-section">
+{%  reply_section entry "" "body_top" "rcbt" entry.review.body_top %}
+   </div>
 
 {%  if entry.comments.diff_comments or entry.comments.screenshot_comments or entry.comments.file_attachment_comments %}
    <dl class="review-comments">
@@ -51,13 +63,13 @@
     </dt>
     <dd>
 {%    comment_detail_display_hook comment "review" %}
-     <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text}}</pre>
 {%    if comment.issue_opened %}
      <div class="issue-indicator">
        {% comment_issue review_request_details comment "screenshot_comments" %}
      </div>
 {%    endif %}
-{%    reply_section entry comment "screenshot_comments" "rc" %}
+     <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text}}</pre>
+{%    reply_section entry comment "screenshot_comments" "rc" comment.text %}
     </dd>
 {%   endfor %}
 
@@ -98,13 +110,13 @@
     </dt>
     <dd>
 {%    comment_detail_display_hook comment "review" %}
-     <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text}}</pre>
 {%    if comment.issue_opened %}
      <div class="issue-indicator">
 {%     comment_issue review_request_details comment "file_attachment_comments" %}
      </div>
 {%    endif %}
-{%    reply_section entry comment "file_attachment_comments" "rc" %}
+     <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text}}</pre>
+{%    reply_section entry comment "file_attachment_comments" "rc" comment.text %}
     </dd>
 {%   endfor %}
 
@@ -138,20 +150,22 @@
     </dt>
     <dd>
 {%    comment_detail_display_hook comment "review" %}
-     <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text}}</pre>
 {%    if comment.issue_opened %}
      <div class="issue-indicator">
 {%     comment_issue review_request_details comment "diff_comments" %}
      </div>
 {%    endif %}
-{%    reply_section entry comment "diff_comments" "rc" %}
+     <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text}}</pre>
+{%    reply_section entry comment "diff_comments" "rc" comment.text %}
     </dd>
 {%   endfor %}
    </dl>
 {%  endif %}
 {%  if entry.review.body_bottom %}
    <pre class="body_bottom reviewtext {% rich_text_classname entry.review.body_bottom_rich_text %}">{{entry.review.body_bottom|render_markdown:entry.review.body_bottom_rich_text}}</pre>
-{%   reply_section entry "" "body_bottom" "rcbb" %}
+   <div class="body-top-comment-section">
+{%   reply_section entry "" "body_bottom" "rcbb" entry.review.body_bottom %}
+   </div>
 {%  endif %}
   </div>
  </div>
