@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
+from djblets.auth.signals import user_registered
 from djblets.db.fields import CounterField, JSONField
 from djblets.forms.fields import TIMEZONE_CHOICES
 from djblets.siteconfig.models import SiteConfiguration
@@ -20,6 +21,7 @@ from reviewboard.reviews.signals import (reply_published,
                                          review_published,
                                          review_request_published)
 from reviewboard.site.models import LocalSite
+from reviewboard.site.signals import local_site_user_added
 
 
 @python_2_unicode_compatible
@@ -434,3 +436,23 @@ def _call_unarchive_all_for_review(sender, review, **kwargs):
 @receiver(reply_published)
 def _call_unarchive_all_for_reply(sender, reply, **kwargs):
     ReviewRequestVisit.objects.unarchive_all(reply.review_request_id)
+
+
+@receiver(user_registered)
+@receiver(local_site_user_added)
+def _add_default_groups(sender, user, local_site=None, **kwargs):
+    """Add user to default groups.
+
+    When a user is registered, add the user to global default groups.
+
+    When a user is added to a LocalSite, add the user to default groups of the
+    LocalSite.
+    """
+    if local_site:
+        default_groups = local_site.groups.filter(is_default_group=True)
+    else:
+        default_groups = Group.objects.filter(is_default_group=True,
+                                              local_site=None)
+
+    for default_group in default_groups:
+        default_group.users.add(user)
