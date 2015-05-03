@@ -52,7 +52,18 @@ class Group(models.Model):
     users = models.ManyToManyField(User, blank=True,
                                    related_name="review_groups",
                                    verbose_name=_("users"))
-    local_site = models.ForeignKey(LocalSite, blank=True, null=True)
+    local_site = models.ForeignKey(LocalSite,
+                                   blank=True,
+                                   null=True,
+                                   related_name='groups')
+    is_default_group = models.BooleanField(
+        _('add new users by default'),
+        default=False,
+        help_text=_('If a local site is set, this will automatically add '
+                    'users to this group when those users are added to the '
+                    'local site. If there is no local site, users will be '
+                    'automatically added to this group when they are '
+                    'registered.'))
 
     incoming_request_count = CounterField(
         _('incoming review request count'),

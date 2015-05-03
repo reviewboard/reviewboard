@@ -63,7 +63,8 @@ class GroupAdmin(admin.ModelAdmin):
                        'visible'),
         }),
         (_('Access Control'), {
-            'fields': ('invite_only', 'users', 'local_site'),
+            'fields': ('invite_only', 'users', 'local_site',
+                       'is_default_group'),
         }),
         (_('State'), {
             'fields': ('incoming_request_count',),

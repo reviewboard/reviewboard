@@ -109,13 +109,13 @@ RB.DatagridPageView = Backbone.View.extend({
         this._$datagrid = this._$wrapper.find('.datagrid-wrapper');
         this._datagrid = this._$datagrid.data('datagrid');
         this._$main = this._$wrapper.find('.datagrid-main');
-        this._$sidebarItems = this.$('.datagrid-sidebar-items');
+        this._$sidebarItems = this.$('.page-sidebar-items');
 
         if (this._actionsView) {
             this._$actionsContainer = $('<div/>')
                 .addClass('datagrid-actions-container')
                 .append(this._actionsView.$el)
-                .appendTo(this.$('.datagrid-sidebar'));
+                .appendTo($('#page_sidebar'));
 
             this._actionsView.delegateEvents();
         }
