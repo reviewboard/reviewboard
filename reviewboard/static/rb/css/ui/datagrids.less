@@ -41,16 +41,16 @@ body.datagrid-page {
 
     .datagrid {
       tr {
-        background: transparent;
+        background: @datagrid-row-odd-bg;
 
         &.even {
-          background: #FBFBFB;
+          background: @datagrid-row-even-bg;
         }
       }
 
       tbody {
         td, th {
-          border-bottom: 1px #F0F0F0 solid;
+          border-bottom: 1px @datagrid-row-border-color solid;
           padding: 5px;
 
           &:last-child {

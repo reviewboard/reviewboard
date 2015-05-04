@@ -29,14 +29,23 @@ RB.UploadDiffView = Backbone.View.extend({
      * Render the view.
      */
     render: function() {
-        var self = this;
+        var self = this,
+            selectDiffText;
+
+        if (this._canDragDrop()) {
+            selectDiffText = gettext('<input type="button" id="select-diff-file" value="Select"> or drag and drop a diff file to begin');
+            selectParentDiffText = gettext('<input type="button" id="select-parent-diff-file" value="Select"> or drag and drop a parent diff file if you have one');
+        } else {
+            selectDiffText = gettext('<input type="button" id="select-diff-file" value="Select"> a file to begin');
+            selectParentDiffText = gettext('<input type="button" id="select-parent-diff-file" value="Select"> a parent diff file if you have one');
+        }
 
         this.$el.html(this.template({
-            pendingChangeHeader: gettext('New Review Request for Pending Change'),
+            pendingChangeHeader: gettext('Create from a local change'),
             tipHeader: gettext('Tip:'),
-            tip: gettext('We recommend using <tt>rbt post</tt> from <a href="https://www.reviewboard.org/docs/rbtools/dev/">RBTools</a> to create and update review requests.'),
-            selectDiff: gettext('<input type="button" id="select-diff-file" value="Select"> or drag and drop a diff file to begin.'),
-            selectParentDiff: gettext('<input type="button" id="select-parent-diff-file" value="Select"> or drag and drop a parent diff file if you have one.'),
+            tip: gettext('Use <tt>rbt post</tt> from <a href="https://www.reviewboard.org/downloads/rbtools/">RBTools</a> to more easily create and update review requests.'),
+            selectDiff: selectDiffText,
+            selectParentDiff: selectParentDiffText,
             baseDir: gettext('What is the base directory for this diff?'),
             changeNum: gettext('What is the change number for this diff?'),
             startOver: gettext('Start Over'),
@@ -62,6 +71,20 @@ RB.UploadDiffView = Backbone.View.extend({
         this._onStateChanged(this.model, this.model.get('state'));
 
         return this;
+    },
+
+    /*
+     * Return whether drag-and-drop is supported on this browser.
+     *
+     * We check if the DOM has the appropriate support for file drag-and-drop,
+     * which will give us the right answer on most browsers. We also need to
+     * check iOS specifically, as Safari lies about the support.
+     */
+    _canDragDrop: function() {
+        return ('draggable' in this.el ||
+                ('ondragstart' in this.el && 'ondrop' in this.el)) &&
+               !navigator.userAgent.match('iPhone OS') &&
+               !navigator.userAgent.match('iPad');
     },
 
     /*
