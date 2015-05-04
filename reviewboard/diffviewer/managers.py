@@ -613,10 +613,10 @@ class DiffProcessor(object):
                 not f.moved and
                 not f.copied and
                 (check_existence and
-                 not repository.get_file_exists(source_filename,
-                                                source_revision,
-                                                base_commit_id=base_commit_id,
-                                                request=request))):
+                 not self._get_file_exists(source_filename,
+                                           source_revision,
+                                           base_commit_id=base_commit_id,
+                                           request=request))):
                 raise FileNotFoundError(source_filename, source_revision,
                                         base_commit_id)
 
@@ -644,7 +644,7 @@ class DiffProcessor(object):
                       ext2 in self.HEADER_EXTENSIONS):
                     return 1
 
-            return cmp(filename1, filename2)
+        return cmp(filename1, filename2)
 
 
 class DiffCommitManager(DiffManagerBase):
