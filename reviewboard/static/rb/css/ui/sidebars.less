@@ -5,21 +5,44 @@
  * Set the page to have a sidebar in desktop mode, with the content
  * area moving to the right of the sidebar.
  */
-body.has-sidebar {
-  #content {
-    margin-left: @page-sidebar-width;
+body {
+  &.has-sidebar {
+    #content {
+      margin-left: @page-sidebar-width;
 
+      .transition-transform(@mobile-menu-animate-duration,
+                            @mobile-menu-animate-timing-func);
+
+      .on-mobile-medium-screen-720({
+        margin-left: 0;
+      });
+    }
+  }
+
+  &.mobile-show-page-sidebar {
     .on-mobile-medium-screen-720({
-      margin-left: 0;
+      #content {
+        .transform(translate(120%));
+      }
+
+      #page-container #page_sidebar {
+        /*
+         * Show the sidebar by default on mobile. It'll be the first thing
+         * seen by the user, and the user will navigate from there.
+         */
+        display: block;
+
+        .transform(translate(0));
+      }
     });
   }
 }
 
 #page-container {
   #page_sidebar {
+    .box-sizing(border-box);
     direction: rtl;  /* Position the scrollbar on the left. */
     float: none;
-    overflow-y: auto;
     padding: 1em 0;
     position: absolute;
     top: 0;
@@ -27,10 +50,22 @@ body.has-sidebar {
     margin: 3em -1px 0 1px;
     width: @page-sidebar-width;
     z-index: @z-index-deco;
+    .scrollable-y();
 
-    .desktop-only();
+    .transition-transform(@mobile-menu-animate-duration,
+                          @mobile-menu-animate-timing-func);
+
+    .on-mobile-medium-screen-720({
+      display: none;
+      .transform(translate(-120%));
+      direction: ltr;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+    });
 
     .page-sidebar-items {
+      direction: ltr;
       list-style: none;
       margin: 0;
       padding: 0;
@@ -52,6 +87,10 @@ body.has-sidebar {
             background: @page-sidebar-active-bg;
             border: 1px @page-sidebar-active-border-color solid;
             border-right: 1px transparent solid;
+
+            .on-mobile-medium-screen-720({
+              border-right-color: @page-sidebar-active-border-color;
+            });
           }
         }
 
@@ -59,6 +98,10 @@ body.has-sidebar {
           background: @page-sidebar-hover-bg;
           border: 1px @page-sidebar-hover-border-color solid;
           border-right: 1px @datagrid-border-color solid;
+
+          .on-mobile-medium-screen-720({
+            border-right-color: @page-sidebar-hover-border-color;
+          });
         }
 
         &.has-url:hover,
@@ -66,6 +109,10 @@ body.has-sidebar {
           .page-sidebar-row {
             .border-radius(15px 0 0 15px);
             .box-shadow(@box-shadow);
+
+            .on-mobile-medium-screen-720({
+              .border-radius(15px);
+            });
           }
         }
 

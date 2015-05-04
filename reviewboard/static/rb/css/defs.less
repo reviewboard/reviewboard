@@ -201,13 +201,16 @@
 @inline-actions-hover-bg: darken(@inline-actions-bg, 5%);
 
 // Datagrids
-@datagrid-bg: #FFFFFF;
-@datagrid-border-color: #999999;
+@datagrid-bg: @box-bg;
+@datagrid-border-color: @box-border-color;
 @datagrid-paginator-bg: #EEE;
 @datagrid-paginator-border-color: #BBB;
 @datagrid-actions-bg: @datagrid-paginator-bg;
 @datagrid-actions-offset-left: 1em;
-@datagrid-header-bg: #D0E6FF;
+@datagrid-header-bg: @box-title-bg;
+@datagrid-row-even-bg: #FBFBFB;
+@datagrid-row-odd-bg: #FFFFFF;
+@datagrid-row-border-color: #F0F0F0;
 
 // Page Sidebar
 @page-sidebar-bg: #E9E9E9;
@@ -237,9 +240,14 @@
 @summary-label-discarded-text-color: #555555;
 
 // New review request page
-@new-review-request-sidebar-bg: #333333;
+@new-review-request-bg: #FFFFFF;
+@new-review-request-commit-icon-color: #888;
+@new-review-request-commit-info-color: #666;
+@new-review-request-jump-to-commit-color: #71A6E2;
+@new-review-request-summary-posted-color: #777;
 
 // Mobile
+@mobile-back-forward-link-color: #444;
 @mobile-menu-animate-duration: 0.3s;
 @mobile-menu-animate-timing-func: ease-out;
 @mobile-menu-bg-color: #383A46;
