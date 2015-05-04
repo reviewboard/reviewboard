@@ -10,6 +10,7 @@ from django.utils.six.moves import reduce
 from django.utils.translation import ugettext_lazy as _, ugettext
 from djblets.datagrid.grids import CheckboxColumn, Column, DateTimeColumn
 from djblets.gravatars import get_gravatar_url
+from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.models import Profile
 from reviewboard.reviews.models import ReviewRequest
@@ -67,8 +68,13 @@ class BaseSubmitterColumn(Column):
 
     def render_user(self, state, user):
         """Render the user's name and gravatar as HTML."""
-        gravatar_url = get_gravatar_url(state.datagrid.request, user,
-                                        self.GRAVATAR_SIZE)
+        siteconfig = SiteConfiguration.objects.get_current()
+
+        if siteconfig.settings.get('integration_gravatars'):
+            gravatar_url = get_gravatar_url(state.datagrid.request, user,
+                                            self.GRAVATAR_SIZE)
+        else:
+            gravatar_url = None
 
         if gravatar_url:
             gravatar_html = format_html(
