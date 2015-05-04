@@ -865,6 +865,7 @@
     clear: both;
 
     pre {
+      margin-bottom: 0;
       .pre-wrap;
     }
 
@@ -875,7 +876,7 @@
     }
 
     .body_top, .body_bottom {
-      margin: 3em 2.5em;
+      margin: 2em;
     }
   }
 
@@ -883,10 +884,10 @@
   .body-bottom-comment-section,
   .comments > dd,
   .review-comments > dd {
-    margin: 0 3em 5em 3em;
+    margin: 0 2em 4em 2em;
 
     &:last-child {
-      margin-bottom: 3em;
+      margin-bottom: 2em;
     }
   }
 
@@ -906,7 +907,7 @@
 
   .controls {
     list-style: none;
-    margin: 1em 0 0 0;
+    margin: 0;
     padding: 0;
     text-align: left;
 
@@ -916,6 +917,7 @@
       text-decoration: none;
       background: #ECECEC;
       border: 1px #C3C3C3 solid;
+      margin-top: 1em;
       padding: 0.6em 1em;
       .border-radius(@box-border-radius);
 
@@ -929,12 +931,14 @@
     }
 
     li {
-      display: inline-block;
+      display: inline;
     }
   }
 
   .comments, .review-comments {
     border: 0;
+    margin: 0;
+    padding: 0;
 
     /*
      * Cover up the left and right borders we add for <dt> to get a clean
@@ -943,7 +947,7 @@
     overflow: hidden;
 
     & > dd {
-      margin-top: 3em;
+      margin-top: 2em;
     }
 
     & > dt {
@@ -1061,7 +1065,7 @@
   }
 
   .reply-comments {
-    margin: 2.5em 0 0 0;
+    margin: 3em 0 2em 0;
     padding: 0;
 
     &>li {
@@ -1076,8 +1080,8 @@
          * border-left size for every following item.
          */
         border-bottom: 1px transparent solid;
-        margin: 1em 0 0 0;
-        padding: 5px;
+        margin: 4em 0 2em 0;
+        padding: 0;
 
         dd {
           margin-left: 0;
