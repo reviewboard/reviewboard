@@ -4,6 +4,7 @@ import logging
 
 from django.db.models import Manager
 from django.utils import six
+from djblets.db.managers import ConcurrencyManager
 
 from reviewboard.accounts.trophies import get_registered_trophy_types
 
@@ -25,6 +26,24 @@ class ProfileManager(Manager):
         user._profile = profile
 
         return profile, is_new
+
+
+class ReviewRequestVisitManager(ConcurrencyManager):
+    """Manager for review request visits.
+
+    Unarchives a specified review request for all users that have archived it.
+    """
+
+    def unarchive_all(self, review_request):
+        """ Unarchives review request for all users.
+
+        Unarchives the given review request for all users by changing all
+        review request visit database entries for this review request from
+        archived to visible.
+        """
+        queryset = self.filter(review_request=review_request,
+                               visibility=self.model.ARCHIVED)
+        queryset.update(visibility=self.model.VISIBLE)
 
 
 class TrophyManager(Manager):

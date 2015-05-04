@@ -5,7 +5,7 @@
 @light-grey: #EAEAEA;
 @grey: #D0D0D0;
 @dark-grey: #5C5C5C;
-@light-blue: #C6DCF3;
+@light-blue: #D0E6FF;
 @dark-blue: #3465A4;
 
 @link-color: #0000C0;
@@ -15,20 +15,14 @@
 @btn-primary-color1: #7E9BC6;
 @btn-primary-color2: darken(@btn-primary-color1, 20%);
 
-@page-container-padding: 1em;
+@page-container-padding: 1.5em;
 
-@headerbar-logo-padding-horiz: 6px;
+@headerbar-logo-padding-horiz: 8px;
 @headerbar-logo-width: 60px;
 @headerbar-padding-left: @headerbar-logo-width +
                          2 * @headerbar-logo-padding-horiz;
-@headerbar-bg: #333333;
-@headerbar-bg-active: #555555;
 @headerbar-padding: 5px;
 @headerbar-menu-min-width: 9em;
-
-@navbar-bg: @light-blue;
-@navbar-border-color: @dark-blue;
-@navbar-text-color: #0000AA;
 
 @box-border-color: #888A85;
 @box-border-radius: 6px;
@@ -43,8 +37,13 @@
 @draft-bg-color: #CDFF9C;
 @draft-border-color: darken(@draft-bg-color, 50%);
 
+@review-request-bg: #FEFADF;
+@review-request-bg-gradient-start: lighten(@review-request-bg, 4%);
+@review-request-bg-gradient-end: @review-request-bg;
+@review-request-border-color: #9E9A7F;
+
 @review-request-action-bg: #E5D7A8;
-@review-request-action-border-color: darken(@review-request-action-bg, 40%);
+@review-request-action-border-color: darken(@review-request-action-bg, 35%);
 @review-request-action-active-bg: darken(@review-request-action-bg, 20%);
 @review-request-action-hover-bg: darken(@review-request-action-bg, 12%);
 
@@ -55,6 +54,8 @@
 @review-request-action-menu-border-color: @review-request-action-border-color;
 @review-request-action-menu-bg: @review-request-action-active-bg;
 @review-request-action-menu-item-hover-bg: @review-request-action-hover-bg;
+@review-request-action-padding-horiz: 0.6em;
+@review-request-action-padding-vert: 1.2em;
 
 @review-request-label-color: #575012;
 @review-request-link-color: #0000EE;
@@ -64,12 +65,19 @@
 
 @review-request-table-border-color: #BBB;
 
+// Reviews
+@reviews-padding-horiz: 0.5em;
+@review-box-border-color: #999999;
+
+// Review UIs
+@review-ui-header-bg: @review-request-bg;
+
 @admin-sidebar-width: 22em;
 
 @admin-msg-banner-bg: #FFC;
 @admin-msg-banner-border-color: darken(@admin-msg-banner-bg, 50%);
 
-@issue-opened-bg: #fff49C;
+@issue-opened-bg: #fff4B0;
 @issue-opened-border-color: darken(@issue-opened-bg, 40%);
 @issue-opened-link-color: darken(@issue-opened-bg, 60%);
 @issue-discarded-bg: #ECECEC;
@@ -90,7 +98,7 @@
 @textarea-border-color: #b8b5a0;
 @textarea-border: 1px #b8b5a0 solid;
 @textarea-editor-background: white;
-@textarea-editor-margin: 5px 0 0 0;
+@textarea-editor-margin: 10px 0 0 0;
 @textarea-editor-padding: 10px;
 
 @z-index-base: 1;
@@ -104,6 +112,10 @@
 @z-index-dialog: 120;
 @z-index-page-overlay: 130;
 @z-index-spinner: 140;
+@z-index-nav-menu-mask: 199;
+@z-index-nav-menu: 200;
+@z-index-mobile-headerbar: 201;
+@z-index-logo: @z-index-mobile-headerbar;
 
 // Icon dimensions
 @rb-icon-edit-width: 20px;
@@ -192,34 +204,59 @@
 @inline-actions-bg: darken(@diff-file-color, 3%);
 @inline-actions-hover-bg: darken(@inline-actions-bg, 5%);
 
-// Dashboard
-@dashboard-sidebar-bg: #E9E9E9;
-@dashboard-sidebar-horiz-padding: 0.8em;
-@dashboard-sidebar-vert-padding: 0.4em;
-@dashboard-sidebar-item-vert-padding: 6px;
-@dashboard-sidebar-section-vert-padding: 8px;
-@dashboard-sidebar-active-bg: darken(@dashboard-sidebar-bg, 5%);
-@dashboard-sidebar-count-border-radius: 2 * @box-border-radius;
-@dashboard-sidebar-count-bg: lighten(@dashboard-sidebar-bg, 15%);
-@dashboard-sidebar-count-border-color: darken(@dashboard-sidebar-bg, 10%);
-@dashboard-sidebar-count-zero-bg: lighten(@dashboard-sidebar-bg, 3%);
-@dashboard-sidebar-count-zero-border-color: darken(@dashboard-sidebar-bg, 5%);
-@dashboard-sidebar-count-vert-padding: 0px;
-@dashboard-sidebar-count-horiz-padding: 8px;
+// Datagrids
+@datagrid-bg: #FFFFFF;
+@datagrid-border-color: #999999;
+@datagrid-paginator-bg: #EEE;
+@datagrid-paginator-border-color: #BBB;
+@datagrid-actions-bg: @datagrid-paginator-bg;
+@datagrid-actions-offset-left: 1em;
+@datagrid-header-bg: #D0E6FF;
+
+// Page Sidebar
+@page-sidebar-bg: #E9E9E9;
+@page-sidebar-count-color: #A02222;
+@page-sidebar-count-zero-color: #BBBBBB;
+@page-sidebar-horiz-padding: 0.8em;
+@page-sidebar-vert-padding: 0.4em;
+@page-sidebar-item-vert-padding: 6px;
+@page-sidebar-section-vert-padding: 8px;
+@page-sidebar-active-bg: #FFFFFF;
+@page-sidebar-active-border-color: @datagrid-border-color;
+@page-sidebar-count-vert-padding: 0px;
+@page-sidebar-count-horiz-padding: 8px;
+@page-sidebar-hover-bg: lighten(@page-sidebar-active-bg, 30%);
+@page-sidebar-hover-border-color: lighten(@page-sidebar-active-border-color, 30%);
+@page-sidebar-width: 19em;
+
+// Review request labels in datagrids.
+@summary-label-draft-bg: #AAE29B;
+@summary-label-draft-border-color: darken(@summary-label-draft-bg, 28%);
+@summary-label-text-color: #005500;
+@summary-label-submitted-bg: #FFFFD0;
+@summary-label-submitted-border-color: darken(@summary-label-submitted-bg, 55%);
+@summary-label-submitted-text-color: #777700;
+@summary-label-discarded-bg: #DDDDDD;
+@summary-label-discarded-border-color: darken(@summary-label-discarded-bg, 25%);
+@summary-label-discarded-text-color: #555555;
+
+// New review request page
+@new-review-request-sidebar-bg: #333333;
 
 // Mobile
-@mobile-navbar-hide-margin-left: -160px;
+@mobile-menu-animate-duration: 0.3s;
+@mobile-menu-animate-timing-func: ease-out;
+@mobile-menu-bg-color: #383A46;
+@mobile-menu-text-color: #EEE;
+@mobile-menu-border-color: darken(@mobile-menu-bg-color, 20%);
+@mobile-menu-header-bg-color: darken(@mobile-menu-bg-color, 5%);
+@mobile-menu-header-border-color: darken(@mobile-menu-header-bg-color, 5%);
+@mobile-menu-footer-height: 40px;
+@mobile-menu-header-height: 32px;
+@mobile-navbar-width: 300px;
 @mobile-medium-width-720: 720px;
-.on-mobile-medium-screen-720(@rules) {
-  @media screen and (max-width: @mobile-medium-width-720),
-         screen and (max-device-width: @mobile-medium-width-720) and (orientation: landscape) {
-    @rules();
-  }
-}
 
 
 @import (reference) "mixins/gradients.less";
 @import (reference) "mixins/style.less";
-
-
-// vim: set et ts=2 sw=2:
+@import (reference) "mixins/theme.less";

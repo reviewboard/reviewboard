@@ -16,6 +16,42 @@
   vertical-align: top;
 }
 
+/* Adds a left-facing arrow to the left-hand side of a box. */
+.left-arrow-callout(@color) {
+  position: relative;
+
+  &:before, &:after {
+    position: absolute;
+    left: -19px;
+    top: 17px;
+    right: 100%;
+    border: 1px transparent solid;
+    content: " ";
+    display: block;
+    width: 0;
+    height: 0;
+  }
+
+  &:before {
+    border-right-color: @box-border-color;
+    border-width: 10px;
+  }
+
+  &:after {
+    border-width: 9px;
+    border-right-color: @color;
+    margin-top: 1px;
+    margin-left: 2px;
+  }
+}
+
+/* Changes the color of an existing callout arrow. */
+.left-arrow-callout-color(@color) {
+  &:after {
+    border-right-color: @color;
+  }
+}
+
 .rich-text-loading() {
   color: transparent;
   background: white url("@{img_base}/spinner.gif") no-repeat @box-padding @box-padding;
@@ -39,6 +75,24 @@
           font-weight: bold;
           text-decoration: none;
         }
+
+        .gravatar-container {
+          background: white;
+          .border-radius(50%);
+          display: inline-block;
+          overflow: hidden;
+          width: 32px;
+          height: 32px;
+        }
+
+        .user-reply-info {
+          display: inline-block;
+          overflow: hidden;
+
+          time {
+            display: block;
+          }
+        }
       }
 
       span {
@@ -55,32 +109,48 @@
  ****************************************************************************/
 .actions-container {
   background: @review-request-action-bg;
-  border-bottom: 1px @review-request-action-border-color solid;
-  float: right;
-  width: 100%;
+  border: 1px @review-request-action-border-color solid;
+  border-bottom: 0;
+  overflow: hidden;
   .border-radius(@box-inner-border-radius @box-inner-border-radius 0 0);
+  .box-sizing(border-box);
 
-  &>ul {
-    min-height: 2em;
+  /*
+   * This adds some content to the actions list, ensuring that even if it's
+   * empty, there will be a suitable height.
+   */
+  .actions:before {
+    content: ".";
+    float: left;
+    visibility: hidden;
+    padding: @review-request-action-padding-horiz 0;
   }
 }
 
 
 .actions {
+  .box-sizing(border-box);
   float: right;
   list-style: none;
   margin: 0;
   padding: 0;
   white-space: nowrap;
 
+  &.actions-left {
+    float: left;
+
+    #hide-review-request-link {
+      padding: 0.6em 0.6em 0.3em 0.6em;
+    }
+  }
+
   a {
     color: black;
     cursor: pointer;
     display: block;
     text-decoration: none;
-    padding: 6px 10px;
-
-    border-left: 1px @review-request-action-border-color solid;
+    padding: @review-request-action-padding-horiz
+             @review-request-action-padding-vert;
   }
 
   img {
@@ -126,6 +196,16 @@
     &.primary:active {
       background-color: @review-request-action-primary-active-bg;
     }
+
+    &.action-view-diff {
+      background: #FFFFEE;
+      font-size: 105%;
+
+      a {
+        padding-left: 1.5em;
+        padding-right: 1.5em;
+      }
+    }
   }
 
   .menu {
@@ -167,8 +247,48 @@
   }
 }
 
-.actions>li:last-child {
+.actions-right>li:last-child {
   .border-radius(0 @box-inner-border-radius 0 0);
+}
+
+.actions.page-tabs {
+  background: @review-request-action-bg;
+  border: 1px @review-request-border-color solid;
+  border-bottom: 0;
+  .border-radius(@box-border-radius @box-border-radius 0 0);
+  margin-left: 1.5em;
+  overflow: hidden;
+
+  .review-ui-box & {
+    .active {
+      background: @review-ui-header-bg;
+    }
+  }
+
+  li {
+    border-bottom: 1px @review-request-action-border-color solid;
+    min-width: 6em;
+    text-align: center;
+
+    &.active {
+      background: @review-request-bg-gradient-start;
+      border: 1px @review-request-border-color solid;
+      border-bottom-color: transparent;
+      border-top: 0;
+
+      &:first-child {
+        border-left: 0;
+      }
+
+      &:last-child {
+        border-right: 0;
+      }
+    }
+  }
+}
+
+.review-request-header {
+  border-bottom: 1px @review-request-action-border-color solid;
 }
 
 
@@ -231,8 +351,8 @@
    */
   @details-width: 300px;
 
-  background-color: #fefadf;
-  background-image: url('@{img_base}/review_request_box_top_bg.png');
+  background: none;
+  border: 0;
 
   label {
     color: @review-request-label-color;
@@ -251,7 +371,7 @@
   }
 
   .box-inner {
-    background-image: url('@{img_base}/review_request_box_bottom_bg.png');
+    background-image: none;
   }
 
   .content {
@@ -299,39 +419,20 @@
   }
 
   .main {
+    background-color: @review-request-bg;
+    #gradient > .vertical(@review-request-bg-gradient-start,
+                          @review-request-bg-gradient-end);
+    border: 1px @review-request-border-color solid;
+    border-top: 0;
+    .border-radius(0 0 @box-border-radius @box-border-radius);
     clear: both;
-    padding: 0;
+    padding: 0.5em;
   }
 
   #required-field-legend {
     color: darkRed;
     font-weight: bold;
     padding: @box-padding;
-  }
-
-  .controls {
-    list-style: none;
-    margin: 0;
-    padding: 0 8px 4px 8px;
-    text-align: right;
-
-    a {
-      color: black;
-      text-decoration: none;
-
-      &:hover {
-        color: #0000C0;
-      }
-    }
-
-    li {
-      display: inline;
-      padding-left: 8px;
-    }
-
-    .rb-icon {
-      vertical-align: bottom;
-    }
   }
 
   .header {
@@ -421,7 +522,9 @@
   }
 
   #review_request_extra {
+    .box-sizing(border-box);
     clear: both;
+    margin-top: 1em;
 
     h3 {
       color: @review-request-label-color;
@@ -441,7 +544,7 @@
   }
 
   #review_request_main {
-    margin-right: @details-width;
+    margin-right: (@details-width + 10px);
     position: relative;
 
     label {
@@ -548,14 +651,17 @@
   }
 
   .review-ui-box-content {
+    border: 1px @review-request-border-color solid;
+    border-top: 0;
     clear: both;
     padding: 0;
+    min-height: 5em;
   }
 
   .review-ui-header {
     border-bottom: 1px @diff-file-border-color solid;
-    #gradient > .vertical-three-colors(#FFFFFF, @diff-file-color, 50%,
-                                       @diff-file-color);
+    background: @review-ui-header-bg;
+    min-height: 2em;
 
     h1 {
       margin: 0;
@@ -570,15 +676,154 @@
  * Reviews
  ****************************************************************************/
 
-.box {
+#reviews {
+  margin-left: @reviews-padding-horiz;
+  margin-right: @reviews-padding-horiz;
+
+  .box {
+    margin: 2em 0;
+    .left-arrow-callout(white);
+  }
+
+  .box-container {
+    padding-left: 75px;
+    width: auto;
+  }
+
+  .box-statuses {
+    float: left;
+    text-align: center;
+
+    .box-status {
+      position: relative;
+      .transition(0.2s linear all);
+
+      &.has-issues {
+        .gravatar-container {
+          border-color: darken(@issue-opened-bg, 45%);
+        }
+      }
+
+      &.ship-it {
+        .gravatar-container {
+          border-color: #6ebf20;
+        }
+
+        .fix-it-label {
+          -webkit-transition-delay: 0.2s;
+          transition-delay: 0.2s;
+        }
+      }
+
+      &.ship-it.has-issues {
+        .gravatar-container {
+          border-color: darken(@issue-opened-bg, 45%);
+        }
+
+        .fix-it-label {
+          z-index: 1;
+        }
+
+        .ship-it-label {
+          position: absolute;
+          top: 3px;
+          margin-left: 2px;
+          padding-left: 2px;
+          padding-right: 2px;
+        }
+      }
+
+      .gravatar-container {
+        background: white;
+        border: 2px #CCC dotted;
+        .border-radius(50%);
+        overflow: hidden;
+        width: 48px;
+        height: 48px;
+        margin: 0 5px;
+        .transition(border-color 0.4s ease-in-out);
+
+        img {
+          border: 2px white solid;
+          .border-radius(50%);
+          .box-sizing(border-box);
+        }
+      }
+
+      .labels-container {
+        margin-top: -5px;
+        position: relative;
+      }
+
+      label {
+        border: 1px #888888 solid;
+        .border-radius(@box-border-radius);
+        display: block;
+        line-height: 1.5;
+        margin-bottom: @page-container-padding;
+        padding: 2px 4px;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 4.5em;
+
+        &.ship-it-label {
+          border: 1px darken(#aeff60, 40%) solid;
+          background: #aeff60;
+
+          /*
+           * NOTE: The ';' at the end here is intentional. It forces Less to
+           *       preserve the commas, rather than assuming they're separating
+           *       arguments to the mixin.
+           */
+          .transition(padding 0.2s ease-in-out,
+                      top 0.2s ease-in-out,
+                      margin 0.2s ease-in-out
+                      ;);
+        }
+
+        &.fix-it-label {
+          border: 1px darken(@issue-opened-bg, 50%) solid;
+          background: @issue-opened-bg;
+
+          .transition(left 0.5s ease-in-out,
+                      opacity 0.8s ease
+                      ;);
+        }
+      }
+    }
+  }
+
+  > .changedesc,
+  > .review {
+    clear: both;
+  }
+}
+
+#reviews .box {
+  border: 0;
+
   &.collapsed {
+    .left-arrow-callout-color(#ECECEE);
+
     .body {
       display: none;
     }
 
+    .box-inner {
+      background: #ECECEE;
+    }
+
     .banner {
+      border-bottom: 0;
       margin-bottom: 0;
     }
+  }
+
+  .box-inner {
+    background: none;
+    min-height: 5em;
+    overflow: hidden;
   }
 
   .collapse-button {
@@ -591,27 +836,33 @@
   }
 }
 
-.review {
-  .box {
-    background-color: #e9edf5;
-    background-image: url('@{img_base}/review_box_top_bg.png');
+#reviews .review {
+  &.has-draft {
+    .box {
+      .left-arrow-callout-color(@draft-bg-color);
+    }
+
+    .header {
+      background: @draft-bg-color;
+    }
   }
 
-  .banner {
-    margin-top: 10px;
-
-    &.floating {
+  .banners {
+    .banner {
+      border-left: 0;
+      border-right: 0;
       border-top: 0;
-      margin-top: 0;
+      .box-sizing(border-box);
+
+      &.floating {
+        border-top: 0;
+        margin-top: 0;
+      }
     }
   }
 
   .body {
-    background-color: #FAFAFA;
-    border: 1px #AAAAAA solid;
     clear: both;
-    margin: 5px;
-    padding: 10px;
 
     pre {
       .pre-wrap;
@@ -624,39 +875,86 @@
     }
 
     .body_top, .body_bottom {
-      margin: 0;
+      margin: 3em 2.5em;
+    }
+  }
+
+  .body-top-comment-section,
+  .body-bottom-comment-section,
+  .comments > dd,
+  .review-comments > dd {
+    margin: 0 3em 5em 3em;
+
+    &:last-child {
+      margin-bottom: 3em;
+    }
+  }
+
+  .box {
+    background: white;
+    border: 0;
+
+    .box-main {
+      padding: 0;
     }
   }
 
   .box-inner {
-    background-image: url('@{img_base}/review_box_bottom_bg.png') !important;
-    min-height: 32px;
+    background: white;
+    border: 1px @review-box-border-color solid;
   }
 
   .controls {
     list-style: none;
-    margin: 0;
-    padding: 0 8px 4px 8px;
-    text-align: right;
+    margin: 1em 0 0 0;
+    padding: 0;
+    text-align: left;
 
     a {
+      color: black;
+      display: inline-block;
       text-decoration: none;
+      background: #ECECEC;
+      border: 1px #C3C3C3 solid;
+      padding: 0.6em 1em;
+      .border-radius(@box-border-radius);
+
+      &:hover {
+        background: #F3F3F3;
+      }
+
+      .fa {
+        margin-right: 5px;
+      }
     }
 
     li {
-      display: inline;
+      display: inline-block;
     }
   }
 
   .comments, .review-comments {
     border: 0;
 
-    dd {
-      margin-bottom: 20px;
+    /*
+     * Cover up the left and right borders we add for <dt> to get a clean
+     * rounded border. We don't want them sticking out of the box.
+     */
+    overflow: hidden;
+
+    & > dd {
+      margin-top: 3em;
     }
 
-    dt thead th {
-      font-weight: normal;
+    & > dt {
+      thead th {
+        font-weight: normal;
+      }
+    }
+
+    .comment_container {
+      border-top: 1px #C0C0C0 solid;
+      border-bottom: 1px #C0C0C0 solid;
     }
 
     .filename a {
@@ -666,7 +964,7 @@
 
     .file-attachment {
       background: #F0F0F0;
-      border: 1px #C0C0C0 solid;
+      border-bottom: 1px #C0C0C0 solid;
       padding: 5px;
 
       .file-attachment-comment-header {
@@ -716,12 +1014,18 @@
       }
     }
 
-    .sidebyside th {
-      /*
-       * The line numbers aren't clickable in the comment fragments in reviews,
-       * so show a standard cursor instead of a pointer cursor.
-       */
-      cursor: initial;
+    .sidebyside {
+      th {
+        /*
+         * The line numbers aren't clickable in the comment fragments in
+         * reviews, so show a standard cursor instead of a pointer cursor.
+         */
+        cursor: initial;
+      }
+
+      .filename-row th {
+        background: #F0F0F0;
+      }
     }
   }
 
@@ -730,7 +1034,8 @@
   }
 
   .header {
-    padding: 2px 4px 4px 4px;
+    .border-radius(@box-border-radius @box-border-radius 0 0);
+    padding: 7px 9px 9px 9px;
 
     a {
       color: black;
@@ -740,8 +1045,9 @@
 
   .reviewer {
     float: left;
+    font-size: 110%;
     font-weight: bold;
-    padding-top: 2px;
+    padding-top: 1px;
 
     a {
       position: relative;
@@ -749,12 +1055,13 @@
   }
 
   .posted_time {
+    color: #555;
     text-align: right;
     padding-top: 2px;
   }
 
   .reply-comments {
-    margin: 20px 0 0 0;
+    margin: 2.5em 0 0 0;
     padding: 0;
 
     &>li {
@@ -763,43 +1070,50 @@
       .review-comments-inline();
 
       dl {
-        border-left: 2px #D0D0D0 solid;
-
         /*
          * Set a border-bottom to prevent a bug in IE where, without a
          * border-bottom, the content of the dl will shift left by the
          * border-left size for every following item.
          */
-        border-bottom: 1px #FAFAFA solid;
-        margin: 0;
+        border-bottom: 1px transparent solid;
+        margin: 1em 0 0 0;
         padding: 5px;
 
         dd {
-          margin-left: 10px;
+          margin-left: 0;
         }
       }
     }
   }
+}
 
-  .shipit {
-    background: #aeff60;
-    border: 1px #888888 solid;
-    font-weight: bold;
-    left: -10px;
-    margin-bottom: 8px;
-    padding: 4px 8px;
-    position: relative;
-    width: 4.5em;
-    top: -8px;
-    .border-radius(@box-border-radius 0 @box-border-radius 0);
+#view_controls {
+  list-style: none;
+  margin: 2em -(@page-container-padding + @reviews-padding-horiz);
+  padding: 1em;
+  text-align: center;
 
-    &.with-issues {
-      border: 1px darken(@issue-opened-bg, 70%) solid;
-      color: #205003;
-      width: 11em;
-      #gradient > .vertical-three-colors(@issue-opened-bg, @issue-opened-bg, 25%,
-                                         darken(@issue-opened-bg, 30%));
+  a {
+    background: #E0E0E0;
+    border: 1px #C3C3C3 solid;
+    .border-radius(@box-border-radius);
+    color: black;
+    padding: 0.6em 1em;
+    text-decoration: none;
+
+    &:hover {
+      background: #ECECEC;
     }
+  }
+
+  li {
+    display: inline;
+    margin: 0 1em;
+    padding: 0;
+  }
+
+  .rb-icon {
+    vertical-align: top;
   }
 }
 
@@ -809,10 +1123,12 @@
   width: 100%;
 
   tbody {
-    background: #F3F3F3 url("@{img_base}/spinner.gif") no-repeat center center;
+    background-color: #F3F3F3;
 
     td {
-      padding: 1em;
+      padding: 4px;
+      font-size: 20px;
+      text-align: center;
     }
   }
 }
@@ -836,7 +1152,11 @@
 .changedesc {
   &.box {
     background-color: #fefadf;
-    background-image: url('@{img_base}/review_request_box_top_bg.png');
+    #gradient > .vertical(lighten(@review-request-bg, 5%), @review-request-bg);
+
+    .box-inner {
+      border: 1px @review-request-border-color solid;
+    }
   }
 
   .body {
@@ -1168,11 +1488,6 @@
     }
   }
 
-  .box-inner {
-    background-image: url('@{img_base}/review_request_box_bottom_bg.png') !important;
-    min-height: 32px;
-  }
-
   .header {
     padding: 2px 4px 4px 4px;
 
@@ -1184,10 +1499,11 @@
     b {
       float: left;
       font-weight: bold;
+      font-size: 110%;
     }
 
     .reviewer {
-      padding-top: 2px;
+      padding-top: 1px;
     }
 
     .posted_time {
@@ -1266,6 +1582,10 @@
       .pre-wrap;
     }
 
+    .spinner {
+      font-size: 20px;
+    }
+
     .comments {
       list-style: none;
       margin: 0;
@@ -1311,7 +1631,7 @@
     border: 1px @file-attachment-border-color solid;
     display: block;
     position: relative;
-    margin: 0 1.5em 1.5em 0;
+    margin: 1em 1.5em 0.5em 0;
     max-width: @file-attachment-width;
     width: @file-attachment-width;
     .box-shadow(@box-shadow);
@@ -1595,8 +1915,8 @@
  * List of Attached Files
  ****************************************************************************/
 #file-list {
-  margin: 2px;
-  padding: 1em 0.5em 0.5em 0.5em;
+  margin: 0;
+  padding: 0;
 
   &.dragover {
     border: 2px green dashed;
@@ -1728,9 +2048,10 @@
 
   font-weight: bold;
   line-height: @issue-state-height;
+  margin-bottom: 2em;
   min-height: @issue-state-height;
   padding: 0.3em 0.6em 0.3em 0.6em;
-  position: relative;
+  .transition(0.1s linear all);
 
   input, .back-to-issue-summary {
     /*
@@ -1752,7 +2073,7 @@
 
   &.dropped {
     background: @issue-discarded-bg;
-    border: 1px solid @issue-discarded-border-color;
+    border: 1px @issue-discarded-border-color solid;
 
     .back-to-issue-summary, .back-to-issue-summary:visited {
       color: @issue-discarded-link-color;
@@ -1761,7 +2082,7 @@
 
   &.open {
     background: @issue-opened-bg;
-    border: 1px solid @issue-opened-border-color;
+    border: 1px @issue-opened-border-color solid;
 
     .back-to-issue-summary, .back-to-issue-summary:visited {
       color: @issue-opened-link-color;
@@ -1770,7 +2091,7 @@
 
   &.resolved {
     background: @issue-resolved-bg;
-    border: 1px solid @issue-resolved-border-color;
+    border: 1px @issue-resolved-border-color solid;
 
     .back-to-issue-summary, .back-to-issue-summary:visited {
       color: @issue-resolved-link-color;
@@ -1803,7 +2124,9 @@
  * Banners
  ****************************************************************************/
 #discard-banner,
-#submitted-banner {
+#submitted-banner,
+#archived-banner,
+#muted-banner {
   background: #E0E0E0;
   border: 1px #808080 solid;
   .border-radius(@box-border-radius);
@@ -1811,8 +2134,15 @@
 }
 
 #draft-banner {
-  .border-radius(@box-border-radius);
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
   .box-shadow(@box-shadow);
+  margin-top: -@page-container-padding;
+  margin-left: -@page-container-padding;
+  margin-right: -@page-container-padding;
+  margin-bottom: @page-container-padding;
+  padding: @page-container-padding;
 }
 
 #draft-banner,
@@ -1915,7 +2245,6 @@
 
 .issue-table-wrapper {
   clear: both;
-  margin: 8px 9px 14px 9px;
 }
 
 #issue-summary-table {
@@ -1923,10 +2252,20 @@
   width: 100%;
 
   tr {
+    &:last-child td {
+      &.status {
+        .border-radius(0 0 @box-border-radius 0);
+      }
+
+      &.summary-table-description {
+        .border-radius(0 0 0 @box-border-radius);
+      }
+    }
+
     td {
       border-width: 0 0 1px 0;
       border-style: solid;
-      padding: 5px 5px;
+      padding: 5px 8px;
       vertical-align: top;
 
       a {
@@ -1942,27 +2281,29 @@
 
   thead {
     th {
-      background: url("@{djblets_img_base}/datagrid/header_bg.png") repeat-x bottom left;
+      background: #E9E9E9;
       border-color: #999;
       border-style: solid;
       border-width: 1px 0;
       cursor: pointer;
       height: 21px;
-      padding: 2px 5px;
+      padding: 2px 8px;
       text-align: left;
       white-space: nowrap;
 
       &:hover {
-        background: url("@{djblets_img_base}/datagrid/header_bg_primary.png") repeat-x bottom left;
+        background: #F9F9F9;
       }
     }
 
     .description-header {
       border-left-width: 1px;
+      .border-radius(@box-border-radius 0 0 0);
     }
 
     .status-header {
       border-right-width: 1px;
+      .border-radius(0 @box-border-radius 0 0);
     }
   }
 
@@ -2055,11 +2396,19 @@
     }
 
     .filters {
-      margin: 3px 0 0 0;
+      margin: 1em 0 1.5em 0;
 
       .filter-wrapper {
         display: inline;
-        margin: 0 4px;
+        margin: 0 0.5em;
+
+        &:first-child {
+          margin-left: 0;
+        }
+
+        select {
+          margin-left: 0.2em;
+        }
       }
     }
   }

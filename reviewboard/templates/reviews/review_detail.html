@@ -19,44 +19,59 @@
 {%  include "reviews/review_header.html" %}
 
 {%  box "review-request" %}
- <div class="actions-container">
-{%   star review_request %}
-  <ul class="actions">
+ <div class="review-request-header">
+  <ul class="actions page-tabs">
+   <li class="active"><a href="{{review_request.get_absolute_url}}">{% trans "Reviews" %}</a></li>
+{%   if has_diffs %}
+   <li><a href="{% url 'view-diff' review_request.display_id %}#index_header">{% trans "Diff" %}</a></li>
+{%   endif %}
+  </ul>
+
+  <div class="actions-container">
+   {% star review_request %}
+   <ul class="actions actions-left">
+{%   if review_request.status == 'P' %}
+    <li class="has-menu">
+     <a class="menu-title" id="hide-review-request-link" href="#"><span class="rb-icon rb-icon-archive-off"></span></a>
+     <ul class="menu" id="hide-review-request-menu" style="display: none;"></ul>
+    </li>
+{%   endif %}
+   </ul>
+   <ul class="actions actions-right">
 {%   review_request_action_hooks %}
 {%   review_request_dropdown_action_hooks %}
 {%   include "reviews/review_request_actions_secondary.html" %}
 {%   if has_diffs %}
-   <li class="primary"><a href="diff/raw/">{% trans "Download Diff" %}</a></li>
+    <li><a href="diff/raw/">{% trans "Download Diff" %}</a></li>
 {%   endif %}
 {%   include "reviews/review_request_actions_primary.html" %}
-{%   if has_diffs %}
-   <li class="primary"><a href="{% url 'view-diff' review_request.display_id %}#index_header">{% trans "View Diff" %}</a></li>
-{%   endif %}
-  </ul>
+   </ul>
+  </div>
  </div>
 
  <div class="main">
 {%   include "reviews/review_request_box.html" %}
-
-  <ul class="controls">
-{%   if entries %}
-   <li>
-    <a href="#" id="expand-all">
-     <div class="rb-icon rb-icon-expand"></div>
-     <span>{% trans "Expand All" %}</span>
-    </a>
-   </li>
-   <li>
-    <a href="#" id="collapse-all">
-     <div class="rb-icon rb-icon-collapse"></div>
-     <span>{% trans "Collapse All" %}</span>
-    </a>
-   </li>
-{%   endif %}
-  </ul>
  </div>
 {%  endbox "review-request" %}
 </div>
+
+<div id="reviews">
+ <ul id="view_controls">
+{%  if entries %}
+  <li>
+   <a href="#" id="expand-all">
+    <span class="fa fa-plus"></span>
+    <span>{% trans "Expand All" %}</span>
+   </a>
+  </li>
+  <li>
+   <a href="#" id="collapse-all">
+    <span class="fa fa-minus"></span>
+    <span>{% trans "Collapse All" %}</span>
+   </a>
+  </li>
+{%  endif %}
+ </ul>
 
 {%  for entry in entries %}
 {%   if entry.review %}
@@ -66,6 +81,7 @@
 {%   endif %}
 {%  endfor %}
 {% endblock content %}
+</div>
 
 {% block scripts-post %}
 {{block.super}}

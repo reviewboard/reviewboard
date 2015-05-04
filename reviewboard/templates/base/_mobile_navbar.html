@@ -1,0 +1,43 @@
+{% load i18n gravatars rb_extensions %}
+
+<div id="mobile_account_menu">
+{% if request.user.is_authenticated %}
+{%  if siteconfig_settings.integration_gravatars %}
+ {% gravatar user 32 %}
+{%  endif %}
+ <span class="username">{{request.user.username}}</span>
+ <ul>
+  <li><a href="{% url 'logout' %}"><span class="fa fa-sign-out"></span> Log out</a></li>
+  <li><a href="{% url 'user-preferences' %}"><span class="fa fa-gear"></span></a></li>
+ </ul>
+{% else %}
+ <ul>
+  <li><a href="{% url 'login' %}?next={{request.path}}"><span class="fa fa-sign-in"></span> {% trans "Log in" %}</a></li>
+  <li><a href="{% url 'register' %}">{% trans "Register" %}</a></li>
+ </ul>
+{% endif %}
+</div>
+
+<ul id="mobile_page_nav">
+{% if request.user.is_authenticated or not siteconfig_settings.auth_require_sitewide_login %}
+{%  if request.user.is_authenticated %}
+ <li><a href="{% url 'new-review-request' %}">{% trans "New Review Request" %}</a></li>
+ <li><a href="{% url 'dashboard' %}">{% trans "My Dashboard" %}</a></li>
+{%  endif %}
+ <li><a href="{% url 'all-review-requests' %}">{% trans "All Review Requests" %}</a></li>
+ <li><a href="{% url 'all-users' %}">{% trans "Users" %}</a></li>
+ <li><a href="{% url 'all-groups' %}">{% trans "Groups" %}</a></li>
+{%  navigation_bar_hooks %}
+{% endif %}
+ </li>
+
+ {{mobile_nav_content}}
+</ul>
+
+<ul id="mobile_account_menu_footer"{% if request.user.is_staff %} class="has-admin"{% endif %}>
+ <li><a href="{{RB_MANUAL_URL}}"><span class="fa fa-book"></span> {% trans "Docs" %}</a></li>
+ <li><a href="{% url 'support' %}"><span class="fa fa-question-circle"></span> {% trans "Support" %}</a></li>
+{%  if request.user.is_staff %}
+ <li><a href="{% url 'reviewboard.admin.views.dashboard' %}"><span class="fa fa-lock"></span> {% trans "Admin" %}</a></li>
+{%  endif %}
+</ul>

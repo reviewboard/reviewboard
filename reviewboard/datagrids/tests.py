@@ -6,6 +6,7 @@ from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.datagrids.builtin_items import UserGroupsItem, UserProfileItem
 from reviewboard.reviews.models import (Group,
                                         ReviewRequest,
@@ -15,7 +16,10 @@ from reviewboard.testing import TestCase
 
 
 class BaseViewTestCase(TestCase):
+    """Base class for tests of dashboard views."""
+
     def setUp(self):
+        """Set up the test case."""
         super(BaseViewTestCase, self).setUp()
 
         self.siteconfig = SiteConfiguration.objects.get_current()
@@ -23,6 +27,7 @@ class BaseViewTestCase(TestCase):
         self.siteconfig.save()
 
     def _get_context_var(self, response, varname):
+        """Return a variable from the view context."""
         for context in response.context:
             if varname in context:
                 return context[varname]
@@ -32,6 +37,7 @@ class BaseViewTestCase(TestCase):
 
 class AllReviewRequestViewTests(BaseViewTestCase):
     """Unit tests for the all_review_requests view."""
+
     @add_fixtures(['test_users'])
     def test_with_access(self):
         """Testing all_review_requests view"""
@@ -134,6 +140,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
 
 class DashboardViewTests(BaseViewTestCase):
     """Unit tests for the dashboard view."""
+
     @add_fixtures(['test_users'])
     def test_incoming(self):
         """Testing dashboard view (incoming)"""
@@ -309,6 +316,84 @@ class DashboardViewTests(BaseViewTestCase):
         self.assertEqual(response.status_code, 404)
 
     @add_fixtures(['test_users'])
+    def test_show_archived(self):
+        """Testing dashboard view with show-archived"""
+        visible = self.create_review_request(summary='Test 1', publish=True)
+        archived = self.create_review_request(summary='Test 2', publish=True)
+        muted = self.create_review_request(summary='Test 3', publish=True)
+
+        self.client.login(username='doc', password='doc')
+        user = User.objects.get(username='doc')
+
+        visible.target_people.add(user)
+        archived.target_people.add(user)
+        muted.target_people.add(user)
+
+        self.client.get(visible.get_absolute_url())
+        self.client.get(archived.get_absolute_url())
+        self.client.get(muted.get_absolute_url())
+
+        visit = ReviewRequestVisit.objects.get(user__username=user,
+                                               review_request=archived.id)
+        visit.visibility = ReviewRequestVisit.ARCHIVED
+        visit.save()
+
+        visit = ReviewRequestVisit.objects.get(user__username=user,
+                                               review_request=muted.id)
+        visit.visibility = ReviewRequestVisit.MUTED
+        visit.save()
+
+        response = self.client.get('/dashboard/', {'show-archived': '1'})
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self._get_context_var(response, 'datagrid')
+        self.assertTrue(datagrid)
+        self.assertEqual(len(datagrid.rows), 3)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 3')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[2]['object'].summary, 'Test 1')
+
+        response = self.client.get('/dashboard/', {'show-archived': '0'})
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self._get_context_var(response, 'datagrid')
+        self.assertTrue(datagrid)
+        self.assertEqual(len(datagrid.rows), 1)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 1')
+
+        self.client.logout()
+        self.client.login(username='grumpy', password='grumpy')
+        user = User.objects.get(username='grumpy')
+
+        visible.target_people.add(user)
+        archived.target_people.add(user)
+        muted.target_people.add(user)
+
+        self.client.get(visible.get_absolute_url())
+        self.client.get(archived.get_absolute_url())
+        self.client.get(muted.get_absolute_url())
+
+        response = self.client.get('/dashboard/', {'show-archived': '1'})
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self._get_context_var(response, 'datagrid')
+        self.assertTrue(datagrid)
+        self.assertEqual(len(datagrid.rows), 3)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 3')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[2]['object'].summary, 'Test 1')
+
+        response = self.client.get('/dashboard/', {'show-archived': '0'})
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self._get_context_var(response, 'datagrid')
+        self.assertTrue(datagrid)
+        self.assertEqual(len(datagrid.rows), 3)
+        self.assertEqual(datagrid.rows[0]['object'].summary, 'Test 3')
+        self.assertEqual(datagrid.rows[1]['object'].summary, 'Test 2')
+        self.assertEqual(datagrid.rows[2]['object'].summary, 'Test 1')
+
+    @add_fixtures(['test_users'])
     def test_sidebar(self):
         """Testing dashboard sidebar"""
         self.client.login(username='doc', password='doc')
@@ -376,6 +461,7 @@ class DashboardViewTests(BaseViewTestCase):
 
 class GroupListViewTests(BaseViewTestCase):
     """Unit tests for the group_list view."""
+
     @add_fixtures(['test_users'])
     def test_with_access(self):
         """Testing group_list view"""
@@ -407,6 +493,7 @@ class GroupListViewTests(BaseViewTestCase):
 
 class SubmitterListViewTests(BaseViewTestCase):
     """Unit tests for the users_list view."""
+
     @add_fixtures(['test_users'])
     def test_with_access(self):
         """Testing users_list view"""
@@ -450,6 +537,7 @@ class SubmitterListViewTests(BaseViewTestCase):
 
 class SubmitterViewTests(BaseViewTestCase):
     """Unit tests for the submitter view."""
+
     @add_fixtures(['test_users'])
     def test_with_private_review_requests(self):
         """Testing submitter view with private review requests"""

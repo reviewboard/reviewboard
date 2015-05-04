@@ -11,13 +11,19 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
         ' <dl>',
         '  <dt>',
         '   <label for="<%= id %>">',
-        '    <a href="<%= userPageURL %>" class="user"><%- fullName %></a>',
+        '    <div class="gravatar-container">',
+        '     <img src="<%- gravatarURL %>" width="32" height="32" ',
+        '          alt="<%- fullName %>" class="gravatar" />',
+        '    </div>',
+        '    <div class="user-reply-info">',
+        '     <a href="<%= userPageURL %>" class="user"><%- fullName %></a>',
         '<% if (timestamp) { %>',
-        '    <span class="timestamp">',
-        '     <time class="timesince" datetime="<%= timestampISO %>">',
-        '<%= timestamp %></time> (<%= timestamp %>)',
-        '    </span>',
+        '     <span class="timestamp">',
+        '      <time class="timesince" datetime="<%= timestampISO %>">',
+        '<%= timestamp %></time>',
+        '     </span>',
         '<% } %>',
+        '    </div>',
         '   </label>',
         '  </dt>',
         '  <dd><pre id="<%= id %>" class="reviewtext">',
@@ -176,6 +182,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
                 commentID: null,
                 userPageURL: userSession.get('userPageURL'),
                 fullName: userSession.get('fullName'),
+                gravatarURL: userSession.getGravatarURL(32),
                 isDraft: true,
                 timestampISO: now.format(),
 
@@ -191,6 +198,9 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
             .end()
             .find('time.timesince')
                 .timesince()
+            .end()
+            .find('.gravatar')
+                .retinaGravatar()
             .end()
             .appendTo(this._$commentsList);
 

@@ -1,11 +1,18 @@
-{% load djblets_utils i18n reviewtags tz %}
+{% load djblets_utils i18n gravatars reviewtags tz %}
 
    <li{% if draft %} class="draft"{% endif %}{% if comment_id %} data-comment-id="{{comment_id}}"{% endif %}>
     <dl>
      <dt>
       <label for="{% if draft %}draft{% endif %}comment_{{context_id}}-{{id}}">
-      <a href="{% url 'user' reply_user %}" class="user">{{reply_user|user_displayname}}</a>
-      <span class="timestamp">{% localtime on %}{% blocktrans with timestamp as timestamp and timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time> ({{timestamp}}){% endblocktrans %}{% endlocaltime %}</span>
+       <div class="gravatar-container">
+{% if siteconfig_settings.integration_gravatars %}
+        {% gravatar reply_user 32 %}
+{% endif %}
+       </div>
+       <div class="user-reply-info">
+        <a href="{% url 'user' reply_user %}" class="user">{{reply_user|user_displayname}}</a>
+        <span class="timestamp">{% localtime on %}{% blocktrans with timestamp as timestamp and timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</span>
+       </div>
       </label>
      </dt>
      <dd><pre id="{% if draft %}draft{% endif %}comment_{{context_id}}-{{id}}" data-raw-value="{% normalize_text_for_edit text rich_text %}" class="reviewtext {% rich_text_classname rich_text %}">{{text|render_markdown:rich_text}}</pre></dd>

@@ -19,6 +19,7 @@ class BaseSidebarItem(object):
     See SidebarItem and BaseSidebarSection for the common types of sidebar
     items.
     """
+
     template_name = None
     label = None
     icon_name = None
@@ -27,11 +28,12 @@ class BaseSidebarItem(object):
     css_classes = None
 
     def __init__(self, sidebar, datagrid):
+        """Initialize the sidebar item."""
         self.sidebar = sidebar
         self.datagrid = datagrid
 
     def get_url(self):
-        """Returns the URL used when clicking the item.
+        """Return the URL used when clicking the item.
 
         By default, this builds a URL to the parent datagrid using
         the ``view_id`` and ``view_args`` attributes. If they are not
@@ -51,7 +53,7 @@ class BaseSidebarItem(object):
         return '%s?%s' % (self.datagrid.request.path, urlencode(url_args))
 
     def get_count(self):
-        """Returns the count shown for this item.
+        """Return the count shown for this item.
 
         By default, this shows nothing. Subclasses can override to display
         a count.
@@ -59,7 +61,7 @@ class BaseSidebarItem(object):
         return None
 
     def is_visible(self):
-        """Returns whether the item is visible.
+        """Return whether the item is visible.
 
         By default, an item is visible. Subclasses can override this to
         control visibility.
@@ -67,7 +69,7 @@ class BaseSidebarItem(object):
         return True
 
     def is_active(self):
-        """Returns whether the item is currently active.
+        """Return whether the item is currently active.
 
         The item will be active if the current page matches the URL
         associated with the item.
@@ -89,7 +91,7 @@ class BaseSidebarItem(object):
         return True
 
     def render(self):
-        """Renders the item."""
+        """Render the item."""
         count = self.get_count()
         context = {
             'datagrid': self.datagrid,
@@ -109,7 +111,7 @@ class BaseSidebarItem(object):
                                 RequestContext(self.datagrid.request, context))
 
     def get_extra_context(self):
-        """Returns extra context for the render."""
+        """Return extra context for the render."""
         return {}
 
 
@@ -121,15 +123,17 @@ class BaseSidebarSection(BaseSidebarItem):
 
     Sections can optionally be clickable and display a count.
     """
+
     template_name = 'datagrids/sidebar_section.html'
 
     def __init__(self, *args, **kwargs):
+        """Initialize the section."""
         super(BaseSidebarSection, self).__init__(*args, **kwargs)
 
         self.items = list(self.get_items())
 
     def get_items(self):
-        """Returns the items displayed in this section.
+        """Return the items displayed in this section.
 
         Subclasses must override this and return or yield the items
         to be displayed.
@@ -137,7 +141,7 @@ class BaseSidebarSection(BaseSidebarItem):
         raise NotImplementedError
 
     def is_visible(self):
-        """Returns whether the section is visible.
+        """Return whether the section is visible.
 
         By default, a section is visible if it has any item classes
         registered.
@@ -145,7 +149,7 @@ class BaseSidebarSection(BaseSidebarItem):
         return len(self.items) > 0
 
     def get_extra_context(self):
-        """Returns extra context for the section."""
+        """Return extra context for the section."""
         return {
             'items': self.items,
         }
@@ -158,11 +162,13 @@ class SidebarNavItem(BaseSidebarItem):
     It will automatically generate a link to the dashboard view matching
     ``view_id`` and ``view_args``, and display the provided count.
     """
+
     template_name = 'datagrids/sidebar_nav_item.html'
 
     def __init__(self, section, label, icon_name=None, view_id=None,
                  view_args=None, count=None, url=None, url_name=None,
                  css_classes=None):
+        """Initialize the item."""
         super(SidebarNavItem, self).__init__(section.sidebar, section.datagrid)
 
         self.label = label
@@ -175,6 +181,7 @@ class SidebarNavItem(BaseSidebarItem):
         self.url_name = url_name
 
     def get_url(self):
+        """Return the URL for the item."""
         if self.url:
             return self.url
         elif self.url_name:
@@ -184,7 +191,7 @@ class SidebarNavItem(BaseSidebarItem):
             return super(SidebarNavItem, self).get_url()
 
     def get_count(self):
-        """Returns the count provided in the constructor."""
+        """Return the count provided in the constructor."""
         return self.count
 
 
@@ -194,7 +201,9 @@ class Sidebar(object):
     A sidebar can have several item classes added to it of various types.
     These will be instantiated and rendered when rendering the datagrid.
     """
+
     def __init__(self, item_classes, default_view_id=None, css_classes=[]):
+        """Initialize the sidebar."""
         self._item_classes = []
         self.css_classes = css_classes
         self.default_view_id = default_view_id
@@ -203,15 +212,15 @@ class Sidebar(object):
             self.add_item(item_cls)
 
     def add_item(self, item_cls):
-        """Adds an item class to the sidebar."""
+        """Add an item class to the sidebar."""
         self._item_classes.append(item_cls)
 
     def remove_item(self, item_cls):
-        """Removes an item class from the sidebar."""
+        """Remove an item class from the sidebar."""
         self._item_classes.remove(item_cls)
 
     def get_items(self, datagrid):
-        """Instantiates and returns all items on the sidebar."""
+        """Instantiate and returns all items on the sidebar."""
         return [
             item_cls(self, datagrid)
             for item_cls in self._item_classes
@@ -224,7 +233,9 @@ class DataGridSidebarMixin(object):
     This is meant to be used along with Sidebar. It will initialize the
     sidebar, providing instances of all the items for the template.
     """
+
     def load_extra_state(self, *args, **kwargs):
+        """Compute any extra state for the sidebar."""
         result = super(DataGridSidebarMixin, self).load_extra_state(
             *args, **kwargs)
 

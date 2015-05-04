@@ -15,13 +15,32 @@ from reviewboard.accounts.backends import (AuthBackend,
 from reviewboard.accounts.forms.pages import (AccountPageForm,
                                               ChangePasswordForm,
                                               ProfileForm)
-from reviewboard.accounts.models import Profile
-from reviewboard.accounts.models import LocalSiteProfile, Trophy
+from reviewboard.accounts.models import (LocalSiteProfile,
+                                         Profile,
+                                         ReviewRequestVisit,
+                                         Trophy)
 from reviewboard.accounts.pages import (AccountPage, get_page_classes,
                                         register_account_page_class,
                                         unregister_account_page_class,
                                         _clear_page_defaults)
 from reviewboard.testing import TestCase
+
+
+class ReviewRequestVisitTests(TestCase):
+    """Testing the ReviewRequestVisit model"""
+
+    fixtures = ['test_users']
+
+    def test_default_visibility(self):
+        """Testing default value of ReviewRequestVisit.visibility"""
+        review_request = self.create_review_request(publish=True)
+        self.client.login(username='admin', password='admin')
+        self.client.get(review_request.get_absolute_url())
+
+        visit = ReviewRequestVisit.objects.get(
+            user__username='admin', review_request=review_request.id)
+
+        self.assertEqual(visit.visibility, ReviewRequestVisit.VISIBLE)
 
 
 class ProfileTests(TestCase):

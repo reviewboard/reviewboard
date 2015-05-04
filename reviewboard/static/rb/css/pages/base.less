@@ -4,13 +4,57 @@
 @img_base: '../../images';
 
 
+/*
+ * A mixin to help animate an element when going in or out of mobile
+ * sidebar mode.
+ */
+.mobile-menu-animation() {
+  .transition-transform(@mobile-menu-animate-duration,
+                        @mobile-menu-animate-timing-func);
+}
+
+
 body {
-  background-color: white;
+  background-color: #F9F9F9;
   color: black;
   font-family: Verdana, Arial, Helvetica, Sans-Serif;
-  font-size: 8pt;
+  font-size: 11px;
   margin: 0;
   padding: 0;
+
+  .on-mobile-medium-screen-720({
+    &.mobile-menu-open {
+      /*
+       * When opening the mobile sidebar menu, lock the viewport so the user
+       * can't scroll, and shift everything on the page over by the menu's
+       * width. This will animate them, using the transitions set on the
+       * elements.
+       */
+      overflow: hidden;
+      position: fixed;
+
+      #container,
+      #mobile_menu_mask,
+      #mobile_navbar_container {
+        .transform(translate(@mobile-navbar-width, 0));
+      }
+    }
+  });
+
+  /*
+   * Set the page to not scroll and have all content take up the maximum
+   * height.
+   */
+  &.full-page-content {
+    overflow: hidden;
+
+    #content_container,
+    #content {
+      height: 100%;
+      margin-bottom: 0;
+      vertical-align: top;
+    }
+  }
 }
 
 h1 {
@@ -46,11 +90,11 @@ textarea {
   z-index: @z-index-base;
   float: right;
 
-  .on-mobile-medium-screen-720({
-    display: none;
-  });
+  .desktop-only();
 
   li {
+    border: 1px transparent solid;
+    border-top: 0;
     display: block;
     float: right;
     margin: -@headerbar-padding 0;
@@ -59,18 +103,24 @@ textarea {
     white-space: nowrap;
 
     &:hover {
-      background: @headerbar-bg-active;
+      border-color: #888;
 
       ul {
+        border: 1px #888 solid;
         display: block;
+        margin-right: -1px;
         z-index: @z-index-menu;
+
+        li {
+          border: 0;
+        }
       }
     }
 
     a {
-      color: white;
+      color: inherit;
       display: block;
-      font-size: 120%;
+      font-size: 110%;
       margin: 0;
       padding: 0 1em;
       text-decoration: none;
@@ -91,7 +141,6 @@ textarea {
     }
 
     ul {
-      background-color: @headerbar-bg;
       display: none;
       margin: 0;
       min-width: @headerbar-menu-min-width;
@@ -161,6 +210,17 @@ textarea {
   }
 }
 
+#container {
+  .on-mobile-medium-screen-720({
+    position: relative;
+
+    .mobile-menu-animation();
+  });
+}
+
+#content_container {
+  position: relative;
+}
 
 /*
  * The error information shown when an AJAX operation fails.
@@ -196,13 +256,20 @@ textarea {
  *    * #search
  */
 #headerbar {
-  background: @headerbar-bg;
-  border-bottom: 1px #DDDDDD solid;
-  color: white;
   margin: 0;
   padding: @headerbar-padding;
   height: 22px;
   vertical-align: middle;
+  z-index: @z-index-mobile-headerbar;
+
+  .on-mobile-medium-screen-720({
+    border-bottom: 1px solid;
+    height: auto;
+    position: relative;
+    text-align: center;
+
+    .mobile-menu-animation();
+  });
 
   br {
     clear: both;
@@ -211,63 +278,65 @@ textarea {
 
   #logo {
     position: absolute;
-    top: -2px;
+    top: 3px;
     left: @headerbar-logo-padding-horiz;
     cursor: pointer;
-    z-index: @z-index-menu;
+    z-index: @z-index-logo;
 
     .on-mobile-medium-screen-720({
-      height: 24px;
-      width: 24px;
+      position: relative;
+      top: 0;
+      height: 32px;
+      width: 32px;
+      z-index: @z-index-mobile-headerbar;
     });
   }
 
+  #nav_toggle {
+    @icon-size: 32px;
+    @font-size: (@icon-size / 2);
+
+    color: rgba(0, 0, 0, 0.8);
+    cursor: pointer;
+    font-size: @font-size;
+    padding: ((@icon-size - @font-size) / 2);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: @icon-size;
+    height: @icon-size;
+
+    .mobile-only();
+
+    .fa {
+      vertical-align: middle;
+    }
+  }
+
   #title {
-    color: white;
+    color: inherit;
     display: inline;
     font-weight: normal;
-    font-size: 120%;
+    font-size: 125%;
     margin: 0;
     padding: 0;
 
     .on-mobile-medium-screen-720({
-      line-height: 23px;
+      margin-left: 0.5em;
     });
 
     a {
-      color: white;
+      color: inherit;
       font-size: 120%;
       text-decoration: none;
-
-      .on-mobile-medium-screen-720({
-        padding-left: 35px;
-      });
     }
 
     .version {
-      color: #E0E0E0;
       font-weight: normal;
       font-size: 90%;
 
-      .on-mobile-medium-screen-720({
-        display: none;
-      });
+      .desktop-only();
     }
-  }
-
-  #search-icon {
-    display: none;
-    float: right;
-    cursor: pointer;
-    padding: 5px;
-
-    .on-mobile-medium-screen-720({
-      position: relative;
-      padding: 0;
-      top: 0;
-      right: 0;
-      display: block;
-    });
   }
 
   #search {
@@ -275,18 +344,30 @@ textarea {
     margin: 0 1em;
 
     .on-mobile-medium-screen-720({
-      position: absolute;
-      right: 25px;
-      display: none;
+      float: none;
+      margin: 0.5em 0.5em 0 0.5em;
+      .box-sizing(border-box);
     });
 
     input {
-      border: 1px black solid;
+      border: 1px #CCC solid;
       margin: 0;
       padding: 2px;
       .border-radius(6px);
       background-color: #EEEEEE;
       font-size: 1.2em;
+
+      .on-mobile-medium-screen-720({
+        /*
+         * Style the search input to appear more like the saerch bars on
+         * most mobile apps and sites, giving more breathing room.
+         */
+        background-color: white;
+        padding: 4px 8px;
+        margin: 0;
+        width: 100%;
+        .box-sizing(border-box);
+      });
     }
   }
 }
@@ -304,6 +385,12 @@ textarea {
   padding-left: @headerbar-padding-left;
 
   .on-mobile-medium-screen-720({
+    /*
+     * Reset positioning and floating so that on mobile, this will take the
+     * full width of the page.
+     */
+    float: none;
+    position: relative;
     padding: 0;
   });
 
@@ -313,53 +400,253 @@ textarea {
   }
 }
 
-#mobile-menu-mask {
-  display: none;
-  background-color: black;
-  .opacity(50);
-  width: 100%;
-  height: 100%;
-  z-index: @z-index-base;
-  position: absolute;
-  top: 32px;
-  left: 0;
-}
-
 /*
- * The container for the navigation bar.
+ * The mobile navbar section containing the username, Log In/Out, Register,
+ * and My Account links.
  */
-#navbar-container {
-  margin: 0 0 1em 0;
-  .on-mobile-medium-screen-720({
-    position: absolute;
-    z-index: @z-index-menu;
-    left: @mobile-navbar-hide-margin-left;
-    height: 100%;
-    background: @light-blue;
-  });
-}
+#mobile_account_menu {
+  @icon-size: 18px;
 
-#mobile-account-nav {
-  display: none;
-  padding-left: 0px;
+  background: rgba(0, 0, 0, 0.80);
+  color: #EEE;
+  border-bottom: 1px rgba(0, 0, 0, 0.3) solid;
+  font-size: 120%;
+  height: @mobile-menu-header-height;
+  overflow: hidden;
+  padding: 0;
+  white-space: nowrap;
+  vertical-align: middle;
 
-  .on-mobile-medium-screen-720({
-    display: block;
-  });
+  .mobile-only();
 
-  > li > a {
-    display: none;
+  img {
+    display: inline-block;
+    vertical-align: middle;
   }
 
   ul {
-    padding-left: 10px;
+    float: right;
+    font-size: 10px;
+    line-height: inherit;
+    list-style: none;
+    margin: 4px 8px 0 0;
+    padding: 0;
+    white-space: nowrap;
+
+    li {
+      display: inline-block;
+      margin: 0 0 0 2em;
+      padding: 4px 0;
+      text-align: center;
+
+      a {
+        color: inherit;
+      }
+
+      span {
+        line-height: inherit;
+      }
+
+      .fa {
+        font-size: @icon-size;
+        vertical-align: middle;
+      }
+    }
+  }
+
+  .username {
+    vertical-align: middle;
+  }
+}
+
+/*
+ * The footer of the mobile menu, containing Docs, Support, and possibly
+ * Admin links.
+ */
+#mobile_account_menu_footer {
+  background: @mobile-menu-header-bg-color;
+  border-top: 1px @mobile-menu-header-border-color solid;
+  font-size: 0;
+  height: @mobile-menu-footer-height;
+  list-style: none;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0;
+
+  &.has-admin li {
+    /*
+     * If there's an admin link, we need to give each item a third of the
+     * width of the page.
+     */
+    width: 33%;
   }
 
   li {
+    display: inline-block;
+    font-size: 12px;
+    text-align: center;
+
+    /*
+     * By default, we have two links, so give each half of the width
+     * of the page.
+     */
+    width: 50%;
+
+    a {
+      .box-sizing(border-box);
+      display: inline-block;
+      padding: 1em;
+      width: 100%;
+    }
+  }
+}
+
+/*
+ * An event mask overlaying the content of the page. It's shown only when
+ * the mobile menu is shown. There is nothing visible, allowing the page
+ * content to fully show through.
+ */
+#mobile_menu_mask {
+  .box-shadow(-1px 0 8px 4px rgba(0, 0, 0, 0.4));
+  display: none;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: @z-index-nav-menu-mask;
+
+  .mobile-menu-animation();
+}
+
+/*
+ * The container for the entire mobile menu.
+ *
+ * This takes up the entire height of the page, but a fixed width, designed
+ * to take up most but not all of the screen on a typical mobile phone.
+ */
+#mobile_navbar_container {
+  background-color: @mobile-menu-bg-color;
+  .box-sizing(border-box);
+  color: @mobile-menu-text-color;
+  border: 0;
+  border-right: 1px @mobile-menu-border-color solid;
+  display: none;
+  position: absolute;
+  top: 0;
+  left: -@mobile-navbar-width;
+  height: 100%;
+  width: @mobile-navbar-width;
+
+  .mobile-only();
+  .mobile-menu-animation();
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}
+
+/*
+ * The main set of navigation links in the mobile navigation menu.
+ *
+ * This is designed around the structure of the datagrid sidebar, for
+ * compatibilty. It's a fairly general design.
+ *
+ * Each item in the navigation list is in an <li>. It may optionally be
+ * within a <span class="label"> within that, and may also have a
+ * <span class="rb-icon"> and/or <span class="count">.
+ *
+ * The links can be grouped into sections by using <li class="section">.
+ * Each section must have a <h3> with the section name, and a <ul> containing
+ * other links.
+ */
+#mobile_page_nav {
+  list-style: none;
+  margin: 0;
+  overflow-y: auto;
+  padding: 0;
+  position: absolute;
+  top: @mobile-menu-header-height;
+  bottom: @mobile-menu-footer-height;
+  left: 0;
+  right: 0;
+
+  /* Section headers */
+  .section h3 {
+    .box-shadow(inset 0 0 8px 4px rbga(0, 0, 0, 0.8));
+    background: @mobile-menu-header-bg-color;
+    border-top: 1px @mobile-menu-header-border-color solid;
+    border-bottom: 1px @mobile-menu-header-border-color solid;
+    font-size: 120%;
+    font-weight: normal;
+    margin: 0;
+    padding: 0.5em;
+    text-transform: uppercase;
+  }
+
+  li {
+    line-height: 20px;
+    margin: 0;
+    padding: 1em;
+    position: relative;
+    text-shadow: 0 0 2px black;
+
+    &.has-count .label {
+      margin-right: 4em;
+    }
+
+    &.section {
+      margin-top: 1.5em;
+      padding: 0;
+
+      h3.label {
+        margin-left: 0;
+      }
+    }
+
+    a {
+      color: @mobile-menu-text-color;
+    }
+
+    .count {
+      color: #BBB;
+      font-size: 95%;
+      padding-left: 8px;
+      position: absolute;
+      right: 1.5em;
+    }
+
+    .label {
+      margin-left: 20px;
+    }
+
+    .rb-icon {
+      position: absolute;
+      left: 0.8em;
+      vertical-align: middle;
+    }
+  }
+
+  ul {
     list-style: none;
-    display: block;
-    margin: 0px 1em 0px 0px;
-    line-height: 30px;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+/*
+ * The container for the desktop navigation bar. This is not shown when in
+ * mobile mode.
+ */
+#navbar-container {
+  a {
+    font-size: 110%;
+    text-decoration: none;
   }
 }
 
@@ -370,8 +657,7 @@ textarea {
  * etc.
  */
 #navbar {
-  background: @navbar-bg;
-  border-bottom: 1px @navbar-border-color solid;
+  border-bottom: 1px solid;
   list-style: none;
   margin: 0;
   min-height: 1.5em;
@@ -379,6 +665,7 @@ textarea {
   padding-left: @headerbar-padding-left;
 
   .on-mobile-medium-screen-720({
+    display: none;
     padding-left: 10px;
     margin-top: 10px;
   });
@@ -387,15 +674,10 @@ textarea {
     display: inline;
     height: 30px;
     margin: 0 1em 0 0;
+
     .on-mobile-medium-screen-720({
       display: block;
     });
-  }
-
-  a {
-    color: @navbar-text-color;
-    font-size: 110%;
-    text-decoration: none;
   }
 
   .newreviewrequest {
@@ -409,14 +691,47 @@ textarea {
 #page-container {
   padding: 0 @page-container-padding @page-container-padding
            @page-container-padding;
+
   .on-mobile-medium-screen-720({
-    margin-top: 10px;
+    position: relative;
+    .mobile-menu-animation();
   });
 }
+
+#topbar {
+  margin: 0 0 @page-container-padding 0;
+
+  .on-mobile-medium-screen-720({
+    margin-bottom: 0;
+  });
+}
+
 
 /*
  * The box containing information on an AJAX error.
  */
 .server-error-box .response-data {
   margin-top: 2em;
+}
+
+
+/****************************************************************************
+ * Page themes
+ ****************************************************************************/
+
+/*
+ * Default color scheme, used for the dashboard, My Account page, and others
+ * featuring largely blue-ish colors.
+ */
+.page-colors(@topbar-bg: #DAEBFF,
+             @topbar-faded-text-color: #5A646E);
+
+.admin {
+  .page-colors(@topbar-bg: #CCC,
+               @topbar-faded-text-color: #555);
+}
+
+.reviewable-page {
+  .page-colors(@topbar-bg: #EDE1B2,
+               @topbar-link-color: #0700E8);
 }

@@ -2,13 +2,13 @@
 
 <div id="headerbar">
 {% include "base/branding.html" %}
+ <div id="nav_toggle"><span class="fa fa-navicon"></span></div>
  <ul id="accountnav">
 {% include "base/_nav_support_menu.html" %}
 {% header_action_hooks %}
 {% header_dropdown_action_hooks %}
  </ul>
 
- <div id="search-icon"><div class="rb-icon rb-icon-search"></div></div>
  <div id="search">
 {% if siteconfig_settings.search_enable %}
   <form method="get" action="{% url 'search' %}">

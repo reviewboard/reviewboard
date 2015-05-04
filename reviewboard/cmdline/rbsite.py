@@ -45,6 +45,8 @@ ui = None
 
 
 class Dependencies(object):
+    """An object which queries and caches dependency information."""
+
     memcached_modules = ["memcache"]
     sqlite_modules = ["pysqlite2", "sqlite3"]
     mysql_modules = ["MySQLdb"]
@@ -70,22 +72,32 @@ class Dependencies(object):
 
     @classmethod
     def get_support_memcached(cls):
+        """Return whether memcached is supported."""
         return cls.has_modules(cls.memcached_modules)
 
     @classmethod
     def get_support_mysql(cls):
+        """Return whether mysql is supported."""
         return cls.has_modules(cls.mysql_modules)
 
     @classmethod
     def get_support_postgresql(cls):
+        """Return whether postgresql is supported."""
         return cls.has_modules(cls.postgresql_modules)
 
     @classmethod
     def get_support_sqlite(cls):
+        """Return whether sqlite is supported."""
         return cls.has_modules(cls.sqlite_modules)
 
     @classmethod
     def get_missing(cls):
+        """Return any missing dependencies.
+
+        This will return a two-tuple, where the first item is a boolean
+        indicating if any missing dependencies are fatal, and the second is a
+        list of missing dependency groups.
+        """
         fatal = False
         missing_groups = []
 
@@ -114,7 +126,7 @@ class Dependencies(object):
 
     @classmethod
     def has_modules(cls, names):
-        """Returns True if one of the specified modules is installed."""
+        """Return True if one of the specified modules is installed."""
         for name in names:
             try:
                 __import__(name)
@@ -126,12 +138,15 @@ class Dependencies(object):
 
 
 class Site(object):
+    """An object which contains the configuration for a Review Board site."""
+
     CACHE_BACKENDS = {
         'memcached': 'django.core.cache.backends.memcached.MemcachedCache',
         'file': 'django.core.cache.backends.filebased.FileBasedCache',
     }
 
     def __init__(self, install_dir, options):
+        """Initialize the site."""
         self.install_dir = self.get_default_site_path(install_dir)
         self.abs_install_dir = os.path.abspath(self.install_dir)
         self.site_id = \
@@ -162,15 +177,14 @@ class Site(object):
         self.send_support_usage_stats = True
 
     def get_default_site_path(self, install_dir):
+        """Return the default site path."""
         if os.path.isabs(install_dir):
             return install_dir
 
         return os.path.join(INSTALLED_SITE_PATH, install_dir)
 
     def rebuild_site_directory(self):
-        """
-        Rebuilds the site hierarchy.
-        """
+        """Rebuild the site hierarchy."""
         htdocs_dir = os.path.join(self.install_dir, "htdocs")
         media_dir = os.path.join(htdocs_dir, "media")
         static_dir = os.path.join(htdocs_dir, "static")
@@ -269,12 +283,14 @@ class Site(object):
                 fp.write(htaccess)
 
     def setup_settings(self):
+        """Set up the environment for running django management commands."""
         # Make sure that we have our settings_local.py in our path for when
         # we need to run manager commands.
         sys.path.insert(0, os.path.join(self.abs_install_dir, "conf"))
         os.environ['DJANGO_SETTINGS_MODULE'] = 'reviewboard.settings'
 
     def get_apache_version(self):
+        """Return the version of the installed apache."""
         try:
             apache_version = subprocess.check_output(['httpd', '-v'])
             # Extract the major and minor version from the string
@@ -292,11 +308,13 @@ class Site(object):
             return (2, 2)
 
     def generate_cron_files(self):
+        """Generate sample crontab for this site."""
         self.process_template("cmdline/conf/cron.conf.in",
                               os.path.join(self.install_dir, "conf",
                                            "cron.conf"))
 
     def generate_config_files(self):
+        """Generate the configuration files for this site."""
         web_conf_filename = ""
         enable_fastcgi = False
         enable_wsgi = False
@@ -404,9 +422,7 @@ class Site(object):
         self.setup_settings()
 
     def sync_database(self, allow_input=False):
-        """
-        Synchronizes the database.
-        """
+        """Synchronize the database."""
         params = []
 
         if not allow_input:
@@ -432,13 +448,11 @@ class Site(object):
         self.run_manage_command("registerscmtools")
 
     def migrate_database(self):
-        """
-        Performs a database migration.
-        """
+        """Perform a database migration."""
         self.run_manage_command("evolve", ["--noinput", "--execute"])
 
     def encrypt_passwords(self):
-        """Hardens any password storage.
+        """Harden any password storage.
 
         Any legacy plain-text passwords will be encrypted.
         """
@@ -447,7 +461,7 @@ class Site(object):
         Repository.objects.encrypt_plain_text_passwords()
 
     def get_static_media_upgrade_needed(self):
-        """Determines if a static media config upgrade is needed."""
+        """Determine if a static media config upgrade is needed."""
         from djblets.siteconfig.models import SiteConfiguration
 
         siteconfig = SiteConfiguration.objects.get_current()
@@ -459,7 +473,7 @@ class Site(object):
                  pkg_resources.parse_version("1.7")))
 
     def get_diff_dedup_needed(self):
-        """Determines if there's likely duplicate diff data stored."""
+        """Determine if there's likely duplicate diff data stored."""
         from reviewboard.diffviewer.models import FileDiff
 
         try:
@@ -471,7 +485,7 @@ class Site(object):
             return True
 
     def get_settings_upgrade_needed(self):
-        """Determines if a settings upgrade is needed."""
+        """Determine if a settings upgrade is needed."""
         try:
             import settings_local
 
@@ -491,7 +505,7 @@ class Site(object):
         return False
 
     def upgrade_settings(self):
-        """Performs a settings upgrade."""
+        """Perform a settings upgrade."""
         settings_file = os.path.join(self.abs_install_dir, "conf",
                                      "settings_local.py")
         perform_upgrade = False
@@ -594,9 +608,7 @@ class Site(object):
         django.conf.settings = django.conf.LazySettings()
 
     def create_admin_user(self):
-        """
-        Creates an administrator user account.
-        """
+        """Create an administrator user account."""
         cwd = os.getcwd()
         os.chdir(self.abs_install_dir)
 
@@ -608,6 +620,7 @@ class Site(object):
         os.chdir(cwd)
 
     def register_support_page(self):
+        """Register this installation with the support data tracker."""
         from reviewboard.admin.support import get_register_support_url
 
         url = get_register_support_url(force_is_admin=True)
@@ -622,6 +635,7 @@ class Site(object):
             pass
 
     def run_manage_command(self, cmd, params=None):
+        """Run a given django management command."""
         cwd = os.getcwd()
         os.chdir(self.abs_install_dir)
 
@@ -667,13 +681,12 @@ class Site(object):
         os.chdir(cwd)
 
     def mkdir(self, dirname):
-        """
-        Creates a directory, but only if it doesn't already exist.
-        """
+        """Create a directory, but only if it doesn't already exist."""
         if not os.path.exists(dirname):
             os.mkdir(dirname)
 
     def link_pkg_dir(self, pkgname, src_path, dest_dir, replace=True):
+        """Create the package directory."""
         src_dir = pkg_resources.resource_filename(pkgname, src_path)
 
         if os.path.islink(dest_dir) and not os.path.exists(dest_dir):
@@ -691,6 +704,7 @@ class Site(object):
             os.symlink(src_dir, dest_dir)
 
     def unlink_media_dir(self, path):
+        """Delete the given media directory and all contents."""
         if os.path.exists(path):
             if os.path.islink(path):
                 os.unlink(path)
@@ -698,9 +712,7 @@ class Site(object):
                 shutil.rmtree(path)
 
     def process_template(self, template_path, dest_filename):
-        """
-        Generates a file from a template.
-        """
+        """Generate a file from a template."""
         domain_name = self.domain_name or ''
         domain_name_escaped = domain_name.replace(".", "\\.")
         template = pkg_resources.resource_string("reviewboard", template_path)
@@ -745,7 +757,9 @@ class Site(object):
 
 class SiteList(object):
     """Maintains the list of sites installed on the system."""
+
     def __init__(self, path):
+        """Initialize the site list."""
         self.path = path
 
         # Read the list in as a unique set.
@@ -766,6 +780,7 @@ class SiteList(object):
             f.close()
 
     def add_site(self, site_path):
+        """Add a site to the site list."""
         self.sites.add(site_path)
 
         # Write all of the sites back to the file.
@@ -794,23 +809,22 @@ class SiteList(object):
 
 
 class UIToolkit(object):
-    """
-    An abstract class that forms the basis for all UI interaction.
+    """An abstract class that forms the basis for all UI interaction.
+
     Subclasses can override this to provide new ways of representing the UI
     to the user.
     """
+
     def run(self):
-        """
-        Runs the UI.
-        """
+        """Run the UI."""
         pass
 
     def page(self, text, allow_back=True, is_visible_func=None,
              on_show_func=None):
-        """
-        Adds a new "page" to display to the user. Input and text are
-        associated with this page and may be displayed immediately or
-        later, depending on the toolkit.
+        """Add a new "page" to display to the user.
+
+        Input and text are associated with this page and may be displayed
+        immediately or later, depending on the toolkit.
 
         If is_visible_func is specified and returns False, this page will
         be skipped.
@@ -819,59 +833,47 @@ class UIToolkit(object):
 
     def prompt_input(self, page, prompt, default=None, password=False,
                      normalize_func=None, save_obj=None, save_var=None):
-        """
-        Prompts the user for some text. This may contain a default value.
-        """
+        """Prompt the user for some text. This may contain a default value."""
         raise NotImplementedError
 
     def prompt_choice(self, page, prompt, choices,
                       save_obj=None, save_var=None):
-        """
-        Prompts the user for an item amongst a list of choices.
-        """
+        """Prompt the user for an item amongst a list of choices."""
         raise NotImplementedError
 
     def text(self, page, text):
-        """
-        Displays a block of text to the user.
-        """
+        """Display a block of text to the user."""
         raise NotImplementedError
 
     def disclaimer(self, page, text):
-        """Displays a block of disclaimer text to the user."""
+        """Display a block of disclaimer text to the user."""
         raise NotImplementedError
 
     def urllink(self, page, url):
-        """
-        Displays a URL to the user.
-        """
+        """Display a URL to the user."""
         raise NotImplementedError
 
     def itemized_list(self, page, title, items):
-        """
-        Displays an itemized list.
-        """
+        """Display an itemized list."""
         raise NotImplementedError
 
     def step(self, page, text, func):
-        """
-        Adds a step of a multi-step operation. This will indicate when
-        it's starting and when it's complete.
+        """Add a step of a multi-step operation.
+
+        This will indicate when it's starting and when it's complete.
         """
         raise NotImplementedError
 
     def error(self, text, force_wait=False, done_func=None):
-        """
-        Displays a block of error text to the user.
-        """
+        """Display a block of error text to the user."""
         raise NotImplementedError
 
 
 class ConsoleUI(UIToolkit):
-    """
-    A UI toolkit that simply prints to the console.
-    """
+    """A UI toolkit that simply prints to the console."""
+
     def __init__(self):
+        """Initialize the UI toolkit."""
         super(UIToolkit, self).__init__()
 
         self.header_wrapper = textwrap.TextWrapper(initial_indent="* ",
@@ -888,8 +890,7 @@ class ConsoleUI(UIToolkit):
 
     def page(self, text, allow_back=True, is_visible_func=None,
              on_show_func=None):
-        """
-        Adds a new "page" to display to the user.
+        """Add a new "page" to display to the user.
 
         In the console UI, we only care if we need to display or ask questions
         for this page. Our representation of a page in this case is simply
@@ -913,9 +914,7 @@ class ConsoleUI(UIToolkit):
     def prompt_input(self, page, prompt, default=None, password=False,
                      yes_no=False, optional=False, normalize_func=None,
                      save_obj=None, save_var=None):
-        """
-        Prompts the user for some text. This may contain a default value.
-        """
+        """Prompt the user for some text. This may contain a default value."""
         assert save_obj
         assert save_var
 
@@ -981,15 +980,18 @@ class ConsoleUI(UIToolkit):
         setattr(save_obj, save_var, value)
 
     def confirm_reentry(self, obj, reenter_var, value):
+        """Confirm whether a re-entered piece of data matches.
+
+        This is used to ensure that secrets and passwords are what the user
+        intended to type.
+        """
         first_var = reenter_var.replace('reenter_', '')
         first_entry = getattr(site, first_var)
         return first_entry == value
 
     def prompt_choice(self, page, prompt, choices,
                       save_obj=None, save_var=None):
-        """
-        Prompts the user for an item amongst a list of choices.
-        """
+        """Prompt the user for an item amongst a list of choices."""
         assert save_obj
         assert save_var
 
@@ -1042,8 +1044,7 @@ class ConsoleUI(UIToolkit):
         setattr(save_obj, save_var, choice)
 
     def text(self, page, text, leading_newline=True, wrap=True):
-        """
-        Displays a block of text to the user.
+        """Display a block of text to the user.
 
         This will wrap the block to fit on the user's screen.
         """
@@ -1059,18 +1060,15 @@ class ConsoleUI(UIToolkit):
             print('    %s' % text)
 
     def disclaimer(self, page, text):
+        """Display a disclaimer to the user."""
         self.text(page, 'NOTE: %s' % text)
 
     def urllink(self, page, url):
-        """
-        Displays a URL to the user.
-        """
+        """Display a URL to the user."""
         self.text(page, url, wrap=False)
 
     def itemized_list(self, page, title, items):
-        """
-        Displays an itemized list.
-        """
+        """Display an itemized list."""
         if title:
             self.text(page, "%s:" % title)
 
@@ -1078,18 +1076,16 @@ class ConsoleUI(UIToolkit):
             self.text(page, "    * %s" % item, False)
 
     def step(self, page, text, func):
-        """
-        Adds a step of a multi-step operation. This will indicate when
-        it's starting and when it's complete.
+        """Add a step of a multi-step operation.
+
+        This will indicate when it's starting and when it's complete.
         """
         sys.stdout.write("%s ... " % text)
         func()
         print("OK")
 
     def error(self, text, force_wait=False, done_func=None):
-        """
-        Displays a block of error text to the user.
-        """
+        """Display a block of error text to the user."""
         print()
 
         for text_block in text.split('\n'):
@@ -1104,24 +1100,31 @@ class ConsoleUI(UIToolkit):
 
 
 class Command(object):
+    """An abstract command."""
+
     needs_ui = False
 
     def add_options(self, parser):
+        """Add any command-specific options to the parser."""
         pass
 
     def run(self):
+        """Run the command."""
         pass
 
 
 class InstallCommand(Command):
+    """Installer command.
+
+    This command installs a new Review Board site tree and generates web server
+    configuration files. This will ask several questions about the site before
+    performing the installation.
     """
-    Installs a new Review Board site tree and generates web server
-    configuration files. This will ask several questions about the
-    site before performing the installation.
-    """
+
     needs_ui = True
 
     def add_options(self, parser):
+        """Add any command-specific options to the parser."""
         is_windows = platform.system() == "Windows"
 
         group = OptionGroup(parser, "'install' command",
@@ -1201,6 +1204,7 @@ class InstallCommand(Command):
         parser.add_option_group(group)
 
     def run(self):
+        """Run the command."""
         if not self.check_permissions():
             return
 
@@ -1245,6 +1249,7 @@ class InstallCommand(Command):
         self.show_get_more()
 
     def normalize_root_url_path(self, path):
+        """Convert user-specified root URL paths to a normal format."""
         if not path.endswith("/"):
             path += "/"
 
@@ -1254,6 +1259,7 @@ class InstallCommand(Command):
         return path
 
     def normalize_media_url_path(self, path):
+        """Convert user-specified media URLs to a normal format."""
         if not path.endswith("/"):
             path += "/"
 
@@ -1263,6 +1269,10 @@ class InstallCommand(Command):
         return path
 
     def check_permissions(self):
+        """Check that permissions are usable.
+
+        If not, this will show an error to the user.
+        """
         # Make sure we can create the directory first.
         try:
             # TODO: Do some chown tests too.
@@ -1288,6 +1298,7 @@ class InstallCommand(Command):
             return False
 
     def print_introduction(self):
+        """Print an introduction to the site installer."""
         page = ui.page("Welcome to the Review Board site installation wizard")
 
         ui.text(page, "This will prepare a Review Board site installation in:")
@@ -1297,6 +1308,7 @@ class InstallCommand(Command):
                       "minutes.")
 
     def print_missing_dependencies(self):
+        """Print information on any missing dependencies."""
         fatal, missing_dep_groups = Dependencies.get_missing()
 
         if missing_dep_groups:
@@ -1321,6 +1333,7 @@ class InstallCommand(Command):
         return fatal
 
     def ask_domain(self):
+        """Ask the user what domain Review Board will be served from."""
         page = ui.page("What's the host name for this site?")
 
         ui.text(page, "This should be the fully-qualified host name without "
@@ -1330,6 +1343,7 @@ class InstallCommand(Command):
                         save_obj=site, save_var="domain_name")
 
     def ask_site_root(self):
+        """Ask the user what site root they'd like."""
         page = ui.page("What URL path points to Review Board?")
 
         ui.text(page, "Typically, Review Board exists at the root of a URL. "
@@ -1346,6 +1360,7 @@ class InstallCommand(Command):
                         save_obj=site, save_var="site_root")
 
     def ask_shipped_media_url(self):
+        """Ask the user the URL where shipped media files are served."""
         page = ui.page("What URL will point to the shipped media files?")
 
         ui.text(page, "While most installations distribute media files on "
@@ -1359,6 +1374,7 @@ class InstallCommand(Command):
                         save_obj=site, save_var="static_url")
 
     def ask_uploaded_media_url(self):
+        """Ask the user the URL where uploaded media files are served."""
         page = ui.page("What URL will point to the uploaded media files?")
 
         ui.text(page, "Note that this is different from shipped media. This "
@@ -1372,6 +1388,7 @@ class InstallCommand(Command):
                         save_obj=site, save_var="media_url")
 
     def ask_database_type(self):
+        """Ask the user for the database type."""
         page = ui.page("What database type will you be using?")
 
         ui.prompt_choice(
@@ -1385,6 +1402,7 @@ class InstallCommand(Command):
             save_obj=site, save_var="db_type")
 
     def ask_database_name(self):
+        """Ask the user for the database name."""
         def determine_sqlite_path():
             site.db_name = sqlite_db_name
 
@@ -1416,6 +1434,7 @@ class InstallCommand(Command):
                         save_obj=site, save_var="db_name")
 
     def ask_database_host(self):
+        """Ask the user for the database host."""
         page = ui.page("What is the database server's address?",
                        is_visible_func=lambda: site.db_type != "sqlite3")
 
@@ -1427,6 +1446,7 @@ class InstallCommand(Command):
                         save_obj=site, save_var="db_host")
 
     def ask_database_login(self):
+        """Ask the user for database login credentials."""
         page = ui.page("What is the login and password for this database?",
                        is_visible_func=lambda: site.db_type != "sqlite3")
 
@@ -1443,6 +1463,7 @@ class InstallCommand(Command):
                         save_var="reenter_db_pass")
 
     def ask_cache_type(self):
+        """Ask the user what type of caching they'd like to use."""
         page = ui.page("What cache mechanism should be used?")
 
         ui.text(page, "memcached is strongly recommended. Use it unless "
@@ -1455,6 +1476,7 @@ class InstallCommand(Command):
                          save_obj=site, save_var="cache_type")
 
     def ask_cache_info(self):
+        """Ask the user for caching configuration."""
         # Appears only if using memcached.
         page = ui.page("What memcached host should be used?",
                        is_visible_func=lambda: site.cache_type == "memcached")
@@ -1474,12 +1496,14 @@ class InstallCommand(Command):
                         save_obj=site, save_var="cache_info")
 
     def ask_web_server_type(self):
+        """Ask the user which web server they're using."""
         page = ui.page("What web server will you be using?")
 
         ui.prompt_choice(page, "Web Server", ["apache", "lighttpd"],
                          save_obj=site, save_var="web_server_type")
 
     def ask_python_loader(self):
+        """Ask the user which Python loader they're using."""
         page = ui.page("What Python loader module will you be using?",
                        is_visible_func=lambda: (site.web_server_type ==
                                                 "apache"))
@@ -1495,6 +1519,7 @@ class InstallCommand(Command):
                          save_obj=site, save_var="python_loader")
 
     def ask_admin_user(self):
+        """Ask the user to create an admin account."""
         page = ui.page("Create an administrator account")
 
         ui.text(page, "To configure Review Board, you'll need an "
@@ -1520,6 +1545,7 @@ class InstallCommand(Command):
                         save_obj=site, save_var="company", optional=True)
 
     def ask_support_data(self):
+        """Ask the user if they'd like to enable support data collection."""
         page = ui.page('Enable collection of data for better support')
 
         ui.text(page, 'We would like to periodically collect data and '
@@ -1547,6 +1573,7 @@ class InstallCommand(Command):
                         save_obj=site, save_var='send_support_usage_stats')
 
     def show_install_status(self):
+        """Show the install status page."""
         page = ui.page("Installing the site...", allow_back=False)
         ui.step(page, "Building site directories",
                 site.rebuild_site_directory)
@@ -1564,6 +1591,7 @@ class InstallCommand(Command):
                 self.setup_support)
 
     def show_finished(self):
+        """Show the finished page."""
         page = ui.page("The site has been installed", allow_back=False)
         ui.text(page, "The site has been installed in %s" %
                       site.abs_install_dir)
@@ -1585,6 +1613,7 @@ class InstallCommand(Command):
                    "%sadmin/installation/creating-sites/" % get_manual_url())
 
     def show_get_more(self):
+        """Show the "Get More out of Review Board" page."""
         from reviewboard.admin.support import get_install_key
 
         page = ui.page('Get more out of Review Board', allow_back=False)
@@ -1600,9 +1629,7 @@ class InstallCommand(Command):
         ui.urllink(page, 'https://www.beanbaginc.com/support/contracts/')
 
     def save_settings(self):
-        """
-        Saves some settings in the database.
-        """
+        """Save some settings in the database."""
         from django.contrib.sites.models import Site
         from djblets.siteconfig.models import SiteConfiguration
 
@@ -1646,17 +1673,20 @@ class InstallCommand(Command):
             sitelist.add_site(site.install_dir)
 
     def setup_support(self):
-        """Sets up the support page for the installation."""
+        """Set up the support page for the installation."""
         if site.send_support_usage_stats:
             site.register_support_page()
 
 
 class UpgradeCommand(Command):
+    """Upgrades an existing site installation.
+
+    This will synchronize media trees and upgrade the database, unless
+    otherwise specified.
     """
-    Upgrades an existing site installation, synchronizing media trees and
-    upgrading the database, unless otherwise specified.
-    """
+
     def add_options(self, parser):
+        """Add any command-specific options to the parser."""
         group = OptionGroup(parser, "'upgrade' command",
                             self.__doc__.strip())
         group.add_option("--no-db-upgrade", action="store_false",
@@ -1668,6 +1698,7 @@ class UpgradeCommand(Command):
         parser.add_option_group(group)
 
     def run(self):
+        """Run the command."""
         site.setup_settings()
 
         diff_dedup_needed = site.get_diff_dedup_needed()
@@ -1791,6 +1822,7 @@ class UpgradeCommand(Command):
 
 class ManageCommand(Command):
     """Runs a Django management command on the site."""
+
     help_text = (
         'Runs a Django management command on the site. '
         'Usage: `rb-site manage <path> <command> -- <arguments>.` '
@@ -1798,10 +1830,12 @@ class ManageCommand(Command):
     )
 
     def add_options(self, parser):
+        """Add any command-specific options to the parser."""
         group = OptionGroup(parser, "'manage' command", self.help_text)
         parser.add_option_group(group)
 
     def run(self):
+        """Run the command."""
         site.setup_settings()
 
         from reviewboard import initialize
@@ -1824,6 +1858,7 @@ COMMANDS = {
 
 
 def parse_options(args):
+    """Parse the given options."""
     global options
 
     parser = OptionParser(usage="%prog command [options] path",
@@ -1869,6 +1904,7 @@ def parse_options(args):
 
 
 def main():
+    """Main application loop."""
     global site
     global ui
 

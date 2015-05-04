@@ -1,26 +1,32 @@
 {% extends "datagrid/listview.html" %}
-{% load i18n reviewtags %}
+{% load djblets_utils i18n reviewtags %}
 
-{% block datagrid_title %}
+{% block datagrid_titlebox %}
 {%  if datagrid.group %}{% star datagrid.group %}{% endif %}
 
-{%  if not datagrid.tabs %}
- {{block.super}}
-{%  else %}
+{%  if datagrid.tabs %}
 <ul class="datagrid-title-tabs">
-{%   for title, url in datagrid.tabs %}
- <li class="datagrid-tab {% if title == datagrid.title %}active{% endif %}">
-  <h1 class="datagrid-title">
-   <a href="{{url}}">{{title}}</a>
-  </h1>
+{%   for tab_title, url in datagrid.tabs %}
+ <li class="datagrid-tab{% if tab_title == datagrid.title %} active{% endif %}">
+  <a href="{{url}}">{{tab_title}}</a>
  </li>
 {%   endfor %}
+</ul>
 {%  endif %}
+
+{{block.super}}
+{% endblock datagrid_titlebox %}
+
+{% block datagrid_title %}
+{%  if not datagrid.tabs %}
+ {{block.super}}
+{%  endif %}
+<ul class="datagrid-top-filters">
  <li class="datagrid-showclosed">
 {%  if datagrid.show_closed %}
-  <a href="?show-closed=0">{% trans "Hide closed" %}</a></li>
+  <a href="{% querystring_with 'show-closed' '0' %}">{% trans "Hide closed" %}</a></li>
 {%  else %}
-  <a href="?show-closed=1">{% trans "Show closed" %}</a></li>
+  <a href="{% querystring_with 'show-closed' '1' %}">{% trans "Show closed" %}</a></li>
 {%  endif %}
  </li>
 </ul>

@@ -3,38 +3,65 @@
 
 {% block extrahead %}
 {# Empty this out. We use "scripts" and "scripts-post" in Review Board. #}
+{# Also, add some meta tags for the viewport. #}
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 {% endblock %}
 
 {% block css %}
 {{block.super}}
 {%  compressed_css "djblets-datagrid" %}
+{%  for css_bundle in datagrid.css_bundle_names %}
+{%   compressed_css css_bundle %}
+{%  endfor %}
 {% endblock %}
 
-{% block content %}
-{%  if datagrid.sidebar %}
-<div id="dashboard_container">
-{%  box "dashboard" %}
- <div id="dashboard-wrapper">
-  <div id="dashboard_sidebar"{% if datagrid.sidebar.css_classes %} class="{{datagrid.sidebar.css_classes|join:' '}}"{% endif %}>
-   <ul id="dashboard-navbar">
+{% block mobile_nav %}
 {%   for item in datagrid.sidebar_items %}
 {%    if item.is_visible %}
 {{item.render}}
 {%    endif %}
 {%   endfor %}
-   </ul>
-  </div>
-  <div id="dashboard-main" class="clearfix">
-{{datagrid.render_listview}}
-  </div>
- </div>
-{%  endbox %}
+{% endblock %}
+
+{% block bodytag %}<body class="datagrid-page full-page-content{% if datagrid.sidebar %} has-sidebar{% endif %}">{% endblock %}
+
+{% block sidebar %}
+{%  if datagrid.sidebar %}
+<div id="page_sidebar"{% if datagrid.sidebar.css_classes %} class="{{datagrid.sidebar.css_classes|join:' '}}{% endif %}">
+ <ul class="page-sidebar-items">
+{%   for item in datagrid.sidebar_items %}
+{%    if item.is_visible %}
+{{item.render}}
+{%    endif %}
+{%   endfor %}
+ </ul>
 </div>
-{%  else %}
-{{block.super}}
 {%  endif %}
+{% endblock sidebar %}
+
+{% block content %}
+{{datagrid.render_listview}}
 {% endblock content %}
 
 {% block scripts-post %}
 {%  compressed_js "djblets-datagrid" %}
+{%  compressed_js "datagrid-pages" %}
+{%  for js_bundle in datagrid.js_bundle_names %}
+{%   compressed_js js_bundle %}
+{%  endfor %}
+
+<script>
+    $(document).ready(function() {
+        var view = new {{datagrid.js_view_class}}({
+            el: $('#page-container'),
+            periodicReload: {{datagrid.periodic_reload|yesno:"true,false"}},
+            model: new {{datagrid.js_model_class}}({
+{%  if local_site_name %}
+                localSiteName: '{{local_site_name|escapejs}}'
+{%  endif %}
+            })
+        });
+        view.render();
+    });
+</script>
 {% endblock %}
