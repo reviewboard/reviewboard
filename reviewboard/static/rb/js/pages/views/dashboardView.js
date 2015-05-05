@@ -13,15 +13,29 @@ var DashboardActionsView = Backbone.View.extend({
         '<div class="datagrid-actions-content">',
         ' <p class="count"></p>',
         ' <ul>',
-        '  <li><a class="discard" href="#"><%= close_discarded_text %></li>',
-        '  <li><a class="submit" href="#"><%= close_submitted_text %></li>',
+        '  <li><a class="discard" href="#"><%= close_discarded_text %></a></li>',
+        '  <li><a class="submit" href="#"><%= close_submitted_text %></a></li>',
+        '  <li>&nbsp;</li>',
+        '  <li><a class="archive" href="#"><%= archive_text %></a></li>',
+        '<% if (show_archived) { %>',
+        '  <li><a class="unarchive" href="#"><%= unarchive_text %></a></li>',
+        '<% } %>',
+        '  <li>&nbsp;</li>',
+        '  <li><a class="mute" href="#"><%= mute_text %></a></li>',
+        '<% if (show_archived) { %>',
+        '  <li><a class="unmute" href="#"><%= unmute_text %></a></li>',
+        '<% } %>',
         ' </ul>',
         '</div>'
     ].join('')),
 
     events: {
         'click .discard': '_onCloseDiscardedClicked',
-        'click .submit': '_onCloseSubmittedClicked'
+        'click .submit': '_onCloseSubmittedClicked',
+        'click .archive': '_onArchiveClicked',
+        'click .unarchive': '_onUnarchiveClicked',
+        'click .mute': '_onMuteClicked',
+        'click .unmute': '_onUnmuteClicked'
     },
 
     /*
@@ -36,11 +50,18 @@ var DashboardActionsView = Backbone.View.extend({
      * Renders the actions pane.
      */
     render: function() {
+        var show_archived = (this.model.get('data') || {}).show_archived;
+
         this.$el
             .hide()
             .html(this.template({
                 close_discarded_text: gettext('<b>Close</b> Discarded'),
-                close_submitted_text: gettext('<b>Close</b> Submitted')
+                close_submitted_text: gettext('<b>Close</b> Submitted'),
+                archive_text: gettext('<b>Archive</b>'),
+                mute_text: gettext('<b>Mute</b>'),
+                unarchive_text: gettext('<b>Unarchive</b>'),
+                unmute_text: gettext('<b>Unmute</b>'),
+                show_archived: show_archived
             }));
 
         this._$content = this.$('.datagrid-actions-content');
@@ -159,6 +180,78 @@ var DashboardActionsView = Backbone.View.extend({
                         .click(_.bind(onConfirmed, this))
                 ]
             });
+    },
+
+    /*
+     * Handler for when the Archive action is clicked.
+     */
+    _onArchiveClicked: function() {
+        var collection = RB.UserSession.instance.archivedReviewRequests;
+
+        this._updateVisibility(
+            _.bind(collection.addImmediately, collection));
+
+        return false;
+    },
+
+    /*
+     * Handler for when the Unarchive action is clicked.
+     */
+    _onUnarchiveClicked: function() {
+        var collection = RB.UserSession.instance.archivedReviewRequests;
+
+        this._updateVisibility(
+            _.bind(collection.removeImmediately, collection));
+
+        return false;
+    },
+
+    /*
+     * Handler for when the Mute action is clicked.
+     *
+     * This will confirm that the user wants to mute the selected review
+     * requests. Once they confirm, the review requests will be archived.
+     */
+    _onMuteClicked: function() {
+        var collection = RB.UserSession.instance.mutedReviewRequests,
+            visibilityFunc = _.bind(collection.addImmediately, collection);
+
+        $('<div/>')
+            .append($('<p/>')
+                .text(gettext('Are you sure you want to mute these review requests?')))
+            .modalBox({
+                title: gettext('Mute review requests'),
+                buttons: [
+                    $('<input type="button"/>')
+                        .val(gettext('Cancel')),
+
+                    $('<input type="button"/>')
+                        .val(gettext('Mute Review Requests'))
+                        .click(_.bind(this._updateVisibility, this,
+                                      visibilityFunc))
+                ]
+            });
+
+        return false;
+    },
+
+    /*
+     * Handler for when the Unmute action is clicked.
+     */
+    _onUnmuteClicked: function() {
+        var collection = RB.UserSession.instance.mutedReviewRequests;
+
+        this._updateVisibility(
+            _.bind(collection.removeImmediately, collection));
+
+        return false;
+    },
+
+    /*
+     * Common code for archiving/muting review requests.
+     */
+    _updateVisibility: function(visibilityFunc) {
+        this.model.updateVisibility(visibilityFunc);
     }
 });
 

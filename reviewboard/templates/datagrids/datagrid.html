@@ -1,5 +1,5 @@
 {% extends "datagrid/datagrid.html" %}
-{% load compressed djblets_deco staticfiles %}
+{% load compressed djblets_deco djblets_js staticfiles %}
 
 {% block extrahead %}
 {# Empty this out. We use "scripts" and "scripts-post" in Review Board. #}
@@ -56,6 +56,7 @@
             el: $('#page-container'),
             periodicReload: {{datagrid.periodic_reload|yesno:"true,false"}},
             model: new {{datagrid.js_model_class}}({
+                data: {{datagrid.extra_js_model_data|json_dumps}},
 {%  if local_site_name %}
                 localSiteName: '{{local_site_name|escapejs}}'
 {%  endif %}

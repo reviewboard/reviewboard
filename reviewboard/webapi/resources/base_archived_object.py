@@ -85,7 +85,7 @@ class BaseArchivedObjectResource(WebAPIResource):
                 'visibility': self.visibility,
             })
 
-        if not is_new and visit.visibility != ReviewRequestVisit.VISIBLE:
+        if not is_new and visit.visibility == self.visibility:
             visit.visibility = ReviewRequestVisit.VISIBLE
             visit.save(update_fields=['visibility'])
 

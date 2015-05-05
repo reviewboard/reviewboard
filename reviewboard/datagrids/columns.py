@@ -12,7 +12,7 @@ from djblets.datagrid.grids import CheckboxColumn, Column, DateTimeColumn
 from djblets.gravatars import get_gravatar_url
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.accounts.models import Profile
+from reviewboard.accounts.models import Profile, ReviewRequestVisit
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.reviews.templatetags.reviewtags import render_star
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -630,39 +630,49 @@ class SummaryColumn(Column):
                   FROM reviews_reviewrequestdraft
                   WHERE reviews_reviewrequestdraft.review_request_id =
                         reviews_reviewrequest.id
-            """
+            """,
+            'visibility': """
+                SELECT accounts_reviewrequestvisit.visibility
+                  FROM accounts_reviewrequestvisit
+                 WHERE accounts_reviewrequestvisit.review_request_id =
+                       reviews_reviewrequest.id
+                   AND accounts_reviewrequestvisit.user_id = %(user_id)s
+            """ % {
+                'user_id': six.text_type(user.id)
+            }
         })
 
     def render_data(self, state, review_request):
         """Return the rendered contents of the column."""
         summary = review_request.summary
-        labels = {}
+        labels = []
 
         if review_request.submitter_id == state.datagrid.request.user.id:
             if review_request.draft_summary is not None:
                 summary = review_request.draft_summary
-                labels.update({_('Draft'): 'label-draft'})
+                labels.append(('label-draft', _('Draft')))
             elif (not review_request.public and
                   review_request.status == ReviewRequest.PENDING_REVIEW):
-                labels.update({_('Draft'): 'label-draft'})
+                labels.append(('label-draft', _('Draft')))
+
+        if review_request.visibility == ReviewRequestVisit.ARCHIVED:
+            labels.append(('label-archived', _('Archived')))
+        elif review_request.visibility == ReviewRequestVisit.MUTED:
+            labels.append(('label-muted', _('Muted')))
 
         if review_request.status == ReviewRequest.SUBMITTED:
-            labels.update({_('Submitted'): 'label-submitted'})
+            labels.append(('label-submitted', _('Submitted')))
         elif review_request.status == ReviewRequest.DISCARDED:
-            labels.update({_('Discarded'): 'label-discarded'})
+            labels.append(('label-discarded', _('Discarded')))
 
-        display_data = ''
+        display_data = format_html_join(
+            '', '<label class="{}">{}</label>', labels)
 
-        if not summary:
-            summary = format_html('<span class="no-summary">{}</span>',
-                                  _('No Summary'))
-
-        display_data += format_html_join('', '<label class="{}">{}</label>', (
-            (labels[label], label)
-            for label, label_class in six.iteritems(labels)
-        ))
-
-        display_data += format_html('<span>{}</span>', summary)
+        if summary:
+            display_data += format_html('<span>{}</span>', summary)
+        else:
+            display_data += format_html('<span class="no-summary">{}</span>',
+                                        _('No Summary'))
 
         return display_data
 
