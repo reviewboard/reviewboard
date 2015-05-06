@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import copy
 import os
 import re
-import six
 import sys
 import warnings
 from contextlib import contextmanager
@@ -17,6 +16,7 @@ from django.db import (DatabaseError, DEFAULT_DB_ALIAS, IntegrityError,
                        connections, router)
 from django.db.models import get_apps
 from djblets.testing.testcases import TestCase as DjbletsTestCase
+from django.utils import six
 
 from reviewboard import scmtools, initialize
 from reviewboard.attachments.models import FileAttachment
