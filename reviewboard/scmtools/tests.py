@@ -31,6 +31,7 @@ from reviewboard.scmtools.errors import (SCMError, FileNotFoundError,
                                          AuthenticationError)
 from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.git import ShortSHA1Error
+from reviewboard.scmtools.hg import HgDiffParser, HgGitDiffParser
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.perforce import STunnelProxy, STUNNEL_SERVER
 from reviewboard.scmtools.signals import (checked_file_exists,
@@ -1610,6 +1611,42 @@ class MercurialTests(SCMTestCase):
     def _first_file_in_diff(self, diff):
         return self.tool.get_parser(diff).parse()[0]
 
+    def test_git_parser_selection_with_header(self):
+        """Testing HgTool returns the git parser when a header is present"""
+        diffContents = (b'# HG changeset patch\n'
+                        b'# Node ID 6187592a72d7\n'
+                        b'# Parent  9d3f4147f294\n'
+                        b'diff --git a/emptyfile b/emptyfile\n'
+                        b'new file mode 100644\n')
+
+        parser = self.tool.get_parser(diffContents)
+        self.assertEqual(type(parser), HgGitDiffParser)
+
+    def test_hg_parser_selection_with_header(self):
+        """Testing HgTool returns the hg parser when a header is present"""
+        diffContents = (b'# HG changeset patch'
+                        b'# Node ID 6187592a72d7\n'
+                        b'# Parent  9d3f4147f294\n'
+                        b'diff -r 9d3f4147f294 -r 6187592a72d7 new.py\n'
+                        b'--- /dev/null   Thu Jan 01 00:00:00 1970 +0000\n'
+                        b'+++ b/new.py  Tue Apr 21 12:20:05 2015 -0400\n')
+
+        parser = self.tool.get_parser(diffContents)
+        self.assertEqual(type(parser), HgDiffParser)
+
+    def test_git_parser_sets_commit_ids(self):
+        """Testing HgGitDiffParser sets the parser commit ids"""
+        diffContents = (b'# HG changeset patch\n'
+                        b'# Node ID 6187592a72d7\n'
+                        b'# Parent  9d3f4147f294\n'
+                        b'diff --git a/emptyfile b/emptyfile\n'
+                        b'new file mode 100644\n')
+
+        parser = self.tool.get_parser(diffContents)
+        parser.parse()
+        self.assertEqual(parser.new_commit_id, b'6187592a72d7')
+        self.assertEqual(parser.base_commit_id, b'9d3f4147f294')
+
     def test_patch_creates_new_file(self):
         """Testing HgTool with a patch that creates a new file"""
         self.assertEqual(
@@ -1709,6 +1746,8 @@ class MercurialTests(SCMTestCase):
                         b'# Parent bf544ea505f8\n'
                         b'diff --git a/path/to file/readme.txt '
                         b'b/new/path to/readme.txt\n'
+                        b'rename from path/to file/readme.txt\n'
+                        b'rename to new/path to/readme.txt\n'
                         b'--- a/path/to file/readme.txt\n'
                         b'+++ b/new/path to/readme.txt\n')
 
@@ -1733,13 +1772,14 @@ class MercurialTests(SCMTestCase):
 
     def test_git_diff_parsing_unicode(self):
         """Testing HgDiffParser git diff with unicode characters"""
-
         diffContents = ('# Node ID 4960455a8e88\n'
                         '# Parent bf544ea505f8\n'
                         'diff --git a/path/to file/réadme.txt '
                         'b/new/path to/réadme.txt\n'
+                        'rename from path/to file/réadme.txt\n'
+                        'rename to new/path to/réadme.txt\n'
                         '--- a/path/to file/réadme.txt\n'
-                        '+++ b/new/path to/reédme.txt\n').encode('utf-8')
+                        '+++ b/new/path to/réadme.txt\n').encode('utf-8')
 
         file = self._first_file_in_diff(diffContents)
         self.assertEqual(file.origInfo, "bf544ea505f8")
