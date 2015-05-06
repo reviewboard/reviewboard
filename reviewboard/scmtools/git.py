@@ -84,13 +84,13 @@ class GitTool(SCMTool):
                                 credentials['password'],
                                 repository.encoding, local_site_name)
 
-    def get_file(self, path, revision=HEAD):
+    def get_file(self, path, revision=HEAD, **kwargs):
         if revision == PRE_CREATION:
             return ""
 
         return self.client.get_file(path, revision)
 
-    def file_exists(self, path, revision=HEAD):
+    def file_exists(self, path, revision=HEAD, **kwargs):
         if revision == PRE_CREATION:
             return False
 

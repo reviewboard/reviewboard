@@ -38,8 +38,14 @@ class HgTool(SCMTool):
 
         self.uses_atomic_revisions = True
 
-    def get_file(self, path, revision=HEAD):
-        return self.client.cat_file(path, six.text_type(revision))
+    def get_file(self, path, revision=HEAD, base_commit_id=None, **kwargs):
+        if base_commit_id is not None:
+            base_commit_id = six.text_type(base_commit_id)
+
+        return self.client.cat_file(
+            path,
+            six.text_type(revision),
+            base_commit_id=base_commit_id)
 
     def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
         revision = revision_str
@@ -200,7 +206,12 @@ class HgWebClient(SCMClient):
         logging.debug('Initialized HgWebClient with url=%r, username=%r',
                       self.path, self.username)
 
-    def cat_file(self, path, rev="tip"):
+    def cat_file(self, path, rev='tip', base_commit_id=None):
+        # If the base commit id is provided it should override anything
+        # that was parsed from the diffs.
+        if rev != PRE_CREATION and base_commit_id is not None:
+            rev = base_commit_id
+
         if rev == HEAD or rev == UNKNOWN:
             rev = "tip"
         elif rev == PRE_CREATION:
@@ -233,7 +244,12 @@ class HgClient(SCMClient):
         else:
             self.local_site_name = None
 
-    def cat_file(self, path, rev="tip"):
+    def cat_file(self, path, rev='tip', base_commit_id=None):
+        # If the base commit id is provided it should override anything
+        # that was parsed from the diffs.
+        if rev != PRE_CREATION and base_commit_id is not None:
+            rev = base_commit_id
+
         if rev == HEAD:
             rev = "tip"
         elif rev == PRE_CREATION:

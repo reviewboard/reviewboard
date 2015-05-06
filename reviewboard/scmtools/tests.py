@@ -213,7 +213,7 @@ class RepositoryTests(TestCase):
 
     def test_get_file_caching(self):
         """Testing Repository.get_file caches result"""
-        def get_file(self, path, revision):
+        def get_file(self, path, revision, **kwargs):
             num_calls['get_file'] += 1
             return b'file data'
 
@@ -261,7 +261,7 @@ class RepositoryTests(TestCase):
 
     def test_get_file_exists_caching_when_exists(self):
         """Testing Repository.get_file_exists caches result when exists"""
-        def file_exists(self, path, revision):
+        def file_exists(self, path, revision, **kwargs):
             num_calls['get_file_exists'] += 1
             return True
 
@@ -288,7 +288,7 @@ class RepositoryTests(TestCase):
         """Testing Repository.get_file_exists doesn't cache result when the
         file does not exist
         """
-        def file_exists(self, path, revision):
+        def file_exists(self, path, revision, **kwargs):
             num_calls['get_file_exists'] += 1
             return False
 
@@ -313,11 +313,11 @@ class RepositoryTests(TestCase):
 
     def test_get_file_exists_caching_with_fetched_file(self):
         """Testing Repository.get_file_exists uses get_file's cached result"""
-        def get_file(self, path, revision):
+        def get_file(self, path, revision, **kwargs):
             num_calls['get_file'] += 1
             return 'file data'
 
-        def file_exists(self, path, revision):
+        def file_exists(self, path, revision, **kwargs):
             num_calls['get_file_exists'] += 1
             return True
 
@@ -370,6 +370,42 @@ class RepositoryTests(TestCase):
                          ('checking_file_exists', path, revision, request))
         self.assertEqual(found_signals[1],
                          ('checked_file_exists', path, revision, request))
+
+    def test_get_file_signature_warning(self):
+        """Test old SCMTool.get_file signature triggers warning"""
+        def get_file(self, path, revision):
+            return 'file data'
+
+        self.scmtool_cls.get_file = get_file
+
+        path = 'readme'
+        revision = 'e965047'
+        request = {}
+
+        warn_msg = ('SCMTool.get_file() must take keyword arguments, '
+                    'signature for %s is deprecated.' %
+                    self.repository.get_scmtool().name)
+
+        with self.assert_warns(message=warn_msg):
+            self.repository.get_file(path, revision, request=request)
+
+    def test_file_exists_signature_warning(self):
+        """Test old SCMTool.file_exists signature triggers warning"""
+        def file_exists(self, path, revision=HEAD):
+            return True
+
+        self.scmtool_cls.file_exists = file_exists
+
+        path = 'readme'
+        revision = 'e965047'
+        request = {}
+
+        warn_msg = ('SCMTool.file_exists() must take keyword arguments, '
+                    'signature for %s is deprecated.' %
+                    self.repository.get_scmtool().name)
+
+        with self.assert_warns(message=warn_msg):
+            self.repository.get_file_exists(path, revision, request=request)
 
 
 class BZRTests(SCMTestCase):
@@ -1810,13 +1846,33 @@ class MercurialTests(SCMTestCase):
         self.assertTrue(isinstance(value, bytes))
         self.assertEqual(value, b'Hello\n\ngoodbye\n')
 
-        self.assertTrue(self.tool.file_exists('doc/readme'))
-        self.assertTrue(not self.tool.file_exists('doc/readme2'))
+        self.assertTrue(self.tool.file_exists('doc/readme', rev))
+        self.assertTrue(not self.tool.file_exists('doc/readme2', rev))
 
         self.assertRaises(FileNotFoundError, lambda: self.tool.get_file(''))
 
         self.assertRaises(FileNotFoundError,
                           lambda: self.tool.get_file('hello', PRE_CREATION))
+
+    def test_get_file_base_commit_id_override(self):
+        """Testing base_commit_id overrides revision in HgTool.get_file"""
+        base_commit_id = Revision('661e5dd3c493')
+        bogus_rev = Revision('bogusrevision')
+        file = 'doc/readme'
+
+        value = self.tool.get_file(file, bogus_rev,
+                                   base_commit_id=base_commit_id)
+        self.assertTrue(isinstance(value, bytes))
+        self.assertEqual(value, b'Hello\n\ngoodbye\n')
+
+        self.assertTrue(self.tool.file_exists(
+            'doc/readme',
+            bogus_rev,
+            base_commit_id=base_commit_id))
+        self.assertTrue(not self.tool.file_exists(
+            'doc/readme2',
+            bogus_rev,
+            base_commit_id=base_commit_id))
 
     def test_interface(self):
         """Testing basic HgTool API"""

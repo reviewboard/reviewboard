@@ -16,7 +16,7 @@ class LocalFileTool(SCMTool):
 
         SCMTool.__init__(self, repository)
 
-    def get_file(self, path, revision=HEAD):
+    def get_file(self, path, revision=HEAD, **kwargs):
         if not path or revision != HEAD:
             raise FileNotFoundError(path, revision)
 
