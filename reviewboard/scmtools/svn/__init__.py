@@ -112,7 +112,7 @@ class SVNTool(SCMTool):
             )\ (\d+)\)$
             """, re.VERBOSE)
 
-    def get_file(self, path, revision=HEAD):
+    def get_file(self, path, revision=HEAD, **kwargs):
         return self.client.get_file(path, revision)
 
     def get_keywords(self, path, revision=HEAD):

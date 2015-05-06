@@ -83,13 +83,13 @@ class GitTool(SCMTool):
                                 credentials['password'],
                                 repository.encoding, local_site_name)
 
-    def get_file(self, path, revision=HEAD):
+    def get_file(self, path, revision=HEAD, **kwargs):
         if revision == PRE_CREATION:
             return ""
 
         return self.client.get_file(path, revision)
 
-    def file_exists(self, path, revision=HEAD):
+    def file_exists(self, path, revision=HEAD, **kwargs):
         if revision == PRE_CREATION:
             return False
 
@@ -174,6 +174,46 @@ class GitDiffParser(DiffParser):
             b' (?!")(?!b/)(?P<new_filename>(?P=orig_filename))(?!")$'),
     ]
 
+    EXTENDED_HEADERS_KEYS = set([
+        b'old mode',
+        b'new mode',
+        b'deleted file mode',
+        b'new file mode',
+        b'copy from',
+        b'copy to',
+        b'rename from',
+        b'rename to',
+        b'similarity index',
+        b'dissimilarity index',
+        b'index',
+    ])
+
+    def _parse_extended_headers(self, linenum):
+        """Parse an extended headers section.
+
+        A dictionary with keys being the header name and values
+        being a tuple of (header value, complete header line) will
+        be returned. The complete header lines will have a trailing
+        new line added for convenience.
+        """
+        headers = {}
+
+        while linenum < len(self.lines):
+            line = self.lines[linenum]
+
+            for key in self.EXTENDED_HEADERS_KEYS:
+                if line.startswith(key):
+                    headers[key] = line[len(key) + 1:], line + b'\n'
+                    break
+            else:
+                # No headers were found on this line so we're
+                # done parsing them.
+                break
+
+            linenum += 1
+
+        return headers, linenum
+
     def parse(self):
         """
         Parses the diff, returning a list of File objects representing each
@@ -217,9 +257,9 @@ class GitDiffParser(DiffParser):
         not to record it).
         """
         if self.lines[linenum].startswith(b"diff --git"):
-            parts = self._parse_git_diff(linenum)
+            line, info = self._parse_git_diff(linenum)
 
-            return parts[0], parts[1], True
+            return line, info, True
         else:
             return linenum + 1, None, False
 
@@ -242,53 +282,50 @@ class GitDiffParser(DiffParser):
         if linenum >= len(self.lines):
             return linenum, None
 
-        line = self.lines[linenum]
+        # Assume the blob / commit information is provided globally. If
+        # we found an index header we'll override this.
+        file_info.origInfo = self.base_commit_id
+        file_info.newInfo = self.new_commit_id
 
-        # Parse the extended header to save the new file, deleted file,
-        # mode change, file move, and index.
-        if self._is_new_file(linenum):
-            file_info.data += line + b"\n"
-            linenum += 1
-        elif self._is_deleted_file(linenum):
-            file_info.data += line + b"\n"
-            linenum += 1
+        headers, linenum = self._parse_extended_headers(linenum)
+
+        if self._is_new_file(headers):
+            file_info.data += headers[b'new file mode'][1]
+            file_info.origInfo = PRE_CREATION
+        elif self._is_deleted_file(headers):
+            file_info.data += headers[b'deleted file mode'][1]
             file_info.deleted = True
-        elif self._is_mode_change(linenum):
-            file_info.data += line + b"\n"
-            file_info.data += self.lines[linenum + 1] + b"\n"
-            linenum += 2
+        elif self._is_mode_change(headers):
+            file_info.data += headers[b'old mode'][1]
+            file_info.data += headers[b'new mode'][1]
 
-        if self._is_moved_file(linenum):
-            rename_from = self.lines[linenum + 1]
-            rename_to = self.lines[linenum + 2]
-
-            file_info.origFile = rename_from[len(b'rename from '):]
-            file_info.newFile = rename_to[len(b'rename to '):]
-
-            file_info.data += line + b"\n"
-            file_info.data += rename_from + b"\n"
-            file_info.data += rename_to + b"\n"
-            linenum += 3
+        if self._is_moved_file(headers):
+            file_info.origFile = headers[b'rename from'][0]
+            file_info.newFile = headers[b'rename to'][0]
             file_info.moved = True
-        elif self._is_copied_file(linenum):
-            copy_from = self.lines[linenum + 1]
-            copy_to = self.lines[linenum + 2]
 
-            file_info.origFile = copy_from[len(b'copy from '):]
-            file_info.newFile = copy_to[len(b'copy to '):]
+            if b'similarity index' in headers:
+                file_info.data += headers[b'similarity index'][1]
 
-            file_info.data += line + b"\n"
-            file_info.data += copy_from + b"\n"
-            file_info.data += copy_to + b"\n"
-            linenum += 3
+            file_info.data += headers[b'rename from'][1]
+            file_info.data += headers[b'rename to'][1]
+        elif self._is_copied_file(headers):
+            file_info.origFile = headers[b'copy from'][0]
+            file_info.newFile = headers[b'copy to'][0]
             file_info.copied = True
+
+            if b'similarity index' in headers:
+                file_info.data += headers[b'similarity index'][1]
+
+            file_info.data += headers[b'copy from'][1]
+            file_info.data += headers[b'copy to'][1]
 
         # Assume by default that the change is empty. If we find content
         # later, we'll clear this.
         empty_change = True
 
-        if self._is_index_range_line(linenum):
-            index_range = self.lines[linenum].split(None, 2)[1]
+        if b'index' in headers:
+            index_range = headers[b'index'][0].split()[0]
 
             if '..' in index_range:
                 file_info.origInfo, file_info.newInfo = index_range.split("..")
@@ -296,8 +333,7 @@ class GitDiffParser(DiffParser):
             if self.pre_creation_regexp.match(file_info.origInfo):
                 file_info.origInfo = PRE_CREATION
 
-            file_info.data += self.lines[linenum] + b"\n"
-            linenum += 1
+            file_info.data += headers[b'index'][1]
 
         # Get the changes
         while linenum < len(self.lines):
@@ -401,34 +437,20 @@ class GitDiffParser(DiffParser):
             'or --dst-prefix options.',
             linenum)
 
-    def _is_new_file(self, linenum):
-        return (linenum < len(self.lines) and
-                self.lines[linenum].startswith(b'new file mode'))
+    def _is_new_file(self, headers):
+        return b'new file mode' in headers
 
-    def _is_deleted_file(self, linenum):
-        return (linenum < len(self.lines) and
-                self.lines[linenum].startswith(b'deleted file mode'))
+    def _is_deleted_file(self, headers):
+        return b'deleted file mode' in headers
 
-    def _is_mode_change(self, linenum):
-        return (linenum + 1 < len(self.lines) and
-                self.lines[linenum].startswith(b'old mode') and
-                self.lines[linenum + 1].startswith(b'new mode'))
+    def _is_mode_change(self, headers):
+        return b'old mode' in headers and b'new mode' in headers
 
-    def _is_copied_file(self, linenum):
-        return (linenum + 2 < len(self.lines) and
-                self.lines[linenum].startswith(b'similarity index') and
-                self.lines[linenum + 1].startswith(b'copy from') and
-                self.lines[linenum + 2].startswith(b'copy to'))
+    def _is_copied_file(self, headers):
+        return b'copy from' in headers and b'copy to' in headers
 
-    def _is_moved_file(self, linenum):
-        return (linenum + 2 < len(self.lines) and
-                self.lines[linenum].startswith(b'similarity index') and
-                self.lines[linenum + 1].startswith(b'rename from') and
-                self.lines[linenum + 2].startswith(b'rename to'))
-
-    def _is_index_range_line(self, linenum):
-        return (linenum < len(self.lines) and
-                self.lines[linenum].startswith(b'index '))
+    def _is_moved_file(self, headers):
+        return b'rename from' in headers and b'rename to' in headers
 
     def _is_git_diff(self, linenum):
         return self.lines[linenum].startswith(b'diff --git')

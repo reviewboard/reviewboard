@@ -321,7 +321,7 @@ class PerforceTool(SCMTool):
     def get_diffs_use_absolute_paths(self):
         return True
 
-    def get_file(self, path, revision=HEAD):
+    def get_file(self, path, revision=HEAD, **kwargs):
         return self.client.get_file(path, revision)
 
     def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):

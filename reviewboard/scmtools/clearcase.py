@@ -230,7 +230,7 @@ class ClearCaseTool(SCMTool):
 
         return res.strip()
 
-    def get_file(self, extended_path, revision=HEAD):
+    def get_file(self, extended_path, revision=HEAD, **kwargs):
         """Return content of file or list content of directory"""
         if not extended_path:
             raise FileNotFoundError(extended_path, revision)

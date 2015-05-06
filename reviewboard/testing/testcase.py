@@ -4,6 +4,8 @@ import copy
 import os
 import re
 import sys
+import warnings
+from contextlib import contextmanager
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -14,6 +16,7 @@ from django.db import (DatabaseError, DEFAULT_DB_ALIAS, IntegrityError,
                        connections, router)
 from django.db.models import get_apps
 from djblets.testing.testcases import TestCase as DjbletsTestCase
+from django.utils import six
 
 from reviewboard import scmtools, initialize
 from reviewboard.accounts.models import ReviewRequestVisit
@@ -108,6 +111,29 @@ class TestCase(DjbletsTestCase):
                                                   note=note,
                                                   policy=policy,
                                                   local_site=local_site)
+
+    @contextmanager
+    def assert_warns(self, cls=DeprecationWarning, message=None):
+        """A context manager for asserting code generates a warning.
+
+        This method only supports code which generates a single warning.
+        Tests which make use of code generating multiple warnings will
+        need to manually catch their warnings.
+        """
+        with warnings.catch_warnings(record=True) as w:
+            # Some warnings such as DeprecationWarning are filtered by
+            # default, stop filtering them.
+            warnings.simplefilter("always")
+            self.assertEqual(len(w), 0)
+
+            yield
+
+            self.assertEqual(len(w), 1)
+            self.assertTrue(issubclass(w[-1].category, cls))
+
+            if message is not None:
+                self.assertEqual(message, six.text_type(w[-1].message))
+
 
     def create_diff_file_attachment(self, filediff, from_modified=True,
                                     review_request=None,

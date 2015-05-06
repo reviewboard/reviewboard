@@ -26,14 +26,14 @@ class MonotoneTool(SCMTool):
         SCMTool.__init__(self, repository)
         self.client = MonotoneClient(repository.path)
 
-    def get_file(self, path, revision=None):
+    def get_file(self, path, revision=None, **kwargs):
         # revision is actually the file id here...
         if not revision:
             return b""
 
         return self.client.get_file(revision)
 
-    def file_exists(self, path, revision=None):
+    def file_exists(self, path, revision=None, **kwargs):
         # revision is actually the file id here...
         if not revision:
             return False
