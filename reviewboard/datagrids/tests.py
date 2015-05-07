@@ -502,7 +502,7 @@ class SubmitterListViewTests(BaseViewTestCase):
 
         datagrid = self._get_context_var(response, 'datagrid')
         self.assertTrue(datagrid)
-        self.assertEqual(len(datagrid.rows), 1)
+        self.assertEqual(len(datagrid.rows), 4)
         self.assertEqual(datagrid.rows[0]['object'].username, 'admin')
 
         response = self.client.get('/users/?letter=D')
