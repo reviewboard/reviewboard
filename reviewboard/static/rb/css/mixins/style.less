@@ -164,3 +164,26 @@
     display: none;
   });
 }
+
+/*
+ * Disable scrolling on the page.
+ *
+ * This will both turn off scrollbars and set the page to be fixed, so that
+ * mobile phones don't allow for any form of scrolling whatsoever.
+ */
+.no-page-scroll() {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+/*
+ * Makes an element vertically scrollable.
+ *
+ * On mobile devices, this will use momentum-based scrolling.
+ */
+.scrollable-y(@type: auto) {
+  overflow-y: @type;
+  -webkit-overflow-scrolling: touch;
+}

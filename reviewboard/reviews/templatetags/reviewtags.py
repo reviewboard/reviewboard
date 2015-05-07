@@ -12,6 +12,7 @@ from django.utils import six
 from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import basictag, blocktag
 from djblets.util.humanize import humanize_list
 
@@ -153,7 +154,7 @@ def reply_list(context, entry, comment, context_type, context_id):
     the JavaScript code for storing and categorizing the comments.
     """
     def generate_reply_html(reply, timestamp, text, rich_text,
-                            comment_id=None):
+                            use_gravatars, comment_id=None):
         context.push()
         context.update({
             'context_id': context_id,
@@ -165,6 +166,7 @@ def reply_list(context, entry, comment, context_type, context_id):
             'draft': not reply.public,
             'comment_id': comment_id,
             'rich_text': rich_text,
+            'use_gravatars': use_gravatars,
         })
 
         result = render_to_string('reviews/review_reply.html', context)
@@ -185,6 +187,9 @@ def reply_list(context, entry, comment, context_type, context_id):
 
         return s
 
+    siteconfig = SiteConfiguration.objects.get_current()
+    use_gravatars = siteconfig.settings.get('integration_gravatars')
+
     review = entry['review']
 
     user = context.get('user', None)
@@ -200,7 +205,8 @@ def reply_list(context, entry, comment, context_type, context_id):
                                      reply_comment.timestamp,
                                      reply_comment.text,
                                      reply_comment.rich_text,
-                                     reply_comment.pk)
+                                     reply_comment.pk,
+                                     use_gravatars)
     elif context_type == "body_top" or context_type == "body_bottom":
         replies = getattr(review, "public_%s_replies" % context_type)()
 
@@ -209,7 +215,8 @@ def reply_list(context, entry, comment, context_type, context_id):
                 reply,
                 reply.timestamp,
                 getattr(reply, context_type),
-                getattr(reply, '%s_rich_text' % context_type))
+                getattr(reply, '%s_rich_text' % context_type),
+                use_gravatars)
 
         return s
     else:

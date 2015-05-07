@@ -62,7 +62,8 @@ RB.PostCommitView = Backbone.View.extend({
         this._rendered = true;
 
         $branch
-            .append(gettext('New Review Request for Committed Change:'))
+            .append($('<span/>')
+                .text(gettext('Create from an existing commit on:')))
             .append(this._branchesView.render().el)
             .appendTo(this.$el);
 

@@ -55,7 +55,7 @@ class CVSTool(SCMTool):
 
         self.client = CVSClient(self.cvsroot, self.repopath, local_site_name)
 
-    def get_file(self, path, revision=HEAD):
+    def get_file(self, path, revision=HEAD, **kwargs):
         if not path:
             raise FileNotFoundError(path, revision)
 

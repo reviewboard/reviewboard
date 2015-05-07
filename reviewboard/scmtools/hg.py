@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 import logging
-import re
 
 from django.utils import six
 from django.utils.six.moves.urllib.parse import quote as urllib_quote
@@ -36,8 +35,14 @@ class HgTool(SCMTool):
         else:
             self.client = HgClient(repository.path, repository.local_site)
 
-    def get_file(self, path, revision=HEAD):
-        return self.client.cat_file(path, six.text_type(revision))
+    def get_file(self, path, revision=HEAD, base_commit_id=None, **kwargs):
+        if base_commit_id is not None:
+            base_commit_id = six.text_type(base_commit_id)
+
+        return self.client.cat_file(
+            path,
+            six.text_type(revision),
+            base_commit_id=base_commit_id)
 
     def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
         revision = revision_str
@@ -54,8 +59,12 @@ class HgTool(SCMTool):
         return ['diff_path', 'parent_diff_path']
 
     def get_parser(self, data):
-        if data.lstrip().startswith(b'diff --git'):
-            return GitDiffParser(data)
+        hg_position = data.find(b'diff -r')
+        git_position = data.find(b'diff --git')
+
+        if git_position > -1 and (git_position < hg_position or
+                                  hg_position == -1):
+            return HgGitDiffParser(data)
         else:
             return HgDiffParser(data)
 
@@ -78,16 +87,17 @@ class HgDiffParser(DiffParser):
     This class is able to extract Mercurial changeset ids, and
     replaces /dev/null with a useful name
     """
-    new_changeset_id = None
-    orig_changeset_id = None
-    is_git_diff = False
+
+    def __init__(self, data):
+        self.new_changeset_id = None
+        self.orig_changeset_id = None
+
+        return super(HgDiffParser, self).__init__(data)
 
     def parse_special_header(self, linenum, info):
         diff_line = self.lines[linenum]
         split_line = diff_line.split()
 
-        # git style diffs are supported as long as the node ID and parent ID
-        # are present in the patch header
         if diff_line.startswith(b"# Node ID") and len(split_line) == 4:
             self.new_changeset_id = split_line[3]
         elif diff_line.startswith(b"# Parent") and len(split_line) == 3:
@@ -97,7 +107,6 @@ class HgDiffParser(DiffParser):
             #  "diff -r abcdef123456 -r 123456abcdef filename"
             # diff between a revision and the working copy are like:
             #  "diff -r abcdef123456 filename"
-            self.is_git_diff = False
             try:
                 # ordinary hg diffs don't record renames, so
                 # new file always == old file
@@ -120,64 +129,16 @@ class HgDiffParser(DiffParser):
                                       "information", linenum)
             linenum += 1
 
-        elif (diff_line.startswith(b"diff --git") and
-              self.orig_changeset_id):
-            # diff is in the following form:
-            #  "diff --git a/origfilename b/newfilename"
-            # possibly followed by:
-            #  "{copy|rename} from origfilename"
-            #  "{copy|rename} from newfilename"
-            self.is_git_diff = True
-
-            info['origInfo'] = self.orig_changeset_id
-            info['origChangesetId'] = self.orig_changeset_id
-
-            if not self.new_changeset_id:
-                info['newInfo'] = "Uncommitted"
-            else:
-                info['newInfo'] = self.new_changeset_id
-
-            match = re.search(
-                r' a/(.*?) b/(.*?)( (copy|rename) from .*)?$',
-                diff_line)
-            info['origFile'] = match.group(1)
-            info['newFile'] = match.group(2)
-            linenum += 1
-
         return linenum
 
     def parse_diff_header(self, linenum, info):
-        if not self.is_git_diff:
-            if (linenum <= len(self.lines) and
-                self.lines[linenum].startswith(b"Binary file ")):
-                info['binary'] = True
-                linenum += 1
+        if (linenum <= len(self.lines) and
+            self.lines[linenum].startswith(b"Binary file ")):
+            info['binary'] = True
+            linenum += 1
 
-            if self._check_file_diff_start(linenum, info):
-                linenum += 2
-
-        else:
-            while linenum < len(self.lines):
-                if self._check_file_diff_start(linenum, info):
-                    self.is_git_diff = False
-                    linenum += 2
-                    return linenum
-
-                line = self.lines[linenum]
-                if (line.startswith(b"Binary file") or
-                    line.startswith(b"GIT binary")):
-                    info['binary'] = True
-                    linenum += 1
-                elif (line.startswith(b"copy") or
-                      line.startswith(b"rename") or
-                      line.startswith(b"new") or
-                      line.startswith(b"old") or
-                      line.startswith(b"deleted") or
-                      line.startswith(b"index")):
-                    # Not interested, just pass over this one
-                    linenum += 1
-                else:
-                    break
+        if self._check_file_diff_start(linenum, info):
+            linenum += 2
 
         return linenum
 
@@ -201,6 +162,37 @@ class HgDiffParser(DiffParser):
             return False
 
 
+class HgGitDiffParser(GitDiffParser):
+    """Parser for git diffs which understands mercurial headers."""
+
+    def parse(self):
+        """Parse the diff returning a list of File objects.
+
+        This will first parse special mercurial headers if they exist
+        and then use the GitDiffParser functionality to parse the
+        remainder of the diff.
+        """
+        # We need to parse out the commit information from the
+        # commented header mercurial outputs.
+        linenum = 0
+
+        while self.lines[linenum].startswith(b'#'):
+            line = self.lines[linenum]
+            split_line = line.split()
+            linenum += 1
+
+            if line.startswith(b"# Node ID") and len(split_line) == 4:
+                self.new_commit_id = split_line[3]
+            elif line.startswith(b"# Parent") and len(split_line) == 3:
+                self.base_commit_id = split_line[2]
+
+        return super(HgGitDiffParser, self).parse()
+
+    def get_orig_commit_id(self):
+        """Return base commit, either parsed from the header or None."""
+        return self.base_commit_id
+
+
 class HgWebClient(SCMClient):
     FULL_FILE_URL = '%(url)s/%(rawpath)s/%(revision)s/%(quoted_path)s'
 
@@ -211,7 +203,12 @@ class HgWebClient(SCMClient):
         logging.debug('Initialized HgWebClient with url=%r, username=%r',
                       self.path, self.username)
 
-    def cat_file(self, path, rev="tip"):
+    def cat_file(self, path, rev='tip', base_commit_id=None):
+        # If the base commit id is provided it should override anything
+        # that was parsed from the diffs.
+        if rev != PRE_CREATION and base_commit_id is not None:
+            rev = base_commit_id
+
         if rev == HEAD or rev == UNKNOWN:
             rev = "tip"
         elif rev == PRE_CREATION:
@@ -244,7 +241,12 @@ class HgClient(SCMClient):
         else:
             self.local_site_name = None
 
-    def cat_file(self, path, rev="tip"):
+    def cat_file(self, path, rev='tip', base_commit_id=None):
+        # If the base commit id is provided it should override anything
+        # that was parsed from the diffs.
+        if rev != PRE_CREATION and base_commit_id is not None:
+            rev = base_commit_id
+
         if rev == HEAD:
             rev = "tip"
         elif rev == PRE_CREATION:

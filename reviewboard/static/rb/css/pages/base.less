@@ -30,8 +30,7 @@ body {
        * width. This will animate them, using the transitions set on the
        * elements.
        */
-      overflow: hidden;
-      position: fixed;
+      .no-page-scroll();
 
       #container,
       #mobile_menu_mask,
@@ -46,7 +45,7 @@ body {
    * height.
    */
   &.full-page-content {
-    overflow: hidden;
+    .no-page-scroll();
 
     #content_container,
     #content {
@@ -700,10 +699,6 @@ textarea {
 
 #topbar {
   margin: 0 0 @page-container-padding 0;
-
-  .on-mobile-medium-screen-720({
-    margin-bottom: 0;
-  });
 }
 
 
