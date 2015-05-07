@@ -1,10 +1,12 @@
 from __future__ import unicode_literals
 
 import base64
+import inspect
 import logging
 import os
 import subprocess
 import sys
+import warnings
 
 from django.utils import six
 from django.utils.encoding import python_2_unicode_compatible
@@ -146,12 +148,23 @@ class SCMTool(object):
     def __init__(self, repository):
         self.repository = repository
 
-    def get_file(self, path, revision=None):
+    def get_file(self, path, revision=None, base_commit_id=None,
+                 **kwargs):
         raise NotImplementedError
 
-    def file_exists(self, path, revision=HEAD):
+    def file_exists(self, path, revision=HEAD, base_commit_id=None,
+                    **kwargs):
+        argspec = inspect.getargspec(self.get_file)
+
         try:
-            self.get_file(path, revision)
+            if argspec.keywords is None:
+                warnings.warn('SCMTool.get_file() must take keyword '
+                              'arguments, signature for %s is deprecated.'
+                              % self.name, DeprecationWarning)
+                self.get_file(path, revision)
+            else:
+                self.get_file(path, revision, base_commit_id=base_commit_id)
+
             return True
         except FileNotFoundError:
             return False

@@ -90,7 +90,7 @@ class PlasticTool(SCMTool):
     def get_diffs_use_absolute_paths(self):
         return True
 
-    def get_file(self, path, revision=HEAD):
+    def get_file(self, path, revision=HEAD, **kwargs):
         logging.debug('Plastic: get_file %s revision %s' % (path, revision))
 
         if revision == PRE_CREATION:
@@ -102,7 +102,7 @@ class PlasticTool(SCMTool):
 
         return self.client.get_file(path, revision)
 
-    def file_exists(self, path, revision=HEAD):
+    def file_exists(self, path, revision=HEAD, **kwargs):
         logging.debug('Plastic: file_exists %s revision %s' % (path, revision))
 
         if revision == PRE_CREATION:

@@ -60,11 +60,11 @@ class TestTool(GitTool):
     def get_file(self, path, revision):
         return 'Hello, world!\n'
 
-    def file_exists(self, path, revision):
+    def file_exists(self, path, revision, **kwargs):
         if path == '/FILE_FOUND':
             return True
 
-        return super(TestTool, self).file_exists(path, revision)
+        return super(TestTool, self).file_exists(path, revision, **kwargs)
 
     @classmethod
     def check_repository(cls, path, *args, **kwargs):

@@ -111,7 +111,7 @@ class BZRTool(SCMTool):
     def __init__(self, repository):
         SCMTool.__init__(self, repository)
 
-    def get_file(self, path, revision):
+    def get_file(self, path, revision, **kwargs):
         if revision == BZRTool.PRE_CREATION_TIMESTAMP:
             return ''
 
