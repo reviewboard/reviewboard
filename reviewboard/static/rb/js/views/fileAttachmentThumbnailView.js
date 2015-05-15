@@ -324,6 +324,13 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         this._$thumbnailContainer.html(
             this.thumbnailContainerTemplate(this.model.attributes));
 
+        _.each(this._$thumbnailContainer.find('img'), function(el) {
+            if (el.hasAttribute('data-at2x')) {
+                this._retinaImage = new RetinaImage(el);
+                el.removeAttribute('data-at2x');
+            }
+        }, this);
+
         // Disable tabbing to any <a> elements inside the thumbnail.
         this._$thumbnailContainer.find('a').each(function() {
             this.tabIndex = -1;

@@ -101,6 +101,9 @@ class DataGridJSMixin(object):
     #: Whether or not to periodically reload the contents of the datagrid.
     periodic_reload = False
 
+    #: Extra data to pass to the JavaScript Model.
+    extra_js_model_data = None
+
 
 class DataGrid(DataGridJSMixin, DjbletsDataGrid):
     """Base class for a datagrid in Review Board.
@@ -307,6 +310,10 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
             'submitter', 'last_updated_since'
         ]
 
+        self.extra_js_model_data = {
+            'show_archived': self.show_archived,
+        }
+
         self.local_site = local_site
         self.user = self.request.user
         self.profile = Profile.objects.get_or_create(user=self.user)[0]
@@ -387,6 +394,8 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
             profile_changed = True
         else:
             profile_changed = False
+
+        self.extra_js_model_data['show_archived'] = self.show_archived
 
         parent_profile_changed = \
             super(DashboardDataGrid, self).load_extra_state(
