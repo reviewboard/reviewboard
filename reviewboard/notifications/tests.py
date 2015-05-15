@@ -9,7 +9,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
-from reviewboard.accounts.models import Profile
+from reviewboard.accounts.models import Profile, ReviewRequestVisit
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.notifications.email import (build_email_address,
                                              get_email_address_for_user,
@@ -468,6 +468,38 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         draft.publish(user=review_request.submitter)
 
         self.assertEqual(len(mail.outbox), 0)
+
+    def test_recipients_with_muted_review_requests(self):
+        """Testing e-mail recipients when users mute a review request"""
+        dopey = User.objects.get(username='dopey')
+        admin = User.objects.get(username='admin')
+
+        group = Group.objects.create(name='group')
+        group.users.add(admin)
+        group.save()
+
+        review_request = self.create_review_request(
+            summary='My test review request',
+            public=True)
+        review_request.target_people.add(dopey)
+        review_request.target_people.add(User.objects.get(username='grumpy'))
+        review_request.target_groups.add(group)
+        review_request.save()
+
+        visit = self.create_visit(review_request, ReviewRequestVisit.MUTED,
+                                  dopey)
+        visit.save()
+
+        visit = self.create_visit(review_request, ReviewRequestVisit.MUTED,
+                                  admin)
+        visit.save()
+
+        draft = ReviewRequestDraft.create(review_request)
+        draft.summary = 'Summary changed'
+        draft.publish(user=review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertValidRecipients(['doc', 'grumpy'])
 
     def test_local_site_user_filters(self):
         """Testing sending e-mails and filtering out users not on a local site
