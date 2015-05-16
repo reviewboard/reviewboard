@@ -635,6 +635,16 @@ td.diff-file-icon {
 }
 
 /* Styling for DiffCommit listings. */
+.diff-commit-expanded-summary {
+  background-color: @diff-table-background;
+  border: 1px solid black;
+  .border-radius(3px);
+  .box-shadow(2px 2px 6px rgba(0, 0, 0, 0.5));
+  margin: 1em;
+  padding: 6px;
+  position: absolute;
+}
+
 .diff-commits {
   border: 1px @review-request-table-border-color solid;
   margin: 1em 0;
@@ -656,7 +666,7 @@ td.diff-file-icon {
       td, th {
         background: @diff-table-background;
         margin: 0;
-        padding: 0.6em;
+        padding: 6px;
 
         &.diff-commit-author {
           white-space: nowrap;

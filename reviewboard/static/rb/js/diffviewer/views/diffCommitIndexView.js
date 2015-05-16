@@ -10,9 +10,12 @@ RB.DiffCommitIndexView = Backbone.View.extend({
      */
     initialize: function() {
         this._$itemsTable = null;
+        this._$body = $(document.body);
 
         this.collection = this.options.collection;
         this.listenTo(this.collection, 'update', this.update);
+
+        _.bindAll(this, '_onExpandSummary');
     },
 
     _itemTemplate: _.template([
@@ -21,7 +24,9 @@ RB.DiffCommitIndexView = Backbone.View.extend({
         ' <td class="commit-entry-type"><%- historyEntrySymbol %></td>',
         ' <% } %>',
         ' <td class="diff-file-icon"></td>',
-        ' <td class="diff-commit-summary"><%- summary %></td>',
+        ' <td class="diff-commit-summary data-diff-commit-cid="<%- cid %>">',
+        '  <%- summary %>',
+        '</td>',
         ' <td class="diff-commit-author"><%- authorName %></td>',
         '</tr>'
     ].join('')),
@@ -79,6 +84,7 @@ RB.DiffCommitIndexView = Backbone.View.extend({
                     tr = this._itemTemplate(_.defaults(
                         {
                            renderHistorySymbol: renderHistorySymbol
+                            cid: diffCommit.cid
                         },
                         diffCommit.attributes)),
                     iconView = new RB.DiffComplexityIconView({
@@ -100,9 +106,70 @@ RB.DiffCommitIndexView = Backbone.View.extend({
             ));
             this._$itemsTable.append($tbody);
 
+            /*
+             * We can't handle the mouseleave event with the out parameter to
+             * $.hoverIntent because we will be sticking another element in
+             * front of the hovered over element. However, it still needs a
+             * function to call when the mouseleave event happens, or it will
+             * cause an error.
+             */
+            $tbody
+                .find('.diff-commit-expandable-summary')
+                .hoverIntent({
+                    timeout: 500,
+                    over: this._onExpandSummary,
+                    out: function() {}
+                });
+
             this.$el.show();
         } else {
             this.$el.hide();
+        }
+    },
+
+    /*
+     * Show an expanded description tooltip for a commit summary.
+     */
+    _onExpandSummary: function(event) {
+        var $target = $(event.target),
+            cid = $target.data('diff-commit-cid'),
+            description = $.trim(this.collection.get(cid).get('description')),
+            summary = $.trim(this.collection.get(cid).get('summary')),
+            $tooltip,
+            offset,
+            left,
+            top;
+
+        if (description !== summary) {
+            /*
+             * We only have to show the tooltip when there is an extended
+             * description to display.
+             */
+            offset = $target.offset();
+
+            $tooltip = $('<div/>')
+                .addClass('diff-commit-expanded-summary')
+                .html(_.escape(description).replace(/\n/g, '<br>'))
+                .hide()
+                .on('mouseleave', function() {
+                    $tooltip.fadeOut(500, function() {
+                        $tooltip.remove();
+                    });
+                })
+                .appendTo(this._$body);
+
+            left = offset.left - $tooltip.getExtents('p', 'l')
+                   - $target.getExtents('p', 'l');
+            top = offset.top - $tooltip.getExtents('p', 't')
+                  - $target.getExtents('p', 't') + $target.getExtents('b', 't')
+                  + $tooltip.getExtents('b', 't') + 2;
+
+            $tooltip
+                .css({
+                    left: left + 'px',
+                    top: top + 'px'
+                })
+                .fadeIn();
         }
     }
 });
