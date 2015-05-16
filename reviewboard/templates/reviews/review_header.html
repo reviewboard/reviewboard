@@ -43,6 +43,10 @@
           value="{% trans "Publish Changes" %}" />
    <input type="button" id="btn-draft-discard"
           value="{% trans "Discard Draft" %}" />
+{%    if send_email %}
+   <input type="checkbox" id="not-trivial" checked />
+   <label for="not-trivial">{% trans "Send E-Mail" %}</label>
+{%    endif %}
   </span>
   <p><label for="field_changedescription">{% trans "Describe your changes (optional):" %}</label></p>
 {%    if draft.changedesc %}
