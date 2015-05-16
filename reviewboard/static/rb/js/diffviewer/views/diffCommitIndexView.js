@@ -17,7 +17,9 @@ RB.DiffCommitIndexView = Backbone.View.extend({
 
     _itemTemplate: _.template([
         '<tr class="commit-entry-<%- historyEntryType%>">',
+        ' <% if (renderHistorySymbol) { %>',
         ' <td class="commit-entry-type"><%- historyEntrySymbol %></td>',
+        ' <% } %>',
         ' <td class="diff-file-icon"></td>',
         ' <td class="diff-commit-summary"><%- summary %></td>',
         ' <td class="diff-commit-author"><%- authorName %></td>',
@@ -27,13 +29,15 @@ RB.DiffCommitIndexView = Backbone.View.extend({
     _tableHeader: _.template([
         '<thead>',
         ' <tr>',
+        '  <% if (renderHistorySymbol) { %>',
         '  <th></th>',
+        '  <% } %>',
         '  <th></th>',
         '  <th><%- gettext("Summary") %></th>',
         '  <th><%- gettext("Author") %></th>',
         ' </tr>',
         '</thead>'
-    ].join(''))(),
+    ].join('')),
 
     /*
      * Render the diff commit list table.
@@ -58,7 +62,12 @@ RB.DiffCommitIndexView = Backbone.View.extend({
      * the complexity in terms of lines inserted, removed, and changed.
      */
     update: function() {
-        var $tbody;
+        var $tbody,
+            renderHistorySymbol = _.any(
+                this.collection.models,
+                function(item) {
+                    return item.get('historyEntrySymbol') != ' ';
+                });
 
         this._$itemsTable.empty();
 
@@ -67,7 +76,11 @@ RB.DiffCommitIndexView = Backbone.View.extend({
 
             this.collection.each(function(diffCommit) {
                 var lineCounts = diffCommit.attributes.lineCounts,
-                    tr = this._itemTemplate(diffCommit.attributes),
+                    tr = this._itemTemplate(_.defaults(
+                        {
+                           renderHistorySymbol: renderHistorySymbol
+                        },
+                        diffCommit.attributes)),
                     iconView = new RB.DiffComplexityIconView({
                         numInserts: lineCounts.inserted,
                         numDeletes: lineCounts.deleted,
@@ -80,7 +93,11 @@ RB.DiffCommitIndexView = Backbone.View.extend({
                 iconView.render();
             }, this);
 
-            this._$itemsTable.append(this._tableHeader);
+            this._$itemsTable.append(this._tableHeader(
+                {
+                    renderHistorySymbol: renderHistorySymbol
+                }
+            ));
             this._$itemsTable.append($tbody);
 
             this.$el.show();
