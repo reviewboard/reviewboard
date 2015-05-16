@@ -83,7 +83,7 @@ RB.DiffCommitIndexView = Backbone.View.extend({
                 var lineCounts = diffCommit.attributes.lineCounts,
                     tr = this._itemTemplate(_.defaults(
                         {
-                           renderHistorySymbol: renderHistorySymbol
+                            renderHistorySymbol: renderHistorySymbol,
                             cid: diffCommit.cid
                         },
                         diffCommit.attributes)),
