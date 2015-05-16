@@ -655,10 +655,13 @@ class SummaryColumn(Column):
                   review_request.status == ReviewRequest.PENDING_REVIEW):
                 labels.append(('label-draft', _('Draft')))
 
-        if review_request.visibility == ReviewRequestVisit.ARCHIVED:
-            labels.append(('label-archived', _('Archived')))
-        elif review_request.visibility == ReviewRequestVisit.MUTED:
-            labels.append(('label-muted', _('Muted')))
+        # review_request.visibility is not defined when the user is not
+        # logged in.
+        if state.datagrid.request.user.is_authenticated():
+            if review_request.visibility == ReviewRequestVisit.ARCHIVED:
+                labels.append(('label-archived', _('Archived')))
+            elif review_request.visibility == ReviewRequestVisit.MUTED:
+                labels.append(('label-muted', _('Muted')))
 
         if review_request.status == ReviewRequest.SUBMITTED:
             labels.append(('label-submitted', _('Submitted')))
