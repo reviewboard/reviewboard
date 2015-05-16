@@ -38,6 +38,10 @@
          value="{% trans "Publish Changes" %}" />
   <input type="button" id="btn-draft-discard"
          value="{% trans "Discard Draft" %}" />
+{%    if send_email %}
+  <input type="checkbox" id="not-trivial" checked />
+  <label for="not-trivial">{% trans "Send E-Mail" %}</label>
+{%    endif %}
   <p><label for="field_changedescription">{% trans "Describe your changes (optional):" %}</label></p>
 {%    if draft.changedesc %}
   <pre id="field_changedescription" class="field field-text-area editable {% rich_text_classname draft.changedesc.rich_text %}" data-field-id="field_changedescription">{{draft.changedesc.text|render_markdown:draft.changedesc.rich_text}}</pre>
