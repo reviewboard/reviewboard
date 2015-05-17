@@ -327,6 +327,9 @@ def render_markdown(text):
     The Markdown text will be sanitized to prevent injecting custom HTML.
     It will also enable a few plugins for code highlighting and sane lists.
     """
+    if isinstance(text, bytes):
+        text = text.decode('utf-8')
+
     return markdown(text, **MARKDOWN_KWARGS)
 
 

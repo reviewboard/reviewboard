@@ -760,11 +760,14 @@ def review_detail(request,
 
     latest_file_attachments = _get_latest_file_attachments(file_attachments)
 
+    siteconfig = SiteConfiguration.objects.get_current()
+
     context_data = make_review_request_context(request, review_request, {
         'blocks': blocks,
         'draft': draft,
         'review_request_details': review_request_details,
         'review_request_visit': visited,
+        'send_email': siteconfig.get('mail_send_review_mail'),
         'entries': entries,
         'last_activity_time': last_activity_time,
         'review': pending_review,
