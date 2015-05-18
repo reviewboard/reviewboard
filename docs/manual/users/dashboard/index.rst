@@ -10,7 +10,7 @@ displays detailed information on review requests at a glance, and allows
 filtering review requests.
 
 After logging in to Review Board, you'll be taken to your dashboard. You can
-always get back to it by clicking :guilabel:`Dashboard` on the navigation
+always get back to it by clicking :guilabel:`My Dashboard` on the navigation
 banner near the top of the page.
 
 
@@ -68,6 +68,13 @@ Incoming: To Me
 This view shows all review requests that have been directly assigned to you.
 
 
+Incoming: Groups
+----------------
+
+Each group that you are a member of will have an entry in the sidebar. Clicking
+on the group name will show only review requests assigned to that group.
+
+
 Incoming: Starred
 -----------------
 
@@ -84,7 +91,8 @@ particular view. This is a detailed, sortable, customizable list.
 
 Clicking on any review request in the list will take you to that particular
 review request, while clicking on a submitter's name will take you to the
-list of review requests submitted by that user.
+list of review requests submitted by that user. Clicking on a bug link will go
+to the associated bug report (assuming a bug tracker has been connected).
 
 
 Sorting
@@ -128,152 +136,74 @@ showing which columns are shown and which aren't.
 
 The following are available columns you can choose from:
 
-
-Branch
-------
-
-Shows the branch information listed on the review request.
-
-
-Bugs
-----
-
-Shows the bug IDs listed on the review request.
-
-
-Diff Size
----------
-
-Shows a count of the removed and added lines of code in the latest revision of
-the diff.
-
-
-Diff Updated
-------------
-
-Shows the timestamp of the last diff update. This is color-coded to indicate
-the age.
-
-
-Diff Updated (Relative)
------------------------
-
-Shows the timestamp of the last diff update, relative to now. This is
-color-coded to indicate the age.
-
-
-Last Updated
-------------
-
-Shows the timestamp of the last update to the review request. This is
-color-coded to indicate the age.
-
-
-Last Updated (Relative)
------------------------
-
-Shows the timestamp of the last update to the review request, relative to now.
-This is color-coded to indicate the age.
-
-
-My Comments
------------
-
-Shows a green comment flag if you have any unpublished comments on the review
-request, or a blue comment flag if you have published comments. This allows
-you to quickly see which review requests you've addressed.
-
-
-New Updates
------------
-
-Shows a message bubble icon for any review requests that have been updated or
-have had discussion since you've last seen it. This does not apply to review
-requests you haven't yet looked at.
-
-
-Number of Reviews
------------------
-
-Shows how many reviews have been made on the review request.
-
-
-Posted Time
------------
-
-Shows the timestamp when the review request was first posted. This is
-color-coded to indicate the age.
-
-
-Posted Time (Relative)
-----------------------
-
-Shows the timestamp when the review request was first posted, relative to now.
-This is color-coded to indicate the age.
-
-
-Repository
-----------
-
-Shows the repository that the review request is against.
-
-
-Review Request ID
------------------
-
-Shows the ID number of the review request.
-
-
-Select Rows
------------
-
-Shows a checkbox that allows you to select the row. When one or more review
-requests are selected, the sidebar will contain commands to close the selected
-review requests.
-
-
-Ship It!
---------
-
-If there are open issues, this shows a count of the open issues in a yellow
-bubble. If there are no open issues, this will show a count of reviews where
-someone has marked "Ship It!"
-
-
-Starred
--------
-
-Shows a star indicator that can be toggled. When toggled on, the review
-request is starred, meaning you'll be CC'd on any discussion. Toggling it off
-will remove you from the CC list.
-
-
-Submitter
----------
-
-Shows the username of the submitter.
-
-
-Summary
--------
-
-Shows the summary text of the review request.
-
-
-Target Groups
--------------
-
-Shows a list of the assigned groups for each review request.
-
-
-Target People
--------------
-
-Shows a list of the assigned people for each review request.
-
-
-To Me
------
-
-Shows a chevron for review requests which directly list you in the "people"
-field.
+======================= =======================================================
+Column
+======================= =======================================================
+Branch                  Shows the branch information listed on the review
+                        request.
+Bugs                    Shows the bug IDs listed on the review request.
+Diff Size               Shows a count of the removed and added lines of code in
+                        the latest revision of the diff.
+Diff Updated            Shows the timestamp of the last diff update. This is
+                        color-coded to indicate the age.
+Diff Updated (Relative) Shows the timestamp of the last diff update, relative to
+                        the current time. This is color-coded to indicate the
+                        age.
+Last Updated            Shows the timestamp of the last update to the review
+                        request. This is color-coded to indicate the age.
+Last Updated (Relative) Shows the timestamp of the last update to the review
+                        request, relative to the current time. This is
+                        color-coded to indicate the age.
+My Comments             Shows a green comment flag if you have any unpublished
+                        comments on the review request, or a blue comment flag
+                        if you have published comments. This allows you to
+                        quickly see which review request you've addressed.
+New Updates             Shows a message bubble icon for any review requests that
+                        have been updated or have had discussion since you last
+                        looked at it. This does not apply to review requests
+                        that you have not opened before.
+Number of Reviews       Shows how many reviews have been done on the review
+                        request.
+Posted Time             Shows the timestamp of when the review request was first
+                        posted. This is color-coded to indicate the age.
+Posted Time (Relative)  Shows the timestamp of when the review request was first
+                        posted, relative to the current time. This is
+                        color-coded to indicate the age.
+Repository              Shows the repository that the review request is for.
+Review Request ID       Shows the ID number of the review request.
+Select Rows             Shows a checkbox that allows you to select the row. When
+                        one or more review requests are selected, the sidebar
+                        will contain bulk modification commands.
+Ship It!                If there are open issues, this shows a count of the open
+                        issues in a yellow bubble. If there are no open issues,
+                        this shows a count of reviews where the reviewer has
+                        marked "Ship It!"
+Starred                 Shows a star indicator that can be toggled. When toggled
+                        on, the review request is starred, meaning that it will
+                        show up in the "Starred" section of the dashboard, and
+                        you will be CC'd on any discussion. Toggling the star
+                        off will remove you from the CC list.
+Submitter               Shows the username of the submitter.
+Summary                 Shows the summary text of the review request.
+Target Groups           Shows a list of the assigned groups for the review
+                        request.
+Target People           Shows a list of the assigned people for the review
+                        request.
+To Me                   Shows a chevron for review requests which directly list
+                        you in the "people" field.
+======================= =======================================================
+
+
+Bulk Actions
+============
+
+When the :guilabel:`Select Rows` column is visible, review requests can be
+selected to perform some bulk actions. After selecting one or more rows, the
+following items will become available:
+
+* :guilabel:`Close Discarded`
+* :guilabel:`Close Submitted`
+* :guilabel:`Archive`
+* :guilabel:`Unarchive`
+* :guilabel:`Mute`
+* :guilabel:`Unmute`
