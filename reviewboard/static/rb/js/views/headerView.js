@@ -104,6 +104,7 @@ RB.HeaderView = Backbone.View.extend({
             width: this.DESKTOP_SEARCH_RESULTS_WIDTH,
             enterToURL: true,
             resultsParentEl: $('#page-container'),
+            resultsClass: 'ui-autocomplete-results search-results',
             parse: function(data) {
                 var jsonData = data,
                     jsonDataSearch = jsonData.search,

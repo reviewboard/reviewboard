@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% load compressed i18n %}
 
+{% block extrahead %}
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+{% endblock %}
+
 {% block ie6_csshacks %}
    #review-banner .banner { position: absolute; }
 {% endblock %}
