@@ -28,23 +28,28 @@
   </ul>
 
   <div class="actions-container">
-   {% star review_request %}
    <ul class="actions actions-left">
 {%   if request.user.is_authenticated and review_request.status == 'P' %}
+    <li>{% star review_request %}</li>
     <li class="has-menu">
      <a class="menu-title" id="hide-review-request-link" href="#"><span class="rb-icon rb-icon-archive-off"></span></a>
      <ul class="menu" id="hide-review-request-menu" style="display: none;"></ul>
     </li>
 {%   endif %}
    </ul>
-   <ul class="actions actions-right">
+   <ul class="actions actions-right-container">
+    <li class="has-menu">
+     <a href="#" class="mobile-actions-menu-label"><span class="fa fa-ellipsis-h fa-lg"></span></a>
+     <ul class="actions actions-right">
 {%   review_request_action_hooks %}
 {%   review_request_dropdown_action_hooks %}
 {%   include "reviews/review_request_actions_secondary.html" %}
 {%   if has_diffs %}
-    <li><a href="diff/raw/">{% trans "Download Diff" %}</a></li>
+      <li><a href="diff/raw/">{% trans "Download Diff" %}</a></li>
 {%   endif %}
 {%   include "reviews/review_request_actions_primary.html" %}
+     </ul>
+    </li>
    </ul>
   </div>
  </div>

@@ -8,13 +8,26 @@
   padding: 8px 10px;
   z-index: @z-index-banner;
 
-  &>h1 {
+  &>h1, &>p {
     display: inline;
     margin-right: 0.2em;
     padding: 0;
   }
 
-  &>input {
-    margin-left: 10px;
+  .on-mobile-medium-screen-720({
+    p {
+      display: block;
+      margin: 1em 0;
+    }
+  });
+
+  .banner-actions {
+    margin-left: 1em;
+
+    .on-mobile-medium-screen-720({
+      display: block;
+      margin-left: 0;
+      margin-top: 1em;
+    });
   }
 }
