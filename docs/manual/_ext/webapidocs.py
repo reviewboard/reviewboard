@@ -73,6 +73,7 @@ class DummyRequest(HttpRequest):
         self.path = ''
         self.user = User.objects.all()[0]
         self.session = {}
+        self._local_site_name = None
 
         # This is normally set internally by Djblets, but we don't
         # go through the standard __call__ flow.
