@@ -8,8 +8,7 @@ RB.DiffCommit = Backbone.Model.extend({
             authorName: null,
 
             // The revision/SHA of the commit.
-
-            commitId: null,
+            commitID: null,
 
             // The commit message.
             description: null,
@@ -91,7 +90,7 @@ RB.DiffCommit = Backbone.Model.extend({
 
         return {
             authorName: rsp.author_name,
-            commitId: rsp.commit_id,
+            commitID: rsp.commit_id,
             description: rsp.description,
             historyEntrySymbol: historyEntrySymbol,
             historyEntryType: rsp.type,

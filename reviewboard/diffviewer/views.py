@@ -231,9 +231,10 @@ class DiffViewerView(TemplateView):
                 commit = history_entry[key]
 
                 entry = {
-                    'type': entry_type,
                     'author_name': commit.author_name,
+                    'commit_id': commit.commit_id,
                     'description': commit.description,
+                    'type': entry_type,
                 }
 
                 entry.update(history_entry[key].get_total_line_counts())
