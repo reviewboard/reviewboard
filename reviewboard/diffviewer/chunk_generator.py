@@ -17,6 +17,7 @@ from pygments import highlight
 from pygments.lexers import get_lexer_for_filename
 from pygments.formatters import HtmlFormatter
 
+from reviewboard.diffviewer.commitutils import find_oldest_filediff_ancestor
 from reviewboard.diffviewer.differ import DiffCompatVersion, get_differ
 from reviewboard.diffviewer.diffutils import (get_line_changed_regions,
                                               get_original_file,
@@ -669,10 +670,17 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
          in this case, so we have to indicate that we are indeed in
          interdiff mode so that we can special-case this and not
          grab a patched file for the interdiff version.
+
+    The cumulative_diff parameter determines if the chunks generated should be
+    cumulative (that is, starting at the beginning of the commit history) or
+    not (i.e., only for that particular FileDiff). When cumulative_diff is
+    True, the resulting chunks will be chunks of the squashed diff between the
+    start of the commit history and the FileDiff's commit.
     """
 
     def __init__(self, request, filediff, interfilediff=None,
-                 force_interdiff=False, enable_syntax_highlighting=True):
+                 force_interdiff=False, enable_syntax_highlighting=True,
+                 cumulative_diff=False):
         assert filediff
 
         self.request = request
@@ -680,13 +688,33 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
         self.filediff = filediff
         self.interfilediff = interfilediff
         self.force_interdiff = force_interdiff
+        self.cumulative_diff = cumulative_diff
         self.repository = self.diffset.repository
         self.tool = self.repository.get_scmtool()
+        self.original_filediff = None
+
+        if self.cumulative_diff:
+            if self.filediff.diff_commit is None:
+                self.cumulative_diff = False
+            else:
+                self.original_filediff = find_oldest_filediff_ancestor(
+                    filediff)
+
+                # In this case the original file is in the repository, so we
+                # don't have to do anything fancy and can use the regular
+                # behaviour.
+                if self.original_filediff is None:
+                    self.cumulative_diff = False
+                else:
+                    orig_filename = self.original_filediff.source_file
+
+        if not self.cumulative_diff:
+            orig_filename = filediff.source_file
 
         super(DiffChunkGenerator, self).__init__(
             old=None,
             new=None,
-            orig_filename=filediff.source_file,
+            orig_filename=orig_filename,
             modified_filename=filediff.dest_file,
             enable_syntax_highlighting=enable_syntax_highlighting,
             encoding_list=self.repository.get_encoding_list(),
@@ -694,18 +722,21 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
 
     def make_cache_key(self):
         """Create a cache key for any generated chunks."""
-        key = 'diff-sidebyside-'
+        key = 'diff-sidebyside'
 
         if self.enable_syntax_highlighting:
-            key += 'hl-'
+            key += '-hl'
+
+        if self.cumulative_diff:
+            key += '-commits-none-%s' % self.filediff.diff_commit_id
 
         if not self.force_interdiff:
             key += six.text_type(self.filediff.pk)
         elif self.interfilediff:
-            key += 'interdiff-%s-%s' % (self.filediff.pk,
-                                        self.interfilediff.pk)
+            key += '-interdiff-%s-%s' % (self.filediff.pk,
+                                         self.interfilediff.pk)
         else:
-            key += 'interdiff-%s-none' % self.filediff.pk
+            key += '-interdiff-%s-none' % self.filediff.pk
 
         key += '-%s' % get_language()
 
@@ -750,9 +781,18 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
 
     def get_chunks_uncached(self):
         """Yield the list of chunks, bypassing the cache."""
-        old = get_original_file(self.filediff, self.request,
-                                self.encoding_list)
-        new = get_patched_file(old, self.filediff, self.request)
+        if self.original_filediff:
+            old = get_original_file(self.original_filediff, self.request,
+                                    self.encoding_list)
+
+            new = get_original_file(self.filediff, self.request,
+                                    self.encoding_list)
+            new = get_patched_file(new, self.filediff, self.request)
+        else:
+            old = get_original_file(self.filediff, self.request,
+                                    self.encoding_list)
+
+            new = get_patched_file(old, self.filediff, self.request)
 
         if self.filediff.orig_sha1 is None:
             self.filediff.extra_data.update({

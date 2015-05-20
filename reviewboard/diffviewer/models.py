@@ -560,7 +560,7 @@ class DiffSet(DiffLineCountsMixin, models.Model):
 
         super(DiffSet, self).save()
 
-    def build_dag(self, *extra_commits):
+    def build_commit_graph(self, *extra_commits):
         """Build the directed acyclic graph of the DiffSet's commit history.
 
         The returned DAG is represented as a dict. The keys of the dict are
@@ -586,6 +586,99 @@ class DiffSet(DiffLineCountsMixin, models.Model):
                                                         flat=True))
 
         return dag
+
+    def build_file_history_graph(self, *filediffs):
+        """Build a directed acyclic graph of the file history in the DiffSet.
+
+        The file history graph tracks a file's history through renames,
+        deletions, and creations over the course of an entire commit history of
+        a DiffSet.
+
+        The return value is a dict which maps FileDiff primary keys to the
+        primary key of a "parent" FileDiff. This parent FileDiff must be
+        applied before the child FileDiff is. If a key's corresponding value is
+        None, that means either the FileDiff is a new file with no previously
+        deleted file by the same name or is a modification of a file in the
+        repository.
+        """
+        def find_parent_deleted_filediff(filediff, files):
+            """Return the parent deleted FileDiff in the list of FileDiffs.
+
+            This function returns None is there is no such FileDiff.
+            """
+            for f in files:
+                if f.deleted and f.source_file == filediff.source_file:
+                    return f
+
+            return None
+
+        # The commit mapping and commit DAG are only needed if a DiffCommit
+        # contains new files. We can save some database queries by only
+        # computing them when needed.
+        commit_dag = None
+        commits = None
+
+        file_dag = {}
+
+        # We create a mapping of a FileDiff's destination revision and file
+        # name to its primary key. This allows us to check this mapping for the
+        # existence of a parent FileDiff via a dict access instead of filtering
+        # for it in a list.
+        files_by_dest = dict(
+            ((filediff.dest_detail, filediff.dest_file), filediff)
+            for filediff in self.files.all()
+        )
+
+        if not filediffs:
+            filediffs = six.itervalues(files_by_dest)
+
+        for filediff in filediffs:
+            parent_filediff = None
+
+            if filediff.is_new:
+                # In this case we need to check the ancestors of the
+                # current DiffCommit to see if there is a FileDiff that
+                # results in this FileDiff's source_file being a deleted
+                # file.
+
+                # We must go though the ancestry of the DiffCommit
+                # because it may be the case that a file with the same name
+                # was deleted more than once.
+                if commits is None:
+                    commit_dag = self.build_commit_graph()
+                    commits = dict(
+                        (c.commit_id, c)
+                        for c in self.diff_commits.prefetch_related('files')
+                    )
+
+                commit_id = filediff.diff_commit_id
+
+                while commit_id in commit_dag and parent_filediff is None:
+                    # TODO: This currently only supports linear histories.
+                    assert len(commit_dag[commit_id]) == 1
+                    commit_id = commit_dag[commit_id][0]
+
+                    parent_filediff = find_parent_deleted_filediff(
+                        filediff, commits[commit_id].files.all())
+
+                # If we do not find a parent FileDiff, then this file was
+                # created in this DiffCommit and was not deleted previously.
+                if parent_filediff is None:
+                    continue
+            else:
+                try:
+                    dest = (filediff.source_revision, filediff.source_file)
+                    parent_filediff = files_by_dest[dest]
+                except KeyError:
+                    # In this case the file is not new and relies on a
+                    # source revision and file name that is not in our
+                    # mapping. It will have to be retrieved from the
+                    # repository.
+                    continue
+
+            file_dag[filediff.pk] = parent_filediff
+
+        return file_dag
 
     def __str__(self):
         return "[%s] %s r%s" % (self.id, self.name, self.revision)

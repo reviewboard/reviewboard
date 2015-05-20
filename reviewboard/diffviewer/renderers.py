@@ -35,7 +35,8 @@ class DiffRenderer(object):
 
     def __init__(self, diff_file, chunk_index=None, highlighting=False,
                  collapse_all=True, lines_of_context=None, extra_context=None,
-                 allow_caching=True, template_name=default_template_name):
+                 allow_caching=True, cumulative_diff=False,
+                 template_name=default_template_name):
         self.diff_file = diff_file
         self.chunk_index = chunk_index
         self.highlighting = highlighting
@@ -43,8 +44,13 @@ class DiffRenderer(object):
         self.lines_of_context = lines_of_context
         self.extra_context = extra_context or {}
         self.allow_caching = allow_caching
+        self.cumulative_diff = cumulative_diff
         self.template_name = template_name
         self.num_chunks = 0
+
+        if (self.cumulative_diff and
+            self.diff_file['filediff'].diff_commit_id is None):
+            self.cumulative_diff = False
 
         if self.lines_of_context and len(self.lines_of_context) == 1:
             # If we only have one value, then assume it represents before
@@ -84,7 +90,8 @@ class DiffRenderer(object):
         """
         if not self.diff_file.get('chunks_loaded', False):
             populate_diff_chunks([self.diff_file], self.highlighting,
-                                 request=request)
+                                 request=request,
+                                 cumulative_diff=self.cumulative_diff)
 
         if self.chunk_index is not None:
             assert not self.lines_of_context or self.collapse_all
@@ -103,20 +110,24 @@ class DiffRenderer(object):
         """Creates and returns a cache key representing the diff to render."""
         filediff = self.diff_file['filediff']
 
-        key = '%s-%s-%s-' % (self.template_name,
-                             self.diff_file['index'],
-                             filediff.diffset.revision)
+        key = '%s-%s-%s' % (self.template_name,
+                            self.diff_file['index'],
+                            filediff.diffset.revision)
+
+        if self.cumulative_diff:
+            key += ('-commits-none-%s'
+                    % self.diff_file['filediff'].diff_commit_id)
 
         if self.diff_file['force_interdiff']:
             interfilediff = self.diff_file['interfilediff']
-            key += 'interdiff-%s-' % filediff.pk
+            key += '-interdiff-%s' % filediff.pk
 
             if interfilediff:
                 key += six.text_type(interfilediff.pk)
             else:
-                key += 'none'
+                key += '-none'
         else:
-            key += six.text_type(filediff.pk)
+            key += '-%s' % filediff.pk
 
         if self.chunk_index is not None:
             key += '-chunk-%s' % self.chunk_index

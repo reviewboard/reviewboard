@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+from django.utils import six
+
 
 def generate_commit_history_diff(old_history, new_history):
     """Generate the difference between the old and new commit histories.
@@ -82,7 +84,7 @@ class DiffCommitFileExistenceChecker(object):
         # validation, it will not be in the generated DAG because it was not
         # saved to the database. However, if it is already in the DAG, it will
         # be ignored.
-        dag = self._diffset.build_dag(self._diff_commit)
+        dag = self._diffset.build_commit_graph(self._diff_commit)
         commit_id = self._diff_commit.commit_id
 
         while commit_id in dag:
@@ -97,3 +99,40 @@ class DiffCommitFileExistenceChecker(object):
                 return True
 
         return False
+
+
+def exclude_filediff_ancestors(filediff_queryset, diffset, dag=None):
+    """Return a QuerySet that excludes all ancestor FileDiffs of the DiffSet.
+
+    If the file history graph is not given, it will be computed.
+    """
+    if diffset.diff_commit_count:
+        if dag is None:
+            dag = diffset.build_file_history_graph()
+
+        filediff_queryset = filediff_queryset.exclude(
+            pk__in=(fd.pk for fd in six.itervalues(dag)))
+
+    return filediff_queryset
+
+
+def find_oldest_filediff_ancestor(filediff, dag=None):
+    """Return the oldest ancestor of the given FileDiff.
+
+    An ancestor of a FileDiff is a previous revision of a FileDiff pertaining
+    to the same file earlier in the commit history. Ancestor FileDiffs may or
+    may not have the same name as the descendant FileDiff because the file may
+    have been renamed or moved.
+    """
+    if dag is None:
+        dag = filediff.diffset.build_file_history_graph(filediff)
+
+    if filediff.pk not in dag:
+        return None
+
+    ancestor = dag[filediff.pk]
+
+    while ancestor.pk in dag:
+        ancestor = dag[ancestor.pk]
+
+    return ancestor

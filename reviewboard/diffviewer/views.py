@@ -439,6 +439,7 @@ class DiffFragmentView(View):
             diff_file,
             extra_context=context,
             template_name=self.template_name,
+            cumulative_diff=True,
             **renderer_settings)
 
     def get_context_data(self, *args, **kwargs):

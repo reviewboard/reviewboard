@@ -2819,7 +2819,7 @@ class DiffSetTests(TestCase):
 
         DiffCommit.objects.bulk_create(commits)
 
-        self.assertDictEqual(dag, diffset.build_dag())
+        self.assertDictEqual(dag, diffset.build_commit_graph())
 
     def test_build_dag_merge(self):
         """Testing DAG generation for a history with a merge"""
@@ -2863,7 +2863,7 @@ class DiffSetTests(TestCase):
                     child_commit=commits['foo'],
                     merge_ordinal=1).save()
 
-        self.assertDictEqual(dag, diffset.build_dag())
+        self.assertDictEqual(dag, diffset.build_commit_graph())
 
 
 class CommitUtilsTests(TestCase):
