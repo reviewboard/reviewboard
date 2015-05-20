@@ -816,7 +816,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
         this.model.set({
             publishing: true,
-            pendingSaveCount: fields.length
+            pendingSaveCount: fields.length,
+            trivial: !this.$('#not-trivial').prop('checked')
         });
 
         if (fields.length === 0) {

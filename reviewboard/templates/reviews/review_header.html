@@ -6,8 +6,10 @@
  <div class="banner" id="submitted-banner">
   <h1>{% trans "This change has been marked as submitted." %}</h1>
 {%  if request.user.pk == review_request.submitter_id or perms.reviews.can_change_status %}
-  <input type="submit" id="btn-review-request-reopen"
-         value="{% trans "Reopen for Review" %}" />
+  <span class="banner-actions">
+   <input type="submit" id="btn-review-request-reopen"
+          value="{% trans "Reopen for Review" %}" />
+  </span>
   <p><label for="field_changedescription">{% trans "Describe the submission (optional):" %}</label></p>
   <pre id="field_changedescription" class="field field-text-area editable {% rich_text_classname close_description_rich_text %}" data-field-id="field_changedescription">{{close_description|render_markdown:close_description_rich_text}}</pre>
 {%  elif close_description %}
@@ -19,8 +21,10 @@
  <div class="banner" id="discard-banner">
   <h1>{% trans "This change has been discarded." %}</h1>
 {%  if request.user.pk == review_request.submitter_id or perms.reviews.can_change_status %}
-  <input type="submit" id="btn-review-request-reopen"
-         value="{% trans "Reopen for Review" %}" />
+  <span class="banner-actions">
+   <input type="submit" id="btn-review-request-reopen"
+          value="{% trans "Reopen for Review" %}" />
+  </span>
   <p><label for="field_changedescription">{% trans "Describe the reason it's discarded (optional):" %}</label></p>
   <pre id="field_changedescription" class="field field-text-area editable {% rich_text_classname close_description_rich_text %}" data-field-id="field_changedescription">{{close_description|render_markdown:close_description_rich_text}}</pre>
 {%  elif close_description %}
@@ -33,11 +37,17 @@
  <div class="banner" id="draft-banner" style="display:none;">
 {%   if review_request.public %}
   <h1>{% trans "This review request is a draft." %}</h1>
- {% trans "Be sure to publish when finished." %}
+ <p>{% trans "Be sure to publish when finished." %}</p>
+ <span class="banner-actions">
   <input type="button" id="btn-draft-publish"
          value="{% trans "Publish Changes" %}" />
   <input type="button" id="btn-draft-discard"
          value="{% trans "Discard Draft" %}" />
+{%    if send_email %}
+  <input type="checkbox" id="not-trivial" checked />
+  <label for="not-trivial">{% trans "Send E-Mail" %}</label>
+{%    endif %}
+  </span>
   <p><label for="field_changedescription">{% trans "Describe your changes (optional):" %}</label></p>
 {%    if draft.changedesc %}
   <pre id="field_changedescription" class="field field-text-area editable {% rich_text_classname draft.changedesc.rich_text %}" data-field-id="field_changedescription">{{draft.changedesc.text|render_markdown:draft.changedesc.rich_text}}</pre>
@@ -50,10 +60,12 @@
 {%   else %}
   <h1>{% trans "This review request is not yet public." %}</h1>
  {% trans "Be sure to publish when finished." %}
-  <input type="button" id="btn-draft-publish"
-         value="{% trans "Publish" %}" />
-  <input type="button" id="btn-review-request-discard"
-         value="{% trans "Discard Review Request" %}" />
+  <span class="banner-actions">
+   <input type="button" id="btn-draft-publish"
+          value="{% trans "Publish" %}" />
+   <input type="button" id="btn-review-request-discard"
+          value="{% trans "Discard Review Request" %}" />
+  </span>
 {%   endif %}
  </div>
 {%  endif %}

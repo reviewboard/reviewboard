@@ -246,7 +246,8 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
                     success: function() {
                         this.trigger('published');
                     },
-                    error: onError
+                    error: onError,
+                    trivial: options.trivial ? 1 : 0
                 }, this);
             },
             error: onError

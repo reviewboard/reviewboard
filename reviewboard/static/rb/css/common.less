@@ -360,22 +360,29 @@
   z-index: @z-index-menu;
 
   .on-mobile-medium-screen-720({
-    /*
-     * On mobile, set the autoresults list to take up the entire size of
-     * the #page-container, overriding anything set by the widget.
-     */
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
-    height: 100%;
-    border: 0;
-    overflow-y: auto;
+    &.search-results {
+      /*
+       * On mobile, set the autoresults list to take up the entire size of
+       * the #page-container, overriding anything set by the widget.
+       */
+      left: 0 !important;
+      top: -@page-container-padding !important;
+      width: 100% !important;
+      height: 100%;
+      border: 0;
+      overflow-y: auto;
+    }
   });
 
   ul {
+    list-style: none;
     margin: 0;
     padding: 0;
     width: 100%;
+
+    .on-mobile-medium-screen-720({
+      max-height: none !important;
+    });
 
     li {
       cursor: pointer;

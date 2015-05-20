@@ -29,8 +29,10 @@
   <div class="header">
 {%  template_hook_point "review-summary-header-pre" %}
    <div class="collapse-button btn"><div class="rb-icon {% if entry.collapsed %}rb-icon-expand-review{% else %}rb-icon-collapse-review{% endif %}"></div></div>
-   <div class="reviewer"><a href="{% url 'user' entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></div>
-   <div class="posted_time">{% localtime on %}{% blocktrans with entry.review.timestamp as timestamp and entry.review.timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</div>
+   <div class="header-details">
+    <div class="reviewer"><a href="{% url 'user' entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a></div>
+    <div class="posted_time">{% localtime on %}{% blocktrans with entry.review.timestamp as timestamp and entry.review.timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</div>
+   </div>
 {%  template_hook_point "review-summary-header-post" %}
   </div>
 

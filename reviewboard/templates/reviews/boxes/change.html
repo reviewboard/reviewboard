@@ -17,8 +17,10 @@
  <div class="box-main">
   <div class="header">
    <div class="collapse-button btn"><div class="rb-icon {% if entry.collapsed %}rb-icon-expand-review{% else %}rb-icon-collapse-review{% endif %}"></div></div>
-   <div class="reviewer"><b>{% trans "Review request changed" %}</b></div>
-   <div class="posted_time">{% localtime on %}{% blocktrans with entry.changedesc.timestamp as timestamp and entry.changedesc.timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</div>
+   <div class="header-details">
+    <div class="reviewer"><b>{% trans "Review request changed" %}</b></div>
+    <div class="posted_time">{% localtime on %}{% blocktrans with entry.changedesc.timestamp as timestamp and entry.changedesc.timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</div>
+   </div>
   </div>
   <div class="body">
 {%  if entry.new_status %}

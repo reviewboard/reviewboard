@@ -15,6 +15,7 @@ from django.utils.six.moves.urllib.parse import urljoin
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.auth.signals import user_registered
 
+from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.server import get_server_url
 from reviewboard.reviews.models import Group, ReviewRequest, Review
 from reviewboard.reviews.signals import (review_request_published,
@@ -35,15 +36,15 @@ def review_request_closed_cb(sender, user, review_request, **kwargs):
         mail_review_request(review_request, on_close=True)
 
 
-def review_request_published_cb(sender, user, review_request, changedesc,
-                                **kwargs):
+def review_request_published_cb(sender, user, review_request, trivial,
+                                changedesc, **kwargs):
     """
     Listens to the ``review_request_published`` signal and sends an
     e-mail if this type of notification is enabled (through
     ``mail_send_review_mail`` site configuration).
     """
     siteconfig = SiteConfiguration.objects.get_current()
-    if siteconfig.get("mail_send_review_mail"):
+    if siteconfig.get('mail_send_review_mail') and not trivial:
         mail_review_request(review_request, changedesc)
 
 
@@ -101,7 +102,7 @@ def get_email_address_for_user(u):
     return build_email_address(u.get_full_name(), u.email)
 
 
-def get_email_addresses_for_group(g):
+def get_email_addresses_for_group(g, review_request_id=None):
     addresses = []
 
     if g.mailing_list:
@@ -125,9 +126,24 @@ def get_email_addresses_for_group(g):
 
         users = g.users.filter(users_q)
 
-        addresses.extend([get_email_address_for_user(u)
-                          for u in users
-                          if u.should_send_email()])
+        if review_request_id:
+            users = users.extra(select={
+                'visibility': """
+                    SELECT accounts_reviewrequestvisit.visibility
+                      FROM accounts_reviewrequestvisit
+                     WHERE accounts_reviewrequestvisit.review_request_id =
+                           %s
+                       AND accounts_reviewrequestvisit.user_id =
+                           reviews_group_users.user_id
+                """ % review_request_id
+            })
+
+        addresses.extend([
+            get_email_address_for_user(u)
+            for u in users
+            if (u.should_send_email() and
+                u.visibility != ReviewRequestVisit.MUTED)
+        ])
 
     return addresses
 
@@ -197,6 +213,17 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     recipients = set()
     to_field = set()
 
+    target_people = target_people.extra(select={
+        'visibility': """
+            SELECT accounts_reviewrequestvisit.visibility
+              FROM accounts_reviewrequestvisit
+             WHERE accounts_reviewrequestvisit.review_request_id =
+                   reviews_reviewrequest_target_people.reviewrequest_id
+               AND accounts_reviewrequestvisit.user_id =
+                   reviews_reviewrequest_target_people.user_id
+        """
+    })
+
     if local_site:
         # Filter out users who are on the reviewer list in some form, but
         # no longer part of the LocalSite.
@@ -229,10 +256,12 @@ def send_review_mail(user, review_request, subject, in_reply_to,
                     recipients.add(get_email_address_for_user(recipient))
 
         for group in review_request.target_groups.all():
-            recipients.update(get_email_addresses_for_group(group))
+            recipients.update(get_email_addresses_for_group(
+                group, review_request_id=review_request.id))
 
         for u in target_people:
-            if u.should_send_email():
+            if (u.should_send_email() and
+                u.visibility != ReviewRequestVisit.MUTED):
                 email_address = get_email_address_for_user(u)
                 recipients.add(email_address)
                 to_field.add(email_address)
@@ -375,7 +404,8 @@ def mail_review_request(review_request, changedesc=None, on_close=False):
             if 'target_groups' in changed_field_names:
                 for item in fields_changed['target_groups']['added']:
                     group = Group.objects.get(pk=item[2])
-                    limit_recipients_to += get_email_addresses_for_group(group)
+                    limit_recipients_to += get_email_addresses_for_group(
+                        group, review_request.id)
 
     review_request.time_emailed = timezone.now()
     review_request.email_message_id = \

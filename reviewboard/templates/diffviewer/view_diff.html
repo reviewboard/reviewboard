@@ -35,11 +35,16 @@
 
   <div class="actions-container">
    {% star review_request %}
-   <ul class="actions actions-right">
+   <ul class="actions actions-right-container">
+    <li class="has-menu">
+     <a href="#" class="mobile-actions-menu-label"><span class="fa fa-ellipsis-h fa-lg"></span></a>
+     <ul class="actions actions-right">
 {%    include "reviews/review_request_actions_secondary.html" %}
 {%    diffviewer_action_hooks %}
-    <li id="download-diff" {% if interdiffset %}style="display: none;"{% endif %}><a href="raw/">{% trans "Download Diff" %}</a></li>
+      <li id="download-diff" {% if interdiffset %}style="display: none;"{% endif %}><a href="raw/">{% trans "Download Diff" %}</a></li>
 {%    include "reviews/review_request_actions_primary.html" %}
+     </ul>
+    </li>
    </ul>
   </div>
  </div>
