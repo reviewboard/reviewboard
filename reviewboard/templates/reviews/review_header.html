@@ -37,16 +37,12 @@
  <div class="banner" id="draft-banner" style="display:none;">
 {%   if review_request.public %}
   <h1>{% trans "This review request is a draft." %}</h1>
- <p>{% trans "Be sure to publish when finished." %}</p>
- <span class="banner-actions">
-  <input type="button" id="btn-draft-publish"
-         value="{% trans "Publish Changes" %}" />
-  <input type="button" id="btn-draft-discard"
-         value="{% trans "Discard Draft" %}" />
-{%    if send_email %}
-  <input type="checkbox" id="not-trivial" checked />
-  <label for="not-trivial">{% trans "Send E-Mail" %}</label>
-{%    endif %}
+  <p>{% trans "Be sure to publish when finished." %}</p>
+  <span class="banner-actions">
+   <input type="button" id="btn-draft-publish"
+          value="{% trans "Publish Changes" %}" />
+   <input type="button" id="btn-draft-discard"
+          value="{% trans "Discard Draft" %}" />
   </span>
   <p><label for="field_changedescription">{% trans "Describe your changes (optional):" %}</label></p>
 {%    if draft.changedesc %}
