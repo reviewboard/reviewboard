@@ -94,8 +94,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
                     this.save(
                         _.defaults({
                             data: {
-                                'public': 1,
-                                'trivial': options.trivial ? 1 : 0
+                                'public': 1
                             }
                         }, options),
                         context);
