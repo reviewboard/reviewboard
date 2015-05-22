@@ -680,6 +680,33 @@ class DiffSet(DiffLineCountsMixin, models.Model):
 
         return file_dag
 
+    def get_commit_interval(self, base_commit_id, tip_commit_id, dag=None):
+        """Find all commits in the half-open interval (base, tip].
+
+        This function returns a (possibly empty) queryset.
+        """
+        if dag is None:
+            dag = self.build_commit_graph()
+
+        commit_ids = set()
+        commit_id = tip_commit_id
+
+        while commit_id in dag:
+            if commit_id == base_commit_id:
+                break
+
+            commit_ids.add(commit_id)
+
+            # TODO: Graph search.
+            assert len(dag[commit_id]) == 1
+            commit_id = dag[commit_id][0]
+
+        # The interval (base_commit, tip_commit] is not valid.
+        if base_commit_id is not None and base_commit_id != commit_id:
+            return DiffCommit.objects.none()
+
+        return self.diff_commits.filter(commit_id__in=commit_ids)
+
     def __str__(self):
         return "[%s] %s r%s" % (self.id, self.name, self.revision)
 
