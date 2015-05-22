@@ -409,7 +409,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     ],
 
     events: {
-        'click .has-menu': '_onMenuClicked',
+        'click .has-menu .has-menu': '_onMenuClicked',
         'click #archive-review-request-link': '_onArchiveClicked',
         'click #unarchive-review-request-link': '_onUnarchiveClicked',
         'click #mute-review-request-link': '_onMuteClicked',
