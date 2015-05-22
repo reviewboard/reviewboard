@@ -234,11 +234,13 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      * event will be triggered with the error message. Otherwise, upon
      * success, the "publish" event will be triggered.
      */
-    publishDraft: function() {
+    publishDraft: function(options) {
         var reviewRequest = this.get('reviewRequest'),
             onError = function(model, xhr) {
                 this.trigger('publishError', xhr.errorText);
             };
+
+        options = options || {};
 
         reviewRequest.draft.ensureCreated({
             success: function() {

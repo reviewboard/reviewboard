@@ -165,7 +165,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         return draft
 
-    def publish(self, review_request=None, user=None,
+    def publish(self, review_request=None, user=None, trivial=False,
                 send_notification=True):
         """Publishes this draft.
 
@@ -243,6 +243,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             review_request_published.send(sender=review_request.__class__,
                                           user=user,
                                           review_request=review_request,
+                                          trivial=trivial,
                                           changedesc=self.changedesc)
 
         return self.changedesc

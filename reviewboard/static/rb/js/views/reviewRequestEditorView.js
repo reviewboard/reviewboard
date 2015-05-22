@@ -222,7 +222,11 @@ DraftBannerView = BannerView.extend({
      * still open, they'll be saved first.
      */
     _onPublishDraftClicked: function() {
-        this.reviewRequestEditorView.publishDraft();
+        var $sendEmail = this.$('#not-trivial');
+
+        this.reviewRequestEditorView.publishDraft({
+            trivial: ($sendEmail.length === 1 && !$sendEmail.is(':checked'))
+        });
 
         return false;
     },
@@ -810,18 +814,17 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * Begins publishing the review request. If there are any field editors
      * still open, they'll be saved first.
      */
-    publishDraft: function() {
+    publishDraft: function(options) {
         /* Save all the fields if we need to. */
         var fields = this.$(".editable:inlineEditorDirty");
 
         this.model.set({
             publishing: true,
-            pendingSaveCount: fields.length,
-            trivial: !this.$('#not-trivial').prop('checked')
+            pendingSaveCount: fields.length
         });
 
         if (fields.length === 0) {
-            this.model.publishDraft();
+            this.model.publishDraft(options);
         } else {
             fields.inlineEditor("submit");
         }

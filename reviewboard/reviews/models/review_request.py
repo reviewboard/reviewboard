@@ -776,7 +776,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         review_request_reopened.send(sender=self.__class__, user=user,
                                      review_request=self)
 
-    def publish(self, user, trivial):
+    def publish(self, user, trivial=False):
         """Publishes the current draft attached to this review request.
 
         The review request will be mark as public, and signals will be
