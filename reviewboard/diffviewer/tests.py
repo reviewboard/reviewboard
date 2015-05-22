@@ -2848,8 +2848,8 @@ class DiffSetTests(TestCase):
     def test_get_commit_range_linear_valid(self):
         """Testing commit interval generation for a linear interval"""
         for commit_id, parent_id in [('r1', 'r0'), ('r2', 'r1'), ('r3', 'r2')]:
-            DiffCommit(commit_id=commit_id, parent_id=parent_id,
-                       **self.common_diffcommit_fields).save()
+            DiffCommit.objects.create(commit_id=commit_id, parent_id=parent_id,
+                                      **self.common_diffcommit_fields)
 
         commit_ids = self.diffset.get_commit_interval('r1', 'r3').values_list(
             'commit_id', flat=True)
@@ -2859,8 +2859,8 @@ class DiffSetTests(TestCase):
     def test_get_commit_range_invalid(self):
         """Testing commit interval generation for an invalid interval"""
         for commit_id, parent_id in [('r1', 'r0'), ('r2', 'r1')]:
-            DiffCommit(commit_id=commit_id, parent_id=parent_id,
-                       **self.common_diffcommit_fields).save()
+            DiffCommit.objects.create(commit_id=commit_id, parent_id=parent_id,
+                                      **self.common_diffcommit_fields)
 
         queryset = self.diffset.get_commit_interval('foo', 'r2')
 
@@ -2868,8 +2868,8 @@ class DiffSetTests(TestCase):
 
     def test_get_commit_range_empty(self):
         """Testing commit interval generation for an empty interval"""
-        DiffCommit(commit_id='foo', parent_id='bar',
-                   **self.common_diffcommit_fields).save()
+        DiffCommit.objects.create(commit_id='foo', parent_id='bar',
+                                  **self.common_diffcommit_fields)
 
         queryset = self.diffset.get_commit_interval('foo', 'foo')
 
