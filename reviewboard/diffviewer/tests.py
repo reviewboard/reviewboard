@@ -2790,20 +2790,14 @@ class DiffSetTests(TestCase):
     """Test cases for DiffSets."""
     fixtures = ['test_users', 'test_scmtools']
 
-    def test_build_dag_linear(self):
-        """Testing DAG generation for a linear history"""
+    def setUp(self):
         repository = self.create_repository(tool_name='Test')
         review_request = self.create_review_request(repository=repository)
-        diffset = self.create_diffset(review_request=review_request)
+        self.diffset = self.create_diffset(review_request=review_request)
 
-        dag = {
-            'foo': ['bar'],
-            'bar': ['baz'],
-        }
-
-        common_fields = {
+        self.common_diffcommit_fields = {
             'name': 'diff',
-            'diffset': diffset,
+            'diffset': self.diffset,
             'author_name': 'Author Name',
             'author_email': 'email@example.com',
             'author_date_utc': timezone.now().astimezone(timezone.utc),
@@ -2812,58 +2806,44 @@ class DiffSetTests(TestCase):
             'commit_type': DiffCommit.COMMIT_CHANGE_TYPE,
         }
 
-        commits = [
-            DiffCommit(commit_id='foo', parent_id='bar', **common_fields),
-            DiffCommit(commit_id='bar', parent_id='baz', **common_fields),
-        ]
+    def test_build_commit_dag_linear(self):
+        """Testing commit DAG generation for a linear history"""
+        dag = {
+            'foo': ['bar'],
+            'bar': ['baz'],
+        }
 
-        DiffCommit.objects.bulk_create(commits)
+        for commit_id, parent_id in [('foo', 'bar'), ('bar', 'baz')]:
+            DiffCommit.objects.create(commit_id=commit_id, parent_id=parent_id,
+                                      **self.common_diffcommit_fields)
 
-        self.assertDictEqual(dag, diffset.build_commit_graph())
+        self.assertDictEqual(dag, self.diffset.build_commit_graph())
 
-    def test_build_dag_merge(self):
-        """Testing DAG generation for a history with a merge"""
-        repository = self.create_repository(tool_name='Test')
-        review_request = self.create_review_request(repository=repository)
-        diffset = self.create_diffset(review_request=review_request)
-
+    def test_build_commit_dag_merge(self):
+        """Testing commit DAG generation for a history with a merge"""
         dag = {
             'foo': ['bar', 'baz'],
             'bar': ['quux'],
             'baz': ['quux'],
         }
 
-        common_fields = {
-            'name': 'diff',
-            'diffset': diffset,
-            'author_name': 'Author Name',
-            'author_email': 'email@example.com',
-            'author_date_utc': timezone.now().astimezone(timezone.utc),
-            'author_date_offset': 0,
-            'description': 'description',
-        }
+        merge_fields = self.common_diffcommit_fields.copy()
+        merge_fields['commit_type'] = DiffCommit.COMMIT_MERGE_TYPE
 
         commits = {
-            'foo': DiffCommit(commit_id='foo', parent_id='bar',
-                              commit_type=DiffCommit.COMMIT_MERGE_TYPE,
-                              **common_fields),
-            'bar': DiffCommit(commit_id='bar', parent_id='quux',
-                              commit_type=DiffCommit.COMMIT_CHANGE_TYPE,
-                              **common_fields),
-            'baz': DiffCommit(commit_id='baz', parent_id='quux',
-                              commit_type=DiffCommit.COMMIT_CHANGE_TYPE,
-                              **common_fields),
+            'foo': DiffCommit.objects.create(commit_id='foo', parent_id='bar',
+                                             **merge_fields),
+            'bar': DiffCommit.objects.create(commit_id='bar', parent_id='quux',
+                                             **self.common_diffcommit_fields),
+            'baz': DiffCommit.objects.create(commit_id='baz', parent_id='quux',
+                                             **self.common_diffcommit_fields),
         }
-
-        # The bulk_create method does not update the pk for created objects.
-        for commit in commits:
-            commits[commit].save()
 
         MergeParent(commit_id='baz',
                     child_commit=commits['foo'],
                     merge_ordinal=1).save()
 
-        self.assertDictEqual(dag, diffset.build_commit_graph())
+        self.assertDictEqual(dag, self.diffset.build_commit_graph())
 
 
 class CommitUtilsTests(TestCase):
