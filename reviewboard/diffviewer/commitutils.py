@@ -1,5 +1,8 @@
 from __future__ import unicode_literals
 
+import itertools
+from collections import deque
+
 from django.utils import six
 
 
@@ -116,23 +119,82 @@ def exclude_filediff_ancestors(filediff_queryset, diffset, dag=None):
     return filediff_queryset
 
 
-def find_oldest_filediff_ancestor(filediff, dag=None):
-    """Return the oldest ancestor of the given FileDiff.
+def find_ancestor_commit_ids(commit_id, commit_dag):
+    """Find all ancestor commits of the commit with the given commit ID."""
+    visited = set()
+    unvisited = deque()
+    unvisited.append(commit_id)
+
+    # We can compute all ancestor commits by doing a depth-first traversal
+    # rooted at the given commit id. All visited vertices (except for the
+    # initial vertex) will be ancestors of the commit.
+    while unvisited:
+        vertex = unvisited.popleft()
+
+        if vertex in visited:
+            continue
+
+        visited.add(vertex)
+
+        for adjacent in commit_dag[vertex]:
+            if adjacent in commit_dag:
+                unvisited.append(adjacent)
+
+    # A commit is not its own ancestor.
+    visited.remove(commit_id)
+
+    return visited
+
+
+def find_ancestor_filediff(filediff, file_dag=None, commit_dag=None,
+                           commit_id=None):
+    """Return an ancestor of the given FileDiff.
+
+    If the commit_id parameter is None, the oldest ancestor is returned.
+    Otherwise, the "youngest" ancestor commit in the half-open interval
+    (..., commit_id] is returned.
 
     An ancestor of a FileDiff is a previous revision of a FileDiff pertaining
     to the same file earlier in the commit history. Ancestor FileDiffs may or
     may not have the same name as the descendant FileDiff because the file may
     have been renamed or moved.
     """
-    if dag is None:
-        dag = filediff.diffset.build_file_history_graph(filediff)
+    if file_dag is None:
+        file_dag = filediff.diffset.build_file_history_graph()
 
-    if filediff.pk not in dag:
+    if commit_id:
+        if commit_dag is None:
+            commit_dag = filediff.diffset.build_commit_graph()
+
+        # We can skip a lot of work if commit_id is not actually in the graph.
+        if commit_id not in itertools.chain(six.iterkeys(commit_dag),
+                                            *six.itervalues(commit_dag)):
+            return None
+
+        interval = find_ancestor_commit_ids(commit_id, commit_dag)
+        interval.add(commit_id)
+    else:
+        interval = tuple()
+
+    if filediff.pk not in file_dag:
         return None
 
-    ancestor = dag[filediff.pk]
+    ancestor = file_dag[filediff.pk]
 
-    while ancestor.pk in dag:
-        ancestor = dag[ancestor.pk]
+    if interval:
+        ancestor_commit_id = ancestor.diff_commit.commit_id
+
+    while ancestor.pk in file_dag:
+        if interval:
+            if ancestor_commit_id in interval:
+                break
+
+        ancestor = file_dag[ancestor.pk]
+
+        if interval:
+            ancestor_commit_id = ancestor.diff_commit.commit_id
+
+    if interval and ancestor_commit_id not in interval:
+        ancestor = None
 
     return ancestor

@@ -22,7 +22,9 @@ import reviewboard.diffviewer.parser as diffparser
 from reviewboard.admin.import_utils import has_module
 from reviewboard.diffviewer.chunk_generator import (DiffChunkGenerator,
                                                     RawDiffChunkGenerator)
-from reviewboard.diffviewer.commitutils import generate_commit_history_diff
+from reviewboard.diffviewer.commitutils import (find_ancestor_commit_ids,
+                                                find_ancestor_filediff,
+                                                generate_commit_history_diff)
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.forms import UploadDiffCommitForm, UploadDiffForm
 from reviewboard.diffviewer.models import (DiffCommit, DiffSet, FileDiff,
@@ -3044,6 +3046,17 @@ class CommitUtilsTests(TestCase):
     # A "fake" DiffCommit class for working with generate_commit_history_diff.
     commit_type = namedtuple('FakeCommit', ('commit_id',))
 
+    def setUp(self):
+        self.common_diffcommit_fields = {
+            'name': 'diff',
+            'author_name': 'Author Name',
+            'author_email': 'email@example.com',
+            'author_date_utc': timezone.now().astimezone(timezone.utc),
+            'author_date_offset': 0,
+            'description': 'description',
+            'commit_type': DiffCommit.COMMIT_CHANGE_TYPE,
+        }
+
     def test_history_diffing_added(self):
         """Testing generate_commit_history_diff with added commits"""
         old_history = []
@@ -3123,6 +3136,244 @@ class CommitUtilsTests(TestCase):
         self.assertEqual(expected_result,
                          list(generate_commit_history_diff(old_history,
                                                            new_history)))
+
+    def test_ancestor_commit_ids(self):
+        """Testing finding ancestor commit IDs"""
+        dag = {
+            'r1': ['r0'],
+            'r2': ['r0'],
+            'r3': ['r1', 'r2'],
+            'r4': ['r3'],
+        }
+
+        self.assertEqual(find_ancestor_commit_ids('r4', dag),
+                         set(['r1', 'r2', 'r3']))
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_find_ancestor_filediff_none(self):
+        """Testing finding ancestor FileDiff of the first FileDiff in a commit
+        history
+        """
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+
+        commit = DiffCommit.objects.create(commit_id='r1', parent_id='r0',
+                                           diffset=diffset,
+                                           **self.common_diffcommit_fields)
+
+        filediff = self.create_filediff(diffset,
+                                        diff_commit=commit,
+                                        status=FileDiff.MODIFIED,
+                                        source_file='/foo',
+                                        source_revision='1',
+                                        dest_file='/foo',
+                                        dest_detail='2',
+                                        diff='')
+
+        self.assertIsNone(find_ancestor_filediff(filediff))
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_find_ancestor_filediff_oldest(self):
+        """Testing finding oldest ancestor FileDiff in a commit history"""
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+
+        r1 = DiffCommit.objects.create(commit_id='r1', parent_id='r0',
+                                       diffset=diffset,
+                                       **self.common_diffcommit_fields)
+
+        r2 = DiffCommit.objects.create(commit_id='r2', parent_id='r1',
+                                       diffset=diffset,
+                                       **self.common_diffcommit_fields)
+
+        r3 = DiffCommit.objects.create(commit_id='r3', parent_id='r2',
+                                       diffset=diffset,
+                                       **self.common_diffcommit_fields)
+
+        r4 = DiffCommit.objects.create(commit_id='r4', parent_id='r3',
+                                       diffset=diffset,
+                                       **self.common_diffcommit_fields)
+
+        r5 = DiffCommit.objects.create(commit_id='r5', parent_id='r4',
+                                       diffset=diffset,
+                                       **self.common_diffcommit_fields)
+
+        f1 = self.create_filediff(diffset,
+                                  diff_commit=r1,
+                                  source_file='/dev/null',
+                                  source_revision=PRE_CREATION,
+                                  dest_file='/foo',
+                                  dest_detail='1',
+                                  status=FileDiff.MODIFIED,
+                                  diff='')
+
+        self.create_filediff(diffset,
+                             diff_commit=r2,
+                             source_file='/foo',
+                             source_revision='1',
+                             dest_file='/dev/null',
+                             dest_detail='DELETED',
+                             status=FileDiff.DELETED,
+                             diff='')
+
+        self.create_filediff(diffset,
+                             diff_commit=r3,
+                             source_file='/dev/null',
+                             source_revision=PRE_CREATION,
+                             dest_file='/foo',
+                             dest_detail='1',
+                             status=FileDiff.MODIFIED,
+                             diff='')
+
+        self.create_filediff(diffset,
+                             diff_commit=r4,
+                             source_file='/foo',
+                             source_revision='1',
+                             dest_file='/dev/null',
+                             dest_detail='DELETED',
+                             status=FileDiff.DELETED,
+                             diff='')
+
+        f5 = self.create_filediff(diffset,
+                                  diff_commit=r5,
+                                  source_file='/dev/null',
+                                  source_revision=PRE_CREATION,
+                                  dest_file='/foo',
+                                  dest_detail='1',
+                                  status=FileDiff.MODIFIED,
+                                  diff='')
+
+        self.assertEqual(f1, find_ancestor_filediff(f5))
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_find_ancestor_filediff_commit(self):
+        """Testing finding ancestor FileDiffs in a specific commit"""
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+
+        r1 = DiffCommit.objects.create(commit_id='r1', parent_id='r0',
+                                       diffset=diffset,
+                                       **self.common_diffcommit_fields)
+
+        r2 = DiffCommit.objects.create(commit_id='r2', parent_id='r1',
+                                       diffset=diffset,
+                                       **self.common_diffcommit_fields)
+
+        r3 = DiffCommit.objects.create(commit_id='r3', parent_id='r2',
+                                       diffset=diffset,
+                                       **self.common_diffcommit_fields)
+
+        self.create_filediff(diffset,
+                             diff_commit=r1,
+                             source_file='/dev/null',
+                             source_revision=PRE_CREATION,
+                             dest_file='/foo',
+                             dest_detail='1',
+                             status=FileDiff.MODIFIED,
+                             diff='')
+
+        f2 = self.create_filediff(diffset,
+                                  diff_commit=r2,
+                                  source_file='/foo',
+                                  source_revision='1',
+                                  dest_file='/dev/null',
+                                  dest_detail='DELETED',
+                                  status=FileDiff.DELETED,
+                                  diff='')
+
+        f3 = self.create_filediff(diffset,
+                                  diff_commit=r3,
+                                  source_file='/dev/null',
+                                  source_revision=PRE_CREATION,
+                                  dest_file='/foo',
+                                  dest_detail='1',
+                                  status=FileDiff.MODIFIED,
+                                  diff='')
+
+        self.assertEqual(f2,
+                         find_ancestor_filediff(f3, commit_id='r2'))
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_find_ancestor_filediff_interval(self):
+        """Testing finding ancestor FileDiffs in a specific interval"""
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+
+        r1 = DiffCommit.objects.create(commit_id='r1', parent_id='r0',
+                                       diffset=diffset,
+                                       **self.common_diffcommit_fields)
+
+        DiffCommit.objects.create(commit_id='r2', parent_id='r1',
+                                  diffset=diffset,
+                                  **self.common_diffcommit_fields)
+
+        r3 = DiffCommit.objects.create(commit_id='r3', parent_id='r2',
+                                       diffset=diffset,
+                                       **self.common_diffcommit_fields)
+
+        f1 = self.create_filediff(diffset,
+                                  diff_commit=r1,
+                                  source_file='/dev/null',
+                                  source_revision=PRE_CREATION,
+                                  dest_file='/foo',
+                                  dest_detail='1',
+                                  status=FileDiff.MODIFIED,
+                                  diff='')
+
+        f3 = self.create_filediff(diffset,
+                                  diff_commit=r3,
+                                  source_file='/foo',
+                                  source_revision='1',
+                                  dest_file='/foo',
+                                  dest_detail='2',
+                                  status=FileDiff.MODIFIED,
+                                  diff='')
+
+        self.assertEqual(f1,
+                         find_ancestor_filediff(f3, commit_id='r2'))
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_find_ancestor_filediff_invalid_interval(self):
+        """Testing finding ancestor FileDiffs in an invalid interval"""
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+
+        DiffCommit.objects.create(commit_id='r1', parent_id='r0',
+                                  diffset=diffset,
+                                  **self.common_diffcommit_fields)
+
+        r2 = DiffCommit.objects.create(commit_id='r2', parent_id='r1',
+                                       diffset=diffset,
+                                       **self.common_diffcommit_fields)
+
+        r3 = DiffCommit.objects.create(commit_id='r3', parent_id='r2',
+                                       diffset=diffset,
+                                       **self.common_diffcommit_fields)
+
+        self.create_filediff(diffset,
+                             diff_commit=r2,
+                             source_file='/dev/null',
+                             source_revision=PRE_CREATION,
+                             dest_file='/foo',
+                             dest_detail='1',
+                             status=FileDiff.MODIFIED,
+                             diff='')
+
+        f3 = self.create_filediff(diffset,
+                                  diff_commit=r3,
+                                  source_file='/foo',
+                                  source_revision='1',
+                                  dest_file='/foo',
+                                  dest_detail='2',
+                                  status=FileDiff.MODIFIED,
+                                  diff='')
+
+        self.assertIsNone(find_ancestor_filediff(f3, commit_id='r1'))
 
 
 class DiffUtilsTests(TestCase):

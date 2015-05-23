@@ -17,7 +17,7 @@ from pygments import highlight
 from pygments.lexers import get_lexer_for_filename
 from pygments.formatters import HtmlFormatter
 
-from reviewboard.diffviewer.commitutils import find_oldest_filediff_ancestor
+from reviewboard.diffviewer.commitutils import find_ancestor_filediff
 from reviewboard.diffviewer.differ import DiffCompatVersion, get_differ
 from reviewboard.diffviewer.diffutils import (get_line_changed_regions,
                                               get_original_file,
@@ -697,8 +697,7 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             if self.filediff.diff_commit is None:
                 self.cumulative_diff = False
             else:
-                self.original_filediff = find_oldest_filediff_ancestor(
-                    filediff)
+                self.original_filediff = find_ancestor_filediff(filediff)
 
                 # In this case the original file is in the repository, so we
                 # don't have to do anything fancy and can use the regular

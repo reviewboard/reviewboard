@@ -14,7 +14,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.contextmanagers import controlled_subprocess
 
 from reviewboard.diffviewer.commitutils import (exclude_filediff_ancestors,
-                                                find_oldest_filediff_ancestor)
+                                                find_ancestor_filediff)
 from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 
@@ -445,8 +445,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
 
             if have_diffset_commits:
                 # We must find the oldest ancestor revision and use that.
-                ancestor = find_oldest_filediff_ancestor(
-                    filediff, diffset_file_graph)
+                ancestor = find_ancestor_filediff(filediff, diffset_file_graph)
 
                 if ancestor is not None:
                     source_revision = ancestor.source_revision
