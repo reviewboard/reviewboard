@@ -31,6 +31,29 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     }, RB.ReviewablePageView.prototype.events),
 
     /*
+     * Parse a query string into a JavaScript object.
+     */
+    _parseQueryString: function(queryString) {
+        var keyValuePairs = {};
+
+        if (queryString !== null && queryString !== undefined) {
+            _.each(queryString.split('&'), function (keyValuePair) {
+                var parts = keyValuePair.split('=', 2),
+                    key = parts[0],
+                    value = parts[1];
+
+                if (value !== undefined) {
+                    value = decodeURIComponent(value);
+                }
+
+                keyValuePairs[key] = value;
+            });
+        }
+
+        return keyValuePairs;
+    },
+
+    /*
      * Initializes the diff viewer page.
      */
     initialize: function() {
@@ -59,30 +82,46 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this.router = new Backbone.Router({
             routes: {
-                ':revision/': 'revision',
-                ':revision/?page=:page': 'revision'
-            }
-        });
-        this.listenTo(this.router, 'route:revision', function(revision, page) {
-            var parts;
-
-            if (page === undefined) {
-                page = 1;
-            } else {
-                page = parseInt(page, 10);
-            }
-
-            if (revision.indexOf('-') === -1) {
-                this._loadRevision(0, parseInt(revision, 10), page);
-            } else {
-                parts = revision.split('-', 2);
-                this._loadRevision(parseInt(parts[0], 10),
-                                   parseInt(parts[1], 10),
-                                   page);
+                ':revision/(?:query)': 'revision'
             }
         });
 
-        /*
+        this.listenTo(this.router, 'route:revision',
+            function(revision, query) {
+                var queryArgs,
+                    revisionParts,
+                    baseRevision,
+                    tipRevision,
+                    baseCommit,
+                    tipCommit,
+                    page;
+
+                queryArgs = this._parseQueryString(query);
+
+                baseCommit = queryArgs['base-commit-id'];
+                tipCommit = queryArgs['tip-commit-id'];
+                page = queryArgs['page'];
+
+                if (page === undefined) {
+                    page = 1;
+                } else {
+                    page = parseInt(page, 10);
+                }
+
+                if (revision.indexOf('-') === -1) {
+                    baseRevision = 0;
+                    tipRevision = parseInt(revision, 10);
+                } else {
+                    revisionParts = revision.split('-', 2);
+
+                    baseRevision = parseInt(revisionParts[0], 10);
+                    tipRevision = parseInt(revisionParts[1], 10);
+                }
+
+                this._loadRevision(baseRevision, tipRevision, baseCommit,
+                    tipCommit, page);
+            });
+
         /*
          * Begin managing the URL history for the page, so that we can
          * switch revisions and handle pagination while keeping the history
@@ -143,21 +182,26 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * Renders the page and begins loading all diffs.
      */
     render: function() {
-        var $reviewRequest,
-            numDiffs = this.model.get('numDiffs'),
-            revisionModel = this.model.get('revision');
+        var numDiffs = this.model.get('numDiffs'),
+            revisionModel = this.model.get('revision'),
+            url = document.location.toString(),
+            queryArgs = this._parseQueryString(url.split('?', 2)[1]),
+            baseCommitID = queryArgs['base-commit-id'],
+            tipCommitID = queryArgs['tip-commit-id'];
 
         _super(this).render.call(this);
-
-        $reviewRequest = this.$('.review-request');
 
         this._$controls = $('#view_controls');
 
         this._diffCommitIndexView = new RB.DiffCommitIndexView({
             el: $('#diff_commit_index'),
-            collection: this.model.get('diffCommits')
+            collection: this.model.get('diffCommits'),
+            baseCommitID: baseCommitID,
+            tipCommitID: tipCommitID
         });
-        this._diffCommitIndexView.render();
+        this._diffCommitIndexView.render({update: false});
+        this.listenTo(this._diffCommitIndexView, 'diffCommitsChanged',
+                      this._handleDiffCommitChanged);
 
         this._diffFileIndexView = new RB.DiffFileIndexView({
             el: $('#diff_index'),
@@ -699,14 +743,28 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * single revision is selected. If not, the interdiff between `base` and
      * `tip` will be shown.
      */
-    _loadRevision: function(base, tip, page) {
+    _loadRevision: function(base, tip, baseCommit, tipCommit, page) {
         var reviewRequestURL = _.result(this.reviewRequest, 'url'),
             contextURL = reviewRequestURL + 'diff-context/',
             $downloadLink = $('#download-diff');
 
         if (base === 0) {
             contextURL += '?revision=' + tip;
-            $downloadLink.show();
+
+            // We do not support interdiffs with inter-commit diffs.
+            if (baseCommit !== undefined || tipCommit !== undefined) {
+                $downloadLink.hide();
+
+                if (baseCommit !== undefined) {
+                    contextURL += '&base-commit-id=' + baseCommit;
+                }
+
+                if (tipCommit !== undefined) {
+                    contextURL += '&tip-commit-id=' + tipCommit;
+                }
+            } else {
+                $downloadLink.show();
+            }
         } else {
             contextURL += '?revision=' + base + '&interdiff-revision=' + tip;
             $downloadLink.hide();
@@ -724,6 +782,21 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
             this.model.set(this.model.parse(rsp.diff_context));
         }, this));
+    },
+
+    /*
+     * Handle the selection of a different diff commit range.
+     */
+    _handleDiffCommitChanged: function(commits) {
+        var tipRevision = this._diffRevisionSelectorView.model.get('revision'),
+            location = tipRevision + '/?tip-commit-id=' +
+                       commits.tip.get('commitID');
+
+        if (commits.base !== null) {
+            location += '?base-commit-id=' +  commits.base.get('commitID');
+        }
+
+        this.router.navigate(location, {trigger: true});
     }
 });
 _.extend(RB.DiffViewerPageView.prototype, RB.KeyBindingsMixin);

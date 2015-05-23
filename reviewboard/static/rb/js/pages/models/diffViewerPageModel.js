@@ -15,15 +15,26 @@ RB.DiffViewerPageModel = Backbone.Model.extend({
      * Parse the data given to us by the server.
      */
     parse: function(rsp) {
+        var commentsHint = new RB.DiffCommentsHint(rsp.comments_hint,
+                                                   {parse: true}),
+            files = new RB.DiffFileCollection(rsp.files, {parse: true}),
+            numDiffs = rsp.num_diffs,
+            pagination = new RB.Pagination(rsp.pagination, {parse: true}),
+            revision = new RB.DiffRevision(rsp.revision, {parse: true}),
+            diffCommits;
+
+        if (rsp.hasOwnProperty('diff_commits')) {
+            diffCommits = new RB.DiffCommitCollection(rsp.diff_commits,
+                                                      {parse: true})
+        }
+
         return {
-            commentsHint: new RB.DiffCommentsHint(rsp.comments_hint,
-                                                  {parse: true}),
-            diffCommits: new RB.DiffCommitCollection(rsp.diff_commits,
-                                                     {parse: true}),
-            files: new RB.DiffFileCollection(rsp.files, {parse: true}),
-            numDiffs: rsp.num_diffs,
-            pagination: new RB.Pagination(rsp.pagination, {parse: true}),
-            revision: new RB.DiffRevision(rsp.revision, {parse: true})
+            commentsHint: commentsHint,
+            diffCommits: diffCommits,
+            files: files,
+            numDiffs: numDiffs,
+            pagination: pagination,
+            revision: revision
         };
     },
 
@@ -48,11 +59,13 @@ RB.DiffViewerPageModel = Backbone.Model.extend({
             toSet.commentsHint = attrs.commentsHint;
         }
 
-        if (this.attributes.diffCommits) {
-            this.attributes.diffCommits.set(attrs.diffCommits.models);
-            this.attributes.diffCommits.trigger('update');
-        } else {
-            toSet.diffCommits = attrs.diffCommits;
+        if (attrs.diffCommits !== undefined) {
+            if (this.attributes.diffCommits) {
+                this.attributes.diffCommits.set(attrs.diffCommits.models);
+                this.attributes.diffCommits.trigger('update');
+            } else {
+                toSet.diffCommits = attrs.diffCommits;
+            }
         }
 
         if (this.attributes.files) {
