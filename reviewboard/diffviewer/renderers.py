@@ -36,7 +36,7 @@ class DiffRenderer(object):
     def __init__(self, diff_file, chunk_index=None, highlighting=False,
                  collapse_all=True, lines_of_context=None, extra_context=None,
                  allow_caching=True, cumulative_diff=False,
-                 template_name=default_template_name):
+                 base_commit_id=None, template_name=default_template_name):
         self.diff_file = diff_file
         self.chunk_index = chunk_index
         self.highlighting = highlighting
@@ -44,7 +44,8 @@ class DiffRenderer(object):
         self.lines_of_context = lines_of_context
         self.extra_context = extra_context or {}
         self.allow_caching = allow_caching
-        self.cumulative_diff = cumulative_diff
+        self.cumulative_diff = cumulative_diff or base_commit_id is not None
+        self.base_commit_id = base_commit_id
         self.template_name = template_name
         self.num_chunks = 0
 
@@ -91,7 +92,8 @@ class DiffRenderer(object):
         if not self.diff_file.get('chunks_loaded', False):
             populate_diff_chunks([self.diff_file], self.highlighting,
                                  request=request,
-                                 cumulative_diff=self.cumulative_diff)
+                                 cumulative_diff=self.cumulative_diff,
+                                 base_commit_id=self.base_commit_id)
 
         if self.chunk_index is not None:
             assert not self.lines_of_context or self.collapse_all
@@ -115,8 +117,13 @@ class DiffRenderer(object):
                             filediff.diffset.revision)
 
         if self.cumulative_diff:
-            key += ('-commits-none-%s'
-                    % self.diff_file['filediff'].diff_commit_id)
+            if self.base_commit_id:
+                key += ('-commits-%s-%s'
+                        % (self.base_commit_id,
+                           self.diff_file['filediff'].diff_commit_id))
+            else:
+                key += ('-commits-none-%s'
+                        % self.diff_file['filediff'].diff_commit_id)
 
         if self.diff_file['force_interdiff']:
             interfilediff = self.diff_file['interfilediff']

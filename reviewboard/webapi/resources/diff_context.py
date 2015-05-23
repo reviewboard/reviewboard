@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.http import Http404
+from django.utils import six
 from djblets.webapi.decorators import (webapi_response_errors,
                                        webapi_request_fields)
 from djblets.webapi.errors import DOES_NOT_EXIST
@@ -53,6 +54,16 @@ class DiffContextResource(WebAPIResource):
                 'type': int,
                 'description': 'The page number for paginated diffs.',
             },
+            'base-commit-id': {
+                'type': six.text_type,
+                'description': 'The base commit ID.',
+                'added_in': '3.0',
+            },
+            'tip-commit-id': {
+                'type': six.text_type,
+                'description': 'The tip commit ID.',
+                'added_in': '3.0',
+            },
         },
     )
     @webapi_response_errors(DOES_NOT_EXIST)
@@ -73,10 +84,14 @@ class DiffContextResource(WebAPIResource):
         revision = request.GET.get('revision')
         interdiff_revision = request.GET.get('interdiff-revision')
 
+        send_commits = (request.GET.get('base-commit-id') is not None and
+                        request.GET.get('tip-commit-id') is not None)
+
         try:
             view = DiffViewerContextView.as_view()
             context = view(request, local_site_name, review_request_id,
-                           revision, interdiff_revision)
+                           revision, interdiff_revision,
+                           send_commits=send_commits)
         except Http404:
             return DOES_NOT_EXIST
 

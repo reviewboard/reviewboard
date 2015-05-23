@@ -822,7 +822,7 @@ class ReviewsDiffViewerView(DiffViewerView):
         pass
 
     def get(self, request, review_request_id, revision=None,
-            interdiff_revision=None, local_site=None):
+            interdiff_revision=None, local_site=None, *args, **kwargs):
         """Handles GET requests for this view.
 
         This will look up the review request and DiffSets, given the
@@ -847,7 +847,7 @@ class ReviewsDiffViewerView(DiffViewerView):
                                                 interdiff_revision, self.draft)
 
         return super(ReviewsDiffViewerView, self).get(
-            request, self.diffset, self.interdiffset)
+            request, self.diffset, self.interdiffset, *args, **kwargs)
 
     def get_context_data(self, *args, **kwargs):
         """Calculates additional context data for rendering.

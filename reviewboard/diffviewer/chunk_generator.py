@@ -9,7 +9,7 @@ from django.utils import six
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.six.moves import range
-from django.utils.translation import get_language
+from django.utils.translation import get_language, ugettext_lazy as _
 from djblets.log import log_timed
 from djblets.cache.backend import cache_memoize
 from djblets.siteconfig.models import SiteConfiguration
@@ -24,6 +24,7 @@ from reviewboard.diffviewer.diffutils import (get_line_changed_regions,
                                               get_patched_file,
                                               convert_to_unicode,
                                               split_line_endings)
+from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.opcode_generator import (DiffOpcodeGenerator,
                                                      get_diff_opcode_generator)
 
@@ -680,7 +681,7 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
 
     def __init__(self, request, filediff, interfilediff=None,
                  force_interdiff=False, enable_syntax_highlighting=True,
-                 cumulative_diff=False):
+                 cumulative_diff=False, base_commit_id=None):
         assert filediff
 
         self.request = request
@@ -688,7 +689,8 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
         self.filediff = filediff
         self.interfilediff = interfilediff
         self.force_interdiff = force_interdiff
-        self.cumulative_diff = cumulative_diff
+        self.cumulative_diff = cumulative_diff or base_commit_id is not None
+        self.base_commit_id = base_commit_id
         self.repository = self.diffset.repository
         self.tool = self.repository.get_scmtool()
         self.original_filediff = None
@@ -697,12 +699,19 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             if self.filediff.diff_commit is None:
                 self.cumulative_diff = False
             else:
-                self.original_filediff = find_ancestor_filediff(filediff)
+                self.original_filediff = find_ancestor_filediff(
+                    filediff,
+                    commit_id=base_commit_id)
 
-                # In this case the original file is in the repository, so we
-                # don't have to do anything fancy and can use the regular
-                # behaviour.
                 if self.original_filediff is None:
+                    if self.base_commit_id:
+                        raise UserVisibleError(
+                            _('No FileDiff found with commit %s')
+                            % base_commit_id)
+
+                    # In this case the original file is in the repository, so
+                    # we don't have to do anything fancy and can use the
+                    # regular behaviour.
                     self.cumulative_diff = False
                 else:
                     orig_filename = self.original_filediff.source_file
@@ -727,7 +736,11 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             key += '-hl'
 
         if self.cumulative_diff:
-            key += '-commits-none-%s' % self.filediff.diff_commit_id
+            if self.base_commit_id:
+                key += ('-commits-%s-%s'
+                        % (self.base_commit_id, self.filediff.diff_commit_id))
+            else:
+                key += '-commits-none-%s' % self.filediff.diff_commit_id
 
         if not self.force_interdiff:
             key += six.text_type(self.filediff.pk)

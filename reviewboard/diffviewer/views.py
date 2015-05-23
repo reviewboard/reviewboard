@@ -125,14 +125,19 @@ class DiffViewerView(TemplateView):
         return response
 
     def get_context_data(self, diffset, interdiffset, extra_context={},
-                         **kwargs):
+                         send_commits=True, **kwargs):
         """Calculates and returns data used for rendering the diff viewer.
 
         This handles all the hard work of generating the data backing the
         side-by-side diff, handling pagination, and more. The data is
         collected into a context dictionary and returned for rendering.
         """
+        base_commit_id = self.request.GET.get('base-commit-id')
+        tip_commit_id = self.request.GET.get('tip-commit-id')
+
         files = get_diff_files(diffset, None, interdiffset,
+                               base_commit_id=base_commit_id,
+                               tip_commit_id=tip_commit_id,
                                request=self.request)
 
         # Break the list of files into pages
@@ -175,71 +180,74 @@ class DiffViewerView(TemplateView):
                 'page_numbers': paginator.page_range,
                 'has_next': page.has_next(),
                 'has_previous': page.has_previous(),
-            },
-            'diff_commits': [],
+            }
         }
 
-        interdiffset_has_commits = (interdiffset and
-                                    interdiffset.diff_commit_count)
+        if send_commits:
+            diff_context['diff_commits'] = []
 
-        if diffset.diff_commit_count or interdiffset_has_commits:
-            diffset_pks = []
+            interdiffset_has_commits = (interdiffset and
+                                        interdiffset.diff_commit_count)
 
-            if diffset.diff_commit_count:
-                diffset_pks.append(diffset.pk)
+            if diffset.diff_commit_count or interdiffset_has_commits:
+                diffset_pks = []
 
-            if interdiffset_has_commits:
-                diffset_pks.append(interdiffset.pk)
+                if diffset.diff_commit_count:
+                    diffset_pks.append(diffset.pk)
 
-            # Minimize the number of queries we have to perform to get the line
-            # counts from the child FileDiffs.
-            commits = DiffCommit.objects.prefetch_related('files').filter(
-                diffset_id__in=diffset_pks)
+                if interdiffset_has_commits:
+                    diffset_pks.append(interdiffset.pk)
 
-            diffcommits_by_diffset_id = defaultdict(list)
+                # Minimize the number of queries we have to perform to get the
+                # line counts from the child FileDiffs.
+                commits = DiffCommit.objects.prefetch_related('files').filter(
+                    diffset_id__in=diffset_pks)
 
-            for commit in commits.all():
-                diffcommits_by_diffset_id[commit.diffset_id].append(commit)
+                diffcommits_by_diffset_id = defaultdict(list)
 
-            if diffset.diff_commit_count and not interdiffset:
-                # When we are not viewing an interdiff, we do not want to
-                # show any commits as added or removed.
-                old_history = diffcommits_by_diffset_id[diffset.pk]
-                new_history = diffcommits_by_diffset_id[diffset.pk]
-            else:
-                old_history = diffcommits_by_diffset_id[diffset.pk]
+                for commit in commits.all():
+                    diffcommits_by_diffset_id[commit.diffset_id].append(commit)
 
-                if interdiffset:
-                    new_history = diffcommits_by_diffset_id[interdiffset.pk]
+                if diffset.diff_commit_count and not interdiffset:
+                    # When we are not viewing an interdiff, we do not want to
+                    # show any commits as added or removed.
+                    old_history = diffcommits_by_diffset_id[diffset.pk]
+                    new_history = diffcommits_by_diffset_id[diffset.pk]
                 else:
-                    new_history = []
+                    old_history = diffcommits_by_diffset_id[diffset.pk]
 
-            commit_diff = generate_commit_history_diff(old_history,
-                                                       new_history)
+                    if interdiffset:
+                        new_history = diffcommits_by_diffset_id[
+                            interdiffset.pk]
+                    else:
+                        new_history = []
 
-            for history_entry in commit_diff:
-                entry_type = history_entry['type']
+                commit_diff = generate_commit_history_diff(old_history,
+                                                           new_history)
 
-                if entry_type in ('unmodified', 'added'):
-                    key = 'new_commit'
-                elif entry_type == 'removed':
-                    key = 'old_commit'
-                else:
-                    raise ValueError('Unexpected history entry type: %r'
-                                     % entry_type)
+                for history_entry in commit_diff:
+                    entry_type = history_entry['type']
 
-                commit = history_entry[key]
+                    if entry_type in ('unmodified', 'added'):
+                        key = 'new_commit'
+                    elif entry_type == 'removed':
+                        key = 'old_commit'
+                    else:
+                        raise ValueError('Unexpected history entry type: %r'
+                                         % entry_type)
 
-                entry = {
-                    'author_name': commit.author_name,
-                    'commit_id': commit.commit_id,
-                    'description': commit.description,
-                    'type': entry_type,
-                }
+                    commit = history_entry[key]
 
-                entry.update(history_entry[key].get_total_line_counts())
+                    entry = {
+                        'author_name': commit.author_name,
+                        'commit_id': commit.commit_id,
+                        'description': commit.description,
+                        'type': entry_type,
+                    }
 
-                diff_context['diff_commits'].append(entry)
+                    entry.update(history_entry[key].get_total_line_counts())
+
+                    diff_context['diff_commits'].append(entry)
 
         if page.has_next():
             diff_context['pagination']['next_page'] = page.next_page_number()
