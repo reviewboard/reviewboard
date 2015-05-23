@@ -340,7 +340,7 @@ class TestCase(DjbletsTestCase):
     def create_filediff(self, diffset, source_file='/test-file',
                         dest_file='/test-file', source_revision='123',
                         dest_detail='124', status=FileDiff.MODIFIED,
-                        diff=DEFAULT_FILEDIFF_DATA):
+                        diff=DEFAULT_FILEDIFF_DATA, diff_commit=None):
         """Creates a FileDiff for testing.
 
         The FileDiff is tied to the given DiffSet. It's populated with
@@ -353,7 +353,8 @@ class TestCase(DjbletsTestCase):
             source_revision=source_revision,
             dest_detail=dest_detail,
             status=status,
-            diff=diff)
+            diff=diff,
+            diff_commit=diff_commit)
 
     def create_repository(self, with_local_site=False, name='Test Repo',
                           tool_name='Git', path=None, local_site=None,

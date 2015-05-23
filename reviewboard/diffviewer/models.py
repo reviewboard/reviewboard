@@ -15,6 +15,7 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import Base64Field, JSONField, RelationCounterField
 
 from reviewboard.diffviewer.errors import DiffParserError
+from reviewboard.diffviewer.graphutils import find_shortest_distances
 from reviewboard.diffviewer.managers import (DiffCommitManager,
                                              DiffSetManager,
                                              FileDiffManager,
@@ -587,7 +588,7 @@ class DiffSet(DiffLineCountsMixin, models.Model):
 
         return dag
 
-    def build_file_history_graph(self, *filediffs):
+    def build_file_history_graph(self):
         """Build a directed acyclic graph of the file history in the DiffSet.
 
         The file history graph tracks a file's history through renames,
@@ -607,32 +608,34 @@ class DiffSet(DiffLineCountsMixin, models.Model):
             This function returns None is there is no such FileDiff.
             """
             for f in files:
-                if f.deleted and f.source_file == filediff.source_file:
+                # This will only ever be called when filediff.is_new is True
+                # so we have to go by filediff.dest_file because
+                # filediff.source_file might be /dev/null or similar. We must
+                # use f.source_file and not f.dest_file for the same reason.
+                if f.deleted and f.source_file == filediff.dest_file:
                     return f
 
             return None
 
-        # The commit mapping and commit DAG are only needed if a DiffCommit
-        # contains new files. We can save some database queries by only
-        # computing them when needed.
-        commit_dag = None
-        commits = None
+        commit_dag = self.build_commit_graph()
+        commits = dict(
+            (c.commit_id, c)
+            for c in self.diff_commits.prefetch_related('files')
+        )
 
         file_dag = {}
 
         # We create a mapping of a FileDiff's destination revision and file
-        # name to its primary key. This allows us to check this mapping for the
+        # name to FileDiffs. This allows us to check this mapping for the
         # existence of a parent FileDiff via a dict access instead of filtering
         # for it in a list.
-        files_by_dest = dict(
-            ((filediff.dest_detail, filediff.dest_file), filediff)
-            for filediff in self.files.all()
-        )
+        files_by_dest = {}
 
-        if not filediffs:
-            filediffs = six.itervalues(files_by_dest)
+        for filediff in self.files.all():
+            destination = (filediff.dest_detail, filediff.dest_file)
+            files_by_dest.setdefault(destination, []).append(filediff)
 
-        for filediff in filediffs:
+        for filediff in itertools.chain(*six.itervalues(files_by_dest)):
             parent_filediff = None
 
             if filediff.is_new:
@@ -644,19 +647,15 @@ class DiffSet(DiffLineCountsMixin, models.Model):
                 # We must go though the ancestry of the DiffCommit
                 # because it may be the case that a file with the same name
                 # was deleted more than once.
-                if commits is None:
-                    commit_dag = self.build_commit_graph()
-                    commits = dict(
-                        (c.commit_id, c)
-                        for c in self.diff_commits.prefetch_related('files')
-                    )
-
-                commit_id = filediff.diff_commit_id
+                commit_id = filediff.diff_commit.commit_id
 
                 while commit_id in commit_dag and parent_filediff is None:
                     # TODO: This currently only supports linear histories.
                     assert len(commit_dag[commit_id]) == 1
                     commit_id = commit_dag[commit_id][0]
+
+                    if commit_id not in commit_dag:
+                        break
 
                     parent_filediff = find_parent_deleted_filediff(
                         filediff, commits[commit_id].files.all())
@@ -668,7 +667,32 @@ class DiffSet(DiffLineCountsMixin, models.Model):
             else:
                 try:
                     dest = (filediff.source_revision, filediff.source_file)
-                    parent_filediff = files_by_dest[dest]
+                    possible_parents = files_by_dest[dest]
+
+                    if len(possible_parents) == 1:
+                        parent_filediff = possible_parents[0]
+                    elif possible_parents:
+                        # We need to locate the FileDiff whose commit is the
+                        # closest ancestor to the FileDiff's commit.
+                        distances = find_shortest_distances(
+                            filediff.diff_commit.commit_id,
+                            commit_dag)
+
+                        parent_commit_id = min(
+                            (
+                                commit_id
+                                for commit_id in commits
+                                if commit_id != filediff.diff_commit.commit_id
+                            ),
+                            key=lambda commit_id: distances[commit_id])
+
+                        for possible_parent in possible_parents:
+                            if (possible_parent.diff_commit.commit_id ==
+                                parent_commit_id):
+                                parent_filediff = possible_parent
+                                break
+
+                        assert parent_filediff is not None
                 except KeyError:
                     # In this case the file is not new and relies on a
                     # source revision and file name that is not in our

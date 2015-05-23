@@ -2876,6 +2876,167 @@ class DiffSetTests(TestCase):
 
         self.assertFalse(queryset.exists())
 
+    def test_file_history_graph(self):
+        """Testing file history graph generation for simple history"""
+        r1 = DiffCommit.objects.create(commit_id='r1', parent_id='r0',
+                                       **self.common_diffcommit_fields)
+
+        r2 = DiffCommit.objects.create(commit_id='r2', parent_id='r1',
+                                       **self.common_diffcommit_fields)
+
+        r3 = DiffCommit.objects.create(commit_id='r3', parent_id='r2',
+                                       **self.common_diffcommit_fields)
+
+        f1 = self.create_filediff(self.diffset,
+                                  diff_commit=r1,
+                                  source_file='/dev/null',
+                                  source_revision=PRE_CREATION,
+                                  dest_file='/foo',
+                                  dest_detail='1',
+                                  status=FileDiff.MODIFIED,
+                                  diff='')
+
+        f2 = self.create_filediff(self.diffset,
+                                  diff_commit=r2,
+                                  source_file='/foo',
+                                  source_revision='1',
+                                  dest_file='/foo',
+                                  dest_detail='2',
+                                  status=FileDiff.MODIFIED,
+                                  diff='')
+
+        f3 = self.create_filediff(self.diffset,
+                                  diff_commit=r3,
+                                  source_file='/foo',
+                                  source_revision='2',
+                                  dest_file='/bar',
+                                  dest_detail='3',
+                                  status=FileDiff.MOVED,
+                                  diff='')
+
+        dag = {
+            f3.pk: f2,
+            f2.pk: f1,
+        }
+
+        self.assertEqual(dag, self.diffset.build_file_history_graph())
+
+    def test_file_history_graph_deletion(self):
+        """Testing file history graph generation with a single deletion"""
+        r1 = DiffCommit.objects.create(commit_id='r1', parent_id='r0',
+                                       **self.common_diffcommit_fields)
+
+        r2 = DiffCommit.objects.create(commit_id='r2', parent_id='r1',
+                                       **self.common_diffcommit_fields)
+
+        r3 = DiffCommit.objects.create(commit_id='r3', parent_id='r2',
+                                       **self.common_diffcommit_fields)
+
+        f1 = self.create_filediff(self.diffset,
+                                  diff_commit=r1,
+                                  source_file='/dev/null',
+                                  source_revision=PRE_CREATION,
+                                  dest_file='/foo',
+                                  dest_detail='1',
+                                  status=FileDiff.MODIFIED,
+                                  diff='')
+
+        f2 = self.create_filediff(self.diffset,
+                                  diff_commit=r2,
+                                  source_file='/foo',
+                                  source_revision='1',
+                                  dest_file='/dev/null',
+                                  dest_detail='DELETED',
+                                  status=FileDiff.DELETED,
+                                  diff='')
+
+        f3 = self.create_filediff(self.diffset,
+                                  diff_commit=r3,
+                                  source_file='/dev/null',
+                                  source_revision=PRE_CREATION,
+                                  dest_file='/foo',
+                                  dest_detail='3',
+                                  status=FileDiff.MODIFIED,
+                                  diff='')
+
+        dag = {
+            f3.pk: f2,
+            f2.pk: f1,
+        }
+
+        self.assertEqual(dag, self.diffset.build_file_history_graph())
+
+    def test_file_history_graph_multiple_deletions(self):
+        """Testing file history graph generation with multiple deletions"""
+        r1 = DiffCommit.objects.create(commit_id='r1', parent_id='r0',
+                                       **self.common_diffcommit_fields)
+
+        r2 = DiffCommit.objects.create(commit_id='r2', parent_id='r1',
+                                       **self.common_diffcommit_fields)
+
+        r3 = DiffCommit.objects.create(commit_id='r3', parent_id='r2',
+                                       **self.common_diffcommit_fields)
+
+        r4 = DiffCommit.objects.create(commit_id='r4', parent_id='r3',
+                                       **self.common_diffcommit_fields)
+
+        r5 = DiffCommit.objects.create(commit_id='r5', parent_id='r4',
+                                       **self.common_diffcommit_fields)
+
+        f1 = self.create_filediff(self.diffset,
+                                  diff_commit=r1,
+                                  source_file='/dev/null',
+                                  source_revision=PRE_CREATION,
+                                  dest_file='/foo',
+                                  dest_detail='1',
+                                  status=FileDiff.MODIFIED,
+                                  diff='')
+
+        f2 = self.create_filediff(self.diffset,
+                                  diff_commit=r2,
+                                  source_file='/foo',
+                                  source_revision='1',
+                                  dest_file='/dev/null',
+                                  dest_detail='DELETED',
+                                  status=FileDiff.DELETED,
+                                  diff='')
+
+        f3 = self.create_filediff(self.diffset,
+                                  diff_commit=r3,
+                                  source_file='/dev/null',
+                                  source_revision=PRE_CREATION,
+                                  dest_file='/foo',
+                                  dest_detail='1',
+                                  status=FileDiff.MODIFIED,
+                                  diff='')
+
+        f4 = self.create_filediff(self.diffset,
+                                  diff_commit=r4,
+                                  source_file='/foo',
+                                  source_revision='1',
+                                  dest_file='/dev/null',
+                                  dest_detail='DELETED',
+                                  status=FileDiff.DELETED,
+                                  diff='')
+
+        f5 = self.create_filediff(self.diffset,
+                                  diff_commit=r5,
+                                  source_file='/dev/null',
+                                  source_revision=PRE_CREATION,
+                                  dest_file='/foo',
+                                  dest_detail='1',
+                                  status=FileDiff.MODIFIED,
+                                  diff='')
+
+        dag = {
+            f5.pk: f4,
+            f4.pk: f3,
+            f3.pk: f2,
+            f2.pk: f1
+        }
+
+        self.assertEqual(dag, self.diffset.build_file_history_graph())
+
 
 class CommitUtilsTests(TestCase):
     """Unit tests for commitutils."""
