@@ -17,6 +17,7 @@ from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
 import reviewboard.diffviewer.diffutils as diffutils
+import reviewboard.diffviewer.graphutils as graphutils
 import reviewboard.diffviewer.parser as diffparser
 from reviewboard.admin.import_utils import has_module
 from reviewboard.diffviewer.chunk_generator import (DiffChunkGenerator,
@@ -3222,4 +3223,50 @@ class DiffExpansionHeaderTests(TestCase):
                     'text': 'foo',
                 },
                 'right': None,
+            })
+
+
+class GraphUtilsTests(TestCase):
+    """Test cases for the diffviewer.graphutils module."""
+
+    def test_shortest_distances(self):
+        """Testing shortest distance finding algorithm"""
+        graph = {
+            'a': ['b'],
+            'b': ['c', 'd'],
+            'c': ['d', 'e'],
+            'd': ['f'],
+            'e': ['g'],
+            'f': ['e'],
+            'h': ['i'],
+        }
+
+        inf = float('inf')
+
+        self.assertEqual(
+            graphutils.find_shortest_distances('a', graph),
+            {
+                'a': 0,
+                'b': 1,
+                'c': 2,
+                'd': 2,
+                'e': 3,
+                'f': 3,
+                'g': 4,
+                'h': inf,
+                'i': inf,
+            })
+
+        self.assertEqual(
+            graphutils.find_shortest_distances('i', graph),
+            {
+                'a': inf,
+                'b': inf,
+                'c': inf,
+                'd': inf,
+                'e': inf,
+                'f': inf,
+                'g': inf,
+                'h': inf,
+                'i': 0,
             })
