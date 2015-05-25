@@ -97,21 +97,6 @@ RB.RepositorySelectionView = RB.CollectionView.extend({
     },
 
     /*
-     * Callback for when the search icon is clicked.
-     *
-     * Toggles on/off the search bar.
-     */
-    _onSearchClicked: function() {
-        var parentWidth = this.$el.innerWidth(),
-            $searchBox = this._$searchBox,
-            searchBoxRightEdge = ($searchBox.position().left + $searchBox.outerWidth()),
-            searchBoxRightMargin = parentWidth - searchBoxRightEdge,
-            animationSpeedMS = 200;
-
-        this._searchActive = !this._searchActive;
-    },
-
-    /*
      * Callback for when the text in the search input changes.
      *
      * Filters the visible items.

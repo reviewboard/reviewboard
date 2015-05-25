@@ -7,7 +7,7 @@ RB.RepositoryView = Backbone.View.extend({
 
     template: _.template([
         '<div class="page-sidebar-row">',
-        ' <span class="label"><%- name %></span>',
+        '<span class="label"><%- name %></span>',
         '</div>'
     ].join('')),
 
