@@ -176,8 +176,24 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
 
                 it('Show when saved', function() {
+                    var $summary = view.$el.find('#field_summary');
+
                     expect(view.banner).toBe(null);
-                    editor.trigger('saved');
+
+                    spyOn(reviewRequest.draft, 'ensureCreated')
+                        .andCallFake(function(options, context) {
+                            options.success.call(context);
+                        });
+                    spyOn(reviewRequest.draft, 'save')
+                        .andCallFake(function(options, context) {
+                            options.success.call(context);
+                        });
+
+                    $summary
+                        .inlineEditor('startEdit')
+                        .inlineEditor('setValue', 'New summary')
+                        .inlineEditor('save');
+
                     expect(view.banner).not.toBe(null);
                     expect(view.banner.$el.is(':visible')).toBe(true);
                 });
@@ -185,6 +201,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
             describe('Buttons actions', function() {
                 it('Discard Draft', function() {
+                    view.model.set('hasDraft', true);
                     view.showBanner();
 
                     spyOn(reviewRequest.draft, 'destroy');
@@ -196,6 +213,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 it('Discard Review Request', function() {
                     reviewRequest.set('public', false);
+                    view.model.set('hasDraft', true);
                     view.showBanner();
 
                     spyOn(reviewRequest, 'close')
@@ -210,6 +228,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
 
                 it('Publish', function() {
+                    view.model.set('hasDraft', true);
                     view.showBanner();
 
                     spyOn(editor, 'publishDraft').andCallThrough();
@@ -242,6 +261,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 var $buttons;
 
                 beforeEach(function() {
+                    view.model.set('hasDraft', true);
                     view.showBanner();
 
                     $buttons = view.banner.$buttons;
@@ -628,6 +648,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
             describe('Draft review requests', function() {
                 beforeEach(function() {
+                    view.model.set('hasDraft', true);
                     view.showBanner();
                 });
 

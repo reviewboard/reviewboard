@@ -22,21 +22,32 @@ BannerView = Backbone.View.extend({
     fieldOptions: {},
     descriptionFieldID: 'changedescription',
     descriptionFieldName: null,
+    descriptionFieldHTML: '',
+    descriptionFieldClasses: '',
+    showSendEmail: false,
 
     template: _.template([
         '<h1><%- title %></h1>',
-        '<%- subtitle %>',
+        '<% if (subtitle) { %>',
+        '<p><%- subtitle %></p>',
+        '<% } %>',
+        '<span class="banner-actions">',
         '<% _.each(actions, function(action) { %>',
         ' <input type="button" id="<%= action.id %>" ',
         '        value="<%- action.label %>" />',
         '<% }); %>',
+        '<% if (showSendEmail) { %>',
+        ' <input type="checkbox" id="not-trivial" checked />',
+        ' <label for="not-trivial"><%- sendEmailText %></label>',
+        '<% } %>',
+        '</span>',
         '<% if (showChangesField) { %>',
         ' <p><label for="field_changedescription">',
         '<%- describeText %></label></p>',
         ' <pre id="field_changedescription"',
-        '      class="editable field-text-area field"',
-        '      data-field-id="changedescription">',
-        '<%- closeDescription %></pre>',
+        '      class="field field-text-area <%- descriptionFieldClasses %>"',
+        '      data-field-id="field_changedescription">',
+        '<%= descriptionFieldHTML %></pre>',
         '<% } %>'
     ].join('')),
 
@@ -45,8 +56,8 @@ BannerView = Backbone.View.extend({
      */
     initialize: function(options) {
         this.reviewRequestEditorView = options.reviewRequestEditorView;
-        this.reviewRequest =
-            this.reviewRequestEditorView.model.get('reviewRequest');
+        this.reviewRequestEditor = this.reviewRequestEditorView.model;
+        this.reviewRequest = this.reviewRequestEditor.get('reviewRequest');
 
         this.reviewRequestEditorView.registerField(_.defaults({
             fieldID: this.descriptionFieldID,
@@ -73,8 +84,6 @@ BannerView = Backbone.View.extend({
      * it will construct a new one.
      */
     render: function() {
-        var reviewRequestEditor = this.reviewRequestEditorView.model;
-
         if (this.$el.children().length === 0) {
             this.$el.html(this.template({
                 title: this.title,
@@ -82,17 +91,20 @@ BannerView = Backbone.View.extend({
                 actions: this.actions,
                 showChangesField: this.showChangesField,
                 describeText: this.describeText,
-                closeDescription: this.reviewRequest.get('closeDescription')
+                descriptionFieldHTML: this.descriptionFieldHTML,
+                descriptionFieldClasses: this.descriptionFieldClasses,
+                showSendEmail: this.showSendEmail,
+                sendEmailText: gettext('Send E-Mail')
             }));
         }
 
         this.$buttons = this.$('input');
 
-        reviewRequestEditor.on('saving destroying', function() {
+        this.reviewRequestEditor.on('saving destroying', function() {
             this.$buttons.prop('disabled', true);
         }, this);
 
-        reviewRequestEditor.on('saved saveFailed destroyed', function() {
+        this.reviewRequestEditor.on('saved saveFailed destroyed', function() {
             this.$buttons.prop('disabled', false);
         }, this);
 
@@ -125,6 +137,31 @@ ClosedBannerView = BannerView.extend({
 
     events: {
         'click #btn-review-request-reopen': '_onReopenClicked'
+    },
+
+    /*
+     * Render the banner.
+     */
+    render: function() {
+        var descriptionFieldClasses = [];
+
+        if (this.reviewRequestEditor.get('statusMutableByUser')) {
+            descriptionFieldClasses.push('editable');
+        }
+
+        if (this.reviewRequest.get('closeDescriptionRichText')) {
+            descriptionFieldClasses.push('rich-text');
+        }
+
+        this.descriptionFieldClasses = descriptionFieldClasses.join(' ');
+        this.descriptionFieldHTML =
+            this.reviewRequestEditor.get('closeDescriptionRenderedText');
+
+        /*
+         * XXX: _super(this).render is causing recursion for some reason I
+         * don't understand.
+         */
+        return BannerView.prototype.render.apply(this, arguments);
     },
 
     /*
@@ -172,9 +209,17 @@ SubmittedBannerView = ClosedBannerView.extend({
  */
 DraftBannerView = BannerView.extend({
     id: 'draft-banner',
-    subtitle: 'Be sure to publish when finished.',
-    describeText: 'Describe your changes (optional):',
+    title: gettext('This review request is a draft.'),
+    subtitle: gettext('Be sure to publish when finished.'),
+    describeText: gettext('Describe your changes (optional):'),
     descriptionFieldName: 'changeDescription',
+
+    _newDraftTemplate: _.template([
+        '<div class="interdiff-link">',
+        '<%- newDiffText %> ',
+        '<a href="<%- interdiffLink %>"><%- showChangesText %></a>',
+        '</div>'
+    ].join('')),
 
     events: {
         'click #btn-draft-publish': '_onPublishDraftClicked',
@@ -189,7 +234,8 @@ DraftBannerView = BannerView.extend({
         _super(this).initialize.apply(this, arguments);
 
         if (this.reviewRequest.get('public')) {
-            this.title = 'This review request is a draft.';
+            this.showSendEmail = this.reviewRequestEditor.get('showSendEmail');
+            this.title = gettext('This review request is a draft.');
             this.actions = [
                 {
                     id: 'btn-draft-publish',
@@ -264,6 +310,40 @@ DraftBannerView = BannerView.extend({
         });
 
         return false;
+    },
+
+    /*
+     * Render the banner
+     */
+    render: function() {
+        var descriptionFieldClasses = [],
+            draft = this.reviewRequest.draft,
+            interdiffLink = draft.get('interdiffLink'),
+            result;
+
+        if (this.reviewRequestEditor.get('mutableByUser')) {
+            descriptionFieldClasses.push('editable');
+        }
+
+        if (draft.get('changeDescriptionRichText')) {
+            descriptionFieldClasses.push('rich-text');
+        }
+
+        this.descriptionFieldClasses = descriptionFieldClasses.join(' ');
+        this.descriptionFieldHTML =
+            this.reviewRequestEditor.get('changeDescriptionRenderedText');
+
+        result = _super(this).render.apply(this, arguments);
+
+        if (interdiffLink) {
+            this.$el.append(this._newDraftTemplate({
+                newDiffText: gettext('This draft adds a new diff.'),
+                showChangesText: gettext('Show changes'),
+                interdiffLink: interdiffLink
+            }));
+        }
+
+        return result;
     }
 });
 
@@ -636,9 +716,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
          * preventing proper Markdown text loading and saving from working
          * correctly.
          */
-        if (this._$bannersContainer.children().filter(':visible').length > 0) {
-            this.showBanner();
-        }
+        this.showBanner();
 
         /*
          * Let's resume with the field setup now.
@@ -778,21 +856,23 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             return;
         }
 
+        if (state === RB.ReviewRequest.CLOSE_SUBMITTED) {
+            BannerClass = SubmittedBannerView;
+        } else if (state === RB.ReviewRequest.CLOSE_DISCARDED) {
+            BannerClass = DiscardedBannerView;
+        } else if (state === RB.ReviewRequest.PENDING &&
+                   this.model.get('hasDraft')) {
+            BannerClass = DraftBannerView;
+        } else {
+            return;
+        }
+
+        console.assert(BannerClass);
         console.assert($existingBanner.length <= 1);
 
         if ($existingBanner.length === 0) {
             $existingBanner = undefined;
         }
-
-        if (state === RB.ReviewRequest.CLOSE_SUBMITTED) {
-            BannerClass = SubmittedBannerView;
-        } else if (state === RB.ReviewRequest.CLOSE_DISCARDED) {
-            BannerClass = DiscardedBannerView;
-        } else if (state === RB.ReviewRequest.PENDING) {
-            BannerClass = DraftBannerView;
-        }
-
-        console.assert(BannerClass);
 
         this.banner = new BannerClass({
             el: $existingBanner,

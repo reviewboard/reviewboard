@@ -6,6 +6,8 @@
  */
 RB.ReviewRequestEditor = Backbone.Model.extend({
     defaults: {
+        changeDescriptionRenderedText: '',
+        closeDescriptionRenderedText: '',
         commentIssueManager: null,
         editable: false,
         editCount: 0,
@@ -17,6 +19,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         publishing: false,
         reviewRequest: null,
         screenshots: null,
+        showSendEmail: false,
         statusEditable: false,
         statusMutableByUser: false
     },
@@ -210,6 +213,8 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
                 }
             },
             success: function() {
+                this.set('hasDraft', true);
+
                 if (_.isFunction(options.success)) {
                     options.success.call(context);
                 }
