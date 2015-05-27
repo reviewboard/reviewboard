@@ -488,6 +488,16 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     def serialize_commit_id_field(self, obj, **kwargs):
         return obj.commit
 
+    def serialize_depends_on_link(self, obj, *args, **kwargs):
+        link = self.serialize_link(obj, *args, **kwargs)
+        link['id'] = obj.display_id
+        return link
+
+    def serialize_blocks_link(self, obj, *args, **kwargs):
+        link = self.serialize_link(obj, *args, **kwargs)
+        link['id'] = obj.display_id
+        return link
+
     @webapi_check_local_site
     @webapi_login_required
     @webapi_response_errors(NOT_LOGGED_IN, PERMISSION_DENIED, INVALID_USER,
