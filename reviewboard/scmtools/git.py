@@ -6,7 +6,9 @@ import re
 import platform
 
 from django.utils import six
-from django.utils.six.moves.urllib.parse import quote as urlquote
+from django.utils.six.moves.urllib.parse import (quote as urlquote,
+                                                 urlsplit as urlsplit,
+                                                 urlunsplit as urlunsplit)
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
@@ -524,7 +526,27 @@ class GitClient(SCMClient):
 
     def is_valid_repository(self):
         """Checks if this is a valid Git repository."""
-        p = self._run_git(['ls-remote', self.path, 'HEAD'])
+        url_parts = urlsplit(self.path)
+
+        if (url_parts.scheme.lower() in ('http', 'https') and
+            url_parts.username is None and self.username):
+            # Git URLs, especially HTTP(s), that require authentication should
+            # be entered without the authentication info in the URL (because
+            # then it would be visible), but we need it in the URL when testing
+            # to make sure it exists. Reformat the path here to include them.
+            new_netloc = urlquote(self.username, safe='')
+
+            if self.password:
+                new_netloc += ':' + urlquote(self.password, safe='')
+
+            new_netloc += '@' + url_parts.netloc
+
+            path = urlunsplit((url_parts[0], new_netloc, url_parts[2],
+                               url_parts[3], url_parts[4]))
+        else:
+            path = self.path
+
+        p = self._run_git(['ls-remote', path, 'HEAD'])
         errmsg = p.stderr.read()
         failure = p.wait()
 
