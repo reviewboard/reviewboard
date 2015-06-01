@@ -20,15 +20,15 @@ Types of Code Review
 
 There are two types of code review: pre-commit and post-commit.
 
-Pre-commit review is a form of code review where code is reviewed *before*
-going into the codebase. In this method, a :term:`diff file` is uploaded
-to Review Board, which reviewers can comment on, and once there's approval
-the code is committed to the repository.
+**Pre-commit review** is a form of code review where code is reviewed *before*
+going into the codebase. In this method, a :term:`diff file` is uploaded to
+Review Board, which reviewers can comment on, and once there's approval the
+code is committed to the repository.
 
-Post-commit review is where the code is reviewed *after* going into the
-codebase. The code is committed to the repository and, at some point later,
-the code is reviewed. Any fixes that need to be made are then committed
-again later.
+**Post-commit review** is where the code is reviewed *after* going into the
+codebase. The code is committed to the repository and, at some point later, the
+code is reviewed. Any fixes that need to be made are then committed again
+later.
 
 The advantage of pre-commit review over post-commit review is that mistakes
 are caught before they become part of the product. The downside is that

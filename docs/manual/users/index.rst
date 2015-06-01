@@ -13,3 +13,4 @@ Users Guide
    reviews/index
    searching/index
    markdown
+   settings
