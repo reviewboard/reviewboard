@@ -1,4 +1,4 @@
-{% load gravatars i18n %}
+{% load djblets_utils gravatars i18n %}
 
 <div class="search-result">
 {% if siteconfig_settings.integration_gravatars %}
@@ -22,7 +22,7 @@
 {% if result.groups %}
   <div class="search-result-user-groups">
    {% trans "A member of:" %}
-{%  for group_name in result.groups %}
+{%  for group_name in result.groups|split:',' %}
     <a href="{% url 'group' group_name %}">{{group_name}}</a>{% if not forloop.last %}, {% endif %}
 {%  endfor %}
   </div>
