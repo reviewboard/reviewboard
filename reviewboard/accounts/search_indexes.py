@@ -17,7 +17,7 @@ class UserIndex(BaseSearchIndex, indexes.Indexable):
     full_name = indexes.CharField(model_attr='get_full_name')
     url = indexes.CharField(model_attr='get_absolute_url')
     show_profile = indexes.BooleanField(model_attr='is_profile_visible')
-    groups = indexes.MultiValueField(indexed=False)
+    groups = indexes.CharField(indexed=False)
 
     def index_queryset(self, using=None):
         """Query the list of users for the index.
@@ -31,7 +31,6 @@ class UserIndex(BaseSearchIndex, indexes.Indexable):
 
         Only publicly-accessible groups will be stored in the index.
         """
-        return [
-            group.name
-            for group in user.review_groups.filter(invite_only=False)
-        ]
+        return ','.join(
+            user.review_groups.filter(invite_only=False).values_list(
+                'name', flat=True))
