@@ -178,6 +178,10 @@ Users
 
    api-token-list
    api-token
+   archived-review-request-list
+   archived-review-request
+   muted-review-request-list
+   muted-review-request
    session
    user-list
    user
