@@ -254,6 +254,25 @@ autodoc_default_flags = [
     'show-inheritance',
 ]
 
+
+autodoc_excludes = {
+    '*': [
+        '__dict__',
+        '__doc__',
+        '__module__',
+        '__weakref__',
+    ],
+    'class': [
+        # Common to models.
+        'DoesNotExist',
+        'MultipleObjectsReturned',
+
+        # Common to forms.
+        'base_fields',
+        'media',
+    ],
+}
+
 autosummary_generate = True
 
 napolean_google_docstring = True
