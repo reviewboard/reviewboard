@@ -35,6 +35,8 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
 
 import reviewboard
 
+from github_linkcode import github_linkcode_resolve
+
 
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it
@@ -49,9 +51,13 @@ import reviewboard
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
+    'sphinx.ext.linkcode',
+    'sphinx.ext.napoleon',
     'sphinx.ext.todo',
+    'autodoc_utils',
     'webapidocs',
     'httprole',
     'retina_images',
@@ -97,7 +103,7 @@ release = reviewboard.get_version_string()
 
 # List of directories, relative to source directory, that shouldn't be searched
 # for source files.
-exclude_trees = ['_build']
+exclude_trees = ['_build', '_templates']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -108,7 +114,7 @@ add_function_parentheses = True
 
 # If true, the current module name will be prepended to all description
 # unit titles (such as .. function::).
-add_module_names = True
+add_module_names = False
 
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.
@@ -229,7 +235,29 @@ latex_show_pagerefs = True
 
 
 intersphinx_mapping = {
+    'django': ('https://docs.djangoproject.com/en/%s/'
+               % reviewboard.django_major_version,
+               'https://docs.djangoproject.com/en/%s/_objects/'
+               % reviewboard.django_major_version),
+    'python': ('https://docs.python.org/2.7', None),
     'rbtools': ('https://reviewboard.org/docs/rbtools/dev/', None),
 }
 
 todo_include_todos = True
+
+autodoc_member_order = 'bysource'
+autoclass_content = 'both'
+autodoc_default_flags = [
+    'members',
+    'special-members',
+    'undoc-members',
+    'show-inheritance',
+]
+
+autosummary_generate = True
+
+napolean_google_docstring = True
+napolean_numpy_docstring = False
+
+
+linkcode_resolve = github_linkcode_resolve

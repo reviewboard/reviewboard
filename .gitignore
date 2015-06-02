@@ -28,6 +28,7 @@ django.mo
 djangojs.mo
 
 # Directories/symlinks
+docs/manual/extending/coderef/python
 reviewboard/htdocs/media/djblets
 reviewboard/htdocs/media/uploaded
 docs/manual/data/htdocs/media/uploaded/

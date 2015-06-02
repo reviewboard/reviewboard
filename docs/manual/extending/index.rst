@@ -8,3 +8,4 @@ Extending Review Board
    extensions/index
    auth-backends
    legacy-auth-backends
+   coderef/index
