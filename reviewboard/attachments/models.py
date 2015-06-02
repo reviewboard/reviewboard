@@ -56,7 +56,8 @@ class FileAttachment(models.Model):
     """A file associated with a review request.
 
     Like diffs, a file can have comments associated with it.
-    These comments are of type :model:`reviews.FileComment`.
+    These comments are of type
+    :py:class:`reviewboard.reviews.models.FileAttachmentComment`.
     """
 
     caption = models.CharField(_("caption"), max_length=256, blank=True)

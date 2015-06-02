@@ -86,10 +86,10 @@ class AccountPageFormsHook(ExtensionHook):
     This hook takes the ID of a registered page where the form should be
     placed. Review Board supplies the following built-in page IDs:
 
-        * ``settings``
-        * ``authentication``
-        * ``profile``
-        * ``groups``
+    * ``settings``
+    * ``authentication``
+    * ``profile``
+    * ``groups``
 
     Any registered page ID can be provided, whether from this extension
     or another.
@@ -227,9 +227,9 @@ class NavigationBarHook(ExtensionHook):
     This takes a list of entries. Each entry represents something
     on the navigation bar, and is a dictionary with the following keys:
 
-        * ``label``:    The label to display
-        * ``url``:      The URL to point to.
-        * ``url_name``: The name of the URL to point to.
+    * ``label``:    The label to display
+    * ``url``:      The URL to point to.
+    * ``url_name``: The name of the URL to point to.
 
     Only one of ``url`` or ``url_name`` is required. ``url_name`` will
     take precedence.
@@ -325,9 +325,9 @@ class ReviewRequestFieldsHook(ExtensionHook):
     field classes should be added. Review Board supplies three built-in
     fieldset IDs:
 
-        * ``main``      - The fieldset with Description and Testing Done.
-        * ``info``      - The "Information" fieldset on the side.
-        * ``reviewers`` - The "Reviewers" fieldset on the side.
+    * ``main``      - The fieldset with Description and Testing Done.
+    * ``info``      - The "Information" fieldset on the side.
+    * ``reviewers`` - The "Reviewers" fieldset on the side.
 
     Any registered fieldset ID can be provided, whether from this extension
     or another.
@@ -415,15 +415,11 @@ class FileAttachmentThumbnailHook(ExtensionHook):
     This accepts a list of Mimetype Handlers specified by the Extension
     that must:
 
-       *
-          Subclass
-          :py:class:`reviewboard.attachments.mimetypes.MimetypeHandler`
-       *
-          Define a list of file mimetypes it can handle in a class variable
-          called `supported_mimetypes`
-       *
-          Define how to generate a thumbnail of that mimetype by overriding
-          the instance function `def get_thumbnail(self):`
+    * Subclass :py:class:`reviewboard.attachments.mimetypes.MimetypeHandler`
+    * Define a list of file mimetypes it can handle in a class variable
+      called `supported_mimetypes`
+    * Define how to generate a thumbnail of that mimetype by overriding
+      the instance function `def get_thumbnail(self):`
 
     These MimetypeHandlers are registered when the hook is created. Likewise,
     it unregisters the same list of MimetypeHandlers when the Extension is
@@ -453,16 +449,16 @@ class ActionHook(ExtensionHook):
     The provided actions parameter must be a list of actions. Each
     action must be a dict with the following keys:
 
-       * `id`:           The ID of this action (optional).
-       * `image`:        The path to the image used for the icon (optional).
-       * `image_width`:  The width of the image (optional).
-       * `image_height`: The height of the image (optional).
-       * `label`:        The label for the action.
-       * `url`:          The URI to invoke when the action is clicked.
-                         If you want to invoke a javascript action, this should
-                         be '#', and you should use a selector on the `id`
-                         field to attach the handler (as opposed to a
-                         javascript: URL, which doesn't work on all browsers).
+    * ``id``:           The ID of this action (optional).
+    * ``image``:        The path to the image used for the icon (optional).
+    * ``image_width``:  The width of the image (optional).
+    * ``image_height``: The height of the image (optional).
+    * ``label``:        The label for the action.
+    * ``url``:          The URI to invoke when the action is clicked.
+                        If you want to invoke a javascript action, this should
+                        be '#', and you should use a selector on the `id`
+                        field to attach the handler (as opposed to a
+                        javascript: URL, which doesn't work on all browsers).
 
     If your hook needs to access the template context, it can override
     get_actions and return results from there.
@@ -487,9 +483,9 @@ class ReviewRequestDropdownActionHook(ActionHook):
 
     The actions for a drop down action should contain:
 
-       * `id`:      The ID of this action (optional).
-       * `label`:   The label of the drop-down.
-       * `items`:   A list of ActionHook-style dicts (see ActionHook params).
+    * ``id``:      The ID of this action (optional).
+    * ``label``:   The label of the drop-down.
+    * ``items``:   A list of ActionHook-style dicts (see ActionHook params).
 
     For example::
 
