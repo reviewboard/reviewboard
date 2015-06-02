@@ -19,7 +19,8 @@ class Screenshot(models.Model):
     """A screenshot associated with a review request.
 
     Like diffs, a screenshot can have comments associated with it.
-    These comments are of type :model:`reviews.ScreenshotComment`.
+    These comments are of type
+    :py:class:`reviewboard.reviews.models.ScreenshotComment`.
     """
     caption = models.CharField(_("caption"), max_length=256, blank=True)
     draft_caption = models.CharField(_("draft caption"),

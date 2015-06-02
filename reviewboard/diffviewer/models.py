@@ -22,7 +22,7 @@ class LegacyFileDiffData(models.Model):
     """Deprecated, legacy class for base64-encoded diff data.
 
     This is no longer populated, and exists solely to store legacy data
-    that has not been migrated to RawFileDiffData.
+    that has not been migrated to :py:class:`RawFileDiffData`.
     """
     binary_hash = models.CharField(_("hash"), max_length=40, primary_key=True)
     binary = Base64Field(_("base64"))

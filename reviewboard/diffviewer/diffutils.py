@@ -589,12 +589,12 @@ def get_last_header_before_line(context, filediff, interfilediff, target_line):
     This returns a dictionary of ``left`` header and ``right`` header. Each
     header is either ``None`` or a dictionary with the following fields:
 
-      ======== ==============================================================
-      Field    Description
-      ======== ==============================================================
-      ``line`` Virtual line number (union of the original and patched files)
-      ``text`` The header text
-      ======== ==============================================================
+    ======== ==============================================================
+    Field    Description
+    ======== ==============================================================
+    ``line`` Virtual line number (union of the original and patched files)
+    ``text`` The header text
+    ======== ==============================================================
     """
     f = get_file_from_filediff(context, filediff, interfilediff)
 
@@ -629,30 +629,30 @@ def get_chunks_in_range(chunks, first_line, num_lines):
 
     Each returned chunk is a dictionary with the following fields:
 
-      ============= ========================================================
-      Variable      Description
-      ============= ========================================================
-      ``change``    The change type ("equal", "replace", "insert", "delete")
-      ``numlines``  The number of lines in the chunk.
-      ``lines``     The list of lines in the chunk.
-      ``meta``      A dictionary containing metadata on the chunk
-      ============= ========================================================
+    ============= ========================================================
+    Variable      Description
+    ============= ========================================================
+    ``change``    The change type ("equal", "replace", "insert", "delete")
+    ``numlines``  The number of lines in the chunk.
+    ``lines``     The list of lines in the chunk.
+    ``meta``      A dictionary containing metadata on the chunk
+    ============= ========================================================
 
 
     Each line in the list of lines is an array with the following data:
 
-      ======== =============================================================
-      Index    Description
-      ======== =============================================================
-      0        Virtual line number (union of the original and patched files)
-      1        Real line number in the original file
-      2        HTML markup of the original file
-      3        Changed regions of the original line (for "replace" chunks)
-      4        Real line number in the patched file
-      5        HTML markup of the patched file
-      6        Changed regions of the patched line (for "replace" chunks)
-      7        True if line consists of only whitespace changes
-      ======== =============================================================
+    ======== =============================================================
+    Index    Description
+    ======== =============================================================
+    0        Virtual line number (union of the original and patched files)
+    1        Real line number in the original file
+    2        HTML markup of the original file
+    3        Changed regions of the original line (for "replace" chunks)
+    4        Real line number in the patched file
+    5        HTML markup of the patched file
+    6        Changed regions of the patched line (for "replace" chunks)
+    7        True if line consists of only whitespace changes
+    ======== =============================================================
     """
     for i, chunk in enumerate(chunks):
         lines = chunk['lines']
