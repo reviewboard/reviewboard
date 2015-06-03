@@ -75,6 +75,8 @@ Each group that you are a member of will have an entry in the sidebar. Clicking
 on the group name will show only review requests assigned to that group.
 
 
+.. _incoming-starred:
+
 Incoming: Starred
 -----------------
 
