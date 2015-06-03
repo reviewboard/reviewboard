@@ -32,6 +32,55 @@ class Comment(BaseComment):
 
     last_line = property(lambda self: self.first_line + self.num_lines - 1)
 
+    @property
+    def base_commit_id(self):
+        """Return the base commit ID of the associated diff or None.
+
+        The base commit ID is only defined when the associated diff is
+        condensed.
+        """
+        if self.extra_data is None:
+            return None
+
+        return self.extra_data.get('base_commit_id', None)
+
+    @base_commit_id.setter
+    def base_commit_id(self, value):
+        """Set the base commit ID of the associated diff.
+
+        If this is set to a non-None value, condensed_diff will be set to True.
+        """
+        if self.extra_data is None:
+            self.extra_data = {}
+
+        if value is not None or 'base_commit_id' in self.extra_data:
+            self.extra_data['base_commit_id'] = value
+
+        if value is not None:
+            self.condensed_diff = True
+
+    @property
+    def condensed_diff(self):
+        """Return whether or not the associated diff is condensed."""
+        return (self.extra_data and
+                self.extra_data.get('condensed_diff', False))
+
+    @condensed_diff.setter
+    def condensed_diff(self, value):
+        """Set whether or not the associated diff was condensed.
+
+        If this is set to False, this will also unset the base_commit_id if it
+        is set.
+        """
+        if self.extra_data is None:
+            self.extra_data = {}
+
+        value = bool(value)
+        self.extra_data['condensed_diff'] = value
+
+        if not value:
+            self.base_commit_id = None
+
     def get_absolute_url(self):
         revision_path = six.text_type(self.filediff.diffset.revision)
         if self.interfilediff:

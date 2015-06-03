@@ -1,9 +1,10 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
-from django.utils import six
+from django.utils import six, timezone
 from djblets.webapi.errors import PERMISSION_DENIED
 
+from reviewboard.diffviewer.models import DiffCommit
 from reviewboard.reviews.models import Comment
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -257,6 +258,142 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
         comment = Comment.objects.get(pk=rsp['diff_comment']['id'])
         self.assertEqual(comment.filediff_id, filediff.pk)
         self.assertEqual(comment.interfilediff_id, interfilediff.pk)
+
+    def test_post_condensed_diff_with_no_history(self):
+        """Testing the POST review-requests/<id>/reviews/<id>/diff-comments/
+        API with condensed_diff set but no history
+        """
+        review_request, filediff = self._create_diff_review_request()
+
+        review = self.create_review(review_request, user=self.user)
+
+        rsp = self.api_post(
+            get_review_diff_comment_list_url(review),
+            {
+                'filediff_id': filediff.pk,
+                'issue_opened': 1,
+                'first_line': 1,
+                'num_lines': 1,
+                'text': 'Text',
+                'extra_data.condensed_diff': 1,
+            },
+            expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('err', rsp)
+        self.assertIn('fields', rsp)
+        self.assertIn('extra_data.condensed_diff', rsp['fields'])
+
+    def test_post_base_commit_id_without_condensed_diff(self):
+        """Testing the POST review-requests/<id>/reviews/<id>/diff-comments/
+        API with base_commit_id but not condensed_diff
+        """
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository,
+                                                    public=True)
+        diffset = self.create_diffset(review_request)
+
+        DiffCommit.objects.create(
+            diffset=diffset,
+            commit_id='r1',
+            parent_id='r0',
+            author_name='Author Name',
+            author_email='author@example.com',
+            description='Description',
+            commit_type=DiffCommit.COMMIT_CHANGE_TYPE,
+            author_date_utc=timezone.now().astimezone(timezone.utc),
+            author_date_offset=0)
+
+        diff_commit = self.create_diff_commit(diffset, repository, 'r2', 'r1')
+
+        filediff = diff_commit.files.first()
+
+        review = self.create_review(review_request, user=self.user)
+
+        rsp = self.api_post(
+            get_review_diff_comment_list_url(review),
+            {
+                'filediff_id': filediff.pk,
+                'issue_opened': 1,
+                'first_line': 1,
+                'num_lines': 1,
+                'text': 'Text',
+                'extra_data.base_commit_id': 'r1',
+            },
+            expected_mimetype=review_diff_comment_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('diff_comment', rsp)
+        self.assertIn('extra_data', rsp['diff_comment'])
+
+        extra_data = rsp['diff_comment']['extra_data']
+
+        self.assertIn('condensed_diff', extra_data)
+        self.assertTrue(extra_data['condensed_diff'])
+        self.assertIn('base_commit_id', extra_data)
+        self.assertEqual('r1', extra_data['base_commit_id'])
+
+    def test_post_same_base_commit_id(self):
+        """Testing the POST review-requests/<id>/reviews/<id>/diff-comments/
+        API with the base commit ID set to the filediff's ID
+        """
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository,
+                                                    public=True)
+        diffset = self.create_diffset(review_request)
+        diff_commit = self.create_diff_commit(diffset, repository, 'r1', 'r0')
+        filediff = diff_commit.files.first()
+        review = self.create_review(review_request, user=self.user)
+
+        rsp = self.api_post(
+            get_review_diff_comment_list_url(review),
+            {
+                'filediff_id': filediff.pk,
+                'issue_opened': 1,
+                'first_line': 1,
+                'num_lines': 1,
+                'text': 'Text',
+                'extra_data.base_commit_id': 'r1',
+                'extra_data.condensed_diff': 1
+            },
+            expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('err', rsp)
+        self.assertIn('fields', rsp)
+        self.assertIn('extra_data.base_commit_id', rsp['fields'])
+
+    def test_post_invalid_base_commit_id(self):
+        """Testing the POST review-requests/<id>/reviews/<id>/diff-comments/
+        API with the base commit ID set to an invalid commit ID
+        """
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository,
+                                                    public=True)
+        diffset = self.create_diffset(review_request)
+        diff_commit = self.create_diff_commit(diffset, repository, 'r1', 'r0')
+        filediff = diff_commit.files.first()
+        review = self.create_review(review_request, user=self.user)
+
+        rsp = self.api_post(
+            get_review_diff_comment_list_url(review),
+            {
+                'filediff_id': filediff.pk,
+                'issue_opened': 1,
+                'first_line': 1,
+                'num_lines': 1,
+                'text': 'Text',
+                'extra_data.base_commit_id': 'r99',
+                'extra_data.condensed_diff': 1
+            },
+            expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('err', rsp)
+        self.assertIn('fields', rsp)
+        self.assertIn('extra_data.base_commit_id', rsp['fields'])
+
+
 
 
 @six.add_metaclass(BasicTestsMetaclass)

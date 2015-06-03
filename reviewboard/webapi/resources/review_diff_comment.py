@@ -8,6 +8,7 @@ from djblets.webapi.decorators import (webapi_login_required,
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
 
+from reviewboard.diffviewer.commitutils import find_ancestor_commit_ids
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources import resources
@@ -63,7 +64,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         allow_unknown=True,
     )
     def create(self, request, filediff_id, interfilediff_id=None,
-               *args, **kwargs):
+               extra_fields=None, *args, **kwargs):
         """Creates a new diff comment.
 
         This will create a new diff comment on this review. The review
@@ -104,6 +105,40 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                     invalid_fields['interfilediff_id'] = \
                         ['This is not a valid interfilediff ID']
 
+        condensed_diff = extra_fields.pop('extra_data.condensed_diff', 'false')
+        base_commit_id = extra_fields.pop('extra_data.base_commit_id', None)
+
+        if base_commit_id is not None:
+            condensed_diff = 'true'
+
+        if condensed_diff in ('1', 'true', 'True', 'TRUE'):
+            extra_fields['extra_data.condensed_diff'] = condensed_diff
+
+            diff_commit = filediff.diff_commit
+
+            if diff_commit is None:
+                invalid_fields['extra_data.condensed_diff'] = [
+                    'This is not a review request with commit history'
+                ]
+            elif base_commit_id is not None:
+                if diff_commit.commit_id == base_commit_id:
+                    invalid_fields['extra_data.base_commit_id'] = [
+                        'Base commit ID is filediff commit ID'
+                    ]
+                else:
+                    ancestors = find_ancestor_commit_ids(
+                        diff_commit.commit_id,
+                        filediff.diffset.build_commit_graph())
+
+                    if base_commit_id not in ancestors:
+                        invalid_fields['extra_data.base_commit_id'] = [
+                            "Base commit ID is not an ancestor of the "
+                            "filediff's commit."
+                        ]
+                    else:
+                        extra_fields['extra_data.base_commit_id'] = \
+                            base_commit_id
+
         if invalid_fields:
             return INVALID_FORM_DATA, {
                 'fields': invalid_fields,
@@ -114,6 +149,7 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
             filediff=filediff,
             interfilediff=interfilediff,
             fields=('filediff', 'interfilediff', 'first_line', 'num_lines'),
+            extra_fields=extra_fields,
             **kwargs)
         review.comments.add(new_comment)
 
