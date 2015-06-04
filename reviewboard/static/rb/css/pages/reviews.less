@@ -129,10 +129,10 @@
    * empty, there will be a suitable height.
    */
   .actions:before {
-    content: "";
+    content: ".";
     float: left;
     visibility: hidden;
-    padding: 0;
+    padding: @review-request-action-padding-vert 0;
   }
 }
 
@@ -158,8 +158,8 @@
     cursor: pointer;
     display: block;
     text-decoration: none;
-    padding: @review-request-action-padding-horiz
-             @review-request-action-padding-vert;
+    padding: @review-request-action-padding-vert
+             @review-request-action-padding-horiz;
   }
 
   img {
