@@ -25,6 +25,7 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
     def _find_range_info(diff):
         lines = split_line_endings(diff)
         process_changes = False
+        process_trailing_context = False
         ranges = []
 
         chunk_start = None
@@ -44,23 +45,60 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
                     # We reduce the indexes by 1 because the chunk ranges
                     # in diffs start at 1, and we want a 0-based index.
                     start = chunk_start - 1 + lines_of_context
+                    chunk_len -= lines_of_context
+
+                    # We then reduce by 1 again, compensating for the
+                    # additional line of context, if any. We must do this
+                    # because the first line after a "@@" section is being
+                    # counted in lines_of_context, but is also the line
+                    # referred to in chunk_start.
+                    if lines_of_context > 0:
+                        start -= 1
+
                     ranges.append((start, start + chunk_len))
                     process_changes = False
+                    process_trailing_context = True
+                    lines_of_context = 0
                     continue
                 else:
                     lines_of_context += 1
+            elif process_trailing_context:
+                if line.startswith(b' '):
+                    # This may be a line of context after the modifications
+                    # in this chunk. Bump up the counter.
+                    lines_of_context += 1
+                    continue
+                else:
+                    # Reset the lines of trailing context, since we hit
+                    # something other than an equal line.
+                    lines_of_context = 0
 
             # This was not a change within a chunk, or we weren't processing,
             # so check to see if this is a chunk header instead.
             m = CHUNK_RANGE_RE.match(line)
 
             if m:
-                # It is a chunk header. Reset the state for the next range,
-                # and pull the line number and length from the header.
+                # It is a chunk header. Start by updating the previous range
+                # to factor in the lines of trailing context.
+                if process_trailing_context and lines_of_context > 0:
+                    last_range = ranges[-1]
+                    ranges[-1] = (last_range[0],
+                                  last_range[1] - lines_of_context)
+
+                # Next, reset the state for the next range, and pull the line
+                # number and length from the header.
                 chunk_start = int(m.group('new_start'))
                 chunk_len = int(m.group('new_len') or '1')
                 process_changes = True
+                process_trailing_context = False
                 lines_of_context = 0
+
+        # We need to adjust the last range, if we're still processing
+        # trailing context.
+        if process_trailing_context and lines_of_context > 0:
+            last_range = ranges[-1]
+            ranges[-1] = (last_range[0],
+                          last_range[1] - lines_of_context)
 
         return ranges
 
@@ -118,7 +156,13 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
         # one of the uploaded diffs. If so, allow it through.
         orig_starts_valid = _is_range_valid(orig_range, tag, i1, i2)
         new_starts_valid = _is_range_valid(new_range, tag, j1, j2)
-        valid_chunk = orig_starts_valid or new_starts_valid
+
+        if tag in ('equal', 'replace'):
+            valid_chunk = orig_starts_valid or new_starts_valid
+        elif tag == 'delete':
+            valid_chunk = orig_starts_valid
+        elif tag == 'insert':
+            valid_chunk = new_starts_valid
 
         if valid_chunk:
             # This chunk is valid. It may only be a portion of the real
