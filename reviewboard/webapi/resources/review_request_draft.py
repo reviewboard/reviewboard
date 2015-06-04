@@ -270,6 +270,11 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'added_in': '2.0',
             'deprecated_in': '2.0.12',
         },
+        'trivial': {
+            'type': bool,
+            'description': 'Determines if the review request publish '
+                           'will not send an email.',
+        },
         'update_from_commit_id': {
             'type': bool,
             'description': 'If true, and if ``commit_id`` is provided, '
@@ -373,7 +378,8 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         allow_unknown=True
     )
     def update(self, request, always_save=False, local_site_name=None,
-               update_from_commit_id=False, extra_fields={}, *args, **kwargs):
+               update_from_commit_id=False, trivial=None,
+               extra_fields={}, *args, **kwargs):
         """Updates a draft of a review request.
 
         This will update the draft with the newly provided data.
@@ -483,7 +489,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
         if request.POST.get('public', False):
             try:
-                review_request.publish(user=request.user)
+                review_request.publish(user=request.user, trivial=trivial)
             except NotModifiedError:
                 return NOTHING_TO_PUBLISH
             except PublishError as e:

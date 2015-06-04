@@ -57,13 +57,23 @@
         },
         extraReviewRequestDraftData: {
 {% if draft.changedesc %}
+{%  if draft.diffset %}
+{%   url "view-interdiff" review_request.display_id draft.diffset.revision|add:"-1" draft.diffset.revision as interdiffLink %}
+            interdiffLink: '{{interdiffLink|escapejs}}',
+{%  endif %}
             changeDescription: "{% normalize_text_for_edit draft.changedesc.text draft.changedesc.rich_text True %}",
             changeDescriptionRichText: {{draft.changedesc.rich_text|yesno:'true,false'}}
 {% endif %}
         },
         editorData: {
+{% if draft.changedesc %}
+            changeDescriptionRenderedText: '{{draft.changedesc.text|render_markdown:draft.changedesc.rich_text|escapejs}}',
+{% endif %}
+            closeDescriptionRenderedText: '{{close_description|render_markdown:close_description_rich_text|escapejs}}',
+            hasDraft: {{draft|yesno:'true,false'}},
             mutableByUser: {{mutable_by_user|yesno:'true,false'}},
             statusMutableByUser: {{status_mutable_by_user|yesno:'true,false'}},
+            showSendEmail: {{send_email|yesno:'true,false'}},
             fileAttachments: [
 {% for file in file_attachments %}
 {%  has_usable_review_ui request.user review_request file as use_review_ui %}
