@@ -209,3 +209,41 @@ following items will become available:
 * :guilabel:`Unarchive`
 * :guilabel:`Mute`
 * :guilabel:`Unmute`
+
+
+.. _star-archive-and-mute:
+
+Star, Archive and Mute
+======================
+
+In an active team, the dashboard can often get cluttered with many open review
+requests. This can make it difficult to keep track of what you have left to
+work on.
+
+There are three visibility controls for review requests: star, archive, and
+mute. These can be manipulated both on the dashboard (through the star column
+and the bulk actions), as well as on the review request page (through the
+visibility controls at the top-left of the review request box).
+
+**Starring** a review request will cause it to show up in the
+:ref:`incoming-starred` section of the dashboard, and will make sure that
+you're copied on any e-mail notifications related to the review request. This
+is a good way to keep track of things which might be related to your work but
+not directly assigned to you, or to mark particularly important review
+requests.
+
+**Archiving** a review request will cause it to be hidden from the incoming
+views of the dashboard until there is new activity. This is similar to the way
+that e-mail clients archive threads. If you're experiencing dashboard overload,
+archiving can quickly streamline your view to show only the review requests
+that still require your attention.
+
+**Muting** a review request works like archiving, except it will never
+re-appear on your dashboard until you explicitly unmute it. You will also not
+be included on any e-mail notifications for muted review requests. This is good
+for tuning out your office mate.
+
+On the incoming dashboard views, the :guilabel:`Show archived` link at the top
+will toggle on all of the archived and muted review requests, allowing you to
+find them again. This setting is sticky when clicked, and can be reversed by
+clicking :guilabel:`Hide archived`.

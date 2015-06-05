@@ -23,7 +23,7 @@ themselves.
 
 Next to the view tabs are several action commands, both for manipulating the
 state of the review request, as well as performing reviews. At the top-left are
-visibility controls (:ref:`star <incoming-starred>` and archive/mute).
+visibility controls (:ref:`star-archive-and-mute`).
 
 .. TODO: link to docs on archive/mute once they're written
 
