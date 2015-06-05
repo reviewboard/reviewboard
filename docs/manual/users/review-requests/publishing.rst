@@ -33,3 +33,7 @@ to the reviewers, letting them know your change is ready to be reviewed again.
 
 The :guilabel:`Describe your changes` field supports rich text using the
 :term:`Markdown` language. See :ref:`using-markdown` for more information.
+
+If the update to your review request is minimal (such as making small fixes to
+the fields), you may not want to notify everyone involved. In this case,
+unchecking :guilabel:`Send E-Mail` will disable e-mail notification.
