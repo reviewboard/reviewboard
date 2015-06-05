@@ -120,7 +120,7 @@ We respect the privacy of our users, but some of them have asked to feature them
 on the [Happy Users page](https://www.reviewboard.org/users/).
 
 If you're using Review Board, and you're a happy user,
-[let us know!](https://groups.google.com/group/reviewboard/).
+[let us know!](https://groups.google.com/group/reviewboard/)
 
 
 Reporting Bugs
