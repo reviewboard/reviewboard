@@ -57,4 +57,4 @@ browse for the new version of the file to upload, and optionally change the
 caption for the file.
 
 See :ref:`reviewing-file-attachments` for more information on how file
-attachment histories are viewed.
+attachments with multiple revisions are reviewed.
