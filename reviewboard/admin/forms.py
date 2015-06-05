@@ -875,7 +875,7 @@ class SupportSettingsForm(SiteSettingsForm):
         required=False,
         widget=forms.TextInput(attrs={
             'size': '80',
-            'disabled': 'disabled'
+            'readonly': 'readonly'
         }))
 
     support_url = forms.CharField(
