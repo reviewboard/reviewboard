@@ -577,6 +577,15 @@ class BitbucketTests(ServiceTests):
             expected_found=False,
             expected_http_called=False)
 
+    def test_get_file_exists_with_git_and_404(self):
+        """Testing BitBucket get_file_exists with Git and a 404 error"""
+        self._test_get_file_exists(
+            tool_name='Git',
+            revision='123',
+            base_commit_id='456',
+            expected_revision='456',
+            expected_found=False)
+
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_close_submitted_hook(self):
         """Testing BitBucket close_submitted hook"""
@@ -771,7 +780,9 @@ class BitbucketTests(ServiceTests):
             if expected_found:
                 return b'{}', {}
             else:
-                raise HTTPError()
+                error = HTTPError(url, 404, 'Not Found', {}, None)
+                error.read = lambda: error.reason
+                raise error
 
         account = self._get_hosting_account()
         service = account.service
