@@ -1,4 +1,5 @@
 @import (reference) "../defs.less";
+@import (reference) "../mixins/upload-diff.less";
 
 
 @img_base: '../../images';
@@ -67,6 +68,8 @@
   }
 
   .pre-commit {
+    .upload-diff-ui();
+
     .tip {
       margin: 2em 2em 1em 2em;
       text-align: center;
@@ -76,16 +79,6 @@
         font-weight: bold;
         text-decoration: none;
       }
-    }
-
-    #prompt-for-basedir,
-    #prompt-for-diff,
-    #prompt-for-parent-diff,
-    #prompt-for-change-number,
-    #processing-diff,
-    #uploading-diffs,
-    #error-indicator {
-      display: none;
     }
 
     #prompt-for-parent-diff {
@@ -98,49 +91,19 @@
 
     #error-contents,
     #parent-diff-error-contents {
-      position: relative;
       margin: 0 10em;
-      line-height: 12pt;
-      margin-bottom: 1em;
-
-      img {
-        margin-right: 5px;
-        vertical-align: sub;
-      }
-    }
-
-    #processing-diff,
-    #uploading-diffs {
-      background: url('@{img_base}/spinner.gif') center center no-repeat;
     }
 
     .input {
-      text-align: center;
-      vertical-align: middle;
       height: 14em;
       line-height: 14em;
       margin: 2em;
       border: 2px dashed @grey;
-      .border-radius(@box-border-radius);
-      background-color: lighten(@light-grey, 10%);
-      position: relative;
 
       .on-mobile-medium-screen-720({
         height: 6em;
         line-height: 6em;
       });
-
-      .startover {
-        position: absolute;
-        bottom: 0;
-        right: 5px;
-        line-height: 14pt;
-      }
-    }
-
-    .drag-hover {
-      border: 1px solid darken(@grey, 4%);
-      .box-shadow(inset @box-shadow);
     }
   }
 
@@ -247,9 +210,8 @@
       position: absolute;
       width: 16px;
       right: 1em;
-      top: 0;
       height: 100%;
-      background: url('@{img_base}/spinner.gif') center center no-repeat;
+      font-size: 16px;
     }
 
     &:nth-child(even) {
