@@ -77,7 +77,11 @@
 {%   if not file.is_new_file %}
    <th colspan="2"><a name="{{file.index}}" class="file-anchor"></a>{{ file.depot_filename }}</th>
 {%   endif %}
-   <th colspan="2">{{file.dest_filename}}{% if file.moved %}{% trans " (moved)" %}{% elif file.copied %}{% trans " (copied)" %}{% endif %}</th>
+   <th colspan="2">
+{%   if file.is_new_file %}
+    <a name="{{file.index}}" class="file-anchor"></a>
+{%   endif %}
+    {{file.dest_filename}}{% if file.moved %}{% trans " (moved)" %}{% elif file.copied %}{% trans " (copied)" %}{% endif %}</th>
 {%  endif %}{# file.dest_filename == file.depot_filename #}
   </tr>
   <tr class="revision-row">
