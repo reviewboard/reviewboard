@@ -500,9 +500,7 @@ class DiffSetManager(models.Manager):
                     orig_rev = f.origInfo
 
             enc, orig_file = convert_to_unicode(f.origFile, encoding_list)
-            enc, new_file = convert_to_unicode(f.newFile, encoding_list)
-
-            dest_file = os.path.join(basedir, new_file).replace("\\", "/")
+            enc, dest_file = convert_to_unicode(f.newFile, encoding_list)
 
             if f.deleted:
                 status = FileDiff.DELETED

@@ -1480,6 +1480,62 @@ class DiffSetManagerTests(SpyAgency, TestCase):
 
         self.assertEqual(diffset.files.count(), 1)
 
+    def test_creating_with_diff_data_with_basedir_no_slash(self):
+        """Test creating a DiffSet from diff file data with basedir without
+        leading slash
+        """
+        diff = (
+            b'diff --git a/README b/README\n'
+            b'index d6613f5..5b50866 100644\n'
+            b'--- README\n'
+            b'+++ README\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah..\n'
+            b'+blah blah\n'
+        )
+
+        repository = self.create_repository(tool_name='Test')
+
+        self.spy_on(repository.get_file_exists,
+                    call_fake=lambda *args, **kwargs: True)
+
+        diffset = DiffSet.objects.create_from_data(
+            repository, 'diff', diff, None, None, None, 'trunk/', None)
+
+        self.assertEqual(diffset.files.count(), 1)
+
+        filediff = diffset.files.all()[0]
+        self.assertEqual(filediff.source_file, 'trunk/README')
+        self.assertEqual(filediff.dest_file, 'trunk/README')
+
+    def test_creating_with_diff_data_with_basedir_slash(self):
+        """Test creating a DiffSet from diff file data with basedir with
+        leading slash
+        """
+        diff = (
+            b'diff --git a/README b/README\n'
+            b'index d6613f5..5b50866 100644\n'
+            b'--- README\n'
+            b'+++ README\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah..\n'
+            b'+blah blah\n'
+        )
+
+        repository = self.create_repository(tool_name='Test')
+
+        self.spy_on(repository.get_file_exists,
+                    call_fake=lambda *args, **kwargs: True)
+
+        diffset = DiffSet.objects.create_from_data(
+            repository, 'diff', diff, None, None, None, '/trunk/', None)
+
+        self.assertEqual(diffset.files.count(), 1)
+
+        filediff = diffset.files.all()[0]
+        self.assertEqual(filediff.source_file, 'trunk/README')
+        self.assertEqual(filediff.dest_file, 'trunk/README')
+
 
 class UploadDiffFormTests(SpyAgency, TestCase):
     """Unit tests for UploadDiffForm."""

@@ -2042,6 +2042,31 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(file.insert_count, 2)
         self.assertEqual(file.delete_count, 1)
 
+    def test_diff_with_tabs_after_filename(self):
+        """Testing parsing Git diffs with tabs after the filename"""
+        diff = (
+            b'diff --git a/README b/README\n'
+            b"index 712544e4343bf04967eb5ea80257f6c64d6f42c7.."
+            b"f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n"
+            b"--- a/README\t\n"
+            b"+++ b/README\t\n"
+            b"@ -1,1 +1,1 @@\n"
+            b"-blah blah\n"
+            b"+blah\n"
+            b"-\n"
+            b"1.7.1\n")
+
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(files[0].origFile, 'README')
+        self.assertEqual(files[0].newFile, 'README')
+        self.assertEqual(files[0].origInfo,
+                         '712544e4343bf04967eb5ea80257f6c64d6f42c7')
+        self.assertEqual(files[0].newInfo,
+                         'f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1')
+        self.assertEqual(files[0].data, diff)
+        self.assertEqual(files[0].insert_count, 1)
+        self.assertEqual(files[0].delete_count, 2)
+
     def test_new_file_diff(self):
         """Testing parsing Git diff with new file"""
         diff = self._read_fixture('git_newfile.diff')
