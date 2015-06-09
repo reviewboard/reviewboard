@@ -1,11 +1,33 @@
 /*
  * A branch in a repository.
  */
-RB.RepositoryBranch = Backbone.Model.extend({
-    defaults: {
-        name: null,
-        commit: null,
-        isDefault: false
+RB.RepositoryBranch = RB.BaseResource.extend({
+    defaults: function() {
+        return _.defaults({
+            name: null,
+            commit: null,
+            isDefault: false
+        }, RB.BaseResource.prototype.defaults());
+    },
+
+    rspNamespace: 'branches',
+
+    deserializedAttrs: [
+        'id',
+        'name',
+        'commit',
+        'isDefault'
+    ],
+
+    serializedAttrs: [
+        'id',
+        'name',
+        'commit',
+        'isDefault'
+    ],
+
+    attrToJsonMap: {
+        'isDefault': 'default'
     },
 
     /*
