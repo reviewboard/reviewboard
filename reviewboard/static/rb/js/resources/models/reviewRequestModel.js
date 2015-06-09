@@ -12,29 +12,31 @@
  * through reopen(), or even permanently destroyed by calling destroy().
  */
 RB.ReviewRequest = RB.BaseResource.extend({
-    defaults: _.defaults({
-        branch: null,
-        bugTrackerURL: null,
-        bugsClosed: null,
-        commitID: null,
-        closeDescription: null,
-        closeDescriptionRichText: false,
-        dependsOn: [],
-        description: null,
-        descriptionRichText: false,
-        draftReview: null,
-        lastUpdated: null,
-        localSitePrefix: null,
-        'public': null,
-        repository: null,
-        reviewURL: null,
-        state: null,
-        summary: null,
-        targetGroups: [],
-        targetPeople: [],
-        testingDone: null,
-        testingDoneRichText: false
-    }, RB.BaseResource.prototype.defaults),
+    defaults: function() {
+        return _.defaults({
+            branch: null,
+            bugTrackerURL: null,
+            bugsClosed: null,
+            commitID: null,
+            closeDescription: null,
+            closeDescriptionRichText: false,
+            dependsOn: [],
+            description: null,
+            descriptionRichText: false,
+            draftReview: null,
+            lastUpdated: null,
+            localSitePrefix: null,
+            'public': null,
+            repository: null,
+            reviewURL: null,
+            state: null,
+            summary: null,
+            targetGroups: [],
+            targetPeople: [],
+            testingDone: null,
+            testingDoneRichText: false
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     rspNamespace: 'review_request',
 

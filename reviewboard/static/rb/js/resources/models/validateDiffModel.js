@@ -21,10 +21,12 @@ var parentProto = RB.Diff.prototype;
  * be used to act upon this information.
  */
 RB.ValidateDiffModel = RB.Diff.extend({
-    defaults: _.defaults({
-        repository: null,
-        localSitePrefix: ''
-    }, RB.Diff.prototype.defaults),
+    defaults: function() {
+        return _.defaults({
+            repository: null,
+            localSitePrefix: ''
+        }, RB.Diff.prototype.defaults());
+    },
 
     serializedAttrs: [
         'repository'

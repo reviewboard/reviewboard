@@ -10,11 +10,13 @@
  * should generally be extending toJSON() and parse().
  */
 RB.BaseResource = Backbone.Model.extend({
-    defaults: {
-        extraData: {},
-        links: null,
-        loaded: false,
-        parentObject: null
+    defaults: function() {
+        return {
+            extraData: {},
+            links: null,
+            loaded: false,
+            parentObject: null
+        };
     },
 
     /* The key for the namespace for the object's payload in a response. */
