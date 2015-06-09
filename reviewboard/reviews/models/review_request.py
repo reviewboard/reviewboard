@@ -368,16 +368,16 @@ class ReviewRequest(BaseReviewRequestDetails):
         This performs several checks to ensure that the user has access.
         This user has access if:
 
-          * The review request is public or the user can modify it (either
-            by being an owner or having special permissions).
+        * The review request is public or the user can modify it (either
+          by being an owner or having special permissions).
 
-          * The repository is public or the user has access to it (either by
-            being explicitly on the allowed users list, or by being a member
-            of a review group on that list).
+        * The repository is public or the user has access to it (either by
+          being explicitly on the allowed users list, or by being a member
+          of a review group on that list).
 
-          * The user is listed as a requested reviewer or the user has access
-            to one or more groups listed as requested reviewers (either by
-            being a member of an invite-only group, or the group being public).
+        * The user is listed as a requested reviewer or the user has access
+          to one or more groups listed as requested reviewers (either by
+          being a member of an invite-only group, or the group being public).
         """
         # Users always have access to their own review requests.
         if self.submitter == user:
@@ -776,7 +776,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         review_request_reopened.send(sender=self.__class__, user=user,
                                      review_request=self)
 
-    def publish(self, user):
+    def publish(self, user, trivial=False):
         """Publishes the current draft attached to this review request.
 
         The review request will be mark as public, and signals will be
@@ -826,7 +826,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         self.save(update_counts=True)
 
         review_request_published.send(sender=self.__class__, user=user,
-                                      review_request=self,
+                                      review_request=self, trivial=trivial,
                                       changedesc=changes)
 
     def _update_counts(self):

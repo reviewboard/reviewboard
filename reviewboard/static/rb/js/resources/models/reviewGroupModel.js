@@ -7,11 +7,13 @@
  * This is used to handle adding a user to a group or removing from a group.
  */
 var GroupMember = RB.BaseResource.extend({
-    defaults: _.defaults({
-        username: null,
-        added: false,
-        loaded: true
-    }, RB.BaseResource.prototype.defaults),
+    defaults: function() {
+        return _.defaults({
+            username: null,
+            added: false,
+            loaded: true
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     serializedAttrs: ['username'],
 

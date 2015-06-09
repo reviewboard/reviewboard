@@ -5,20 +5,23 @@
  * as the ability to publish and discard (destroy) a draft.
  */
 RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
-    defaults: _.defaults({
-        branch: null,
-        bugsClosed: null,
-        changeDescription: null,
-        dependsOn: [],
-        description: null,
-        descriptionRichText: false,
-        'public': null,
-        summary: null,
-        targetGroups: [],
-        targetPeople: [],
-        testingDone: null,
-        testingDoneRichText: false
-    }, RB.BaseResource.prototype.defaults),
+    defaults: function() {
+        return _.defaults({
+            branch: null,
+            bugsClosed: null,
+            changeDescription: null,
+            chnageDescriptionRichText: false,
+            dependsOn: [],
+            description: null,
+            descriptionRichText: false,
+            'public': null,
+            summary: null,
+            targetGroups: [],
+            targetPeople: [],
+            testingDone: null,
+            testingDoneRichText: false
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     rspNamespace: 'draft',
     listKey: 'draft',
@@ -94,7 +97,8 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
                     this.save(
                         _.defaults({
                             data: {
-                                'public': 1
+                                'public': 1,
+                                'trivial': options.trivial ? 1 : 0
                             }
                         }, options),
                         context);

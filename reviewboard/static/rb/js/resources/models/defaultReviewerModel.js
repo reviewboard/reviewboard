@@ -9,10 +9,12 @@
  * provided.
  */
 RB.DefaultReviewer = RB.BaseResource.extend({
-    defaults: _.defaults({
-        name: null,
-        fileRegex: null
-    }, RB.BaseResource.prototype.defaults),
+    defaults: function() {
+        return _.defaults({
+            name: null,
+            fileRegex: null
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     rspNamespace: 'default_reviewer',
 

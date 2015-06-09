@@ -5,40 +5,42 @@
  * RB.ReviewReply.
  */
 RB.Review = RB.BaseResource.extend({
-    defaults: _.defaults({
-        /*
-         * The text format type to request for text in all responses.
-         */
-        forceTextType: null,
+    defaults: function() {
+        return _.defaults({
+            /*
+             * The text format type to request for text in all responses.
+             */
+            forceTextType: null,
 
-        shipIt: false,
-        'public': false,
-        bodyTop: null,
-        bodyTopRichText: false,
-        bodyBottom: null,
-        bodyBottomRichText: false,
-        draftReply: null,
+            shipIt: false,
+            'public': false,
+            bodyTop: null,
+            bodyTopRichText: false,
+            bodyBottom: null,
+            bodyBottomRichText: false,
+            draftReply: null,
 
-        /*
-         * A string containing a comma-separated list of text types to include
-         * in the payload.
-         */
-        includeTextTypes: null,
+            /*
+             * A string containing a comma-separated list of text types to
+             * include in the payload.
+             */
+            includeTextTypes: null,
 
-        /*
-         * Markdown-formatted text fields, if the caller fetches or posts with
-         * with includeTextTypes="markdown".
-         */
-        markdownTextFields: {},
+            /*
+             * Markdown-formatted text fields, if the caller fetches or posts
+             * with includeTextTypes="markdown".
+             */
+            markdownTextFields: {},
+            
+            /*
+             * Raw text fields, if forceTextType is used and the caller
+             * fetches or posts with includeTextTypes="raw".
+             */
+            rawTextFields: {},
 
-        /*
-         * Raw text fields, if the caller fetches or posts with
-         * includeTextTypes="raw".
-         */
-        rawTextFields: {},
-
-        timestamp: null
-    }, RB.BaseResource.prototype.defaults),
+            timestamp: null
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     rspNamespace: 'review',
 

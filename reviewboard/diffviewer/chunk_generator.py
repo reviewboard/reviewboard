@@ -642,35 +642,35 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
 
     There are three ways this can operate, based on provided parameters.
 
-    1) filediff, no interfilediff
-       - Returns chunks for a single filediff. This is the usual way
-         people look at diffs in the diff viewer.
+    1) filediff, no interfilediff -
+       Returns chunks for a single filediff. This is the usual way
+       people look at diffs in the diff viewer.
 
-         In this mode, we get the original file based on the filediff
-         and then patch it to get the resulting file.
+       In this mode, we get the original file based on the filediff
+       and then patch it to get the resulting file.
 
-         This is also used for interdiffs where the source revision
-         has no equivalent modified file but the interdiff revision
-         does. It's no different than a standard diff.
+       This is also used for interdiffs where the source revision
+       has no equivalent modified file but the interdiff revision
+       does. It's no different than a standard diff.
 
-    2) filediff, interfilediff
-       - Returns chunks showing the changes between a source filediff
-         and the interdiff.
+    2) filediff, interfilediff -
+       Returns chunks showing the changes between a source filediff
+       and the interdiff.
 
-         This is the typical mode used when showing the changes
-         between two diffs. It requires that the file is included in
-         both revisions of a diffset.
+       This is the typical mode used when showing the changes
+       between two diffs. It requires that the file is included in
+       both revisions of a diffset.
 
-    3) filediff, no interfilediff, force_interdiff
-       - Returns chunks showing the changes between a source
-         diff and an unmodified version of the diff.
+    3) filediff, no interfilediff, force_interdiff -
+       Returns chunks showing the changes between a source
+       diff and an unmodified version of the diff.
 
-         This is used when the source revision in the diffset contains
-         modifications to a file which have then been reverted in the
-         interdiff revision. We don't actually have an interfilediff
-         in this case, so we have to indicate that we are indeed in
-         interdiff mode so that we can special-case this and not
-         grab a patched file for the interdiff version.
+       This is used when the source revision in the diffset contains
+       modifications to a file which have then been reverted in the
+       interdiff revision. We don't actually have an interfilediff
+       in this case, so we have to indicate that we are indeed in
+       interdiff mode so that we can special-case this and not
+       grab a patched file for the interdiff version.
 
     The cumulative_diff parameter determines if the chunks generated should be
     cumulative (that is, starting at the beginning of the commit history) or

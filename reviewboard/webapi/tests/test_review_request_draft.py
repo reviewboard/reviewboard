@@ -743,6 +743,44 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.assertEqual(rsp['err']['code'], 105)
         self.assertTrue(resources.review_request_draft._find_user.called)
 
+    def test_put_with_publish_and_trivial(self):
+        """Testing the PUT review-requests/<id>/draft/ API with trivial
+        changes
+        """
+        self.siteconfig.set('mail_send_review_mail', True)
+        self.siteconfig.save()
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+        draft = ReviewRequestDraft.create(review_request)
+        draft.summary = 'My Summary'
+        draft.description = 'My Description'
+        draft.testing_done = 'My Testing Done'
+        draft.branch = 'My Branch'
+        draft.target_people.add(User.objects.get(username='doc'))
+        draft.save()
+
+        mail.outbox = []
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'public': True,
+                'trivial': True,
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request = ReviewRequest.objects.get(pk=review_request.id)
+        self.assertEqual(review_request.summary, "My Summary")
+        self.assertEqual(review_request.description, "My Description")
+        self.assertEqual(review_request.testing_done, "My Testing Done")
+        self.assertEqual(review_request.branch, "My Branch")
+        self.assertTrue(review_request.public)
+
+        self.assertEqual(len(mail.outbox), 0)
+
     def test_get_or_create_user_auth_backend(self):
         """Testing the PUT review-requests/<id>/draft/ API
         with AuthBackend.get_or_create_user failure

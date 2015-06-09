@@ -1,3 +1,5 @@
+.. _review-request-fields:
+
 ==============
 Editing Fields
 ==============
@@ -9,7 +11,7 @@ you make will be seen by you only until you :ref:`publish the changes
 <publishing-review-requests>`.
 
 
-.. image:: review-request-fields.png
+.. image:: review-request-details.png
 
 
 Changing Fields

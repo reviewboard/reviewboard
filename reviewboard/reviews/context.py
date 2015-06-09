@@ -16,20 +16,20 @@ def comment_counts(user, all_comments, filediff, interfilediff=None):
 
     Each entry in the array has a dictionary containing the following keys:
 
-      =========== ==================================================
-      Key                Description
-      =========== ==================================================
-      comment_id         The ID of the comment
-      text               The plain or rich text of the comment
-      rich_text          The rich text flag for the comment
-      line               The first line number
-      num_lines          The number of lines this comment spans
-      user               A dictionary containing "username" and "name" keys
-                         for the user
-      url                The URL to the comment
-      localdraft         True if this is the current user's draft comment
-      review_id          The ID of the review this comment is associated with
-      ==============================================================
+    =========== ==================================================
+    Key                Description
+    =========== ==================================================
+    comment_id         The ID of the comment
+    text               The plain or rich text of the comment
+    rich_text          The rich text flag for the comment
+    line               The first line number
+    num_lines          The number of lines this comment spans
+    user               A dictionary containing "username" and "name" keys
+                       for the user
+    url                The URL to the comment
+    localdraft         True if this is the current user's draft comment
+    review_id          The ID of the review this comment is associated with
+    ==============================================================
     """
     comment_dict = {}
 

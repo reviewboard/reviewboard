@@ -165,7 +165,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         return draft
 
-    def publish(self, review_request=None, user=None,
+    def publish(self, review_request=None, user=None, trivial=False,
                 send_notification=True):
         """Publishes this draft.
 
@@ -176,20 +176,20 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         The draft's assocated ReviewRequest object will be used if one isn't
         passed in.
 
-        The keys that may be saved in 'fields_changed' in the
+        The keys that may be saved in ``fields_changed`` in the
         ChangeDescription are:
 
-           *  'summary'
-           *  'description'
-           *  'testing_done'
-           *  'bugs_closed'
-           *  'depends_on'
-           *  'branch'
-           *  'target_groups'
-           *  'target_people'
-           *  'screenshots'
-           *  'screenshot_captions'
-           *  'diff'
+        *  ``summary``
+        *  ``description``
+        *  ``testing_done``
+        *  ``bugs_closed``
+        *  ``depends_on``
+        *  ``branch``
+        *  ``target_groups``
+        *  ``target_people``
+        *  ``screenshots``
+        *  ``screenshot_captions``
+        *  ``diff``
 
         Each field in 'fields_changed' represents a changed field. This will
         save fields in the standard formats as defined by the
@@ -199,13 +199,13 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         For the 'screenshot_captions' field, the value will be a dictionary
         of screenshot ID/dict pairs with the following fields:
 
-           * 'old': The old value of the field
-           * 'new': The new value of the field
+        * ``old``: The old value of the field
+        * ``new``: The new value of the field
 
-        For the 'diff' field, there is only ever an 'added' field, containing
-        the ID of the new diffset.
+        For the ``diff`` field, there is only ever an ``added`` field,
+        containing the ID of the new diffset.
 
-        The 'send_notification' parameter is intended for internal use only,
+        The ``send_notification`` parameter is intended for internal use only,
         and is there to prevent duplicate notifications when being called by
         ReviewRequest.publish.
         """
@@ -254,6 +254,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             review_request_published.send(sender=review_request.__class__,
                                           user=user,
                                           review_request=review_request,
+                                          trivial=trivial,
                                           changedesc=self.changedesc)
 
         return self.changedesc

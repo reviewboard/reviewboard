@@ -283,7 +283,11 @@ class Bitbucket(HostingService):
                quote(revision),
                quote(path)))
 
-        return self._api_get(url, raw_content=True)
+        try:
+            return self._api_get(url, raw_content=True)
+        except FileNotFoundError:
+            raise FileNotFoundError(path, revision=revision,
+                                    base_commit_id=base_commit_id)
 
     def _build_api_url(self, url, version='1.0'):
         return 'https://bitbucket.org/api/%s/%s' % (version, url)
@@ -354,6 +358,10 @@ class Bitbucket(HostingService):
         if e.code == 401:
             raise AuthorizationError(
                 message or ugettext('Invalid Bitbucket username or password'))
+        elif e.code == 404:
+            # We don't have a path here, but it will be filled in inside
+            # _api_get_src.
+            raise FileNotFoundError('')
         else:
             raise HostingServiceError(
                 message or ugettext('Unknown error when talking to Bitbucket'))

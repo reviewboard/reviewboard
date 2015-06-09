@@ -1833,8 +1833,8 @@ class ProcessorsTests(TestCase):
         self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
-        #       change in a chunk matter to the processor, so the rest can
-        #       be left out.
+        #       change in a chunk matter to the processor for this test,
+        #       so the rest can be left out.
         orig_diff = (
             '@@ -22,7 +22,7 @@\n'
             ' #\n #\n #\n-#\n'
@@ -1852,11 +1852,11 @@ class ProcessorsTests(TestCase):
         self.assertEqual(new_opcodes, [
             ('filtered-equal', 0, 0, 0, 1),
             ('filtered-equal', 0, 5, 1, 5),
-            ('delete', 5, 10, 5, 5),
+            ('filtered-equal', 5, 10, 5, 5),
             ('equal', 10, 25, 5, 20),
             ('replace', 25, 26, 20, 21),
-            ('equal', 26, 32, 21, 27),
-            ('filtered-equal', 32, 40, 27, 35),
+            ('equal', 26, 28, 21, 23),
+            ('filtered-equal', 28, 40, 23, 35),
             ('filtered-equal', 40, 40, 35, 45),
         ])
         self._sanity_check_opcodes(new_opcodes)
@@ -1873,8 +1873,8 @@ class ProcessorsTests(TestCase):
         self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
-        #       change in a chunk matter to the processor, so the rest can
-        #       be left out.
+        #       change in a chunk matter to the processor for this test,
+        #       so the rest can be left out.
         orig_diff = (
             '@@ -2,7 +2,7 @@\n'
             ' #\n #\n #\n-#\n'
@@ -1900,8 +1900,8 @@ class ProcessorsTests(TestCase):
         self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
-        #       change in a chunk matter to the processor, so the rest can
-        #       be left out.
+        #       change in a chunk matter to the processor for this test,
+        #       so the rest can be left out.
         orig_diff = (
             '@@ -0,0 +1 @@\n'
             '+#\n'
@@ -1927,8 +1927,8 @@ class ProcessorsTests(TestCase):
         self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
-        #       change in a chunk matter to the processor, so the rest can
-        #       be left out.
+        #       change in a chunk matter to the processor for this test,
+        #       so the rest can be left out.
         orig_diff = (
             '@@ -1,5 +1,5 @@\n'
             ' #\n#\n+#\n'
@@ -1964,8 +1964,8 @@ class ProcessorsTests(TestCase):
         self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
-        #       change in a chunk matter to the processor, so the rest can
-        #       be left out.
+        #       change in a chunk matter to the processor for this test,
+        #       so the rest can be left out.
         orig_diff = (
             '@@ -0,0 +1,232 @@\n'
             ' #\n #\n #\n+#\n'
@@ -2004,8 +2004,8 @@ class ProcessorsTests(TestCase):
         self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
-        #       change in a chunk matter to the processor, so the rest can
-        #       be left out.
+        #       change in a chunk matter to the processor for this test,
+        #       so the rest can be left out.
         orig_diff = '\n'.join([
             '@@ -413,6 +413,8 @@\n'
             ' #\n #\n #\n+#\n'
@@ -2042,8 +2042,8 @@ class ProcessorsTests(TestCase):
             ('filtered-equal', 0, 631, 0, 631),
             ('replace', 631, 632, 631, 632),
             ('insert', 632, 632, 632, 633),
-            ('equal', 632, 813, 633, 814),
-            ('filtered-equal', 813, 882, 814, 883),
+            ('equal', 632, 809, 633, 810),
+            ('filtered-equal', 809, 882, 810, 883),
         ])
         self._sanity_check_opcodes(new_opcodes)
 
@@ -2071,8 +2071,8 @@ class ProcessorsTests(TestCase):
         self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
-        #       change in a chunk matter to the processor, so the rest can
-        #       be left out.
+        #       change in a chunk matter to the processor for this test,
+        #       so the rest can be left out.
         orig_diff = ''.join([
             '@@ -1,4 +1,5 @@\n',
             '-#\n',
@@ -2091,6 +2091,34 @@ class ProcessorsTests(TestCase):
             ('equal', 0, 2, 0, 2),
             ('replace', 2, 15, 2, 15),
             ('filtered-equal', 15, 100, 15, 100),
+        ])
+        self._sanity_check_opcodes(new_opcodes)
+
+    def test_filter_interdiff_opcodes_with_trailing_context(self):
+        """Testing filter_interdiff_opcodes with trailing context"""
+        opcodes = [
+            ('replace', 0, 13, 0, 13),
+            ('insert', 13, 13, 13, 14),
+            ('replace', 13, 20, 14, 21),
+        ]
+        self._sanity_check_opcodes(opcodes)
+
+        orig_diff = (
+            '@@ -10,5 +10,6 @@\n'
+            ' #\n #\n #\n+#\n #\n #\n'
+        )
+        new_diff = (
+            '@@ -10,6 +10,7 @@\n'
+            ' #\n #\n #\n #\n+##\n #\n #\n'
+        )
+
+        new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
+                                                    new_diff))
+
+        self.assertEqual(new_opcodes, [
+            ('filtered-equal', 0, 13, 0, 13),
+            ('insert', 13, 13, 13, 14),
+            ('filtered-equal', 13, 20, 14, 21),
         ])
         self._sanity_check_opcodes(new_opcodes)
 

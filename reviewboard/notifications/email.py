@@ -36,15 +36,15 @@ def review_request_closed_cb(sender, user, review_request, **kwargs):
         mail_review_request(review_request, on_close=True)
 
 
-def review_request_published_cb(sender, user, review_request, changedesc,
-                                **kwargs):
+def review_request_published_cb(sender, user, review_request, trivial,
+                                changedesc, **kwargs):
     """
     Listens to the ``review_request_published`` signal and sends an
     e-mail if this type of notification is enabled (through
     ``mail_send_review_mail`` site configuration).
     """
     siteconfig = SiteConfiguration.objects.get_current()
-    if siteconfig.get("mail_send_review_mail"):
+    if siteconfig.get('mail_send_review_mail') and not trivial:
         mail_review_request(review_request, changedesc)
 
 

@@ -1249,6 +1249,8 @@ class RepositoryForm(forms.ModelForm):
             'mirror_path': forms.TextInput(attrs={'size': '60'}),
             'raw_file_url': forms.TextInput(attrs={'size': '60'}),
             'bug_tracker': forms.TextInput(attrs={'size': '60'}),
+            'name': forms.TextInput(attrs={'size': '30',
+                                           'autocomplete': 'off'}),
             'username': forms.TextInput(attrs={'size': '30',
                                                'autocomplete': 'off'}),
             'users': FilteredSelectMultiple(_('users with access'), False),

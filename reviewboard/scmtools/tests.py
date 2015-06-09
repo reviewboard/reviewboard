@@ -14,6 +14,7 @@ from django.core.cache import cache
 from django.utils import six
 from django.utils.six.moves import zip_longest
 from djblets.util.filesystem import is_exe_in_path
+from kgb import SpyAgency
 import nose
 
 from reviewboard.diffviewer.diffutils import patch
@@ -30,7 +31,7 @@ from reviewboard.scmtools.errors import (SCMError, FileNotFoundError,
                                          RepositoryNotFoundError,
                                          AuthenticationError)
 from reviewboard.scmtools.forms import RepositoryForm
-from reviewboard.scmtools.git import ShortSHA1Error
+from reviewboard.scmtools.git import ShortSHA1Error, GitClient
 from reviewboard.scmtools.hg import HgDiffParser, HgGitDiffParser
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.perforce import STunnelProxy, STUNNEL_SERVER
@@ -1898,7 +1899,7 @@ class MercurialTests(SCMTestCase):
         self.assertTrue(not tool.file_exists('TODO.rstNotFound', rev))
 
 
-class GitTests(SCMTestCase):
+class GitTests(SpyAgency, SCMTestCase):
     """Unit tests for Git."""
     fixtures = ['test_scmtools']
 
@@ -2675,6 +2676,22 @@ class GitTests(SCMTestCase):
         self.assertRaises(
             ShortSHA1Error,
             lambda: self.remote_tool.get_file('README', 'd7e96b3'))
+
+    def test_valid_repository_https_username(self):
+        """Testing GitClient.is_valid_repository with an HTTPS URL and external
+        credentials
+        """
+        client = GitClient('https://example.com/test.git',
+                           username='username',
+                           password='pass/word')
+
+        self.spy_on(client._run_git)
+        client.is_valid_repository()
+
+        self.assertEqual(client._run_git.calls[0].args[0],
+                         ['ls-remote',
+                          'https://username:pass%2Fword@example.com/test.git',
+                          'HEAD'])
 
 
 class PolicyTests(TestCase):

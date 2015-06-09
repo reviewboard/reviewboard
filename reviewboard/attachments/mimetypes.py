@@ -58,13 +58,18 @@ def score_match(pattern, mimetype):
     """Return a score for how well the pattern matches the mimetype.
 
     This is an ordered list of precedence (_ indicates non-match):
-       Type/Vendor+Subtype   2
-       Type/_     +Subtype   1.9
-       Type/*                1.8
-          */Vendor+Subtype   1.7
-          */_     +Subtype   1.6
-       Type/_                1
-          */_                0.7
+
+    ======================= ==========
+    Format                  Precedence
+    ======================= ==========
+    ``Type/Vendor+Subtype`` 2
+    ``Type/_     +Subtype`` 1.9
+    ``Type/*``              1.8
+    ``*/Vendor+Subtype``    1.7
+    ``*/_     +Subtype``    1.6
+    ``Type/_``              1
+    ``*/_``                 0.7
+    ======================= ==========
     """
     EXACT_TYPE = 1
     ANY_TYPE = 0.7

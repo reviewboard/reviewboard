@@ -9,7 +9,9 @@ RB.CommitView = Backbone.View.extend({
     className: 'commit',
 
     template: _.template([
-        '<div class="progress"></div>',
+        '<div class="progress">',
+        ' <span class="fa fa-spinner fa-pulse"></span>',
+        '</div>',
         '<div class="summary">',
         '  <% if (reviewRequestURL) { %>',
         '   <span class="fa fa-arrow-circle-right jump-to-commit"/>',
