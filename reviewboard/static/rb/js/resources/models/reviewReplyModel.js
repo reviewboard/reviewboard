@@ -4,32 +4,34 @@
  * Encapsulates replies to a top-level review.
  */
 RB.ReviewReply = RB.BaseResource.extend({
-    defaults: _.defaults({
-        /*
-         * The text format type to request for text in all responses.
-         */
-        forceTextType: null,
+    defaults: function() {
+        return _.defaults({
+            /*
+             * The text format type to request for text in all responses.
+             */
+            forceTextType: null,
 
-        /*
-         * Whether responses from the server should return raw text
-         * fields when forceTextType is used.
-         */
-        includeTextTypes: null,
+            /*
+             * Whether responses from the server should return raw text
+             * fields when forceTextType is used.
+             */
+            includeTextTypes: null,
 
-        /*
-         * Raw text fields, if the caller fetches or posts with
-         * include-text-types=raw.
-         */
-        rawTextFields: {},
+            /*
+             * Raw text fields, if the caller fetches or posts with
+             * include-text-types=raw.
+             */
+            rawTextFields: {},
 
-        review: null,
-        'public': false,
-        bodyTop: null,
-        bodyTopRichText: false,
-        bodyBottom: null,
-        bodyBottomRichText: false,
-        timestamp: null
-    }, RB.BaseResource.prototype.defaults),
+            review: null,
+            'public': false,
+            bodyTop: null,
+            bodyTopRichText: false,
+            bodyBottom: null,
+            bodyBottomRichText: false,
+            timestamp: null
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     rspNamespace: 'reply',
     listKey: 'replies',

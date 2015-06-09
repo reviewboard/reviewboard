@@ -2,16 +2,18 @@
  * Screenshots.
  */
 RB.Screenshot = RB.BaseResource.extend({
-    defaults: _.defaults({
-        /* The screenshot's optional caption. */
-        caption: null,
+    defaults: function() {
+        return _.defaults({
+            /* The screenshot's optional caption. */
+            caption: null,
 
-        /* The screenshot's filename. */
-        filename: null,
+            /* The screenshot's filename. */
+            filename: null,
 
-        /* The URL where the screenshot can be reviewed. */
-        reviewURL: null
-    }, RB.BaseResource.prototype.defaults),
+            /* The URL where the screenshot can be reviewed. */
+            reviewURL: null
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     rspNamespace: 'screenshot',
 

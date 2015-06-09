@@ -2,14 +2,16 @@
  * A client-side representation of a repository on the server.
  */
 RB.Repository = RB.BaseResource.extend({
-    defaults: {
-        filesOnly: false,
-        localSitePrefix: null,
-        name: null,
-        requiresBasedir: false,
-        requiresChangeNumber: false,
-        scmtoolName: null,
-        supportsPostCommit: false
+    defaults: function() {
+        return _.defaults({
+            filesOnly: false,
+            localSitePrefix: null,
+            name: null,
+            requiresBasedir: false,
+            requiresChangeNumber: false,
+            scmtoolName: null,
+            supportsPostCommit: false
+        }, RB.BaseResource.prototype.defaults());
     },
 
     rspNamespace: 'repository',

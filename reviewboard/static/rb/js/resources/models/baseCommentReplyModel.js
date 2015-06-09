@@ -6,33 +6,35 @@
  * provide any additional functionality.
  */
 RB.BaseCommentReply = RB.BaseResource.extend({
-    defaults: _.defaults({
-        /*
-         * The text format type to request for text in all responses.
-         */
-        forceTextType: null,
+    defaults: function() {
+        return _.defaults({
+            /*
+             * The text format type to request for text in all responses.
+             */
+            forceTextType: null,
 
-        /*
-         * A string containing a comma-separated list of text types to include
-         * in the payload.
-         */
-        includeTextTypes: null,
+            /*
+             * A string containing a comma-separated list of text types to include
+             * in the payload.
+             */
+            includeTextTypes: null,
 
-        /*
-         * Raw text fields, if the caller fetches or posts with
-         * include-text-types=raw.
-         */
-        rawTextFields: {},
+            /*
+             * Raw text fields, if the caller fetches or posts with
+             * include-text-types=raw.
+             */
+            rawTextFields: {},
 
-        /* The ID of the comment being replied to. */
-        replyToID: null,
+            /* The ID of the comment being replied to. */
+            replyToID: null,
 
-        /* Whether the reply text is saved in rich-text (Markdown) format. */
-        richText: false,
+            /* Whether the reply text is saved in rich-text (Markdown) format. */
+            richText: false,
 
-        /* The text entered for the comment. */
-        text: ''
-    }, RB.BaseResource.prototype.defaults),
+            /* The text entered for the comment. */
+            text: ''
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     attrToJsonMap: {
         forceTextType: 'force_text_type',

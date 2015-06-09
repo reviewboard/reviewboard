@@ -5,36 +5,39 @@ var parentProto = RB.BaseComment.prototype;
 
 
 RB.FileAttachmentComment = RB.BaseComment.extend({
-    defaults: _.defaults({
-        /*
-         * The ID of the file attachment that fileAttachmentID is diffed
-         * against.
-         */
-        diffAgainstFileAttachmentID: null,
+    defaults: function() {
+         return _.defaults({
+            /*
+             * The ID of the file attachment that fileAttachmentID is diffed
+             * against.
+             */
+            diffAgainstFileAttachmentID: null,
 
-        /* The file attachment diffed against for this comment. */
-        diffAgainstFileAttachment: null,
+            /* The file attachment diffed against for this comment. */
+            diffAgainstFileAttachment: null,
+             
+            /* The ID of the file attachment the comment is on. */
+            fileAttachmentID: null,
 
-        /* The ID of the file attachment the comment is on. */
-        fileAttachmentID: null,
+            /* The file attachment the comment is on. */
+            fileAttachment: null,
 
-        /* The file attachment the comment is on. */
-        fileAttachment: null,
+            /*
+             * The text used to describe a link to the file. This may differ
+             * depending on the comment.
+             */
+            linkText: null,
 
-        /*
-         * The text used to describe a link to the file. This may differ
-         * depending on the comment.
-         */
-        linkText: null,
+            /*
+             * The URL for the review UI for the comment on this file
+             * attachment.
+             */
+            reviewURL: null,
 
-        /*
-         * The URL for the review UI for the comment on this file attachment.
-         */
-        reviewURL: null,
-
-        /* The HTML representing a thumbnail, if any, for this comment. */
-        thumbnailHTML: null
-    }, parentProto.defaults),
+            /* The HTML representing a thumbnail, if any, for this comment. */
+            thumbnailHTML: null
+        }, parentProto.defaults());
+    },
 
     rspNamespace: 'file_attachment_comment',
     expandedFields: ['diff_against_file_attachment', 'file_attachment'],
