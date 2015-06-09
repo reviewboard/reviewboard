@@ -6,46 +6,49 @@
  * subclassed by more specific implementations.
  */
 RB.BaseComment = RB.BaseResource.extend({
-    defaults: _.defaults({
-        /*
-         * The text format type to request for text in all responses.
-         */
-        forceTextType: null,
+    defaults: function() {
+        return _.defaults({
+            /*
+             * The text format type to request for text in all responses.
+             */
+            forceTextType: null,
 
-        /*
-         * A string containing a comma-separated list of text types to include
-         * in the payload.
-         */
-        includeTextTypes: null,
+            /*
+             * A string containing a comma-separated list of text types to
+             * include in the payload.
+             */
+            includeTextTypes: null,
 
-        /* Whether or not an issue is opened. */
-        issueOpened: null,
+            /* Whether or not an issue is opened. */
+            issueOpened: null,
 
-        /*
-         * The current state of the issue.
-         *
-         * This must be one of STATE_DROPPED, STATE_OPEN, or STATE_RESOLVED.
-         */
-        issueStatus: null,
+            /*
+             * The current state of the issue.
+             *
+             * This must be one of STATE_DROPPED, STATE_OPEN, or
+             * STATE_RESOLVED.
+             */
+            issueStatus: null,
 
-        /*
-         * Markdown-formatted text fields, if the caller fetches or posts with
-         * include-text-types=raw.
-         */
-        markdownTextFields: {},
+            /*
+             * Markdown-formatted text fields, if the caller fetches or posts
+             * with include-text-types=raw.
+             */
+            markdownTextFields: {},
+            
+            /*
+             * Raw text fields, if the caller fetches or posts with
+             * include-text-types=raw.
+             */
+            rawTextFields: {},
 
-        /*
-         * Raw text fields, if the caller fetches or posts with
-         * include-text-types=raw.
-         */
-        rawTextFields: {},
+            /* Whether the comment is saved in rich-text (Markdown) format. */
+            richText: null,
 
-        /* Whether the comment is saved in rich-text (Markdown) format. */
-        richText: null,
-
-        /* The text entered for the comment. */
-        text: ''
-    }, RB.BaseResource.prototype.defaults),
+            /* The text entered for the comment. */
+            text: ''
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     extraQueryArgs: {
         'force-text-type': 'html',

@@ -5,28 +5,30 @@ var parentProto = RB.BaseComment.prototype;
 
 
 RB.ScreenshotComment = RB.BaseComment.extend({
-    defaults: _.defaults({
-        /* The X coordinate for the top-left of the comment region. */
-        x: null,
+    defaults: function() {
+        return _.defaults({
+            /* The X coordinate for the top-left of the comment region. */
+            x: null,
 
-        /* The Y coordinate for the top-left of the comment region. */
-        y: null,
+            /* The Y coordinate for the top-left of the comment region. */
+            y: null,
 
-        /* The width of the comment region. */
-        width: null,
+            /* The width of the comment region. */
+            width: null,
 
-        /* The height of the comment region. */
-        height: null,
+            /* The height of the comment region. */
+            height: null,
 
-        /* The ID of the screenshot the comment is on. */
-        screenshotID: null,
+            /* The ID of the screenshot the comment is on. */
+            screenshotID: null,
 
-        /* The screenshot the comment is on. */
-        screenshot: null,
+            /* The screenshot the comment is on. */
+            screenshot: null,
 
-        /* The URL to an image depicting what was commented on. */
-        thumbnailURL: null
-    }, parentProto.defaults),
+            /* The URL to an image depicting what was commented on. */
+            thumbnailURL: null
+        }, parentProto.defaults());
+    },
 
     rspNamespace: 'screenshot_comment',
     expandedFields: ['screenshot'],

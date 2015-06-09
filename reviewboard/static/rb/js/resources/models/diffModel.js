@@ -12,10 +12,12 @@ var parentProto = RB.BaseResource.prototype;
  * It is expected that parentObject will be set to a ReviewRequest instance.
  */
 RB.Diff = RB.BaseResource.extend({
-    defaults: {
-        diff: null,
-        parentDiff: null,
-        basedir: null
+    defaults: function() {
+        return _.defaults({
+            diff: null,
+            parentDiff: null,
+            basedir: null
+        }, parentProto.defaults());
     },
 
     rspNamespace: 'diff',

@@ -11,28 +11,30 @@ var parentProto = RB.BaseComment.prototype;
  * FileDiff or an interdiff consisting of two FileDiffs.
  */
 RB.DiffComment = RB.BaseComment.extend({
-    defaults: _.defaults({
-        /* The first line number in the range (0-indexed). */
-        beginLineNum: 0,
+    defaults: function() {
+        return _.defaults({
+            /* The first line number in the range (0-indexed). */
+            beginLineNum: 0,
 
-        /* The last line number in the range (0-indexed). */
-        endLineNum: 0,
+            /* The last line number in the range (0-indexed). */
+            endLineNum: 0,
 
-        /* The FileDiff the comment applies to. */
-        fileDiff: null,
+            /* The FileDiff the comment applies to. */
+            fileDiff: null,
 
-        /* The ID of the FileDiff the comment is on. */
-        fileDiffID: null,
+            /* The ID of the FileDiff the comment is on. */
+            fileDiffID: null,
 
-        /* The optional FileDiff at the end of an interdiff range. */
-        interFileDiff: null,
+            /* The optional FileDiff at the end of an interdiff range. */
+            interFileDiff: null,
 
-        /*
-         * The ID of the optional FileDiff specifying the end of an
-         * interdiff range.
-         */
-        interFileDiffID: null
-    }, parentProto.defaults),
+            /*
+             * The ID of the optional FileDiff specifying the end of an
+             * interdiff range.
+             */
+            interFileDiffID: null
+        }, parentProto.defaults());
+    },
 
     rspNamespace: 'diff_comment',
     expandedFields: ['filediff', 'interfilediff'],
