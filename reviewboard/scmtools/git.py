@@ -355,6 +355,19 @@ class GitDiffParser(DiffParser):
                 orig_filename = orig_line[len(b'--- '):]
                 new_filename = new_line[len(b'+++ '):]
 
+                # Some diffs may incorrectly contain filenames listed as:
+                #
+                # --- filename\t
+                # +++ filename\t
+                #
+                # We need to strip those single trailing tabs.
+                if orig_filename.endswith(b'\t'):
+                    orig_filename = orig_filename[:-1]
+
+                if new_filename.endswith(b'\t'):
+                    new_filename = new_filename[:-1]
+
+                # Strip the Git a/ and b/ prefixes, if set in the diff.
                 if orig_filename.startswith(b'a/'):
                     orig_filename = orig_filename[2:]
 
