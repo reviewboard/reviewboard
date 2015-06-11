@@ -788,9 +788,17 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * Handle the selection of a different diff commit range.
      */
     _handleDiffCommitChanged: function(commits) {
-        var tipRevision = this._diffRevisionSelectorView.model.get('revision'),
-            location = tipRevision + '/?tip-commit-id=' +
-                       commits.tip.get('commitID');
+        var location = '1';
+
+        /*
+         * If there is no revision selector, then the current revision must be
+         * 1.
+         */
+        if (this._diffRevisionSelectorView !== undefined) {
+            location = this._diffRevisionSelectorView.model.get('revision');
+        }
+
+        location += '/?tip-commit-id' + commits.tip.get('commitID');
 
         if (commits.base !== null) {
             location += '?base-commit-id=' +  commits.base.get('commitID');
