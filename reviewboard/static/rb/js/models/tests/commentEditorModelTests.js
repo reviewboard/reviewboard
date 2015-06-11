@@ -289,7 +289,7 @@ suite('rb/models/CommentEditor', function() {
             editor.setExtraData('key1', 'strvalue');
             editor.setExtraData('key2', 42);
 
-            expect(editor.get('extraData')).toEqual({
+            expect(editor.get('extraData').attributes).toEqual({
                 key1: 'strvalue',
                 key2: 42
             });
@@ -444,7 +444,9 @@ suite('rb/models/CommentEditor', function() {
                 expect(comment.get('text')).toBe(text);
                 expect(comment.get('issueOpened')).toBe(issue_opened);
                 expect(comment.get('richText')).toBe(true);
-                expect(comment.get('extraData')).toEqual({mykey: 'myvalue'});
+                expect(comment.get('extraData').attributes).toEqual({
+                    mykey: 'myvalue'
+                });
                 expect(editor.get('dirty')).toBe(false);
                 expect(editor.trigger).toHaveBeenCalledWith('saved');
             });
