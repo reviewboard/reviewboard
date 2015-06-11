@@ -20,7 +20,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
 from reviewboard.diffviewer.errors import (DiffTooBigError,
                                            DiffParserError,
                                            EmptyDiffError)
-from reviewboard.reviews.errors import PermissionError
+from reviewboard.reviews.errors import PermissionError, PublishError
 from reviewboard.reviews.fields import get_review_request_field
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.errors import (AuthenticationError,
@@ -44,6 +44,7 @@ from reviewboard.webapi.errors import (CHANGE_NUMBER_IN_USE,
                                        INVALID_REPOSITORY,
                                        INVALID_USER,
                                        MISSING_REPOSITORY,
+                                       PUBLISH_ERROR,
                                        REPO_AUTHENTICATION_ERROR,
                                        REPO_INFO_ERROR)
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
@@ -847,6 +848,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                          "should never be reached." % status)
             except PermissionError:
                 return self._no_access_error(request.user)
+            except PublishError as e:
+                return PUBLISH_ERROR.with_message(e.msg)
 
         # Preserve the old changenum behavior.
         changed_fields = []
