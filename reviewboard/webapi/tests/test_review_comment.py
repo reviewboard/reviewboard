@@ -259,9 +259,9 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
         self.assertEqual(comment.filediff_id, filediff.pk)
         self.assertEqual(comment.interfilediff_id, interfilediff.pk)
 
-    def test_post_condensed_diff_with_no_history(self):
+    def test_post_cumulative_diff_with_no_history(self):
         """Testing the POST review-requests/<id>/reviews/<id>/diff-comments/
-        API with condensed_diff set but no history
+        API with cumulative_diff set but no history
         """
         review_request, filediff = self._create_diff_review_request()
 
@@ -275,18 +275,18 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
                 'first_line': 1,
                 'num_lines': 1,
                 'text': 'Text',
-                'extra_data.condensed_diff': 1,
+                'extra_data.cumulative_diff': 1,
             },
             expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertIn('err', rsp)
         self.assertIn('fields', rsp)
-        self.assertIn('extra_data.condensed_diff', rsp['fields'])
+        self.assertIn('extra_data.cumulative_diff', rsp['fields'])
 
-    def test_post_base_commit_id_without_condensed_diff(self):
+    def test_post_base_commit_id_without_cumulative_diff(self):
         """Testing the POST review-requests/<id>/reviews/<id>/diff-comments/
-        API with base_commit_id but not condensed_diff
+        API with base_commit_id but not cumulative_diff
         """
         repository = self.create_repository(tool_name='Test')
         review_request = self.create_review_request(repository=repository,
@@ -328,8 +328,8 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
 
         extra_data = rsp['diff_comment']['extra_data']
 
-        self.assertIn('condensed_diff', extra_data)
-        self.assertTrue(extra_data['condensed_diff'])
+        self.assertIn('cumulative_diff', extra_data)
+        self.assertTrue(extra_data['cumulative_diff'])
         self.assertIn('base_commit_id', extra_data)
         self.assertEqual('r1', extra_data['base_commit_id'])
 
@@ -354,7 +354,7 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
                 'num_lines': 1,
                 'text': 'Text',
                 'extra_data.base_commit_id': 'r1',
-                'extra_data.condensed_diff': 1
+                'extra_data.cumulative_diff': 1
             },
             expected_status=400)
 
@@ -384,7 +384,7 @@ class ResourceListTests(CommentListMixin, ReviewRequestChildListMixin,
                 'num_lines': 1,
                 'text': 'Text',
                 'extra_data.base_commit_id': 'r99',
-                'extra_data.condensed_diff': 1
+                'extra_data.cumulative_diff': 1
             },
             expected_status=400)
 

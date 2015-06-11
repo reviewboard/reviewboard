@@ -105,19 +105,20 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
                     invalid_fields['interfilediff_id'] = \
                         ['This is not a valid interfilediff ID']
 
-        condensed_diff = extra_fields.pop('extra_data.condensed_diff', 'false')
+        cumulative_diff = extra_fields.pop('extra_data.cumulative_diff',
+                                           'false')
         base_commit_id = extra_fields.pop('extra_data.base_commit_id', None)
 
         if base_commit_id is not None:
-            condensed_diff = 'true'
+            cumulative_diff = 'true'
 
-        if condensed_diff in ('1', 'true', 'True', 'TRUE'):
-            extra_fields['extra_data.condensed_diff'] = condensed_diff
+        if cumulative_diff.lower() in ('1', 'true'):
+            extra_fields['extra_data.cumulative_diff'] = cumulative_diff
 
             diff_commit = filediff.diff_commit
 
             if diff_commit is None:
-                invalid_fields['extra_data.condensed_diff'] = [
+                invalid_fields['extra_data.cumulative_diff'] = [
                     'This is not a review request with commit history'
                 ]
             elif base_commit_id is not None:
