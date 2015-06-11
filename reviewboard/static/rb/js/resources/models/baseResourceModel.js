@@ -9,10 +9,10 @@
  * Other resource models are expected to extend this. In particular, they
  * should generally be extending toJSON() and parse().
  */
-RB.BaseResource = Backbone.Model.extend({
+RB.BaseResource = Backbone.Model.extend(_.defaults({
     defaults: function() {
         return {
-            extraData: {},
+            extraData: new RB.ExtraData(),
             links: null,
             loaded: false,
             parentObject: null
@@ -60,6 +60,11 @@ RB.BaseResource = Backbone.Model.extend({
 
     /* Special deserializer functions called in parseResourceData(). */
     deserializers: {},
+
+    intialize: function() {
+        this.listenTo(this.get('extraData'), 'change',
+                      this._onExtraDataChanged);
+    },
 
     /*
      * Returns the URL for this resource's instance.
@@ -639,9 +644,7 @@ RB.BaseResource = Backbone.Model.extend({
         }
 
         if (this.supportsExtraData) {
-            _.each(this.get('extraData'), function(value, key) {
-                data['extra_data.' + key] = value;
-            }, this);
+            _.extend(data, this.get('extraData').toJSON());
         }
 
         return data;
@@ -736,13 +739,13 @@ RB.BaseResource = Backbone.Model.extend({
             key;
 
         if (this.supportsExtraData && attrs.extraData !== undefined) {
-            if (!_.isObject(attrs.extraData)) {
+            if (!(attrs.extraData instanceof RB.ExtraData)) {
                 return strings.INVALID_EXTRADATA_TYPE;
             }
 
-            for (key in attrs.extraData) {
-                if (attrs.extraData.hasOwnProperty(key)) {
-                    value = attrs.extraData[key];
+            for (key in attrs.extraData.attributes) {
+                if (attrs.extraData.attributes.hasOwnProperty(key)) {
+                    value = attrs.extraData.get(key);
 
                     if (!_.isNull(value) &&
                         (!_.isNumber(value) || _.isNaN(value)) &&
@@ -755,11 +758,11 @@ RB.BaseResource = Backbone.Model.extend({
             }
         }
     }
-}, {
+}, RB.ExtraDataMixin), {
     strings: {
         UNSET_PARENT_OBJECT: 'parentObject must be set',
         INVALID_EXTRADATA_TYPE:
-            'extraData must be an object, null, or undefined',
+            'extraData must be an RB.ExtraData instance, null, or undefined',
         INVALID_EXTRADATA_VALUE_TYPE:
             'extraData.{key} must be null, a number, boolean, or string'
     }

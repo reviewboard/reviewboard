@@ -982,4 +982,40 @@ suite('rb/resources/models/BaseResource', function() {
             expect(model.url()).toBe(null);
         });
     });
+
+    describe('set', function() {
+        it('with extraData as dict', function() {
+            model.supportsExtraData = true;
+
+            model.set({
+                extraData: {
+                    foo: 1
+                }
+            });
+
+            expect(model.attributes.extraData instanceof RB.ExtraData)
+                .toEqual(true);
+            expect(model.attributes.extraData.attributes).toEqual({foo: 1});
+        });
+
+        it('with extraData as RB.ExtraData', function() {
+            var extraData = new RB.ExtraData({foo: 1}),
+                modelExtraData,
+                originalCid;
+
+            model.supportsExtraData = true;
+            originalCid = model.get('extraData').cid;
+
+            model.set({
+                extraData: extraData
+            });
+
+            modelExtraData = model.get('extraData');
+
+            expect(modelExtraData instanceof RB.ExtraData).toEqual(true);
+            expect(modelExtraData.attributes).toEqual({foo: 1});
+            expect(modelExtraData.cid).not.toEqual(extraData.cid);
+            expect(modelExtraData.cid).toEqual(originalCid);
+        });
+    });
 });
