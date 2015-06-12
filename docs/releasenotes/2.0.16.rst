@@ -5,12 +5,20 @@ Review Board 2.0.16 Release Notes
 **Release date**: TBD
 
 
+Security Updates
+================
+
+This release fixes a security vulnerability recently reported that allows a
+user to craft a string that can, under the right circumstances, execute a
+malicious script. If you're running 2.0.x, we highly recommend that you
+upgrade, particularly if your server is public on the Internet.
+
+
 Upgrade Notes
 =============
 
-* If your install has Search enabled, you'll need to perform a full
-  re-indexing of your database in order for search to function correctly
-  again.
+If your install has Search enabled, you'll need to perform a full re-indexing
+of your database in order for search to function correctly again.
 
 
 New Features
