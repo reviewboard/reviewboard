@@ -10,8 +10,8 @@ var UpdatesBubbleView = Backbone.View.extend({
     template: _.template([
         '<span id="updates-bubble-summary"><%- summary %></span>',
         ' by ',
-        '<a href="<%= user.url %>" id="updates-bubble-user">',
-        '<%= user.fullname || user.username %>',
+        '<a href="<%- user.url %>" id="updates-bubble-user">',
+        '<%- user.fullname || user.username %>',
         '</a>',
         '<span id="updates-bubble-buttons">',
         ' <a href="#" class="update-page"><%- updatePageText %></a>',
