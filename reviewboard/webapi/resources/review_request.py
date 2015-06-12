@@ -20,7 +20,10 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
 from reviewboard.diffviewer.errors import (DiffTooBigError,
                                            DiffParserError,
                                            EmptyDiffError)
-from reviewboard.reviews.errors import PermissionError
+from reviewboard.reviews.errors import (CloseError,
+                                        PermissionError,
+                                        PublishError,
+                                        ReopenError)
 from reviewboard.reviews.fields import get_review_request_field
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.errors import (AuthenticationError,
@@ -35,6 +38,7 @@ from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.encoder import status_to_string, string_to_status
 from reviewboard.webapi.errors import (CHANGE_NUMBER_IN_USE,
+                                       CLOSE_ERROR,
                                        COMMIT_ID_ALREADY_EXISTS,
                                        DIFF_EMPTY,
                                        DIFF_TOO_BIG,
@@ -44,6 +48,8 @@ from reviewboard.webapi.errors import (CHANGE_NUMBER_IN_USE,
                                        INVALID_REPOSITORY,
                                        INVALID_USER,
                                        MISSING_REPOSITORY,
+                                       PUBLISH_ERROR,
+                                       REOPEN_ERROR,
                                        REPO_AUTHENTICATION_ERROR,
                                        REPO_INFO_ERROR)
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
@@ -839,11 +845,14 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                         close_description_text_type ==
                         self.TEXT_TYPE_MARKDOWN)
 
-                    review_request.close(
-                        self._close_type_map[status],
-                        request.user,
-                        close_description,
-                        rich_text=close_description_rich_text)
+                    try:
+                        review_request.close(
+                            self._close_type_map[status],
+                            request.user,
+                            close_description,
+                            rich_text=close_description_rich_text)
+                    except CloseError as e:
+                        return CLOSE_ERROR.with_message(six.text_type(e))
 
                     # Set this so that we'll return this new value when
                     # serializing the object.
@@ -851,12 +860,17 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                     review_request._close_description_rich_text = \
                         close_description_rich_text
                 elif status == 'pending':
-                    review_request.reopen(request.user)
+                    try:
+                        review_request.reopen(request.user)
+                    except ReopenError as e:
+                        return REOPEN_ERROR.with_message(e.msg)
                 else:
                     raise AssertionError("Code path for invalid status '%s' "
                                          "should never be reached." % status)
             except PermissionError:
                 return self._no_access_error(request.user)
+            except PublishError as e:
+                return PUBLISH_ERROR.with_message(e.msg)
 
         # Preserve the old changenum behavior.
         changed_fields = []
@@ -868,6 +882,11 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 review_request.commit = six.text_type(changenum)
                 changed_fields.append('changenum')
                 changed_fields.append('commit_id')
+
+            try:
+                review_request.reopen(request.user)
+            except ReopenError as e:
+                return REOPEN_ERROR.with_message(e.msg)
 
             try:
                 draft = ReviewRequestDraftResource.prepare_draft(
@@ -883,7 +902,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 return EMPTY_CHANGESET
 
             draft.save()
-            review_request.reopen()
 
         if extra_fields:
             self.import_extra_data(review_request, review_request.extra_data,
