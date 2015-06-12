@@ -40,3 +40,5 @@ Errors
    225-publish-error
    226-user-query-error
    227-commit-id-already-exists
+   230-close-error
+   231-reopen-error

@@ -131,7 +131,11 @@ ClosedBannerView = BannerView.extend({
      * Handler for Reopen Review Request.
      */
     _onReopenClicked: function() {
-        this.reviewRequest.reopen();
+        this.reviewRequest.reopen({
+            error: function(model, xhr) {
+                alert(xhr.errorText);
+            }
+        });
 
         return false;
     }
@@ -660,6 +664,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
             this.$('#btn-draft-publish').enable();
             this.$('#btn-draft-discard').enable();
+        }, this);
+
+        this.model.on('closeError', function(errorText) {
+            alert(errorText);
         }, this);
 
         this.model.on('saved', this.showBanner, this);
@@ -1333,8 +1341,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
         if (confirm(confirmText)) {
             this.model.get('reviewRequest').close({
-                type: RB.ReviewRequest.CLOSE_DISCARDED
-            });
+                type: RB.ReviewRequest.CLOSE_DISCARDED,
+                error: function(model, xhr) {
+                    this.model.trigger('closeError', xhr.errorText);
+                }
+            }, this);
         }
 
         return false;
@@ -1359,8 +1370,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
         if (submit) {
             this.model.get('reviewRequest').close({
-                type: RB.ReviewRequest.CLOSE_SUBMITTED
-            });
+                type: RB.ReviewRequest.CLOSE_SUBMITTED,
+                error: function(model, xhr) {
+                    this.model.trigger('closeError', xhr.errorText);
+                }
+            }, this);
         }
 
         return false;
