@@ -41,3 +41,5 @@ Errors
    226-user-query-error
    227-commit-id-already-exists
    228-token-generation-failed
+   230-close-error
+   231-reopen-error
