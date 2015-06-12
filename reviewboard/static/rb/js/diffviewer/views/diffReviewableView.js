@@ -45,7 +45,8 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         this._selector = new RB.TextCommentRowSelector({
             el: this.el,
-            reviewableView: this
+            reviewableView: this,
+            extraCommentBlockOptions: this.options.extraCommentBlockOptions
         });
 
         this._hiddenCommentBlockViews = [];

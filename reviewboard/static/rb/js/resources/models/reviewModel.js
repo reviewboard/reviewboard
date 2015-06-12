@@ -111,8 +111,8 @@ RB.Review = RB.BaseResource.extend({
     },
 
     createDiffComment: function(id, fileDiffID, interFileDiffID, beginLineNum,
-                                endLineNum) {
-        return new RB.DiffComment({
+                                endLineNum, cumulativeDiff, baseCommitID) {
+        var comment = new RB.DiffComment({
             parentObject: this,
             id: id,
             fileDiffID: fileDiffID,
@@ -120,6 +120,16 @@ RB.Review = RB.BaseResource.extend({
             beginLineNum: beginLineNum,
             endLineNum: endLineNum
         });
+
+        if (cumulativeDiff) {
+            comment.setCumulativeDiff(cumulativeDiff);
+
+            if (baseCommitID !== null) {
+                comment.setBaseCommitID(baseCommitID);
+            }
+        }
+
+        return comment;
     },
 
     createScreenshotComment: function(id, screenshot_id, x, y, width, height) {

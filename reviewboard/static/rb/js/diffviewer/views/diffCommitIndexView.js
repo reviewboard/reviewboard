@@ -97,6 +97,16 @@ RB.DiffCommitIndexView = Backbone.View.extend({
     },
 
     /*
+     * Return if the shown commit history is from an interdiff.
+     */
+    isShowingInterdiff: function() {
+        return _.any(this.collection.models,
+                     function(item) {
+                         return item.get('historyEntrySymbol') !== ' ';
+                     });
+    },
+
+    /*
      * Update the diff commit list table.
      *
      * This will populate the table with entries from the associated
@@ -113,11 +123,7 @@ RB.DiffCommitIndexView = Backbone.View.extend({
      *            should be updated while rendering.
      */
     update: function(options) {
-        var renderHistorySymbol = _.any(
-                this.collection.models,
-                function(item) {
-                    return item.get('historyEntrySymbol') != ' ';
-                }),
+        var renderHistorySymbol = this.isShowingInterdiff(),
             itemCount = this.collection.size(),
             $radio,
             $tbody,
@@ -213,6 +219,40 @@ RB.DiffCommitIndexView = Backbone.View.extend({
     },
 
     /*
+     * Get the range of selected commits.
+     *
+     * When there is no range selected, this function returns null.
+     */
+    getSelectedRange: function() {
+        if (this.collection.size() === 0 || this.isShowingInterdiff()) {
+            return null;
+        }
+
+        return {
+            base: this._baseCommit,
+            tip: this._tipCommit
+        };
+    },
+
+    /*
+     * Return this distance between two commits in the history.
+     *
+     * The distance is the length of the shortest path between them.
+     *
+     * TODO: This only supports linear histories.
+     */
+    getDistance: function(a, b) {
+        var indexA = this.collection.models.indexOf(a),
+            indexB = this.collection.models.indexOf(b);
+
+        if (indexA === undefined || indexB === undefined) {
+            return undefined;
+        }
+
+        return Math.abs(indexA - indexB);
+    },
+
+    /*
      * Show an expanded description tooltip for a commit summary.
      */
     _onExpandSummary: function(event) {
@@ -283,10 +323,7 @@ RB.DiffCommitIndexView = Backbone.View.extend({
         }
 
         if (trigger !== false) {
-            this.trigger('diffCommitsChanged', {
-                base: this._baseCommit,
-                tip: this._tipCommit
-            });
+            this.trigger('diffCommitsChanged', this.getSelectedRange());
         }
     },
 
@@ -309,10 +346,7 @@ RB.DiffCommitIndexView = Backbone.View.extend({
         this._tipCommit = commit;
 
         if (trigger !== false) {
-            this.trigger('diffCommitsChanged', {
-                base: this._baseCommit,
-                tip: this._tipCommit
-            });
+            this.trigger('diffCommitsChanged', this.getSelectedRange());
         }
     }
 });

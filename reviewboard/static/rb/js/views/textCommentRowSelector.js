@@ -309,12 +309,12 @@ RB.TextCommentRowSelector = Backbone.View.extend({
          * Selection was finalized. Create the comment block
          * and show the comment dialog.
          */
-        this.options.reviewableView.createAndEditCommentBlock({
+        this.options.reviewableView.createAndEditCommentBlock(_.defaults({
             beginLineNum: this._beginLineNum,
             endLineNum: this._endLineNum,
             $beginRow: this._$begin,
             $endRow: this._$end
-        });
+        }, this.options.extraCommentBlockOptions || {}));
     },
 
     /*

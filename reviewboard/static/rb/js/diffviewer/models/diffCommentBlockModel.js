@@ -11,7 +11,9 @@ RB.DiffCommentBlock = RB.AbstractCommentBlock.extend({
         beginLineNum: null,
         endLineNum: null,
         $beginRow: null,
-        $endRow: null
+        $endRow: null,
+        cumulativeDiff: null,
+        baseCommitID: null
     }, RB.AbstractCommentBlock.prototype.defaults),
 
     /*
@@ -31,6 +33,8 @@ RB.DiffCommentBlock = RB.AbstractCommentBlock.extend({
             this.get('fileDiffID'),
             this.get('interFileDiffID'),
             this.get('beginLineNum'),
-            this.get('endLineNum'));
+            this.get('endLineNum'),
+            this.get('cumulativeDiff'),
+            this.get('baseCommitID'));
     }
 });

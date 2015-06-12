@@ -134,6 +134,50 @@ RB.DiffComment = RB.BaseComment.extend({
         }
 
         return parentProto.validate.call(this, attrs, options);
+    },
+
+    /*
+     * Get the base commit ID of the associated diff, if it exists.
+     */
+    getBaseCommitID: function() {
+        return this.getExtraData('base_commit_id') || null;
+    },
+
+    /*
+     * Set the base commit ID of the associated cumulative diff.
+     */
+    setBaseCommitID: function(value) {
+        var extraData = this.get('extraData');
+
+        if (value === null) {
+            extraData.unset('base_commit_id');
+        } else {
+            extraData.set({
+                base_commit_id: value,
+                cumulative_diff: true
+            });
+        }
+    },
+
+    /*
+     * Get whether or not the associated diff is cumulative.
+     */
+    getCumulativeDiff: function() {
+        return this.getExtraData('cumulative_diff') || false;
+    },
+
+    /*
+     * Set whether or not the associated diff is cumulative.
+     */
+    setCumulativeDiff: function(value) {
+        var extraData = this.get('extraData');
+
+        if (!value) {
+            extraData.unset('cumulative_diff');
+            extraData.unset('base_commit_id');
+        } else {
+            extraData.set('cumulative_diff', !!value);
+        }
     }
 }, {
     strings: {

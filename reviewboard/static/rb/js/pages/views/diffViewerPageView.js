@@ -336,28 +336,54 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     queueLoadDiff: function(fileDiffID, fileDiffRevision,
                             interFileDiffID, interdiffRevision,
                             fileIndex, serializedCommentBlocks) {
-        var diffReviewable = new RB.DiffReviewable({
-            reviewRequest: this.reviewRequest,
-            fileIndex: fileIndex,
-            fileDiffID: fileDiffID,
-            interFileDiffID: interFileDiffID,
-            revision: fileDiffRevision,
-            interdiffRevision: interdiffRevision,
-            serializedCommentBlocks: serializedCommentBlocks
-        });
+        var hasCommits = this._diffCommitIndexView.collection.size() > 0,
+            diffReviewable = new RB.DiffReviewable({
+                reviewRequest: this.reviewRequest,
+                fileIndex: fileIndex,
+                fileDiffID: fileDiffID,
+                interFileDiffID: interFileDiffID,
+                revision: fileDiffRevision,
+                interdiffRevision: interdiffRevision,
+                serializedCommentBlocks: serializedCommentBlocks
+            }),
+            cumulativeDiff = false,
+            baseCommitID = null,
+            commitRange;
+
+        if (hasCommits) {
+            commitRange = this._diffCommitIndexView.getSelectedRange();
+
+            if (commitRange.base !== undefined) {
+
+                cumulativeDiff = this._diffCommitIndexView.getDistance(
+                    commitRange.base, commitRange.tip) !== 1;
+
+                if (cumulativeDiff && commitRange.base !== null) {
+                    baseCommitID = commitRange.base.get('commitID');
+                }
+            } else {
+                cumulativeDiff = this
+                    ._diffCommitIndexView
+                    .collection
+                    .models
+                    .indexOf(commitRange.tip) !== 0;
+            }
+        }
 
         $.funcQueue('diff_files').add(function() {
             if ($('#file' + fileDiffID).length === 1) {
                 /*
                  * We already have this one. This is probably a pre-loaded file.
                  */
-                this._renderFileDiff(diffReviewable);
+                this._renderFileDiff(diffReviewable, cumulativeDiff,
+                                     baseCommitID);
             } else {
                 diffReviewable.getRenderedDiff({
                     complete: function(xhr) {
                         $('#file_container_' + fileDiffID)
                             .replaceWith(xhr.responseText);
-                        this._renderFileDiff(diffReviewable);
+                        this._renderFileDiff(diffReviewable, cumulativeDiff,
+                                             baseCommitID);
                     }
                 }, this);
             }
@@ -373,7 +399,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * Once rendered and set up, the next diff in the load queue will be
      * pulled from the server.
      */
-    _renderFileDiff: function(diffReviewable) {
+    _renderFileDiff: function(diffReviewable, cumulativeDiff, baseCommitID) {
         var elementName = 'file' + diffReviewable.get('fileDiffID'),
             $el = $('#' + elementName),
             diffReviewableView,
@@ -391,7 +417,11 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         diffReviewableView = new RB.DiffReviewableView({
             el: $el,
-            model: diffReviewable
+            model: diffReviewable,
+            extraCommentBlockOptions: {
+                cumulativeDiff: cumulativeDiff,
+                baseCommitID: baseCommitID
+            }
         });
 
         this._diffFileIndexView.addDiff(this._diffReviewableViews.length,
