@@ -134,8 +134,8 @@ class DiffChunkGenerator(object):
         """Returns the chunks for the given diff information.
 
         If the file is binary or is an added or deleted 0-length file, or if
-        the file has moved with no additional changes, then an empty list of
-        chunks will be returned.
+        the file has moved (or been copied) with no additional changes, then
+        an empty list of chunks will be returned.
 
         If there are chunks already computed in the cache, they will be
         returned. Otherwise, new chunks will be generated, stored in cache,
@@ -146,7 +146,7 @@ class DiffChunkGenerator(object):
         if (self.filediff.binary or
             self.filediff.source_revision == '' or
             ((self.filediff.is_new or self.filediff.deleted or
-              self.filediff.moved) and
+              self.filediff.moved or self.filediff.copied) and
              counts['raw_insert_count'] == 0 and
              counts['raw_delete_count'] == 0)):
             return []
