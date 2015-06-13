@@ -13,8 +13,13 @@ from reviewboard.accounts.backends import AuthBackend
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.reviews.models import (BaseComment, ReviewRequest,
                                         ReviewRequestDraft)
+from reviewboard.reviews.signals import (review_request_closing,
+                                         review_request_publishing,
+                                         review_request_reopening)
+from reviewboard.reviews.errors import CloseError, PublishError, ReopenError
 from reviewboard.site.models import LocalSite
-from reviewboard.webapi.errors import INVALID_REPOSITORY
+from reviewboard.webapi.errors import (CLOSE_ERROR, INVALID_REPOSITORY,
+                                       PUBLISH_ERROR, REOPEN_ERROR)
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (review_request_item_mimetype,
@@ -23,6 +28,7 @@ from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
                                                         ExtraDataListMixin)
 from reviewboard.webapi.tests.urls import (get_repository_item_url,
+                                           get_review_request_draft_url,
                                            get_review_request_item_url,
                                            get_review_request_list_url,
                                            get_user_item_url)
@@ -1539,3 +1545,93 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
         review_request = ReviewRequest.objects.get(pk=review_request.id)
         self.assertEqual(review_request.status, 'S')
+
+
+class ErrorTests(SpyAgency, BaseWebAPITestCase):
+    """Tests for handling errors."""
+    fixtures = ['test_users']
+
+    def test_publishing_error(self):
+        """Testing triggering a PublishError during a review request publish"""
+        def callback(*args, **kwargs):
+            raise PublishError('')
+
+        self.spy_on(callback)
+
+        review_request = self.create_review_request(submitter=self.user)
+        ReviewRequestDraft.create(review_request)
+
+        review_request_publishing.connect(callback)
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'public': 1
+            },
+            expected_status=PUBLISH_ERROR.http_status)
+        review_request_publishing.disconnect(callback)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+
+        self.assertTrue(callback.spy.called)
+        self.assertFalse(review_request.public)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('err', rsp)
+        self.assertIn('msg', rsp['err'])
+        self.assertEqual(rsp['err']['msg'], six.text_type(PublishError('')))
+
+    def test_reopening_error(self):
+        """Testing triggering a ReopenError during a review request reopen"""
+        def callback(*args, **kwargs):
+            raise ReopenError('')
+
+        self.spy_on(callback)
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    public=True)
+        review_request.close(ReviewRequest.SUBMITTED, user=self.user)
+
+        review_request_reopening.connect(callback)
+        rsp = self.api_put(
+            get_review_request_item_url(review_request.display_id),
+            {
+                'status': 'pending'
+            },
+            expected_status=REOPEN_ERROR.http_status)
+        review_request_reopening.disconnect(callback)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+
+        self.assertTrue(callback.spy.called)
+        self.assertEqual(review_request.status, ReviewRequest.SUBMITTED)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('err', rsp)
+        self.assertIn('msg', rsp['err'])
+        self.assertEqual(rsp['err']['msg'], six.text_type(ReopenError('')))
+
+    def test_closing_error(self):
+        """Testing triggering a CloseError during a review request close"""
+        def callback(*args, **kwargs):
+            raise CloseError('')
+
+        self.spy_on(callback)
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    public=True)
+
+        review_request_closing.connect(callback)
+        rsp = self.api_put(
+            get_review_request_item_url(review_request.display_id),
+            {
+                'status': 'discarded'
+            },
+            expected_status=CLOSE_ERROR.http_status)
+        review_request_closing.disconnect(callback)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+
+        self.assertTrue(callback.spy.called)
+        self.assertEqual(review_request.status, ReviewRequest.PENDING_REVIEW)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('err', rsp)
+        self.assertIn('msg', rsp['err'])
+        self.assertEqual(rsp['err']['msg'], six.text_type(CloseError('')))

@@ -302,7 +302,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             try:
                 review.publish(user=request.user)
             except PublishError as e:
-                return PUBLISH_ERROR.with_message(e.msg)
+                return PUBLISH_ERROR.with_message(six.text_type(e))
 
         return 200, {
             self.item_result_key: review,
