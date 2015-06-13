@@ -14,8 +14,9 @@ class PermissionError(Exception):
 class PublishError(Exception):
     """An error that occurs when attempting to publish a review request."""
 
-    def __str__(self):
-        return 'Publish error: %s' % self
+    def __init__(self, message):
+        super(PublishError, self).__init__(
+            'Error publishing the review request: %s' % message)
 
 
 class CloseError(Exception):
@@ -30,7 +31,7 @@ class ReopenError(Exception):
     """An error that occurs while attempting to reopen a review request."""
 
     def __init__(self, message):
-        super(ReopenError, self).__init(
+        super(ReopenError, self).__init__(
             'Error reopening the review request: %s' % message)
 
 
