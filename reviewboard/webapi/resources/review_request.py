@@ -853,14 +853,14 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                     try:
                         review_request.reopen(request.user)
                     except ReopenError as e:
-                        return REOPEN_ERROR.with_message(e.msg)
+                        return REOPEN_ERROR.with_message(six.text_type(e))
                 else:
                     raise AssertionError("Code path for invalid status '%s' "
                                          "should never be reached." % status)
             except PermissionError:
                 return self._no_access_error(request.user)
             except PublishError as e:
-                return PUBLISH_ERROR.with_message(e.msg)
+                return PUBLISH_ERROR.with_message(six.text_type(e))
 
         # Preserve the old changenum behavior.
         changed_fields = []
@@ -876,7 +876,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             try:
                 review_request.reopen(request.user)
             except ReopenError as e:
-                return REOPEN_ERROR.with_message(e.msg)
+                return REOPEN_ERROR.with_message(six.text_type(e))
 
             try:
                 draft = ReviewRequestDraftResource.prepare_draft(

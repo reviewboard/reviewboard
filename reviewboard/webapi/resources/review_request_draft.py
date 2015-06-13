@@ -493,7 +493,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             except NotModifiedError:
                 return NOTHING_TO_PUBLISH
             except PublishError as e:
-                return PUBLISH_ERROR.with_message(e.msg)
+                return PUBLISH_ERROR.with_message(six.text_type(e))
 
         return 200, {
             self.item_result_key: draft,

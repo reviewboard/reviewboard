@@ -308,7 +308,7 @@ class ReviewReplyResource(BaseReviewResource):
             try:
                 reply.publish(user=request.user)
             except PublishError as e:
-                return PUBLISH_ERROR.with_message(e.msg)
+                return PUBLISH_ERROR.with_message(six.text_type(e))
 
         else:
             reply.save()
