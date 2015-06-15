@@ -427,8 +427,7 @@ RB.ReviewDialogView = Backbone.View.extend({
      * the server will begin loading and rendering.
      */
     render: function() {
-        var data,
-            $hooksContainer;
+        var $hooksContainer;
 
         this.$el.html(this.template({
             shipItText: gettext('Ship It'),
@@ -701,16 +700,17 @@ RB.ReviewDialogView = Backbone.View.extend({
         });
 
         $.funcQueue('reviewForm').add(function() {
+            var saveFunc = publish ? this.model.publish : this.model.save;
+
             this.model.set({
                 shipIt: this._$shipIt.prop('checked'),
                 bodyTop: this._bodyTopEditor.getText(),
                 bodyBottom: this._bodyBottomEditor.getText(),
-                'public': publish,
                 bodyTopRichText: this._bodyTopEditor.richText,
                 bodyBottomRichText: this._bodyBottomEditor.richText
             });
 
-            this.model.save({
+            saveFunc.call(this.model, {
                 success: function() {
                     $.funcQueue('reviewForm').next();
                 },
