@@ -97,7 +97,7 @@ class ReviewAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
         (_('State'), {
-            'fields': ('email_message_id', 'time_emailed'),
+            'fields': ('email_message_id', 'time_emailed', 'extra_data'),
             'classes': ('collapse',)
         })
     )
