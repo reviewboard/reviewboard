@@ -12,7 +12,7 @@ RB.DraftReview = RB.Review.extend(_.extend({
      *
      * Before publish, the "publishing" event will be triggered.
      *
-     * After the publish has succeeded, the "publishing" event will be
+     * After the publish has succeeded, the "published" event will be
      * triggered.
      */
     publish: function(options, context) {
@@ -30,6 +30,7 @@ RB.DraftReview = RB.Review.extend(_.extend({
             ready: function() {
                 this.set('public', true);
                 this.save({
+                    attrs: options.attrs,
                     success: function() {
                         this.trigger('published');
 
