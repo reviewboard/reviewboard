@@ -13,6 +13,8 @@ user to craft a string that can, under the right circumstances, execute a
 malicious script. If you're running 2.0.x, we highly recommend that you
 upgrade, particularly if your server is public on the Internet.
 
+This was reported by Uchida.
+
 
 Upgrade Notes
 =============
@@ -271,4 +273,5 @@ Contributors
 * David Trowbridge
 * Rohan Meringenti
 * Steven MacLeod
+* Uchida
 * Wang Jun Sun

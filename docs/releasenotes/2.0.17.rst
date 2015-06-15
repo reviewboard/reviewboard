@@ -2,7 +2,7 @@
 Review Board 2.0.17 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: June 15, 2015
 
 
 Packaging
@@ -67,3 +67,4 @@ Contributors
 * Christian Hammond
 * David Trowbridge
 * Steven MacLeod
+* Stephen Gallagher
