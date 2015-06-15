@@ -2,7 +2,7 @@
 Review Board 2.0.16 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: June 11, 2015
 
 
 Security Updates
