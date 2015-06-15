@@ -1,0 +1,70 @@
+=================================
+Review Board 2.0.17 Release Notes
+=================================
+
+**Release date**: June 15, 2015
+
+
+Packaging
+=========
+
+* Review Board now installs PyCrypto 2.6+ as a dependency.
+
+* The README is no longer missing from the package.
+
+
+Extensions
+==========
+
+* Extensions reading/writing extra data on reviews through JavaScript can now
+  do so through :js:class:`RB.Review`.
+
+
+Bug Fixes
+=========
+
+Diff Viewer
+-----------
+
+* Diffs for files that were copied without being modified weren't being
+  shown in the diff viewer.
+
+  Patch by Steven MacLeod.
+
+* Internal errors when generating diffs are now shown on the page, rather
+  than a generic HTTP 500.
+
+
+Reviews
+-------
+
+* Fixed the review dialog not emitting the ``publishing`` and ``published``
+  events, which are needed by some extensions.
+
+* Modifying a draft for a review request that depends on multiple review
+  requests, each listing the same reviewer, who has private profiles enabled,
+  no longer results in an HTTP 500 error.
+
+
+Web API
+-------
+
+* Fixed some errors and regressions in showing error messages from publishing
+  or reopening review requests.
+
+
+Administration
+--------------
+
+* Fixed database entries for reviews in the administration UI not showing
+  the ``extra_data`` field.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Steven MacLeod
+* Stephen Gallagher
