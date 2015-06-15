@@ -955,7 +955,8 @@ RB.ReviewDialogView = Backbone.View.extend({
         _.each(this._commentViews, maybeSave);
 
         $.funcQueue('reviewForm').add(function() {
-            var shipIt = this._$shipIt.prop('checked');
+            var shipIt = this._$shipIt.prop('checked'),
+                saveFunc = publish ? this.model.publish : this.model.save;
 
             if (this.model.get('public') === publish &&
                 this.model.get('shipIt') === shipIt) {
@@ -963,11 +964,10 @@ RB.ReviewDialogView = Backbone.View.extend({
             } else {
                 madeChanges = true;
                 this.model.set({
-                    'public': publish,
                     shipIt: shipIt
                 });
 
-                this.model.save({
+                saveFunc.call(this.model, {
                     attrs: ['public', 'shipIt', 'forceTextType',
                             'includeTextTypes'],
                     success: function() {
