@@ -1104,7 +1104,9 @@ def comment_diff_fragments(
 
         page_content = render_to_string(template_name, context)
 
-        response = HttpResponse(page_content)
+        response = HttpResponse(
+            page_content,
+            content_type='application/javascript')
 
         if had_error:
             return response
