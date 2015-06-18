@@ -781,7 +781,7 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
         if (self.filediff.binary or
             self.filediff.source_revision == '' or
             ((self.filediff.is_new or self.filediff.deleted or
-              self.filediff.moved) and
+              self.filediff.moved or self.filediff.copied) and
              counts['raw_insert_count'] == 0 and
              counts['raw_delete_count'] == 0)):
             raise StopIteration

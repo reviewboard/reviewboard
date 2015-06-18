@@ -2,10 +2,9 @@ from __future__ import unicode_literals
 
 from django.utils import six
 from django.utils.html import escape
+from djblets.markdown import markdown_escape, markdown_unescape
 
-from reviewboard.reviews.markdown_utils import (markdown_escape,
-                                                markdown_set_field_escaped,
-                                                markdown_unescape,
+from reviewboard.reviews.markdown_utils import (markdown_set_field_escaped,
                                                 render_markdown)
 
 

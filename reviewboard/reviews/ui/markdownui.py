@@ -3,12 +3,12 @@ from __future__ import unicode_literals
 import logging
 
 from django.utils.translation import ugettext as _
+from djblets.markdown import iter_markdown_lines
 from pygments.lexers import TextLexer
 
 from reviewboard.reviews.chunk_generators import MarkdownDiffChunkGenerator
 from reviewboard.reviews.ui.text import TextBasedReviewUI
-from reviewboard.reviews.markdown_utils import (iter_markdown_lines,
-                                                render_markdown_from_file)
+from reviewboard.reviews.markdown_utils import render_markdown_from_file
 
 
 class MarkdownReviewUI(TextBasedReviewUI):

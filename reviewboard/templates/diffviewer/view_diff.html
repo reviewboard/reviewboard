@@ -17,8 +17,11 @@
 {% block content %}
 {%  if error %}
 {%   errorbox %}
-<p>{{error}}</p>
-{%    if trace %}<pre>{{trace|escape}}</pre>{% endif %}
+<h2>{% trans "There was an internal error displaying the diff." %}</h2>
+<p><b>{% blocktrans %}Details:</b> {{error}}{% endblocktrans %}</p>
+{%    if request.user.is_superuser %}
+{%     if trace %}<pre>{{trace|escape}}</pre>{% endif %}
+{%    endif %}
 {%   enderrorbox %}
 {%  else %}{# !error #}
 
@@ -89,6 +92,7 @@
 {% block scripts-post %}
 {{block.super}}
 
+{%  if not error %}
 <script>
     RB.PageManager.setPage(new RB.DiffViewerPageView({
         model: new RB.DiffViewerPageModel({{diff_context|json_dumps}},
@@ -100,4 +104,5 @@
 {%  include "reviews/reviewable_page_data.js" %}
     }));
 </script>
+{%  endif %}{# !error #}
 {% endblock scripts-post %}

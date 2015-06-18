@@ -84,6 +84,8 @@ RB.Review = RB.BaseResource.extend({
         }
     },
 
+    supportsExtraData: true,
+
     parseResourceData: function(rsp) {
         var rawTextFields = rsp.raw_text_fields || rsp,
             data = RB.BaseResource.prototype.parseResourceData.call(this, rsp);
