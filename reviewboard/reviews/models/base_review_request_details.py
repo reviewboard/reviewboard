@@ -7,10 +7,10 @@ from django.utils import six
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
+from djblets.markdown import markdown_escape
 
 from reviewboard.attachments.models import FileAttachmentHistory
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.markdown_utils import markdown_escape
 from reviewboard.reviews.models.default_reviewer import DefaultReviewer
 from reviewboard.scmtools.errors import InvalidChangeNumberError
 

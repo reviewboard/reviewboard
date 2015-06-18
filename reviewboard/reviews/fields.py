@@ -6,12 +6,12 @@ from django.utils import six
 from django.utils.datastructures import SortedDict
 from django.utils.html import escape, strip_tags
 from django.utils.safestring import mark_safe
+from djblets.markdown import iter_markdown_lines
 
 from reviewboard.diffviewer.diffutils import get_line_changed_regions
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
 from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
-                                                iter_markdown_lines,
                                                 normalize_text_for_edit,
                                                 render_markdown)
 
