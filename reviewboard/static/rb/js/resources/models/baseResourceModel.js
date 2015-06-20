@@ -12,7 +12,7 @@
 RB.BaseResource = Backbone.Model.extend(_.defaults({
     defaults: function() {
         return {
-            extraData: new RB.ExtraData(),
+            extraData: {},
             links: null,
             loaded: false,
             parentObject: null
@@ -61,9 +61,10 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
     /* Special deserializer functions called in parseResourceData(). */
     deserializers: {},
 
-    intialize: function() {
-        this.listenTo(this.get('extraData'), 'change',
-                      this._onExtraDataChanged);
+    initialize: function() {
+        if (this.supportsExtraData) {
+            this._setupExtraData();
+        }
     },
 
     /*
@@ -644,7 +645,7 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
         }
 
         if (this.supportsExtraData) {
-            _.extend(data, this.get('extraData').toJSON());
+            _.extend(data, this.extraData.toJSON());
         }
 
         return data;
@@ -739,13 +740,13 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
             key;
 
         if (this.supportsExtraData && attrs.extraData !== undefined) {
-            if (!(attrs.extraData instanceof RB.ExtraData)) {
+            if (!_.isObject(attrs.extraData)) {
                 return strings.INVALID_EXTRADATA_TYPE;
             }
 
-            for (key in attrs.extraData.attributes) {
-                if (attrs.extraData.attributes.hasOwnProperty(key)) {
-                    value = attrs.extraData.get(key);
+            for (key in attrs.extraData) {
+                if (attrs.extraData.hasOwnProperty(key)) {
+                    value = attrs.extraData[key];
 
                     if (!_.isNull(value) &&
                         (!_.isNumber(value) || _.isNaN(value)) &&
@@ -762,7 +763,7 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
     strings: {
         UNSET_PARENT_OBJECT: 'parentObject must be set',
         INVALID_EXTRADATA_TYPE:
-            'extraData must be an RB.ExtraData instance, null, or undefined',
+            'extraData must be an object or undefined',
         INVALID_EXTRADATA_VALUE_TYPE:
             'extraData.{key} must be null, a number, boolean, or string'
     }

@@ -182,15 +182,15 @@ suite('rb/resources/models/FileAttachmentComment', function() {
             describe('Valid values', function() {
                 it('Empty object', function() {
                     expect(model.validate({
-                        extraData: new RB.ExtraData()
+                        extraData: {}
                     })).toBe(undefined);
                 });
 
                 it('Populated object', function() {
                     expect(model.validate({
-                        extraData: new RB.ExtraData({
+                        extraData: {
                             a: 42
-                        })
+                        }
                     })).toBe(undefined);
                 });
 
@@ -233,12 +233,6 @@ suite('rb/resources/models/FileAttachmentComment', function() {
                         extraData: ''
                     })).toBe(errStr);
                 });
-
-                it('Object', function() {
-                    expect(model.validate({
-                        extraData: {}
-                    })).toBe(errStr);
-                })
             });
         });
 
@@ -246,33 +240,33 @@ suite('rb/resources/models/FileAttachmentComment', function() {
             describe('Valid values', function() {
                 it('Booleans', function() {
                     expect(model.validate({
-                        extraData: new RB.ExtraData({
+                        extraData: {
                             value: true
-                        })
+                        }
                     })).toBe(undefined);
                 });
 
                 it('Integers', function() {
                     expect(model.validate({
-                        extraData: new RB.ExtraData({
+                        extraData: {
                             value: 42
-                        })
+                        }
                     })).toBe(undefined);
                 });
 
                 it('Null', function() {
                     expect(model.validate({
-                        extraData: new RB.ExtraData({
+                        extraData: {
                             value: null
-                        })
+                        }
                     })).toBe(undefined);
                 });
 
                 it('Strings', function() {
                     expect(model.validate({
-                        extraData: new RB.ExtraData({
+                        extraData: {
                             value: 'foo'
-                        })
+                        }
                     })).toBe(undefined);
                 });
             });
@@ -283,35 +277,35 @@ suite('rb/resources/models/FileAttachmentComment', function() {
 
                 it('Arrays', function() {
                     expect(model.validate({
-                        extraData: new RB.ExtraData({
+                        extraData: {
                             value: [1, 2, 3]
-                        })
+                        }
                     })).toBe(errStr);
                 });
 
                 it('NaN', function() {
                     expect(model.validate({
-                        extraData: new RB.ExtraData({
+                        extraData: {
                             value: NaN
-                        })
+                        }
                     })).toBe(errStr);
                 });
 
                 it('Objects', function() {
                     expect(model.validate({
-                        extraData: new RB.ExtraData({
+                        extraData: {
                             value: {
                                 a: 1
                             }
-                        })
+                        }
                     })).toBe(errStr);
                 });
 
                 it('Undefined', function() {
                     expect(model.validate({
-                        extraData: new RB.ExtraData({
+                        extraData: {
                             value: undefined
-                        })
+                        }
                     })).toBe(errStr);
                 });
             });
