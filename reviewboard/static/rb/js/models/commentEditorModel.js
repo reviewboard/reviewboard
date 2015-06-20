@@ -16,7 +16,7 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
             canEdit: undefined,
             canSave: false,
             editing: false,
-            extraData: new RB.ExtraData(),
+            extraData: {},
             comment: null,
             dirty: false,
             openIssue: userSession.get('commentsOpenAnIssue'),
@@ -68,8 +68,7 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
 
         this._updateState();
 
-        this.listenTo(this.get('extraData'), 'change',
-                      this._onExtraDataChanged);
+        this._setupExtraData();
     },
 
     /*
@@ -173,7 +172,7 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
         comment.set({
             text: this.get('text'),
             issueOpened: this.get('openIssue'),
-            extraData: this.get('extraData').clone(),
+            extraData: _.clone(this.get('extraData')),
             richText: this.get('richText'),
             includeTextTypes: 'html'
         });
