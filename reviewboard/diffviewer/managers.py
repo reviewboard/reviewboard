@@ -541,19 +541,13 @@ class DiffSetManager(models.Manager):
         tool = repository.get_scmtool()
 
         for f in parser.parse():
-            dest_filename, dest_revision = tool.parse_diff_revision(
-                f.newFile,
-                f.newInfo,
-                moved=f.moved,
-                copied=f.copied)
-
             source_filename, source_revision = tool.parse_diff_revision(
                 f.origFile,
                 f.origInfo,
                 moved=f.moved,
                 copied=f.copied)
 
-            dest_filename = self._normalize_filename(dest_filename, basedir)
+            dest_filename = self._normalize_filename(f.newFile, basedir)
             source_filename = self._normalize_filename(source_filename,
                                                        basedir)
 
@@ -580,7 +574,6 @@ class DiffSetManager(models.Manager):
             f.origFile = source_filename
             f.origInfo = source_revision
             f.newFile = dest_filename
-            f.newInfo = dest_revision
 
             yield f
 
