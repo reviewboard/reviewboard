@@ -12,7 +12,7 @@ RB.CommitView = Backbone.View.extend({
         '<div class="progress"></div>',
         '<div class="summary">',
         ' <%- summary %>',
-        '  <% if (reviewRequestURL) { %>',
+        '  <% if (accessible && reviewRequestURL) { %>',
         '   <div class="rb-icon rb-icon-jump-to jump-to-commit"/>',
         '  <% } %>',
         '</div>',
@@ -27,23 +27,42 @@ RB.CommitView = Backbone.View.extend({
      * Render the view.
      */
     render: function() {
-        var commitID = this.model.get('id');
+        var commitID = this.model.get('id'),
+            date = this.model.get('date'),
+            details;
+
+        if (this.model.get('accessible')) {
+            details = interpolate(
+                date ? gettext('Revision %(revision)s by <span class="author">%(author)s</span>, <time class="timesince" datetime="%(date)s"></time>.')
+                     : gettext('Revision %(revision)s by <span class="author">%(author)s</span>.'),
+                {
+                    revision: _.escape(commitID),
+                    author: _.escape(this.model.get('authorName') ||
+                                     gettext('<unknown>')),
+                    date: date ? date.toISOString() : null
+                },
+                true)
+        } else {
+            details = interpolate(
+                gettext('Revision %(revision)s (not accessible on this repository)'),
+                {
+                    revision: _.escape(commitID)
+                },
+                true);
+            this.$el.addClass('disabled');
+        }
 
         if (commitID.length === 40) {
             commitID = commitID.slice(0, 7);
         }
 
         this.$el.html(this.template(_.defaults({
-            'details': interpolate(
-                gettext('Revision %(revision)s by <span class="author">%(author)s</span>, <time class="timesince" datetime="%(date)s"></time>.'),
-                {
-                    revision: _.escape(commitID),
-                    author: _.escape(this.model.get('authorName')),
-                    date: this.model.get('date').toISOString()
-                },
-                true)
+            details: details
         }, this.model.attributes)));
-        this.$('.timesince').timesince();
+
+        if (date) {
+            this.$('.timesince').timesince();
+        }
 
         return this;
     },
@@ -55,12 +74,16 @@ RB.CommitView = Backbone.View.extend({
      * to it. If not, trigger the 'create' event.
      */
     _onClick: function() {
-        var url = this.model.get('reviewRequestURL');
+        var url;
 
-        if (url) {
-            window.location = url;
-        } else {
-            this.model.trigger('create', this.model);
+        if (this.model.get('accessible')) {
+            url = this.model.get('reviewRequestURL');
+
+            if (url) {
+                window.location = url;
+            } else {
+                this.model.trigger('create', this.model);
+            }
         }
     },
 

@@ -3,6 +3,15 @@
  */
 RB.RepositoryCommit = Backbone.Model.extend({
     defaults: {
+        /*
+         * Whether this commit appears accessible.
+         *
+         * On Subversion, a commit will be inaccessible if blocked by ACLs,
+         * and will appear basically empty. No author, no commit message, no
+         * date.
+         */
+        accessible: true,
+
         authorName: null,
         date: null,
         parent: null,
@@ -13,8 +22,9 @@ RB.RepositoryCommit = Backbone.Model.extend({
 
     parse: function(object) {
         return {
+            accessible: object.date || object.message || object.author_name,
             authorName: object.author_name,
-            date: new Date(object.date),
+            date: object.date ? new Date(object.date) : null,
             id: object.id,
             parent: object.parent,
             message: object.message,
