@@ -194,24 +194,14 @@ class SVNTool(SCMTool):
         for i in range(len(commits) - 1):
             commit = commits[i]
             parent = commits[i + 1]
-
-            results.append(Commit(
-                commit.get('author', ''),
-                commit['revision'],
-                commit['date'].isoformat(),
-                commit.get('message', ''),
-                parent['revision']))
+            results.append(self._build_commit(commit, parent['revision']))
 
         # If there were fewer than the requested number of commits fetched,
         # also include the last one in the list so we don't leave off the
         # initial revision.
         if len(commits) < self.COMMITS_PAGE_LIMIT:
             commit = commits[-1]
-            results.append(Commit(
-                commit.get('author', ''),
-                commit['revision'],
-                commit['date'].isoformat(),
-                commit.get('message', '')))
+            results.append(self._build_commit(commit))
 
         return results
 
@@ -322,6 +312,19 @@ class SVNTool(SCMTool):
             name=name,
             commit=dirent['created_rev'],
             default=default)
+
+    def _build_commit(self, data, parent=''):
+        date = data.get('date', '')
+
+        if date:
+            date = date.isoformat()
+
+        return Commit(
+            data.get('author', ''),
+            data['revision'],
+            date,
+            data.get('message', ''),
+            parent)
 
     @classmethod
     def normalize_error(cls, e):
