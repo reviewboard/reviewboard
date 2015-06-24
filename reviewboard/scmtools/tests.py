@@ -1242,6 +1242,29 @@ class CommonSVNTestsBase(SCMTestCase):
                    'Add an unterminated keyword for testing bug #1523\n',
                    '4'))
 
+    def test_get_commits_with_no_date(self):
+        """Testing SVN (<backend>) get_commits with no date in commit"""
+        def _get_log(*args, **kwargs):
+            return [
+                {
+                    'author': 'chipx86',
+                    'revision': '5',
+                    'message': 'Commit 1',
+                },
+            ]
+
+        self.spy_on(self.tool.client.get_log, _get_log)
+
+        commits = self.tool.get_commits(start='5')
+
+        self.assertEqual(len(commits), 1)
+        self.assertEqual(
+            commits[0],
+            Commit('chipx86',
+                   '5',
+                   '',
+                   'Commit 1'))
+
     def test_get_change(self):
         """Testing SVN (<backend>) get_change"""
         commit = self.tool.get_change('5')

@@ -2090,16 +2090,13 @@
   form {
     background-color: #aceb6f;
     display: block;
-    padding: 6px;
+    padding: @comment-dlg-padding;
 
     .buttons {
-      bottom: 6px;
-      left: 6px;
-      margin-top: 6px;
-      position: absolute;
+      margin: 0;
 
       input[type="button"] {
-        margin-right: 3px;
+        margin-right: (@comment-dlg-padding / 2);
       }
     }
   }
@@ -2107,7 +2104,7 @@
   h1 {
     background: transparent;
     border: 0;
-    margin: 0 0 6px 0;
+    margin: 0;
     padding: 0;
   }
 
@@ -2121,31 +2118,66 @@
     z-index: @z-index-deco;
   }
 
-  .markdown-info {
-    line-height: 16px;
+  .comment-dlg-body,
+  .comment-dlg-footer,
+  .comment-dlg-header {
+    position: relative;
   }
 
-  .status {
-    margin: 4px 0;
-    font-style: italic;
+  .comment-dlg-footer {
+    padding: @comment-dlg-padding 0 0 0;
+
+    .status {
+      display: none;
+      font-style: italic;
+      margin-bottom: @comment-dlg-padding;
+    }
+  }
+
+  .comment-dlg-header {
+    padding: 0 0 @comment-dlg-padding 0;
+    line-height: 16px;
+
+    .markdown-info {
+      line-height: inherit;
+    }
+  }
+
+  .comment-dlg-options {
+    list-style: none;
+    margin: 0;
+    padding: @comment-dlg-padding 0 0 0;
+
+    li {
+      margin: (@comment-dlg-padding / 2) 0;
+      padding: 0;
+
+      &:first-child {
+        margin-top: 0;
+      }
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
   }
 
   .other-comments {
     background-color: #a1c0e3;
     border-right: 1px black solid;
-    padding: 6px;
+    padding: @comment-dlg-padding;
 
     ul {
       background-color: white;
       border: 1px #333333 solid;
       list-style: none;
-      margin: 0;
+      margin: @comment-dlg-padding 0 0 0;
       overflow: auto;
       padding: 0;
       position: relative;
 
       li {
-        padding: 6px;
+        padding: @comment-dlg-padding;
 
         &.even {
           background-color: #F3F3F3;
@@ -2153,13 +2185,12 @@
 
         h2 {
           font-size: 90%;
-          margin: 0 0 6px 0;
+          margin: 0 0 @comment-dlg-padding 0;
           padding: 0;
 
           .actions {
             font-weight: normal;
-            position: absolute;
-            right: 6px;
+            right: @comment-dlg-padding;
 
             a {
               background-color: #EEEEEE;
@@ -2167,8 +2198,8 @@
               color: black;
               cursor: pointer;
               text-decoration: none;
-              margin-left: 6px;
-              padding: 1px 3px;
+              margin-left: @comment-dlg-padding;
+              padding: 3px;
 
               &:hover {
                 background-color: #F6F6F6;
@@ -2182,6 +2213,15 @@
           font-size: 90%;
         }
       }
+    }
+  }
+
+  .text-editor {
+    border: @textarea-border;
+    margin: 0;
+
+    .CodeMirror, textarea {
+      border: 0;
     }
   }
 
