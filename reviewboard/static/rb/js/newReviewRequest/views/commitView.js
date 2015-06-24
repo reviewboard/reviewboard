@@ -12,25 +12,34 @@ RB.CommitView = Backbone.View.extend({
         '<div class="progress">',
         ' <span class="fa fa-spinner fa-pulse"></span>',
         '</div>',
-        '<div class="summary">',
+        '<% if (accessible) { %>',
+        ' <div class="summary">',
         '  <% if (reviewRequestURL) { %>',
         '   <span class="fa fa-arrow-circle-right jump-to-commit"/>',
         '  <% } %>',
-        ' <%- summary %>',
-        '</div>',
+        '  <%- summary %>',
+        ' </div>',
+        '<% } %>',
         '<div class="commit-info">',
         ' <span class="revision">',
         '  <span class="fa fa-code-fork"></span>',
         '  <%- revision %>',
+        '  <% if (!accessible) { %>',
+        '   <%- RB.CommitView.strings.COMMIT_NOT_ACCESSIBLE %>',
+        '  <% } %>',
         ' </span>',
-        ' <span class="author">',
-        '  <span class="fa fa-user"></span>',
-        '  <%- author %>',
-        ' </span>',
-        ' <span class="time">',
-        '  <span class="fa fa-clock-o"></span>',
-        '  <time class="timesince" datetime="<%- date %>"></time>',
-        ' </span>',
+        ' <% if (accessible && author) { %>',
+        '  <span class="author">',
+        '   <span class="fa fa-user"></span>',
+        '   <%- author %>',
+        '  </span>',
+        ' <% } %>',
+        ' <% if (date) { %>',
+        '  <span class="time">',
+        '   <span class="fa fa-clock-o"></span>',
+        '   <time class="timesince" datetime="<%- date %>"></time>',
+        '  </span>',
+        ' <% } %>',
         '</div>'
     ].join('')),
 
@@ -42,7 +51,13 @@ RB.CommitView = Backbone.View.extend({
      * Render the view.
      */
     render: function() {
-        var commitID = this.model.get('id');
+        var commitID = this.model.get('id'),
+            date = this.model.get('date'),
+            details;
+
+        if (!this.model.get('accessible')) {
+            this.$el.addClass('disabled');
+        }
 
         if (commitID.length === 40) {
             commitID = commitID.slice(0, 7);
@@ -54,10 +69,13 @@ RB.CommitView = Backbone.View.extend({
 
         this.$el.html(this.template(_.defaults({
             revision: commitID,
-            author: this.model.get('authorName'),
-            'date': this.model.get('date').toISOString()
+            author: this.model.get('authorName') || gettext('<unknown>'),
+            date: date ? date.toISOString() : null
         }, this.model.attributes)));
-        this.$('.timesince').timesince();
+
+        if (date) {
+            this.$('.timesince').timesince();
+        }
 
         return this;
     },
@@ -69,12 +87,16 @@ RB.CommitView = Backbone.View.extend({
      * to it. If not, trigger the 'create' event.
      */
     _onClick: function() {
-        var url = this.model.get('reviewRequestURL');
+        var url;
 
-        if (url) {
-            window.location = url;
-        } else {
-            this.model.trigger('create', this.model);
+        if (this.model.get('accessible')) {
+            url = this.model.get('reviewRequestURL');
+
+            if (url) {
+                window.location = url;
+            } else {
+                this.model.trigger('create', this.model);
+            }
         }
     },
 
@@ -90,5 +112,10 @@ RB.CommitView = Backbone.View.extend({
      */
     cancelProgress: function() {
         this.$('.progress').hide();
+    }
+}, {
+    strings: {
+        COMMIT_NOT_ACCESSIBLE:
+            gettext('(not accessible on this repository)'),
     }
 });
