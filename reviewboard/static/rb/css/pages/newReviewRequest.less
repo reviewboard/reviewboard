@@ -143,6 +143,11 @@
     padding: 1em;
     cursor: pointer;
 
+    &.disabled {
+      color: #888;
+      cursor: default;
+    }
+
     &.has-review-request {
       .summary {
         color: @new-review-request-summary-posted-color;

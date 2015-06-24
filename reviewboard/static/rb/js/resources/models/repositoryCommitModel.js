@@ -4,6 +4,15 @@
 RB.RepositoryCommit = RB.BaseResource.extend({
     defaults: function() {
         return _.defaults({
+            /*
+             * Whether this commit appears accessible.
+             *
+             * On Subversion, a commit will be inaccessible if blocked by ACLs,
+             * and will appear basically empty. No author, no commit message, no
+             * date.
+             */
+            accessible: true,
+
             authorName: null,
             date: null,
             parent: null,
@@ -42,7 +51,7 @@ RB.RepositoryCommit = RB.BaseResource.extend({
 
     deserializers: {
         date: function(date) {
-            return new Date(date);
+            return date ? new Date(date) : '';
         },
 
         summary: function(message) {
@@ -54,5 +63,13 @@ RB.RepositoryCommit = RB.BaseResource.extend({
         date: function(date) {
             return date.toString();
         }
+    },
+
+    parseResourceData: function(rsp) {
+        var data = RB.BaseResource.prototype.parseResourceData.call(this, rsp);
+
+        data.accessible = rsp.date || rsp.message || rsp.author_name;
+
+        return data;
     }
 });
