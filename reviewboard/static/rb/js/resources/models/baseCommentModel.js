@@ -32,10 +32,10 @@ RB.BaseComment = RB.BaseResource.extend({
 
             /*
              * Markdown-formatted text fields, if the caller fetches or posts
-             * with include-text-types=raw.
+             * with include-text-types=markdown.
              */
             markdownTextFields: {},
-            
+
             /*
              * Raw text fields, if the caller fetches or posts with
              * include-text-types=raw.

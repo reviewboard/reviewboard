@@ -93,7 +93,9 @@ BaseCommentView = Backbone.View.extend({
 
             this.$editor.inlineEditor('submit');
         } else {
-            this.model.save(options);
+            this.model.save(_.extend({
+                attrs: ['forceTextType', 'includeTextTypes', 'extraData']
+            }, options));
         }
     },
 
@@ -458,19 +460,9 @@ HeaderFooterCommentView = Backbone.View.extend({
      * Renders the text for this comment.
      */
     renderText: function(model, text) {
-        var reviewRequest = this.model.get('parentObject'),
-            normTextFields;
+        var reviewRequest = this.model.get('parentObject');
 
         if (this.$editor) {
-            normTextFields = RB.UserSession.instance.get('defaultUseRichText')
-                             ? this.model.get('markdownTextFields')
-                             : this.model.get('rawTextFields');
-
-            this.$editor.inlineEditor('option', {
-                hasRawValue: true,
-                rawValue: normTextFields[this.propertyName]
-            });
-
             if (text) {
                 this._$editorContainer.show();
                 this._$linkContainer.hide();
@@ -725,6 +717,12 @@ RB.ReviewDialogView = Backbone.View.extend({
             linkText: gettext('Add footer'),
             editText: gettext('Edit footer')
         });
+
+        /*
+         * Even if the model is already loaded, we may not have the right text
+         * type data. Force it to reload.
+         */
+        this.model.set('loaded', false);
 
         this.model.ready({
             data: this._queryData,
