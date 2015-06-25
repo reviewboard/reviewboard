@@ -6,7 +6,7 @@ review_request_publishing = Signal(providing_args=['user',
                                                    'review_request_draft'])
 
 review_request_published = Signal(providing_args=['user', 'review_request',
-                                                  'changedesc'])
+                                                  'trivial', 'changedesc'])
 
 #: Emitted when a review request is about to be closed.
 #:
@@ -52,4 +52,4 @@ review_published = Signal(providing_args=['user', 'review'])
 
 reply_publishing = Signal(providing_args=['user', 'reply'])
 
-reply_published = Signal(providing_args=['user', 'reply'])
+reply_published = Signal(providing_args=['user', 'reply', 'trivial'])

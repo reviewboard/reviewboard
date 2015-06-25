@@ -37,8 +37,10 @@ BannerView = Backbone.View.extend({
         '        value="<%- action.label %>" />',
         '<% }); %>',
         '<% if (showSendEmail) { %>',
-        ' <input type="checkbox" id="not-trivial" checked />',
-        ' <label for="not-trivial"><%- sendEmailText %></label>',
+        ' <label>',
+        '  <input type="checkbox" class="send-email" checked />',
+        '  <%- sendEmailText %>',
+        '</label>',
         '<% } %>',
         '</span>',
         '<% if (showChangesField) { %>',
@@ -272,7 +274,7 @@ DraftBannerView = BannerView.extend({
      * still open, they'll be saved first.
      */
     _onPublishDraftClicked: function() {
-        var $sendEmail = this.$('#not-trivial');
+        var $sendEmail = this.$('.send-email');
 
         this.reviewRequestEditorView.publishDraft({
             trivial: ($sendEmail.length === 1 && !$sendEmail.is(':checked'))

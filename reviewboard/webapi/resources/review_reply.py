@@ -155,6 +155,12 @@ class ReviewReplyResource(BaseReviewResource):
             'added_in': '2.0',
             'deprecated_in': '2.0.12',
         },
+        'trivial': {
+            'type': bool,
+            'description': 'If true, the review does not send '
+                           'an email.',
+            'added_in': '2.5',
+        },
     }
 
     def get_base_reply_to_field(self, review_id, *args, **kwargs):
@@ -280,8 +286,8 @@ class ReviewReplyResource(BaseReviewResource):
         """
         pass
 
-    def _update_reply(self, request, reply, public=None, extra_fields={},
-                      *args, **kwargs):
+    def _update_reply(self, request, reply, public=None, trivial=False,
+                      extra_fields={}, *args, **kwargs):
         """Common function to update fields on a draft reply."""
         if not self.has_modify_permissions(request, reply):
             # Can't modify published replies or those not belonging
@@ -306,7 +312,7 @@ class ReviewReplyResource(BaseReviewResource):
 
         if public:
             try:
-                reply.publish(user=request.user)
+                reply.publish(user=request.user, trivial=trivial)
             except PublishError as e:
                 return PUBLISH_ERROR.with_message(six.text_type(e))
 

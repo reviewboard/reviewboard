@@ -15,7 +15,8 @@ RB.ReviewRequestPageView = RB.ReviewablePageView.extend({
             el: $('#reviews'),
             pageEditState: this.reviewRequestEditor,
             reviewRequestEditorView: this.reviewRequestEditorView,
-            reviewRequest: this.reviewRequest
+            reviewRequest: this.reviewRequest,
+            editorData: this.options.replyEditorData
         });
 
         if (this.reviewRequestEditorView.issueSummaryTableView) {

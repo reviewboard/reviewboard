@@ -294,3 +294,45 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
         self.assertEqual(reply.public, True)
 
         self.assertEqual(len(mail.outbox), 1)
+
+    def test_put_with_publish_and_trivial(self):
+        """Testing the PUT review-requests/<id>/draft/ API with trivial
+        changes
+        """
+        self.siteconfig.set('mail_send_review_mail', True)
+        self.siteconfig.save()
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+
+        review = self.create_review(review_request, publish=True)
+
+        mail.outbox = []
+
+        rsp, response = self.api_post_with_response(
+            get_review_reply_list_url(review),
+            expected_mimetype=review_reply_item_mimetype)
+
+        self.assertIn('Location', response)
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        rsp = self.api_put(
+            response['Location'],
+            {
+                'body_top': 'Test',
+                'public': True,
+                'trivial': True
+            },
+            expected_mimetype=review_reply_item_mimetype)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('reply', rsp)
+        self.assertIn('id', rsp['reply'])
+
+        reply = Review.objects.get(pk=rsp['reply']['id'])
+
+        self.assertTrue(reply.public)
+
+        self.assertEqual(len(mail.outbox), 0)

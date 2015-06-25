@@ -278,7 +278,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                         view.model.set('showSendEmail', true);
                         view.showBanner();
 
-                        $('#not-trivial').prop('checked', false);
+                        $('.send-email').prop('checked', false);
                         $('#btn-draft-publish').click();
 
                         expect(editor.get('publishing')).toBe(true);

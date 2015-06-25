@@ -99,4 +99,7 @@
 {%  endfor %}
 {% endif %}
             }
+        },
+        replyEditorData: {
+            showSendEmail: {{send_email|yesno:'true,false'}}
         }
