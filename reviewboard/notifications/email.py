@@ -59,14 +59,15 @@ def review_published_cb(sender, user, review, **kwargs):
         mail_review(review)
 
 
-def reply_published_cb(sender, user, reply, **kwargs):
+def reply_published_cb(sender, user, reply, trivial, **kwargs):
     """
     Listens to the ``reply_published`` signal and sends an e-mail if
     this type of notification is enabled (through
     ``mail_send_review_mail`` site configuration).
     """
     siteconfig = SiteConfiguration.objects.get_current()
-    if siteconfig.get("mail_send_review_mail"):
+
+    if siteconfig.get('mail_send_review_mail') and not trivial:
         mail_reply(reply)
 
 

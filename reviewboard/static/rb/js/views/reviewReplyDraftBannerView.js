@@ -14,7 +14,13 @@ RB.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
         '        class="publish-button" />',
         ' <input type="button" value="<%- discardText %>"',
         '        class="discard-button" />',
-        '</span>'
+        '</span>',
+        '<% if (showSendEmail) { %>',
+        ' <label>',
+        '  <input type="checkbox" class="send-email" checked />',
+        '  <%- sendEmailText %>',
+        '</label>',
+        '<% } %>'
     ].join('')),
 
     events: {
@@ -31,7 +37,9 @@ RB.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
         this.$el.html(this.template({
             draftText: gettext('This reply is a draft.'),
             publishText: gettext('Publish'),
-            discardText: gettext('Discard')
+            discardText: gettext('Discard'),
+            sendEmailText: gettext('Send E-Mail'),
+            showSendEmail: this.options.showSendEmail
         }));
 
         this.model.on('saving destroying', function() {
@@ -55,10 +63,13 @@ RB.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
      * Publishes the reply.
      */
     _onPublishClicked: function() {
+        var $sendEmail = this.$('.send-email');
+
         this.model.publish({
             error: function(model, xhr) {
                 this.model.trigger('publishError', xhr.errorText);
-            }
+            },
+            trivial: $sendEmail.length === 1 && !$sendEmail.is(':checked')
         }, this);
     },
 

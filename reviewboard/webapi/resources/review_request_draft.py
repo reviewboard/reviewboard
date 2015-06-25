@@ -274,6 +274,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': bool,
             'description': 'Determines if the review request publish '
                            'will not send an email.',
+            'added_in': '2.5',
         },
         'update_from_commit_id': {
             'type': bool,

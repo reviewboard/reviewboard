@@ -184,7 +184,7 @@ class Review(models.Model):
 
         super(Review, self).save()
 
-    def publish(self, user=None):
+    def publish(self, user=None, trivial=False):
         """Publishes this review.
 
         This will make the review public and update the timestamps of all
@@ -215,7 +215,7 @@ class Review(models.Model):
 
         if self.is_reply():
             reply_published.send(sender=self.__class__,
-                                 user=user, reply=self)
+                                 user=user, reply=self, trivial=trivial)
         else:
             issue_counts = fetch_issue_counts(self.review_request,
                                               Q(pk=self.pk))
@@ -241,7 +241,7 @@ class Review(models.Model):
                 })
 
             review_published.send(sender=self.__class__,
-                                  user=user, review=self)
+                                  user=user, review=self, trivial=trivial)
 
     def delete(self):
         """Deletes this review.
