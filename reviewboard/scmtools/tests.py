@@ -838,7 +838,7 @@ class CVSTests(SCMTestCase):
         self.assertEqual(norm_path, expected_path)
 
 
-class CommonSVNTestsBase(SCMTestCase):
+class CommonSVNTestsBase(SpyAgency, SCMTestCase):
     """Common unit tests for Subversion.
 
     This is meant to be subclassed for each backend that wants to run

@@ -112,7 +112,10 @@ RB.ReviewReply = RB.BaseResource.extend({
             ready: function() {
                 this.set('public', true);
                 this.save({
-                    attrs: ['public'],
+                    data: {
+                        'public': 1,
+                        trivial: options.trivial ? 1 : 0
+                    },
                     success: function() {
                         this.trigger('published');
 
