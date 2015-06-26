@@ -837,6 +837,28 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
     @add_fixtures(['test_scmtools'])
+    def test_post_with_conflicting_repos(self):
+        """Testing the POST review-requests/ API with conflicting repositories
+        """
+        repository = self.create_repository(tool_name='Test')
+        self.create_repository(tool_name='Test',
+                               name='Test 2',
+                               path='blah',
+                               mirror_path=repository.path)
+
+        rsp = self.api_post(
+            get_review_request_list_url(),
+            {'repository': repository.path},
+            expected_status=400)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
+        self.assertEqual(rsp['err']['msg'],
+                         'Too many repositories matched "%s". Try '
+                         'specifying the repository by name instead.'
+                         % repository.path)
+        self.assertEqual(rsp['repository'], repository.path)
+
+    @add_fixtures(['test_scmtools'])
     def test_post_with_commit_id(self):
         """Testing the POST review-requests/ API with commit_id"""
         repository = self.create_repository()

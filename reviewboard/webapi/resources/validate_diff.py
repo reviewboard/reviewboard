@@ -122,6 +122,14 @@ class ValidateDiffResource(DiffResource):
             return INVALID_REPOSITORY, {
                 'repository': repository
             }
+        except Repository.MultipleObjectsReturned:
+            msg = ('Too many repositories matched "%s". '
+                   'Try specifying the repository by name instead.'
+                   % repository)
+
+            return INVALID_REPOSITORY.with_message(msg), {
+                'repository': repository,
+            }
 
         if (not repository.get_scmtool().get_diffs_use_absolute_paths() and
             basedir is None):
