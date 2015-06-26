@@ -81,7 +81,6 @@
      <div class="file-attachment">
       <div class="file-attachment-comment-header">
        <a href="{{comment.get_absolute_url}}">
-        <img src="{{comment.file_attachment.icon_url}}" />
         <span class="filename">{{comment.get_link_text}}</span>
        </a>
 {%    if comment.file_attachment.attachment_revision %}
@@ -96,11 +95,6 @@
 {%      endblocktrans %}
 {%     endif %}
         </span>
-{%    endif %}
-{%    if draft and comment.file_attachment.draft_caption %}
-       <p class="caption">{{comment.file_attachment.draft_caption}}</p>
-{%    elif comment.file_attachment.caption %}
-       <p class="caption">{{comment.file_attachment.caption}}</p>
 {%    endif %}
       </div>
 {%    with comment.thumbnail as thumbnail %}
