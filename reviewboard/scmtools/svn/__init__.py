@@ -87,7 +87,7 @@ class SVNTool(SCMTool):
         # 'svn diff' produces patches which have the revision string localized
         # to their system locale. This is a little ridiculous, but we have to
         # deal with it because not everyone uses RBTools.
-        self.revision_re = re.compile("""
+        self.revision_re = re.compile('''
             ^(\(([^\)]+)\)\s)?      # creating diffs between two branches of a
                                     # remote repository will insert extra
                                     # "relocation information" into the diff.
@@ -98,34 +98,36 @@ class SVNTool(SCMTool):
                                     # to express that, but oh well.
 
             \ *\((?:
-                [Rr]ev(?:ision)?|   # English - svnlook uses 'rev 0' while svn
-                                    #           diff uses 'revision 0'
-                revisión:|          # Spanish
+                revisão|            # Brazilian Portuguese
+                [Rr]ev(?:ision)?|   # English, German
+                                    # - svnlook uses 'rev 0' while svn diff
+                                    #   uses 'revision 0'
                 révision|           # French
                 revisione|          # Italian
                 リビジョン|         # Japanese
                 리비전|             # Korean
                 revisjon|           # Norwegian
                 wersja|             # Polish
-                revisão|            # Brazilian Portuguese
-                版本                # Simplified Chinese
+                版本|               # Simplified Chinese
+                revisión:           # Spanish
             )\ (\d+)\)$
-            """, re.VERBOSE)
+            ''', re.VERBOSE)
 
         # 'svn diff' also localises the (working copy) string to the system
         # locale.
         self.working_copy_re = re.compile(r'''
             ^\((?:
+                cópia\ de\ trabalho|   # Brazilian Portuguese
                 working\ copy|         # English
-                copia\ de\ trabajo|    # Spanish
                 copie\ de\ travail|    # French
+                Arbeitskopie|          # German
                 copia\ locale|         # Italian
                 作業コピー|            # Japanese
                 작업\ 사본|            # Korean
                 arbeidskopi|           # Norweigan
                 kopia\ robocza|        # Polish
-                cópia\ de\ trabalho|   # Brazilian Portuguese
                 工作副本|              # Simplified Chinese
+                copia\ de\ trabajo     # Spanish
             )\)$
         ''', re.VERBOSE)
 
@@ -324,11 +326,11 @@ class SVNTool(SCMTool):
     @classmethod
     def normalize_error(cls, e):
         if 'callback_get_login required' in six.text_type(e):
-            raise AuthenticationError(
+            return AuthenticationError(
                 msg='Authentication failed when talking to the Subversion '
                     'repository')
         else:
-            raise SCMError(e)
+            return SCMError(e)
 
     @classmethod
     def _ssl_server_trust_prompt(cls, trust_dict, repository):
