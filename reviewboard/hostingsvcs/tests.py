@@ -447,12 +447,13 @@ class BitbucketTests(ServiceTests):
         account.data['password'] = encrypt_password('abc123')
         service = account.service
 
-        with self.assertRaisesMessage(RepositoryError,
-                                      'Please specify just the name of the '
-                                      'repository, not a path.'):
-            service.check_repository(bitbucket_team_name='myteam',
-                                     bitbucket_team_repo_name='myteam/myrepo',
-                                     plan='team')
+        self.assertRaisesMessage(
+            RepositoryError,
+            'Please specify just the name of the repository, not a path.',
+            lambda: service.check_repository(
+                bitbucket_team_name='myteam',
+                bitbucket_team_repo_name='myteam/myrepo',
+                plan='team'))
 
     def test_check_repository_with_dot_git(self):
         """Testing Bitbucket check_repository with .git"""
@@ -460,12 +461,13 @@ class BitbucketTests(ServiceTests):
         account.data['password'] = encrypt_password('abc123')
         service = account.service
 
-        with self.assertRaisesMessage(RepositoryError,
-                                      'Please specify just the name of the '
-                                      'repository without ".git".'):
-            service.check_repository(bitbucket_team_name='myteam',
-                                     bitbucket_team_repo_name='myrepo.git',
-                                     plan='team')
+        self.assertRaisesMessage(
+            RepositoryError,
+            'Please specify just the name of the repository without ".git".',
+            lambda: service.check_repository(
+                bitbucket_team_name='myteam',
+                bitbucket_team_repo_name='myrepo.git',
+                plan='team'))
 
     def test_authorize(self):
         """Testing Bitbucket authorization"""
@@ -497,10 +499,10 @@ class BitbucketTests(ServiceTests):
 
         self.assertFalse(service.is_authorized())
 
-        with self.assertRaisesMessage(AuthorizationError,
-                                      'Invalid Bitbucket username or '
-                                      'password'):
-            service.authorize('myuser', 'abc123', None)
+        self.assertRaisesMessage(
+            AuthorizationError,
+            'Invalid Bitbucket username or password',
+            lambda: service.authorize('myuser', 'abc123', None))
 
         self.assertNotIn('password', account.data)
         self.assertFalse(service.is_authorized())

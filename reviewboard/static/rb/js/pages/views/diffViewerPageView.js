@@ -184,6 +184,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     render: function() {
         var numDiffs = this.model.get('numDiffs'),
             revisionModel = this.model.get('revision'),
+            $diffs = $('#diffs'),
             url = document.location.toString(),
             queryArgs = this._parseQueryString(url.split('?', 2)[1]),
             baseCommitID = queryArgs['base-commit-id'],
@@ -258,10 +259,13 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this.listenTo(this._paginationView2, 'pageSelected',
                       _.partial(this._onPageSelected, true));
 
-        $('#diffs').bindClass(RB.UserSession.instance,
-                              'diffsShowExtraWhitespace', 'ewhl');
+        $diffs.bindClass(RB.UserSession.instance,
+                         'diffsShowExtraWhitespace', 'ewhl');
 
         this._setFiles();
+
+        this._chunkHighlighter = new RB.ChunkHighlighterView();
+        this._chunkHighlighter.render().$el.prependTo($diffs);
 
         $('#diff-details').removeClass('loading');
 
@@ -545,7 +549,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      */
     _highlightAnchor: function($anchor) {
         this._highlightedChunk = $anchor.parents('tbody:first, thead:first');
-        RB.ChunkHighlighterView.highlight(
+        this._chunkHighlighter.highlight(
             $anchor.parents('tbody:first, thead:first'));
     },
 

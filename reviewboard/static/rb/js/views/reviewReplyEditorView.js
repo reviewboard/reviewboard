@@ -74,7 +74,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
             this._createCommentEditor($draftComment);
         }
 
-        this.listenTo(this.model, 'change:text change:richText', function() {
+        this.listenTo(this.model, 'textUpdated', function() {
             var reviewRequest = this.model.get('review').get('parentObject');
 
             if (this._$editor) {

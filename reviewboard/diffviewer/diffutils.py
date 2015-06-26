@@ -289,7 +289,9 @@ def get_original_file(filediff, request, encoding_list):
                                                encoding_list)
 
     # If there's a parent diff set, apply it to the buffer.
-    if filediff.parent_diff:
+    if (filediff.parent_diff and
+        (not filediff.extra_data or
+         not filediff.extra_data.get('parent_moved', False))):
         data = patch(filediff.parent_diff, data, filediff.source_file,
                      request)
 

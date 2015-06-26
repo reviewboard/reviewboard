@@ -1726,12 +1726,13 @@ class PostCommitTests(SpyAgency, TestCase):
         self.assertEqual(fileDiff.source_file, 'readme')
         self.assertEqual(fileDiff.source_revision, 'd6613f5')
 
-    def test_update_from_committed_change_with_markdown_escaping(self):
-        """Testing post-commit update with markdown escaping"""
+    def test_update_from_committed_change_with_rich_text_reset(self):
+        """Testing post-commit update from commit resets rich text"""
         def get_change(repository, commit_to_get):
             commit = Commit()
-            commit.message = '* No escaping\n\n* but this needs escaping'
+            commit.message = '* This is a summary\n\n* This is a description.'
             diff_filename = os.path.join(self.testdata_dir, 'git_readme.diff')
+
             with open(diff_filename, 'r') as f:
                 commit.diff = f.read()
 
@@ -1749,9 +1750,32 @@ class PostCommitTests(SpyAgency, TestCase):
         review_request.description_rich_text = True
         review_request.update_from_commit_id('4')
 
-        self.assertEqual(review_request.summary, '* No escaping')
+        self.assertEqual(review_request.summary, '* This is a summary')
         self.assertEqual(review_request.description,
-                         '\\* but this needs escaping')
+                         '* This is a description.')
+        self.assertFalse(review_request.description_rich_text)
+
+    def test_update_from_pending_change_with_rich_text_reset(self):
+        """Testing post-commit update from changeset resets rich text"""
+        review_request = ReviewRequest.objects.create(self.user,
+                                                      self.repository)
+        review_request.description_rich_text = True
+        review_request.testing_done_rich_text = True
+
+        changeset = ChangeSet()
+        changeset.changenum = 4
+        changeset.summary = '* This is a summary'
+        changeset.description = '* This is a description.'
+        changeset.testing_done = '* This is some testing.'
+        review_request.update_from_pending_change(4, changeset)
+
+        self.assertEqual(review_request.summary, '* This is a summary')
+        self.assertEqual(review_request.description,
+                         '* This is a description.')
+        self.assertFalse(review_request.description_rich_text)
+        self.assertEqual(review_request.testing_done,
+                         '* This is some testing.')
+        self.assertFalse(review_request.testing_done_rich_text)
 
     def test_update_from_committed_change_without_repository_support(self):
         """Testing post-commit update failure conditions"""
