@@ -277,6 +277,8 @@ def parse_options(args):
 
 def main():
     """Run the application."""
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
+
     if DEBUG:
         pid = os.getpid()
         log_filename = 'rbssh-%s.log' % pid
