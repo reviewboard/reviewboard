@@ -226,13 +226,20 @@ class DiffSetManager(models.Manager):
         encoding_list = repository.get_encoding_list()
 
         for f in files:
+            parent_file = None
+            orig_rev = None
+            parent_content = b''
+
+
             if f.origFile in parent_files:
                 parent_file = parent_files[f.origFile]
                 parent_content = parent_file.data
                 orig_rev = parent_file.origInfo
-            else:
-                parent_content = b''
 
+            # If there is a parent file there is not necessarily an original
+            # revision for the parent file in the case of a renamed file in
+            # git.
+            if not orig_rev:
                 if parent_commit_id and f.origInfo != PRE_CREATION:
                     orig_rev = parent_commit_id
                 else:
@@ -260,6 +267,13 @@ class DiffSetManager(models.Manager):
                 parent_diff=parent_content,
                 binary=f.binary,
                 status=status)
+
+            if (parent_file and
+                (parent_file.moved or parent_file.copied) and
+                parent_file.insert_count == 0 and
+                parent_file.delete_count == 0):
+                filediff.extra_data = {'parent_moved': True}
+
             filediff.set_line_counts(raw_insert_count=f.insert_count,
                                      raw_delete_count=f.delete_count)
 

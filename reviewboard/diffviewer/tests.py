@@ -1519,6 +1519,142 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         self.assertEqual(filediff.source_revision,
                          '661e5dd3c4938ecbe8f77e2fdfa905d70485f94c')
 
+    def test_moved_parent_filediff(self):
+        """Test creating a Diffset from form data where the parent diff is only
+        a rename"""
+        revisions = [
+            b'93e6b3e8944c48737cb11a1e52b046fa30aea7a9',
+            b'4839fc480f47ca59cf05a9c39410ea744d1e17a2',
+        ]
+
+        parent_diff = SimpleUploadedFile(
+            'parent_diff',
+            (b'diff --git a/foo b/bar\n'
+             b'similarity index 100%%\n'
+             b'rename from foo\n'
+             b'rename to bar\n'),
+            content_type='text/x-patch')
+
+        diff = SimpleUploadedFile(
+            'diff',
+            (b'diff --git a/bar b/bar\n'
+             b'index %s..%s 100644\n'
+             b'--- a/bar\n'
+             b'+++ b/bar\n'
+             b'@@ -1,2 +1,3 @@\n'
+             b' Foo\n'
+             b'+Bar\n') % (revisions[0], revisions[1]),
+            content_type='text/x-patch')
+
+        repository = self.create_repository(tool_name='Test')
+        self.spy_on(repository.get_file_exists,
+                    call_fake=lambda *args, **kwargs: True)
+        # We will only be making one call to get_file and we can fake it out.
+        self.spy_on(repository.get_file,
+                    call_fake=lambda *args, **kwargs: b'Foo\n')
+        self.spy_on(diffutils.patch)
+
+        form = UploadDiffForm(repository=repository,
+                              data={
+                                  'basedir': '/',
+                              },
+                              files={
+                                  'path': diff,
+                                  'parent_diff_path': parent_diff,
+                              })
+
+        self.assertTrue(form.is_valid())
+
+        diffset = form.create(diff, parent_diff)
+
+        self.assertEqual(diffset.files.count(), 1)
+
+        f = diffset.files.get()
+
+        self.assertEqual(f.source_revision, revisions[0])
+        self.assertEqual(f.dest_detail, revisions[1])
+
+        # We shouldn't call out to patch because the parent diff is just a
+        # rename.
+        original_file = diffutils.get_original_file(f, None, ['ascii'])
+        self.assertEqual(original_file, b'Foo\n')
+        self.assertFalse(diffutils.patch.spy.called)
+
+        patched_file = diffutils.get_patched_file(original_file, f, None)
+        self.assertEqual(patched_file, b'Foo\nBar\n')
+        self.assertTrue(diffutils.patch.spy.called)
+
+    def test_moved_modified_parent_filediff(self):
+        """Test creating a Diffset from form data where the parent diff is a
+        rename and a modify"""
+        revisions = [
+            b'93e6b3e8944c48737cb11a1e52b046fa30aea7a9',
+            b'4839fc480f47ca59cf05a9c39410ea744d1e17a2',
+            b'04861c126cfebd7e7cb93045ab0bff4a7acc4cf2',
+        ]
+
+        parent_diff = SimpleUploadedFile(
+            'parent_diff',
+            (b'diff --git a/foo b/bar\n'
+             b'similarity index 55%%\n'
+             b'rename from foo\n'
+             b'rename to bar\n'
+             b'index %s..%s 100644\n'
+             b'--- a/foo\n'
+             b'+++ b/bar\n'
+             b'@@ -1,2 +1,3 @@\n'
+             b' Foo\n'
+             b'+Bar\n') % (revisions[0], revisions[1]),
+            content_type='text/x-patch')
+
+        diff = SimpleUploadedFile(
+            'diff',
+            (b'diff --git a/bar b/bar\n'
+             b'index %s..%s 100644\n'
+             b'--- a/bar\n'
+             b'+++ b/bar\n'
+             b'@@ -1,3 +1,4 @@\n'
+             b' Foo\n'
+             b' Bar\n'
+             b'+Baz\n') % (revisions[1], revisions[2]),
+            content_type='text/x-patch')
+
+        repository = self.create_repository(tool_name='Test')
+        self.spy_on(repository.get_file_exists,
+                    call_fake=lambda *args, **kwargs: True)
+        # We will only be making one call to get_file and we can fake it out.
+        self.spy_on(repository.get_file,
+                    call_fake=lambda *args, **kwargs: b'Foo\n')
+        self.spy_on(diffutils.patch)
+
+        form = UploadDiffForm(repository=repository,
+                              data={
+                                'basedir': '/',
+                              },
+                              files={
+                                'path': diff,
+                                'parent_diff_path': parent_diff,
+                              })
+
+        self.assertTrue(form.is_valid())
+
+        diffset = form.create(diff, parent_diff)
+
+        self.assertEqual(diffset.files.count(), 1)
+
+        f = diffset.files.get()
+
+        self.assertEqual(f.source_revision, revisions[0])
+        self.assertEqual(f.dest_detail, revisions[2])
+
+        original_file = diffutils.get_original_file(f, None, ['ascii'])
+        self.assertEqual(original_file, b'Foo\nBar\n')
+        self.assertTrue(diffutils.patch.spy.called)
+
+        patched_file = diffutils.get_patched_file(original_file, f, None)
+        self.assertEqual(patched_file, b'Foo\nBar\nBaz\n')
+        self.assertEqual(len(diffutils.patch.spy.calls), 2)
+
 
 class ProcessorsTests(TestCase):
     """Unit tests for diff processors."""
