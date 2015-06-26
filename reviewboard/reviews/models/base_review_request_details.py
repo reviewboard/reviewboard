@@ -9,7 +9,6 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
 
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.markdown_utils import markdown_escape
 from reviewboard.reviews.models.default_reviewer import DefaultReviewer
 from reviewboard.scmtools.errors import InvalidChangeNumberError
 
@@ -216,17 +215,13 @@ class BaseReviewRequestDetails(models.Model):
         description = changeset.description
         testing_done = changeset.testing_done
 
-        if self.description_rich_text:
-            description = markdown_escape(description)
-
-        if self.testing_done_rich_text:
-            testing_done = markdown_escape(testing_done)
-
         self.summary = changeset.summary
         self.description = description
+        self.description_rich_text = False
 
         if testing_done:
             self.testing_done = testing_done
+            self.testing_done_rich_text = False
 
         if changeset.branch:
             self.branch = changeset.branch
@@ -247,10 +242,8 @@ class BaseReviewRequestDetails(models.Model):
         self.commit = commit_id
         self.summary = summary.strip()
 
-        if self.description_rich_text:
-            self.description = markdown_escape(message)
-        else:
-            self.description = message
+        self.description = message
+        self.description_rich_text = False
 
         DiffSet.objects.create_from_data(
             repository=self.repository,
