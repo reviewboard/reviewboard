@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django.db.models import Q
 from django.utils import six
 from djblets.webapi.decorators import (webapi_login_required,
@@ -166,6 +168,12 @@ class ValidateDiffResource(DiffResource):
                 'revision': six.text_type(e.revision),
             }
         except SCMError as e:
+            return DIFF_PARSE_ERROR, {
+                'reason': six.text_type(e),
+            }
+        except Exception as e:
+            logging.exception('Unexpected error when validating diff.')
+
             return DIFF_PARSE_ERROR, {
                 'reason': six.text_type(e),
             }
