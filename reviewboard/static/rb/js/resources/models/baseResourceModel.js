@@ -141,6 +141,7 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
         } else if (!this.isNew()) {
             // Fetch data from the server
             this.fetch({
+                data: options.data,
                 success: success,
                 error: error
             });
