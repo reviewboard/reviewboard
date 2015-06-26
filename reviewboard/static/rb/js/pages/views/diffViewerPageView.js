@@ -144,7 +144,8 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     render: function() {
         var $reviewRequest,
             numDiffs = this.model.get('numDiffs'),
-            revisionModel = this.model.get('revision');
+            revisionModel = this.model.get('revision'),
+            $diffs = $('#diffs');
 
         _super(this).render.call(this);
 
@@ -207,10 +208,13 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this.listenTo(this._paginationView2, 'pageSelected',
                       _.partial(this._onPageSelected, true));
 
-        $('#diffs').bindClass(RB.UserSession.instance,
-                              'diffsShowExtraWhitespace', 'ewhl');
+        $diffs.bindClass(RB.UserSession.instance,
+                         'diffsShowExtraWhitespace', 'ewhl');
 
         this._setFiles();
+
+        this._chunkHighlighter = new RB.ChunkHighlighterView();
+        this._chunkHighlighter.render().$el.prependTo($diffs);
 
         $('#diff-details').removeClass('loading');
 
@@ -464,7 +468,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      */
     _highlightAnchor: function($anchor) {
         this._highlightedChunk = $anchor.parents('tbody:first, thead:first');
-        RB.ChunkHighlighterView.highlight(
+        this._chunkHighlighter.highlight(
             $anchor.parents('tbody:first, thead:first'));
     },
 
