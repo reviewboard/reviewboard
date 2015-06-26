@@ -651,9 +651,17 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                          Q(mirror_path=repository) |
                          Q(name=repository)) &
                         Q(local_site=local_site))
-            except Repository.DoesNotExist as e:
+            except Repository.DoesNotExist:
                 return INVALID_REPOSITORY, {
                     'repository': repository
+                }
+            except Repository.MultipleObjectsReturned:
+                msg = ('Too many repositories matched "%s". '
+                       'Try specifying the repository by name instead.'
+                       % repository)
+
+                return INVALID_REPOSITORY.with_message(msg), {
+                    'repository': repository,
                 }
 
             if not repository.is_accessible_by(request.user):
