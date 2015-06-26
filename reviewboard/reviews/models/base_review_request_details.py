@@ -242,17 +242,13 @@ class BaseReviewRequestDetails(models.Model):
         description = changeset.description
         testing_done = changeset.testing_done
 
-        if self.description_rich_text:
-            description = markdown_escape(description)
-
-        if self.testing_done_rich_text:
-            testing_done = markdown_escape(testing_done)
-
         self.summary = changeset.summary
         self.description = description
+        self.description_rich_text = False
 
         if testing_done:
             self.testing_done = testing_done
+            self.testing_done_rich_text = False
 
         if changeset.branch:
             self.branch = changeset.branch
@@ -273,10 +269,8 @@ class BaseReviewRequestDetails(models.Model):
         self.commit = commit_id
         self.summary = summary.strip()
 
-        if self.description_rich_text:
-            self.description = markdown_escape(message)
-        else:
-            self.description = message
+        self.description = message
+        self.description_rich_text = False
 
         DiffSet.objects.create_from_data(
             repository=self.repository,
