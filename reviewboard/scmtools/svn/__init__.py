@@ -331,11 +331,11 @@ class SVNTool(SCMTool):
     @classmethod
     def normalize_error(cls, e):
         if 'callback_get_login required' in six.text_type(e):
-            raise AuthenticationError(
+            return AuthenticationError(
                 msg='Authentication failed when talking to the Subversion '
                     'repository')
         else:
-            raise SCMError(e)
+            return SCMError(e)
 
     @classmethod
     def _ssl_server_trust_prompt(cls, trust_dict, repository):
