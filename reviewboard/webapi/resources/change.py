@@ -95,9 +95,12 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
 
         for field_name, data in six.iteritems(obj.fields_changed):
             field_cls = get_review_request_field(field_name)
-            field = field_cls(review_request)
 
-            fields_changed[field.field_id] = field.serialize_change_entry(obj)
+            if field_cls:
+                field = field_cls(review_request)
+
+                fields_changed[field.field_id] = \
+                    field.serialize_change_entry(obj)
 
         return fields_changed
 
