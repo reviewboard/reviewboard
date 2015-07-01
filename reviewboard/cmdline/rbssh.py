@@ -45,7 +45,7 @@ if 'RBSITE_PYTHONPATH' in os.environ:
 
 import paramiko
 
-from reviewboard import get_version_string
+from reviewboard import initialize, get_version_string
 from reviewboard.scmtools.core import SCMTool
 from reviewboard.ssh.client import SSHClient
 
@@ -274,6 +274,8 @@ def main():
 
         logging.debug('%s' % sys.argv)
         logging.debug('PID %s' % pid)
+
+    initialize()
 
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)
