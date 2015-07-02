@@ -687,30 +687,28 @@ suite('rb/views/CommentDialogView', function() {
             });
         });
 
-        describe('Status text', function() {
-            var $statusText;
+        describe('Title text', function() {
+            var $title;
 
             beforeEach(function() {
                 dlg.open();
-                $statusText = dlg.$el.find('form .status');
+                $title = dlg.$el.find('form .title');
             });
 
             it('Default state', function() {
-                expect($statusText.text()).toBe('');
+                expect($title.text()).toBe('Your comment');
             });
 
-            it('Showing new text', function() {
-                var text = 'Testing';
-
-                editor.set('statusText', text);
-                expect($statusText.text()).toBe(text);
+            it('Setting dirty=true', function() {
+                editor.set('dirty', true);
+                expect($title.text()).toBe('Your comment (unsaved)');
             });
 
-            it('Setting to null', function() {
-                editor.set('statusText', 'Testing');
-                editor.set('statusText', null);
+            it('Setting dirty=false', function() {
+                editor.set('dirty', true);
+                editor.set('dirty', false);
 
-                expect($statusText.text()).toBe('');
+                expect($title.text()).toBe('Your comment');
             });
         });
 
