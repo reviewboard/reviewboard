@@ -93,15 +93,22 @@ RB.ChunkHighlighterView = Backbone.View.extend({
      * Re-calculates the common sizes for the page container.
      */
     _recalcGlobalSizes: function() {
+        var oldWidth = this.$el.width();
+
         this._width = this._$pageContainer.outerWidth();
 
-        this.$el.css('left', -this._$pageContainer.getExtents('p', 'l'));
+        this.$el.css({
+            left: -this._$pageContainer.getExtents('p', 'l'),
+            width: oldWidth
+        });
     },
 
     /*
      * Updates the position of the borders, based on the chunk dimensions.
      */
     _updatePosition: function(e) {
+        var chunkPos;
+
         if (e && e.target && e.target !== window &&
             !e.target.getElementsByTagName) {
             /*
@@ -116,7 +123,14 @@ RB.ChunkHighlighterView = Backbone.View.extend({
         }
 
         if (this._top === null) {
-            this._top = Math.floor(this._$chunk.position().top +
+            chunkPos = this._$chunk.position();
+
+            if (!chunkPos) {
+                /* The diff isn't yet loaded. */
+                return;
+            }
+
+            this._top = Math.floor(chunkPos.top +
                                    this._$chunkContainer.position().top);
         }
 

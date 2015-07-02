@@ -94,4 +94,4 @@ class FileAttachmentComment(BaseComment):
                               'FileAttachmentReviewUI %r: %s',
                               review_ui, e, exc_info=1)
         else:
-            return self.file_attachment.filename
+            return self.file_attachment.display_name
