@@ -2082,13 +2082,16 @@
  * Comment detail dialog
  ****************************************************************************/
 .comment-dlg {
-  border: 1px black solid;
+  border: 1px @comment-dlg-border-color solid;
+  .border-radius(@box-border-radius);
+  .box-shadow(@box-shadow);
   cursor: default;
   margin-top: 8px;
+  overflow: hidden;
   position: absolute;
 
   form {
-    background-color: #aceb6f;
+    background-color: @comment-dlg-bg;
     display: block;
     padding: @comment-dlg-padding;
 
@@ -2162,9 +2165,13 @@
     }
   }
 
+  .markdown-info {
+    line-height: 16px;
+  }
+
   .other-comments {
-    background-color: #a1c0e3;
-    border-right: 1px black solid;
+    background-color: @comment-dlg-other-comments-bg;
+    border-right: 1px @comment-dlg-border-color solid;
     padding: @comment-dlg-padding;
 
     ul {
@@ -2193,9 +2200,7 @@
             right: @comment-dlg-padding;
 
             a {
-              background-color: #EEEEEE;
-              border: 1px black outset;
-              color: black;
+              color: blue;
               cursor: pointer;
               text-decoration: none;
               margin-left: @comment-dlg-padding;

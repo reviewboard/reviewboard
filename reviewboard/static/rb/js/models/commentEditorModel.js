@@ -24,7 +24,6 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
             publishedCommentsType: null,
             reviewRequest: null,
             richText: userSession.get('defaultUseRichText'),
-            statusText: '',
             text: ''
         };
     },
@@ -54,9 +53,6 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
                     reviewRequestEditor.decr('editCount');
                 }
             }
-
-            this.set('statusText',
-                     dirty ? gettext('This comment has unsaved changes.') : '');
         }, this);
 
         this.on('change:openIssue change:richText change:text', function() {
@@ -203,8 +199,6 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
         if (oldComment) {
             oldComment.destroyIfEmpty();
         }
-
-        this.set('statusText', '');
 
         if (comment) {
             /*
