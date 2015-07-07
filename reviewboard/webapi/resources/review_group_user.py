@@ -74,7 +74,7 @@ class ReviewGroupUserResource(UserResource):
         if (not group_resource.has_access_permissions(request, group) or
             not self.has_modify_permissions(request, group, username,
                                             local_site)):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         try:
             if local_site:
@@ -109,7 +109,7 @@ class ReviewGroupUserResource(UserResource):
         if (not group_resource.has_access_permissions(request, group) or
             not self.has_modify_permissions(request, group, user.username,
                                             local_site)):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         group.users.remove(user)
 

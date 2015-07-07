@@ -8,7 +8,6 @@ from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (SPECIAL_PARAMS,
                                        webapi_login_required,
                                        webapi_request_fields)
-from djblets.webapi.errors import NOT_LOGGED_IN, PERMISSION_DENIED
 from djblets.webapi.resources.base import \
     WebAPIResource as DjbletsWebAPIResource
 from djblets.webapi.resources.mixins.api_tokens import ResourceAPITokenMixin
@@ -183,18 +182,6 @@ class WebAPIResource(ResourceAPITokenMixin, DjbletsWebAPIResource):
             fields[field] = [force_unicode(e) for e in form.errors[field]]
 
         return fields
-
-    def _no_access_error(self, user):
-        """Returns a WebAPIError indicating the user has no access.
-
-        Which error this returns depends on whether or not the user is logged
-        in. If logged in, this will return _no_access_error(request.user).
-        Otherwise, it will return NOT_LOGGED_IN.
-        """
-        if user.is_authenticated():
-            return PERMISSION_DENIED
-        else:
-            return NOT_LOGGED_IN
 
     def import_extra_data(self, obj, extra_data, fields):
         for key, value in six.iteritems(fields):

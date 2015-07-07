@@ -65,7 +65,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
             return DOES_NOT_EXIST
 
         if not resources.review_reply.has_modify_permissions(request, reply):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         try:
             comment = resources.review_diff_comment.get_object(
@@ -132,7 +132,7 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
             return DOES_NOT_EXIST
 
         if not resources.review_reply.has_modify_permissions(request, reply):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         self.update_comment(diff_comment, is_reply=True, **kwargs)
 

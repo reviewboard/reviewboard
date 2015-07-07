@@ -196,7 +196,7 @@ class DefaultReviewerResource(WebAPIResource):
         provided in the default reviewer's list.
         """
         if not self.model.objects.can_create(request.user, local_site):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         code, data = self._create_or_update(local_site, **kwargs)
 
@@ -247,7 +247,7 @@ class DefaultReviewerResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_modify_permissions(request, default_reviewer):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         return self._create_or_update(local_site, default_reviewer, **kwargs)
 

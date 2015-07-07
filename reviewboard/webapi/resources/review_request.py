@@ -622,7 +622,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         if submit_as and user.username != submit_as:
             if not user.has_perm('reviews.can_submit_as_another_user',
                                  local_site):
-                return self._no_access_error(request.user)
+                return self.get_no_access_error(request)
 
             user = self._find_user(submit_as, local_site, request)
 
@@ -655,7 +655,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 }
 
             if not repository.is_accessible_by(request.user):
-                return self._no_access_error(request.user)
+                return self.get_no_access_error(request)
 
         try:
             review_request = ReviewRequest.objects.create(
@@ -828,7 +828,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
              not self.has_modify_permissions(request, review_request)) or
             (status is not None and
              not review_request.is_status_mutable_by(request.user))):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if (status is not None and
             (review_request.status != string_to_status(status) or
@@ -866,7 +866,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                     raise AssertionError("Code path for invalid status '%s' "
                                          "should never be reached." % status)
             except PermissionError:
-                return self._no_access_error(request.user)
+                return self.get_no_access_error(request)
             except PublishError as e:
                 return PUBLISH_ERROR.with_message(six.text_type(e))
 

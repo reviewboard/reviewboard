@@ -411,7 +411,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         try:
             draft = self.prepare_draft(request, review_request)
         except PermissionDenied:
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if (commit_id and commit_id != review_request.commit_id and
             commit_id != draft.commit_id):
@@ -522,7 +522,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_delete_permissions(request, draft, *args, **kwargs):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         draft.delete()
 

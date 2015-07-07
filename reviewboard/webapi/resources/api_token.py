@@ -134,7 +134,7 @@ class APITokenResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_list_access_permissions(request, *args, **kwargs):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         try:
             self._validate_policy(policy)
@@ -193,7 +193,7 @@ class APITokenResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_access_permissions(request, token, *args, **kwargs):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if 'note' in kwargs:
             token.note = kwargs['note']

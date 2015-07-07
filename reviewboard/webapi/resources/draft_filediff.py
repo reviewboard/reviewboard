@@ -109,7 +109,7 @@ class DraftFileDiffResource(FileDiffResource):
             return DOES_NOT_EXIST
 
         if not review_request_draft.is_mutable_by(request.user):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if 'dest_attachment_file' in request.FILES:
             if not filediff.binary:

@@ -234,7 +234,7 @@ class ReviewGroupResource(WebAPIResource):
         local_site = self._get_local_site(local_site_name)
 
         if not self.model.objects.can_create(request.user, local_site):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         group, is_new = self.model.objects.get_or_create(
             name=name,
@@ -311,7 +311,7 @@ class ReviewGroupResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_modify_permissions(request, group):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if name is not None and name != group.name:
             # If we're changing the group name, make sure that group doesn't
@@ -357,7 +357,7 @@ class ReviewGroupResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_delete_permissions(request, group):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         group.delete()
 

@@ -198,7 +198,7 @@ class BaseFileAttachmentResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         form_data = request.POST.copy()
         form = UploadFileForm(review_request, form_data, request.FILES)
@@ -264,7 +264,7 @@ class BaseFileAttachmentResource(WebAPIResource):
                 resources.review_request_draft.prepare_draft(request,
                                                              review_request)
             except PermissionDenied:
-                return self._no_access_error(request.user)
+                return self.get_no_access_error(request)
 
             file.draft_caption = caption
             file.save()
@@ -300,13 +300,13 @@ class BaseFileAttachmentResource(WebAPIResource):
 
         if not self.has_delete_permissions(request, file_attachment, *args,
                                            **kwargs):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         try:
             draft = resources.review_request_draft.prepare_draft(
                 request, review_request)
         except PermissionDenied:
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if file_attachment.attachment_history_id is None:
             draft.inactive_file_attachments.add(file_attachment)
