@@ -2340,11 +2340,11 @@
 #submitted-banner {
   background: #E0E0E0;
   border: 1px #808080 solid;
-  .border-radius(@box-border-radius);
-  .box-shadow(@box-shadow);
 }
 
-#draft-banner {
+#draft-banner,
+#discard-banner,
+#submitted-banner {
   border-top: 0;
   border-left: 0;
   border-right: 0;
@@ -2358,11 +2358,7 @@
   .interdiff-link {
     margin-top: 1em;
   }
-}
 
-#draft-banner,
-#discard-banner,
-#submitted-banner {
   .on-mobile-medium-screen-720({
     .banner-actions {
       margin-bottom: 2em;
@@ -2371,6 +2367,7 @@
 
   p label {
     .inline-editor-label();
+    padding-top: 1em
   }
 
   &>p {

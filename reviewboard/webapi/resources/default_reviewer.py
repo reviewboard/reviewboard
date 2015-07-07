@@ -83,7 +83,7 @@ class DefaultReviewerResource(WebAPIResource):
         return default_reviewer.people.all()
 
     @webapi_check_login_required
-    def get_queryset(self, request, is_list=False, local_site_name=None,
+    def get_queryset(self, request, is_list=False, local_site=None,
                      *args, **kwargs):
         """Returns a queryset for DefaultReviewer models.
 
@@ -93,7 +93,6 @@ class DefaultReviewerResource(WebAPIResource):
         resources, then it can be further filtered by one or more of the
         arguments listed in get_list.
         """
-        local_site = self._get_local_site(local_site_name)
         queryset = self.model.objects.filter(local_site=local_site)
 
         if is_list:
@@ -189,15 +188,13 @@ class DefaultReviewerResource(WebAPIResource):
             }
         },
     )
-    def create(self, request, local_site_name=None, *args, **kwargs):
+    def create(self, request, local_site=None, *args, **kwargs):
         """Creates a new default reviewer entry.
 
         Note that by default, a default reviewer will apply to review
         requests on all repositories, unless one or more repositories are
         provided in the default reviewer's list.
         """
-        local_site = self._get_local_site(local_site_name)
-
         if not self.model.objects.can_create(request.user, local_site):
             return self._no_access_error(request.user)
 
@@ -237,22 +234,20 @@ class DefaultReviewerResource(WebAPIResource):
             }
         },
     )
-    def update(self, request, local_site_name=None, *args, **kwargs):
+    def update(self, request, local_site=None, *args, **kwargs):
         """Updates an existing default reviewer entry.
 
         If the list of repositories is updated with a blank entry, then
         the default reviewer will apply to review requests on all repositories.
         """
         try:
-            default_reviewer = self.get_object(
-                request, local_site_name=local_site_name, *args, **kwargs)
+            default_reviewer = self.get_object(request, local_site=local_site,
+                                               *args, **kwargs)
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
         if not self.has_modify_permissions(request, default_reviewer):
             return self._no_access_error(request.user)
-
-        local_site = self._get_local_site(local_site_name)
 
         return self._create_or_update(local_site, default_reviewer, **kwargs)
 
