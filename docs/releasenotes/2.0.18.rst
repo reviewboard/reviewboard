@@ -1,0 +1,141 @@
+=================================
+Review Board 2.0.18 Release Notes
+=================================
+
+**Release date**: June 28, 2015
+
+
+Extensions
+==========
+
+* Reworked the comment dialog for better extensibility.
+
+  JavaScript extensions using :js:class:`RB.CommentDialogHook` can now
+  add elements to the comment dialog without breaking the sizing or layout.
+
+  There are a few new elements that custom UI can be added to, identified
+  by CSS classes:
+
+  * ``.comment-dlg-header``:
+    The draggable header of the dialog, containing the title and the
+    "Markdown" link.
+
+  * ``.comment-dlg-body``:
+    The main body, containing the text box and ``.comment-dlg-options``.
+
+  * ``.comment-dlg-options``:
+    The list of options (checkboxes) for the comment. Each entry must be
+    a ``<li>``.
+
+  * ``.comment-dlg-footer``:
+    The footer, containing the status text (indicating if a comment must be
+    saved), and the buttons.
+
+  * ``.comment-dlg-footer .buttons``:
+    The buttons on the comment dialog.
+
+* Fixed packaging issues with Review Board static media files referenced by
+  an extension's CSS/LessCSS files.
+
+
+Web API
+=======
+
+* When validating diffs, unexpected errors are now caught and returned
+  to the caller, instead of returning a generic HTTP 500.
+
+* Added an error response when validating diffs or creating review requests
+  using a repository path that matches more than one repository.
+
+* The changes API will no longer crash when representing a field change
+  from an extension-provided field that no longer exists.
+
+
+Bug Fixes
+=========
+
+New Review Request Page
+-----------------------
+
+* Subversion commits that aren't accessible (due to ACLs) no longer crash
+  the page.
+
+  Instead, they're shown in the list as inaccessible, and cannot be posted
+  for review.
+
+
+Diff Viewer
+-----------
+
+* Fixed the display of diffs based on parent diffs containing moved files.
+
+
+Reviews
+-------
+
+* Fixed the display of comment diff fragments on reviews in Chrome when
+  the server is configured to send ``X-Content-Type-Options: nosniff``.
+
+  Patch by Perry Hung.
+
+* HTML-like text entered into a reply to a comment is no longer temporarily
+  interpreted as HTML.
+
+  This was only temporarily interpreted as HTML during the save, and was then
+  replaced with the proper text. HTML-like text was never interpreted as HTML
+  on page load or any other time, so there's no risk that the text could
+  be used to compromise a user.
+
+* Updating the description or testing of a review request from a commit or
+  Perforce changeset no longer escapes the new text. (:bug:`3898`)
+
+  This would happen if the text was previously flagged as Markdown text
+  (when editing the text field and saving as Markdown). That flag wans't
+  being reset when updated from an outside source.
+
+
+CVS
+---
+
+* Fixed a regression in posting CVS diffs for review. (:bug:`3887`)
+
+
+Perforce
+--------
+
+* Fixed a regression in posting Perforce diffs for review. (:bug:`3887`)
+
+
+Subversion
+----------
+
+* Fixed parsing SVN diffs with revision markers localized in German.
+
+* Fixed a regression in adding repositories with self-signed SSL certificates.
+  (:bug:`3888`)
+
+  When trying to add a repository with a self-signed certificate, the
+  certificate will once again be presented to the user for verification,
+  rather than simply failing.
+
+
+SSH
+---
+
+* Fixed a crash that could occur in some setups when instructing an external
+  program to use :command:`rbssh`.
+
+  If the external program wasn't preserving the environment, then
+  :command:`rbssh` would fail on startup, resulting in hard-to-diagnose
+  errors. This was seen in some Subversion setups.
+
+  This also fixes manually using :command:`rbssh` on the command line.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Perry Hung

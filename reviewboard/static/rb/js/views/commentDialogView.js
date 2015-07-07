@@ -94,11 +94,11 @@ var CommentsListView = Backbone.View.extend({
  * used to reply to those comments.
  */
 RB.CommentDialogView = Backbone.View.extend({
-    DIALOG_TOTAL_HEIGHT: 300,
+    DIALOG_TOTAL_HEIGHT: 350,
     DIALOG_NON_EDITABLE_HEIGHT: 120,
     SLIDE_DISTANCE: 10,
     COMMENTS_BOX_WIDTH: 280,
-    FORM_BOX_WIDTH: 430,
+    FORM_BOX_WIDTH: 450,
 
     className: 'comment-dlg',
     template: _.template([
@@ -108,7 +108,7 @@ RB.CommentDialogView = Backbone.View.extend({
         '</div>',
         '<form method="post">',
         ' <h1 class="comment-dlg-header">',
-        '  <span class="title"><%- yourCommentText %></span>',
+        '  <span class="title"></span>',
         '<% if (authenticated && !hasDraft) { %>',
         '  <a class="markdown-info" href="<%- markdownDocsURL %>"',
         '     target="_blank"><%- markdownText %></a>',
@@ -135,7 +135,6 @@ RB.CommentDialogView = Backbone.View.extend({
         '  </ul>',
         ' </div>',
         ' <div class="comment-dlg-footer">',
-        '  <div class="status"></div>',
         '  <div class="buttons">',
         '   <input type="button" class="save" value="<%- saveButton %>" ',
         '          disabled="true" />',
@@ -174,7 +173,6 @@ RB.CommentDialogView = Backbone.View.extend({
                 markdownDocsURL: MANUAL_URL + 'users/markdown/',
                 markdownText: gettext('Markdown'),
                 otherReviewsText: gettext('Other reviews'),
-                yourCommentText: gettext('Your comment'),
                 loginText: interpolate(
                     gettext('You must <a href="%s">log in</a> to post a comment.'),
                     [userSession.get('loginURL')]),
@@ -194,7 +192,7 @@ RB.CommentDialogView = Backbone.View.extend({
         this._$body = this._$draftForm.children('.comment-dlg-body');
         this._$header = this._$draftForm.children('.comment-dlg-header');
         this._$footer = this._$draftForm.children('.comment-dlg-footer');
-        this._$statusField  = this._$footer.children('.status');
+        this._$title = this._$header.children('.title');
 
         this._$commentOptions = this._$body.children('.comment-dlg-options');
 
@@ -303,23 +301,8 @@ RB.CommentDialogView = Backbone.View.extend({
             handle: '.comment-dlg-header'
         });
 
-        this.model.on('change:dirty', function() {
-            if (this.$el.is(':visible')) {
-                this._handleResize();
-            }
-        }, this);
-
-        this.model.on('change:statusText', function(model, text) {
-            if (text) {
-                this._$statusField
-                    .text(text)
-                    .show();
-            } else {
-                this._$statusField
-                    .text('')
-                    .hide();
-            }
-        }, this);
+        this.listenTo(this.model, 'change:dirty', this._updateTitle);
+        this._updateTitle();
 
         this.model.on('change:publishedComments',
                       this._onPublishedCommentsChanged, this);
@@ -435,6 +418,15 @@ RB.CommentDialogView = Backbone.View.extend({
      */
     positionBeside: function($el, options) {
         this.$el.positionToSide($el, options);
+    },
+
+    /*
+     * Updates the title of the comment dialog, based on the current state.
+     */
+    _updateTitle: function() {
+        this._$title.text(this.model.get('dirty')
+                          ? gettext('Your comment (unsaved)')
+                          : gettext('Your comment'));
     },
 
     /*

@@ -195,12 +195,13 @@ class ReviewUI(object):
             })
 
     def get_comment_link_text(self, comment):
-        """Returns the text to link to a comment.
+        """Return the text to link to a comment.
 
-        This will normally just return the filename, but some may want to
-        specialize to list things like page numbers or sections.
+        This will normally just return the file attachment's display name, but
+        some may want to specialize to list things like page numbers or
+        sections.
         """
-        return self.obj.caption or self.obj.filename
+        return self.obj.display_name
 
     def get_extra_context(self, request):
         return {}

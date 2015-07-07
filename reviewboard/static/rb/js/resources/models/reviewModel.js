@@ -31,7 +31,7 @@ RB.Review = RB.BaseResource.extend({
              * with includeTextTypes="markdown".
              */
             markdownTextFields: {},
-            
+
             /*
              * Raw text fields, if forceTextType is used and the caller
              * fetches or posts with includeTextTypes="raw".

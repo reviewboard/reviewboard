@@ -19,6 +19,7 @@ Review Board Release Notes
 .. toctree::
    :maxdepth: 1
 
+   2.0.18
    2.0.17
    2.0.16
    2.0.15
