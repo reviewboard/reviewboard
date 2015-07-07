@@ -10,7 +10,7 @@ from djblets.webapi.decorators import (webapi_request_fields,
                                        webapi_response_errors)
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
-from djblets.webapi.resources import UserResource as DjbletsUserResource
+from djblets.webapi.resources.user import UserResource as DjbletsUserResource
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.accounts.errors import UserQueryError
