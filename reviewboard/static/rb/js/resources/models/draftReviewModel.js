@@ -16,13 +16,7 @@ RB.DraftReview = RB.Review.extend(_.extend({
      * triggered.
      */
     publish: function(options, context) {
-        var error;
-
         options = options || {};
-
-        error = _.isFunction(options.error)
-                ? _.bind(options.error, context)
-                : undefined;
 
         this.trigger('publishing');
 
@@ -37,7 +31,13 @@ RB.DraftReview = RB.Review.extend(_.extend({
                             options.success.call(context);
                         }
                     },
-                    error: error
+                    error: function(model, xhr) {
+                        model.trigger('publishError', xhr.errorText);
+
+                        if (_.isFunction(options.error)) {
+                            options.error.call(context, model, xhr);
+                        }
+                    }
                 }, this);
             },
             error: error
