@@ -123,9 +123,13 @@ RB.ReviewReply = RB.BaseResource.extend({
                             options.success.call(context);
                         }
                     },
-                    error: _.isFunction(options.error)
-                           ? _.bind(options.error, context)
-                           : undefined
+                    error: function(model, xhr) {
+                        model.trigger('publishError', xhr.errorText);
+
+                        if (_.isFunction(options.error)) {
+                            options.error.call(context, model, xhr);
+                        }
+                    }
                 }, this);
             }
         }, this);
