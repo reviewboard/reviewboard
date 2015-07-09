@@ -26,7 +26,7 @@ class OriginalFileResource(BaseOriginalFileResource):
 
         if not review_request_resource.has_access_permissions(request,
                                                               review_request):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         try:
             return resources.filediff.get_object(request, *args, **kwargs)

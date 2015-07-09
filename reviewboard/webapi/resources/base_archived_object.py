@@ -76,7 +76,7 @@ class BaseArchivedObjectResource(WebAPIResource):
 
         if not resources.user.has_modify_permissions(request, user,
                                                      *args, **kwargs):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         visit, is_new = ReviewRequestVisit.objects.get_or_create(
             user=user,

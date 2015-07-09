@@ -66,9 +66,6 @@ RB.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
         var $sendEmail = this.$('.send-email');
 
         this.model.publish({
-            error: function(model, xhr) {
-                this.model.trigger('publishError', xhr.errorText);
-            },
             trivial: $sendEmail.length === 1 && !$sendEmail.is(':checked')
         }, this);
     },

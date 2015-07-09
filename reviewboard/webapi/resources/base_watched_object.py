@@ -97,7 +97,7 @@ class BaseWatchedObjectResource(WebAPIResource):
 
         if not resources.user.has_modify_permissions(request, user,
                                                      *args, **kwargs):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         profile, profile_is_new = \
             Profile.objects.get_or_create(user=request.user)
@@ -122,7 +122,7 @@ class BaseWatchedObjectResource(WebAPIResource):
 
         if not resources.user.has_modify_permissions(request, user,
                                                      *args, **kwargs):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         profile, profile_is_new = \
             Profile.objects.get_or_create(user=request.user)

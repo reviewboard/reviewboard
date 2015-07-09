@@ -1,10 +1,10 @@
 from __future__ import unicode_literals
 
-from reviewboard.webapi.tests.mixins import test_template
+from djblets.webapi.testing.decorators import webapi_test_template
 
 
 class ExtraDataListMixin(object):
-    @test_template
+    @webapi_test_template
     def test_post_with_extra_fields(self):
         """Testing the POST <URL> API with extra fields"""
         self.load_fixtures(self.basic_post_fixtures)
@@ -38,7 +38,7 @@ class ExtraDataListMixin(object):
 
 
 class ExtraDataItemMixin(object):
-    @test_template
+    @webapi_test_template
     def test_put_with_extra_fields(self):
         """Testing the PUT <URL> API with extra fields"""
         self.load_fixtures(getattr(self, 'basic_put_fixtures', []))

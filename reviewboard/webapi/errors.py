@@ -3,11 +3,6 @@ from __future__ import unicode_literals
 from djblets.webapi.errors import WebAPIError
 
 
-class WebAPITokenGenerationError(Exception):
-    """An error generating a Web API token."""
-    pass
-
-
 #
 # Standard error messages
 #

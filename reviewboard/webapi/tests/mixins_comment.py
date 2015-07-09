@@ -1,17 +1,18 @@
 from __future__ import unicode_literals
 
-from reviewboard.webapi.tests.mixins import test_template
+from djblets.webapi.testing.decorators import webapi_test_template
+
 from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
                                                         ExtraDataListMixin)
 
 
 class BaseCommentListMixin(object):
-    @test_template
+    @webapi_test_template
     def test_post_with_text_type_markdown(self):
         """Testing the POST <URL> API with text_type=markdown"""
         self._test_post_with_text_type('markdown')
 
-    @test_template
+    @webapi_test_template
     def test_post_with_text_type_plain(self):
         """Testing the POST <URL> API with text_type=plain"""
         self._test_post_with_text_type('plain')
@@ -46,7 +47,7 @@ class BaseCommentItemMixin(object):
         else:
             self.assertEqual(item_rsp['rich_text'], 'plain')
 
-    @test_template
+    @webapi_test_template
     def test_get_with_markdown_and_force_text_type_markdown(self):
         """Testing the GET <URL> API with text_type=markdown and
         ?force-text-type=markdown
@@ -57,7 +58,7 @@ class BaseCommentItemMixin(object):
             force_text_type='markdown',
             expected_text=r'\# `This` is a **test**')
 
-    @test_template
+    @webapi_test_template
     def test_get_with_markdown_and_force_text_type_plain(self):
         """Testing the GET <URL> API with text_type=markdown and
         ?force-text-type=plain
@@ -68,7 +69,7 @@ class BaseCommentItemMixin(object):
             force_text_type='plain',
             expected_text='# `This` is a **test**')
 
-    @test_template
+    @webapi_test_template
     def test_get_with_markdown_and_force_text_type_html(self):
         """Testing the GET <URL> API with text_type=markdown and
         ?force-text-type=html
@@ -80,7 +81,7 @@ class BaseCommentItemMixin(object):
             expected_text='<p># <code>This</code> is a '
                           '<strong>test</strong></p>')
 
-    @test_template
+    @webapi_test_template
     def test_get_with_plain_and_force_text_type_markdown(self):
         """Testing the GET <URL> API with text_type=plain and
         ?force-text-type=markdown
@@ -91,7 +92,7 @@ class BaseCommentItemMixin(object):
             force_text_type='markdown',
             expected_text=r'\#<\`This\` is a \*\*test\*\*>')
 
-    @test_template
+    @webapi_test_template
     def test_get_with_plain_and_force_text_type_plain(self):
         """Testing the GET <URL> API with text_type=plain and
         ?force-text-type=plain
@@ -102,7 +103,7 @@ class BaseCommentItemMixin(object):
             force_text_type='plain',
             expected_text='#<`This` is a **test**>')
 
-    @test_template
+    @webapi_test_template
     def test_get_with_plain_and_force_text_type_html(self):
         """Testing the GET <URL> API with text_type=plain and
         ?force-text-type=html
@@ -113,19 +114,19 @@ class BaseCommentItemMixin(object):
             force_text_type='html',
             expected_text='#&lt;`This` is a **test**&gt;')
 
-    @test_template
+    @webapi_test_template
     def test_put_with_text_type_markdown_and_text(self):
         """Testing the PUT <URL> API
         with text_type=markdown and text specified
         """
         self._test_put_with_text_type_and_text('markdown')
 
-    @test_template
+    @webapi_test_template
     def test_put_with_text_type_plain_and_text(self):
         """Testing the PUT <URL> API with text_type=plain and text specified"""
         self._test_put_with_text_type_and_text('plain')
 
-    @test_template
+    @webapi_test_template
     def test_put_with_text_type_markdown_and_not_text(self):
         """Testing the PUT <URL> API
         with text_type=markdown and text not specified escapes text
@@ -135,7 +136,7 @@ class BaseCommentItemMixin(object):
             '`Test` **diff** comment',
             r'\`Test\` \*\*diff\*\* comment')
 
-    @test_template
+    @webapi_test_template
     def test_put_with_text_type_plain_and_not_text(self):
         """Testing the PUT <URL> API
         with text_type=plain and text not specified
@@ -145,7 +146,7 @@ class BaseCommentItemMixin(object):
             r'\`Test\` \*\*diff\*\* comment',
             '`Test` **diff** comment')
 
-    @test_template
+    @webapi_test_template
     def test_put_without_text_type_and_escaping_provided_fields(self):
         """Testing the PUT <URL> API
         without changing text_type and with escaping provided fields
