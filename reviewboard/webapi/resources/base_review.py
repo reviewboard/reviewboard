@@ -286,7 +286,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         if not self.has_modify_permissions(request, review):
             # Can't modify published reviews or those not belonging
             # to the user.
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if 'ship_it' in kwargs:
             review.ship_it = kwargs['ship_it']

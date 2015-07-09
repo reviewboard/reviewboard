@@ -234,7 +234,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
 
         # Check permissions to change the issue status
         if not comment.can_change_issue_status(request.user):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         # We can only update the status of an issue if an issue has been
         # opened

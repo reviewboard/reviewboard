@@ -292,7 +292,7 @@ class ReviewReplyResource(BaseReviewResource):
         if not self.has_modify_permissions(request, reply):
             # Can't modify published replies or those not belonging
             # to the user.
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         for field in ('body_top', 'body_bottom'):
             value = kwargs.get(field, None)

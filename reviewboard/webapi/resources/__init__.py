@@ -5,7 +5,8 @@ import logging
 from django.contrib.auth.models import User
 from djblets.extensions.models import RegisteredExtension
 from djblets.extensions.resources import ExtensionResource
-from djblets.webapi.resources import register_resource_for_model
+from djblets.webapi.resources.registry import (ResourcesRegistry,
+                                               register_resource_for_model)
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffCommit, DiffSet, FileDiff
@@ -22,7 +23,7 @@ from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.models import WebAPIToken
 
 
-class Resources(object):
+class Resources(ResourcesRegistry):
     """Manages the instances for all API resources.
 
     This handles dynamically loading API resource instances upon request,
@@ -32,38 +33,18 @@ class Resources(object):
     be imported from the proper file and cached. Subsequent requests will be
     returned from the cache.
     """
+
+    resource_search_path = [
+        'reviewboard.webapi.resources',
+    ]
+
     def __init__(self):
+        super(Resources, self).__init__()
+
         self.extension = ExtensionResource(get_extension_manager())
 
-        self._loaded = False
-
-    def __getattr__(self, name):
-        """Returns a resource instance as an attribute.
-
-        If the resource hasn't yet been loaded into cache, it will be
-        imported, fetched from the module, and cached. Subsequent attribute
-        fetches for this resource will be returned from the cache.
-        """
-        if not self._loaded:
-            self._loaded = True
-            self._register_resources()
-
-        if name not in self.__dict__:
-            instance_name = '%s_resource' % name
-
-            try:
-                mod = __import__('reviewboard.webapi.resources.%s' % name,
-                                 {}, {}, [instance_name])
-                self.__dict__[name] = getattr(mod, instance_name)
-            except (ImportError, AttributeError) as e:
-                logging.error('Unable to load webapi resource %s: %s'
-                              % (name, e))
-                raise AttributeError('%s is not a valid resource name' % name)
-
-        return self.__dict__[name]
-
-    def _register_resources(self):
-        """Registers all the resource model associations."""
+    def register_resources(self):
+        """Register all the resource model associations."""
         register_resource_for_model(ChangeDescription, self.change)
         register_resource_for_model(
             Comment,

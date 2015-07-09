@@ -294,7 +294,7 @@ class DiffResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if review_request.repository is None:
             return INVALID_ATTRIBUTE, {
@@ -363,7 +363,7 @@ class DiffResource(WebAPIResource):
                 draft = ReviewRequestDraftResource.prepare_draft(
                     request, review_request)
             except PermissionDenied:
-                return self._no_access_error(request.user)
+                return self.get_no_access_error(request)
 
         draft.diffset = diffset
 
@@ -411,7 +411,7 @@ class DiffResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if extra_fields:
             self.import_extra_data(diffset, diffset.extra_data, extra_fields)

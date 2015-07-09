@@ -175,7 +175,7 @@ class HostingServiceAccountResource(WebAPIResource):
 
         if not HostingServiceAccount.objects.can_create(request.user,
                                                         local_site):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         # Validate the service.
         service = get_hosting_service(service_id)

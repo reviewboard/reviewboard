@@ -74,7 +74,7 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
 
         if not resources.review_request.has_access_permissions(request,
                                                                review_request):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         timestamp, updated_object = review_request.get_last_activity()
 

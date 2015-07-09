@@ -4,26 +4,10 @@ from django.contrib.auth.models import User
 from django.utils import six
 from django.utils.six.moves import range
 from djblets.testing.decorators import add_fixtures
-from djblets.util.decorators import simple_decorator
 from djblets.webapi.errors import PERMISSION_DENIED
+from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.webapi.models import WebAPIToken
-
-
-@simple_decorator
-def test_template(test_func):
-    """Marks this test function as a template for tests.
-
-    This adds a flag to the test function hinting that it should be
-    processed differently. WebAPITestCase will replace the docstring to
-    match that of the active test suite.
-    """
-    def _call(*args, **kwargs):
-        return test_func(*args, **kwargs)
-
-    _call.is_test_template = True
-
-    return _call
 
 
 class BasicTestsMetaclass(type):
@@ -182,7 +166,7 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         raise NotImplementedError("%s doesn't implement check_delete_result"
                                   % self.__class__.__name__)
 
-    @test_template
+    @webapi_test_template
     def test_delete(self):
         """Testing the DELETE <URL> API"""
         self.load_fixtures(self.basic_delete_fixtures)
@@ -194,7 +178,7 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         self.api_delete(url)
         self.check_delete_result(self.user, *cb_args)
 
-    @test_template
+    @webapi_test_template
     def test_delete_not_owner(self):
         """Testing the DELETE <URL> API without owner"""
         self.load_fixtures(self.basic_delete_fixtures)
@@ -217,7 +201,7 @@ class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
     on Local Sites.
     """
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_delete_with_site(self):
         """Testing the DELETE <URL> API with access to a local site"""
         user, url, cb_args = self._setup_test_delete_with_site()
@@ -226,7 +210,7 @@ class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
         self.check_delete_result(user, *cb_args)
 
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_delete_with_site_no_access(self):
         """Testing the DELETE <URL> API without access to a local site"""
         user, url, cb_args = self._setup_test_delete_with_site()
@@ -259,7 +243,7 @@ class BasicDeleteTestsWithLocalSiteAndAPITokenMixin(object):
     sites.
     """
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_delete_with_restrict_site_and_allowed(self):
         """Testing the DELETE <URL> API with access to a local site
         and session restricted to the site
@@ -272,7 +256,7 @@ class BasicDeleteTestsWithLocalSiteAndAPITokenMixin(object):
         self.check_delete_result(user, *cb_args)
 
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_delete_with_restrict_site_and_not_allowed(self):
         """Testing the DELETE <URL> API with access to a local site
         and session restricted to a different site
@@ -298,7 +282,7 @@ class BasicDeleteNotAllowedTestsMixin(BasicTestsMixin):
             "%s doesn't implement setup_http_not_allowed_item_test"
             % self.__class__.__name__)
 
-    @test_template
+    @webapi_test_template
     def test_delete_method_not_allowed(self):
         """Testing the DELETE <URL> API gives Method Not Allowed"""
         url = self.setup_http_not_allowed_item_test(self.user)
@@ -322,7 +306,7 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
         raise NotImplementedError("%s doesn't implement setup_basic_get_test"
                                   % self.__class__.__name__)
 
-    @test_template
+    @webapi_test_template
     def test_get(self):
         """Testing the GET <URL> API"""
         self.load_fixtures(self.basic_get_fixtures)
@@ -352,7 +336,7 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
     on Local Sites.
     """
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_get_with_site(self):
         """Testing the GET <URL> API with access to a local site"""
         user, url, mimetype, item = self._setup_test_get_with_site()
@@ -371,7 +355,7 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
             self.compare_item(rsp, item)
 
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_get_with_site_no_access(self):
         """Testing the GET <URL> API without access to a local site"""
         user, url, mimetype, item = self._setup_test_get_with_site()
@@ -404,7 +388,7 @@ class BasicGetItemTestsWithLocalSiteAndAPITokenMixin(object):
     sites.
     """
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_get_with_restrict_site_and_allowed(self):
         """Testing the GET <URL> API with access to a local site
         and session restricted to the site
@@ -426,7 +410,7 @@ class BasicGetItemTestsWithLocalSiteAndAPITokenMixin(object):
             self.compare_item(rsp, item)
 
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_get_with_restrict_site_and_not_allowed(self):
         """Testing the GET <URL> API with access to a local site
         and session restricted to a different site
@@ -456,7 +440,7 @@ class BasicGetListTestsMixin(BasicTestsMixin):
         raise NotImplementedError("%s doesn't implement setup_basic_get_test"
                                   % self.__class__.__name__)
 
-    @test_template
+    @webapi_test_template
     def test_get(self):
         """Testing the GET <URL> API"""
         self.load_fixtures(self.basic_get_fixtures)
@@ -484,7 +468,7 @@ class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
     on Local Sites.
     """
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_get_with_site(self):
         """Testing the GET <URL> API with access to a local site"""
         user, url, mimetype, items = self._setup_test_get_list_with_site()
@@ -500,7 +484,7 @@ class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
             self.compare_item(items_rsp[i], items[i])
 
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_get_with_site_no_access(self):
         """Testing the GET <URL> API without access to a local site"""
         user, url, mimetype, items = self._setup_test_get_list_with_site()
@@ -534,7 +518,7 @@ class BasicGetListTestsWithLocalSiteAndAPITokenMixin(object):
     sites.
     """
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_get_with_restrict_site_and_allowed(self):
         """Testing the GET <URL> API with access to a local site
         and session restricted to the site
@@ -554,7 +538,7 @@ class BasicGetListTestsWithLocalSiteAndAPITokenMixin(object):
             self.compare_item(items_rsp[i], items[i])
 
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_get_with_restrict_site_and_not_allowed(self):
         """Testing the GET <URL> API with access to a local site
         and session restricted to a different site
@@ -590,7 +574,7 @@ class BasicPostTestsMixin(BasicTestsMixin):
         raise NotImplementedError("%s doesn't implement check_post_result"
                                   % self.__class__.__name__)
 
-    @test_template
+    @webapi_test_template
     def test_post(self):
         """Testing the POST <URL> API"""
         self.load_fixtures(self.basic_post_fixtures)
@@ -613,7 +597,7 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
     on Local Sites.
     """
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_post_with_site(self):
         """Testing the POST <URL> API with access to a local site"""
         user, url, mimetype, post_data, cb_args = \
@@ -625,7 +609,7 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
         self.check_post_result(user, rsp, *cb_args)
 
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_post_with_site_no_access(self):
         """Testing the POST <URL> API without access to a local site"""
         user, url, mimetype, post_data, cb_args = \
@@ -660,7 +644,7 @@ class BasicPostTestsWithLocalSiteAndAPITokenMixin(object):
     sites.
     """
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_post_with_restrict_site_and_allowed(self):
         """Testing the POST <URL> API with access to a local site
         and session restricted to the site
@@ -676,7 +660,7 @@ class BasicPostTestsWithLocalSiteAndAPITokenMixin(object):
         self.check_post_result(user, rsp, *cb_args)
 
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_post_with_restrict_site_and_not_allowed(self):
         """Testing the POST <URL> API with access to a local site
         and session restricted to a different site
@@ -702,7 +686,7 @@ class BasicPostNotAllowedTestsMixin(BasicTestsMixin):
             "%s doesn't implement setup_http_not_allowed_list_test"
             % self.__class__.__name__)
 
-    @test_template
+    @webapi_test_template
     def test_post_method_not_allowed(self):
         """Testing the POST <URL> API gives Method Not Allowed"""
         url = self.setup_http_not_allowed_list_test(self.user)
@@ -732,7 +716,7 @@ class BasicPutTestsMixin(BasicTestsMixin):
         raise NotImplementedError("%s doesn't implement check_put_result"
                                   % self.__class__.__name__)
 
-    @test_template
+    @webapi_test_template
     def test_put(self):
         """Testing the PUT <URL> API"""
         self.load_fixtures(self.basic_put_fixtures)
@@ -749,7 +733,7 @@ class BasicPutTestsMixin(BasicTestsMixin):
         self.check_put_result(self.user, rsp[self.resource.item_result_key],
                               item, *cb_args)
 
-    @test_template
+    @webapi_test_template
     def test_put_not_owner(self):
         """Testing the PUT <URL> API without owner"""
         self.load_fixtures(self.basic_put_fixtures)
@@ -773,7 +757,7 @@ class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
     on Local Sites.
     """
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_put_with_site(self):
         """Testing the PUT <URL> API with access to a local site"""
         user, url, mimetype, put_data, item, cb_args = \
@@ -787,7 +771,7 @@ class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
                               item, *cb_args)
 
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_put_with_site_no_access(self):
         """Testing the PUT <URL> API without access to a local site"""
         user, url, mimetype, put_data, item, cb_args = \
@@ -821,7 +805,7 @@ class BasicPutTestsWithLocalSiteAndAPITokenMixin(object):
     sites.
     """
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_put_with_restrict_site_and_allowed(self):
         """Testing the PUT <URL> API with access to a local site
         and session restricted to the site
@@ -839,7 +823,7 @@ class BasicPutTestsWithLocalSiteAndAPITokenMixin(object):
                               item, *cb_args)
 
     @add_fixtures(['test_site'])
-    @test_template
+    @webapi_test_template
     def test_put_with_restrict_site_and_not_allowed(self):
         """Testing the PUT <URL> API with access to a local site
         and session restricted to a different site
@@ -866,7 +850,7 @@ class BasicPutNotAllowedTestsMixin(BasicTestsMixin):
             "%s doesn't implement setup_http_not_allowed_item_test"
             % self.__class__.__name__)
 
-    @test_template
+    @webapi_test_template
     def test_put_method_not_allowed(self):
         """Testing the PUT <URL> API gives Method Not Allowed"""
         url = self.setup_http_not_allowed_item_test(self.user)
@@ -890,7 +874,7 @@ class BaseReviewRequestChildMixin(object):
             "%s doesn't implement setup_review_request_child_test"
             % self.__class__.__name__)
 
-    @test_template
+    @webapi_test_template
     def test_get_with_private_group(self):
         """Testing the GET <URL> API
         with access to review request on a private group
@@ -906,7 +890,7 @@ class BaseReviewRequestChildMixin(object):
                      expected_mimetype=mimetype,
                      expected_json=self.basic_get_returns_json)
 
-    @test_template
+    @webapi_test_template
     def test_get_with_private_group_no_access(self):
         """Testing the GET <URL> API
         without access to review request on a private group
@@ -922,7 +906,7 @@ class BaseReviewRequestChildMixin(object):
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
     @add_fixtures(['test_scmtools'])
-    @test_template
+    @webapi_test_template
     def test_get_with_private_repo(self):
         """Testing the GET <URL> API
         with access to review request on a private repository
@@ -939,7 +923,7 @@ class BaseReviewRequestChildMixin(object):
                      expected_json=self.basic_get_returns_json)
 
     @add_fixtures(['test_scmtools'])
-    @test_template
+    @webapi_test_template
     def test_get_with_private_repo_no_access(self):
         """Testing the GET <URL> API
         without access to review request on a private repository

@@ -10,12 +10,12 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields,
                                        webapi_response_errors)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
-                                   NOT_LOGGED_IN, PERMISSION_DENIED)
+                                   NOT_LOGGED_IN, PERMISSION_DENIED,
+                                   WebAPITokenGenerationError)
 
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
-from reviewboard.webapi.errors import (TOKEN_GENERATION_FAILED,
-                                       WebAPITokenGenerationError)
+from reviewboard.webapi.errors import TOKEN_GENERATION_FAILED
 from reviewboard.webapi.models import WebAPIToken
 from reviewboard.webapi.resources import resources
 
@@ -134,7 +134,7 @@ class APITokenResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_list_access_permissions(request, *args, **kwargs):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         try:
             self._validate_policy(policy)
@@ -193,7 +193,7 @@ class APITokenResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_access_permissions(request, token, *args, **kwargs):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if 'note' in kwargs:
             token.note = kwargs['note']

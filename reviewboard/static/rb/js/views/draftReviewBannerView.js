@@ -102,12 +102,7 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      * Publishes the review.
      */
     _onPublishClicked: function() {
-        this.model.publish({
-            error: function(model, xhr) {
-                this.model.trigger('publishError', xhr.errorText);
-            }
-        }, this);
-
+        this.model.publish();
         return false;
     },
 

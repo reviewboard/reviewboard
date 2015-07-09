@@ -190,8 +190,8 @@ WEB_API_ENCODERS = (
 
 # The backends that are used to authenticate requests against the web API.
 WEB_API_AUTH_BACKENDS = (
-    'djblets.webapi.auth.WebAPIBasicAuthBackend',
-    'reviewboard.webapi.auth_backends.WebAPITokenAuthBackend',
+    'djblets.webapi.auth.backends.basic.WebAPIBasicAuthBackend',
+    'djblets.webapi.auth.backends.api_tokens.WebAPITokenAuthBackend',
 )
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'

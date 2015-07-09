@@ -12,11 +12,13 @@ class PermissionError(Exception):
 
 
 class PublishError(Exception):
-    """An error that occurs when attempting to publish a review request."""
+    """An error that occurs when attempting to publish.
+
+    The model triggering this error may be a review request, review, or reply.
+    """
 
     def __init__(self, message):
-        super(PublishError, self).__init__(
-            'Error publishing the review request: %s' % message)
+        super(PublishError, self).__init__('Error publishing: %s' % message)
 
 
 class CloseError(Exception):

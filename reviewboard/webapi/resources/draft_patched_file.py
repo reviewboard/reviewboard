@@ -24,7 +24,7 @@ class DraftPatchedFileResource(BasePatchedFileResource):
             return DOES_NOT_EXIST
 
         if not draft_resource.has_access_permissions(request, draft):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         try:
             return resources.draft_filediff.get_object(request, *args,

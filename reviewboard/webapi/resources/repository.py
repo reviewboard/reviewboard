@@ -339,7 +339,7 @@ class RepositoryResource(WebAPIResource):
         local_site = self._get_local_site(local_site_name)
 
         if not Repository.objects.can_create(request.user, local_site):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         try:
             scmtool = Tool.objects.get(name=tool)
@@ -505,7 +505,7 @@ class RepositoryResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_modify_permissions(request, repository):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         for field in ('bug_tracker', 'encoding', 'mirror_path', 'name',
                       'password', 'path', 'public', 'raw_file_url',
@@ -574,7 +574,7 @@ class RepositoryResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_delete_permissions(request, repository):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if not repository.review_requests.exists():
             repository.delete()

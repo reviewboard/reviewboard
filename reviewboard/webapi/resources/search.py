@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from django.db.models import Q
-from djblets.webapi.resources import UserResource as DjbletsUserResource
+from djblets.webapi.resources.user import UserResource as DjbletsUserResource
 
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.webapi.base import WebAPIResource
