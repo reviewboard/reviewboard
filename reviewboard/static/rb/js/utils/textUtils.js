@@ -30,6 +30,8 @@ RB.formatText = function($el, options) {
                                               options.bugTrackerURL,
                                               options.isHTMLEncoded))
             .removeClass('rich-text');
+    } else if ($el !== undefined && $el.length !== 0) {
+        RB.LinkifyUtils.linkifyChildren($el[0], options.bugTrackerURL);
     }
 };
 
