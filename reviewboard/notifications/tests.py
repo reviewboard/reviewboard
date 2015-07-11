@@ -11,6 +11,7 @@ from kgb import SpyAgency
 
 from reviewboard.accounts.models import Profile, ReviewRequestVisit
 from reviewboard.admin.siteconfig import load_site_config
+from reviewboard.diffviewer.models import FileDiff
 from reviewboard.notifications.email import (build_email_address,
                                              get_email_address_for_user,
                                              get_email_addresses_for_group)
@@ -22,6 +23,7 @@ from reviewboard.reviews.models import (Group,
                                         Review,
                                         ReviewRequest,
                                         ReviewRequestDraft)
+from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
@@ -85,7 +87,7 @@ class UserEmailTests(TestCase, EmailTestHelper):
                          "New Review Board user registration for NewUser")
 
         self.assertEqual(email.from_email, self.sender)
-        self.assertEqual(email.extra_headers['From'], settings.SERVER_EMAIL)
+        self.assertEqual(email.headers['From'], settings.SERVER_EMAIL)
         self.assertEqual(email.to[0], build_email_address(admin_name,
                                                           admin_email_addr))
 
@@ -118,7 +120,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
-        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
                          'Review Request %s: My test review request'
                          % review_request.pk)
@@ -168,10 +170,10 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         email = mail.outbox[0]
         self.assertEqual(email.from_email, self.sender)
-        self.assertEqual(email.extra_headers['From'], from_email)
-        self.assertEqual(email.extra_headers['X-ReviewBoard-URL'],
+        self.assertEqual(email.headers['From'], from_email)
+        self.assertEqual(email.headers['X-ReviewBoard-URL'],
                          'http://example.com/')
-        self.assertEqual(email.extra_headers['X-ReviewRequest-URL'],
+        self.assertEqual(email.headers['X-ReviewRequest-URL'],
                          'http://example.com/r/%s/'
                          % review_request.display_id)
         self.assertEqual(email.subject,
@@ -213,10 +215,10 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         email = mail.outbox[0]
         self.assertEqual(email.from_email, self.sender)
-        self.assertEqual(email.extra_headers['From'], from_email)
-        self.assertEqual(email.extra_headers['X-ReviewBoard-URL'],
+        self.assertEqual(email.headers['From'], from_email)
+        self.assertEqual(email.headers['X-ReviewBoard-URL'],
                          'http://example.com/s/local-site-1/')
-        self.assertEqual(email.extra_headers['X-ReviewRequest-URL'],
+        self.assertEqual(email.headers['X-ReviewRequest-URL'],
                          'http://example.com/s/local-site-1/r/%s/'
                          % review_request.display_id)
         self.assertEqual(email.subject,
@@ -308,7 +310,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
-        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
                          'Re: Review Request %s: My test review request'
                          % review_request.pk)
@@ -336,7 +338,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
-        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
                          'Re: Review Request %s: My test review request'
                          % review_request.pk)
@@ -366,7 +368,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
-        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
                          'Re: Review Request %s: My test review request'
                          % review_request.pk)
@@ -403,7 +405,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
-        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
                          'Re: Review Request %s: My test review request'
                          % review_request.pk)
@@ -436,7 +438,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
-        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
                          'Re: Review Request %s: Changed summary'
                          % review_request.pk)
@@ -566,7 +568,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
-        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].headers['From'], from_email)
         self.assertValidRecipients(
             ['site_user1', 'site_user2', 'site_user3', 'site_user4',
              'site_user5', review_request.submitter.username], [])
@@ -588,11 +590,142 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
-        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
                          'Review Request %s: \ud83d\ude04'
                          % review_request.pk)
         self.assertValidRecipients(['grumpy', 'doc'])
+
+    @add_fixtures(['test_scmtools'])
+    def test_review_request_email_with_added_file(self):
+        """Testing sending a review request e-mail with added files in the
+        diffset
+        """
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+        filediff = self.create_filediff(diffset=diffset,
+                                        source_file='/dev/null',
+                                        source_revision=PRE_CREATION)
+
+        review_request.publish(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertTrue('X-ReviewBoard-Diff-For' in message.headers)
+        diff_headers = message.headers.getlist('X-ReviewBoard-Diff-For')
+
+        self.assertEqual(len(diff_headers), 1)
+        self.assertFalse(filediff.source_file in diff_headers)
+        self.assertTrue(filediff.dest_file in diff_headers)
+
+    @add_fixtures(['test_scmtools'])
+    def test_review_request_email_with_deleted_file(self):
+        """Testing sending a review request e-mail with deleted files in the
+        diffset
+        """
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+        filediff = self.create_filediff(diffset=diffset,
+                                        dest_file='/dev/null',
+                                        status=FileDiff.DELETED)
+
+        review_request.publish(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertTrue('X-ReviewBoard-Diff-For' in message.headers)
+        diff_headers = message.headers.getlist('X-ReviewBoard-Diff-For')
+
+        self.assertEqual(len(diff_headers), 1)
+        self.assertTrue(filediff.source_file in diff_headers)
+        self.assertFalse(filediff.dest_file in diff_headers)
+
+    @add_fixtures(['test_scmtools'])
+    def test_review_request_email_with_moved_file(self):
+        """Testing sending a review request e-mail with moved files in the
+        diffset
+        """
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+        filediff = self.create_filediff(diffset=diffset,
+                                        source_file='foo',
+                                        dest_file='bar',
+                                        status=FileDiff.MOVED)
+
+        review_request.publish(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertTrue('X-ReviewBoard-Diff-For' in message.headers)
+        diff_headers = message.headers.getlist('X-ReviewBoard-Diff-For')
+
+        self.assertEqual(len(diff_headers), 2)
+        self.assertTrue(filediff.source_file in diff_headers)
+        self.assertTrue(filediff.dest_file in diff_headers)
+
+    @add_fixtures(['test_scmtools'])
+    def test_review_request_email_with_copied_file(self):
+        """Testing sending a review request e-mail with copied files in the
+        diffset
+        """
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+        filediff = self.create_filediff(diffset=diffset,
+                                        source_file='foo',
+                                        dest_file='bar',
+                                        status=FileDiff.COPIED)
+
+        review_request.publish(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertTrue('X-ReviewBoard-Diff-For' in message.headers)
+        diff_headers = message.headers.getlist('X-ReviewBoard-Diff-For')
+
+        self.assertEqual(len(diff_headers), 2)
+        self.assertTrue(filediff.source_file in diff_headers)
+        self.assertTrue(filediff.dest_file in diff_headers)
+
+    @add_fixtures(['test_scmtools'])
+    def test_review_request_email_with_multiple_files(self):
+        """Testing sending a review request e-mail with multiple files in the
+        diffset
+        """
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+        filediffs = [
+            self.create_filediff(diffset=diffset,
+                                 source_file='foo',
+                                 dest_file='bar',
+                                 status=FileDiff.MOVED),
+            self.create_filediff(diffset=diffset,
+                                 source_file='baz',
+                                 dest_file='/dev/null',
+                                 status=FileDiff.DELETED)
+        ]
+
+        review_request.publish(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertTrue('X-ReviewBoard-Diff-For' in message.headers)
+        diff_headers = message.headers.getlist('X-ReviewBoard-Diff-For')
+
+        self.assertEqual(len(diff_headers), 3)
+        self.assertTrue(filediffs[0].source_file in diff_headers)
+        self.assertTrue(filediffs[0].dest_file in diff_headers)
+        self.assertTrue(filediffs[1].source_file in diff_headers)
+        self.assertFalse(filediffs[1].dest_file in diff_headers)
 
     def _get_sender(self, user):
         return build_email_address(user.get_full_name(), self.sender)

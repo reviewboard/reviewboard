@@ -10,7 +10,8 @@ from django.core.mail import EmailMultiAlternatives
 from django.core.urlresolvers import reverse
 from django.db.models import Q
 from django.template.loader import render_to_string
-from django.utils import timezone
+from django.utils import six, timezone
+from django.utils.datastructures import MultiValueDict
 from django.utils.six.moves.urllib.parse import urljoin
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.auth.signals import user_registered
@@ -157,11 +158,24 @@ class SpiffyEmailMessage(EmailMultiAlternatives):
 
     The generated Message-ID header from the e-mail can be accessed
     through the :py:attr:`message_id` attribute after the e-mail is sent.
+
+    This class also supports repeated headers.
     """
+
     def __init__(self, subject, text_body, html_body, from_email, sender,
-                 to, cc, in_reply_to, headers={}):
-        headers = headers.copy()
+                 to, cc, in_reply_to, headers=None):
         siteconfig = SiteConfiguration.objects.get_current()
+
+        headers = headers or MultiValueDict()
+
+        if (isinstance(headers, dict) and
+            not isinstance(headers, MultiValueDict)):
+            # Instantiating a MultiValueDict from a dict does not ensure that
+            # the values are lists, so we have to do that ourselves.
+            self._headers = MultiValueDict(dict(
+                (key, [value])
+                for key, value in six.iteritems(headers)
+            ))
 
         if sender:
             headers['Sender'] = sender
@@ -187,16 +201,27 @@ class SpiffyEmailMessage(EmailMultiAlternatives):
 
         super(SpiffyEmailMessage, self).__init__(subject, text_body,
                                                  settings.DEFAULT_FROM_EMAIL,
-                                                 to, headers=headers)
+                                                 to)
 
         self.cc = cc or []
         self.message_id = None
+
+        # We don't want to use the regular extra_headers attribute because
+        # it will be treated as a plain dict by Django. Instead, since we're
+        # using a MultiValueDict, we store it in a separate attribute
+        # attribute and handle adding our headers in the message method.
+        self.headers = headers
 
         self.attach_alternative(html_body, "text/html")
 
     def message(self):
         msg = super(SpiffyEmailMessage, self).message()
         self.message_id = msg['Message-ID']
+
+        for name, value_list in self.headers.iterlists():
+            for value in value_list:
+                msg.add_header(name, value)
+
         return msg
 
     def recipients(self):
@@ -304,16 +329,31 @@ def send_review_mail(user, review_request, subject, in_reply_to,
 
     base_url = get_server_url(local_site=local_site)
 
-    headers = {
-        'X-ReviewBoard-URL': base_url,
-        'X-ReviewRequest-URL': urljoin(base_url,
-                                       review_request.get_absolute_url()),
-        'X-ReviewGroup': ', '.join(group.name for group in
-                                   review_request.target_groups.all()),
-    }
+    headers = MultiValueDict({
+        'X-ReviewBoard-URL': [base_url],
+        'X-ReviewRequest-URL': [urljoin(base_url,
+                                        review_request.get_absolute_url())],
+        'X-ReviewGroup': [', '.join(group.name for group in
+                                    review_request.target_groups.all())],
+    })
 
     if review_request.repository:
         headers['X-ReviewRequest-Repository'] = review_request.repository.name
+
+    latest_diffset = review_request.get_latest_diffset()
+
+    if latest_diffset:
+        modified_files = set()
+
+        for filediff in latest_diffset.files.all():
+            if filediff.deleted or filediff.copied or filediff.moved:
+                modified_files.add(filediff.source_file)
+
+            if filediff.is_new or filediff.copied or filediff.moved:
+                modified_files.add(filediff.dest_file)
+
+        for filename in modified_files:
+            headers.appendlist('X-ReviewBoard-Diff-For', filename)
 
     sender = None
 
