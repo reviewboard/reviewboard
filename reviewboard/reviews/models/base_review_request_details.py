@@ -7,7 +7,6 @@ from django.utils import six
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
-from djblets.markdown import markdown_escape
 
 from reviewboard.attachments.models import FileAttachmentHistory
 from reviewboard.diffviewer.models import DiffSet
@@ -280,7 +279,8 @@ class BaseReviewRequestDetails(models.Model):
             parent_diff_file_contents=None,
             diffset_history=self.get_review_request().diffset_history,
             basedir='/',
-            request=None)
+            request=None,
+            base_commit_id=commit.base_commit_id)
 
     def save(self, **kwargs):
         self.bugs_closed = self.bugs_closed.strip()
