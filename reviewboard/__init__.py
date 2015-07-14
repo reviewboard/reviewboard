@@ -94,7 +94,7 @@ def initialize():
 
     # Set RBSITE_PYTHON_PATH to the path we need for any RB-bundled
     # scripts we may call.
-    os.environ['RBSITE_PYTHONPATH'] = \
+    os.environ[b'RBSITE_PYTHONPATH'] = \
         os.path.dirname(settings_local.__file__)
 
     from Crypto import Random

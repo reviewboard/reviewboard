@@ -380,9 +380,9 @@ def load_site_config(full_reload=False):
         siteconfig.get('swift_container_name'))
 
     if siteconfig.settings.get('site_domain_method', 'http') == 'https':
-        os.environ['HTTPS'] = 'on'
+        os.environ[b'HTTPS'] = b'on'
     else:
-        os.environ['HTTPS'] = 'off'
+        os.environ[b'HTTPS'] = b'off'
 
     # Save back changes if they have been made
     if dirty:

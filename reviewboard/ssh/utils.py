@@ -99,5 +99,7 @@ def register_rbssh(envvar):
     specifically place it in the system environment using ``os.putenv``,
     while in others (Mercurial, Bazaar), we need to place it in ``os.environ``.
     """
-    os.putenv(envvar, 'rbssh')
-    os.environ[envvar] = 'rbssh'
+    envvar = envvar.encode('utf-8')
+
+    os.putenv(envvar, b'rbssh')
+    os.environ[envvar] = b'rbssh'
