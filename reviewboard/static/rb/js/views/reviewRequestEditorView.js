@@ -1353,9 +1353,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
          * amount of spaces between its top and the top of the "extra"
          * pane (where the issue summary table and stuff live).
          */
-        this._$main.outerHeight(this._$extra.offset().top -
-                                this._$extra.getExtents('mp', 't') -
-                                this._$main.offset().top);
+        this._$main.height(this._$extra.offset().top -
+                           this._$main.offset().top);
         height = this._$main.height();
 
         if ($lastContent.outerHeight() + lastContentTop < height) {
@@ -1380,7 +1379,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 editor.setSize(
                     null,
                     contentHeight -
-                    $lastEditable.inlineEditor('buttons').outerHeight(true));
+                    $lastEditable.inlineEditor('buttons').height());
             } else {
                 /*
                  * It's possible to squish the editable element if we force
