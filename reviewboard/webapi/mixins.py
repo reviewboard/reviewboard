@@ -3,10 +3,11 @@ from __future__ import unicode_literals
 from django.utils import six
 from django.utils.html import escape
 from djblets.markdown import markdown_escape, markdown_unescape
+from djblets.webapi.resources.mixins.forms import (
+    UpdateFormMixin as DjbletsUpdateFormMixin)
 
 from reviewboard.reviews.markdown_utils import (markdown_set_field_escaped,
                                                 render_markdown)
-
 
 class MarkdownFieldsMixin(object):
     """Mixes in common logic for Markdown text fields.
@@ -345,3 +346,52 @@ class MarkdownFieldsMixin(object):
                              self.DEFAULT_EXTRA_DATA_TEXT_TYPE)
 
         return text_type == self.TEXT_TYPE_MARKDOWN
+
+
+class UpdateFormMixin(DjbletsUpdateFormMixin):
+    """A mixin for providing the ability to create and update using a form.
+
+    A WebAPIResource class using this mixin must set the :py:attr:`form_class`
+    attribute to a :py:class:`ModelForm` instance that corresponds to the model
+    being updated.
+
+    Classes using this mixin can provide methods of the form
+    ``parse_<field_name>_field`` to do parsing of form data before it is passed
+    to the form. These methods may return either a single value or a list (in
+    the case where the corresponding field expects a list of values, such as a
+    :py:class:`django.forms.ModelMultipleChoiceField`).
+
+    The :py:meth:`create_form` and :py:meth:`save_form` methods should be used
+    for creating new form instances and saving them. A form created this way
+    can be given an optional instance argument to allow for updating the
+    instance. Any fields missing from data (but appearing in the
+    :py:class:`form_class`'s :py:attr:`fields` attribute) will be copied over
+    from the instance.
+    """
+
+    def save_form(self, form, extra_fields=None):
+        """Save the form and extra data.
+
+        Args:
+            form (django.forms.ModelForm):
+                The form to save.
+
+            extra_fields (dict):
+                The extra data to save on the object. These should be key-value
+                pairs in the form of ``extra_data.key = value``.
+
+        Returns:
+            django.db.models.Model: The saved model instance.
+        """
+        instance = form.save(commit=False)
+
+        if extra_fields:
+            if not instance.extra_data:
+                instance.extra_data = {}
+
+            self.import_extra_data(instance, instance.extra_data, extra_fields)
+
+        instance.save()
+        form.save_m2m()
+
+        return instance
