@@ -23,7 +23,7 @@ from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
-from reviewboard.notifications.webhooks import WebHookTarget
+from reviewboard.notifications.models import WebHookTarget
 from reviewboard.reviews.models import (Comment, FileAttachmentComment,
                                         Group, Review, ReviewRequest,
                                         ReviewRequestDraft, Screenshot,
