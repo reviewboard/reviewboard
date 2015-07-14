@@ -1,7 +1,5 @@
 from __future__ import unicode_literals
 
-import logging
-
 from django.contrib.auth.models import User
 from djblets.extensions.models import RegisteredExtension
 from djblets.extensions.resources import ExtensionResource
@@ -13,6 +11,7 @@ from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.notifications.models import WebHookTarget
 from reviewboard.reviews.models import (Comment, DefaultReviewer,
                                         Group, ReviewRequest,
                                         ReviewRequestDraft, Review,
@@ -90,6 +89,7 @@ class Resources(ResourcesRegistry):
                          self.review_file_attachment_comment))
         register_resource_for_model(User, self.user)
         register_resource_for_model(WebAPIToken, self.api_token)
+        register_resource_for_model(WebHookTarget, self.webhook)
 
 
 resources = Resources()

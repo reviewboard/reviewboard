@@ -38,6 +38,7 @@ class RootResource(WebAPIResource, DjbletsRootResource):
             resources.session,
             resources.user,
             resources.validation,
+            resources.webhook,
         ], *args, **kwargs)
 
     @webapi_check_login_required

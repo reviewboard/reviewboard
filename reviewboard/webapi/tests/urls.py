@@ -727,3 +727,15 @@ def get_watched_review_request_item_url(username, object_id,
         local_site_name=local_site_name,
         username=username,
         watched_obj_id=object_id)
+
+
+#
+# WebHookResource
+#
+def get_webhook_list_url(local_site_name=None):
+    return resources.webhook.get_list_url(local_site_name=local_site_name)
+
+
+def get_webhook_item_url(webhook_id, local_site_name=None):
+    return resources.webhook.get_item_url(local_site_name=local_site_name,
+                                          webhook_id=webhook_id)
