@@ -23,6 +23,7 @@ from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
+from reviewboard.notifications.webhooks import WebHookTarget
 from reviewboard.reviews.models import (Comment, FileAttachmentComment,
                                         Group, Review, ReviewRequest,
                                         ReviewRequestDraft, Screenshot,
@@ -548,6 +549,88 @@ class TestCase(DjbletsTestCase):
         review.screenshot_comments.add(comment)
 
         return comment
+
+    def create_webhook(self, enabled=False, events=WebHookTarget.ALL_EVENTS,
+                       url='http://example.com',
+                       encoding=WebHookTarget.ENCODING_JSON,
+                       use_custom_content=False, custom_content='',
+                       secret='', apply_to=WebHookTarget.APPLY_TO_ALL,
+                       repositories=None, with_local_site=False,
+                       local_site=None, extra_fields=None):
+        """Create a webhook for testing.
+
+        It is populated with default data that can be overridden by the caller.
+
+        Args:
+            enabled (bool):
+                Whether or not the webhook is enabled when it is created.
+
+            events (unicode):
+                A comma-separated list of events that the webhook will trigger
+                on.
+
+            url (unicode):
+                The URL that requests will be made against.
+
+            encoding (unicode):
+                The encoding of the payload to send.
+
+            use_custom_content (bool):
+                Determines if custom content will be sent for the payload (if
+                ``True``) or if it will be auto-generated (if ``False``).
+
+            custom_content (unicode):
+                The custom content to send when ``use_custom_content`` is
+                ``True``.
+
+            secret (unicode):
+                An HMAC secret to sign the payload with.
+
+            apply_to (unicode):
+                The types of repositories the webhook will apply to.
+
+            repositories (list):
+                A list of repositories that the webhook will be limited to if
+                ``apply_to`` is ``WebHookTarget.APPLY_TO_SELECTED_REPOS``.
+
+            with_local_site (bool):
+                Determines if this should be created with a local site.
+
+            local_site (reviewboard.site.models.LocalSite):
+                An optional local site. If ``with_local_site`` is ``True`` and
+                this argument is ``None``, the local site will be looked up.
+
+            extra_fields (dict):
+                Extra data to be imported into the webhook.
+
+        Returns:
+            WebHookTarget: A webhook constructed with the given arguments.
+        """
+        if not local_site:
+            if with_local_site:
+                local_site = self.get_local_site(name=self.local_site_name)
+            else:
+                local_site = None
+
+        webhook = WebHookTarget.objects.create(
+            enabled=enabled,
+            events=events,
+            url=url,
+            encoding=encoding,
+            use_custom_content=use_custom_content,
+            custom_content=custom_content,
+            secret=secret,
+            apply_to=apply_to,
+            local_site=local_site)
+
+        if repositories:
+            webhook.repositories = repositories
+
+        if extra_fields:
+            webhook.extra_data = extra_fields
+            webhook.save(update_fields=['extra_data'])
+
+        return webhook
 
     def _fixture_setup(self):
         """Set up fixtures for unit tests.
