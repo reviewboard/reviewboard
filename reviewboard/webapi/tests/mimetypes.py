@@ -165,3 +165,6 @@ watched_review_request_item_mimetype = \
     _build_mimetype('watched-review-request')
 watched_review_request_list_mimetype = \
     _build_mimetype('watched-review-requests')
+
+webhook_list_mimetype = _build_mimetype('webhooks')
+webhook_item_mimetype = _build_mimetype('webhook')

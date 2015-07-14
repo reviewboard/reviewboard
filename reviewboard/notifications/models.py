@@ -33,6 +33,12 @@ class WebHookTarget(models.Model):
     ENCODING_XML = 'application/xml'
     ENCODING_FORM_DATA = 'application/x-www-form-urlencoded'
 
+    ALL_ENCODINGS = [
+        ENCODING_JSON,
+        ENCODING_XML,
+        ENCODING_FORM_DATA
+    ]
+
     ENCODINGS = (
         (ENCODING_JSON, _('JSON')),
         (ENCODING_XML, _('XML')),
@@ -121,6 +127,30 @@ class WebHookTarget(models.Model):
                     'request.'))
 
     objects = WebHookTargetManager()
+
+    def is_accessible_by(self, user, local_site=None):
+        """Return if the webhook can be accessed or modified by the user.
+
+        All superusers and admins of the webhook's local site can access and
+        modify the webhook.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user who is trying to access the webhook.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The current local site, if it exists.
+
+        Returns:
+            bool:
+            Whether or not the given user can access or modify the webhook
+            through the given local site.
+        """
+        return (user.is_superuser or
+                (user.is_authenticated() and
+                 local_site and
+                 self.local_site_id == local_site.pk and
+                 local_site.is_mutable_by(user)))
 
     def __str__(self):
         return 'Webhook for events %s, url %s' % (','.join(self.events),
