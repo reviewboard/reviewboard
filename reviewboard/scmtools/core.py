@@ -77,12 +77,13 @@ class Branch(object):
 
 class Commit(object):
     def __init__(self, author_name='', id='', date='', message='', parent='',
-                 diff=None):
+                 diff=None, base_commit_id=None):
         self.author_name = author_name
         self.id = id
         self.date = date
         self.message = message
         self.parent = parent
+        self.base_commit_id = base_commit_id
 
         # This field is only used when we're actually fetching the commit from
         # the server to create a new review request, and isn't part of the
