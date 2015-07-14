@@ -345,9 +345,9 @@ def load_site_config():
         settings.AWS_CALLING_FORMAT = 0
 
     if siteconfig.settings.get('site_domain_method', 'http') == 'https':
-        os.environ['HTTPS'] = 'on'
+        os.environ[b'HTTPS'] = b'on'
     else:
-        os.environ['HTTPS'] = 'off'
+        os.environ[b'HTTPS'] = b'off'
 
     # Save back changes if they have been made
     if dirty:

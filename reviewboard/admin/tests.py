@@ -108,7 +108,7 @@ class SSHSettingsFormTestCase(TestCase):
         # configurations been overwritten.
         self.old_home = os.getenv('HOME')
         self.tempdir = tempfile.mkdtemp(prefix='rb-tests-home-')
-        os.environ['RBSSH_ALLOW_AGENT'] = '0'
+        os.environ[b'RBSSH_ALLOW_AGENT'] = b'0'
         self._set_home(self.tempdir)
 
         self.ssh_client = SSHClient()
@@ -122,7 +122,7 @@ class SSHSettingsFormTestCase(TestCase):
             shutil.rmtree(self.tempdir)
 
     def _set_home(self, homedir):
-        os.environ['HOME'] = homedir
+        os.environ[b'HOME'] = homedir.encode('utf-8')
 
     def test_generate_key(self):
         """Testing SSHSettingsForm POST with generate_key=1"""

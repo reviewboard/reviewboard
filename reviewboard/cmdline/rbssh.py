@@ -254,7 +254,7 @@ def parse_options(args):
 
 
 def main():
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
+    os.environ.setdefault(b'DJANGO_SETTINGS_MODULE', b'reviewboard.settings')
 
     if DEBUG:
         pid = os.getpid()

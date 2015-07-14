@@ -247,9 +247,9 @@ class SCMTool(object):
         env = os.environ.copy()
 
         if local_site_name:
-            env['RB_LOCAL_SITE'] = local_site_name
+            env[b'RB_LOCAL_SITE'] = local_site_name.encode('utf-8')
 
-        env['PYTHONPATH'] = ':'.join(sys.path)
+        env[b'PYTHONPATH'] = (':'.join(sys.path)).encode('utf-8')
 
         return subprocess.Popen(command,
                                 env=env,

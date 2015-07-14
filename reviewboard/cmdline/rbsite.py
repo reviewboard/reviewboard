@@ -272,7 +272,7 @@ class Site(object):
         # Make sure that we have our settings_local.py in our path for when
         # we need to run manager commands.
         sys.path.insert(0, os.path.join(self.abs_install_dir, "conf"))
-        os.environ['DJANGO_SETTINGS_MODULE'] = 'reviewboard.settings'
+        os.environ[b'DJANGO_SETTINGS_MODULE'] = b'reviewboard.settings'
 
     def get_apache_version(self):
         try:
@@ -629,8 +629,8 @@ class Site(object):
             from django.core.management import (execute_from_command_line,
                                                 get_commands)
 
-            os.environ.setdefault('DJANGO_SETTINGS_MODULE',
-                                  'reviewboard.settings')
+            os.environ.setdefault(b'DJANGO_SETTINGS_MODULE',
+                                  b'reviewboard.settings')
 
             if not params:
                 params = []
@@ -1880,7 +1880,8 @@ def main():
     for install_dir in site_paths:
         site = Site(install_dir, options)
 
-        os.putenv('HOME', os.path.join(site.install_dir, "data"))
+        os.putenv(b'HOME',
+                  os.path.join(site.install_dir, 'data').encode('utf-8'))
 
         command.run()
         ui.run()
