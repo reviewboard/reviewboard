@@ -69,6 +69,7 @@ class RBTestRunner(DjangoTestSuiteRunner):
             'django.contrib.auth.hashers.SHA1PasswordHasher',
         )
         settings.RUNNING_TEST = True
+        os.environ[b'RB_RUNNING_TESTS'] = b'1'
 
         self._setup_media_dirs()
 
