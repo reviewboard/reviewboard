@@ -222,6 +222,8 @@ CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30  # 1 month
 # runner, as well as some special features like a code coverage report.
 TEST_RUNNER = 'reviewboard.test.RBTestRunner'
 
+RUNNING_TEST = (os.environ.get('RB_RUNNING_TESTS') == '1')
+
 # Dependency checker functionality.  Gives our users nice errors when they
 # start out, instead of encountering them later on.  Most of the magic for this
 # happens in manage.py, not here.
