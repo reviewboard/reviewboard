@@ -33,11 +33,11 @@ class WebHookTarget(models.Model):
     ENCODING_XML = 'application/xml'
     ENCODING_FORM_DATA = 'application/x-www-form-urlencoded'
 
-    ALL_ENCODINGS = [
+    ALL_ENCODINGS = (
         ENCODING_JSON,
         ENCODING_XML,
         ENCODING_FORM_DATA
-    ]
+    )
 
     ENCODINGS = (
         (ENCODING_JSON, _('JSON')),
