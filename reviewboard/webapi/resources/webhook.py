@@ -62,7 +62,7 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
     added_in = '2.5'
 
     name = 'webhook'
-    verbose_name = 'webhook'
+    verbose_name = 'WebHook'
     model = WebHookTarget
     uri_object_key = 'webhook_id'
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
@@ -73,11 +73,11 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
     APPLY_TO_NO_REPOS = 'none'
     APPLY_TO_CUSTOM_REPOS = 'custom'
 
-    ALL_APPLY_TO_OPTIONS = [
+    ALL_APPLY_TO_OPTIONS = (
         APPLY_TO_ALL_REPOS,
         APPLY_TO_NO_REPOS,
         APPLY_TO_CUSTOM_REPOS,
-    ]
+    )
 
     REPOSITORIES_SPLIT_RE = re.compile(r',\s*')
 
@@ -105,7 +105,7 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
                            '``application/x-www-form-data``.',
         },
         'events': {
-            'type': [unicode],
+            'type': [six.text_type],
             'description': 'A list of events that will cause the webhook to '
                            'trigger.',
         },

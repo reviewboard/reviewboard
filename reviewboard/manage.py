@@ -155,9 +155,10 @@ if __name__ == "__main__":
     # From http://www.djangosnippets.org/snippets/281/
     sys.path.insert(0, dirname(dirname(abspath(__file__))))
 
-    if 'DJANGO_SETTINGS_MODULE' not in os.environ:
+    if b'DJANGO_SETTINGS_MODULE' not in os.environ:
         in_subprocess = False
-        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
+        os.environ.setdefault(b'DJANGO_SETTINGS_MODULE',
+                              b'reviewboard.settings')
     else:
         in_subprocess = True
 

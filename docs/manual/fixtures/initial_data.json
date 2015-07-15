@@ -3831,5 +3831,22 @@
         "time_added": "2014-07-08T10:58:04.652Z", 
         "extra_data": "{}"
     }
+},
+{
+    "pk": 1,
+    "model": "notifications.webhooktarget",
+    "fields": {
+        "enabled": true,
+        "events": "*",
+        "url": "http://example.com/webhook",
+        "encoding": "application/json",
+        "use_custom_content": false,
+        "custom_content": null,
+        "secret": "",
+        "apply_to": "A",
+        "repositories": [],
+        "local_site": null,
+        "extra_data": null
+    }
 }
 ]
