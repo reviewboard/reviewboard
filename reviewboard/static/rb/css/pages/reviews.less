@@ -1758,12 +1758,14 @@
     float: none;
   });
 
-  .file:hover .file-actions {
-    visibility: visible;
+  .file:hover .file-actions-container {
+    display: block;
   }
 
   .file {
     @file-attachment-bg: white;
+    @file-attachment-overlay-bg: #FCFCFC;
+    @file-attachment-overlay-border-color: #EEEEEE;
     @file-attachment-height: 150px;
     @file-attachment-width: 300px;
     @file-attachment-border-color: #CCCCCC;
@@ -1774,6 +1776,7 @@
     position: relative;
     margin: 1em 1.5em 0.5em 0;
     max-width: @file-attachment-width;
+    .transition(0.2s opacity linear);
     width: @file-attachment-width;
     .box-shadow(@box-shadow);
     .box-sizing(border-box);
@@ -1789,28 +1792,64 @@
       text-align: center;
     }
 
+    /*
+     * This container provides the padding necessary to display a shadow
+     * around all but one edges of the actions list. We clip the shadow on
+     * the side sharing a border with the file attachment thumbnail.
+     */
+    .file-actions-container {
+      @shadow-padding: 4px;
+
+      display: none;
+      overflow: hidden;
+      padding: @shadow-padding;
+      position: absolute;
+      left: 100%;
+      top: -(@shadow-padding + 1px);
+      z-index: @z-index-menu;
+
+      &.left {
+        padding-right: 0;
+
+        .file-actions {
+          border-right-color: @file-attachment-overlay-border-color;
+          margin-left: @shadow-padding;
+        }
+      }
+
+      &.right {
+        padding-left: 0;
+
+        .file-actions {
+          border-left-color: @file-attachment-overlay-border-color;
+        }
+      }
+    }
+
     .file-actions {
+      background-color: @file-attachment-overlay-bg;
+      border: 1px @file-attachment-border-color solid;
+      .box-shadow(@box-shadow);
       .box-sizing(border-box);
-      .opacity(95);
-      background-color: @dark-grey;
-      height: @file-attachment-height - @file-attachment-caption-height - 1px;
-      left: 0;
+      height: @file-attachment-height - @file-attachment-caption-height;
       list-style: none;
       margin: 0;
       padding: 0;
-      position: absolute;
-      text-shadow: black 0px 0px 4px;
-      top: 0;
-      visibility: hidden;
-      z-index: @z-index-menu;
+      white-space: nowrap;
 
       li {
-        .opacity(100);
-        margin: 1em;
+        margin: 0;
+        padding: 0;
 
         a {
-          color: white;
+          color: #333;
+          display: block;
+          padding: 0.5em 1em;
           text-decoration: none;
+
+          &:hover {
+            background: darken(@file-attachment-overlay-bg, 5%);
+          }
         }
       }
     }
@@ -1878,8 +1917,8 @@
 
       .box-sizing(border-box);
       .opacity(90);
-      background-color: #FEFEFE;
-      border-top: 1px #EEEEEE solid;
+      background-color: @file-attachment-overlay-bg;
+      border-top: 1px @file-attachment-overlay-border-color solid;
       bottom: 0;
       line-height: 2.5em;
       padding: 0 @file-caption-padding;
@@ -2067,6 +2106,27 @@
     border: 2px green dashed;
     display: block;
     margin: 0;
+  }
+
+  /*
+   * When hovering over a thumbnail, fade out all the other thumbnails, to both
+   * provide focus to the thumbnail the user is hovering over, and to help
+   * separate out the actions menu from other thumbnail contents.
+   */
+  &.hover-thumbnail {
+    .file {
+      opacity: 0.5;
+
+      &:hover {
+        opacity: 1;
+
+        /*
+         * Instantly show the thumbnail. Fixes a z-index glitch with the menu,
+         * too.
+         */
+        .transition(0s opacity linear);
+      }
+    }
   }
 
   h1.drop-indicator {
