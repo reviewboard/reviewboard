@@ -2524,7 +2524,14 @@
 }
 
 #issue-summary-table {
+  @issue-status-gravatar-width: 24px;
+  @issue-status-icon-width: 16px;
+  @issue-status-icon-right-margin: 2px;
+
+  border: 1px @issue-table-border-color solid;
+  .border-radius(@box-border-radius);
   border-spacing: 0;
+  overflow: hidden;
   width: 100%;
 
   .on-mobile-medium-screen-720({
@@ -2532,29 +2539,22 @@
   });
 
   tr {
-    &:last-child td {
-      &.status {
-        .border-radius(0 0 @box-border-radius 0);
-      }
-
-      &.summary-table-description {
-        .border-radius(0 0 0 @box-border-radius);
-      }
-    }
-
     td {
-      border-width: 0 0 1px 0;
-      border-style: solid;
-      padding: 5px 8px;
-      vertical-align: top;
+      border-top: 1px transparent solid;
+      cursor: pointer;
+      padding: @issue-table-cell-padding;
+      vertical-align: middle;
 
       a {
         color: #0000CC;
         text-decoration: none;
       }
 
+      .rb-icon {
+        margin-right: @issue-status-icon-right-margin;
+      }
+
       .on-mobile-medium-screen-720({
-        border: 0;
         display: block;
       });
     }
@@ -2570,10 +2570,8 @@
     });
 
     th {
-      background: #E9E9E9;
-      border-color: #999;
-      border-style: solid;
-      border-width: 1px 0;
+      background: @issue-table-header-bg;
+      border-bottom: 1px #BBB solid;
       cursor: pointer;
       height: 21px;
       padding: 2px 8px;
@@ -2581,76 +2579,118 @@
       white-space: nowrap;
 
       &:hover {
-        background: #F9F9F9;
+        background: @issue-table-header-hover-bg;
       }
-    }
-
-    .description-header {
-      border-left-width: 1px;
-      .border-radius(@box-border-radius 0 0 0);
-    }
-
-    .status-header {
-      border-right-width: 1px;
-      .border-radius(0 @box-border-radius 0 0);
     }
   }
 
   .issue {
-    .status {
-      border-right-width: 1px;
+    /*
+     * Sets the background and hover colors for an issue row of a given type.
+     */
+    .issue-row-colors(@bg, @hover-bg) {
+      &:hover td {
+        background-color: @hover-bg;
+      }
+
+      td {
+        background-color: @bg;
+      }
+    }
+
+    /* Add borders separating groups of different types of statuses. */
+    &:not(.hidden) {
+      &.open + .issue:not(.open),
+      &.dropped + .issue:not(.dropped),
+      &.resolved + .issue:not(.resolved) {
+        td {
+          border-top-color: @issue-table-row-border-color;
+
+          .on-mobile-medium-screen-720({
+            border-top-color: transparent;
+          });
+        }
+      }
+    }
+
+    .issue-text {
+      vertical-align: middle;
     }
 
     .summary-table-description {
-      border-left-width: 1px;
+      line-height: 16px;
+      overflow: hidden;
+      vertical-align: top;
       width: 100%;
     }
 
     &.open {
-      td {
-        background-color: #FDF4A4;
-        border-color: @dark-yellow;
-      }
+      .issue-row-colors(@issue-opened-bg, @issue-opened-hover-bg);
     }
 
     &.dropped {
-      td {
-        background-color: @light-grey;
-        border-color: #AAA;
-      }
+      .issue-row-colors(@issue-discarded-bg, @issue-discarded-hover-bg);
     }
 
     &.resolved {
-      td {
-        background-color: #FFF;
-        border-color: #AAA;
+      .issue-row-colors(@issue-resolved-bg, @issue-resolved-hover-bg);
+    }
+
+    .reviewer {
+      padding: 0 @issue-table-cell-padding;
+
+      a {
+        padding: @issue-table-cell-padding 0;
       }
     }
 
-    &:hover td {
-      background-color: #D4E0F3;
-      border-color: @dark-blue;
-    }
-
-    .summary-anchor {
-      color: #000;
-      display: block;
-      overflow: hidden;
-      text-decoration: none;
+    .last-updated {
+      padding: @issue-table-cell-padding;
     }
 
     .on-mobile-medium-screen-720({
-      &:last-child .status {
-        border-bottom: 0;
+      @issue-status-icon-mobile-margin-horiz: (@issue-status-gravatar-width -
+                                               @issue-status-icon-width) / 2;
+
+      /*
+       * Add a border betwen all sections, but don't add it to the very top.
+       * This sort of selector will guarantee all visible rows following the
+       * first visible row will have a top border set.
+       */
+      &:not(.hidden) ~ .issue:not(.hidden) {
+        td:first-child {
+          border-top-color: @issue-table-row-border-color;
+        }
       }
 
-      .status {
-        border-bottom: 1px transparent solid;
+      td {
+        &.summary-table-description,
+        &.reviewer,
+        &.last-updated {
+          padding-left: 1em;
+          padding-right: 1em;
+        }
+
+        &.summary-table-description {
+          padding-top: 1em;
+        }
+
+        &.last-updated {
+          padding-bottom: 1em;
+        }
+      }
+
+      .issue-icon {
+        margin: 0 @issue-status-icon-mobile-margin-horiz;
+      }
+
+      .last-updated time {
+        /* Align the text. */
+        margin-left: (@issue-status-gravatar-width +
+                      @issue-status-icon-mobile-margin-horiz);
       }
 
       .status, .summary-table-description {
-        border-left: 0;
-        border-right: 0;
         width: auto;
       }
     });
@@ -2658,18 +2698,17 @@
 
   .no-issues {
     td {
-        background-color: #FFF;
-        border-color: #999;
-        border-width: 1px;
+      background-color: #FFF;
     }
   }
 
-  .status {
-    text-transform: capitalize;
-  }
-
   .comment-id, .last-updated, .reviewer, .status {
+    vertical-align: middle;
     white-space: nowrap;
+
+    img {
+      vertical-align: middle;
+    }
 
     .on-mobile-medium-screen-720({
       white-space: normal;
@@ -2678,25 +2717,60 @@
 }
 
 #issue-summary {
-  .header {
+  @tabs-margin-left: 2.5em;
+
+  .issue-summary-header {
+    margin: 1.5em 0 -1px 0;
     padding-bottom: 0;
     position: relative;
 
-    .counters {
-      position: absolute;
-      bottom: 0;
-      right: @box-padding;
+    .issue-summary-tabs {
+      list-style: none;
+      margin: 0 0 0 @tabs-margin-left;
+      padding: 0;
 
-      .on-mobile-medium-screen-720({
-        position: initial;
-      });
+      .issue-summary-tab {
+        border: 1px transparent solid;
+        border-bottom: 0;
+        .border-radius(@box-border-radius @box-border-radius 0 0);
+        cursor: pointer;
+        display: inline-block;
+        margin: 0 0.5em 1px 0;
+        padding: 0.5em 1em;
+        vertical-align: bottom;
 
-      .counter {
-        margin-left: 4px;
+        * {
+          cursor: pointer;
+          vertical-align: middle;
+        }
 
-        &.total {
+        &:hover {
+          background: @issue-table-tab-hover-bg;
+          border-color: @issue-table-tab-hover-border-color;
+        }
+
+        &.active {
+          background: @issue-table-tab-bg;
+          border-color: @issue-table-tab-border-color;
+
+          /*
+           * Make the tab flush with the top border of the issue table,
+           * along with the -1px margin-bottom in .issue-summary-header.
+           */
+          margin-bottom: 0px;
+
           label, span {
-            font-weight: bold;
+            /*
+             * Compensate for the 1px vertical difference in content
+             * between the active and inactive tabs.
+             */
+            padding-bottom: 1px;
+          }
+        }
+
+        &.issue-summary-total {
+          label, span {
+            display: inline-block;
           }
         }
 
@@ -2704,14 +2778,27 @@
           color: black;
           font-weight: normal;
           margin-right: 3px;
+          line-height: 16px;
+        }
+
+        .issue-counter-value {
+          vertical-align: middle;
         }
       }
     }
 
-    .filters {
-      margin: 1em 0 1.5em 0;
+    .issue-summary-filters {
+      position: absolute;
+      bottom: 0;
+      right: @box-padding;
+      margin-bottom: 1em;
 
-      .filter-wrapper {
+      .on-mobile-medium-screen-720({
+        position: initial;
+        text-align: right;
+      });
+
+      .issue-summary-filter-wrapper {
         display: inline;
         margin: 0 0.5em;
 

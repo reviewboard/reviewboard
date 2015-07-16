@@ -77,14 +77,27 @@
 @admin-msg-banner-bg: #FFC;
 @admin-msg-banner-border-color: darken(@admin-msg-banner-bg, 50%);
 
+@issue-table-border-color: #999;
+@issue-table-cell-padding: 7px;
+@issue-table-header-bg: #E9E9E9;
+@issue-table-header-hover-bg: darken(@issue-table-header-bg, 5%);
+@issue-table-row-border-color: #CCC;
+@issue-table-tab-border-color: @issue-table-border-color;
+@issue-table-tab-bg: @issue-table-header-bg;
+@issue-table-tab-hover-bg: lighten(@issue-table-header-bg, 5%);
+@issue-table-tab-hover-border-color: lighten(@issue-table-tab-border-color, 5%);
+
 @issue-opened-bg: #fff4B0;
 @issue-opened-border-color: darken(@issue-opened-bg, 40%);
+@issue-opened-hover-bg: desaturate(darken(@issue-opened-bg, 10%), 20%);
 @issue-opened-link-color: darken(@issue-opened-bg, 60%);
 @issue-discarded-bg: #ECECEC;
 @issue-discarded-border-color: darken(@issue-discarded-bg, 20%);
+@issue-discarded-hover-bg: darken(@issue-discarded-bg, 5%);
 @issue-discarded-link-color: darken(@issue-discarded-bg, 60%);
 @issue-resolved-bg: #FAFAFA;
 @issue-resolved-border-color: darken(@issue-resolved-bg, 10%);
+@issue-resolved-hover-bg: darken(@issue-resolved-bg, 5%);
 @issue-resolved-link-color: darken(@issue-resolved-bg, 60%);
 
 /*
