@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.db.models import Q
 from django.utils import six
 from django.utils.encoding import force_unicode
 from django.utils.six.moves.urllib.parse import quote as urllib_quote
@@ -11,6 +10,7 @@ from djblets.webapi.decorators import (SPECIAL_PARAMS,
 from djblets.webapi.resources.base import \
     WebAPIResource as DjbletsWebAPIResource
 from djblets.webapi.resources.mixins.api_tokens import ResourceAPITokenMixin
+from djblets.webapi.resources.mixins.queries import APIQueryUtilsMixin
 
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -23,7 +23,8 @@ CUSTOM_MIMETYPE_BASE = 'application/vnd.reviewboard.org'
 EXTRA_DATA_LEN = len('extra_data.')
 
 
-class WebAPIResource(ResourceAPITokenMixin, DjbletsWebAPIResource):
+class WebAPIResource(ResourceAPITokenMixin, APIQueryUtilsMixin,
+                     DjbletsWebAPIResource):
     """A specialization of the Djblets WebAPIResource for Review Board."""
 
     autogenerate_etags = True
@@ -95,64 +96,6 @@ class WebAPIResource(ResourceAPITokenMixin, DjbletsWebAPIResource):
         """
         return super(WebAPIResource, self).get_list(request, *args, **kwargs)
 
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object.
-
-        This is an override of get_href, which takes into account our
-        local_site_name namespacing in order to get the right prefix on URLs.
-        """
-        if not self.uri_object_key:
-            return None
-
-        href_kwargs = {
-            self.uri_object_key: getattr(obj, self.model_object_key),
-        }
-        href_kwargs.update(self.get_href_parent_ids(obj, **kwargs))
-
-        return request.build_absolute_uri(
-            self.get_item_url(request=request, **href_kwargs))
-
-    def get_list_url(self, **kwargs):
-        """Returns the URL to the list version of this resource.
-
-        This will generate a URL for the resource, given the provided
-        arguments for the URL pattern.
-        """
-        return self._get_resource_url(self.name_plural, **kwargs)
-
-    def get_item_url(self, **kwargs):
-        """Returns the URL to the item version of this resource.
-
-        This will generate a URL for the resource, given the provided
-        arguments for the URL pattern.
-        """
-        return self._get_resource_url(self.name, **kwargs)
-
-    def build_queries_for_int_field(self, request, field_name,
-                                    query_param_name=None):
-        """Builds queries based on request parameters for an int field.
-
-        get_queryset() implementations can use this to allow callers to
-        filter results through range matches. Callers can search for exact
-        matches, or can do <, <=, >, or >= matches.
-        """
-        if not query_param_name:
-            query_param_name = field_name.replace('_', '-')
-
-        q = Q()
-
-        if query_param_name in request.GET:
-            q = q & Q(**{field_name: request.GET[query_param_name]})
-
-        for op in ('gt', 'gte', 'lt', 'lte'):
-            param = '%s-%s' % (query_param_name, op)
-
-            if param in request.GET:
-                query_field = '%s__%s' % (field_name, op)
-                q = q & Q(**{query_field: request.GET[param]})
-
-        return q
-
     def can_import_extra_data_field(self, obj, field):
         """Returns whether a particular field in extra_data can be imported.
 
@@ -161,13 +104,36 @@ class WebAPIResource(ResourceAPITokenMixin, DjbletsWebAPIResource):
         """
         return True
 
-    def _get_resource_url(self, name, local_site_name=None, request=None,
-                          **kwargs):
-        return local_site_reverse(
+    def build_resource_url(self, name, local_site_name=None, request=None,
+                           **kwargs):
+        """Build the URL to a resource, factoring in Local Sites.
+
+        Args:
+            name (unicode):
+                The resource name.
+
+            local_site_name (unicode):
+                The LocalSite name.
+
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            kwargs (dict):
+                The keyword arguments needed for URL resolution.
+
+        Returns:
+            unicode: The resulting absolute URL to the resource.
+        """
+        url = local_site_reverse(
             self._build_named_url(name),
             local_site_name=local_site_name,
             request=request,
             kwargs=kwargs)
+
+        if request:
+            return request.build_absolute_uri(url)
+
+        return url
 
     def _get_local_site(self, local_site_name):
         if local_site_name:
