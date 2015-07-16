@@ -1,12 +1,13 @@
 /*
- * issueSummaryTableView handles all interactions with * the issue summary
+ * IssueSummaryTableView handles all interactions with the issue summary
  * table.
  */
 RB.IssueSummaryTableView = Backbone.View.extend({
     events: {
-        'change .filter': '_onFilterChanged',
+        'change #issue-reviewer-filter': '_onFilterChanged',
+        'click .issue-summary-tab': '_onTabChanged',
         'click thead th': '_onHeaderClicked',
-        'click .summary-anchor': '_onAnchorClicked'
+        'click .issue': '_onIssueClicked'
     },
 
     // Maps a status filter state to its corresponding selector
@@ -17,26 +18,51 @@ RB.IssueSummaryTableView = Backbone.View.extend({
         all: ""
     },
 
+    statusIconsMap: {
+        open: 'rb-icon-issue-open',
+        dropped: 'rb-icon-issue-dropped',
+        resolved: 'rb-icon-issue-resolved'
+    },
+
     initialize: function() {
-        this.statusFilterState = "open";  // Default status is "open"
-        this.reviewerFilterState = "all"; // Default reviewer is "all"
+        this.statusFilterState = null;
+        this.reviewerFilterState = null;
 
         // Maps a reviewer name to issues issued by the reviewer
         this.reviewerToSelectorMap = {
             all: ""
         };
+
+        this._lastWindowWidth = null;
+        this._$window = $(window);
+
+        _.bindAll(this, '_onWindowResize');
     },
 
     render: function() {
         this._$table = this.$el.find('table');
         this._$thead = this._$table.find('thead');
         this._$tbody = this._$table.find('tbody');
+        this._$filters = this.$('.issue-summary-filters');
+        this._$reviewerFilter = this._$filters.find('#issue-reviewer-filter');
+        this._$reviewerHeader = this._$thead.find('.from-header');
+
+        this._$currentTab = this.$('.issue-summary-tab.active');
+        console.assert(this._$currentTab.length === 1);
+
+        this.statusFilterState = this._$currentTab.data('issue-state');
+        this.reviewerFilterState = this._$reviewerFilter.val();
 
         this._buildReviewerFilterMap();
         this._checkNoIssues();
         this._uncollapseTarget();
 
-        this.model.on('issueStatusUpdated', this._onIssueStatusChanged, this);
+        this.listenTo(this.model, 'issueStatusUpdated',
+                      this._onIssueStatusChanged);
+
+        this._$window.off('resize', this._onWindowResize);
+        this._$window.on('resize', this._onWindowResize);
+        this._onWindowResize();
 
         return this;
     },
@@ -64,35 +90,96 @@ RB.IssueSummaryTableView = Backbone.View.extend({
     updateStatus: function(entry, old_status, new_status) {
         entry.removeClass(old_status)
             .addClass(new_status)
-            .find('.status').text(new_status);
+            .find('.issue-icon')
+                .removeClass(this.statusIconsMap[old_status])
+                .addClass(this.statusIconsMap[new_status]);
 
         this.setVisibility(entry, new_status);
         this._checkNoIssues();
+        this._updateReviewersPos();
     },
 
     // Replace old timestamp attirbute with new timestamp and update text.
     updateTimeStamp: function(entry, timestamp) {
-        entry.find(".last-updated")
-            .attr("timestamp", new Date(timestamp).getTime())
-            .text(timestamp);
+        entry.find('.last-updated time')
+            .attr("datetime", new Date(timestamp).toISOString())
+            .text(timestamp)
+            .timesince();
     },
 
-    _onFilterChanged: function() {
-        // Hide all visible rows
-        $('.issue' + this.stateToSelectorMap[this.statusFilterState] +
-          this.reviewerToSelectorMap[this.reviewerFilterState])
-            .toggleClass("hidden");
+    /*
+     * Handler for when the tab has changed.
+     *
+     * This will switch the view to show the issues that match the tab's
+     * issue state and the current reviewer filter.
+     */
+    _onTabChanged: function(e) {
+        var $tab = $(e.currentTarget);
 
-        // Update filter states
-        this.statusFilterState = $("#issue-state-filter").val();
-        this.reviewerFilterState = $("#issue-reviewer-filter").val();
+        this._$currentTab.removeClass('active');
 
-        // Show rows that match the intersection of the filters
-        $('.issue' + this.stateToSelectorMap[this.statusFilterState] +
-          this.reviewerToSelectorMap[this.reviewerFilterState])
-            .toggleClass("hidden");
+        this._resetFilters();
+        this.statusFilterState = $tab.data('issue-state');
+        this._applyFilters();
+
+        $tab.addClass('active');
+        this._$currentTab = $tab;
+    },
+
+    /*
+     * Handler for when the reviewer filter changes.
+     *
+     * This will switch the view to show issues that match the reviewer
+     * and the current issue filter state.
+     */
+    _onReviewerChanged: function() {
+        this._resetFilters();
+        this.reviewerFilterState = this._$reviewerFilter.val();
+        this._applyFilters();
+    },
+
+    /*
+     * Reset the filters on the list.
+     *
+     * This will unhide all rows, preparing the list for a new filter.
+     */
+    _resetFilters: function() {
+        this._$tbody.find('.issue.hidden').removeClass('hidden');
+    },
+
+    /*
+     * Apply the filters on the list.
+     *
+     * This will show or hide rows, based on the current state and reviewer
+     * filters.
+     */
+    _applyFilters: function() {
+        var sel = this.stateToSelectorMap[this.statusFilterState] +
+                  this.reviewerToSelectorMap[this.reviewerFilterState];
+
+        if (sel) {
+            this._$tbody.find('.issue').not(sel).addClass('hidden');
+        }
 
         this._checkNoIssues();
+        this._updateReviewersPos();
+    },
+
+    /*
+     * Updates the position of the reviewers filter.
+     *
+     * The filter will be aligned with the header column in the table.
+     */
+    _updateReviewersPos: function() {
+        if (this._$reviewerHeader.is(':visible')) {
+            this._$filters.css({
+                left: this._$reviewerHeader.offset().left -
+                      this._$table.offset().left +
+                      this._$reviewerHeader.getExtents('p', 'l')
+            });
+        } else {
+            this._$filters.css('left', '');
+        }
     },
 
     _onHeaderClicked: function(event) {
@@ -106,20 +193,29 @@ RB.IssueSummaryTableView = Backbone.View.extend({
         return false;
     },
 
-    _onAnchorClicked: function(event) {
+    _onIssueClicked: function(event) {
+        var $el;
+
+        if (event.target.tagName === 'A') {
+            /* Allow the link to go through. */
+            return;
+        }
+
+        $el = $(event.currentTarget);
+
         event.stopPropagation();
 
         /*
-         *  Extract the comment's attirbutes from the issue element and trigger
-         *  the issueClicked event so the page can navigate the user to the
-         *  relevant issue comment.
+         * Extract the comment's attributes from the issue element and trigger
+         * the issueClicked event so the page can navigate the user to the
+         * relevant issue comment.
          */
-        var $el = $(event.target);
-
         this.trigger('issueClicked', {
-            type: $el.attr('comment-type'),
-            id: $el.attr('issue-id')
+            type: $el.data('comment-type'),
+            id: $el.data('issue-id')
         });
+
+        window.location = $el.data('comment-href');
     },
 
     // Check that there are no issues that match the selected filter(s).
@@ -211,7 +307,7 @@ RB.IssueSummaryTableView = Backbone.View.extend({
         var self = this;
 
         this._$tbody.find('.issue').each(function() {
-            var reviewer = $(this).attr('reviewer');
+            var reviewer = $(this).data('reviewer');
 
             if (!_.has(self.reviewerToSelectorMap, reviewer)) {
                 self.reviewerToSelectorMap[reviewer] =
@@ -260,5 +356,20 @@ RB.IssueSummaryTableView = Backbone.View.extend({
          */
         $(window).scrollTop($(window).scrollTop() + this.$el.height() -
                             oldHeight);
+    },
+
+    /*
+     * Handler for when the window resizes.
+     *
+     * Updates the calculated position of the reviewers filter.
+     */
+    _onWindowResize: function() {
+        var winWidth = this._$window.width();
+
+        if (winWidth !== this._lastWindowWidth) {
+            this._updateReviewersPos();
+        }
+
+        this._lastWindowWidth = winWidth;
     }
 });

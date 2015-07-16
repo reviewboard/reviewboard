@@ -1044,6 +1044,14 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             }
         }
 
+        this.listenTo(view, 'hoverIn', function() {
+            this._$attachments.addClass('hover-thumbnail');
+        });
+
+        this.listenTo(view, 'hoverOut', function() {
+            this._$attachments.removeClass('hover-thumbnail');
+        });
+
         view.on('beginEdit', function() {
             this.model.incr('editCount');
         }, this);

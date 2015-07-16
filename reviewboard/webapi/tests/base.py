@@ -9,7 +9,6 @@ from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.testing.testcases import WebAPITestCaseMixin
 
-from reviewboard import initialize
 from reviewboard.notifications.tests import EmailTestHelper
 from reviewboard.reviews.models import Review
 from reviewboard.testing import TestCase
@@ -30,8 +29,6 @@ class BaseWebAPITestCase(WebAPITestCaseMixin, TestCase, EmailTestHelper):
 
     def setUp(self):
         super(BaseWebAPITestCase, self).setUp()
-
-        initialize()
 
         self.siteconfig = SiteConfiguration.objects.get_current()
         self.siteconfig.set("mail_send_review_mail", False)

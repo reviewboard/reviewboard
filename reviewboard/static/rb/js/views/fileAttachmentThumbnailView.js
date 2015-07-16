@@ -37,7 +37,9 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
 
     template: _.template([
         '<div class="file">',
-        ' <ul class="file-actions"></ul>',
+        ' <div class="file-actions-container">',
+        '  <ul class="file-actions"></ul>',
+        ' </div>',
         ' <div class="file-thumbnail-container"></div>',
         ' <div class="file-caption-container">',
         // spaceless
@@ -137,12 +139,14 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         this._onCaptionChanged();
 
         this.$el.hover(_.bind(this._onHoverIn, this),
-                       _.bind(this._stopAnimating, this));
+                       _.bind(this._onHoverOut, this));
 
         if (this.options.renderThumbnail) {
-            this._$actions = this.$('.file-actions');
+            this._$actionsContainer = this.$('.file-actions-container');
+            this._$actions = this._$actionsContainer.children('.file-actions');
             this._$captionContainer = this.$('.file-caption-container');
             this._$thumbnailContainer = this.$('.file-thumbnail-container');
+            this._$file = this.$('.file');
 
             this._$actions.find('.file-download')
                 .bindProperty('href', this.model, 'downloadURL', {
@@ -425,10 +429,30 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
     _onHoverIn: function() {
         var self = this,
             $thumbnail = this.$('.file-thumbnail').children(),
+            actionsWidth = this._$actionsContainer.outerWidth(),
+            actionsRight = this._$file.offset().left +
+                           this._$file.outerWidth() +
+                           actionsWidth,
             elHeight,
             thumbnailHeight,
             distance,
             duration;
+
+        this.trigger('hoverIn');
+
+        /*
+         * Position the actions menu to the left or right of the attachment
+         * thumbnail.
+         */
+        if (actionsRight > $(window).width()) {
+            this._$actionsContainer
+                .css('left', -actionsWidth)
+                .addClass('left');
+        } else {
+            this._$actionsContainer
+                .css('left', '100%')
+                .addClass('right');
+        }
 
         if (!this.$el.hasClass('editing') && $thumbnail.length === 1) {
             elHeight = this.$el.height();
@@ -459,6 +483,22 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
                         });
             }
         }
+    },
+
+    /*
+     * Handler for when the mouse stops hovering over the thumbnail.
+     *
+     * Removes the classes for the actions container, and stops animating
+     * the thumbnail contents.
+     */
+    _onHoverOut: function() {
+        this.trigger('hoverOut');
+
+        this._$actionsContainer
+            .removeClass('left')
+            .removeClass('right');
+
+        this._stopAnimating();
     },
 
     /*
