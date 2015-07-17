@@ -1,0 +1,194 @@
+=====================================
+Review Board 2.5 Beta 2 Release Notes
+=====================================
+
+**Release date**: TBD
+
+
+This release contains all bug fixes and features found in Review Board version
+:doc:`2.0.18 <2.0.18>`.
+
+
+Installation
+============
+
+To install this release, run the following::
+
+    $ sudo easy_install \
+        -f http://downloads.reviewboard.org/releases/ReviewBoard/2.5/ \
+        -U ReviewBoard
+
+We **do not** recommend upgrading a production server with this version of
+Review Board. It's best to install on a test server, with a copy of your
+production database, in case there are any major problems.
+
+
+New User Features
+=================
+
+Design Update
+-------------
+
+Review Board's visual design was starting to get a little long in the tooth.
+This release contains significant updates to the dashboard, review request,
+reviews, and diff viewer pages. In addition to the large, obvious redesigns,
+several smaller pieces of UI have been polished up:
+
+* The highlighted chunk in the diff viewer now uses a highlight on either side
+  of the view which doesn't cover up any content or cause the page to "jump".
+
+* The comment dialog has been updated to soften the look a bit, increase the
+  default size, and prevent visual jumpiness.
+
+* The old animated GIF spinners throughout the UI have been replaced with a
+  modern icon-font based spinner that looks great on all screens.
+
+
+Mobile UI
+---------
+
+* Most of Review Board's UI has been updated to work better on small screens
+  (such as those found on phones and tablets).
+
+  Based on work by Jason Tseng.
+
+
+Review Requests
+---------------
+
+* Sending e-mail is optional when publishing review requests.
+
+  When e-mail notifications are turned on, users now have the option of
+  preventing e-mail updates from being sent when publishing a review request.
+  This can be used to avoid spamming your teammates when all you did was fix a
+  typo or make another small change.
+
+  Based on work by Jessica Qian.
+
+* Archive and Mute review requests.
+
+  Archive and Mute allow you to clean up your dashboard to show only the things
+  that require your immediate attention. Like many e-mail clients, "archiving"
+  a review request will hide it until there's new activity, and "muting" a
+  review request will hide it permanently.
+
+  Based on work by Chris Arnold.
+
+* Added post-commit review request support for Bitbucket.
+
+  Review requests for committed changes hosted on Bitbucket can now be created
+  from the "New Review Request" page.
+
+
+Diff Viewer
+-----------
+
+* Show rendered Markdown text in comment bubble toolips.
+
+  The comment bubbles have always had a tooltip to preview the comment text.
+  These tooltips now contain the rendered Markdown text rather than raw
+  Markdown.
+
+  Patch by Wu Di.
+
+
+File Attachments
+----------------
+
+* "HD" file attachment thumbnails.
+
+  In an era of high-resolution screens, the old postage-stamp size file
+  attachment thumbnails with lots of knobs and buttons looked pretty outdated.
+  File attachment thumbnails are now shown as large, clean images. These
+  thumbnails will show some UI options when hovering the mouse over them, and
+  will also scroll to reveal more of the image.
+
+* Diffs of text file attachments with multiple revisions.
+
+  When a text-based file attachment has multiple revisions, those revisions can
+  now be compared as a diff. This also shows diffs of Markdown file attachments
+  (for both the source and rendered output).
+
+
+Administration UI
+-----------------
+
+* New "Add new users by default" setting for groups.
+
+  Turning this setting on will cause any newly-registered users to be
+  automatically added to the group.
+
+  Patch by Stanley Yeo.
+
+
+Web API
+-------
+
+* The :ref:`webapi2.0-file-attachment-resource` now contains a ``revision``
+  field.
+
+* The :ref:`webapi2.0-repository-resource` now contains a ``bug_tracker``
+  field.
+
+  Patch by Halvor Lund.
+
+* In the :ref:`webapi2.0-review-request-resource`, the ``depends_on`` and
+  ``blocks`` fields now include the ID of the review requests being linked to.
+  (:bug:`3863`).
+
+* Added a :ref:`webapi2.0-web-hook-resource` for managing webhooks.
+
+
+Bug Fixes
+=========
+
+Dashboard
+---------
+
+* Fixed the "Submitter" column to not wrap lines when usernames contain
+  wrappable characters such as hyphens.
+
+
+Diff Viewer
+-----------
+
+* Fixed some problems with interdiffs resulting from rebased changes.
+
+
+File Attachments
+----------------
+
+* Fixed the order of revisions for diffs of some file types.
+
+  When showing a diff between file attachment revisions, some of the file
+  review UIs (notably the image review UI) would show the old file on the right
+  and the new file on the left.
+
+* Fixed commenting on text-based file attachments.
+
+* Fixed sensitivity of the "Upload" button on the file attachment form when no
+  file had been selected. (:bug:`3829`)
+
+  Patch by Vincent Le.
+
+
+Web API
+-------
+
+* Fixed links in the :ref:`webapi2.0-hosting-service-account-resource` when
+  using local sites.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Chris Arnold
+* Christian Hammond
+* David Trowbridge
+* Halvor Lund
+* Jason Tseng
+* Jessica Qian
+* Stanley Yeo
+* Vincent Le
+* Wu Di

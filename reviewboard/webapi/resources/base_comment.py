@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.utils import six
-from django.utils.formats import localize
 from djblets.webapi.errors import DOES_NOT_EXIST
 
 from reviewboard.reviews.models import BaseComment
@@ -250,7 +249,6 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         comment.save(update_fields=['issue_status'])
 
         last_activity_time, updated_object = review_request.get_last_activity()
-        comment.timestamp = localize(comment.timestamp)
 
         return 200, {
             comment_resource.item_result_key: comment,

@@ -1,23 +1,17 @@
 from __future__ import unicode_literals
 
-import copy
 import os
 import re
-import sys
 import warnings
 from contextlib import contextmanager
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.core import serializers
 from django.core.cache import cache
 from django.core.files import File
-from django.db import (DatabaseError, DEFAULT_DB_ALIAS, IntegrityError,
-                       connections, router)
-from django.db.models import get_apps
-from django.utils import timezone
-from djblets.testing.testcases import TestCase as DjbletsTestCase
 from django.utils import six
+from djblets.testing.testcases import (FixturesCompilerMixin,
+                                       TestCase as DjbletsTestCase)
 
 from reviewboard import scmtools, initialize
 from reviewboard.accounts.models import ReviewRequestVisit
@@ -35,7 +29,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.webapi.models import WebAPIToken
 
 
-class TestCase(DjbletsTestCase):
+class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     """The base class for Review Board test cases.
 
     This class provides a number of convenient functions for creating
@@ -48,9 +42,6 @@ class TestCase(DjbletsTestCase):
     """
     local_site_name = 'local-site-1'
     local_site_id = 1
-
-    _precompiled_fixtures = {}
-    _fixture_dirs = []
 
     ws_re = re.compile(r'\s+')
 
@@ -684,149 +675,3 @@ class TestCase(DjbletsTestCase):
             webhook.save(update_fields=['extra_data'])
 
         return webhook
-
-    def _fixture_setup(self):
-        """Set up fixtures for unit tests.
-
-        Unlike Django's standard _fixture_setup function, this doesn't
-        re-locate and re-deserialize the fixtures every time. Instead, it
-        precompiles fixtures the first time they're found and reuses the
-        objects for future tests.
-
-        However, also unlike Django's, this does not accept compressed
-        or non-JSON fixtures.
-        """
-        # Temporarily hide the fixtures, so that the parent class won't
-        # do anything with them.
-        self._hide_fixtures = True
-        super(TestCase, self)._fixture_setup()
-        self._hide_fixtures = False
-
-        if getattr(self, 'multi_db', False):
-            databases = connections
-        else:
-            databases = [DEFAULT_DB_ALIAS]
-
-        for db in databases:
-            if hasattr(self, 'fixtures'):
-                self.load_fixtures(self.fixtures, db=db)
-
-    def load_fixtures(self, fixtures, db=DEFAULT_DB_ALIAS):
-        """Loads fixtures for the current test.
-
-        This is called for every fixture in the testcase's ``fixtures``
-        list. It can also be called by an individual test to add additional
-        fixtures on top of that.
-        """
-        if not fixtures:
-            return
-
-        if db not in TestCase._precompiled_fixtures:
-            TestCase._precompiled_fixtures[db] = {}
-
-        for fixture in fixtures:
-            if fixture not in TestCase._precompiled_fixtures[db]:
-                self._precompile_fixture(fixture, db)
-
-        self._load_fixtures(fixtures, db)
-
-    def _precompile_fixture(self, fixture, db):
-        """Precompiles a fixture.
-
-        The fixture is loaded and deserialized, and the resulting objects
-        are stored for future use.
-        """
-        assert db in TestCase._precompiled_fixtures
-        assert fixture not in TestCase._precompiled_fixtures[db]
-
-        fixture_path = None
-
-        for fixture_dir in self._get_fixture_dirs():
-            fixture_path = os.path.join(fixture_dir, fixture + '.json')
-
-            if os.path.exists(fixture_path):
-                break
-
-        try:
-            if not fixture_path:
-                raise IOError('Fixture path not found')
-
-            with open(fixture_path, 'r') as fp:
-                TestCase._precompiled_fixtures[db][fixture] = [
-                    obj
-                    for obj in serializers.deserialize('json', fp, using=db)
-                    if router.allow_syncdb(db, obj.object.__class__)
-                ]
-        except IOError as e:
-            sys.stderr.write('Unable to load fixture %s: %s\n' % (fixture, e))
-
-    def _get_fixture_dirs(self):
-        """Returns the list of fixture directories.
-
-        This is computed only once and cached.
-        """
-        if not TestCase._fixture_dirs:
-            app_module_paths = []
-
-            for app in get_apps():
-                if hasattr(app, '__path__'):
-                    # It's a 'models/' subpackage.
-                    for path in app.__path__:
-                        app_module_paths.append(path)
-                else:
-                    # It's a models.py module
-                    app_module_paths.append(app.__file__)
-
-            all_fixture_dirs = [
-                os.path.join(os.path.dirname(path), 'fixtures')
-                for path in app_module_paths
-            ]
-
-            TestCase._fixture_dirs = [
-                fixture_dir
-                for fixture_dir in all_fixture_dirs
-                if os.path.exists(fixture_dir)
-            ]
-
-        return TestCase._fixture_dirs
-
-    def _load_fixtures(self, fixtures, db):
-        """Loads precompiled fixtures.
-
-        Each precompiled fixture is loaded and then used to populate the
-        database.
-        """
-        models = set()
-        connection = connections[db]
-
-        with connection.constraint_checks_disabled():
-            for fixture in fixtures:
-                assert db in TestCase._precompiled_fixtures
-                assert fixture in TestCase._precompiled_fixtures[db]
-                objects = TestCase._precompiled_fixtures[db][fixture]
-
-                for obj in objects:
-                    models.add(obj.object.__class__)
-
-                    try:
-                        obj = copy.copy(obj)
-                        obj.save(using=db)
-                    except (DatabaseError, IntegrityError) as e:
-                        sys.stderr.write('Could not load %s.%s(pk=%s): %s\n'
-                                         % (obj.object._meta.app_label,
-                                            obj.object._meta.object_name,
-                                            obj.object.pk,
-                                            e))
-                        raise
-
-        # We disabled constraints above, so check now.
-        connection.check_constraints(table_names=[
-            model._meta.db_table
-            for model in models
-        ])
-
-    def __getattribute__(self, name):
-        if name == 'fixtures' and self.__dict__.get('_hide_fixtures'):
-            raise AttributeError
-
-        return super(TestCase, self).__getattribute__(name)

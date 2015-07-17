@@ -540,6 +540,28 @@ def pretty_print_issue_status(status):
     return BaseComment.issue_status_to_string(status)
 
 
+@register.filter
+@stringfilter
+def issue_status_icon(status):
+    """Return an icon name for the issue status.
+
+    Args:
+        status (unicode):
+            The stored issue status for the comment.
+
+    Returns:
+        unicode: The icon name for the issue status.
+    """
+    if status == BaseComment.OPEN:
+        return 'rb-icon-issue-open'
+    elif status == BaseComment.RESOLVED:
+        return 'rb-icon-issue-resolved'
+    elif status == BaseComment.DROPPED:
+        return 'rb-icon-issue-dropped'
+    else:
+        raise ValueError('Unknown comment issue status "%s"' % status)
+
+
 @register.filter('render_markdown')
 def _render_markdown(text, is_rich_text):
     if is_rich_text:

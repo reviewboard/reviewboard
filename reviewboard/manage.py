@@ -155,6 +155,15 @@ if __name__ == "__main__":
     # From http://www.djangosnippets.org/snippets/281/
     sys.path.insert(0, dirname(dirname(abspath(__file__))))
 
+    # Python may insert the directory that manage.py is in into the Python
+    # path, which can cause conflicts with other modules (such as Python's
+    # "site" module). We don't want this, so it's important that we remove
+    # this directory from the path.
+    try:
+        sys.path.remove(dirname(abspath(__file__)))
+    except ValueError:
+        pass
+
     if b'DJANGO_SETTINGS_MODULE' not in os.environ:
         in_subprocess = False
         os.environ.setdefault(b'DJANGO_SETTINGS_MODULE',
