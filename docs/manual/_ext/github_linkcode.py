@@ -24,17 +24,28 @@ def _run_git(cmd):
 def _get_branch_for_version():
     """Return the branch or tag for the current version of Review Board."""
     if VERSION[4] == 'final' or VERSION[5] > 0:
+        branch = 'release-%s.%s' % (VERSION[0], VERSION[1])
+
         if reviewboard.is_release():
-            return 'release-%s.%s.%s' % (VERSION[0], VERSION[1], VERSION[2])
+            if VERSION[2] > 0:
+                branch += '.%s' % VERSION[2]
+
+            if VERSION[4] != 'final':
+                branch += VERSION[4]
+
+                if VERSION[5] > 0:
+                    branch += '%s' % VERSION[5]
         else:
-            return 'release-%s.%s.x' % (VERSION[0], VERSION[1])
+            branch += '.x'
+
+        return branch
     else:
         return 'master'
 
 
 def git_get_nearest_tracking_branch(ref='HEAD', remote='origin'):
     """Return the nearest tracking branch for the given Git repository."""
-    merge_base = 'origin/%s' % _get_branch_for_version()
+    merge_base = _get_branch_for_version()
     lines = _run_git(['branch', '-rv', '--contains', merge_base]).splitlines()
 
     remote_prefix = '%s/' % remote
