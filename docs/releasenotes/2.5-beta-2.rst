@@ -2,7 +2,7 @@
 Review Board 2.5 Beta 2 Release Notes
 =====================================
 
-**Release date**: TBD
+**Release date**: July 20, 2015
 
 
 This release contains all bug fixes and features found in Review Board version
@@ -42,6 +42,9 @@ several smaller pieces of UI have been polished up:
 
 * The old animated GIF spinners throughout the UI have been replaced with a
   modern icon-font based spinner that looks great on all screens.
+
+* The issue summary table on review requests has some visual polish and offers
+  a better way to filter statuses.
 
 
 Mobile UI
