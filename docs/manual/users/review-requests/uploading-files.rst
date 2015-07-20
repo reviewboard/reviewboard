@@ -11,7 +11,7 @@ data, audio, or anything else. This is especially helpful for files that are
 part of a change but can't be represented in diffs, as well as things like
 attaching a screenshot of changes that affect user interfaces.
 
-.. image:: file-attachment.png
+.. image:: file-attachments.png
 
 Many types of files, including text and images, can be displayed on Review
 Board and reviewed by clicking on the areas where you want to add comments.

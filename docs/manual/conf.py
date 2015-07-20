@@ -240,7 +240,7 @@ intersphinx_mapping = {
                'https://docs.djangoproject.com/en/%s/_objects/'
                % reviewboard.django_major_version),
     'python': ('https://docs.python.org/2.7', None),
-    'rbtools': ('https://reviewboard.org/docs/rbtools/dev/', None),
+    'rbtools': ('https://www.reviewboard.org/docs/rbtools/dev/', None),
 }
 
 todo_include_todos = True
