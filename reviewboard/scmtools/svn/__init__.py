@@ -543,7 +543,7 @@ class SVNDiffParser(DiffParser):
         #    sanely, though.
         if (self.lines[linenum] == b'' and
             linenum + 2 < len(self.lines) and
-            self.lines[linenum + 1].startswith('Property changes on:')):
+            self.lines[linenum + 1].startswith(b'Property changes on:')):
             # Skip over the next 3 lines (blank, "Property changes on:", and
             # the "__________" divider.
             info['skip'] = True
