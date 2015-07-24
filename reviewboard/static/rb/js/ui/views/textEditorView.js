@@ -53,8 +53,14 @@ CodeMirrorWrapper = Backbone.View.extend({
     /*
      * Returns whether or not the editor's contents have changed.
      */
-    isDirty: function(/* initialValue */) {
-        return !this._codeMirror.isClean();
+    isDirty: function(initialValue) {
+        /*
+         * We cannot trust codeMirror's isClean() method.
+         *
+         * It is also possible for initialValue to be undefined, so we use an
+         * empty string in that case instead.
+         */
+        return (initialValue || '') !== this.getText();
     },
 
     /*
