@@ -83,9 +83,9 @@
                     id: {{file.pk}},
                     loaded: true,
                     attachmentHistoryID: {{file.attachment_history_id}},
-                    caption: '{{caption|escapejs}}',
+                    caption: _.unescape('{{caption|escapejs}}'),
                     downloadURL: '{{file.get_absolute_url|escapejs}}',
-                    filename: '{{file.filename}}|escapejs}}',
+                    filename: '{{file.filename|escapejs}}',
                     reviewURL: '{{file_attachment_url|escapejs}}',
                     revision: {{file.attachment_revision}},
                     thumbnailHTML: '{{file.thumbnail|escapejs}}'

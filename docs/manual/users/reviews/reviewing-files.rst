@@ -15,7 +15,7 @@ images, have special interfaces for doing reviews. For image files, see
 For other files, reviewers can download the files, and add comments to the
 attachment as a whole.
 
-.. image:: ../review-requests/file-attachment.png
+.. image:: ../review-requests/file-attachments.png
 
 The file attachment box provides a :guilabel:`Add Comment` button. Clicking
 this button pops up a comment dialog that works exactly like the dialog you

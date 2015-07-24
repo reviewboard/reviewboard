@@ -4,7 +4,7 @@
  */
 RB.IssueSummaryTableView = Backbone.View.extend({
     events: {
-        'change #issue-reviewer-filter': '_onFilterChanged',
+        'change #issue-reviewer-filter': '_onReviewerChanged',
         'click .issue-summary-tab': '_onTabChanged',
         'click thead th': '_onHeaderClicked',
         'click .issue': '_onIssueClicked'
@@ -311,8 +311,8 @@ RB.IssueSummaryTableView = Backbone.View.extend({
 
             if (!_.has(self.reviewerToSelectorMap, reviewer)) {
                 self.reviewerToSelectorMap[reviewer] =
-                    '[reviewer="' + reviewer + '"]';
-                $('#issue-reviewer-filter').append(
+                    '[data-reviewer="' + reviewer + '"]';
+                self._$reviewerFilter.append(
                     $('<option>').text(reviewer).val(reviewer));
             }
         });
