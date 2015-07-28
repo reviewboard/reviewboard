@@ -756,59 +756,90 @@ class CVSTests(SCMTestCase):
     def test_keyword_diff(self):
         """Testing parsing CVS diff with keywords"""
         diff = self.tool.normalize_patch(
-            b"Index: Makefile\n"
-            b"==========================================================="
-            b"========\n"
-            b"RCS file: /cvsroot/src/Makefile,v\n"
-            b"retrieving revision 1.1\n"
-            b"retrieving revision 1.2\n"
-            b"diff -u -r1.1.1.1 Makefile\n"
-            b"--- Makefile    26 Jul 2007 08:50:30 -0000      1.1\n"
-            b"+++ Makefile    26 Jul 2007 10:20:20 -0000      1.2\n"
-            b"@@ -1,6 +1,7 @@\n"
-            b" # $Author: bob $\n"
-            b" # $Date: 2014/12/18 13:09:42 $\n"
-            b" # $Header: /src/Makefile,v 1.2 2014/12/18 "
-            b"13:09:42 bob Exp $\n"
-            b" # $Id: Makefile,v 1.2 2014/12/18 13:09:42 bob Exp $\n"
-            b" # $Locker: bob $\n"
-            b" # $Name: some_name $\n"
-            b" # $RCSfile: Makefile,v $\n"
-            b" # $Revision: 1.2 $\n"
-            b" # $Source: /src/Makefile,v $\n"
-            b" # $State: Exp $\n"
-            b"+# foo\n"
-            b" include ../tools/Makefile.base-vars\n"
-            b" NAME = misc-docs\n"
-            b" OUTNAME = cvs-misc-docs\n",
+            b'Index: Makefile\n'
+            b'==========================================================='
+            b'========\n'
+            b'RCS file: /cvsroot/src/Makefile,v\n'
+            b'retrieving revision 1.1\n'
+            b'retrieving revision 1.2\n'
+            b'diff -u -r1.1.1.1 Makefile\n'
+            b'--- Makefile    26 Jul 2007 08:50:30 -0000      1.1\n'
+            b'+++ Makefile    26 Jul 2007 10:20:20 -0000      1.2\n'
+            b'@@ -1,6 +1,7 @@\n'
+            b' # $Author: bob $\n'
+            b' # $Date: 2014/12/18 13:09:42 $\n'
+            b' # $Header: /src/Makefile,v 1.2 2014/12/18 '
+            b'13:09:42 bob Exp $\n'
+            b' # $Id: Makefile,v 1.2 2014/12/18 13:09:42 bob Exp $\n'
+            b' # $Locker: bob $\n'
+            b' # $Name: some_name $\n'
+            b' # $RCSfile: Makefile,v $\n'
+            b' # $Revision: 1.2 $\n'
+            b' # $Source: /src/Makefile,v $\n'
+            b' # $State: Exp $\n'
+            b'+# foo\n'
+            b' include ../tools/Makefile.base-vars\n'
+            b' NAME = misc-docs\n'
+            b' OUTNAME = cvs-misc-docs\n',
             'Makefile')
 
         self.assertEqual(
             diff,
-            b"Index: Makefile\n"
-            b"==========================================================="
-            b"========\n"
-            b"RCS file: /cvsroot/src/Makefile,v\n"
-            b"retrieving revision 1.1\n"
-            b"retrieving revision 1.2\n"
-            b"diff -u -r1.1.1.1 Makefile\n"
-            b"--- Makefile    26 Jul 2007 08:50:30 -0000      1.1\n"
-            b"+++ Makefile    26 Jul 2007 10:20:20 -0000      1.2\n"
-            b"@@ -1,6 +1,7 @@\n"
-            b" # $Author$\n"
-            b" # $Date$\n"
-            b" # $Header$\n"
-            b" # $Id$\n"
-            b" # $Locker$\n"
-            b" # $Name$\n"
-            b" # $RCSfile$\n"
-            b" # $Revision$\n"
-            b" # $Source$\n"
-            b" # $State$\n"
-            b"+# foo\n"
-            b" include ../tools/Makefile.base-vars\n"
-            b" NAME = misc-docs\n"
-            b" OUTNAME = cvs-misc-docs\n")
+            b'Index: Makefile\n'
+            b'==========================================================='
+            b'========\n'
+            b'RCS file: /cvsroot/src/Makefile,v\n'
+            b'retrieving revision 1.1\n'
+            b'retrieving revision 1.2\n'
+            b'diff -u -r1.1.1.1 Makefile\n'
+            b'--- Makefile    26 Jul 2007 08:50:30 -0000      1.1\n'
+            b'+++ Makefile    26 Jul 2007 10:20:20 -0000      1.2\n'
+            b'@@ -1,6 +1,7 @@\n'
+            b' # $Author$\n'
+            b' # $Date$\n'
+            b' # $Header$\n'
+            b' # $Id$\n'
+            b' # $Locker$\n'
+            b' # $Name$\n'
+            b' # $RCSfile$\n'
+            b' # $Revision$\n'
+            b' # $Source$\n'
+            b' # $State$\n'
+            b'+# foo\n'
+            b' include ../tools/Makefile.base-vars\n'
+            b' NAME = misc-docs\n'
+            b' OUTNAME = cvs-misc-docs\n')
+
+    def test_keyword_diff_unicode(self):
+        """Testing parsing CVS diff with keywords and unicode characters"""
+        # Test bug 3931: this should succeed without a UnicodeDecodeError
+        self.tool.normalize_patch(
+            b'Index: Makefile\n'
+            b'==========================================================='
+            b'========\n'
+            b'RCS file: /cvsroot/src/Makefile,v\n'
+            b'retrieving revision 1.1\n'
+            b'retrieving revision 1.2\n'
+            b'diff -u -r1.1.1.1 Makefile\n'
+            b'--- Makefile    26 Jul 2007 08:50:30 -0000      1.1\n'
+            b'+++ Makefile    26 Jul 2007 10:20:20 -0000      1.2\n'
+            b'@@ -1,6 +1,7 @@\n'
+            b' # $Author: bob $\n'
+            b' # $Date: 2014/12/18 13:09:42 $\n'
+            b' # $Header: /src/Makefile,v 1.2 2014/12/18 '
+            b'13:09:42 bob Exp $\n'
+            b' # $Id: Makefile,v 1.2 2014/12/18 13:09:42 bob Exp $\n'
+            b' # $Locker: bob $\n'
+            b' # $Name: some_name $\n'
+            b' # $RCSfile: Makefile,v $\n'
+            b' # $Revision: 1.2 $\n'
+            b' # $Source: /src/Makefile,v $\n'
+            b' # $State: Exp $\n'
+            b'+# foo \xf0\x9f\x92\xa9\n'
+            b' include ../tools/Makefile.base-vars\n'
+            b' NAME = misc-docs\n'
+            b' OUTNAME = cvs-misc-docs\n',
+            'Makefile')
 
     def test_bad_root(self):
         """Testing CVSTool with a bad CVSROOT"""
