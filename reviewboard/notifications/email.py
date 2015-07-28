@@ -331,9 +331,12 @@ def send_review_mail(user, review_request, subject, in_reply_to,
             # two are not equal.
             sender = None
 
-    message = SpiffyEmailMessage(subject.strip(), text_body, html_body,
-                                 from_email, sender, list(to_field),
-                                 list(cc_field), in_reply_to, headers)
+    message = SpiffyEmailMessage(subject.strip(),
+                                 text_body.encode('utf-8'),
+                                 html_body.encode('utf-8'),
+                                 from_email, sender,
+                                 list(to_field), list(cc_field),
+                                 in_reply_to, headers)
     try:
         message.send()
     except Exception:
