@@ -406,6 +406,6 @@ class CVSClient(object):
         the diffs uploaded may have expanded keywords. We use this function
         to collapse them back down in order to be able to apply the patch.
         """
-        regex = re.compile(r'\$(%s):([^\$\n\r]*)\$' % '|'.join(self.keywords),
+        regex = re.compile(br'\$(%s):([^\$\n\r]*)\$' % '|'.join(self.keywords),
                            re.IGNORECASE)
-        return regex.sub(r'$\1$', data)
+        return regex.sub(br'$\1$', data)
