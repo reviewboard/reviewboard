@@ -455,6 +455,14 @@ def mail_review(review):
         'review': review,
     }
 
+    extra_headers = {}
+
+    if review.ship_it:
+        extra_headers['X-ReviewBoard-ShipIt'] = '1'
+
+        if review.ship_it_only:
+            extra_headers['X-ReviewBoard-ShipIt-Only'] = '1'
+
     has_error, extra_context['comment_entries'] = \
         build_diff_comment_fragments(
             review.ordered_comments, extra_context,
@@ -470,7 +478,8 @@ def mail_review(review):
                          None,
                          'notifications/review_email.txt',
                          'notifications/review_email.html',
-                         extra_context)
+                         extra_context,
+                         extra_headers=extra_headers)
     review.time_emailed = timezone.now()
     review.save()
 

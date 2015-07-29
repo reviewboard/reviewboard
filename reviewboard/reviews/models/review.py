@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.functional import cached_property
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import CounterField, JSONField
@@ -25,6 +26,9 @@ from reviewboard.reviews.signals import (reply_publishing, reply_published,
 @python_2_unicode_compatible
 class Review(models.Model):
     """A review of a review request."""
+
+    SHIP_IT_TEXT = 'Ship It!'
+
     review_request = models.ForeignKey(ReviewRequest,
                                        related_name="reviews",
                                        verbose_name=_("review request"))
@@ -107,6 +111,22 @@ class Review(models.Model):
     # Set this up with a ReviewManager to help prevent race conditions and
     # to fix duplicate reviews.
     objects = ReviewManager()
+
+    @cached_property
+    def ship_it_only(self):
+        """Return if the review only contains a "Ship It!".
+
+        Returns:
+            bool: ``True`` if the review is only a "Ship It!" and ``False``
+            otherwise.
+        """
+        return (self.ship_it and
+                (not self.body_top or
+                 self.body_top == Review.SHIP_IT_TEXT) and
+                not (self.body_bottom or
+                     self.comments.exists() or
+                     self.file_attachment_comments.exists() or
+                     self.screenshot_comments.exists()))
 
     def get_participants(self):
         """Returns a list of participants in a review's discussion."""

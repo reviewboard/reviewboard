@@ -737,7 +737,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertTrue('X-Foo' in message.headers)
+        self.assertIn('X-Foo', message.headers)
         self.assertEqual(message.headers['X-Foo'], 'Bar')
 
     def test_extra_headers_multivalue_dict(self):
@@ -762,9 +762,165 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertTrue('X-Foo' in message.headers)
+        self.assertIn('X-Foo', message.headers)
         self.assertEqual(set(message.headers.getlist('X-Foo')),
                          set(header_values))
+
+    def test_review_no_shipit_headers(self):
+        """Testing sending a review e-mail without a 'Ship It!'"""
+        review_request = self.create_review_request(public=True)
+
+        self.create_review(review_request,
+                           body_top=Review.SHIP_IT_TEXT,
+                           body_bottom='',
+                           publish=True)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertNotIn('X-ReviewBoard-ShipIt', message.headers)
+        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.headers)
+
+    def test_review_shipit_only_headers(self):
+        """Testing sending a review e-mail with only a 'Ship It!'"""
+        review_request = self.create_review_request(public=True)
+
+        self.create_review(review_request,
+                           body_top=Review.SHIP_IT_TEXT,
+                           body_bottom='',
+                           ship_it=True,
+                           publish=True)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertIn('X-ReviewBoard-ShipIt', message.headers)
+        self.assertIn('X-ReviewBoard-ShipIt-Only', message.headers)
+
+    def test_review_shipit_only_headers_no_text(self):
+        """Testing sending a review e-mail with only a 'Ship It!' and no text
+        """
+        review_request = self.create_review_request(public=True)
+
+        self.create_review(review_request,
+                           body_top='',
+                           body_bottom='',
+                           ship_it=True,
+                           publish=True)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertIn('X-ReviewBoard-ShipIt', message.headers)
+        self.assertIn('X-ReviewBoard-ShipIt-Only', message.headers)
+
+    def test_review_shipit_headers_custom_top_text(self):
+        """Testing sending a review e-mail with a 'Ship It' and custom top text
+        """
+        review_request = self.create_review_request(public=True)
+
+        self.create_review(review_request,
+                           body_top='Some general information.',
+                           body_bottom='',
+                           ship_it=True,
+                           publish=True)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertIn('X-ReviewBoard-ShipIt', message.headers)
+        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.headers)
+
+    def test_review_shipit_headers_bottom_text(self):
+        """Testing sending a review e-mail with a 'Ship It' and bottom text"""
+        review_request = self.create_review_request(public=True)
+
+        self.create_review(review_request,
+                           body_top=Review.SHIP_IT_TEXT,
+                           body_bottom='Some comments',
+                           ship_it=True,
+                           publish=True)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertIn('X-ReviewBoard-ShipIt', message.headers)
+        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.headers)
+
+    @add_fixtures(['test_scmtools'])
+    def test_review_shipit_headers_comments(self):
+        """Testing sending a review e-mail with a 'Ship It' and diff comments
+        """
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository,
+                                                    public=True)
+
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+
+        review = self.create_review(review_request,
+                                    body_top=Review.SHIP_IT_TEXT,
+                                    body_bottom='',
+                                    ship_it=True,
+                                    publish=False)
+
+        self.create_diff_comment(review, filediff)
+
+        review.publish()
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertIn('X-ReviewBoard-ShipIt', message.headers)
+        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.headers)
+
+    def test_review_shipit_headers_attachment_comments(self):
+        """Testing sending a review e-mail with a 'Ship It' and file attachment
+        comments
+        """
+        review_request = self.create_review_request(public=True)
+
+        file_attachment = self.create_file_attachment(review_request)
+
+        review = self.create_review(review_request,
+                                    body_top=Review.SHIP_IT_TEXT,
+                                    body_bottom='',
+                                    ship_it=True,
+                                    publish=False)
+
+        self.create_file_attachment_comment(review, file_attachment)
+
+        review.publish()
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertIn('X-ReviewBoard-ShipIt', message.headers)
+        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.headers)
+
+    def test_review_shipit_headers_screenshot_comments(self):
+        """Testing sending a review e-mail with a 'Ship It' and screenshot
+        comments
+        """
+        review_request = self.create_review_request(public=True)
+
+        screenshot = self.create_screenshot(review_request)
+
+        review = self.create_review(review_request,
+                                    body_top=Review.SHIP_IT_TEXT,
+                                    body_bottom='',
+                                    ship_it=True,
+                                    publish=False)
+
+        self.create_screenshot_comment(review, screenshot)
+
+        review.publish()
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertIn('X-ReviewBoard-ShipIt', message.headers)
+        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.headers)
 
     def _get_sender(self, user):
         return build_email_address(user.get_full_name(), self.sender)
