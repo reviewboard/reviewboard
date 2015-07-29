@@ -209,7 +209,8 @@ class SpiffyEmailMessage(EmailMultiAlternatives):
 
 def send_review_mail(user, review_request, subject, in_reply_to,
                      extra_recipients, text_template_name,
-                     html_template_name, context={}, limit_recipients_to=None):
+                     html_template_name, context={}, limit_recipients_to=None,
+                     extra_headers=None):
     """
     Formats and sends an e-mail out with the current domain and review request
     being added to the template context. Returns the resulting message ID.
@@ -301,6 +302,15 @@ def send_review_mail(user, review_request, subject, in_reply_to,
         'X-ReviewGroup': [', '.join(group.name for group in
                                     review_request.target_groups.all())],
     })
+
+    if extra_headers:
+        if not isinstance(extra_headers, MultiValueDict):
+            extra_headers = MultiValueDict(
+                (key, [value])
+                for (key, value) in six.iteritems(extra_headers)
+            )
+
+        headers.update(extra_headers)
 
     if review_request.repository:
         headers['X-ReviewRequest-Repository'] = review_request.repository.name

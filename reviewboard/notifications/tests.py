@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
+from django.utils.datastructures import MultiValueDict
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 
@@ -13,7 +14,8 @@ from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.notifications.email import (build_email_address,
                                              get_email_address_for_user,
-                                             get_email_addresses_for_group)
+                                             get_email_addresses_for_group,
+                                             send_review_mail)
 from reviewboard.reviews.models import (Group,
                                         Review,
                                         ReviewRequest,
@@ -716,6 +718,53 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertTrue(filediffs[0].dest_file in diff_headers)
         self.assertTrue(filediffs[1].source_file in diff_headers)
         self.assertFalse(filediffs[1].dest_file in diff_headers)
+
+    def test_extra_headers_dict(self):
+        """Testing sending extra headers as a dict with an e-mail message"""
+        review_request = self.create_review_request()
+
+        send_review_mail(review_request.submitter,
+                         review_request,
+                         'Foo',
+                         None,
+                         None,
+                         'notifications/review_request_email.txt',
+                         'notifications/review_request_email.html',
+                         extra_headers={
+                             'X-Foo': 'Bar'
+                         })
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertTrue('X-Foo' in message.headers)
+        self.assertEqual(message.headers['X-Foo'], 'Bar')
+
+    def test_extra_headers_multivalue_dict(self):
+        """Testing sending extra headers as a MultiValueDict with an e-mail
+        message
+        """
+        header_values = ['Bar', 'Baz']
+
+        review_request = self.create_review_request()
+
+        send_review_mail(review_request.submitter,
+                         review_request,
+                         'Foo',
+                         None,
+                         None,
+                         'notifications/review_request_email.txt',
+                         'notifications/review_request_email.html',
+                         extra_headers=MultiValueDict({
+                             'X-Foo': header_values,
+                         }))
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertTrue('X-Foo' in message.headers)
+        self.assertEqual(set(message.headers.getlist('X-Foo')),
+                         set(header_values))
 
     def _get_sender(self, user):
         return build_email_address(user.get_full_name(), self.sender)
