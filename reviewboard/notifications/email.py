@@ -231,7 +231,8 @@ class SpiffyEmailMessage(EmailMultiAlternatives):
 
 def send_review_mail(user, review_request, subject, in_reply_to,
                      extra_recipients, text_template_name,
-                     html_template_name, context={}, limit_recipients_to=None):
+                     html_template_name, context={}, limit_recipients_to=None,
+                     extra_headers=None):
     """
     Formats and sends an e-mail out with the current domain and review request
     being added to the template context. Returns the resulting message ID.
@@ -336,6 +337,15 @@ def send_review_mail(user, review_request, subject, in_reply_to,
         'X-ReviewGroup': [', '.join(group.name for group in
                                     review_request.target_groups.all())],
     })
+
+    if extra_headers:
+        if not isinstance(extra_headers, MultiValueDict):
+            extra_headers = MultiValueDict(
+                (key, [value])
+                for (key, value) in six.iteritems(extra_headers)
+            )
+
+        headers.update(extra_headers)
 
     if review_request.repository:
         headers['X-ReviewRequest-Repository'] = review_request.repository.name
@@ -481,6 +491,14 @@ def mail_review(review):
         'review': review,
     }
 
+    extra_headers = {}
+
+    if review.ship_it:
+        extra_headers['X-ReviewBoard-ShipIt'] = '1'
+
+        if review.ship_it_only:
+            extra_headers['X-ReviewBoard-ShipIt-Only'] = '1'
+
     has_error, extra_context['comment_entries'] = \
         build_diff_comment_fragments(
             review.ordered_comments, extra_context,
@@ -496,7 +514,8 @@ def mail_review(review):
                          None,
                          'notifications/review_email.txt',
                          'notifications/review_email.html',
-                         extra_context)
+                         extra_context,
+                         extra_headers=extra_headers)
     review.time_emailed = timezone.now()
     review.save()
 
