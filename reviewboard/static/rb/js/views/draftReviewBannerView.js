@@ -20,6 +20,14 @@ RB.DraftReviewBannerView = Backbone.View.extend({
         return this._$banner.outerHeight();
     },
 
+    remove: function() {
+        if (this._publishButton) {
+            this._publishButton.remove();
+        }
+
+        _super(this).remove.call(this);
+    },
+
     render: function() {
         var model = this.model;
 
@@ -37,6 +45,24 @@ RB.DraftReviewBannerView = Backbone.View.extend({
         model.on('publishError', function(errorText) {
             alert(errorText);
         });
+
+        this._publishButton = new RB.SplitButtonView({
+            el: $('#review-banner-publish-container'),
+            text: gettext('Publish Review'),
+            click: _.bind(this._onPublishClicked, this),
+            id: 'review-banner-publish',
+            zIndex: this.$('.banner').css('zIndex'),
+            alternatives: [
+                {
+                    text: gettext('... to Submitter Only'),
+                    click: _.bind(this._onPublishClicked, this),
+                    id: 'review-banner-publish-submitter-only'
+                }
+            ]
+
+        });
+
+        this._publishButton.render();
 
         return this;
     },
