@@ -1,5 +1,77 @@
 @import (reference) "../defs.less";
 
+.split-btn {
+  .box-shadow(@btn-box-shadow);
+  cursor: pointer;
+  display: inline-block;
+
+  .btn {
+    border: 1px solid @btn-border-color;
+    border-bottom-color: @btn-border-bottom-color;
+    .border-radius(0);
+
+    &.primary-btn {
+      .border-radius(@btn-border-radius 0 0 @btn-border-radius);
+
+      &.drop-down-shown {
+        .border-radius(@btn-border-radius 0 0 0);
+        border-bottom: 0;
+      }
+
+      &.drop-up-shown {
+        .border-radius(0 0 0 @btn-border-radius);
+        border-top: 0;
+      }
+    }
+
+    &.drop-down-btn {
+      border-left: none;
+      .border-radius(0 @btn-border-radius @btn-border-radius 0);
+
+      &.drop-down-shown {
+        .border-radius(0 @btn-border-radius 0 0);
+        border-bottom: 0;
+      }
+
+      &.drop-up-shown {
+        .border-radius(0 0 @btn-border-radius 0);
+        border-top: 0;
+      }
+    }
+  }
+}
+
+.split-btn-alternatives {
+  .box-shadow(@btn-box-shadow);
+  cursor: pointer;
+
+  .btn {
+    .border-radius(0);
+    display: block;
+  }
+
+  &.drop-down-shown {
+    .btn {
+      border-bottom: 0;
+
+      &:last-child {
+        border-bottom: 1px solid @btn-border-bottom-color;
+        .border-radius(0 0 @btn-border-radius @btn-border-radius);
+      }
+    }
+  }
+
+  &.drop-up-shown {
+    .btn {
+      border-top: 0;
+
+      &:first-child {
+      }
+      .border-radius(@btn-border-radius @btn-border-radius 0 0);
+      border-top: 1px solid @btn-border-color;
+    }
+  }
+}
 
 .btn,
 input[type="button"],
@@ -16,10 +88,10 @@ input[type="submit"] {
   color: #333;
   font-size: 13px;
   line-height: normal;
-  border: 1px solid #ccc;
-  border-bottom-color: #bbb;
+  border: 1px solid @btn-border-color;
+  border-bottom-color: @btn-border-bottom-color;
   .border-radius(4px);
-  .box-shadow(inset 0 1px 0 rgba(255,255,255,.2), 0 1px 2px rgba(0,0,0,.05));
+  .box-shadow(@btn-box-shadow);
 
   // Transitions
   .transition(.1s linear all);
@@ -39,7 +111,7 @@ input[type="submit"] {
     .box-shadow(inset 0 2px 4px rgba(0,0,0,.25), 0 1px 2px rgba(0,0,0,.05));
   }
 
-  &:hover {
+  &:hover, &.hover {
     background-position: 0 -15px;
     color: #333;
     text-decoration: none;

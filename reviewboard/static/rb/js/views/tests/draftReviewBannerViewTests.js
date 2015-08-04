@@ -7,7 +7,7 @@ suite('rb/views/DraftReviewBannerView', function() {
             '  <h1>You have a pending review.</h1>',
             '  <input id="review-banner-edit" type="button" ',
             '         value="Edit Review" />',
-            '  <input id="review-banner-publish" type="button" ',
+            '  <input id="review-banner-publish-container" type="button" ',
             '         value="Publish" />',
             '  <input id="review-banner-discard" type="button" ',
             '         value="Discard" />',
@@ -25,6 +25,10 @@ suite('rb/views/DraftReviewBannerView', function() {
         });
 
         view.render();
+    });
+
+    afterEach(function() {
+        view.remove();
     });
 
     describe('Button states', function() {
@@ -80,6 +84,18 @@ suite('rb/views/DraftReviewBannerView', function() {
             spyOn(model, 'publish');
 
             view.$('#review-banner-publish').click();
+
+            expect(model.publish).toHaveBeenCalled();
+        });
+
+        it('Publish to Submitter Only', function() {
+            spyOn(model, 'publish');
+
+            /*
+             * The alternative buttons from the split button are added to the
+             * <body>.
+             */
+            $('#review-banner-publish-submitter-only').click();
 
             expect(model.publish).toHaveBeenCalled();
         });

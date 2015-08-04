@@ -49,15 +49,16 @@ def review_request_published_cb(sender, user, review_request, trivial,
         mail_review_request(review_request, changedesc)
 
 
-def review_published_cb(sender, user, review, **kwargs):
+def review_published_cb(sender, user, review, to_submitter_only, **kwargs):
     """
     Listens to the ``review_published`` signal and sends an e-mail if
     this type of notification is enabled (through
     ``mail_send_review_mail`` site configuration).
     """
     siteconfig = SiteConfiguration.objects.get_current()
-    if siteconfig.get("mail_send_review_mail"):
-        mail_review(review)
+
+    if siteconfig.get('mail_send_review_mail'):
+        mail_review(review, to_submitter_only)
 
 
 def reply_published_cb(sender, user, reply, trivial, **kwargs):
@@ -476,7 +477,7 @@ def mail_review_request(review_request, changedesc=None, on_close=False):
     review_request.save()
 
 
-def mail_review(review):
+def mail_review(review, to_submitter_only):
     """Sends an e-mail representing the supplied review."""
     review_request = review.review_request
 
@@ -504,6 +505,11 @@ def mail_review(review):
             review.ordered_comments, extra_context,
             "notifications/email_diff_comment_fragment.html")
 
+    limit_to = None
+
+    if to_submitter_only:
+        limit_to = set([get_email_address_for_user(review.user)])
+
     review.email_message_id = \
         send_review_mail(review.user,
                          review_request,
@@ -515,7 +521,8 @@ def mail_review(review):
                          'notifications/review_email.txt',
                          'notifications/review_email.html',
                          extra_context,
-                         extra_headers=extra_headers)
+                         extra_headers=extra_headers,
+                         limit_recipients_to=limit_to)
     review.time_emailed = timezone.now()
     review.save()
 
