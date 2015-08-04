@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 import email
 import logging
 from email.utils import formataddr
+from collections import defaultdict
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -25,7 +26,51 @@ from reviewboard.reviews.signals import (review_request_published,
 from reviewboard.reviews.views import build_diff_comment_fragments
 
 
-def review_request_closed_cb(sender, user, review_request, **kwargs):
+# A mapping of signals to EmailHooks.
+_hooks = defaultdict(set)
+
+
+def register_email_hook(signal, handler):
+    """Register an e-mail hook
+
+    Args:
+        signal (django.signals.signal):
+            The signal that will trigger the e-mail to be sent. This is one of
+            ``review_request_published``, ``review_request_closed``,
+            ``review_published``, or ``reply_published.
+
+        handler (reviewboard.extensions.hooks.EmailHook):
+            The ``EmailHook`` that will be triggered when an e-mail of the
+            chosen type is about to be sent.
+    """
+    assert signal in (review_request_published, review_request_closed,
+                      review_published, reply_published), (
+        'Invalid signal %r' % signal)
+
+    _hooks[signal].add(handler)
+
+
+def unregister_email_hook(signal, handler):
+    """Unregister an e-mail hook.
+
+    Args:
+        signal (django.signals.signal):
+            The signal that will trigger the e-mail to be sent. This is one of
+            ``review_request_published``, ``review_request_closed``,
+            ``review_published``, or ``reply_published.
+
+        handler (reviewboard.extensions.hooks.EmailHook):
+            The ``EmailHook`` that will be triggered when an e-mail of the
+            chosen type is about to be sent.
+    """
+    assert signal in (review_request_published, review_request_closed,
+                      review_published, reply_published), (
+        'Invalid signal %r' % signal)
+
+    _hooks[signal].discard(handler)
+
+
+def review_request_closed_cb(sender, user, review_request, type, **kwargs):
     """Send e-mail when a review request is closed.
 
     Listens to the ``review_request_closed`` signal and sends an e-mail if this
@@ -35,7 +80,7 @@ def review_request_closed_cb(sender, user, review_request, **kwargs):
     siteconfig = SiteConfiguration.objects.get_current()
 
     if siteconfig.get('mail_send_review_close_mail'):
-        mail_review_request(review_request, on_close=True)
+        mail_review_request(review_request, user, close_type=type)
 
 
 def review_request_published_cb(sender, user, review_request, changedesc,
@@ -49,7 +94,7 @@ def review_request_published_cb(sender, user, review_request, changedesc,
     siteconfig = SiteConfiguration.objects.get_current()
 
     if siteconfig.get('mail_send_review_mail'):
-        mail_review_request(review_request, changedesc)
+        mail_review_request(review_request, user, changedesc)
 
 
 def review_published_cb(sender, user, review, **kwargs):
@@ -62,7 +107,7 @@ def review_published_cb(sender, user, review, **kwargs):
     siteconfig = SiteConfiguration.objects.get_current()
 
     if siteconfig.get('mail_send_review_mail'):
-        mail_review(review)
+        mail_review(review, user)
 
 
 def reply_published_cb(sender, user, reply, **kwargs):
@@ -75,7 +120,7 @@ def reply_published_cb(sender, user, reply, **kwargs):
     siteconfig = SiteConfiguration.objects.get_current()
 
     if siteconfig.get('mail_send_review_mail'):
-        mail_reply(reply)
+        mail_reply(reply, user)
 
 
 def user_registered_cb(user, **kwargs):
@@ -579,12 +624,17 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     return message.message_id
 
 
-def mail_review_request(review_request, changedesc=None, on_close=False):
+def mail_review_request(review_request, user, changedesc=None,
+                        close_type=None):
     """Send an e-mail representing the supplied review request.
 
     Args:
         review_request (reviewboard.reviews.models.ReviewRequest):
             The review request to send an e-mail about.
+
+        user (django.contrib.auth.models.User):
+            The user who triggered the e-mail (i.e., they published or closed
+            the review request).
 
         changedesc (reviewboard.changedescs.models.ChangeDescription):
             An optional change description showing what has changed in the
@@ -594,15 +644,17 @@ def mail_review_request(review_request, changedesc=None, on_close=False):
             template to add contextual (updated) flags to inform people what
             has changed.
 
-        on_close (bool):
-            Determines if the e-mail is sent because the review request was
-            closed (i.e., submitted or discarded).
+        close_type (unicode):
+            How the review request was closed or ``None`` if it was published.
+            If this is not ``None`` it must be one of
+            :py:ref:`reviewboard.reviews.models.ReviewRequest.SUBMITTED` or
+            :py:ref:`reviewboard.reviews.models.ReviewRequest.DISCARDED`.
     """
     # If the review request is not yet public or has been discarded, don't send
     # any mail. Relax the "discarded" rule when e-mails are sent on closing
     # review requests
-    if (not review_request.public
-        or (not on_close and review_request.status == 'D')):
+    if (not review_request.public or
+        (not close_type and review_request.status == 'D')):
         return
 
     summary = review_request.summary
@@ -623,7 +675,7 @@ def mail_review_request(review_request, changedesc=None, on_close=False):
 
     extra_context = {}
 
-    if on_close:
+    if close_type:
         changedesc = review_request.changedescs.filter(public=True).latest()
 
     limit_recipients_to = None
@@ -666,6 +718,18 @@ def mail_review_request(review_request, changedesc=None, on_close=False):
                                           extra_recipients,
                                           limit_recipients_to)
 
+    extra_filter_kwargs = {}
+
+    if close_type:
+        signal = review_request_closed
+        extra_filter_kwargs['close_type'] = close_type
+    else:
+        signal = review_request_published
+
+    to_field, cc_field = filter_email_recipients_from_hooks(
+        to_field, cc_field, signal, review_request=review_request, user=user,
+        **extra_filter_kwargs)
+
     review_request.time_emailed = timezone.now()
     review_request.email_message_id = \
         send_review_mail(review_request.submitter, review_request, subject,
@@ -676,7 +740,7 @@ def mail_review_request(review_request, changedesc=None, on_close=False):
     review_request.save()
 
 
-def mail_review(review):
+def mail_review(review, user):
     """Send an e-mail representing the supplied review.
 
     Args:
@@ -713,6 +777,10 @@ def mail_review(review):
 
     to_field, cc_field = build_recipients(reviewer, review_request, None)
 
+    to_field, cc_field = filter_email_recipients_from_hooks(
+        to_field, cc_field, review_published, review=review, user=user,
+        review_request=review_request)
+
     review.email_message_id = send_review_mail(
         reviewer,
         review_request,
@@ -730,7 +798,7 @@ def mail_review(review):
     review.save()
 
 
-def mail_reply(reply):
+def mail_reply(reply, user):
     """Send an e-mail representing the supplied reply to a review.
 
     Args:
@@ -755,10 +823,14 @@ def mail_reply(reply):
             extra_context,
             "notifications/email_diff_comment_fragment.html")
 
-    user = reply.user
+    reviewer = reply.user
 
-    to_field, cc_field = build_recipients(user, review_request,
+    to_field, cc_field = build_recipients(reviewer, review_request,
                                           review_request.participants)
+
+    to_field, cc_field = filter_email_recipients_from_hooks(
+        to_field, cc_field, reply_published, reply=reply, user=user,
+        review=review, review_request=review_request)
 
     reply.email_message_id = send_review_mail(
         user,
@@ -812,6 +884,39 @@ def mail_new_user(user):
         logging.error("Error sending e-mail notification with subject '%s' on "
                       "behalf of '%s' to admin: %s",
                       subject.strip(), from_email, e, exc_info=1)
+
+
+def filter_email_recipients_from_hooks(to_field, cc_field, signal, **kwargs):
+    """Filter the e-mail recipients through configured e-mail hooks.
+
+    Args:
+        to_field (set):
+            The original TO field of the e-mail, as a set of
+            :py:class:`django.contrib.auth.models.User`s and
+            :py:class:`reviewboard.reviews.models.Group`s.
+
+        cc_field (set):
+            The original CC field of the e-mail, as a set of
+            :py:class:`django.contrib.auth.models.User`s and
+            :py:class:`reviewboard.reviews.models.Group`s
+
+        signal (django.signals.Signal):
+            The signal that triggered the e-mail.
+
+        **kwargs (dict):
+            Extra keyword arguments to pass to the e-mail hook
+
+    Returns:
+        tuple: A 2-tuple of the TO field and the CC field, as :py:class:`set`s
+        of :py:class:`django.contrib.auth.models.User`s and
+        :py:class:`reviewboard.reviews.models.Group`s.
+    """
+    if signal in _hooks:
+        for hook in _hooks[signal]:
+            to_field = hook.get_to_field(to_field, **kwargs)
+            cc_field = hook.get_cc_field(cc_field, **kwargs)
+
+    return to_field, cc_field
 
 
 # Fixes bug #3613

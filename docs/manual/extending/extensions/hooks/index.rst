@@ -24,6 +24,7 @@ The following hooks are available for use by extensions.
    dashboard-sidebar-items-hook
    dashboard-columns-hook
    datagrid-columns-hook
+   email-hook
    file-attachment-thumbnail-hook
    hosting-service-hook
    navigation-bar-hook

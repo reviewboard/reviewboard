@@ -15,9 +15,14 @@ from reviewboard.attachments.mimetypes import (register_mimetype_handler,
 from reviewboard.datagrids.grids import DashboardDataGrid, UserPageDataGrid
 from reviewboard.hostingsvcs.service import (register_hosting_service,
                                              unregister_hosting_service)
+from reviewboard.notifications.email import (register_email_hook,
+                                             unregister_email_hook)
 from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         register_review_request_fieldset,
                                         unregister_review_request_fieldset)
+from reviewboard.reviews.signals import (review_request_published,
+                                         review_published, reply_published,
+                                         review_request_closed)
 from reviewboard.reviews.ui.base import register_ui, unregister_ui
 
 
@@ -501,6 +506,336 @@ class UserPageSidebarItemsHook(DataGridSidebarItemsHook):
             extension, UserPageDataGrid, item_classes)
 
 
+@six.add_metaclass(ExtensionHookPoint)
+class EmailHook(ExtensionHook):
+    """A hook for changing the recipients of e-mails.
+
+    Extensions can use this hook to change the contents of the TO and CC fields
+    of e-mails. This should be subclassed in an extension to provide the
+    desired behaviour. This class is a base class for more specialized
+    extension hooks. If modifying only one type of e-mail's fields is desired,
+    one of the following classes should be sub-classed instead.
+
+      * :py:class:`ReviewPublishedEmailHook`
+      * :py:class:`ReviewReplyPublishedEmailHook`
+      * :py:class:`ReviewRequestPublishedEmailHook`
+      * :py:class:`ReviewRequestClosed`
+
+    However, if more specialized behaviour is desired, this class can be
+    sub-classed.
+    """
+
+    def __init__(self, extension, signals=None):
+        """Initialize the EmailHook.
+
+        Args:
+            extension (djblets.extension.Extension):
+                The extension creating this hook.
+
+            signals (list):
+                A list of :py:class:`django.signals.Signal` that, when
+                triggered, will cause e-mails to be sent. Valid signals are:
+
+                * ``review_request_published``
+                * ``review_request_closed``
+                * ``review_published``
+                * ``reply_published``
+        """
+        super(EmailHook, self).__init__(extension)
+
+        self.signals = set(signals or [])
+
+        for signal in self.signals:
+            register_email_hook(signal, self)
+
+    def shutdown(self):
+        """Unregister the e-mail handlers."""
+        for signal in self.signals:
+            unregister_email_hook(signal, self)
+
+    def get_to_field(self, to_field, **kwargs):
+        """Return the TO field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`django.contrib.auth.models.User`s and
+                :py:class:`reviewboard.reviews.models.Group`s. that will
+                receive the e-mail.
+
+            kwargs (dict):
+                Additional keyword arguments that will be passed based on the
+                type of e-mail being sent.
+
+        Returns:
+            set: The desired TO field.
+        """
+        return to_field
+
+    def get_cc_field(self, cc_field, **kwargs):
+        """Return the CC field for the e-mail.
+
+        Args:
+            cc_field (set):
+                A set of :py:class:`django.contrib.auth.models.User`s and
+                :py:class:`reviewboard.reviews.models.Group`s that will
+                receive a carbon copy of the e-mail.
+
+            kwargs (dict):
+                Additional keyword arguments that will be passed based on the
+                type of e-mail being sent.
+
+        Returns:
+            set: The desired CC field.
+        """
+        return cc_field
+
+
+class ReviewPublishedEmailHook(EmailHook):
+    """A hook for changing the recipients of review publishing e-mails."""
+
+    def __init__(self, extension):
+        """Initialize the ReviewPublishedEmailHook.
+
+        Args:
+            extension (djablets.extensions.Extension):
+                The extension registering this hook.
+        """
+        super(ReviewPublishedEmailHook, self).__init__(
+            extension,
+            signals=[review_published])
+
+    def get_to_field(self, to_field, review, user, review_request):
+        """Return the TO field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`django.contrib.auth.models.User`s and
+                :py:class:`reviewboard.reviews.models.Group`s. that will
+                receive the e-mail.
+
+            review (reviewboard.reviews.models.Review):
+                The review that was published.
+
+            user (django.contrib.auth.models.User):
+                The user who published the review.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that was reviewed.
+
+        Returns:
+            set: The desired TO field.
+        """
+        return to_field
+
+    def get_cc_field(self, cc_field, review, user, review_request):
+        """Return the CC field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`django.contrib.auth.models.User`s and
+                :py:class:`reviewboard.reviews.models.Group`s. that will
+                receive a carbon copy of the e-mail.
+
+            review (reviewboard.reviews.models.Review):
+                The review that was published.
+
+            user (django.contrib.auth.models.User):
+                The user who published the review.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that was reviewed.
+
+        Returns:
+            set: The desired CC field.
+        """
+        return cc_field
+
+
+class ReviewReplyPublishedEmailHook(EmailHook):
+    """A hook for changing the recipients of review reply publishing e-mails.
+    """
+
+    def __init__(self, extension):
+        """Initialize the ReviewReplyPublishedEmailHook.
+
+        Args:
+            extension (djblets.extensions.Extension):
+                The extension registering this hook.
+        """
+        super(ReviewReplyPublishedEmailHook, self).__init__(
+            extension,
+            signals=[reply_published])
+
+    def get_to_field(self, to_field, reply, user, review_request):
+        """Return the TO field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`django.contrib.auth.models.User`s and
+                :py:class:`reviewboard.reviews.models.Group`s. that will
+                receive the e-mail.
+
+            reply (reviewboard.reviews.models.Review):
+                The review reply that was published.
+
+            user (django.contrib.auth.models.User):
+                The user who published the review reply.
+
+            review (reviewboard.reviews.model.Review):
+                The review the reply is in reply to.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that was reviewed.
+
+        Returns:
+            set: The desired TO field.
+        """
+        return to_field
+
+    def get_cc_field(self, cc_field, reply, user, review_request):
+        """Return the CC field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`django.contrib.auth.models.User`s and
+                :py:class:`reviewboard.reviews.models.Group`s. that will
+                receive a carbon copy of the e-mail
+
+            reply (reviewboard.reviews.models.Review):
+                The review reply that was published.
+
+            user (django.contrib.auth.models.User):
+                The user who published the reply.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that was reviewed.
+
+        Returns:
+            set: The desired CC field.
+        """
+        return cc_field
+
+
+class ReviewRequestClosedEmailHook(EmailHook):
+    """A hook for changing the recipients of review request closing e-mails."""
+
+    def __init__(self, extension):
+        """Initialize the ReviewRequestClosedEmailHook.
+
+        Args:
+            extension (djablets.extensions.Extension):
+                The extension registering this hook.
+        """
+        super(ReviewRequestClosedEmailHook, self).__init__(
+            extension,
+            signals=[review_request_closed])
+
+    def get_to_field(self, to_field, review_request, user, close_type):
+        """Return the TO field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`django.contrib.auth.models.User`s and
+                :py:class:`reviewboard.reviews.models.Group`s. that will
+                receive the e-mail.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that was published.
+
+            user (django.contrib.auth.models.User):
+                The user who closed the review request.
+
+            close_type (unicode):
+                How the review request was closed. This is one of
+                :py:ref:`reviewboard.reviews.models.ReviewRequest.SUBMITTED` or
+                :py:ref:`reviewboard.reviews.models.ReviewRequest.DISCARDED`.
+
+        Returns:
+            set: The desired TO field.
+        """
+        return to_field
+
+    def get_cc_field(self, cc_field, review_request, user, close_type):
+        """Return the CC field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`django.contrib.auth.models.User`s and
+                :py:class:`reviewboard.reviews.models.Group`s. that will
+                receive a carbon copy of the e-mail.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that was published.
+
+            user (django.contrib.auth.models.User):
+                The user who closed the review request.
+
+            close_type (unicode):
+                How the review request was closed. This is one of
+                ``ReviewRequest.SUBMITTED`` or ``ReviewRequest.DISCARDED``.
+
+        Returns:
+            set: The desired CC field.
+        """
+        return cc_field
+
+
+class ReviewRequestPublishedEmailHook(EmailHook):
+    """A hook for changing the recipients of review request publishing e-mails.
+    """
+
+    def __init__(self, extension):
+        """Initialize the ReviewRequestPublishedEmailHook.
+
+        Args:
+            extension (djablets.extensions.Extension):
+                The extension registering this hook.
+        """
+        super(ReviewRequestPublishedEmailHook, self).__init__(
+            extension,
+            signals=[review_request_published])
+
+    def get_to_field(self, to_field, review_request, user):
+        """Return the TO field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`django.contrib.auth.models.User`s and
+                :py:class:`reviewboard.reviews.models.Group`s. that will
+                receive the e-mail.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that was published.
+
+            user (django.contrib.auth.models.User):
+                The user who published the review request.
+
+        Returns:
+            set: The desired TO field.
+        """
+        return to_field
+
+    def get_cc_field(self, cc_field, review_request, user):
+        """Return the CC field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`django.contrib.auth.models.User`s and
+                :py:class:`reviewboard.reviews.models.Group`s. that will
+                receive a carbon copy of the e-mail.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that was published.
+
+            user (django.contrib.auth.models.User):
+                The user who published the review request.
+
+        Returns:
+            set: The desired CC field.
+        """
+        return cc_field
+
+
 __all__ = [
     'AccountPageFormsHook',
     'AccountPagesHook',
@@ -512,6 +847,7 @@ __all__ = [
     'DataGridColumnsHook',
     'DataGridSidebarItemsHook',
     'DiffViewerActionHook',
+    'EmailHook',
     'ExtensionHook',
     'FileAttachmentThumbnailHook',
     'HeaderActionHook',
@@ -520,9 +856,13 @@ __all__ = [
     'NavigationBarHook',
     'ReviewRequestActionHook',
     'ReviewRequestApprovalHook',
+    'ReviewRequestClosedEmailHook',
     'ReviewRequestDropdownActionHook',
     'ReviewRequestFieldSetsHook',
     'ReviewRequestFieldsHook',
+    'ReviewRequestPublishedEmailHook',
+    'ReviewPublishedEmailHook',
+    'ReviewReplyPublishedEmailHook',
     'ReviewUIHook',
     'SignalHook',
     'TemplateHook',
