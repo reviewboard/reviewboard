@@ -45,10 +45,10 @@ def console_email_backend():
     settings.EMAIL_BACKEND = \
         'django.core.mail.backends.console.EmailBackend'
 
-    yield
-
-    settings.EMAIL_BACKEND = old_backend
-
+    try:
+        yield
+    finally:
+        settings.EMAIL_BACKEND = old_backend
 
 
 class EmailTestHelper(object):
