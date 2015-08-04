@@ -642,6 +642,11 @@ RB.ReviewDialogView = Backbone.View.extend({
      * and then remove the dialog itself.
      */
     remove: function() {
+        if (this._publishButton) {
+            this._publishButton.remove();
+            this._publishButton = null;
+        }
+
         _.each(this._hookViews, function(hookView) {
             hookView.remove();
         });
@@ -857,12 +862,7 @@ RB.ReviewDialogView = Backbone.View.extend({
                 stretchX: true,
                 stretchY: true,
                 buttons: [
-                    $('<input type="button"/>')
-                        .val(gettext('Publish Review'))
-                        .click(_.bind(function() {
-                            this._saveReview(true);
-                            return false;
-                        }, this)),
+                    $('<div id="review-form-publish-split-btn-container" />'),
 
                     $('<input type="button"/>')
                         .val(gettext('Discard Review'))
@@ -881,6 +881,32 @@ RB.ReviewDialogView = Backbone.View.extend({
             .trigger('ready');
 
         /* Must be done after the dialog is rendered. */
+
+        this._publishButton = new RB.SplitButtonView({
+            el: $('#review-form-publish-split-btn-container'),
+            text: gettext('Publish Review'),
+            click: _.bind(function() {
+                this._saveReview(true);
+                return false;
+            }, this),
+            direction: 'up',
+            zIndex: $('#review-form-modalbox').css('zIndex'),
+            alternatives: [
+                {
+                    text: gettext('... to Submitter Only'),
+                    click: _.bind(function() {
+                        this._saveReview(true, {
+                            publishToSubmitterOnly: true
+                        });
+                        this.close();
+                        return false;
+                    }, this)
+                }
+            ]
+        });
+
+        this._publishButton.render();
+
         this._$buttons = this._$dlg.modalBox('buttons');
     },
 
@@ -928,8 +954,14 @@ RB.ReviewDialogView = Backbone.View.extend({
      * If requested, this will also publish the review (saving with
      * public=true).
      */
-    _saveReview: function(publish) {
+    _saveReview: function(publish, options) {
         var madeChanges = false;
+
+        options = options || {};
+
+        if (publish && options.publishToSubmitterOnly) {
+            this.model.set('publishToSubmitterOnly', true);
+        }
 
         this._$buttons.prop('disabled');
 
@@ -967,7 +999,7 @@ RB.ReviewDialogView = Backbone.View.extend({
 
                 saveFunc.call(this.model, {
                     attrs: ['public', 'shipIt', 'forceTextType',
-                            'includeTextTypes'],
+                            'includeTextTypes', 'publishToSubmitterOnly'],
                     success: function() {
                         $.funcQueue('reviewForm').next();
                     },

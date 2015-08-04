@@ -196,6 +196,11 @@ RB.ReviewablePageView = Backbone.View.extend({
         return this;
     },
 
+    remove: function() {
+        this.draftReviewBanner.remove();
+        _super(this).remove.call(this);
+    },
+
     /*
      * Registers for update notifications to the review request from the
      * server.

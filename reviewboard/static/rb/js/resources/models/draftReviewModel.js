@@ -7,6 +7,25 @@
  * existing draft if one exists, and return 404 if not.
  */
 RB.DraftReview = RB.Review.extend(_.extend({
+    defaults: function() {
+        return _.defaults({
+            publishToSubmitterOnly: false
+        }, RB.Review.prototype.defaults());
+    },
+
+    attrToJsonMap: _.defaults({
+        publishToSubmitterOnly: 'publish_to_submitter_only'
+    }, RB.Review.prototype.attrToJsonMap),
+
+    serializedAttrs: [
+        'publishToSubmitterOnly'
+    ].concat(RB.Review.prototype.serializedAttrs),
+
+    serializers: _.defaults({
+        publishToSubmitterOnly: RB.JSONSerializers.onlyIfValue
+    }, RB.Review.prototype.serializers),
+
+
     /*
      * Publishes the review.
      *

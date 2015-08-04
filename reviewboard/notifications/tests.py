@@ -45,10 +45,10 @@ def console_email_backend():
     settings.EMAIL_BACKEND = \
         'django.core.mail.backends.console.EmailBackend'
 
-    yield
-
-    settings.EMAIL_BACKEND = old_backend
-
+    try:
+        yield
+    finally:
+        settings.EMAIL_BACKEND = old_backend
 
 
 class EmailTestHelper(object):
@@ -313,6 +313,35 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         siteconfig.set("mail_send_review_close_mail", False)
         siteconfig.save()
         load_site_config()
+
+    def test_review_to_submitter_only(self):
+        """Test that e-mails from reviews published to the submitter only will
+        only go to the submitter and the reviewer
+        """
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('mail_send_review_mail', True)
+        siteconfig.save()
+
+        review_request = self.create_review_request(public=True, publish=False)
+        review_request.target_people = [User.objects.get(username='grumpy')]
+        review_request.save()
+
+        review = self.create_review(review_request=review_request,
+                                    publish=False)
+
+        review.publish(to_submitter_only=True)
+        self.assertEqual(len(mail.outbox), 1)
+
+        message = mail.outbox[0]
+
+        self.assertEqual(message.cc, [])
+        self.assertEqual(len(message.to), 2)
+
+        self.assertEqual(
+            set(message.to),
+            set([get_email_address_for_user(review.user),
+                 get_email_address_for_user(review_request.submitter)]))
+
 
     def test_review_reply_email(self):
         """Testing sending an e-mail when replying to a review"""

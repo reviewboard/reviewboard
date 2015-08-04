@@ -46,9 +46,11 @@ review_request_reopening = Signal(providing_args=['user', 'review_request'])
 review_request_reopened = Signal(providing_args=['user', 'review_request'])
 
 
-review_publishing = Signal(providing_args=['user', 'review'])
+review_publishing = Signal(providing_args=['user', 'review',
+                                           'to_submitter_only'])
 
-review_published = Signal(providing_args=['user', 'review'])
+review_published = Signal(providing_args=['user', 'review',
+                                          'to_submitter_only'])
 
 reply_publishing = Signal(providing_args=['user', 'reply'])
 
