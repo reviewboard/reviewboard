@@ -19,6 +19,7 @@ CodeMirrorWrapper = Backbone.View.extend({
         var codeMirrorOptions = {
             mode: 'gfm',
             lineWrapping: true,
+            electricChars: false,
             extraKeys: {
                 'Home': 'goLineLeft',
                 'End': 'goLineRight',
