@@ -18,6 +18,7 @@ CodeMirrorWrapper = Backbone.View.extend({
     initialize: function(options) {
         var codeMirrorOptions = {
             mode: 'gfm',
+            theme: 'rb default',
             lineWrapping: true,
             electricChars: false,
             extraKeys: {

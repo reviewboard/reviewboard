@@ -10,10 +10,12 @@
  * Pygments: Comment
  * Pygments: Comment.Multiline
  * Pygments: Comment.Single
+ * CodeMirror: Comment
  */
 .c, .com,
 .cm,
-.c1 {
+.c1,
+.cm-s-rb .cm-comment {
   color: #0000C0;
   font-style: italic;
 }
@@ -23,18 +25,21 @@
   border: 1px solid #FF0000;
 }
 
-/* Pygments: Keyword */
-.k {
-	font-weight: bold;
-}
-
-/* Pygments: Operator */
-.o {
+/*
+ * Pygments: Operator
+ * CodeMirror: Operator
+ */
+.o,
+.cm-s-rb .cm-operator {
   color: black;
 }
 
-/* Pygments: Comment.Preproc */
-.cp {
+/*
+ * Pygments: Comment.Preproc
+ * CodeMirror: Meta (pre-processor, etc.)
+ */
+.cp,
+.cm-s-rb .cm-meta {
   color: #612B00;
 }
 
@@ -96,8 +101,20 @@
   font-weight: bold;
 }
 
-/* Pygments: Keyword.Declaration */
-.kd {
+/*
+ * Pygments: Keyword
+ * Pygments: Keyword.Constant
+ * Pygments: Keyword.Declaration
+ * Pygments: Keyword.Namespace
+ * CodeMirror: Keyword (var, function)
+ * CodeMirror: CSS Property
+ */
+.k,
+.kc,
+.kd,
+.kn,
+.cm-s-rb .cm-keyword,
+.cm-s-rb .cm-property {
   font-weight: bold;
 }
 
@@ -116,14 +133,24 @@
   font-weight: bold;
 }
 
-/* Pygments: Literal.Number */
-.m, .lit {
+/*
+ * Pygments: Literal.Number
+ * CodeMirror: Number
+ */
+.m, .lit,
+.cm-s-rb .cm-number {
   color: darkred;
   font-weight: bold;
 }
 
-/* Pygments: Literal.String */
-.s, .str, .atv {
+/*
+ * Pygments: Literal.String
+ * Pygments: Literal.String.Doc
+ * CodeMirror: String
+ */
+.s, .str, .atv,
+.sd,
+.cm-s-rb .cm-string {
   color: darkred;
 }
 
@@ -132,8 +159,12 @@
   color: #000080;
 }
 
-/* Pygments: Name.Builtin */
-.nb {
+/*
+ * Pygments: Name.Builtin
+ * CodeMirror: Builtin Keyword
+ */
+.nb,
+.cm-s-rb .cm-builtin {
   font-weight: bold;
 }
 
@@ -180,8 +211,12 @@
   color: black;
 }
 
-/* Pygments: Name.Tag */
-.nt, .tag, .tag {
+/*
+ * Pygments: Name.Tag
+ * CodeMirror: Tag
+ */
+.nt, .tag, .tag,
+.cm-s-rb .cm-tag {
   color: #000080;
   font-weight: bold;
 }
@@ -218,11 +253,6 @@
 /* Pygments: Literal.String.Char */
 .sc {
   color: #BB4444;
-}
-
-/* Pygments: Literal.String.Doc */
-.sd {
-  color: #0000C0;
 }
 
 /* Pygments: Literal.String.Double */
@@ -267,8 +297,12 @@
   color: #B8860B;
 }
 
-/* Pygments: Name.Builtin.Pseudo */
-.bp {
+/*
+ * Pygments: Name.Builtin.Pseudo
+ * CodeMirror: Variable 2 (self, this, etc.)
+ */
+.bp,
+.cm-s-rb .cm-variable-2 {
   color: darkred;
   font-weight: bold;
 }
@@ -293,6 +327,7 @@
   color: #666666;
 }
 
+/* Pygments: Comment.Special */
 .cs {
   color: red;
   font-weight: bold;
