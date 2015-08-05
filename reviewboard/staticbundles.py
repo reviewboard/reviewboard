@@ -337,7 +337,7 @@ PIPELINE_CSS = dict({
             'rb/css/pages/text-review-ui.less',
             'rb/css/pages/reviews.less',
             'rb/css/ui/dnd-uploader.less',
-            'rb/css/syntax.css',
+            'rb/css/syntax.less',
         ),
         'output_filename': 'rb/css/reviews.min.css',
         'absolute_paths': False,
