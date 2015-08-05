@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block extrahead %}
+{{block.super}}
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+{% endblock %}
+
+{% block content %}
+<div id="auth_container">
+ {% block auth_content %}{% endblock %}
+</div>
+{% endblock content %}

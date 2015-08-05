@@ -338,7 +338,6 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             **kwargs)
 
     def create_review_request(self, with_local_site=False, local_site=None,
-                              with_diffs=False,
                               summary='Test Summary',
                               description='Test Description',
                               testing_done='Testing',

@@ -1,12 +1,28 @@
-codemirror-3.23.min.js is built with the minifier at
-http://codemirror.net/doc/compress.html
+We are using CodeMirror 5.5 (saved as codemirror-5.5.min.js), built locally
+from a source tree.
 
-It contains the following modules:
+If you make any modifications to the list of modules, or bump the version, you
+must update this file!
+
+Our build of CodeMirror is built with the following modules:
 
 Modes:
+  * coffeescript.js
+  * css.js
   * gfm.js
+  * go.js
+  * htmlmixed.js
   * javascript.js
+  * perl.js
+  * php.js
+  * python.js
+  * rst.js
+  * ruby.js
+  * shell.js
+  * sql.js
   * markdown.js
+  * xml.js
+  * yaml.js
 
 Add-ons:
   * continuelist.js
@@ -14,3 +30,11 @@ Add-ons:
   * lint.js
   * matchbrackets.js
   * overlay.js
+
+To build, download the CodeMirror source for the proper version and run:
+
+./bin/compress --local `which uglifyjs` \
+    codemirror meta coffeescript css gfm go htmlmixed javascript perl php python \
+    rst ruby shell sql markdown xml yaml \
+    continuelist json-lint lint matchbrackets overlay \
+    > codemirror-5.5.min.js

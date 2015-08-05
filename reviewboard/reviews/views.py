@@ -905,6 +905,8 @@ class ReviewsDiffViewerView(DiffViewerView):
         context = super(ReviewsDiffViewerView, self).get_context_data(
             *args, **kwargs)
 
+        siteconfig = SiteConfiguration.objects.get_current()
+
         context.update({
             'close_description': close_description,
             'close_description_rich_text': close_description_rich_text,
@@ -918,6 +920,7 @@ class ReviewsDiffViewerView(DiffViewerView):
             'all_file_attachments': file_attachments,
             'screenshots': screenshots,
             'comments': comments,
+            'send_email': siteconfig.get('mail_send_review_mail'),
         })
 
         context.update(
