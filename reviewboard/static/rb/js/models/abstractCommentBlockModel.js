@@ -44,10 +44,10 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
                 comment.text = $("<div/>").html(comment.text).text();
 
                 if (comment.localdraft) {
-                    comment_attr['text'] = comment.text;
-                    comment_attr['issueOpened'] = comment.issue_opened;
-                    comment_attr['issueStatus'] = comment.issue_status;
-                    comment_attr['html'] = comment.html;
+                    comment_attr.text = comment.text;
+                    comment_attr.issueOpened = comment.issue_opened;
+                    comment_attr.issueStatus = comment.issue_status;
+                    comment_attr.html = comment.html;
 
                     this.ensureDraftComment(comment.comment_id, comment_attr);
                 } else {

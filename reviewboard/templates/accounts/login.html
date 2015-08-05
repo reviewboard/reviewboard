@@ -1,60 +1,58 @@
-{% extends "base.html" %}
+{% extends "accounts/base.html" %}
 {% load djblets_deco djblets_extensions djblets_utils i18n %}
 
 {% block title %}{% trans "Log In" %}{% endblock %}
 
-{% block content %}
-<div id="auth_container">
+{% block auth_content %}
 {%  template_hook_point "before-login-form" %}
 
- <div class="auth-header">
-  <h1>{% trans "Log in to Review Board" %}</h1>
+<div class="auth-header">
+ <h1>{% trans "Log in to Review Board" %}</h1>
 {%  if auth_backends.0.login_instructions %}
-  <p>{{auth_backends.0.login_instructions}}</p>
+ <p>{{auth_backends.0.login_instructions}}</p>
 {%  endif %}
 {%  if form.errors %}
 {%   errorbox %}{{form.non_field_errors}}{% enderrorbox %}
 {%  endif %}
- </div>
+</div>
 
- <form method="post" action="." class="auth-section main-auth-section"
-       id="login_form">
+<form method="post" action="." class="auth-section main-auth-section"
+      id="login_form">
 {%  block hidden_fields %}
-  <input type="hidden" name="next" value="{{next}}" />
+ <input type="hidden" name="next" value="{{next}}" />
   {% csrf_token %}
 {%  endblock %}
-  <div class="auth-form-row auth-field-row">
-   {{form.username.label_tag}}
-   {{form.username}}
-   {{form.errors.username}}
-  </div>
+ <div class="auth-form-row auth-field-row">
+  {{form.username.label_tag}}
+  {{form.username}}
+  {{form.errors.username}}
+ </div>
 
-  <div class="auth-form-row auth-field-row">
-   {{form.password.label_tag}}
-   {{form.password}}
-   {{form.errors.password}}
-  </div>
+ <div class="auth-form-row auth-field-row">
+  {{form.password.label_tag}}
+  {{form.password}}
+  {{form.errors.password}}
+ </div>
 
-  <div class="auth-form-row">
-   <div class="auth-button-container">
-    <input type="submit" class="primary" value="{% trans "Log in" %}" />
-   </div>
+ <div class="auth-form-row">
+  <div class="auth-button-container">
+   <input type="submit" class="primary" value="{% trans "Log in" %}" />
   </div>
+ </div>
 
-  <div class="auth-form-row login-links">
+ <div class="auth-form-row login-links">
 {%  if auth_backends.0.supports_registration %}
 {%   if siteconfig_settings.auth_enable_registration %}
-   <p>
-    <a href="{% url 'register' %}">{% trans "Create an account" %}</a>
-   </p>
+  <p>
+   <a href="{% url 'register' %}">{% trans "Create an account" %}</a>
+  </p>
 {%   endif %}
-   <p>
-    <a href="{% url 'recover' %}">{% trans "Forgot your password?" %}</a>
-   </p>
+  <p>
+   <a href="{% url 'recover' %}">{% trans "Forgot your password?" %}</a>
+  </p>
 {%  endif %}
-  </div>
- </form>
+ </div>
+</form>
 
 {%  template_hook_point "after-login-form" %}
-</div>
-{% endblock %}
+{% endblock auth_content %}

@@ -68,12 +68,7 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
      * Renders the view.
      */
     renderContent: function() {
-        var $fileHeader,
-            $tr,
-            $td,
-            $revisionLabel,
-            $revisionSelector,
-            hasDiff = this.model.get('diffRevision') !== null;
+        var $fileHeader;
 
         this._$viewTabs = this.$('.text-review-ui-views li');
 

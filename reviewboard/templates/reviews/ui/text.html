@@ -6,7 +6,7 @@
 
 {% block review_ui_box_content_inner %}
  <div id="diffs">
-  <div class="diff-container text-review-ui {{review_ui.extra_css_classes|join:' '}}">
+  <div class="diff-container text-review-ui {{review_ui.extra_css_classes|join:' '}}{%  if review_ui.can_render_text and not diff_type_mismatch %} text-review-ui-has-tabs{% endif %}">
    <div class="review-ui-header">
 {%  if num_revisions > 1 %}
     <div id="revision_label"></div>

@@ -1,0 +1,335 @@
+/*
+ * Styles the syntax-highlighted code for various languages, using both the
+ * Pygments and CodeMirror CSS classes for styles.
+ *
+ * Each section will document the class names in order, naming them as per
+ * Pygments/CodeMirror's conventions.
+ */
+
+/*
+ * Pygments: Comment
+ * Pygments: Comment.Multiline
+ * Pygments: Comment.Single
+ * CodeMirror: Comment
+ */
+.c, .com,
+.cm,
+.c1,
+.cm-s-rb .cm-comment {
+  color: #0000C0;
+  font-style: italic;
+}
+
+/* Pygments: Error */
+.err {
+  border: 1px solid #FF0000;
+}
+
+/*
+ * Pygments: Operator
+ * CodeMirror: Operator
+ */
+.o,
+.cm-s-rb .cm-operator {
+  color: black;
+}
+
+/*
+ * Pygments: Comment.Preproc
+ * CodeMirror: Meta (pre-processor, etc.)
+ */
+.cp,
+.cm-s-rb .cm-meta {
+  color: #612B00;
+}
+
+/* Pygments: Generic.Deleted */
+.gd {
+  color: #A00000;
+}
+
+/* Pygments: Generic.Emph */
+.ge {
+  font-style: italic;
+}
+
+/* Pygments: Generic.Error */
+.gr {
+  color: #FF0000;
+}
+
+/* Pygments: Generic.Heading */
+.gh {
+  color: #000080;
+  font-weight: bold;
+}
+
+/* Pygments: Generic.Inserted */
+.gi {
+  color: #004000;
+}
+
+/* Pygments: Generic.Output */
+.go {
+  color: #808080;
+}
+
+/* Pygments: Generic.Prompt */
+.gp {
+  color: #000080;
+  font-weight: bold;
+}
+
+/* Pygments: Generic.Strong */
+.gs {
+  font-weight: bold;
+}
+
+/* Pygments: Generic.Subheading */
+.gu {
+  color: #800080;
+  font-weight: bold;
+}
+
+/* Pygments: Generic.Traceback */
+.gt {
+  color: #0040D0;
+}
+
+/* Pygments: Keyword.Constant */
+.kc {
+  font-weight: bold;
+}
+
+/*
+ * Pygments: Keyword
+ * Pygments: Keyword.Constant
+ * Pygments: Keyword.Declaration
+ * Pygments: Keyword.Namespace
+ * CodeMirror: Keyword (var, function)
+ * CodeMirror: CSS Property
+ */
+.k,
+.kc,
+.kd,
+.kn,
+.cm-s-rb .cm-keyword,
+.cm-s-rb .cm-property {
+  font-weight: bold;
+}
+
+/* Pygments: Keyword.Pseudo */
+.kp {
+  color: #AA22FF;
+}
+
+/* Pygments: Keyword.Reserved */
+.kr, .kwd {
+  font-weight: bold;
+}
+
+/* Pygments: Keyword.Type */
+.kt {
+  font-weight: bold;
+}
+
+/*
+ * Pygments: Literal.Number
+ * CodeMirror: Number
+ */
+.m, .lit,
+.cm-s-rb .cm-number {
+  color: darkred;
+  font-weight: bold;
+}
+
+/*
+ * Pygments: Literal.String
+ * Pygments: Literal.String.Doc
+ * CodeMirror: String
+ */
+.s, .str, .atv,
+.sd,
+.cm-s-rb .cm-string {
+  color: darkred;
+}
+
+/* Pygments: Name.Attribute */
+.na, .atn {
+  color: #000080;
+}
+
+/*
+ * Pygments: Name.Builtin
+ * CodeMirror: Builtin Keyword
+ */
+.nb,
+.cm-s-rb .cm-builtin {
+  font-weight: bold;
+}
+
+/* Pygments: Name.Class */
+.nc {
+  color: black;
+}
+
+/* Pygments: Name.Constant */
+.no {
+  color: #880000;
+}
+
+/* Pygments: Name.Decorator */
+.nd {
+  color: darkBlue;
+  font-weight: bold;
+}
+
+/* Pygments: Name.Entity */
+.ni {
+  color: #999999;
+  font-weight: bold
+}
+
+/* Pygments: Name.Exception */
+.ne {
+  color: #D2413A;
+  font-weight: bold;
+}
+
+/* Pygments: Name.Function */
+.nf, .fun {
+  color: black;
+}
+
+/* Pygments: Name.Label */
+.nl {
+  color: black;
+}
+
+/* Pygments: Name.Namespace */
+.nn {
+  color: black;
+}
+
+/*
+ * Pygments: Name.Tag
+ * CodeMirror: Tag
+ */
+.nt, .tag, .tag,
+.cm-s-rb .cm-tag {
+  color: #000080;
+  font-weight: bold;
+}
+
+/* Pygments: Name.Variable */
+.nv, .dec, .var {
+  color: black;
+}
+
+/* Pygments: Operator.Word */
+.ow {
+  font-weight: bold;
+}
+
+/*
+ * Pygments: Literal.Number.Float
+ * Pygments: Literal.Number.Hex
+ * Pygments: Literal.Number.Integer
+ * Pygments: Literal.Number.Oct
+ */
+.mf,
+.mh,
+.mi,
+.mo {
+  color: darkred;
+  font-weight: bold;
+}
+
+/* Pygments: Literal.String.Backtick */
+.sb {
+  color: #BB4444;
+}
+
+/* Pygments: Literal.String.Char */
+.sc {
+  color: #BB4444;
+}
+
+/* Pygments: Literal.String.Double */
+.s2 {
+  color: #BB4444;
+}
+
+/* Pygments: Literal.String.Escape */
+.se {
+  color: #BB6622;
+  font-weight: bold;
+}
+
+/* Pygments: Literal.String.Heredoc */
+.sh {
+  color: #BB4444;
+}
+
+/* Pygments: Literal.String.Interpol */
+.si {
+  color: red;
+  font-weight: bold;
+}
+
+/* Pygments: Literal.String.Other */
+.sx {
+  color: #008000;
+}
+
+/* Pygments: Literal.String.Regex */
+.sr {
+  color: #BB6688;
+}
+
+/* Pygments: Literal.String.Single */
+.s1 {
+  color: #BB4444;
+}
+
+/* Pygments: Literal.String.Symbol */
+.ss {
+  color: #B8860B;
+}
+
+/*
+ * Pygments: Name.Builtin.Pseudo
+ * CodeMirror: Variable 2 (self, this, etc.)
+ */
+.bp,
+.cm-s-rb .cm-variable-2 {
+  color: darkred;
+  font-weight: bold;
+}
+
+/* Pygments: Name.Variable.Class */
+.vc {
+  color: #B8860B;
+}
+
+/* Pygments: Name.Variable.Global */
+.vg {
+  color: #B8860B;
+}
+
+/* Pygments: Name.Variable.Instance */
+.vi {
+  color: #B8860B;
+}
+
+/* Pygments: Literal.Number.Integer.Long */
+.il {
+  color: #666666;
+}
+
+/* Pygments: Comment.Special */
+.cs {
+  color: red;
+  font-weight: bold;
+  font-style: italic;
+}

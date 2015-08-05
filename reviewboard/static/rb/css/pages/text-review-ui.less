@@ -9,20 +9,27 @@
 
   .border-radius(@box-border-radius);
 
+  &.text-review-ui-has-tabs {
+    .sidebyside thead th {
+      background: @diff-file-color;
+    }
+  }
+
   .review-ui-header {
     /*
      * We set this instead of turning off the border to keep the gradient from
      * stopping too soon on Chrome and Firefox.
      */
     border-bottom-color: transparent;
+    min-height: 0;
 
     .text-review-ui-views {
       border-bottom: 1px @diff-file-border-color solid;
 
       ul {
         list-style: none;
-        margin: 1em 0 0 5em;
-        padding: 0;
+        margin: 0;
+        padding: 1em 0 0 5em;
 
         li {
           background: lighten(@diff-file-color, 2%);
@@ -86,6 +93,10 @@
   .sidebyside {
     .border-radius(0 0 @box-border-radius @box-border-radius);
     margin-bottom: 0;
+
+    thead th {
+      background: @review-ui-header-bg;
+    }
   }
 }
 

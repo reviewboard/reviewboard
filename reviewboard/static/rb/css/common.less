@@ -318,6 +318,33 @@
       margin: 0 0 1em 0;;
     }
   }
+
+  .on-mobile-medium-screen-720({
+    /* Waste less vertical space on mobile devices. */
+    margin-top: 3em;
+
+    .auth-form-row {
+      /* Change the labels to appear above the fields and not to the side. */
+      padding-left: 0;
+
+      &.auth-field-row {
+        label {
+          display: block;
+          float: none;
+          padding: 0.5em 0;
+          text-align: left;
+          width: auto;
+        }
+      }
+    }
+
+    .auth-section {
+      &.main-auth-section {
+        /* Reset the margin that was providing room for the side labels. */
+        margin-left: 0;
+      }
+    }
+  });
 }
 
 #auth_container #login_form {

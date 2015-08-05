@@ -70,7 +70,7 @@ class BaseSubmitterColumn(Column):
         """Render the user's name and gravatar as HTML."""
         siteconfig = SiteConfiguration.objects.get_current()
 
-        if siteconfig.settings.get('integration_gravatars'):
+        if siteconfig.get('integration_gravatars'):
             gravatar_url = get_gravatar_url(state.datagrid.request, user,
                                             self.GRAVATAR_SIZE)
         else:

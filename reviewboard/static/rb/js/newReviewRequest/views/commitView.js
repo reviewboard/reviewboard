@@ -52,8 +52,7 @@ RB.CommitView = Backbone.View.extend({
      */
     render: function() {
         var commitID = this.model.get('id'),
-            date = this.model.get('date'),
-            details;
+            date = this.model.get('date');
 
         if (!this.model.get('accessible')) {
             this.$el.addClass('disabled');
@@ -115,7 +114,6 @@ RB.CommitView = Backbone.View.extend({
     }
 }, {
     strings: {
-        COMMIT_NOT_ACCESSIBLE:
-            gettext('(not accessible on this repository)'),
+        COMMIT_NOT_ACCESSIBLE: gettext('(not accessible on this repository)')
     }
 });
