@@ -11,6 +11,7 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         this._replyEditorViews = [];
         this._draftBannerShown = false;
         this._$banners = null;
+        this._bannerView = null;
         this._$boxStatus = null;
         this._$fixItLabel = null;
         this._openIssueCount = 0;
@@ -143,14 +144,14 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
      */
     _showReplyDraftBanner: function() {
         if (!this._draftBannerShown) {
-            var banner = new RB.ReviewReplyDraftBannerView({
+            this._bannerView = new RB.ReviewReplyDraftBannerView({
                 model: this._reviewReply,
                 $floatContainer: this.$('.box'),
                 noFloatContainerClass: 'collapsed',
                 showSendEmail: this.options.editorData.showSendEmail
             });
 
-            banner.render().$el.appendTo(this._$banners);
+            this._bannerView.render().$el.appendTo(this._$banners);
             this._draftBannerShown = true;
             this.$el.addClass('has-draft');
         }
@@ -160,9 +161,12 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
      * Hides the reply draft banner.
      */
     _hideReplyDraftBanner: function() {
-        this._$banners.children().remove();
-        this._draftBannerShown = false;
-        this.$el.removeClass('has-draft');
+        if (this._draftBannerShown) {
+            this._bannerView.remove();
+            this._bannerView = null;
+            this._draftBannerShown = false;
+            this.$el.removeClass('has-draft');
+        }
     },
 
     /*
