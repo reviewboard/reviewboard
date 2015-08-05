@@ -94,8 +94,9 @@ suite('rb/views/ReviewReplyDraftBannerView', function() {
                 $('.publish-button').click();
 
                 expect(reviewReply.publish).toHaveBeenCalled();
-                expect(reviewReply.publish.calls[0].args[0].trivial).toBe(true);
-            })
+                expect(reviewReply.publish.calls[0].args[0].trivial)
+                    .toBe(true);
+            });
         });
 
         it('Without Send E-Mail shown', function() {

@@ -31,7 +31,6 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
             pageEditState = this.options.pageEditState,
             bugTrackerURL = reviewRequest.get('bugTrackerURL'),
             review = this.model,
-            $labelsContainer,
             loadReviewID;
 
         RB.CollapsableBoxView.prototype.render.call(this);
