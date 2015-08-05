@@ -188,7 +188,7 @@ def reply_list(context, entry, comment, context_type, context_id):
         return s
 
     siteconfig = SiteConfiguration.objects.get_current()
-    use_gravatars = siteconfig.settings.get('integration_gravatars')
+    use_gravatars = siteconfig.get('integration_gravatars')
 
     review = entry['review']
 
@@ -205,8 +205,8 @@ def reply_list(context, entry, comment, context_type, context_id):
                                      reply_comment.timestamp,
                                      reply_comment.text,
                                      reply_comment.rich_text,
-                                     reply_comment.pk,
-                                     use_gravatars)
+                                     use_gravatars,
+                                     reply_comment.pk)
     elif context_type == "body_top" or context_type == "body_bottom":
         replies = getattr(review, "public_%s_replies" % context_type)()
 
