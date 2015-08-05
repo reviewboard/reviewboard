@@ -263,7 +263,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
         var $selector = $container.find('td > div').not('.collapse-floater');
 
         if (immediate) {
-            $selector.hide()
+            $selector.hide();
         } else {
             $selector.slideUp('slow');
         }
