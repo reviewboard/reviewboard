@@ -1,0 +1,104 @@
+{% extends base_template_name %}
+{% load compressed djblets_deco djblets_js i18n %}
+
+{% block title %}{{page_title}}{% endblock %}
+
+{% block content %}
+<div class="config-forms-container"{% if pages_id %} id="{{pages_id}}"{% endif %}>
+{%  box "nav config-forms-side-nav" %}
+ <div class="box-head">
+  <h1 class="box-title">{{nav_title}}</h1>
+ </div>
+ <div class="box-main box-foot">
+  <ul>
+{%   for page in pages %}
+{%    if page.is_visible %}
+   <li><a href="#{{page.page_id}}">{{page.page_title}}</a></li>
+{%    endif %}
+{%   endfor %}
+  </ul>
+ </div>
+{%  endbox %}
+
+<div class="config-forms-page-content">
+{%  if messages %}
+ <ul id="messages">
+{%   for message in messages %}
+  <li{% if message.tags %} class="{{message.tags}}"{% endif %}>{{message}}</li>
+{%   endfor %}
+ </ul>
+{%  endif %}
+
+{%  for page in pages %}
+{%   if page.is_visible %}
+ <div class="page" id="page_{{page.page_id}}">
+{{page.render|safe}}
+ </div>
+{%   endif %}
+{%  endfor %}
+{% endblock content %}
+
+{% block css %}
+{{block.super}}
+{%  compressed_css "djblets-config-forms" %}
+{%  for bundle_name in css_bundle_names %}
+{%   compressed_css bundle_name %}
+{%  endfor %}
+{%  for form in forms %}
+{%   for css_bundle_name in form.css_bundle_names %}
+{%    compressed_css css_bundle_name %}
+{%   endfor %}
+{%  endfor %}
+{% endblock css %}
+
+{% block scripts-post %}
+{{block.super}}
+{%  compressed_js "djblets-config-forms" %}
+{%  for bundle_name in js_bundle_names %}
+{%   compressed_js bundle_name %}
+{%  endfor %}
+{%  for form in forms %}
+{%   for js_bundle_name in form.js_bundle_names %}
+{%    compressed_js js_bundle_name %}
+{%   endfor %}
+{%  endfor %}
+
+<script>
+    $(document).ready(function() {
+        var config,
+            configView,
+            formView;
+
+{%  if js_model_class %}
+        config = new {{js_model_class}}({{js_model_data|json_dumps}});
+{%  endif %}
+
+        configView = new {{js_view_class}}({
+            {{js_view_data|json_dumps_items:','}}
+            model: config,
+            el: $('#{{pages_id}}')
+        });
+
+{%  spaceless %}
+{%   for form in forms %}
+{%    if form.js_view_class %}
+        formView = new {{form.js_view_class}}({
+            {{form.get_js_view_data|json_dumps_items:','}}
+{%     if form.js_model_class %}
+            model: new {{form.js_model_class}}({
+                {{form.get_js_model_data|json_dumps_items:','}}
+                config: config
+            },
+{%     endif %}
+            el: $('#form_{{form.form_id}}'),
+            configView: configView
+        });
+        formView.render()
+{%    endif %}
+{%   endfor %}
+{%  endspaceless %}
+
+        configView.render();
+    });
+</script>
+{% endblock scripts-post %}

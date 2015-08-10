@@ -1,0 +1,16 @@
+{% load djblets_forms %}
+{% load djblets_utils %}
+{%    if field.is_hidden %}
+   {{field}}
+{%    else %}
+{%     with field|form_field_has_label_first as label_first %}
+   <div class="form-row{% if not label_first %} checkbox-row{% endif%}{% if field.errors %} error{% endif %}{% if field.name %} field-{{field.name}}{% endif %}" {% if field.name %} id="row-{{field.name}}"{% endif %}>
+    {{field.errors}}
+    {% if not label_first %}{{field}}{% endif %}
+    {% if not form.fields_no_label %}{% label_tag field %}{% endif %}
+    {% if label_first %}{{field}}{% endif %}
+    {% if field.help_text %}<p class="help">{{field.help_text|safe}}</p>{% endif %}
+    {% if form.disabled_reasons|default:''|contains:field.name %}<p class="disabled-reason">{{form.disabled_reasons|getitem:field.name|safe}}</p>{% endif %}
+   </div>
+{%     endwith %}
+{%    endif %}

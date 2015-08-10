@@ -1,0 +1,2 @@
+http://downloads.reviewboard.org/mirror/
+http://downloads.reviewboard.org/releases/Djblets/0.8/

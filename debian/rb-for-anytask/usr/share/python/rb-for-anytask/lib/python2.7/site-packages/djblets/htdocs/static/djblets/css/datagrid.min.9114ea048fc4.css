@@ -1,0 +1,308 @@
+.datagrid {
+  border-collapse: collapse;
+  width: 100%;
+}
+.datagrid tr {
+  background-color: white;
+}
+.datagrid tr.even {
+  background-color: #F2F2F2;
+}
+.datagrid tr:hover {
+  background-color: #d4e0f3;
+}
+.datagrid tr:hover.headers {
+  background-color: transparent;
+}
+.datagrid td {
+  line-height: 1.4em;
+  padding: 4px;
+}
+.datagrid td a {
+  color: black;
+  text-decoration: none;
+}
+.datagrid th.day {
+  background-color: #E9E9E9;
+  border-bottom: 1px #999999 solid;
+}
+.datagrid-header {
+  background: url("../images/datagrid/header_bg.035aafc0d7fd.png") repeat-x bottom left;
+  border-top: 1px #999999 solid;
+  border-bottom: 1px #999999 solid;
+  border-right: 1px #CCCCCC solid;
+  color: black;
+  cursor: pointer;
+  font-weight: bold;
+  padding: 4px;
+  text-align: left;
+  white-space: nowrap;
+}
+.datagrid-header:hover {
+  background: url("../images/datagrid/header_bg_primary.51e17284d97c.png") repeat-x bottom left;
+}
+.datagrid-header:hover a {
+  text-decoration: underline;
+}
+.datagrid-header a {
+  color: black;
+  text-decoration: none;
+}
+.datagrid-header a.unsort {
+  color: #444444;
+}
+.datagrid-header a:hover {
+  text-decoration: underline;
+}
+.datagrid-header img,
+.datagrid-header div {
+  vertical-align: middle;
+}
+.datagrid-header-drag {
+  border: 1px #999999 solid;
+  border-top: 0;
+}
+.edit-columns {
+  width: 1.2em;
+}
+/****************************************************************************
+ * Titles
+ ****************************************************************************/
+.datagrid-title,
+.datagrid-titlebox {
+  background-color: #a2bedc;
+  border-bottom: 1px #728eac solid;
+  margin: 0;
+  padding: 5px 10px 5px 5px;
+}
+.datagrid-titlebox h1 {
+  display: inline;
+  font-size: 120%;
+  padding-right: 10px;
+}
+.datagrid-titlebox ul {
+  list-style: none;
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+.datagrid-titlebox ul li {
+  display: inline;
+}
+.datagrid-titlebox ul li a {
+  color: #0000CC;
+}
+/****************************************************************************
+ * Paginator
+ ****************************************************************************/
+.datagrid-wrapper .paginator {
+  padding: 8px 4px 4px 4px;
+}
+.datagrid-wrapper .paginator .current-page {
+  font-weight: bold;
+  padding: 2px 6px;
+}
+.datagrid-wrapper .paginator .current-letter {
+  border: 1px solid #CCCCCC;
+  background-color: #d4e0f3;
+  padding: 2px 6px;
+  margin-right: 4px;
+}
+.datagrid-wrapper .paginator .current-letter a {
+  border: none;
+  color: black;
+  padding: 2px 6px;
+  text-decoration: none;
+}
+.datagrid-wrapper .paginator .current-letter a:hover {
+  border: 1px solid #CCCCCC;
+  background-color: #9BC0F2;
+  color: black;
+}
+.datagrid-wrapper .paginator .current-letter a:visited {
+  color: black;
+}
+.datagrid-wrapper .paginator .page-count {
+  color: #444444;
+  margin-left: 10px;
+}
+.datagrid-wrapper .paginator a {
+  border: 1px solid #CCCCCC;
+  color: black;
+  padding: 2px 6px;
+  text-decoration: none;
+}
+.datagrid-wrapper .paginator a:hover {
+  background-color: #9BC0F2;
+  border-color: #003366;
+  color: black;
+}
+.datagrid-wrapper .paginator a:visited {
+  color: black;
+}
+/****************************************************************************
+ * Column-specific classes
+ ****************************************************************************/
+.datagrid .age1 {
+  background-color: #beedbc;
+  border-left: 1px #8bbd5c solid;
+  border-right: 1px #8bbd5c solid;
+  white-space: nowrap;
+}
+.datagrid .age1:hover {
+  background-color: #a1cb9f;
+}
+.datagrid tr.even .age1 {
+  background-color: #b4e3b2;
+}
+.datagrid .age2 {
+  background-color: #ddfa8e;
+  border-left: 1px #a3e266 solid;
+  border-right: 1px #a3e266 solid;
+  white-space: nowrap;
+}
+.datagrid .age2:hover {
+  background-color: #bcd675;
+}
+.datagrid tr.even .age2 {
+  background-color: #d3f084;
+}
+.datagrid .age3 {
+  background-color: #fdf18c;
+  border-left: 1px #d8c158 solid;
+  border-right: 1px #d8c158 solid;
+  white-space: nowrap;
+}
+.datagrid .age3:hover {
+  background-color: #d9ce74;
+}
+.datagrid tr.even .age3 {
+  background-color: #f3e782;
+}
+.datagrid .age4 {
+  background-color: #fed3a9;
+  border-left: 1px #d49659 solid;
+  border-right: 1px #d49659 solid;
+  white-space: nowrap;
+}
+.datagrid .age4:hover {
+  background-color: #dab38e;
+}
+.datagrid tr.even .age4 {
+  background-color: #f4c99f;
+}
+.datagrid .age5 {
+  background-color: #fab6b6;
+  border-left: 1px #f56363 solid;
+  border-right: 1px #f56363 solid;
+  white-space: nowrap;
+}
+.datagrid .age5:hover {
+  background-color: #d69999;
+}
+.datagrid tr.even .age5 {
+  background-color: #f0acac;
+}
+.datagrid tr.month {
+  background-color: #E9E9E9;
+}
+.datagrid td.summary {
+  cursor: pointer;
+}
+.datagrid-head,
+.datagrid-body {
+  border-collapse: collapse;
+}
+.datagrid-menu {
+  background-color: #F0F0F0;
+  border-left: 1px #303030 solid;
+  border-bottom: 1px #303030 solid;
+  margin: 0;
+  padding: 2px 4px;
+}
+.datagrid-menu td {
+  margin: 2px;
+}
+.datagrid-menu td img,
+.datagrid-menu td div {
+  vertical-align: sub;
+}
+.datagrid-menu td input {
+  vertical-align: baseline;
+}
+.datagrid-menu a {
+  color: black;
+  text-decoration: none;
+}
+.datagrid-menu tr:hover .datagrid-menu-checkbox {
+  background-color: #E0E0E0;
+  cursor: pointer;
+}
+.datagrid-menu tr:hover .datagrid-menu-label {
+  text-decoration: underline;
+}
+.datagrid-menu-checkbox {
+  border: 1px #C0C0C0 solid;
+  height: 1.4em;
+  width: 1.4em;
+}
+.datagrid-menu-checkbox img {
+  display: block;
+  margin: 0 auto;
+  margin-top: 0.4em;
+}
+.datagrid-icon {
+  background-repeat: no-repeat;
+  display: inline-block;
+  overflow: hidden;
+  text-indent: -99999px;
+  vertical-align: middle;
+  background-image: url("../images/datagrid/icons.3a1c03b2e9e4.png");
+  background-image: url("../images/datagrid/icons.3a1c03b2e9e4.png");
+  zoom: 1;
+  *display: inline;
+}
+@media (-webkit-min-device-pixel-ratio: 1.5), (min--moz-device-pixel-ratio: 1.5), (-o-min-device-pixel-ratio: 3/2), (min-resolution: 1.5dppx) {
+  .datagrid-icon {
+    background-image: url("../images/datagrid/icons@2x.4dcc8695afc2.png");
+    background-size: 66px 16px;
+  }
+}
+/*
+ * NOTE: Keep these in the same order as found in the spritesheet.
+ */
+.datagrid-icon-edit {
+  background-position: -1px -1px;
+  width: 18px;
+  height: 14px;
+}
+.datagrid-icon-sort-asc-primary {
+  background-position: -21px -2px;
+  width: 10px;
+  height: 5px;
+}
+.datagrid-icon-sort-desc-primary {
+  background-position: -21px -9px;
+  width: 10px;
+  height: 5px;
+}
+.datagrid-icon-sort-asc-secondary {
+  background-position: -33px -2px;
+  width: 10px;
+  height: 5px;
+}
+.datagrid-icon-sort-desc-secondary {
+  background-position: -33px -9px;
+  width: 10px;
+  height: 5px;
+}
+.datagrid-icon-unsort {
+  background-position: -45px -2px;
+  width: 8px;
+  height: 8px;
+}
+.datagrid-icon-checkmark {
+  background-position: -53px 1px;
+  width: 12px;
+  height: 12px;
+}

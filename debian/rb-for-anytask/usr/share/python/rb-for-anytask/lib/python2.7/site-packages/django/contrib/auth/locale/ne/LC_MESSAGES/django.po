@@ -1,0 +1,274 @@
+# This file is distributed under the same license as the Django package.
+#
+# Translators:
+# Sagar Chalise <chalisesagar@gmail.com>, 2011
+msgid ""
+msgstr ""
+"Project-Id-Version: django-core\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2013-10-09 20:17+0200\n"
+"PO-Revision-Date: 2013-10-10 08:45+0000\n"
+"Last-Translator: Jannis Leidel <jannis@leidel.info>\n"
+"Language-Team: Nepali (http://www.transifex.com/projects/p/django/language/"
+"ne/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: ne\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: admin.py:41
+msgid "Personal info"
+msgstr "व्यक्तिगत विवरण"
+
+#: admin.py:42
+msgid "Permissions"
+msgstr "अनुमति"
+
+#: admin.py:44
+msgid "Important dates"
+msgstr "महत्वपूर्ण मितिहरु"
+
+#: admin.py:132
+msgid "Password changed successfully."
+msgstr "पासवर्ड सफलतापूर्वक फेरिएको छ ।"
+
+#: admin.py:142
+#, python-format
+msgid "Change password: %s"
+msgstr "पासवर्ड फेर्नुहोस : %s"
+
+#: forms.py:33 tests/test_forms.py:261 tests/test_forms.py:266
+#: tests/test_forms.py:407
+msgid "No password set."
+msgstr "पासवर्ड राखिएको छैन ।"
+
+#: forms.py:39 tests/test_forms.py:271 tests/test_forms.py:277
+msgid "Invalid password format or unknown hashing algorithm."
+msgstr ""
+
+#: forms.py:72
+msgid "A user with that username already exists."
+msgstr "त्यो प्रयोगकर्ता नाम भएका व्यक्ति पहिले नै छन् ।"
+
+#: forms.py:73 forms.py:254 forms.py:314
+msgid "The two password fields didn't match."
+msgstr "दुई पासवर्ड मिलेन ।"
+
+#: forms.py:75 forms.py:120
+msgid "Username"
+msgstr "प्रयोगकर्ता नाम "
+
+#: forms.py:77 forms.py:121
+msgid "Required. 30 characters or fewer. Letters, digits and @/./+/-/_ only."
+msgstr "आवश्यक । ३० अक्षर वा कम । अंक, वर्ण र  @/./+/-/_  मात्र उपयुक्त ।"
+
+#: forms.py:80 forms.py:124
+msgid "This value may contain only letters, numbers and @/./+/-/_ characters."
+msgstr "यो मान अंक, वर्ण र  @/./+/-/_  मात्र उपयुक्त छ ।"
+
+#: forms.py:82 forms.py:126 forms.py:153 forms.py:316
+msgid "Password"
+msgstr "पासवर्ड"
+
+#: forms.py:84
+msgid "Password confirmation"
+msgstr "पासवर्ड पुष्टि"
+
+#: forms.py:86
+msgid "Enter the same password as above, for verification."
+msgstr "प्रमाणिकरणको लागि माथी कै पासवर्ड राख्नुहोस ।"
+
+#: forms.py:127
+msgid ""
+"Raw passwords are not stored, so there is no way to see this user's "
+"password, but you can change the password using <a href=\"password/\">this "
+"form</a>."
+msgstr ""
+"पासवर्ड राखिएको हुँदैन, त्यसैले व्यक्तिको पासवर्ड हेर्न मिल्दैन, तर पासवर्ड फेर्न को लागि <a "
+"href=\"password/\">यो फारम</a> भर्नु होस । "
+
+#: forms.py:156
+#, python-format
+msgid ""
+"Please enter a correct %(username)s and password. Note that both fields may "
+"be case-sensitive."
+msgstr "कृपया सही %(username)s र पासवर्ड राख्नु होस । "
+
+#: forms.py:158
+msgid "This account is inactive."
+msgstr "यो खाता सक्रिय छैन । "
+
+#: forms.py:206
+msgid "Email"
+msgstr "ई-मेल"
+
+#: forms.py:256
+msgid "New password"
+msgstr "नयाँ पासवर्ड"
+
+#: forms.py:258
+msgid "New password confirmation"
+msgstr "नयाँ पासवर्ड पुष्टि"
+
+#: forms.py:287
+msgid "Your old password was entered incorrectly. Please enter it again."
+msgstr "तपाईको पुरानो पासवर्ड गलत भयो । कृपया पुन: हाल्नुहोस ।  "
+
+#: forms.py:290
+msgid "Old password"
+msgstr "पुरानो पासवर्ड"
+
+#: forms.py:318
+msgid "Password (again)"
+msgstr "पासवर्ड (पुन:)"
+
+#: hashers.py:243 hashers.py:317 hashers.py:365 hashers.py:393 hashers.py:426
+#: hashers.py:459 hashers.py:493
+msgid "algorithm"
+msgstr "अल्गोरिदम"
+
+#: hashers.py:244
+msgid "iterations"
+msgstr ""
+
+#: hashers.py:245 hashers.py:319 hashers.py:366 hashers.py:394 hashers.py:494
+msgid "salt"
+msgstr ""
+
+#: hashers.py:246 hashers.py:367 hashers.py:395 hashers.py:427 hashers.py:460
+#: hashers.py:495
+msgid "hash"
+msgstr ""
+
+#: hashers.py:318
+msgid "work factor"
+msgstr ""
+
+#: hashers.py:320
+msgid "checksum"
+msgstr ""
+
+#: models.py:72 models.py:121
+msgid "name"
+msgstr "नाम"
+
+#: models.py:74
+msgid "codename"
+msgstr "कोडनेम"
+
+#: models.py:78
+msgid "permission"
+msgstr "अनुमति"
+
+#: models.py:79 models.py:123
+msgid "permissions"
+msgstr "अनुमति"
+
+#: models.py:128
+msgid "group"
+msgstr "समुह"
+
+#: models.py:129 models.py:294
+msgid "groups"
+msgstr "समुहहरु"
+
+#: models.py:200
+msgid "password"
+msgstr "पासवर्ड"
+
+#: models.py:201
+msgid "last login"
+msgstr "पूर्व लगिन"
+
+#: models.py:291
+msgid "superuser status"
+msgstr "प्रधान प्रयोगकर्ता प्रतिष्ठा "
+
+#: models.py:292
+msgid ""
+"Designates that this user has all permissions without explicitly assigning "
+"them."
+msgstr ""
+
+#: models.py:295
+msgid ""
+"The groups this user belongs to. A user will get all permissions granted to "
+"each of his/her group."
+msgstr ""
+
+#: models.py:299
+msgid "user permissions"
+msgstr "प्रयोग कर्ताका अनुमति "
+
+#: models.py:301
+msgid "Specific permissions for this user."
+msgstr ""
+
+#: models.py:368
+msgid "username"
+msgstr "प्रयोगकर्ता नाम"
+
+#: models.py:367
+msgid ""
+"Required. 30 characters or fewer. Letters, numbers and @/./+/-/_ characters"
+msgstr "आवश्यक । ३० अक्षर वा कम । अंक, वर्ण र  @/./+/-/_  मात्र उपयुक्त ।"
+
+#: models.py:370
+msgid "Enter a valid username."
+msgstr "सही प्रयोग कर्ता नाम राख्नु होस ।"
+
+#: models.py:372
+msgid "first name"
+msgstr "नाम"
+
+#: models.py:373
+msgid "last name"
+msgstr "थर"
+
+#: models.py:374
+msgid "email address"
+msgstr "ई-मेल ठेगाना"
+
+#: models.py:375
+msgid "staff status"
+msgstr "स्टाफ प्रतिष्ठा "
+
+#: models.py:376
+msgid "Designates whether the user can log into this admin site."
+msgstr ""
+
+#: models.py:378
+msgid "active"
+msgstr "सक्रिय "
+
+#: models.py:379
+msgid ""
+"Designates whether this user should be treated as active. Unselect this "
+"instead of deleting accounts."
+msgstr ""
+
+#: models.py:381
+msgid "date joined"
+msgstr "दर्ता भएको मिति"
+
+#: models.py:389
+msgid "user"
+msgstr "प्रयोगकर्ता"
+
+#: models.py:390
+msgid "users"
+msgstr "प्रयोगकर्ता"
+
+#: views.py:89
+msgid "Logged out"
+msgstr "लग आउट "
+
+#: templates/registration/password_reset_subject.txt:2
+#, python-format
+msgid "Password reset on %(site_name)s"
+msgstr "%(site_name)s को पासवर्ड पून: राख्नु "
+
+#: tests/test_forms.py:325
+msgid "Enter a valid email address."
+msgstr "सही ई-मेल ठेगाना राख्नु होस ।"

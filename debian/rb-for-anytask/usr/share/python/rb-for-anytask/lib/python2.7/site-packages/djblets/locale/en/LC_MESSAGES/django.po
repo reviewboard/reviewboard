@@ -1,0 +1,270 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2014-04-25 15:54-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: auth/forms.py:44
+msgid "Password"
+msgstr ""
+
+#: auth/forms.py:48
+msgid "Password (confirm)"
+msgstr ""
+
+#: auth/forms.py:50
+msgid "E-mail address"
+msgstr ""
+
+#: auth/forms.py:62
+msgid "Passwords must match"
+msgstr ""
+
+#: auth/forms.py:82
+msgid "Sorry, this username is taken."
+msgstr ""
+
+#: auth/util.py:37
+msgid "Cookies must be enabled."
+msgstr ""
+
+#: auth/util.py:43
+msgid "Incorrect password."
+msgstr ""
+
+#: configforms/forms.py:23 siteconfig/templates/siteconfig/settings.html:64
+msgid "Save"
+msgstr ""
+
+#: datagrid/grids.py:420
+msgid "Select Rows"
+msgstr ""
+
+#: datagrid/grids.py:492
+#, python-format
+msgid "%s ago"
+msgstr ""
+
+#: datagrid/templates/datagrid/column_header.html:16
+msgid "Ascending"
+msgstr ""
+
+#: datagrid/templates/datagrid/column_header.html:16
+msgid "Descending"
+msgstr ""
+
+#: datagrid/templates/datagrid/column_header.html:18
+msgid "Unsort"
+msgstr ""
+
+#: datagrid/templates/datagrid/listview.html:33
+msgid "Edit columns"
+msgstr ""
+
+#: datagrid/templates/datagrid/paginator.html:3
+msgid "First Page"
+msgstr ""
+
+#: datagrid/templates/datagrid/paginator.html:4
+msgid "Previous Page"
+msgstr ""
+
+#: datagrid/templates/datagrid/paginator.html:9
+#, python-format
+msgid "Page %(pagenum)s<"
+msgstr ""
+
+#: datagrid/templates/datagrid/paginator.html:12
+msgid "Next Page"
+msgstr ""
+
+#: datagrid/templates/datagrid/paginator.html:13
+msgid "Last Page"
+msgstr ""
+
+#: extensions/errors.py:55
+#, python-format
+msgid "Cannot find extension with id %s"
+msgstr ""
+
+#: extensions/manager.py:290
+msgid "There was an error loading this extension"
+msgstr ""
+
+#: extensions/manager.py:378
+msgid "Invalid package name."
+msgstr ""
+
+#: extensions/manager.py:381
+msgid "Installation failed (probably malformed URL)."
+msgstr ""
+
+#: extensions/manager.py:569
+#, python-format
+msgid "Error initializing extension: %s"
+msgstr ""
+
+#: extensions/settings.py:62
+#, python-format
+msgid "The settings key \"%(key)s\" was not found in extension %(ext)s"
+msgstr ""
+
+#: extensions/templates/extensions/configure_extension.html:5
+#: extensions/templates/extensions/configure_extension.html:26
+#, python-format
+msgid "Configure %(name)s"
+msgstr ""
+
+#: extensions/templates/extensions/extension_list.html:4
+#: extensions/templates/extensions/extension_list.html:24
+msgid "Manage Extensions"
+msgstr ""
+
+#: extensions/templates/extensions/extension_list.html:32
+msgid "Scan for new extensions"
+msgstr ""
+
+#: extensions/templates/extensions/extension_list.html:35
+msgid "Loading..."
+msgstr ""
+
+#: feedview/templates/feedview/feed-inline.html:4
+#, python-format
+msgid "<p class=\"feed-error\">Unable to load feed: %(error)s</p>"
+msgstr ""
+
+#: log/views.py:46
+msgid "Debug"
+msgstr ""
+
+#: log/views.py:47
+msgid "Info"
+msgstr ""
+
+#: log/views.py:48
+msgid "Warning"
+msgstr ""
+
+#: log/views.py:49
+msgid "Error"
+msgstr ""
+
+#: log/views.py:50
+msgid "Critical"
+msgstr ""
+
+#: log/views.py:162
+msgid "All"
+msgstr ""
+
+#: log/views.py:188
+msgid "Any date"
+msgstr ""
+
+#: log/views.py:197
+msgid "Today"
+msgstr ""
+
+#: log/views.py:206
+msgid "Past 7 days"
+msgstr ""
+
+#: log/views.py:215
+msgid "This month"
+msgstr ""
+
+#: log/views.py:226
+msgid "By date"
+msgstr ""
+
+#: log/views.py:227
+msgid "By level"
+msgstr ""
+
+#: log/templates/log/log.html:4 log/templates/log/log.html.py:14
+msgid "Server Log"
+msgstr ""
+
+#: log/templates/log/log.html:18
+msgid "Filter"
+msgstr ""
+
+#: log/templates/log/log.html:34
+msgid "Timestamp"
+msgstr ""
+
+#: log/templates/log/log.html:37
+msgid "Level"
+msgstr ""
+
+#: log/templates/log/log.html:38
+msgid "Message"
+msgstr ""
+
+#: siteconfig/management/commands/get-siteconfig.py:24
+#: siteconfig/management/commands/set-siteconfig.py:31
+msgid "--key must be provided"
+msgstr ""
+
+#: siteconfig/management/commands/get-siteconfig.py:43
+#: siteconfig/management/commands/set-siteconfig.py:53
+#, python-format
+msgid "'%s' is not a valid settings key"
+msgstr ""
+
+#: siteconfig/management/commands/set-siteconfig.py:19
+msgid "The existing key to modify (dot-separated)"
+msgstr ""
+
+#: siteconfig/management/commands/set-siteconfig.py:21
+msgid "The value to store"
+msgstr ""
+
+#: siteconfig/management/commands/set-siteconfig.py:34
+msgid "--value must be provided"
+msgstr ""
+
+#: siteconfig/management/commands/set-siteconfig.py:59
+#, python-format
+msgid "Cannot set %s keys"
+msgstr ""
+
+#: siteconfig/management/commands/set-siteconfig.py:71
+#, python-format
+msgid "'%(value)s' is not a valid %(type)s"
+msgstr ""
+
+#: siteconfig/management/commands/set-siteconfig.py:76
+#, python-format
+msgid "Setting '%(key)s' to %(value)s"
+msgstr ""
+
+#: siteconfig/templates/siteconfig/settings.html:23
+msgid "Please correct the error below."
+msgid_plural "Please correct the errors below."
+msgstr[0] ""
+msgstr[1] ""
+
+#: siteconfig/templates/siteconfig/settings.html:29
+msgid "The settings have been saved."
+msgstr ""
+
+#: util/contextmanagers.py:86
+#, python-format
+msgid ""
+"The process '%(name)s' with PID '%(pid)s' did not exit cleanly and will be "
+"killed automatically."
+msgstr ""

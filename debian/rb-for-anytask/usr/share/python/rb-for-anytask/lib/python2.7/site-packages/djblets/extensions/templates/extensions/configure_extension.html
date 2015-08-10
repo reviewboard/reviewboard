@@ -1,0 +1,26 @@
+{% extends "siteconfig/settings.html" %}
+{% load djblets_utils i18n staticfiles %}
+
+{% block page_title %}
+{%  blocktrans with extension.info.name as name %}Configure {{name}}{% endblocktrans %}
+{% endblock %}
+
+{% block extrahead %}
+{%  url 'admin:jsi18n' as jsi18nurl %}
+<script src="{{jsi18nurl|default:"../../../jsi18n/"}}"></script>
+{{block.super}}
+{% endblock %}
+
+{% block scripts-post %}
+<script src="{% static 'admin/js/core.js' %}"></script>
+<script>
+    var django = {
+        jQuery: jQuery
+    };
+</script>
+{{block.super}}
+{% endblock %}
+
+{% block form_title %}
+{%  blocktrans with extension.info.name as name %}Configure {{name}}{% endblocktrans %}
+{% endblock %}

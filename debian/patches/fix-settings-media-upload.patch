@@ -1,0 +1,12 @@
+--- a/anytask/settings.py
++++ b/anytask/settings.py
+@@ -39,4 +39,6 @@
+     }
+ }
+ 
+-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+\ No newline at end of file
++EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
++MEDIA_ROOT = '/var/lib/anytask/media'
++UPLOAD_ROOT = '/var/lib/anytask/upload'
+\ No newline at end of file

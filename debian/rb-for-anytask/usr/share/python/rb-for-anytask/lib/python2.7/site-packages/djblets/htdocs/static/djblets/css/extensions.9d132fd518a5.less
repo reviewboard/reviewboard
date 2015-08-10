@@ -1,0 +1,218 @@
+/* !(*%!(&^ (see http://www.positioniseverything.net/easyclearing.html) */
+.clearfix {
+  display: inline-block;
+
+  &:after {
+    clear: both;
+    content: ".";
+    display: block;
+    height: 0;
+    visibility: hidden;
+  }
+}
+
+#activity-indicator {
+  background-color: #fce94f;
+  background-image: url("../images/extensions/spinner.gif");
+  background-position: 0.4em 0.4em;
+  background-repeat: no-repeat;
+  border: 1px #c4a000 solid;
+  border-top: 0;
+  font-weight: bold;
+  left: 50%;
+  margin-left: -3em;
+  padding: 0.5em 0.6em 0.5em 2.2em;
+  position: fixed;
+  text-align: center;
+  top: 0;
+  width: 6em;
+  z-index: 20000;
+}
+
+/****************************************************************************
+ * Modal Boxes
+ ****************************************************************************/
+
+
+.modalbox {
+  background-color: white;
+  background-image: url('../images/extensions/box_top_bg.png');
+  background-position: top left;
+  background-repeat: repeat-x;
+  border: 1px #888A85 solid;
+  margin: 10px;
+}
+
+.modalbox-title {
+  background: #a2bedc url('../images/extensions/title_box_top_bg.png') repeat-x top left;
+  border-bottom: 1px #728eac solid;
+  font-size: 120%;
+  margin: 0;
+  padding: 5px 10px 5px 5px;
+}
+
+.modalbox-inner {
+  background-image: url('../images/extensions/box_bottom_bg.png');
+  background-position: bottom left;
+  background-repeat: repeat-x;
+  padding-bottom: 1px; /* IE wants this and it does no harm. */
+}
+
+.modalbox-contents {
+  margin: 10px;
+  position: relative; /* Makes this the offsetParent for calculations. */
+}
+
+.modalbox-buttons {
+  bottom: 0;
+  margin: 10px;
+  position: absolute;
+  right: 0;
+  text-align: right;
+}
+
+.modalbox-buttons input {
+  margin-left: 10px;
+}
+
+
+/****************************************************************************
+ * Extension manager
+ ****************************************************************************/
+
+#extension-manager {
+  .actions {
+    background: #FDFDFD;
+    border: 1px #AAAAAA solid;
+    border-top: 0;
+    border-bottom: 1px #999999 solid;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    li {
+      list-style: none;
+      display: inline-block;
+      margin: 0;
+      padding: 0.8em 1em;
+
+      a {
+        color: #0000FF;
+
+        &:hover {
+          text-decoration: underline;
+        }
+      }
+    }
+  }
+}
+
+.extensions-list-page {
+  #content-main {
+    float: left;
+    width: 100%;
+  }
+}
+
+.extensions {
+  border: 1px #AAAAAA solid;
+  border-top: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  margin-bottom: 20px;
+
+  li {
+    list-style: none;
+    padding: 1em;
+    position: relative;
+
+    &.loading {
+      background: url("../images/extensions/spinner.gif") no-repeat 1em center;
+      padding-left: 3em;
+    }
+  }
+
+  .extension {
+    &.enabled {
+      border-left: 8px #AACCAA solid;
+    }
+
+    &.disabled {
+      border-left: 8px #DDDDDD solid;
+    }
+
+    &.error {
+      border-left: 8px #CCAAAA solid;
+    }
+
+    &.row1 {
+      border-top: 1px #E0E0E0 solid;
+      border-bottom: 1px #E0E0E0 solid;
+
+      &:first-child {
+        border-top: 0;
+      }
+    }
+
+    h1 {
+      float: left;
+      font-size: 120%;
+      margin: 0;
+
+      .version {
+        color: #444;
+        font-weight: normal;
+        margin-left: 0.5em;
+      }
+    }
+
+    .author {
+      float: right;
+      margin: 0;
+    }
+
+    .description {
+      clear: both;
+      margin: 1.5em 10em 1.5em 1em;
+      padding: 0;
+    }
+
+    .extension-header {
+      .clearfix;
+      display: block;
+    }
+
+    .extension-load-error {
+      p {
+        margin: 1.5em 10em 1.5em 1em;
+        padding: 0;
+      }
+
+      pre {
+        margin-left: 3em;
+        margin-bottom: 2em;
+        overflow-x: auto;
+      }
+    }
+  }
+
+  .object-tools {
+    float: none;
+    margin: 0 0 0 1em;
+
+    li {
+      display: inline;
+      float: none;
+      margin: 0 1em 0 0;
+
+      a {
+        display: inline;
+        float: none;
+        font-weight: normal;
+        margin: 0;
+        padding: 0;
+      }
+    }
+  }
+}

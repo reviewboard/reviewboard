@@ -1,0 +1,25 @@
+{% load i18n %}
+{% if is_paginated %}
+<div class="paginator">
+{%  if show_first %}
+ <a href="?{{extra_query}}page=1" title="{% trans "First Page" %}">&laquo;</a>
+{%  endif %}
+{%  if has_previous %}
+ <a href="?{{extra_query}}page={{previous}}" title="{% trans "Previous Page" %}">&lt;</a>
+{%  endif %}
+{%  for pagenum in page_numbers %}
+{%   ifequal pagenum page %}
+ <span class="current-page">{{pagenum}}</span>
+{%   else %}
+ <a href="?{{extra_query}}page={{pagenum}}" title="{% blocktrans %}Page {{pagenum}}{% endblocktrans %}">{{pagenum}}</a>
+{%   endifequal %}
+{%  endfor %}
+{%  if has_next %}
+ <a href="?{{extra_query}}page={{next}}" title="{% trans "Next Page" %}">&gt;</a>
+{%  endif %}
+{%  if show_last %}
+ <a href="?{{extra_query}}page={{pages}}" title="{% trans "Last Page" %}">&raquo;</a>
+{%  endif %}
+ <span class="page-count">{{pages}} pages&nbsp;</span>
+</div>
+{% endif %}

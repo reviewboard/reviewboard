@@ -1,0 +1,288 @@
+# This file is distributed under the same license as the Django package.
+#
+# Translators:
+# Christian Joergensen <christian@gmta.info>, 2012
+# Erik Wognsen <r4mses@gmail.com>, 2013
+# Jannis Leidel <jannis@leidel.info>, 2011
+# Steven Gandsø <steven.gandso@gmail.com>, 2013
+msgid ""
+msgstr ""
+"Project-Id-Version: django-core\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2013-10-09 20:17+0200\n"
+"PO-Revision-Date: 2013-10-27 02:54+0000\n"
+"Last-Translator: Erik Wognsen <r4mses@gmail.com>\n"
+"Language-Team: Danish (http://www.transifex.com/projects/p/django/language/"
+"da/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: da\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: admin.py:41
+msgid "Personal info"
+msgstr "Personlig information"
+
+#: admin.py:42
+msgid "Permissions"
+msgstr "Rettigheder"
+
+#: admin.py:44
+msgid "Important dates"
+msgstr "Vigtige datoer"
+
+#: admin.py:132
+msgid "Password changed successfully."
+msgstr "Adgangskoden blev ændret."
+
+#: admin.py:142
+#, python-format
+msgid "Change password: %s"
+msgstr "Skift adgangskode: %s"
+
+#: forms.py:33 tests/test_forms.py:261 tests/test_forms.py:266
+#: tests/test_forms.py:407
+msgid "No password set."
+msgstr "Ingen adgangskode valgt."
+
+#: forms.py:39 tests/test_forms.py:271 tests/test_forms.py:277
+msgid "Invalid password format or unknown hashing algorithm."
+msgstr "Ugyldigt adgangskodeformat eller hashing-algoritme."
+
+#: forms.py:72
+msgid "A user with that username already exists."
+msgstr "En bruger med dette brugernavn findes allerede."
+
+#: forms.py:73 forms.py:254 forms.py:314
+msgid "The two password fields didn't match."
+msgstr "De to adgangskoder var ikke identiske."
+
+#: forms.py:75 forms.py:120
+msgid "Username"
+msgstr "Brugernavn"
+
+#: forms.py:77 forms.py:121
+msgid "Required. 30 characters or fewer. Letters, digits and @/./+/-/_ only."
+msgstr "Påkrævet. Højst 30 tegn. Kun  bogstaver og cifre samt @/./+/-/_"
+
+#: forms.py:80 forms.py:124
+msgid "This value may contain only letters, numbers and @/./+/-/_ characters."
+msgstr ""
+"Dette felt må kun indeholde bogstaver og cifre samt disse tegn: @/./+/-/_"
+
+#: forms.py:82 forms.py:126 forms.py:153 forms.py:316
+msgid "Password"
+msgstr "Adgangskode"
+
+#: forms.py:84
+msgid "Password confirmation"
+msgstr "Bekræftelse af adgangskode"
+
+#: forms.py:86
+msgid "Enter the same password as above, for verification."
+msgstr "Indtast den samme adgangskode som ovenfor for verifikation."
+
+#: forms.py:127
+msgid ""
+"Raw passwords are not stored, so there is no way to see this user's "
+"password, but you can change the password using <a href=\"password/\">this "
+"form</a>."
+msgstr ""
+"Rå adgangskoder gemmes ikke, så det er ikke muligt at se denne brugers "
+"adgangskode, men du kan ændre adgangskoden ved hjælp af <a href=\"password/"
+"\">denne formular</a>."
+
+#: forms.py:156
+#, python-format
+msgid ""
+"Please enter a correct %(username)s and password. Note that both fields may "
+"be case-sensitive."
+msgstr ""
+"Indtast venligst et korrekt %(username)s og adgangskode. Bemærk at begge "
+"felter kan være versalfølsomme."
+
+#: forms.py:158
+msgid "This account is inactive."
+msgstr "Denne konto er inaktiv."
+
+#: forms.py:206
+msgid "Email"
+msgstr "E-mail"
+
+#: forms.py:256
+msgid "New password"
+msgstr "Ny adgangskode"
+
+#: forms.py:258
+msgid "New password confirmation"
+msgstr "Bekræftelse af ny adgangskode"
+
+#: forms.py:287
+msgid "Your old password was entered incorrectly. Please enter it again."
+msgstr ""
+"Din gamle adgangskode blev ikke indtastet korrekt. Indtast den venligst igen."
+
+#: forms.py:290
+msgid "Old password"
+msgstr "Gammel adgangskode"
+
+#: forms.py:318
+msgid "Password (again)"
+msgstr "Adgangskode (igen)"
+
+#: hashers.py:243 hashers.py:317 hashers.py:365 hashers.py:393 hashers.py:426
+#: hashers.py:459 hashers.py:493
+msgid "algorithm"
+msgstr "algoritme"
+
+#: hashers.py:244
+msgid "iterations"
+msgstr "iterationer"
+
+#: hashers.py:245 hashers.py:319 hashers.py:366 hashers.py:394 hashers.py:494
+msgid "salt"
+msgstr "salt"
+
+#: hashers.py:246 hashers.py:367 hashers.py:395 hashers.py:427 hashers.py:460
+#: hashers.py:495
+msgid "hash"
+msgstr "hash"
+
+#: hashers.py:318
+msgid "work factor"
+msgstr "work factor"
+
+#: hashers.py:320
+msgid "checksum"
+msgstr "tjeksum"
+
+#: models.py:72 models.py:121
+msgid "name"
+msgstr "navn"
+
+#: models.py:74
+msgid "codename"
+msgstr "kodenavn"
+
+#: models.py:78
+msgid "permission"
+msgstr "rettighed"
+
+#: models.py:79 models.py:123
+msgid "permissions"
+msgstr "rettigheder"
+
+#: models.py:128
+msgid "group"
+msgstr "gruppe"
+
+#: models.py:129 models.py:294
+msgid "groups"
+msgstr "grupper"
+
+#: models.py:200
+msgid "password"
+msgstr "adgangskode"
+
+#: models.py:201
+msgid "last login"
+msgstr "sidst logget ind"
+
+#: models.py:291
+msgid "superuser status"
+msgstr "superbrugerstatus"
+
+#: models.py:292
+msgid ""
+"Designates that this user has all permissions without explicitly assigning "
+"them."
+msgstr ""
+"Bestemmer at denne bruger har alle rettigheder uden at tildele dem eksplicit."
+
+#: models.py:295
+msgid ""
+"The groups this user belongs to. A user will get all permissions granted to "
+"each of his/her group."
+msgstr ""
+"Grupperne som denne bruger hører til. En bruger får alle rettigheder givet "
+"til hver af hans/hendes grupper."
+
+#: models.py:299
+msgid "user permissions"
+msgstr "rettigheder"
+
+#: models.py:301
+msgid "Specific permissions for this user."
+msgstr "Specifikke rettigheder for denne bruger."
+
+#: models.py:368
+msgid "username"
+msgstr "brugernavn"
+
+#: models.py:367
+msgid ""
+"Required. 30 characters or fewer. Letters, numbers and @/./+/-/_ characters"
+msgstr ""
+"Påkrævet. Højst 30 tegn. Kun  bogstaver og cifre samt disse tegn: @/./+/-/_"
+
+#: models.py:370
+msgid "Enter a valid username."
+msgstr "Indtast et gyldigt brugernavn."
+
+#: models.py:372
+msgid "first name"
+msgstr "fornavn"
+
+#: models.py:373
+msgid "last name"
+msgstr "efternavn"
+
+#: models.py:374
+msgid "email address"
+msgstr "e-mail-adresse"
+
+#: models.py:375
+msgid "staff status"
+msgstr "admin-status"
+
+#: models.py:376
+msgid "Designates whether the user can log into this admin site."
+msgstr "Bestemmer om brugeren kan logge ind på dette administrationswebsite."
+
+#: models.py:378
+msgid "active"
+msgstr "aktiv"
+
+#: models.py:379
+msgid ""
+"Designates whether this user should be treated as active. Unselect this "
+"instead of deleting accounts."
+msgstr ""
+"Bestemmer om brugeren skal behandles som aktiv. Fravælg dette frem for at "
+"slette en konto."
+
+#: models.py:381
+msgid "date joined"
+msgstr "dato for registrering"
+
+#: models.py:389
+msgid "user"
+msgstr "bruger"
+
+#: models.py:390
+msgid "users"
+msgstr "brugere"
+
+#: views.py:89
+msgid "Logged out"
+msgstr "Logget ud"
+
+#: templates/registration/password_reset_subject.txt:2
+#, python-format
+msgid "Password reset on %(site_name)s"
+msgstr "Adgangskode nulstillet på %(site_name)s"
+
+#: tests/test_forms.py:325
+msgid "Enter a valid email address."
+msgstr "Indtast en gyldig e-mail-adresse."

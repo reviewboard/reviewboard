@@ -1,0 +1,14 @@
+{% load feedtags %}
+{% load i18n %}
+{% if error %}
+{%  blocktrans with error.reason as error %}<p class="feed-error">Unable to load feed: {{error}}</p>{% endblocktrans %}
+{% else %}
+{%  for entry in parser.entries|slice:":3" %}
+<div class="entry">
+ <h3 class="entry-title"><a href="{{entry.link}}">{{entry.title}}</a> - {{entry.updated_parsed|feeddate|date:"M d, Y"}}</h3>
+ <div class="entry-content">
+ {{entry.summary|safe}}
+ </div>
+</div>
+{%  endfor %}
+{% endif %}

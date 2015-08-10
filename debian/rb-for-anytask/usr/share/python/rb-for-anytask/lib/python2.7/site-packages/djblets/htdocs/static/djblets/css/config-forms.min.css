@@ -1,0 +1,352 @@
+.config-forms-container {
+  font-size: 9pt;
+  padding: 1em;
+  width: 81em;
+  margin: 0 auto;
+}
+.config-forms-container .box-container {
+  margin: 0;
+  width: auto;
+}
+.config-forms-container .box {
+  background: #eeeeee;
+  margin: 0 0 2em 0;
+}
+.config-forms-container .box .box-inner {
+  background: transparent;
+}
+.config-forms-container .box .box-recessed {
+  margin: 0 -1em;
+}
+.config-forms-container .box .box-main {
+  padding: 1em;
+}
+.config-forms-container .config-forms-side-nav {
+  float: left;
+  margin-top: 2;
+  width: 17em;
+}
+.config-forms-container .config-forms-side-nav .box-main {
+  padding: 0;
+}
+.config-forms-container .config-forms-side-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.config-forms-container .config-forms-side-nav ul li {
+  border-bottom: 1px #D9D9D9 solid;
+}
+.config-forms-container .config-forms-side-nav ul li:first-child {
+  border-top: 1px #D9D9D9 solid;
+}
+.config-forms-container .config-forms-side-nav ul li:last-child.active,
+.config-forms-container .config-forms-side-nav ul li:last-child:hover {
+  -moz-border-radius: 0 0 6px 6px;
+  -webkit-border-radius: 0 0 6px 6px;
+  border-radius: 0 0 6px 6px;
+}
+.config-forms-container .config-forms-side-nav ul li:hover {
+  background-color: #e1e1e1;
+}
+.config-forms-container .config-forms-side-nav ul li.active {
+  background: #FEFEFE;
+}
+.config-forms-container .config-forms-side-nav ul li.active:hover {
+  background: #FEFEFE;
+}
+.config-forms-container .config-forms-side-nav ul li.active a {
+  cursor: default;
+}
+.config-forms-container .config-forms-side-nav ul li a {
+  color: black;
+  display: block;
+  font-weight: normal;
+  outline: none;
+  padding: 0.5em 1em;
+  text-decoration: none;
+}
+.config-forms-container .config-forms-page-content {
+  float: left;
+  margin-top: 0;
+  margin-left: 2em;
+  width: 60em;
+}
+.config-forms-container .config-forms-page-content form {
+  margin: 0 auto;
+}
+.config-forms-container .config-forms-page-content form input[type=text],
+.config-forms-container .config-forms-page-content form input[type=password],
+.config-forms-container .config-forms-page-content form input[type=email] {
+  width: 30em;
+  max-width: 30em;
+  font-size: inherit;
+  padding: 0.3em 0.6em;
+}
+.config-forms-container .config-forms-page-content form label,
+.config-forms-container .config-forms-page-content form p {
+  color: #666666;
+}
+.config-forms-container .config-forms-page-content form label {
+  display: block;
+  margin: 0.25em 0;
+}
+.config-forms-container .config-forms-page-content form p {
+  font-size: inherit;
+  margin: 1em 0;
+}
+.config-forms-container .config-forms-page-content form select {
+  font-size: inherit;
+}
+.config-forms-container .config-forms-page-content form .buttons input[type=submit] {
+  text-align: center;
+  margin: 0 auto;
+}
+.config-forms-container .config-forms-page-content form .fields-row {
+  margin: 0 0 1em 0;
+  position: relative;
+}
+.config-forms-container .config-forms-page-content form .fields-row:after {
+  clear: both;
+  display: table;
+  content: "";
+  line-height: 0;
+}
+.config-forms-container .config-forms-page-content form .fields-row:last-child {
+  margin-bottom: 0;
+}
+.config-forms-container .config-forms-page-content form .fields-row.checkbox-row .field {
+  width: 100%;
+}
+.config-forms-container .config-forms-page-content form .fields-row.checkbox-row .field input,
+.config-forms-container .config-forms-page-content form .fields-row.checkbox-row .field label {
+  display: inline;
+  width: auto;
+}
+.config-forms-container .config-forms-page-content form .fields-row.checkbox-row .field label {
+  margin-left: 0;
+}
+.config-forms-container .config-forms-page-content form .fields-row.checkbox-row .field ul {
+  margin: 0 0 0 1em;
+}
+.config-forms-container .config-forms-page-content form .fields-row .field {
+  display: block;
+  float: left;
+  margin-right: 1em;
+}
+.config-forms-container .config-forms-page-content form .fields-row .field:last-child {
+  margin-right: 0;
+}
+.config-forms-container .config-forms-page-content form .fields-row .field input {
+  width: 21em;
+}
+.config-forms-container .config-forms-page-content form .fields-row .field input[type=checkbox] {
+  width: auto;
+}
+.config-forms-container .config-forms-page-content form .fields-row .field ul {
+  list-style: none;
+  margin: 1em 0;
+  padding: 0;
+}
+.config-forms-container .config-forms-page-content form .fields-row .field ul:last-child {
+  margin-bottom: 0;
+}
+.config-forms-container .config-forms-page-content form .fields-row .field ul li {
+  margin: 0.5em 0;
+}
+.config-forms-container .config-forms-page-content form .fields-row .field ul li:last-child label {
+  margin-bottom: 0;
+}
+.config-forms-container .config-forms-page-content form .fields-row .field ul li label {
+  color: inherit;
+}
+.config-forms-container .config-forms-page-content form .fields-row .field .hint {
+  display: block;
+  margin: 0.5em 0 0 0.5em;
+  font-size: 90%;
+}
+.config-forms-container .config-forms-page-content form .search {
+  padding: 0;
+  margin: 0 0 1em 0;
+}
+.config-forms-container .config-forms-page-content form .search input {
+  margin-left: 0.5em;
+  width: 53em;
+  max-width: 100%;
+}
+.config-forms-container .config-forms-page-content #messages {
+  margin: 0 0 1em 0;
+  padding: 0;
+}
+.config-forms-container .config-forms-page-content #messages li {
+  background: #ffffcc url(../images/config-forms/icon_success.gif) 5px 0.3em no-repeat;
+  border: 1px solid #cccc00;
+  color: #666;
+  display: block;
+  font-size: 12px;
+  margin: 0 0 3px 0;
+  padding: 4px 5px 4px 25px;
+}
+.config-forms-container .config-forms-page-content #messages li.error {
+  background-image: url(../images/config-forms/icon_error.gif);
+}
+.config-forms-container .config-forms-page-content #messages li.warning {
+  background-image: url(../images/config-forms/icon_alert.gif);
+}
+.config-forms-container .config-forms-page-content .page {
+  display: none;
+}
+.config-forms-container .config-forms-page-content .page.active {
+  display: block;
+}
+.config-forms-container .config-forms-page-content .box .box-main .box-title {
+  margin: 0;
+  padding: 0.5em 0.3em 0.3em 0.5em;
+  font-size: 10pt;
+}
+.config-forms-container .config-forms-page-content .box .box-main .box-title.first {
+  margin-top: 0;
+}
+.config-forms-container .config-forms-page-content .box .box-main p:first-child {
+  margin-top: 0;
+}
+.config-forms-container .config-forms-page-content .box .box-main p:last-child {
+  margin-bottom: 0;
+}
+.config-forms-container .config-forms-page-content .box .box-main .description {
+  margin: 0 0 1em 0;
+}
+.config-forms-container .config-forms-page-content .config-forms-list {
+  background: #FFFFFF;
+  padding: 0;
+  margin-bottom: 0;
+  border-top: 1px #AAAAAA solid;
+}
+.config-forms-container .config-forms-page-content table.config-forms-list {
+  border-collapse: collapse;
+  border-top: 0;
+  width: 100%;
+}
+.config-forms-container .config-forms-page-content table.config-forms-list thead th {
+  background: #F0F0F3;
+  border-bottom: 1px #AAAAAA solid;
+  border-right: 1px #CCCCCC solid;
+  text-align: left;
+  padding: 0.3em 0.3em 0.3em 1.5em;
+}
+.config-forms-container .config-forms-page-content table.config-forms-list thead th:last-child {
+  border-right: 0;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-item,
+.config-forms-container .config-forms-page-content table.config-forms-list td {
+  border-bottom: 1px #E9E9E9 solid;
+  padding: 0.3em 0.3em 0.3em 1.5em;
+  list-style: none;
+  line-height: 32px;
+  vertical-align: middle;
+  /* Ellipsize the text contents. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-item:hover {
+  background: #FAFAFA;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-item a {
+  font-weight: normal;
+  text-decoration: none;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-item .rb-icon {
+  vertical-align: top;
+  margin-right: 0.5em;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-item .btn {
+  font-size: 12px;
+  height: 28px;
+  line-height: 28px;
+  margin: 1px 1px 1px 5px;
+  padding: 0 1em;
+  text-align: center;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-item .btn .rb-icon {
+  vertical-align: middle;
+  margin-right: 0;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-item ul {
+  background: #FFFFF0;
+  border: 1px #BBBBB0 solid;
+  list-style: none;
+  margin: 0;
+  padding: 0 0.5em;
+  white-space: nowrap;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-item ul label {
+  display: inline;
+  margin-left: 0.2em;
+  vertical-align: middle;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-item.disabled label {
+  color: #C0C0C0;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-item-actions {
+  float: right;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-item-spinner {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  margin: 1px;
+  background-image: url(../images/config-forms/spinner.gif);
+  background-repeat: no-repeat;
+  vertical-align: middle;
+  visibility: hidden;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-action-edit.btn {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-add {
+  border: 0;
+  vertical-align: bottom;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-actions {
+  margin: 1em 0 0 0em;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-actions input {
+  margin-right: 0.5em;
+  width: 230px;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-header-actions {
+  margin: 0 0 1em 0;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-full {
+  margin-top: 1em;
+}
+.config-forms-container .config-forms-page-content .config-forms-list-full p {
+  margin: 0;
+}
+.config-forms-container .config-forms-page-content .config-forms-subsection {
+  margin: 2em 0;
+}
+.config-forms-container .config-forms-page-content .config-forms-subsection h3 {
+  border-bottom: 1px #D0D0D0 solid;
+  font-size: 100%;
+  padding: 0 0 0 0.4em;
+  margin-bottom: 1em;
+}
+/*
+ * My Account page
+ */
+.config-forms-list-action-join,
+.config-forms-list-action-leave {
+  min-width: 3em;
+}
+.config-group-name {
+  display: inline-block;
+  min-width: 15em;
+  padding-right: 2em;
+}
+.config-group-display-name {
+  color: #A0A0A0;
+  font-size: 90%;
+}

@@ -1,0 +1,57 @@
+{% extends "admin/base_site.html" %}
+{% load i18n staticfiles %}
+
+{% block title %}{% trans "Server Log" %}{% endblock %}
+
+{% block bodyclass %}change-list{% endblock %}
+
+{% block extrastyle %}
+{{block.super}}
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}" />
+{% endblock %}
+
+{% block content %}
+<h1 class="title">{% trans "Server Log" %}</h1>
+
+<div id="changelist" class="module filtered">
+ <div id="changelist-filter">
+  <h2>{% trans "Filter" %}</h2>
+{% for filterset_name, filters in filtersets %}
+  <h3>{{filterset_name}}</h3>
+  <ul>
+{%  for filter in filters %}
+   <li{% if filter.selected %} class="selected"{% endif %}><a href="{{filter.url}}">{{filter.name}}</a></li>
+{%  endfor %}
+  </ul>
+{% endfor %}
+ </div>
+
+ <table id="log-entries">
+  <thead>
+   <tr>
+    <th scope="col"{% if sort_type %} class="sorted sortable {% ifequal sort_type 'asc' %}ascending{% else %}descending{% endifequal %}"{% endif %}>
+     <div class="text">
+      <a href="{{sort_url}}">{% trans "Timestamp" %}</a>
+     </div>
+    </th>
+    <th scope="col"><div class="text">{% trans "Level" %}</div></th>
+    <th scope="col"><div class="text">{% trans "Message" %}</div></th>
+   </tr>
+  </thead>
+  <tbody>
+{% for timestamp, level, message in log_lines %}
+{%  ifchanged timestamp.day %}
+   <tr>
+    <th colspan="3">{{timestamp|date}}</th>
+   </tr>
+{%  endifchanged %}
+   <tr class="level-{{level|lower}} {% cycle row1,row2 %}">
+    <th>{{timestamp|time:"H:i:s"}}</td>
+    <th>{{level}}</td>
+    <td><pre>{{message}}</pre></td>
+   </tr>
+{% endfor %}
+  </tbody>
+ </table>
+</div>
+{% endblock %}

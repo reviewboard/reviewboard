@@ -1,0 +1,54 @@
+{% extends "admin/base_site.html" %}
+{% load admin_list compressed djblets_extensions djblets_js i18n staticfiles %}
+
+{% block title %}{% trans "Manage Extensions" %} {{block.super}}{% endblock %}
+
+{% block extrahead %}
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+{%  compressed_css "djblets-admin" %}
+{%  url 'admin:jsi18n' as jsi18nurl %}
+<script src="{{jsi18nurl|default:"../../../jsi18n/"}}"></script>
+{%  include "js/jquery.html" %}
+{%  include "js/jquery-ui.html" %}
+{%  include "js/underscore.html" %}
+{%  include "js/backbone.html" %}
+{%  compressed_js "djblets-gravy" %}
+{%  compressed_js "djblets-extensions" %}
+{%  compressed_js "djblets-extensions-admin" %}
+
+{{block.super}}
+{% endblock %}
+
+{% block bodyclass %}{{block.super}} extensions-list-page{% endblock %}
+
+{% block content %}
+
+<h1 class="title">{% trans "Manage Extensions" %}</h1>
+
+<div id="content-main">
+ <form id="extension-manager" method="POST" action=".">
+  {% csrf_token %}
+  <input type="hidden" name="full-reload" value="1" />
+
+  <ul class="actions">
+{%  block extension_list_actions %}
+   <li><a href="#" id="reload-extensions">{% trans "Scan for installed extensions" %}</a></li>
+{%  endblock %}
+  </ul>
+  <ul class="extensions">
+   <li class="loading">{% trans "Loading..." %}</li>
+  </ul>
+ </form>
+</div>
+
+<script>
+    $(document).ready(function() {
+        var view = new Djblets.ExtensionManagerView({
+            el: $('#extension-manager'),
+            model: new Djblets.ExtensionManager()
+        });
+
+        view.render();
+    });
+</script>
+{% endblock %}

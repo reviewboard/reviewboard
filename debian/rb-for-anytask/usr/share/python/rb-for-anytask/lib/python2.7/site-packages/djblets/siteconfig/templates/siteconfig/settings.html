@@ -1,0 +1,77 @@
+{% extends "admin/base_site.html" %}
+{% load admin_list compressed djblets_utils i18n staticfiles %}
+
+{% block title %}
+{% block page_title %}{{form.Meta.title}}{% endblock %} {{block.super}}
+{% endblock %}
+
+{% block extrahead %}
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}" />
+{%  compressed_css "djblets-admin" %}
+{{form.media.render_css|join:''}}
+{{block.super}}
+{% endblock %}
+
+{% block scripts-post %}
+{{block.super}}
+{{form.media.render_js|join:''}}
+{% endblock %}
+
+{% block bodyclass %}{{block.super}} change-form{% endblock %}
+
+{% block content %}
+{%  if form.error_dict %}
+ <p class="errornote">
+  {% blocktrans count form.error_dict.items|length as counter %}Please correct the error below.{% plural %}Please correct the errors below.{% endblocktrans %}
+ </p>
+{%  endif %}
+
+{% if saved %}
+ <ul class="messagelist">
+  <li>{% trans "The settings have been saved." %}</li>
+ </ul>
+{% endif %}
+
+ <h1 class="title">{% block form_title %}{{form.Meta.title}}{% endblock %}</h1>
+
+<div id="content-main">
+ <form action="." method="post"{% if form.is_multipart %} enctype="multipart/form-data"{% endif %}>
+  {% csrf_token %}
+{% block form_content %}
+{% if form.Meta.fieldsets %}
+{%  for fieldset in form.Meta.fieldsets %}
+  <fieldset class="module aligned{% if fieldset.classes %}{% for class in fieldset.classes %} {{class}}{% endfor %}{% endif %}"{% if fieldset.id %} id="fieldset_{{fieldset.id}}"{% endif %}>
+{%   if fieldset.title %}<h2>{{fieldset.title}}</h2>{% endif %}
+{%   if fieldset.description %}
+   <div class="description">
+    {{fieldset.description|paragraphs}}
+   </div>
+{%   endif %}
+{%   for fieldname in fieldset.fields %}
+{%    with form|getitem:fieldname as field %}
+{%     include "siteconfig/settings_field.html" %}
+{%    endwith %}
+{%   endfor %}
+  </fieldset>
+{%  endfor %}
+{% else %}
+  <fieldset class="module aligned">
+{%   for field in form %}
+{%    include "siteconfig/settings_field.html" %}
+{%   endfor %}
+  </fieldset>
+{% endif %}
+{% endblock %}
+
+{% block submit_row %}
+  <div class="submit-row">
+{%  block submit_row_buttons %}
+   <input type="submit" value="{% trans "Save" %}" class="default" />
+{%  endblock submit_row_buttons %}
+   <div style="clear: both"></div>
+  </div>
+{% endblock submit_row %}
+
+ </form>
+</div>
+{% endblock %}

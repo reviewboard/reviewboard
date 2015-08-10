@@ -1,0 +1,182 @@
+# This file is distributed under the same license as the Django package.
+#
+# Translators:
+# Alex Gaynor <alex.gaynor@gmail.com>, 2012
+# Jannis Leidel <jannis@leidel.info>, 2011
+# Meir Kriheli <mkriheli@gmail.com>, 2011-2012
+msgid ""
+msgstr ""
+"Project-Id-Version: django-core\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2013-05-02 16:18+0200\n"
+"PO-Revision-Date: 2013-04-29 08:25+0000\n"
+"Last-Translator: claudep <claude@2xlibre.net>\n"
+"Language-Team: Hebrew (http://www.transifex.com/projects/p/django/language/"
+"he/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: he\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: static/admin/js/SelectFilter2.js:45
+#, c-format
+msgid "Available %s"
+msgstr "%s זמינות"
+
+#: static/admin/js/SelectFilter2.js:46
+#, c-format
+msgid ""
+"This is the list of available %s. You may choose some by selecting them in "
+"the box below and then clicking the \"Choose\" arrow between the two boxes."
+msgstr ""
+"זו רשימת %s הזמינים לבחירה. ניתן לבחור חלק ע\"י סימון בתיבה מתחת ולחיצה על "
+"חץ  \"בחר\" בין שתי התיבות."
+
+#: static/admin/js/SelectFilter2.js:53
+#, c-format
+msgid "Type into this box to filter down the list of available %s."
+msgstr "ניתן להקליד בתיבה זו כדי לסנן %s."
+
+#: static/admin/js/SelectFilter2.js:57
+msgid "Filter"
+msgstr "סינון"
+
+#: static/admin/js/SelectFilter2.js:61
+msgid "Choose all"
+msgstr "בחירת הכל"
+
+#: static/admin/js/SelectFilter2.js:61
+#, c-format
+msgid "Click to choose all %s at once."
+msgstr "בחירת כל ה%s בבת אחת."
+
+#: static/admin/js/SelectFilter2.js:67
+msgid "Choose"
+msgstr "בחר"
+
+#: static/admin/js/SelectFilter2.js:69
+msgid "Remove"
+msgstr "הסרה"
+
+#: static/admin/js/SelectFilter2.js:75
+#, c-format
+msgid "Chosen %s"
+msgstr "%s אשר נבחרו"
+
+#: static/admin/js/SelectFilter2.js:76
+#, c-format
+msgid ""
+"This is the list of chosen %s. You may remove some by selecting them in the "
+"box below and then clicking the \"Remove\" arrow between the two boxes."
+msgstr ""
+"זו רשימת %s אשר נבחרו. ניתן להסיר חלק ע\"י בחירה בתיבה מתחת ולחיצה על חץ "
+"\"הסרה\" בין שתי התיבות."
+
+#: static/admin/js/SelectFilter2.js:80
+msgid "Remove all"
+msgstr "הסרת הכל"
+
+#: static/admin/js/SelectFilter2.js:80
+#, c-format
+msgid "Click to remove all chosen %s at once."
+msgstr "הסרת כל %s אשר נבחרו בבת אחת."
+
+#: static/admin/js/actions.js:18 static/admin/js/actions.min.js:1
+msgid "%(sel)s of %(cnt)s selected"
+msgid_plural "%(sel)s of %(cnt)s selected"
+msgstr[0] "%(sel)s מ %(cnt)s נבחרות"
+msgstr[1] "%(sel)s מ %(cnt)s נבחרות"
+
+#: static/admin/js/actions.js:109 static/admin/js/actions.min.js:5
+msgid ""
+"You have unsaved changes on individual editable fields. If you run an "
+"action, your unsaved changes will be lost."
+msgstr ""
+"יש לך שינויים שלא נשמרו על שדות יחידות.  אם אתה מפעיל פעולה, שינויים שלא "
+"נשמרו יאבדו."
+
+#: static/admin/js/actions.js:121 static/admin/js/actions.min.js:5
+msgid ""
+"You have selected an action, but you haven't saved your changes to "
+"individual fields yet. Please click OK to save. You'll need to re-run the "
+"action."
+msgstr ""
+"בחרת פעולה, אבל עוד לא שמרת את השינויים לשדות בודדים. אנא לחץ על אישור כדי "
+"לשמור. יהיה עליך להפעיל את הפעולה עוד פעם."
+
+#: static/admin/js/actions.js:123 static/admin/js/actions.min.js:6
+msgid ""
+"You have selected an action, and you haven't made any changes on individual "
+"fields. You're probably looking for the Go button rather than the Save "
+"button."
+msgstr ""
+"בחרת פעולה, ולא עשיתה שינויימ על שדות. אתה כנראה מחפש את הכפתור ללכת במקום "
+"הכפתור לשמור."
+
+#: static/admin/js/calendar.js:8
+msgid ""
+"January February March April May June July August September October November "
+"December"
+msgstr ""
+"ינואר פברואר מרץ אפריל מאי יוני יולי אוגוסט ספטמבר אוקטובר נובמבר דצמבר"
+
+#: static/admin/js/calendar.js:9
+msgid "S M T W T F S"
+msgstr "א ב ג ד ה ו ש"
+
+#: static/admin/js/collapse.js:8 static/admin/js/collapse.js.c:19
+#: static/admin/js/collapse.min.js:1
+msgid "Show"
+msgstr "הצג"
+
+#: static/admin/js/collapse.js:16 static/admin/js/collapse.min.js:1
+msgid "Hide"
+msgstr "הסתר"
+
+#: static/admin/js/admin/DateTimeShortcuts.js:52
+#: static/admin/js/admin/DateTimeShortcuts.js:88
+msgid "Now"
+msgstr "כעת"
+
+#: static/admin/js/admin/DateTimeShortcuts.js:56
+msgid "Clock"
+msgstr "שעון"
+
+#: static/admin/js/admin/DateTimeShortcuts.js:84
+msgid "Choose a time"
+msgstr "בחירת שעה"
+
+#: static/admin/js/admin/DateTimeShortcuts.js:89
+msgid "Midnight"
+msgstr "חצות"
+
+#: static/admin/js/admin/DateTimeShortcuts.js:90
+msgid "6 a.m."
+msgstr "6 בבוקר"
+
+#: static/admin/js/admin/DateTimeShortcuts.js:91
+msgid "Noon"
+msgstr "12 בצהריים"
+
+#: static/admin/js/admin/DateTimeShortcuts.js:95
+#: static/admin/js/admin/DateTimeShortcuts.js:208
+msgid "Cancel"
+msgstr "ביטול"
+
+#: static/admin/js/admin/DateTimeShortcuts.js:148
+#: static/admin/js/admin/DateTimeShortcuts.js:201
+msgid "Today"
+msgstr "היום"
+
+#: static/admin/js/admin/DateTimeShortcuts.js:152
+msgid "Calendar"
+msgstr "לוח שנה"
+
+#: static/admin/js/admin/DateTimeShortcuts.js:199
+msgid "Yesterday"
+msgstr "אתמול"
+
+#: static/admin/js/admin/DateTimeShortcuts.js:203
+msgid "Tomorrow"
+msgstr "מחר"

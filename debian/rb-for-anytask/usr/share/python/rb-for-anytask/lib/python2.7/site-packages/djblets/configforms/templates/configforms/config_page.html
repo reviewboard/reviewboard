@@ -1,0 +1,15 @@
+{% load djblets_deco %}
+
+{% for form in page.forms %}
+{%  box %}
+<div class="box-head">
+ <h1 class="box-title">{{form.form_title}}</h1>
+</div>
+<div class="box-main box-foot">
+ <form method="post" action=".#{{page.page_id}}" id="form_{{form.form_id}}"{% if form.is_multipart %} enctype="multipart/form-data"{% endif %}>
+  {% csrf_token %}
+  {{form.render|safe}}
+ </form>
+</div>
+{%  endbox %}
+{% endfor %}

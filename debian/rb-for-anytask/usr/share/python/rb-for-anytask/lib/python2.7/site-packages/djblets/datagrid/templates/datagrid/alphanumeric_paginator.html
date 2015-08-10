@@ -1,0 +1,34 @@
+{% load i18n %}
+<div class="paginator">
+{% for letter in letters %}
+{%  ifequal current_letter letter %}
+ <span class="current-letter">
+ <span class="current-page">{% if letter == "all" %}{% trans "All" %}{% else %}{{letter}}{% endif %}</span>
+{%   if show_first %}
+ <a href="?{{extra_query}}letter={{letter}}&page=1" title="{% trans "First Page" %}">&laquo;</a>
+{%   endif %}
+{%   if has_previous %}
+ <a href="?{{extra_query}}letter={{letter}}&page={{previous}}" title="{% trans "Previous Page" %}">&lt;</a>
+{%   endif %}
+{%   for pagenum in page_numbers %}
+{%    if pagenum == page and pages > 1 %}
+ <span class="current-page">{{pagenum}}</span>
+{%    elif pages > 1 %}
+ <a href="?{{extra_query}}letter={{letter}}&page={{pagenum}}" title="{% blocktrans %}Page {{pagenum}}{% endblocktrans %}">{{pagenum}}</a>
+{%    endif %}
+{%   endfor %}
+{%   if has_next %}
+ <a href="?{{extra_query}}letter={{letter}}&page={{next}}" title="{% trans "Next Page" %}">&gt;</a>
+{%   endif %}
+{%   if show_last %}
+ <a href="?{{extra_query}}letter={{letter}}&page={{pages}}" title="{% trans "Last Page" %}">&raquo;</a>
+{%   endif %}
+{%   if pages > 1 %}
+ <span class="page-count">{{pages}} pages&nbsp;</span>
+{%   endif %}
+ </span>
+{%  else %}
+ <a href="?{{extra_query}}letter={{letter}}&page=1" title="{% blocktrans %}{{letter}}{% endblocktrans %}">{% if letter == "all" %}{% trans "All" %}{% else %}{{letter}}{% endif %}</a>
+{%  endifequal %}
+{% endfor %}
+</div>
