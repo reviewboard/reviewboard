@@ -227,7 +227,7 @@ class SpiffyEmailMessage(EmailMultiAlternatives):
     """
 
     def __init__(self, subject, text_body, html_body, from_email, sender,
-                 to, cc, in_reply_to, headers=None):
+                 to, cc=None, in_reply_to=None, headers=None):
         siteconfig = SiteConfiguration.objects.get_current()
 
         headers = headers or MultiValueDict()
@@ -261,11 +261,11 @@ class SpiffyEmailMessage(EmailMultiAlternatives):
         # read receipts, Out of Office e-mails, and other general auto-replies.
         headers['X-Auto-Response-Suppress'] = 'DR, RN, OOF, AutoReply'
 
-        headers['From'] = from_email
-
-        super(SpiffyEmailMessage, self).__init__(subject, text_body,
-                                                 settings.DEFAULT_FROM_EMAIL,
-                                                 to)
+        super(SpiffyEmailMessage, self).__init__(
+            subject, text_body, settings.DEFAULT_FROM_EMAIL, to,
+            headers={
+                'From': from_email,
+            })
 
         self.cc = cc or []
         self.message_id = None
@@ -274,7 +274,7 @@ class SpiffyEmailMessage(EmailMultiAlternatives):
         # it will be treated as a plain dict by Django. Instead, since we're
         # using a MultiValueDict, we store it in a separate attribute
         # attribute and handle adding our headers in the message method.
-        self.headers = headers
+        self.rb_headers = headers
 
         self.attach_alternative(html_body, "text/html")
 
@@ -282,7 +282,7 @@ class SpiffyEmailMessage(EmailMultiAlternatives):
         msg = super(SpiffyEmailMessage, self).message()
         self.message_id = msg['Message-ID']
 
-        for name, value_list in self.headers.iterlists():
+        for name, value_list in self.rb_headers.iterlists():
             for value in value_list:
                 msg.add_header(name, value)
 
