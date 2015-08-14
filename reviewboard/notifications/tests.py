@@ -15,7 +15,8 @@ from kgb import SpyAgency
 from reviewboard.accounts.models import Profile, ReviewRequestVisit
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.diffviewer.models import FileDiff
-from reviewboard.notifications.email import (build_email_address,
+from reviewboard.notifications.email import (SpiffyEmailMessage,
+                                             build_email_address,
                                              build_recipients,
                                              get_email_address_for_user,
                                              get_email_addresses_for_group,
@@ -54,6 +55,12 @@ def console_email_backend():
 
 
 class EmailTestHelper(object):
+    def setUp(self):
+        super(EmailTestHelper, self).setUp()
+
+        mail.outbox = []
+        self.sender = 'noreply@example.com'
+
     def assertValidRecipients(self, user_list, group_list=[]):
         recipient_list = mail.outbox[0].to + mail.outbox[0].cc
         self.assertEqual(len(recipient_list), len(user_list) + len(group_list))
@@ -71,12 +78,38 @@ class EmailTestHelper(object):
                     "group %s was not found in the recipient list" % address)
 
 
-class UserEmailTests(TestCase, EmailTestHelper):
+class GeneralEmailTests(EmailTestHelper, TestCase):
+    """General unit tests for e-mail support."""
+
+    def test_headers_from_sender(self):
+        """Testing SpiffyEmailMessage From/Sender headers"""
+        email = SpiffyEmailMessage(
+            subject='Test email',
+            text_body='This is a test.',
+            html_body='<p>This is a test.</p>',
+            from_email='doc@example.com',
+            sender=self.sender,
+            to=['sleepy@example.com'])
+
+        self.assertIn('From', email.extra_headers)
+        self.assertIn('Sender', email.rb_headers)
+        self.assertIn('X-Sender', email.rb_headers)
+        self.assertNotIn('From', email.rb_headers)
+        self.assertNotIn('Sender', email.extra_headers)
+        self.assertNotIn('X-Sender', email.extra_headers)
+        self.assertEqual(email.extra_headers['From'], 'doc@example.com')
+        self.assertEqual(email.rb_headers['Sender'], self.sender)
+        self.assertEqual(email.rb_headers['X-Sender'], self.sender)
+
+        msg = email.message()
+        self.assertEqual(msg['From'], 'doc@example.com')
+        self.assertEqual(msg['Sender'], self.sender)
+        self.assertEqual(msg['X-Sender'], self.sender)
+
+
+class UserEmailTests(EmailTestHelper, TestCase):
     def setUp(self):
         super(UserEmailTests, self).setUp()
-
-        mail.outbox = []
-        self.sender = 'noreply@example.com'
 
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set("mail_send_new_user_mail", True)
@@ -112,20 +145,18 @@ class UserEmailTests(TestCase, EmailTestHelper):
                          "New Review Board user registration for NewUser")
 
         self.assertEqual(email.from_email, self.sender)
-        self.assertEqual(email.headers['From'], settings.SERVER_EMAIL)
+        self.assertEqual(email.extra_headers['From'], settings.SERVER_EMAIL)
         self.assertEqual(email.to[0], build_email_address(admin_name,
                                                           admin_email_addr))
 
 
-class ReviewRequestEmailTests(TestCase, EmailTestHelper):
+class ReviewRequestEmailTests(EmailTestHelper, TestCase):
     """Tests the e-mail support."""
+
     fixtures = ['test_users']
 
     def setUp(self):
         super(ReviewRequestEmailTests, self).setUp()
-
-        mail.outbox = []
-        self.sender = 'noreply@example.com'
 
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set("mail_send_review_mail", True)
@@ -145,7 +176,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
-        self.assertEqual(mail.outbox[0].headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
                          'Review Request %s: My test review request'
                          % review_request.pk)
@@ -195,10 +226,10 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         email = mail.outbox[0]
         self.assertEqual(email.from_email, self.sender)
-        self.assertEqual(email.headers['From'], from_email)
-        self.assertEqual(email.headers['X-ReviewBoard-URL'],
+        self.assertEqual(email.extra_headers['From'], from_email)
+        self.assertEqual(email.rb_headers['X-ReviewBoard-URL'],
                          'http://example.com/')
-        self.assertEqual(email.headers['X-ReviewRequest-URL'],
+        self.assertEqual(email.rb_headers['X-ReviewRequest-URL'],
                          'http://example.com/r/%s/'
                          % review_request.display_id)
         self.assertEqual(email.subject,
@@ -240,10 +271,10 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         email = mail.outbox[0]
         self.assertEqual(email.from_email, self.sender)
-        self.assertEqual(email.headers['From'], from_email)
-        self.assertEqual(email.headers['X-ReviewBoard-URL'],
+        self.assertEqual(email.extra_headers['From'], from_email)
+        self.assertEqual(email.rb_headers['X-ReviewBoard-URL'],
                          'http://example.com/s/local-site-1/')
-        self.assertEqual(email.headers['X-ReviewRequest-URL'],
+        self.assertEqual(email.rb_headers['X-ReviewRequest-URL'],
                          'http://example.com/s/local-site-1/r/%s/'
                          % review_request.display_id)
         self.assertEqual(email.subject,
@@ -364,7 +395,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
-        self.assertEqual(mail.outbox[0].headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
                          'Re: Review Request %s: My test review request'
                          % review_request.pk)
@@ -392,7 +423,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
-        self.assertEqual(mail.outbox[0].headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
                          'Re: Review Request %s: My test review request'
                          % review_request.pk)
@@ -422,7 +453,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
-        self.assertEqual(mail.outbox[0].headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
                          'Re: Review Request %s: My test review request'
                          % review_request.pk)
@@ -459,7 +490,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
-        self.assertEqual(mail.outbox[0].headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
                          'Re: Review Request %s: My test review request'
                          % review_request.pk)
@@ -492,7 +523,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
-        self.assertEqual(mail.outbox[0].headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
         self.assertEqual(mail.outbox[0].subject,
                          'Re: Review Request %s: Changed summary'
                          % review_request.pk)
@@ -622,7 +653,7 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
-        self.assertEqual(mail.outbox[0].headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
         self.assertValidRecipients(
             ['site_user1', 'site_user2', 'site_user3', 'site_user4',
              'site_user5', review_request.submitter.username], [])
@@ -675,8 +706,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertTrue('X-ReviewBoard-Diff-For' in message.headers)
-        diff_headers = message.headers.getlist('X-ReviewBoard-Diff-For')
+        self.assertTrue('X-ReviewBoard-Diff-For' in message.rb_headers)
+        diff_headers = message.rb_headers.getlist('X-ReviewBoard-Diff-For')
 
         self.assertEqual(len(diff_headers), 1)
         self.assertFalse(filediff.source_file in diff_headers)
@@ -699,8 +730,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertTrue('X-ReviewBoard-Diff-For' in message.headers)
-        diff_headers = message.headers.getlist('X-ReviewBoard-Diff-For')
+        self.assertTrue('X-ReviewBoard-Diff-For' in message.rb_headers)
+        diff_headers = message.rb_headers.getlist('X-ReviewBoard-Diff-For')
 
         self.assertEqual(len(diff_headers), 1)
         self.assertTrue(filediff.source_file in diff_headers)
@@ -724,8 +755,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertTrue('X-ReviewBoard-Diff-For' in message.headers)
-        diff_headers = message.headers.getlist('X-ReviewBoard-Diff-For')
+        self.assertTrue('X-ReviewBoard-Diff-For' in message.rb_headers)
+        diff_headers = message.rb_headers.getlist('X-ReviewBoard-Diff-For')
 
         self.assertEqual(len(diff_headers), 2)
         self.assertTrue(filediff.source_file in diff_headers)
@@ -749,8 +780,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertTrue('X-ReviewBoard-Diff-For' in message.headers)
-        diff_headers = message.headers.getlist('X-ReviewBoard-Diff-For')
+        self.assertTrue('X-ReviewBoard-Diff-For' in message.rb_headers)
+        diff_headers = message.rb_headers.getlist('X-ReviewBoard-Diff-For')
 
         self.assertEqual(len(diff_headers), 2)
         self.assertTrue(filediff.source_file in diff_headers)
@@ -780,8 +811,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertTrue('X-ReviewBoard-Diff-For' in message.headers)
-        diff_headers = message.headers.getlist('X-ReviewBoard-Diff-For')
+        self.assertTrue('X-ReviewBoard-Diff-For' in message.rb_headers)
+        diff_headers = message.rb_headers.getlist('X-ReviewBoard-Diff-For')
 
         self.assertEqual(len(diff_headers), 3)
         self.assertTrue(filediffs[0].source_file in diff_headers)
@@ -810,8 +841,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertIn('X-Foo', message.headers)
-        self.assertEqual(message.headers['X-Foo'], 'Bar')
+        self.assertIn('X-Foo', message.rb_headers)
+        self.assertEqual(message.rb_headers['X-Foo'], 'Bar')
 
     def test_extra_headers_multivalue_dict(self):
         """Testing sending extra headers as a MultiValueDict with an e-mail
@@ -838,8 +869,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertIn('X-Foo', message.headers)
-        self.assertEqual(set(message.headers.getlist('X-Foo')),
+        self.assertIn('X-Foo', message.rb_headers)
+        self.assertEqual(set(message.rb_headers.getlist('X-Foo')),
                          set(header_values))
 
     def test_review_no_shipit_headers(self):
@@ -854,8 +885,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertNotIn('X-ReviewBoard-ShipIt', message.headers)
-        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.headers)
+        self.assertNotIn('X-ReviewBoard-ShipIt', message.rb_headers)
+        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.rb_headers)
 
     def test_review_shipit_only_headers(self):
         """Testing sending a review e-mail with only a 'Ship It!'"""
@@ -870,8 +901,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertIn('X-ReviewBoard-ShipIt', message.headers)
-        self.assertIn('X-ReviewBoard-ShipIt-Only', message.headers)
+        self.assertIn('X-ReviewBoard-ShipIt', message.rb_headers)
+        self.assertIn('X-ReviewBoard-ShipIt-Only', message.rb_headers)
 
     def test_review_shipit_only_headers_no_text(self):
         """Testing sending a review e-mail with only a 'Ship It!' and no text
@@ -887,8 +918,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertIn('X-ReviewBoard-ShipIt', message.headers)
-        self.assertIn('X-ReviewBoard-ShipIt-Only', message.headers)
+        self.assertIn('X-ReviewBoard-ShipIt', message.rb_headers)
+        self.assertIn('X-ReviewBoard-ShipIt-Only', message.rb_headers)
 
     def test_review_shipit_headers_custom_top_text(self):
         """Testing sending a review e-mail with a 'Ship It' and custom top text
@@ -904,8 +935,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertIn('X-ReviewBoard-ShipIt', message.headers)
-        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.headers)
+        self.assertIn('X-ReviewBoard-ShipIt', message.rb_headers)
+        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.rb_headers)
 
     def test_review_shipit_headers_bottom_text(self):
         """Testing sending a review e-mail with a 'Ship It' and bottom text"""
@@ -920,8 +951,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertIn('X-ReviewBoard-ShipIt', message.headers)
-        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.headers)
+        self.assertIn('X-ReviewBoard-ShipIt', message.rb_headers)
+        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.rb_headers)
 
     @add_fixtures(['test_scmtools'])
     def test_review_shipit_headers_comments(self):
@@ -947,8 +978,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertIn('X-ReviewBoard-ShipIt', message.headers)
-        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.headers)
+        self.assertIn('X-ReviewBoard-ShipIt', message.rb_headers)
+        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.rb_headers)
 
     def test_review_shipit_headers_attachment_comments(self):
         """Testing sending a review e-mail with a 'Ship It' and file attachment
@@ -971,8 +1002,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertIn('X-ReviewBoard-ShipIt', message.headers)
-        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.headers)
+        self.assertIn('X-ReviewBoard-ShipIt', message.rb_headers)
+        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.rb_headers)
 
     def test_review_shipit_headers_screenshot_comments(self):
         """Testing sending a review e-mail with a 'Ship It' and screenshot
@@ -995,8 +1026,8 @@ class ReviewRequestEmailTests(TestCase, EmailTestHelper):
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertIn('X-ReviewBoard-ShipIt', message.headers)
-        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.headers)
+        self.assertIn('X-ReviewBoard-ShipIt', message.rb_headers)
+        self.assertNotIn('X-ReviewBoard-ShipIt-Only', message.rb_headers)
 
     def _get_sender(self, user):
         return build_email_address(user.get_full_name(), self.sender)
