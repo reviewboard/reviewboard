@@ -30,6 +30,22 @@ from reviewboard.reviews.views import build_diff_comment_fragments
 _hooks = defaultdict(set)
 
 
+def _ensure_unicode(text):
+    """Return a unicode object for the given text.
+
+    Args:
+        text (bytes or unicode):
+            The text to decode.
+
+    Returns:
+        unicode: The decoded text.
+    """
+    if isinstance(text, bytes):
+        text = text.decode('utf-8')
+
+    return text
+
+
 def register_email_hook(signal, handler):
     """Register an e-mail hook
 
@@ -657,10 +673,7 @@ def mail_review_request(review_request, user, changedesc=None,
         (not close_type and review_request.status == 'D')):
         return
 
-    summary = review_request.summary
-    if isinstance(summary, bytes):
-        summary = summary.decode('utf-8')
-
+    summary = _ensure_unicode(review_request.summary)
     subject = "Review Request %d: %s" % (review_request.display_id,
                                          summary)
     reply_message_id = None
@@ -781,11 +794,13 @@ def mail_review(review, user):
         to_field, cc_field, review_published, review=review, user=user,
         review_request=review_request)
 
+    summary = _ensure_unicode(review_request.summary)
+
     review.email_message_id = send_review_mail(
         reviewer,
         review_request,
         ('Re: Review Request %d: %s'
-         % (review_request.display_id, review_request.summary)),
+         % (review_request.display_id, summary)),
         review_request.email_message_id,
         to_field,
         cc_field,
@@ -832,11 +847,13 @@ def mail_reply(reply, user):
         to_field, cc_field, reply_published, reply=reply, user=user,
         review=review, review_request=review_request)
 
+    summary = _ensure_unicode(review_request.summary)
+
     reply.email_message_id = send_review_mail(
         user,
         review_request,
         ('Re: Review Request %d: %s'
-         % (review_request.display_id, review_request.summary)),
+         % (review_request.display_id, summary)),
         review.email_message_id,
         to_field,
         cc_field,
