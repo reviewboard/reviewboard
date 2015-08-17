@@ -155,9 +155,9 @@ def submitter(request,
 
     datagrid = datagrid_cls(request, user, local_site=local_site)
     datagrid.tabs = [
-        (UserPageReviewRequestDataGrid.tab_title(username),
+        (UserPageReviewRequestDataGrid.tab_title,
          reverse('user', args=[username])),
-        (UserPageReviewsDataGrid.tab_title(username),
+        (UserPageReviewsDataGrid.tab_title,
          reverse('user-grid', args=[username, 'reviews'])),
     ]
 
