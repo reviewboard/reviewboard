@@ -28,7 +28,7 @@ class AnytaskSyncExtension(Extension):
         values['body_top'] = reply.body_top.encode('utf-8')
         values['body_bottom'] = reply.body_bottom.encode('utf-8')
         values['author'] = reply.user.username
-        url = 'http://127.0.0.1:8000/issue/update/' + str(review_id)
+        url = 'http://127.0.0.1:8000/anyrb/update/' + str(review_id)
         data = urllib.urlencode(values)
         req = urllib2.Request(url, data)
         rsp = urllib2.urlopen(req)
@@ -43,7 +43,7 @@ class AnytaskSyncExtension(Extension):
         for comment in review.get_all_comments():
             if comment.comment_type == 'diff':
                 values['diff-url'] = comment.get_absolute_url()
-        url = 'http://127.0.0.1:8000/issue/update/' + str(review_id)
+        url = 'http://127.0.0.1:8000/anyrb/update/' + str(review_id)
         data = urllib.urlencode(values)
         req = urllib2.Request(url, data)
         rsp = urllib2.urlopen(req)
