@@ -69,7 +69,7 @@ class ReviewUI(object):
 
         When this is called, the arguments are always passed as keyword
         arguments. Subclasses don't need to accept all the arguments, as
-        long as they take a **kwargs.
+        long as they take a ``**kwargs``.
         """
         return True
 
