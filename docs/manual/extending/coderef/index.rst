@@ -209,7 +209,6 @@ Web API
    reviewboard.webapi.base
    reviewboard.webapi.decorators
    reviewboard.webapi.errors
-   reviewboard.webapi.managers
    reviewboard.webapi.mixins
    reviewboard.webapi.models
    reviewboard.webapi.server_info

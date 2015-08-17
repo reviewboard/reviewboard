@@ -13,3 +13,4 @@ Configuration
    repositories
    review-groups
    users
+   webhooks

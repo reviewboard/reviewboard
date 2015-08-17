@@ -33,6 +33,7 @@ Glossary
        between two versions of a diff, which is useful when making incremental
        changes to a very large diff.
 
+   Local Site
    Local Sites
        One or more divisions of a Review Board site. Local sites act as
        individual Review Board sites with their own set of repositories,
@@ -64,6 +65,12 @@ Glossary
        A review request that can only be accessed by users meeting certain
        criteria, such as being on an access list for a group or repository.
        See :ref:`access-control` for more information.
+
+   Review Request
+   Review Requests
+       A review request is a collection of assets (such as source code,
+       documents, and test data) and information (such as a summary,
+       description, testing, and branch information) put up for review.
 
    Unified Diff
        A type of :term:`diff file` designed to be easy to parse and easy

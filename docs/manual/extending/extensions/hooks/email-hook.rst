@@ -1,20 +1,20 @@
-.. _email_hook:
+.. _email-hook:
 
 =========
 EmailHook
 =========
 
 :py:class:`reviewboard.extensions.hooks.EmailHook` allows extensions to modify
-the recipients of e-mails generated from review request activity
+the recipients of e-mails generated from review request activity.
 
 :py:class:`EmailHook` requires two arguments for initialization: the extension
 instance and the list of review request signals to listen for. It can listen
 for the following signals:
 
- * :py:ref:`reviewboard.reviews.signals.review_request_published`;
- * :py:ref:`reviewboard.reviews.signals.review_request_closed`;
- * :py:ref:`reviewboard.reviews.signals.review_published`; and
- * :py:ref:`reviewboard.reviews.siganls.reply_published`.
+* :py:data:`~reviewboard.reviews.signals.review_request_published`
+* :py:data:`~reviewboard.reviews.signals.review_request_closed`
+* :py:data:`~reviewboard.reviews.signals.review_published`
+* :py:data:`~reviewboard.reviews.signals.reply_published`
 
 Attempting to use any other signal will trigger an exception.
 
@@ -29,10 +29,10 @@ These sub-classes are:
 .. toctree::
    :maxdepth: 1
 
-   review_request_published_email_hook
-   review_request_closed_email_hook
-   review_published_email_hook
-   review_reply_published_email_hook
+   review-request-published-email-hook
+   review-request-closed-email-hook
+   review-published-email-hook
+   review-reply-published-email-hook
 
 
 Example
