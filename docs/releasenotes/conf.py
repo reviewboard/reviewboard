@@ -20,6 +20,7 @@
 # absolute, like shown here.
 import os
 import sys
+from datetime import datetime
 sys.path.append(os.path.abspath('_ext'))
 
 
@@ -53,7 +54,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Release Notes'
-copyright = u'2009-2014 Beanbag, Inc.'
+copyright = u'2009-%s, Beanbag, Inc.' % datetime.now().year
 bugtracker_url = 'https://www.reviewboard.org/bugs/%s'
 
 # The version info for the project you're documenting, acts as replacement for
