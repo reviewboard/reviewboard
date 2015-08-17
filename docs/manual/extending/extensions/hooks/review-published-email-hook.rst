@@ -1,4 +1,4 @@
-.. _review_published_email_hook:
+.. _review-published-email-hook:
 
 ========================
 ReviewPublishedEmailHook

@@ -48,13 +48,15 @@ def _ensure_unicode(text):
 
 
 def register_email_hook(signal, handler):
-    """Register an e-mail hook
+    """Register an e-mail hook.
 
     Args:
-        signal (django.signals.signal):
+        signal (django.dispatch.Signal):
             The signal that will trigger the e-mail to be sent. This is one of
-            ``review_request_published``, ``review_request_closed``,
-            ``review_published``, or ``reply_published.
+            :py:data:`~reviewboard.reviews.signals.review_request_published`,
+            :py:data:`~reviewboard.reviews.signals.review_request_closed`,
+            :py:data:`~reviewboard.reviews.signals.review_published`, or
+            :py:data:`~reviewboard.reviews.signals.reply_published`.
 
         handler (reviewboard.extensions.hooks.EmailHook):
             The ``EmailHook`` that will be triggered when an e-mail of the
@@ -71,10 +73,12 @@ def unregister_email_hook(signal, handler):
     """Unregister an e-mail hook.
 
     Args:
-        signal (django.signals.signal):
+        signal (django.dispatch.Signal):
             The signal that will trigger the e-mail to be sent. This is one of
-            ``review_request_published``, ``review_request_closed``,
-            ``review_published``, or ``reply_published.
+            :py:data:`~reviewboard.reviews.signals.review_request_published`,
+            :py:data:`~reviewboard.reviews.signals.review_request_closed`,
+            :py:data:`~reviewboard.reviews.signals.review_published`, or
+            :py:data:`~reviewboard.reviews.signals.reply_published`.
 
         handler (reviewboard.extensions.hooks.EmailHook):
             The ``EmailHook`` that will be triggered when an e-mail of the
@@ -90,8 +94,9 @@ def unregister_email_hook(signal, handler):
 def review_request_closed_cb(sender, user, review_request, type, **kwargs):
     """Send e-mail when a review request is closed.
 
-    Listens to the ``review_request_closed`` signal and sends an e-mail if this
-    type of notification is enabled (through the
+    Listens to the
+    :py:data:`~reviewboard.reviews.signals.review_request_closed` signal and
+    sends an e-mail if this type of notification is enabled (through the
     ``mail_send_review_close_mail`` site configuration setting).
     """
     siteconfig = SiteConfiguration.objects.get_current()
@@ -105,9 +110,10 @@ def review_request_published_cb(sender, user, review_request, trivial,
                                 changedesc, **kwargs):
     """Send e-mail when a review request is published.
 
-    Listens to the ``review_request_published`` signal and sends an e-mail if
-    this type of notification is enabled through the ``mail_send_review_mail``
-    site configuration setting).
+    Listens to the
+    :py:data:`~reviewboard.reviews.signals.review_request_published` signal and
+    sends an e-mail if this type of notification is enabled through the
+    ``mail_send_review_mail`` site configuration setting).
     """
     siteconfig = SiteConfiguration.objects.get_current()
 
@@ -118,9 +124,9 @@ def review_request_published_cb(sender, user, review_request, trivial,
 def review_published_cb(sender, user, review, **kwargs):
     """Send e-mail when a review is published.
 
-    Listens to the ``review_published`` signal and sends e-mail if this type of
-    notification is enabled through the ``mail_send_review_mail`` site
-    configuration setting).
+    Listens to the :py:data:`~reviewboard.reviews.signals.review_published`
+    signal and sends e-mail if this type of notification is enabled through the
+    ``mail_send_review_mail`` site configuration setting).
     """
     siteconfig = SiteConfiguration.objects.get_current()
 
@@ -131,9 +137,9 @@ def review_published_cb(sender, user, review, **kwargs):
 def reply_published_cb(sender, user, reply, trivial, **kwargs):
     """Send e-mail when a review reply is published.
 
-    Listens to the ``reply_published`` signal and sends an e-mail if this type
-    of notification is enabled (through ``mail_send_review_mail`` site
-    configuration).
+    Listens to the :py:data:`~reviewboard.reviews.signals.reply_published`
+    signal and sends an e-mail if this type of notification is enabled (through
+    ``mail_send_review_mail`` site configuration).
     """
     siteconfig = SiteConfiguration.objects.get_current()
 
@@ -176,7 +182,7 @@ def build_email_address(fullname, email):
             The e-mail address.
 
     Returns:
-        unicode: A properly formatted e-mail addresss.
+        unicode: A properly formatted e-mail address.
     """
     return formataddr((fullname, email))
 
@@ -257,9 +263,10 @@ class SpiffyEmailMessage(EmailMultiAlternatives):
     """An EmailMessage subclass with improved header and message ID support.
 
     This also knows about several headers (standard and variations),
-    including Sender/X-Sender, In-Reply-To/References, and Reply-To.
+    including ``Sender``/``X-Sender``, ``In-Reply-To``/``References``, and
+    ``Reply-To``.
 
-    The generated Message-ID header from the e-mail can be accessed
+    The generated ``Message-ID`` header from the e-mail can be accessed
     through the :py:attr:`message_id` attribute after the e-mail is sent.
 
     This class also supports repeated headers.
@@ -354,20 +361,20 @@ def build_recipients(user, review_request, extra_recipients=None,
 
         extra_recipients (list):
             An optional list of extra recipients as
-            :py:class:`django.contrib.auth.models.User`s and
-            :py:class:`reviewboard.reviews.models.Group`s that will receive the
-            e-mail.
+            :py:class:`Users <django.contrib.auth.models.User>` and
+            :py:class:`Groups <reviewboard.reviews.models.Group>` that will
+            receive the e-mail.
 
         limit_recipients_to (list):
             An optional list of recipients as
-            :py:class:`django.contrib.auth.models.User`s and
-            :py:class:`reviewboard.reviews.models.Group`s who will receive the
-            e-mail in place of the normal recipients.
+            :py:class:`Users <django.contrib.auth.models.User>` and
+            :py:class:`Groups <reviewboard.reviews.models.Group>` who will
+            receive the e-mail in place of the normal recipients.
 
     Returns:
-        tuple: A 2-tuple of the TO field and the CC field, as :py:class:`set`s
-        of :py:class:`django.contrib.auth.models.User`s and
-        :py:class:`reviewboard.reviews.models.Group`s.
+        tuple: A 2-tuple of the To field and the CC field, as sets of
+        :py:class:`Users <django.contrib.auth.models.User>` and
+        :py:class:`Groups <reviewboard.reviews.models.Group>`.
     """
     recipients = set()
     to_field = set()
@@ -424,8 +431,8 @@ def build_recipients(user, review_request, extra_recipients=None,
         Args:
             to_filter (list):
                 A list of recipients as
-                :py:class:`django.contrib.auth.models.User`s and
-                :py:class:`reviewboard.reviews.models.Group`s.
+                :py:class:`Users <django.contrib.auth.models.User>` and
+                :py:class:`Groups <reviewboard.reviews.models.Group>`.
         """
         pks = set()
 
@@ -486,8 +493,8 @@ def recipients_to_addresses(recipients, review_request_id=None):
 
     Args:
         recipients (list):
-            A list of :py:class:`django.contrib.auth.models.User`s and
-            :py:class:`reviewboard.reviews.models.Group`s.
+            A list of :py:class:`Users <django.contrib.auth.models.User>` and
+            :py:class:`Groups <reviewboard.reviews.models.Group>`.
 
     Returns:
         set: The e-mail addresses for all recipients.
@@ -526,13 +533,13 @@ def send_review_mail(user, review_request, subject, in_reply_to,
 
         to_field (list):
             The recipients to send the e-mail to. This should be a list of
-            :py:class:`django.contrib.auth.models.User`s and
-            :py:class:`reviewboard.reviews.models.Group`s.
+            :py:class:`Users <django.contrib.auth.models.User>` and
+            :py:class:`Groups <reviewboard.reviews.models.Group>`.
 
         cc_field (list):
             The addresses to be CC'ed on the e-mail. This should be a list of
-            :py:class:`django.contrib.auth.models.User`s and
-            :py:class:`reviewboard.reviews.models.Group`s.
+            :py:class:`Users <django.contrib.auth.models.User>` and
+            :py:class:`Groups <reviewboard.reviews.models.Group>`.
 
         text_template_name (unicode):
             The name for the text e-mail template.
@@ -544,8 +551,8 @@ def send_review_mail(user, review_request, subject, in_reply_to,
             Optional extra context to provide to the template.
 
         extra_headers (dict):
-            Either a :py:class:`dict` or a
-            :py:class:`django.utils.datastructures.MultiValueDict` providing
+            Either a dict or
+            :py:class:`~django.utils.datastructures.MultiValueDict` providing
             additional headers to send with the e-mail.
 
     Returns:
@@ -671,8 +678,8 @@ def mail_review_request(review_request, user, changedesc=None,
         close_type (unicode):
             How the review request was closed or ``None`` if it was published.
             If this is not ``None`` it must be one of
-            :py:ref:`reviewboard.reviews.models.ReviewRequest.SUBMITTED` or
-            :py:ref:`reviewboard.reviews.models.ReviewRequest.DISCARDED`.
+            :py:attr:`~reviewboard.reviews.models.ReviewRequest.SUBMITTED` or
+            :py:attr:`~reviewboard.reviews.models.ReviewRequest.DISCARDED`.
     """
     # If the review request is not yet public or has been discarded, don't send
     # any mail. Relax the "discarded" rule when e-mails are sent on closing
@@ -765,7 +772,7 @@ def mail_review(review, user):
     """Send an e-mail representing the supplied review.
 
     Args:
-        review (reviewboard.reviews.model.Review):
+        review (reviewboard.reviews.models.Review):
             The review to send an e-mail about.
     """
     review_request = review.review_request
@@ -916,25 +923,25 @@ def filter_email_recipients_from_hooks(to_field, cc_field, signal, **kwargs):
 
     Args:
         to_field (set):
-            The original TO field of the e-mail, as a set of
-            :py:class:`django.contrib.auth.models.User`s and
-            :py:class:`reviewboard.reviews.models.Group`s.
+            The original To field of the e-mail, as a set of
+            :py:class:`Users <django.contrib.auth.models.User>` and
+            :py:class:`Groups <reviewboard.reviews.models.Group>`.
 
         cc_field (set):
             The original CC field of the e-mail, as a set of
-            :py:class:`django.contrib.auth.models.User`s and
-            :py:class:`reviewboard.reviews.models.Group`s
+            :py:class:`Users <django.contrib.auth.models.User>` and
+            :py:class:`Groups <reviewboard.reviews.models.Group>`.
 
-        signal (django.signals.Signal):
+        signal (django.dispatch.Signal):
             The signal that triggered the e-mail.
 
         **kwargs (dict):
-            Extra keyword arguments to pass to the e-mail hook
+            Extra keyword arguments to pass to the e-mail hook.
 
     Returns:
-        tuple: A 2-tuple of the TO field and the CC field, as :py:class:`set`s
-        of :py:class:`django.contrib.auth.models.User`s and
-        :py:class:`reviewboard.reviews.models.Group`s.
+        tuple: A 2-tuple of the To field and the CC field, as sets
+        of :py:class:`Users <django.contrib.auth.models.User>` and
+        :py:class:`Groups <reviewboard.reviews.models.Group>`.
     """
     if signal in _hooks:
         for hook in _hooks[signal]:
