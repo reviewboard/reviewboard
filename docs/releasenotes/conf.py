@@ -211,5 +211,11 @@ latex_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    'https://www.reviewboard.org/docs/manual/dev/': None,
+    'django': ('https://docs.djangoproject.com/en/%s/'
+               % reviewboard.django_major_version,
+               'https://docs.djangoproject.com/en/%s/_objects/'
+               % reviewboard.django_major_version),
+    'python': ('https://docs.python.org/2.7', None),
+    'rbtools': ('https://www.reviewboard.org/docs/rbtools/dev/', None),
+    'reviewboard': ('https://www.reviewboard.org/docs/manual/dev/', None),
 }

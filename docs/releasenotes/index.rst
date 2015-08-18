@@ -10,6 +10,7 @@ Review Board Release Notes
 .. toctree::
    :maxdepth: 1
 
+   2.5-rc-1
    2.5-beta-2
    2.5-beta-1
 
