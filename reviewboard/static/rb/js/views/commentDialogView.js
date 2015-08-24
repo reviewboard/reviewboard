@@ -270,6 +270,7 @@ RB.CommentDialogView = Backbone.View.extend({
         this._textEditor.on('change', function() {
             this.model.set('text', this._textEditor.getText());
         }, this);
+        this._textEditor.bindRichTextCheckbox(this._$enableMarkdownField);
         this._textEditor.bindRichTextVisibility(
             this._$draftForm.find('.markdown-info'));
 
