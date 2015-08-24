@@ -122,6 +122,7 @@ RB.DraftResourceModelMixin = {
      */
     _retrieveDraft: function(options, context) {
         var self = this,
+            extraQueryArgs,
             data;
 
         if (!RB.UserSession.instance.get('authenticated')) {
@@ -137,8 +138,10 @@ RB.DraftResourceModelMixin = {
         options = options || {};
         data = options.data || {};
 
-        if (!_.isEmpty(this.extraQueryArgs)) {
-            data = _.extend({}, this.extraQueryArgs, data);
+        extraQueryArgs = _.result(this, 'extraQueryArgs', {});
+
+        if (!_.isEmpty(extraQueryArgs)) {
+            data = _.extend({}, extraQueryArgs, data);
         }
 
         Backbone.Model.prototype.fetch.call(this, {

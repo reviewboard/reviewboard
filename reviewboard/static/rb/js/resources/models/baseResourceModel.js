@@ -32,7 +32,14 @@ RB.BaseResource = Backbone.Model.extend({
     /* The list of fields to expand in resource payloads. */
     expandedFields: [],
 
-    /* Extra query arguments for GET requests. */
+    /*
+     * Extra query arguments for GET requests.
+     *
+     * This may also be a function that returns the extra query arguments.
+     *
+     * These values can be overridden by the caller when making a request.
+     * They function as defaults for the queries.
+     */
     extraQueryArgs: {},
 
     /* Whether or not extra data can be associated on the resource. */
@@ -662,6 +669,7 @@ RB.BaseResource = Backbone.Model.extend({
     sync: function(method, model, options) {
         var data,
             contentType,
+            extraQueryArgs,
             syncOptions;
 
         options = options || {};
@@ -669,8 +677,10 @@ RB.BaseResource = Backbone.Model.extend({
         if (method === 'read') {
             data = options.data || {};
 
-            if (!_.isEmpty(this.extraQueryArgs)) {
-                data = _.extend({}, this.extraQueryArgs, data);
+            extraQueryArgs = _.result(this, 'extraQueryArgs', {});
+
+            if (!_.isEmpty(extraQueryArgs)) {
+                data = _.extend({}, extraQueryArgs, data);
             }
         } else {
             if (options.form) {

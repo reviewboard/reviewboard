@@ -44,9 +44,17 @@ RB.BaseComment = RB.BaseResource.extend({
         }, RB.BaseResource.prototype.defaults());
     },
 
-    extraQueryArgs: {
-        'force-text-type': 'html',
-        'include-text-types': 'raw'
+    extraQueryArgs: function() {
+        var textTypes = 'raw';
+
+        if (RB.UserSession.instance.get('defaultUseRichText')) {
+            textTypes += ',markdown';
+        }
+
+        return {
+            'force-text-type': 'html',
+            'include-text-types': textTypes
+        };
     },
 
     supportsExtraData: true,
@@ -121,6 +129,12 @@ RB.BaseComment = RB.BaseResource.extend({
         if (rsp.raw_text_fields) {
             data.rawTextFields = {
                 text: rsp.raw_text_fields.text
+            };
+        }
+
+        if (rsp.markdown_text_fields) {
+            data.markdownTextFields = {
+                text: rsp.markdown_text_fields.text
             };
         }
 
