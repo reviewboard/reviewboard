@@ -1,4 +1,4 @@
-.. _review_request_closed_email_hook:
+.. _review-request-closed-email-hook:
 
 ============================
 ReviewRequestClosedEmailHook

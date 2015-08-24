@@ -497,6 +497,8 @@ class UserPageReviewRequestDataGrid(UserPageDataGridMixin,
     This will show the review requests the user has out for review.
     """
 
+    tab_title = _('Review Requests')
+
     def __init__(self, request, user, *args, **kwargs):
         """Initialize the datagrid."""
         queryset = ReviewRequest.objects.from_user(
@@ -511,16 +513,11 @@ class UserPageReviewRequestDataGrid(UserPageDataGridMixin,
         super(UserPageReviewRequestDataGrid, self).__init__(
             request,
             queryset=queryset,
-            title=_("%s's review requests") % user.username,
+            title=_("%s's Review Requests") % user.username,
             *args, **kwargs)
 
         self.groups = user.review_groups.accessible(request.user)
         self.user = user
-
-    @staticmethod
-    def tab_title(username):
-        """Return the localized title for the tab."""
-        return _("%s's review requests") % username
 
 
 class UserPageReviewsDataGrid(UserPageDataGridMixin, ReviewDataGrid):
@@ -528,6 +525,8 @@ class UserPageReviewsDataGrid(UserPageDataGridMixin, ReviewDataGrid):
 
     This will show reviews the user has made on other review requests.
     """
+
+    tab_title = _('Reviews')
 
     def __init__(self, request, user, *args, **kwargs):
         """Initialize the datagrid."""
@@ -542,13 +541,8 @@ class UserPageReviewsDataGrid(UserPageDataGridMixin, ReviewDataGrid):
         super(UserPageReviewsDataGrid, self).__init__(
             request,
             queryset=queryset,
-            title=_("%s's reviews") % user.username,
+            title=_("%s's Reviews") % user.username,
             *args, **kwargs)
 
         self.groups = user.review_groups.accessible(request.user)
         self.user = user
-
-    @staticmethod
-    def tab_title(username):
-        """Return the localized title for the tab."""
-        return _("%s's reviews") % username

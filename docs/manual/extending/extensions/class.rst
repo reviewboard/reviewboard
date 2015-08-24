@@ -27,8 +27,10 @@ The following are also available on an extension instance:
 
 
 .. py:class:: reviewboard.extensions.base.Extension
+   :noindex:
 
    .. py:attribute:: apps
+      :noindex:
 
       A list of `Django apps`_ that the extension either provides or depends
       upon.
@@ -44,6 +46,7 @@ The following are also available on an extension instance:
       in Django.
 
    .. py:attribute:: context_processors
+      :noindex:
 
       A list of `Django context processors`_, which inject variables into
       every rendered template. Certain third-party apps depend on context
@@ -53,6 +56,7 @@ The following are also available on an extension instance:
       ``settings.TEMPLATE_CONTEXT_PROCESSORS`` in Django.
 
    .. py:attribute:: css_bundles
+      :noindex:
 
       A list of custom CSS media bundles that can be used when rendering
       pages.
@@ -60,6 +64,7 @@ The following are also available on an extension instance:
       See :ref:`extension-static-files` for more information.
 
    .. py:attribute:: default_settings
+      :noindex:
 
       A dictionary of default settings for the extension. These defaults
       are used when accessing :py:attr:`settings`, if the user hasn't
@@ -68,6 +73,7 @@ The following are also available on an extension instance:
       See :ref:`extension-settings-defaults` for more information.
 
    .. py:attribute:: has_admin_site
+      :noindex:
 
       A boolean that indicates whether a Django admin site should be generated
       for the extension.
@@ -79,6 +85,7 @@ The following are also available on an extension instance:
       See :ref:`extension-admin-site` for more information.
 
    .. py:attribute:: is_configurable
+      :noindex:
 
       A boolean indicating whether the extension supports global
       configuration by a system administrator.
@@ -90,6 +97,7 @@ The following are also available on an extension instance:
       See :ref:`extension-configuration` for more information.
 
    .. py:attribute:: js_bundles
+      :noindex:
 
       A list of custom JavaScript media bundles that can be used when
       rendering pages.
@@ -97,6 +105,7 @@ The following are also available on an extension instance:
       See :ref:`extension-static-files` for more information.
 
    .. py:attribute:: js_extensions
+      :noindex:
 
       A list of :py:class:`reviewboard.extensions.base.JSExtension`
       subclasses used for providing JavaScript-side extensions.
@@ -104,6 +113,7 @@ The following are also available on an extension instance:
       See :ref:`js-extensions` for more information.
 
    .. py:attribute:: metadata
+      :noindex:
 
       A dictionary providing additional information on the extension,
       such as the name or a description.
@@ -147,6 +157,7 @@ The following are also available on an extension instance:
       unless there's a special way it should be presented.
 
    .. py:attribute:: middleware
+      :noindex:
 
       A list of `Django middleware`_ classes, which hook into various levels
       of the HTTP request/response and page render process.
@@ -159,6 +170,7 @@ The following are also available on an extension instance:
       ``settings.MIDDLEWARE_CLASSES`` in Django.
 
    .. py:attribute:: requirements
+      :noindex:
 
       A list of strings providing the names of other extensions the
       extension requires. Enabling the extension will in turn enable
@@ -168,6 +180,7 @@ The following are also available on an extension instance:
       See :ref:`extension-egg-dependencies` for more information.
 
    .. py:attribute:: settings
+      :noindex:
 
       An instance of :py:class:`djblets.extensions.settings.Settings`. This
       attribute gives each extension an easy-to-use and persistent data store
@@ -176,6 +189,7 @@ The following are also available on an extension instance:
       See :ref:`extension-settings` for more information.
 
    .. py:attribute:: resources
+      :noindex:
 
       A list of :py:class:`reviewboard.webapi.resources.WebAPIResource`
       subclasses. This is used to extend the Web API.

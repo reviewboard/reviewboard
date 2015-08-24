@@ -298,6 +298,11 @@ body.datagrid-page {
         }
 
         .datagrid-top-filters {
+          @filter-menu-size: 32px;
+          @filter-menu-offset-top: 4px;
+
+          display: inline;
+
           a {
             text-decoration: none;
 
@@ -305,6 +310,75 @@ body.datagrid-page {
               text-decoration: underline;
             }
           }
+
+          .datagrid-filters {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+          }
+
+          .datagrid-filters-menu {
+            .mobile-only();
+
+            border: 1px transparent solid;
+            border-bottom: 0;
+            color: #333;
+            font-size: 1.5em;
+            line-height: @filter-menu-size;
+            position: relative;
+            text-align: center;
+            width: @filter-menu-size;
+            height: @filter-menu-size;
+          }
+
+          .on-mobile-medium-screen-720({
+            position: absolute;
+            right: 0;
+            top: @filter-menu-offset-top;
+
+            &:hover {
+              .datagrid-filters {
+                opacity: 1;
+                visibility: visible;
+              }
+
+              .datagrid-filters-menu {
+                background: @datagrid-filter-menu-bg;
+                border-color: @datagrid-filter-menu-border-color;
+                .border-radius(@box-border-radius @box-border-radius 0 0);
+                .transition(0.1s border-color linear, 0.1s background linear;);
+                z-index: (@z-index-menu + 1);
+              }
+            }
+
+            .datagrid-filters {
+              background: @datagrid-filter-menu-bg;
+              border: 1px @datagrid-filter-menu-border-color solid;
+              .border-radius(@box-border-radius 0 @box-border-radius
+                             @box-border-radius);
+              opacity: 0;
+              position: absolute;
+              right: 0;
+              top: @filter-menu-size;
+              visibility: hidden;
+              z-index: @z-index-menu;
+              .transition(0.1s opacity linear);
+
+              li {
+                white-space: nowrap;
+
+                a {
+                  color: black;
+                  display: block;
+                  padding: 1em;
+
+                  &:hover {
+                    text-decoration: none;
+                  }
+                }
+              }
+            }
+          });
         }
       }
 
