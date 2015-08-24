@@ -9,7 +9,6 @@ from django.template import TemplateSyntaxError
 from django.template.defaultfilters import escapejs, stringfilter
 from django.template.loader import render_to_string
 from django.utils import six
-from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.decorators import basictag, blocktag
@@ -24,6 +23,7 @@ from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
 from reviewboard.reviews.models import (BaseComment, Group,
                                         ReviewRequest, ScreenshotComment,
                                         FileAttachmentComment)
+from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 
 
 register = template.Library()
@@ -74,32 +74,21 @@ def ifneatnumber(context, nodelist, rid):
 @basictag(takes_context=True)
 def file_attachment_comments(context, file_attachment):
     """Returns a JSON array of current comments for a file attachment."""
-    comments = []
-    user = context.get('user', None)
+    review_ui = file_attachment.review_ui
 
-    for comment in file_attachment.get_comments():
-        review = comment.get_review()
+    if not review_ui:
+        # For the purposes of serialization, we'll create a dummy ReviewUI.
+        review_ui = FileAttachmentReviewUI(file_attachment.review_request,
+                                           file_attachment)
 
-        if review and (review.public or review.user == user):
-            comments.append({
-                'comment_id': comment.id,
-                'text': normalize_text_for_edit(user, comment.text,
-                                                comment.rich_text),
-                'rich_text': comment.rich_text,
-                'user': {
-                    'username': escape(review.user.username),
-                    'name': escape(review.user.get_full_name() or
-                                   review.user.username),
-                },
-                'url': comment.get_review_url(),
-                'localdraft': review.user == user and not review.public,
-                'review_id': review.id,
-                'issue_opened': comment.issue_opened,
-                'issue_status': escape(
-                    BaseComment.issue_status_to_string(comment.issue_status)),
-            })
+    # NOTE: We're setting this here because file attachments serialization
+    #       requires this to be set, but we don't necessarily have it set
+    #       by this time. We should rethink parts of this down the road, but
+    #       it requires dealing with some compatibility issues for subclasses.
+    review_ui.request = context['request']
 
-    return json.dumps(comments)
+    return json.dumps(review_ui.serialize_comments(
+        file_attachment.get_comments()))
 
 
 @register.tag

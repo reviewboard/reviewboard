@@ -47,9 +47,6 @@ class SandboxReviewUI(FileAttachmentReviewUI):
     def get_js_view_data(self):
         raise Exception
 
-    def serialize_comments(self, comments):
-        raise Exception
-
 
 class ConflictFreeReviewUI(FileAttachmentReviewUI):
     supported_mimetypes = ['image/gif']
