@@ -11,14 +11,14 @@ from django.http import HttpResponse
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import six
-from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.context import make_review_request_context
-from reviewboard.reviews.markdown_utils import markdown_render_conditional
+from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
+                                                normalize_text_for_edit)
 from reviewboard.reviews.models import FileAttachmentComment, Review
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -47,6 +47,7 @@ class ReviewUI(object):
         self.review_request = review_request
         self.obj = obj
         self.diff_against_obj = None
+        self.request = None
 
     def set_diff_against(self, obj):
         """Sets the object to generate a diff against.
@@ -278,7 +279,9 @@ class ReviewUI(object):
 
         return {
             'comment_id': comment.pk,
-            'text': escape(comment.text),
+            'text': normalize_text_for_edit(user, comment.text,
+                                            comment.rich_text),
+            'rich_text': comment.rich_text,
             'html': markdown_render_conditional(comment.text,
                                                 comment.rich_text),
             'user': {

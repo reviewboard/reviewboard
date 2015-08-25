@@ -45,6 +45,7 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
 
                 if (comment.localdraft) {
                     comment_attr.text = comment.text;
+                    comment_attr.richText = comment.rich_text;
                     comment_attr.issueOpened = comment.issue_opened;
                     comment_attr.issueStatus = comment.issue_status;
                     comment_attr.html = comment.html;

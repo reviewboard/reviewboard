@@ -50,9 +50,17 @@ RB.BaseComment = RB.BaseResource.extend({
         }, RB.BaseResource.prototype.defaults());
     },
 
-    extraQueryArgs: {
-        'force-text-type': 'html',
-        'include-text-types': 'raw'
+    extraQueryArgs: function() {
+        var textTypes = 'raw';
+
+        if (RB.UserSession.instance.get('defaultUseRichText')) {
+            textTypes += ',markdown';
+        }
+
+        return {
+            'force-text-type': 'html',
+            'include-text-types': textTypes
+        };
     },
 
     supportsExtraData: true,
