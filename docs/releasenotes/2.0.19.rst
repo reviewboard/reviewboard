@@ -1,0 +1,147 @@
+=================================
+Review Board 2.0.19 Release Notes
+=================================
+
+**Release date**: August 24, 2015
+
+
+Security Updates
+================
+
+Django 1.6.x is no longer maintained by the Django project, and will no longer
+be receiving security fixes directly. Since we still depend on this version,
+and will have users depending on it for years to come, we're maintaining our
+own unofficial branch and handling all backports of security fixes to Django.
+
+We've released Django 1.6.11.1, containing all current Django security fixes,
+and will be continuing to release new versions as security vulnerabilities are
+discovered.
+
+We cannot automatically install this yet, due to restrictions in
+:command:`pip`, so you'll need to be sure to upgrade manually for now.
+
+Please see our `security announcement`_ for instructions.
+
+.. _`security announcement`:
+   https://www.reviewboard.org/news/2015/08/24/new-django-1-6-11-1-security-releases/
+
+
+New Features
+============
+
+* Added a :mailheader:`X-ReviewBoard-Diff-For` header for file-based e-mail
+  filtering.
+
+  E-mails now contain a :mailheader:`X-ReviewBoard-Diff-For` header for each
+  file that was modified in the diff. In the case of a moved or copied file,
+  both the source and destination file names are added. Otherwise only the
+  relevant file names (source in the case of deleted and destination in the
+  case of new) are added.
+
+* Added new headers for filtering review request e-mails.
+
+  E-mails for reviews containing a Ship It! will include a
+  :mailheader:`X-ReviewBoard-ShipIt` header. If the review doesn't contain any
+  other content (for instance, if it's the result of the pressing the
+  :guilabel:`Ship It!` button), it will also contain a
+  :mailheader:`X-ReviewBoard-ShipIt-Only` header.
+
+
+Extensions
+==========
+
+* The :guilabel:`Ship It!` button and :guilabel:`Publish Review` button in the
+  review dialog will now show any
+  :py:class:`PublishErrors <reviewboard.reviews.errors.PublishError>` sent
+  by an extension.
+
+  Patch by Mark Côté.
+
+* Added new extension hooks for manipulating the recipient list for review
+  and review request e-mails.
+
+  The new :ref:`email-hook` allows an extension to designate new lists of
+  recipients for all the review/review request e-mails that Review Board
+  sends. They can update both the To and CC lists for any e-mail.
+
+  These take lists of signals the hook should listen to for the various events
+  (such as :py:data:`~reviewboard.reviews.signals.review_request_published`).
+  As a convenience, callers can make use of one of the subclasses for specific
+  events:
+
+  * :ref:`review-request-published-email-hook`
+  * :ref:`review-request-closed-email-hook`
+  * :ref:`review-published-email-hook`
+  * :ref:`review-reply-published-email-hook`
+
+
+Bug Fixes
+=========
+
+Compatibility
+-------------
+
+* Fixed "environment can only contain strings" errors on Windows.
+
+  This helps resolve issues with using `Power Pack`_ on Windows.
+
+
+.. _`Power Pack`: https://www.reviewboard.org/powerpack/
+
+
+E-Mail
+------
+
+* Fixed Unicode errors when sending e-mails with UTF-8 content. (:bug:`3926`,
+  :bug:`3943`)
+
+
+Reviews
+-------
+
+* Fixed linking to URLs, ``/r/<id>/`` and bug numbers in text.
+
+* Fixed loading newly-saved comments in diffs and file attachments when
+  saving as plain text.
+
+  The comments would appear with the text interpreted as Markdown, but the
+  Markdown checkbox unchecked. It now behaves like all other fields, factoring
+  in the comment's state and the "Always use Markdown for text fields" setting
+  in the My Account page.
+
+* Opening and closing editors no longer results in review request or
+  review drafts.
+
+
+SSH
+---
+
+* Fixed usage of SSH storage backends when calling out to :command:`rbssh`.
+
+  This restores compatibility with some repository types when using
+  `Power Pack`_.
+
+
+CVS
+---
+
+* Fixed Unicode errors when normalizing keywords in CVS diffs. (:bug:`3931`)
+
+
+Subversion
+----------
+
+* Fixed Unicode errors when parsing SVN diffs containing accented characters
+  in the revision strings.
+
+  Patch by Maxime Besson.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Mark Côté
+* Maxime Besson

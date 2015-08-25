@@ -170,7 +170,7 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
             issueOpened: this.get('openIssue'),
             extraData: _.clone(this.get('extraData')),
             richText: this.get('richText'),
-            includeTextTypes: 'html'
+            includeTextTypes: 'html,raw,markdown'
         });
 
         comment.save({
@@ -194,13 +194,17 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
      */
     _updateFromComment: function() {
         var oldComment = this.previous('comment'),
-            comment = this.get('comment');
+            comment = this.get('comment'),
+            defaultRichText,
+            textFields;
 
         if (oldComment) {
             oldComment.destroyIfEmpty();
         }
 
         if (comment) {
+            defaultRichText = this.defaults().richText;
+
             /*
              * Set the attributes based on what we know at page load time.
              *
@@ -211,6 +215,11 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
              * Doing this before the ready() call ensures that we'll have the
              * text and state up-front and that it won't overwrite what the
              * user has typed after load.
+             *
+             * Note also that we'll always want to use our default richText
+             * value if it's true, and we'll fall back on the comment's value
+             * if false. This is so that we can keep a consistent experience
+             * when the "Always edit Markdown by default" value is set.
              */
             this.set({
                 dirty: false,
@@ -218,11 +227,23 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
                 openIssue: comment.get('issueOpened') === null
                            ? this.defaults().openIssue
                            : comment.get('issueOpened'),
-                richText: comment.get('richText') === null
-                          ? this.defaults().richText
-                          : comment.get('richText'),
-                text: comment.get('text')
+                richText: defaultRichText || !!comment.get('richText')
             });
+
+            /*
+             * We'll try to set the one from the appropriate text fields, if it
+             * exists and is not empty. If we have this, then it came from a
+             * previous save. If we don't have it, we'll fall back to "text",
+             * which should be normalized content from the initial page load.
+             */
+            textFields = (comment.get('richText') || !defaultRichText
+                          ? comment.get('rawTextFields')
+                          : comment.get('markdownTextFields'));
+
+            this.set('text',
+                     !_.isEmpty(textFields)
+                     ? textFields.text
+                     : comment.get('text'));
 
             comment.ready({
                 ready: this._updateState
