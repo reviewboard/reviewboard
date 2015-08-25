@@ -2,7 +2,7 @@
 Review Board 2.0.19 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: August 24, 2015
 
 
 Security Updates
