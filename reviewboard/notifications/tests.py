@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from contextlib import contextmanager
+import logging
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -8,6 +8,7 @@ from django.core import mail
 from django.utils.datastructures import MultiValueDict
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
+from kgb import SpyAgency
 
 from reviewboard.accounts.models import Profile
 from reviewboard.admin.siteconfig import load_site_config
@@ -28,23 +29,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
 
-@contextmanager
-def console_email_backend():
-    """Wrap code that should use the console e-mail backend.
-
-    The test e-mail backend won't encounter some of the unicode processing
-    errors that can happen with other backends (like SMTP or console). This
-    context manager can wrap test code that depends on this behavior, and will
-    clean up after itself.
-    """
-    old_backend = settings.EMAIL_BACKEND
-    settings.EMAIL_BACKEND = \
-        'django.core.mail.backends.console.EmailBackend'
-
-    try:
-        yield
-    finally:
-        settings.EMAIL_BACKEND = old_backend
+_CONSOLE_EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 
 class EmailTestHelper(object):
@@ -143,7 +128,7 @@ class UserEmailTests(EmailTestHelper, TestCase):
                                                           admin_email_addr))
 
 
-class ReviewRequestEmailTests(EmailTestHelper, TestCase):
+class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
     """Tests the e-mail support."""
 
     fixtures = ['test_users']
@@ -596,22 +581,27 @@ class ReviewRequestEmailTests(EmailTestHelper, TestCase):
 
     def test_review_request_email_with_unicode_summary(self):
         """Testing sending a review request e-mail with a unicode subject"""
-        # Because the console backend won't populate mail.outbox, we just rely
-        # on the fact that we don't get a UnicodeDecodeError here.
-        with console_email_backend():
+        self.spy_on(logging.exception)
+
+        with self.settings(EMAIL_BACKEND=_CONSOLE_EMAIL_BACKEND):
             review_request = self.create_review_request()
             review_request.summary = '\ud83d\ude04'
 
-            review_request.target_people.add(User.objects.get(username='grumpy'))
+            review_request.target_people.add(User.objects.get(
+                username='grumpy'))
             review_request.target_people.add(User.objects.get(username='doc'))
             review_request.publish(review_request.submitter)
 
+        self.assertIsNotNone(review_request.email_message_id)
+        self.assertFalse(logging.exception.spy.called)
+
     def test_review_request_email_with_unicode_description(self):
         """Testing sending a review request e-mail with a unicode
-        description"""
-        # Because the console backend won't populate mail.outbox, we just rely
-        # on the fact that we don't get a UnicodeDecodeError here.
-        with console_email_backend():
+        description
+        """
+        self.spy_on(logging.exception)
+
+        with self.settings(EMAIL_BACKEND=_CONSOLE_EMAIL_BACKEND):
             review_request = self.create_review_request()
             review_request.description = '\ud83d\ude04'
 
@@ -620,6 +610,9 @@ class ReviewRequestEmailTests(EmailTestHelper, TestCase):
             review_request.target_people.add(
                 User.objects.get(username='doc'))
             review_request.publish(review_request.submitter)
+
+        self.assertIsNotNone(review_request.email_message_id)
+        self.assertFalse(logging.exception.spy.called)
 
     @add_fixtures(['test_scmtools'])
     def test_review_request_email_with_added_file(self):

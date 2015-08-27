@@ -300,7 +300,7 @@ class SpiffyEmailMessage(EmailMultiAlternatives):
 
         for name, value_list in self.rb_headers.iterlists():
             for value in value_list:
-                msg.add_header(name, value)
+                msg.add_header(six.binary_type(name), value)
 
         return msg
 
