@@ -996,6 +996,25 @@ class CommonSVNTestsBase(SpyAgency, SCMTestCase):
         self.assertEqual(self.tool.parse_diff_revision('', '(版本 7)')[1],
                          '7')
 
+    def test_revision_parsing_with_nonexistent(self):
+        """Testing SVN (<backend>) revision parsing with "(nonexistent)"
+        revision indicator
+        """
+        # English
+        self.assertEqual(
+            self.tool.parse_diff_revision('', '(nonexistent)')[1],
+            PRE_CREATION)
+
+        # German
+        self.assertEqual(
+            self.tool.parse_diff_revision('', '(nicht existent)')[1],
+            PRE_CREATION)
+
+        # Simplified Chinese
+        self.assertEqual(
+            self.tool.parse_diff_revision('', '(不存在的)')[1],
+            PRE_CREATION)
+
     def test_interface(self):
         """Testing SVN (<backend>) with basic SVNTool API"""
         self.assertEqual(self.tool.get_diffs_use_absolute_paths(), False)
