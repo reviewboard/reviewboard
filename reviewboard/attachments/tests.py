@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils.safestring import SafeText
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
@@ -505,3 +506,46 @@ class SandboxTests(SpyAgency, BaseFileAttachmentTestCase):
 
         self.file_attachment.icon_url
         self.assertTrue(SandboxMimetypeHandler.get_icon_url.called)
+
+
+class TextMimetypeTests(SpyAgency, TestCase):
+    """Unit tests for reviewboard.attachments.mimetypes.TextMimetype."""
+
+    fixtures = ['test_users']
+
+    def setUp(self):
+        uploaded_file = SimpleUploadedFile(
+            'test.txt',
+            b'<p>This is a test</p>',
+            content_type='text/plain')
+
+        form = UploadFileForm(files={
+            'path': uploaded_file,
+        })
+        self.assertTrue(form.is_valid())
+
+        review_request = self.create_review_request(publish=True)
+        self.file_attachment = form.create(uploaded_file, review_request)
+
+    def test_get_thumbnail_uncached_is_safe_text(self):
+        """Testing TextMimetype.get_thumbnail string type is SafeText
+        without cached thumbnail
+        """
+        thumbnail = self.file_attachment.thumbnail
+
+        self.assertIsInstance(thumbnail, SafeText)
+
+    def test_get_thumbnail_cached_is_safe_text(self):
+        """Testing TextMimetype.get_thumbnail string type is SafeText with
+        cached thumbnail
+        """
+        # Django's in-memory cache won't mangle the string types, so we can't
+        # rely on just calling thumbnail twice. We have to fake it, so that
+        # that we simulate the real-world behavior of getting a raw string
+        # back out of a real cache.
+        self.spy_on(self.file_attachment.mimetype_handler._generate_thumbnail,
+                    call_fake=lambda self: '<div>My thumbnail</div>')
+
+        thumbnail = self.file_attachment.thumbnail
+
+        self.assertIsInstance(thumbnail, SafeText)
