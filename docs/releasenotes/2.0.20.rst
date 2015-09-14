@@ -2,7 +2,7 @@
 Review Board 2.0.20 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: September 14, 2015
 
 
 Django Security Notice
