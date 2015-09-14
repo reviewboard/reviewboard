@@ -65,6 +65,11 @@ class RawDiffChunkGenerator(object):
     STYLED_MAX_LINE_LEN = 1000
     STYLED_MAX_LIMIT_BYTES = 200000  # 200KB
 
+    # A list of filename extensions that won't be styled.
+    STYLED_EXT_BLACKLIST = (
+        '.txt',  # ResourceLexer is used as a default.
+    )
+
     # Default tab size used in browsers.
     TAB_SIZE = DiffOpcodeGenerator.TAB_SIZE
 
@@ -159,8 +164,11 @@ class RawDiffChunkGenerator(object):
                 try:
                     # TODO: Try to figure out the right lexer for these files
                     #       once instead of twice.
-                    markup_a = self._apply_pygments(old or '', source_file)
-                    markup_b = self._apply_pygments(new or '', dest_file)
+                    if not source_file.endswith(self.STYLED_EXT_BLACKLIST):
+                        markup_a = self._apply_pygments(old or '', source_file)
+
+                    if not dest_file.endswith(self.STYLED_EXT_BLACKLIST):
+                        markup_b = self._apply_pygments(new or '', dest_file)
                 except:
                     pass
 
