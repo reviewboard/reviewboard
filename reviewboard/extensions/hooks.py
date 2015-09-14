@@ -1,5 +1,8 @@
 from __future__ import unicode_literals
 
+import inspect
+import warnings
+
 from django.utils import six
 from djblets.extensions.hooks import (DataGridColumnsHook, ExtensionHook,
                                       ExtensionHookPoint, SignalHook,
@@ -254,9 +257,27 @@ class NavigationBarHook(ExtensionHook):
         self.entries = entries
         self.is_enabled_for = is_enabled_for
 
+        if callable(is_enabled_for):
+            argspec = inspect.getargspec(is_enabled_for)
+
+            if argspec.keywords is None:
+                warnings.warn(
+                    'NavigationBarHook.is_enabled_for is being passed '
+                    'a function without keyword arguments by %r. This '
+                    'is deprecated.'
+                    % extension,
+                    DeprecationWarning)
+
+                self.is_enabled_for = \
+                    lambda user, **kwargs: is_enabled_for(user)
+
     def get_entries(self, context):
+        request = context['request']
+
         if (not callable(self.is_enabled_for) or
-            self.is_enabled_for(context.get('user', None))):
+            self.is_enabled_for(user=request.user,
+                                request=request,
+                                local_site_name=context['local_site_name'])):
             return self.entries
         else:
             return []
