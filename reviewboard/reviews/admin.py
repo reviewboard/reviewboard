@@ -66,7 +66,7 @@ class GroupAdmin(admin.ModelAdmin):
             'fields': ('invite_only', 'users', 'local_site'),
         }),
         (_('State'), {
-            'fields': ('incoming_request_count',),
+            'fields': ('incoming_request_count', 'extra_data'),
             'classes': ('collapse',),
         }),
     )
@@ -140,7 +140,7 @@ class ReviewRequestAdmin(admin.ModelAdmin):
                        'last_review_activity_timestamp',
                        'shipit_count', 'issue_open_count',
                        'issue_resolved_count', 'issue_dropped_count',
-                       'local_id'),
+                       'local_id', 'extra_data'),
             'classes': ['collapse'],
         }),
     )
@@ -216,6 +216,9 @@ class ReviewRequestDraftAdmin(admin.ModelAdmin):
             'fields': ('screenshots', 'inactive_screenshots', 'changedesc',
                        'diffset'),
             'classes': ['collapse'],
+        }),
+        (_('State'), {
+            'fields': ('extra_data',),
         }),
     )
 
