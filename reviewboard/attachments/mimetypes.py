@@ -299,9 +299,10 @@ class TextMimetype(MimetypeHandler):
         # reload to:
         # 1) re-read the file attachment
         # 2) re-generate the html based on the data read
-        return cache_memoize('file-attachment-thumbnail-%s-html-%s'
-                             % (self.__class__.__name__, self.attachment.pk),
-                             self._generate_thumbnail)
+        return mark_safe(
+            cache_memoize('file-attachment-thumbnail-%s-html-%s'
+                          % (self.__class__.__name__, self.attachment.pk),
+                          self._generate_thumbnail))
 
 
 class ReStructuredTextMimetype(TextMimetype):
