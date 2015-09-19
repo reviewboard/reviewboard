@@ -317,6 +317,12 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         # This will be overridden by MarkdownFieldsMixin.
         return None
 
+    def serialize_depends_on_link(self, obj, *args, **kwargs):
+        link = self.serialize_link(obj, *args, **kwargs)
+        link['id'] = obj.display_id
+        link['url'] = obj.get_absolute_url()
+        return link
+
     def get_extra_data_field_supports_markdown(self, review_request, key):
         field_cls = get_review_request_field(key)
 
