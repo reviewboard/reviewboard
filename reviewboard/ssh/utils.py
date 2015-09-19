@@ -7,7 +7,7 @@ from django.utils import six
 
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import (BadHostKeyError, SSHAuthenticationError,
-                                    SSHError)
+                                    SSHError, SSHInvalidPortError)
 from reviewboard.ssh.policy import RaiseUnknownHostKeyPolicy
 
 
@@ -56,7 +56,11 @@ def check_host(netloc, username=None, password=None, namespace=None):
 
     if ':' in netloc:
         hostname, port = netloc.split(':')
-        port = int(port)
+
+        try:
+            port = int(port)
+        except ValueError:
+            raise SSHInvalidPortError(port)
     else:
         hostname = netloc
         port = SSH_PORT
