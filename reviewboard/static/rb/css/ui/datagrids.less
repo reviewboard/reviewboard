@@ -54,9 +54,15 @@ body.datagrid-page {
           padding: 5px;
 
           &:last-child {
-            border-right: 0;
+            border-right: 0 !important;
           }
         }
+
+	tr:first-child {
+          td, th {
+            border-top: 0 !important;
+	  }
+	}
 
         tr {
           background: @datagrid-bg;
