@@ -497,11 +497,13 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     def serialize_depends_on_link(self, obj, *args, **kwargs):
         link = self.serialize_link(obj, *args, **kwargs)
         link['id'] = obj.display_id
+        link['url'] = obj.get_absolute_url()
         return link
 
     def serialize_blocks_link(self, obj, *args, **kwargs):
         link = self.serialize_link(obj, *args, **kwargs)
         link['id'] = obj.display_id
+        link['url'] = obj.get_absolute_url()
         return link
 
     @webapi_check_local_site
