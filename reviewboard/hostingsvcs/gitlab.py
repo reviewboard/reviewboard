@@ -247,7 +247,7 @@ class GitLab(HostingService):
                 author_name=item['author_name'],
                 id=item['id'],
                 date=item['created_at'],
-                message=item['message'],
+                message=item.get('message', ''),
                 parent='')
 
             if idx > 0:
