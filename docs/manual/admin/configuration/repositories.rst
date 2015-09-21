@@ -197,8 +197,6 @@ associated with the repository if this field is provided.
         ``http://bugzilla.example.com/show_bug.cgi?id=%s``
       * **Google Code**:
         ``http://code.google.com/p/myproject/issues/detail?id=%s``
-      * **Trac**:
-        ``http://trac.example.com/ticket/%s``
 
     If you don't use a bug tracker with projects in this repository, this
     field can be left blank.
