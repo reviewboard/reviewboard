@@ -27,7 +27,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
     listKey: 'draft',
     supportsExtraData: true,
 
-    expandedFields: ['target_people', 'target_groups'],
+    expandedFields: ['depends_on', 'target_people', 'target_groups'],
 
     extraQueryArgs: {
         'force-text-type': 'html',
