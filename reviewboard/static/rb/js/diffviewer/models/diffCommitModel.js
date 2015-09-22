@@ -102,5 +102,12 @@ RB.DiffCommit = Backbone.Model.extend({
             },
             summary: summary
         };
+    },
+
+    /*
+     * Determine if the description contains more text than the summary.
+     */
+    isSummarized: function() {
+        return this.get('summary') !== this.get('description');
     }
 });
