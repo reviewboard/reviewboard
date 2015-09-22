@@ -666,13 +666,13 @@ class TextMimetypeTests(SpyAgency, TestCase):
             b'<p>This is a test</p>',
             content_type='text/plain')
 
-        form = UploadFileForm(files={
+        review_request = self.create_review_request(publish=True)
+
+        form = UploadFileForm(review_request, files={
             'path': uploaded_file,
         })
         self.assertTrue(form.is_valid())
 
-        review_request = self.create_review_request(publish=True)
-        self.file_attachment = form.create(uploaded_file, review_request)
 
     def test_get_thumbnail_uncached_is_safe_text(self):
         """Testing TextMimetype.get_thumbnail string type is SafeText
