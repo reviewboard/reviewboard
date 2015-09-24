@@ -1,12 +1,24 @@
 {% extends "base.html" %}
 
-{% load djblets_deco %}
+{% load djblets_deco i18n %}
 
-{% block title %}Permission denied.{% endblock %}
+{% block title %}{% trans "Permission denied." %}{% endblock %}
 
 {% block content %}
-{% box "important" %}
-<h1>You do not have permission to view this item.</h1>
-<p>TODO: write some nice text.</p>
-{% endbox %}
+{%  box "important" %}
+  <h1>{% trans "You do not have permission to view this item." %}</h1>
+  <p>
+{%   if request.user.is_anonymous %}
+{%    blocktrans %}
+   This may be because you're not logged in. Try logging in and viewing the
+   page again. If you're still seeing this, talk to your administrator.
+{%    endblocktrans %}
+{%   else %}
+{%    blocktrans %}
+   This usually means your account hasn't been granted access to this page. If
+   you feel this is in error, talk to your administrator.
+{%    endblocktrans %}
+{%   endif %}
+  </p>
+{%  endbox %}
 {% endblock %}
