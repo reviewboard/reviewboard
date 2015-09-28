@@ -343,7 +343,8 @@ class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
             id=item.pk,
             summary=item.summary)
 
-        if item.status == ReviewRequest.SUBMITTED:
+        if item.status in (ReviewRequest.SUBMITTED,
+                           ReviewRequest.DISCARDED):
             return '<s>%s</s>' % rendered_item
         else:
             return rendered_item
@@ -355,7 +356,8 @@ class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
             summary=item.summary,
             id=item.display_id)
 
-        if item.status == ReviewRequest.SUBMITTED:
+        if item.status in (ReviewRequest.SUBMITTED,
+                           ReviewRequest.DISCARDED):
             return '<s>%s</s>' % rendered_item
         else:
             return rendered_item
