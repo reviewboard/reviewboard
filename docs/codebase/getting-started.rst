@@ -327,6 +327,31 @@ If you're writing a change that needs to modify the database, you'll want
 to see :ref:`database-evolutions`.
 
 
+Testing Data
+------------
+
+A newly created instance of Review Board is pretty bare. Oftentimes, it is
+useful to have some review requests, reviews, and other users set up in your
+local instance to test against. Thankfully, there's a handy utility available
+to create those things for you.
+
+To create a new user and insert 5 review requests for them, run::
+
+    $ ./reviewboard/manage.py fill-database --users=1 --review-requests=5
+
+You can also make it so that there are diffs attached to each review request::
+
+    $ ./reviewboard/manage.py fill-database --users=1 --review-requests=5 --diffs=2
+
+You can also have automated reviews created for those review requests::
+
+    $ ./reviewboard/manage.py fill-database --users=1 --review-requests=5 --diffs=2 --reviews=2
+
+To see a full list of what fill-database can generate for you, run::
+
+    $ ./reviewboard/manage.py fill-database --help
+
+
 Additional Tips
 ---------------
 
