@@ -543,6 +543,38 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertValidRecipients(['doc', 'grumpy'])
 
+    def test_group_member_not_receive_email(self):
+        """Testing sending review e-mails and filtering out the review
+        submitter when they are part of a review group assigned to the request
+        """
+        # See issue 3895.
+        submitter = User.objects.get(username='doc')
+        profile = Profile.objects.get_or_create(user=submitter)[0]
+        profile.should_send_own_updates = False
+        profile.save()
+
+        reviewer = User.objects.get(username='dopey')
+
+        group = self.create_review_group()
+        group.users.add(submitter)
+
+        review_request = self.create_review_request(public=True)
+        review_request.target_groups.add(group)
+        review_request.target_people.add(reviewer)
+        review_request.save()
+
+        review = self.create_review(review_request, user=submitter)
+        review.publish()
+
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+
+        self.assertListEqual(
+            msg.to,
+            [get_email_address_for_user(reviewer)])
+
+        self.assertListEqual(msg.cc, [])
+
     def test_local_site_user_filters(self):
         """Testing sending e-mails and filtering out users not on a local site
         """
