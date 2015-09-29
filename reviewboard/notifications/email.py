@@ -551,7 +551,9 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     cc_field = recipients_to_addresses(cc_field) - to_field
 
     if not user.should_send_own_updates():
-        to_field.discard(get_email_address_for_user(user))
+        user_email = get_email_address_for_user(user)
+        to_field.discard(user_email)
+        cc_field.discard(user_email)
 
     if not to_field and not cc_field:
         # Nothing to send.
