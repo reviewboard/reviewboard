@@ -27,6 +27,7 @@ Contributor Guides
    :maxdepth: 1
 
    getting-started
+   generating-documentation
    coding-standards
    contributing-patches
    writing-good-descriptions
