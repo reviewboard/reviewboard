@@ -82,7 +82,7 @@ def group(request,
                                        user=request.user,
                                        status=None,
                                        with_counts=True),
-        _("Review requests for %s") % name,
+        _('Review requests for %s') % group.display_name,
         local_site=local_site)
 
     return datagrid.render_to_response(template_name)
