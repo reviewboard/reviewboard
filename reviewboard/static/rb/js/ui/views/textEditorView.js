@@ -17,7 +17,15 @@ CodeMirrorWrapper = Backbone.View.extend({
      */
     initialize: function(options) {
         var codeMirrorOptions = {
-            mode: 'gfm',
+            mode: {
+                name: 'gfm',
+                classOverrides: {
+                    code: 'rb-markdown-code',
+                    list1: 'rb-markdown-list1',
+                    list2: 'rb-markdown-list2',
+                    list3: 'rb-markdown-list3'
+                }
+            },
             theme: 'rb default',
             lineWrapping: true,
             electricChars: false,
