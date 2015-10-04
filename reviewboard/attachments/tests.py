@@ -673,6 +673,7 @@ class TextMimetypeTests(SpyAgency, TestCase):
         })
         self.assertTrue(form.is_valid())
 
+        self.file_attachment = form.create()
 
     def test_get_thumbnail_uncached_is_safe_text(self):
         """Testing TextMimetype.get_thumbnail string type is SafeText
