@@ -427,8 +427,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
      * Determines if we should scroll the thumbnail or not.
      */
     _onHoverIn: function() {
-        var self = this,
-            $thumbnail = this.$('.file-thumbnail').children(),
+        var $thumbnail = this.$('.file-thumbnail').children(),
             actionsWidth = this._$actionsContainer.outerWidth(),
             actionsRight = this._$file.offset().left +
                            this._$file.outerWidth() +
@@ -438,7 +437,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
             distance,
             duration;
 
-        this.trigger('hoverIn');
+        this.trigger('hoverIn', this.$el);
 
         /*
          * Position the actions menu to the left or right of the attachment
@@ -477,9 +476,9 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
                         {
                             duration: duration,
                             easing: 'linear',
-                            complete: function() {
-                                self._scrollingThumbnail = false;
-                            }
+                            complete: _.bind(function() {
+                                this._scrollingThumbnail = false;
+                            }, this)
                         });
             }
         }

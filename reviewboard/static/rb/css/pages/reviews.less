@@ -2114,20 +2114,8 @@
    * provide focus to the thumbnail the user is hovering over, and to help
    * separate out the actions menu from other thumbnail contents.
    */
-  &.hover-thumbnail {
-    .file {
-      opacity: 0.5;
-
-      &:hover {
-        opacity: 1;
-
-        /*
-         * Instantly show the thumbnail. Fixes a z-index glitch with the menu,
-         * too.
-         */
-        .transition(0s opacity linear);
-      }
-    }
+  .file.faded {
+    opacity: 0.5;
   }
 
   h1.drop-indicator {

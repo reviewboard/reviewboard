@@ -1044,12 +1044,16 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             }
         }
 
-        this.listenTo(view, 'hoverIn', function() {
-            this._$attachments.addClass('hover-thumbnail');
+        this.listenTo(view, 'hoverIn', function($thumbnail) {
+            this._$attachments
+                .find('.file')
+                .not(
+                    $thumbnail.find('.file')[0]
+                ).addClass('faded');
         });
 
         this.listenTo(view, 'hoverOut', function() {
-            this._$attachments.removeClass('hover-thumbnail');
+            this._$attachments.find('.file').removeClass('faded');
         });
 
         view.on('beginEdit', function() {
