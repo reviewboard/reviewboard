@@ -14,6 +14,8 @@
 RB.ReviewRequest = RB.BaseResource.extend({
     defaults: function() {
         return _.defaults({
+            approved: false,
+            approvalFailure: null,
             branch: null,
             bugTrackerURL: null,
             bugsClosed: null,
@@ -46,6 +48,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
     },
 
     attrToJsonMap: {
+        approvalFailure: 'approval_failure',
         bugsClosed: 'bugs_closed',
         closeDescription: 'close_description',
         closeDescriptionRichText: 'close_description_text_type',
@@ -60,6 +63,8 @@ RB.ReviewRequest = RB.BaseResource.extend({
     },
 
     deserializedAttrs: [
+        'approved',
+        'approvalFailure',
         'branch',
         'bugsClosed',
         'closeDescription',
