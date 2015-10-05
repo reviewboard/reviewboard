@@ -63,11 +63,12 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
     /*
      * Creates a file attachment tracked by the editor.
      *
-     * This wraps ReviewRequest.createFileAttachment and stores the
+     * This wraps RB.ReviewRequestDraft.createFileAttachment and stores the
      * file attachment in the fileAttachments collection.
      *
-     * This should be used instead of ReviewRequest.createFileAttachment
-     * for any existing or newly uploaded file attachments.
+     * This should be used instead of
+     * RB.ReviewRequestDraft.createFileAttachment for any existing or newly
+     * uploaded file attachments.
      */
     createFileAttachment: function(attributes) {
         var draft = this.get('reviewRequest').draft,
@@ -329,6 +330,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         }, this);
 
         fileAttachment.on('saved destroy', function() {
+            this.set('hasDraft', true);
             this.trigger('saved');
         }, this);
     }
