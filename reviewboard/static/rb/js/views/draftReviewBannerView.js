@@ -102,7 +102,9 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      * Publishes the review.
      */
     _onPublishClicked: function() {
-        this.model.publish();
+        this.model.publish({
+            attrs: ['public']
+        });
         return false;
     },
 
