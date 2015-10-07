@@ -20,6 +20,7 @@ _capabilities_defaults = {
     },
     'review_requests': {
         'commit_ids': True,
+        'trivial_publish': True,
     },
     'scmtools': {
         'git': {
