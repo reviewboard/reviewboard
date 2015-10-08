@@ -14,7 +14,7 @@ from djblets.log import log_timed
 from djblets.cache.backend import cache_memoize
 from djblets.siteconfig.models import SiteConfiguration
 from pygments import highlight
-from pygments.lexers import get_lexer_for_filename
+from pygments.lexers import guess_lexer_for_filename
 from pygments.formatters import HtmlFormatter
 
 from reviewboard.diffviewer.differ import get_differ
@@ -648,9 +648,10 @@ class DiffChunkGenerator(object):
 
         The resulting HTML will be returned as a list of lines.
         """
-        lexer = get_lexer_for_filename(filename,
-                                       stripnl=False,
-                                       encoding='utf-8')
+        lexer = guess_lexer_for_filename(filename,
+                                         data,
+                                         stripnl=False,
+                                         encoding='utf-8')
         lexer.add_filter('codetagify')
 
         return split_line_endings(
