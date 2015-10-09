@@ -43,8 +43,9 @@ def create_settings():
                         name = os.path.abspath(options.db_name)
                         out_fp.write("        'NAME': '%s',\n" % name)
                     else:
-                        out_fp.write("        'NAME': 'reviewboard-%d.%d.db' "
-                                     "% (VERSION[0], VERSION[1]),\n")
+                        out_fp.write("        'NAME': os.path.join(ROOT_PATH,"
+                                     " 'reviewboard-%d.%d.db' % (VERSION[0], "
+                                     "VERSION[1])),\n")
                 else:
                     name = options.db_name
                     out_fp.write("        'NAME': '%s',\n" % name)
