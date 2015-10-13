@@ -23,6 +23,8 @@ class HostingServiceResource(WebAPIResource):
     This resource allows for querying that list and determining what
     capabilities of the hosting service can be used by Review Board.
     """
+    added_in = '2.5'
+
     name = 'hosting_service'
     model_object_key = 'id'
     model = HostingService
@@ -88,8 +90,7 @@ class HostingServiceResource(WebAPIResource):
         return super(HostingServiceResource, self).get_serializer_for_object(
             obj)
 
-    def get_links(self, items, obj=None, local_site_name=None,
-                  *args, **kwargs):
+    def get_links(self, items, obj=None, *args, **kwargs):
         links = super(HostingServiceResource, self).get_links(
             items, obj, *args, **kwargs)
 
@@ -97,9 +98,9 @@ class HostingServiceResource(WebAPIResource):
             request = kwargs.get('request')
 
             accounts_url = resources.hosting_service_account.get_list_url(
-                local_site_name=local_site_name)
+                local_site_name=request._local_site_name)
             repos_url = resources.repository.get_list_url(
-                local_site_name=local_site_name)
+                local_site_name=request._local_site_name)
 
             links.update({
                 'accounts': {

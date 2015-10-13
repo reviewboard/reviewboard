@@ -12,7 +12,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     ANCHOR_FILE: 2,
     ANCHOR_CHUNK: 4,
 
-    DIFF_SCROLLDOWN_AMOUNT: 100,
+    DIFF_SCROLLDOWN_AMOUNT: 15,
 
     keyBindings: {
         'aAKP<m': '_selectPreviousFile',
@@ -34,7 +34,13 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * Initializes the diff viewer page.
      */
     initialize: function() {
-        var url;
+        var revisionInfo = this.model.get('revision'),
+            curRevision = revisionInfo.get('revision'),
+            curInterdiffRevision = revisionInfo.get('interdiffRevision'),
+            url = document.location.toString(),
+            hash = document.location.hash || '',
+            search = document.location.search || '',
+            revisionRange;
 
         _super(this).initialize.call(this);
 
@@ -48,7 +54,6 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this.listenTo(this.model.get('files'), 'update', this._setFiles);
 
         /* Check to see if there's an anchor we need to scroll to. */
-        url = document.location.toString();
         this._startAtAnchorName = (url.match('#') ? url.split('#')[1] : null);
 
         this.router = new Backbone.Router({
@@ -77,22 +82,50 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         });
 
         /*
-         * If we have "index_header" or a file+line hash in the location,
-         * strip it off. Backbone's router makes use of the hash to try to
-         * be backwards compatible with browsers that don't support the
-         * history API, but we don't care about those, and if it's present
-         * when we call start(), it will change the page's URL to be
-         * /diff/index_header, which isn't a valid URL.
+        /*
+         * Begin managing the URL history for the page, so that we can
+         * switch revisions and handle pagination while keeping the history
+         * clean and the URLs representative of the current state.
+         *
+         * Note that Backbone will attempt to convert the hash to part of
+         * the page URL, stripping away the "#". This will result in a
+         * URL pointing to an incorrect, possible non-existent diff revision.
+         *
+         * We work around that by saving the values for the hash and query
+         * string (up above), and by later replacing the current URL with a
+         * new one that, amongst other things, contains the hash present
+         * when the page was loaded.
          */
-        if (window.location.hash) {
-            window.location.replace('#');
-        }
-
         Backbone.history.start({
             pushState: true,
             hashChange: false,
             root: this.options.reviewRequestData.reviewURL + 'diff/',
             silent: true
+        });
+
+        /*
+         * Navigating here accomplishes two things:
+         *
+         * 1. The user may have viewed diff/, and not diff/<revision>/, but
+         *    we want to always show the revision in the URL. This ensures
+         *    we have a URL equivalent to the one we get when clicking
+         *    a revision in the slider.
+         *
+         * 2. We want to add back any hash and query string that was
+         *    stripped away.
+         *
+         * We won't be invoking any routes or storing new history. The back
+         * button will correctly bring the user to the previous page.
+         */
+        revisionRange = curRevision;
+
+        if (curInterdiffRevision) {
+            revisionRange += '-' + curInterdiffRevision;
+        }
+
+        this.router.navigate(revisionRange + '/' + search + hash, {
+            replace: true,
+            trigger: false
         });
     },
 
@@ -111,13 +144,14 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     render: function() {
         var $reviewRequest,
             numDiffs = this.model.get('numDiffs'),
-            revisionModel = this.model.get('revision');
+            revisionModel = this.model.get('revision'),
+            $diffs = $('#diffs');
 
         _super(this).render.call(this);
 
         $reviewRequest = this.$('.review-request');
 
-        this._$controls = $reviewRequest.find('ul.controls');
+        this._$controls = $('#view_controls');
 
         this._diffFileIndexView = new RB.DiffFileIndexView({
             el: $('#diff_index'),
@@ -174,10 +208,13 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this.listenTo(this._paginationView2, 'pageSelected',
                       _.partial(this._onPageSelected, true));
 
-        $('#diffs').bindClass(RB.UserSession.instance,
-                              'diffsShowExtraWhitespace', 'ewhl');
+        $diffs.bindClass(RB.UserSession.instance,
+                         'diffsShowExtraWhitespace', 'ewhl');
 
         this._setFiles();
+
+        this._chunkHighlighter = new RB.ChunkHighlighterView();
+        this._chunkHighlighter.render().$el.prependTo($diffs);
 
         $('#diff-details').removeClass('loading');
 
@@ -195,7 +232,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         '    </tr>',
         '   </thead>',
         '   <tbody>',
-        '    <tr><td><pre>&nbsp;</pre></td></tr>',
+        '    <tr><td><span class="fa fa-spinner fa-pulse"></span></td></tr>',
         '   </tbody>',
         '  </table>',
         ' </div>',
@@ -376,7 +413,9 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * the top of the view.
      */
     selectAnchor: function($anchor, scroll) {
-        var i;
+        var scrollAmount,
+            i,
+            url;
 
         if (!$anchor || $anchor.length === 0 ||
             $anchor.parent().is(':hidden')) {
@@ -384,8 +423,25 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         }
 
         if (scroll !== false) {
-            $(window).scrollTop($anchor.offset().top -
-                                this.DIFF_SCROLLDOWN_AMOUNT);
+            url = [
+                this._getCurrentURL(),
+                location.search,
+                '#',
+                $anchor.attr('name')
+            ].join('');
+
+            this.router.navigate(url, {
+                replace: true,
+                trigger: false
+            });
+
+            scrollAmount = this.DIFF_SCROLLDOWN_AMOUNT;
+
+            if (RB.DraftReviewBannerView.instance) {
+                scrollAmount += RB.DraftReviewBannerView.instance.getHeight();
+            }
+
+            $(window).scrollTop($anchor.offset().top - scrollAmount);
         }
 
         this._highlightAnchor($anchor);
@@ -412,7 +468,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      */
     _highlightAnchor: function($anchor) {
         this._highlightedChunk = $anchor.parents('tbody:first, thead:first');
-        RB.ChunkHighlighterView.highlight(
+        this._chunkHighlighter.highlight(
             $anchor.parents('tbody:first, thead:first'));
     },
 
@@ -601,17 +657,29 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     },
 
     /*
-     * Callback for when a new page is selected.
+     * Get the current URL.
      *
-     * Navigates to the same revision with a different page number.
+     * This will compute and return the current page's URL (relative to the
+     * router root), not including query parameters or hash locations.
      */
-    _onPageSelected: function(scroll, page) {
+    _getCurrentURL: function() {
         var revision = this.model.get('revision'),
             url = revision.get('revision');
 
         if (revision.get('interdiffRevision') !== null) {
             url += '-' + revision.get('interdiffRevision');
         }
+
+        return url;
+    },
+
+    /*
+     * Callback for when a new page is selected.
+     *
+     * Navigates to the same revision with a different page number.
+     */
+    _onPageSelected: function(scroll, page) {
+        var url = this._getCurrentURL();
 
         if (scroll) {
             this.selectAnchorByName('index_header', true);

@@ -687,30 +687,28 @@ suite('rb/views/CommentDialogView', function() {
             });
         });
 
-        describe('Status text', function() {
-            var $statusText;
+        describe('Title text', function() {
+            var $title;
 
             beforeEach(function() {
                 dlg.open();
-                $statusText = dlg.$el.find('form .status');
+                $title = dlg.$el.find('form .title');
             });
 
             it('Default state', function() {
-                expect($statusText.text()).toBe('');
+                expect($title.text()).toBe('Your comment');
             });
 
-            it('Showing new text', function() {
-                var text = 'Testing';
-
-                editor.set('statusText', text);
-                expect($statusText.text()).toBe(text);
+            it('Setting dirty=true', function() {
+                editor.set('dirty', true);
+                expect($title.text()).toBe('Your comment (unsaved)');
             });
 
-            it('Setting to null', function() {
-                editor.set('statusText', 'Testing');
-                editor.set('statusText', null);
+            it('Setting dirty=false', function() {
+                editor.set('dirty', true);
+                editor.set('dirty', false);
 
-                expect($statusText.text()).toBe('');
+                expect($title.text()).toBe('Your comment');
             });
         });
 
@@ -864,40 +862,131 @@ suite('rb/views/CommentDialogView', function() {
             });
 
             describe('Enable Markdown checkbox', function() {
-                it('When defaultUseRichText is true', function() {
-                    RB.UserSession.instance.set('defaultUseRichText', true);
-
-                    editor = new RB.CommentEditor({
-                        reviewRequest: reviewRequest,
-                        reviewRequestEditor: reviewRequestEditor
+                describe('When defaultUseRichText is true', function() {
+                    beforeEach(function() {
+                        RB.UserSession.instance.set('defaultUseRichText', true);
                     });
-                    dlg = new RB.CommentDialogView({
-                        animate: false,
-                        model: editor
-                    });
-                    dlg.render();
-                    $checkbox = dlg.$('#enable_markdown');
 
-                    expect(editor.get('richText')).toBe(true);
-                    expect($checkbox.prop('checked')).toBe(true);
+                    it('New comment', function() {
+                        editor = new RB.CommentEditor({
+                            reviewRequest: reviewRequest,
+                            reviewRequestEditor: reviewRequestEditor
+                        });
+                        dlg = new RB.CommentDialogView({
+                            animate: false,
+                            model: editor
+                        });
+                        dlg.render();
+                        $checkbox = dlg.$('#enable_markdown');
+
+                        expect(editor.get('richText')).toBe(true);
+                        expect($checkbox.prop('checked')).toBe(true);
+                        expect(dlg._textEditor.richText).toBe(true);
+                    });
+
+                    it('Existing comment with richText=true', function() {
+                        editor = new RB.CommentEditor({
+                            reviewRequest: reviewRequest,
+                            reviewRequestEditor: reviewRequestEditor,
+                            comment: new RB.DiffComment({
+                                richText: true
+                            })
+                        });
+                        dlg = new RB.CommentDialogView({
+                            animate: false,
+                            model: editor
+                        });
+                        dlg.render();
+                        $checkbox = dlg.$('#enable_markdown');
+
+                        expect(editor.get('richText')).toBe(true);
+                        expect($checkbox.prop('checked')).toBe(true);
+                        expect(dlg._textEditor.richText).toBe(true);
+                    });
+
+                    it('Existing comment with richText=false', function() {
+                        editor = new RB.CommentEditor({
+                            reviewRequest: reviewRequest,
+                            reviewRequestEditor: reviewRequestEditor,
+                            comment: new RB.DiffComment({
+                                richText: false
+                            })
+                        });
+                        dlg = new RB.CommentDialogView({
+                            animate: false,
+                            model: editor
+                        });
+                        dlg.render();
+                        $checkbox = dlg.$('#enable_markdown');
+
+                        expect(editor.get('richText')).toBe(true);
+                        expect($checkbox.prop('checked')).toBe(true);
+                        expect(dlg._textEditor.richText).toBe(true);
+                    });
                 });
 
-                it('When defaultUseRichText is false', function() {
-                    RB.UserSession.instance.set('defaultUseRichText', false);
-
-                    editor = new RB.CommentEditor({
-                        reviewRequest: reviewRequest,
-                        reviewRequestEditor: reviewRequestEditor
+                describe('When defaultUseRichText is false', function() {
+                    beforeEach(function() {
+                        RB.UserSession.instance.set('defaultUseRichText',
+                                                    false);
                     });
-                    dlg = new RB.CommentDialogView({
-                        animate: false,
-                        model: editor
-                    });
-                    dlg.render();
-                    $checkbox = dlg.$('#enable_markdown');
 
-                    expect(editor.get('richText')).toBe(false);
-                    expect($checkbox.prop('checked')).toBe(false);
+                    it('New comment', function() {
+                        editor = new RB.CommentEditor({
+                            reviewRequest: reviewRequest,
+                            reviewRequestEditor: reviewRequestEditor
+                        });
+                        dlg = new RB.CommentDialogView({
+                            animate: false,
+                            model: editor
+                        });
+                        dlg.render();
+                        $checkbox = dlg.$('#enable_markdown');
+
+                        expect(editor.get('richText')).toBe(false);
+                        expect($checkbox.prop('checked')).toBe(false);
+                        expect(dlg._textEditor.richText).toBe(false);
+                    });
+
+                    it('Existing comment with richText=true', function() {
+                        editor = new RB.CommentEditor({
+                            reviewRequest: reviewRequest,
+                            reviewRequestEditor: reviewRequestEditor,
+                            comment: new RB.DiffComment({
+                                richText: true
+                            })
+                        });
+                        dlg = new RB.CommentDialogView({
+                            animate: false,
+                            model: editor
+                        });
+                        dlg.render();
+                        $checkbox = dlg.$('#enable_markdown');
+
+                        expect(editor.get('richText')).toBe(true);
+                        expect($checkbox.prop('checked')).toBe(true);
+                        expect(dlg._textEditor.richText).toBe(true);
+                    });
+
+                    it('Existing comment with richText=false', function() {
+                        editor = new RB.CommentEditor({
+                            reviewRequest: reviewRequest,
+                            reviewRequestEditor: reviewRequestEditor,
+                            comment: new RB.DiffComment({
+                                richText: false
+                            })
+                        });
+                        dlg = new RB.CommentDialogView({
+                            animate: false,
+                            model: editor
+                        });
+                        dlg.render();
+                        $checkbox = dlg.$('#enable_markdown');
+
+                        expect(editor.get('richText')).toBe(false);
+                        expect($checkbox.prop('checked')).toBe(false);
+                        expect(dlg._textEditor.richText).toBe(false);
+                    });
                 });
             });
         });

@@ -1,5 +1,6 @@
 Lead Developers:
 
+	* Barret Rennie
 	* Christian Hammond
 	* David Trowbridge
 
@@ -24,7 +25,6 @@ Contributors:
 	* Augie Fackler
 	* Azad Salahli
 	* Masakazu Hamaji
-	* Barret Rennie
 	* Benoît Allard
 	* Ben Allen
 	* Ben Cooksley
@@ -39,7 +39,8 @@ Contributors:
 	* Bruce Cran
 	* Butch Landingin
 	* cgorobets
-	* cstejerean
+	* Chester Li
+	* Chris Arnold
 	* Chris Bayley
 	* Chris Clark
 	* Chris Lamb
@@ -50,6 +51,7 @@ Contributors:
 	* Colin Caughie
 	* Corey Hickey
 	* Cristian Messel
+	* cstejerean
 	* Curtis Miller
 	* Damian Johnson
 	* Dan Bentley
@@ -67,6 +69,7 @@ Contributors:
 	* Derek Slager
 	* devraj
 	* Dick Porter
+	* Dmitry Vasiliev
 	* Eduardo Felipe Castegnaro
 	* Edward Lee
 	* Edwin Zhang
@@ -78,6 +81,7 @@ Contributors:
 	* Eric Johansson
 	* Eric Miller
 	* Erik Johansson
+	* Erik Lattimore
 	* Evan Dower
 	* Evers Ding
 	* Eyal Lin
@@ -93,6 +97,7 @@ Contributors:
 	* Giridharan Suriya
 	* Greg McNutt
 	* Greg Wang
+	* Halvor Lund
 	* Harald Glock
 	* Helder Ribeiro
 	* Henrik Hedberg
@@ -104,10 +109,13 @@ Contributors:
 	* Jacob Farkas
 	* James Farwell
 	* Jamie Scheinblum
+	* Jason Tseng
 	* Jason Veatch
 	* Jeeva Suresh
 	* Jeff Lamb
 	* Jeroen Janssen
+	* Jessica Qian
+	* Jessica Yuen
 	* Jim Chen
 	* Joe Heck
 	* Joe Winter
@@ -121,6 +129,7 @@ Contributors:
 	* JSlominski
 	* jszhang
 	* Justin Maillet
+	* Justin Wu
 	* Karl Leuschen
 	* Kay Röpke
 	* Kevin Kubasik
@@ -142,6 +151,8 @@ Contributors:
 	* Mark Côté
 	* Mark Edgington
 	* Mark Lee
+	* Mark Loyzer
+	* Mark Russell
 	* Mark Striemer
 	* Markus Knittig
 	* Mat Schaffer
@@ -152,6 +163,7 @@ Contributors:
 	* Matt Stancliff
 	* Maximillian Dornseif
 	* Max N
+	* Maxime Besson
 	* Megan Schneider
 	* Michael Plump
 	* Michael Rowe
@@ -173,10 +185,12 @@ Contributors:
 	* nn1436401@gmail.com
 	* Nuno Ferreira
 	* Olessia Karpova
+	* Omar Ali
 	* Onkar Shinde
 	* Paolo Borelli
 	* Paul Beets
 	* Paul Scott
+	* Perry Hung
 	* pfarrell
 	* Philipp Henkel
 	* Philippe Normand
@@ -190,6 +204,7 @@ Contributors:
 	* Robert Munteanu
 	* Robin Helgelin
 	* Rodrigo Castro
+	* Rohan Meringenti
 	* Russell Bryant
 	* Rusty Burchfield
 	* Ryan Done
@@ -201,11 +216,14 @@ Contributors:
 	* Sergey Berezhnoy
 	* Severin Gehwolf
 	* Sharan Rao
+	* Sihang Chen
 	* Simon Morley
 	* Sitnikov Vladimir
 	* Skip Montanaro
 	* Solomon Matthews
 	* Stacey Sheldon
+	* Stanley Yeo
+	* Stefan Seeger
 	* Stephanie Su
 	* Stephen Gallagher
 	* Steve Milner
@@ -218,6 +236,8 @@ Contributors:
 	* Taro MURAOKA
 	* Tarun Anupoju
 	* Ted Dunning
+	* Teresa Fan
+	* Terry Cain
 	* Thilo-Alexander Ginkel
 	* Tim Daly
 	* Tim W
@@ -228,14 +248,18 @@ Contributors:
 	* Tomi Äijö
 	* Tony Bibbs
 	* Torsten Flatter
+	* Tran Nguyen
 	* Travis Cline
 	* Vaclav Slavik
 	* Victoria Ponce (BitNami)
 	* Vignesh Srinivasan
 	* Viktor Nagy
+	* Vincent Le
 	* Vlad Filippov
+	* Wang Jun Sun
 	* Will Lentz
 	* wshino wshino
+	* Wu Di
 	* Xavier Duret
 	* Yanjia Xin
 	* Yazan Medanat

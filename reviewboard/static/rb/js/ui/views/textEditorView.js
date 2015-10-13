@@ -17,8 +17,18 @@ CodeMirrorWrapper = Backbone.View.extend({
      */
     initialize: function(options) {
         var codeMirrorOptions = {
-            mode: 'gfm',
+            mode: {
+                name: 'gfm',
+                classOverrides: {
+                    code: 'rb-markdown-code',
+                    list1: 'rb-markdown-list1',
+                    list2: 'rb-markdown-list2',
+                    list3: 'rb-markdown-list3'
+                }
+            },
+            theme: 'rb default',
             lineWrapping: true,
+            electricChars: false,
             extraKeys: {
                 'Home': 'goLineLeft',
                 'End': 'goLineRight',
@@ -53,8 +63,14 @@ CodeMirrorWrapper = Backbone.View.extend({
     /*
      * Returns whether or not the editor's contents have changed.
      */
-    isDirty: function(/* initialValue */) {
-        return !this._codeMirror.isClean();
+    isDirty: function(initialValue) {
+        /*
+         * We cannot trust codeMirror's isClean() method.
+         *
+         * It is also possible for initialValue to be undefined, so we use an
+         * empty string in that case instead.
+         */
+        return (initialValue || '') !== this.getText();
     },
 
     /*

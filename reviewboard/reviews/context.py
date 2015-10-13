@@ -5,7 +5,8 @@ from django.utils import six
 from reviewboard.attachments.forms import CommentFileForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.forms import UploadDiffForm
-from reviewboard.reviews.markdown_utils import normalize_text_for_edit
+from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
+                                                normalize_text_for_edit)
 from reviewboard.reviews.models import BaseComment
 
 
@@ -15,20 +16,20 @@ def comment_counts(user, all_comments, filediff, interfilediff=None):
 
     Each entry in the array has a dictionary containing the following keys:
 
-      =========== ==================================================
-      Key                Description
-      =========== ==================================================
-      comment_id         The ID of the comment
-      text               The plain or rich text of the comment
-      rich_text          The rich text flag for the comment
-      line               The first line number
-      num_lines          The number of lines this comment spans
-      user               A dictionary containing "username" and "name" keys
-                         for the user
-      url                The URL to the comment
-      localdraft         True if this is the current user's draft comment
-      review_id          The ID of the review this comment is associated with
-      ==============================================================
+    =========== ==================================================
+    Key                Description
+    =========== ==================================================
+    comment_id         The ID of the comment
+    text               The plain or rich text of the comment
+    rich_text          The rich text flag for the comment
+    line               The first line number
+    num_lines          The number of lines this comment spans
+    user               A dictionary containing "username" and "name" keys
+                       for the user
+    url                The URL to the comment
+    localdraft         True if this is the current user's draft comment
+    review_id          The ID of the review this comment is associated with
+    ==============================================================
     """
     comment_dict = {}
 
@@ -49,6 +50,8 @@ def comment_counts(user, all_comments, filediff, interfilediff=None):
                 'comment_id': comment.id,
                 'text': normalize_text_for_edit(user, comment.text,
                                                 comment.rich_text),
+                'html': markdown_render_conditional(comment.text,
+                                                    comment.rich_text),
                 'rich_text': comment.rich_text,
                 'line': comment.first_line,
                 'num_lines': comment.num_lines,

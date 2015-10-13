@@ -15,9 +15,14 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     commentsListName: 'diff_comments',
 
     cssTemplate: _.template([
-        '#<%= id %> td pre {',
-        '    min-width: <%= minWidth %>px;',
-        '    max-width: <%= maxWidth %>px;',
+        '#<%= id %> td pre,',
+        '#<%= id %> .revision-row th.revision-col {',
+        '    min-width: <%= minColWidth %>px;',
+        '    max-width: <%= maxColWidth %>px;',
+        '}',
+        '#<%= id %> .filename-row th {',
+        '    min-width: <%= minFilenameWidth %>px;',
+        '    max-width: <%= maxFilenameWidth %>px;',
         '}'
     ].join('\n')),
 
@@ -48,10 +53,13 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         this._$collapseButtons = $();
 
         /* State for keeping consistent column widths for diff content. */
+        this._$filenameRow = null;
         this._$revisionRow = null;
         this._$css = null;
-        this._reservedWidths = 0;
+        this._filenameReservedWidths = 0;
+        this._colReservedWidths = 0;
         this._numColumns = 0;
+        this._numFilenameColumns = 0;
         this._prevContentWidth = null;
 
         /*
@@ -59,6 +67,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
          * the page scrolls.
          */
         this._$window = $(window);
+        this._$parent = this.$el.parent();
 
         this.on('commentBlockViewAdded', this._placeCommentBlockView, this);
     },
@@ -79,9 +88,14 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * Renders the reviewable.
      */
     render: function() {
+        var $thead;
+
         _super(this).render.call(this);
 
-        this._$revisionRow = this.$('thead .revision-row');
+        $thead = this.$('thead');
+
+        this._$revisionRow = $thead.find('.revision-row');
+        this._$filenameRow = $thead.find('.filename-row');
         this._$css = $('<style/>').appendTo(this.$el);
 
         this._selector.render();
@@ -152,148 +166,6 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     },
 
     /*
-     * Finds the row in a table matching the specified line number.
-     *
-     * This will perform a binary search of the lines trying to find
-     * the matching line number. It will then return the row element,
-     * if found.
-     */
-    _findLineNumRow: function(lineNum, startRow, endRow) {
-        var row = null,
-            table = this.el,
-            rowOffset = 1, // Get past the headers.
-            guessRowNum,
-            guessRow,
-            oldHigh,
-            oldLow,
-            high,
-            low,
-            value,
-            found,
-            i,
-            j;
-
-        if (table.rows.length - rowOffset > lineNum) {
-            row = table.rows[rowOffset + lineNum];
-
-            // Account for the "x lines hidden" row.
-            if (row && this.getLineNum(row) === lineNum) {
-                return row;
-            }
-        }
-
-        if (startRow) {
-            // startRow already includes the offset, so we need to remove it.
-            startRow -= rowOffset;
-        }
-
-        low = startRow || 1;
-        high = Math.min(endRow || table.rows.length, table.rows.length);
-
-        if (endRow !== undefined && endRow < table.rows.length) {
-            /* See if we got lucky and found it in the last row. */
-            if (this.getLineNum(table.rows[endRow]) === lineNum) {
-                return table.rows[endRow];
-            }
-        } else if (row) {
-            /*
-             * We collapsed the rows (unless someone mucked with the DB),
-             * so the desired row is less than the row number retrieved.
-             */
-            high = Math.min(high, rowOffset + lineNum);
-        }
-
-        /* Binary search for this cell. */
-        for (i = Math.round((low + high) / 2); low < high - 1;) {
-            row = table.rows[rowOffset + i];
-
-            if (!row) {
-                /* This should not happen, unless we miscomputed high. */
-                high--;
-
-                /*
-                 * This won't do much if low + high is odd, but we'll catch
-                 * up on the next iteration.
-                 */
-                i = Math.round((low + high) / 2);
-                continue;
-            }
-
-            value = this.getLineNum(row);
-
-            if (!value) {
-                /*
-                 * Bad luck, let's look around.
-                 *
-                 * We'd expect to find a value on the first try, but the
-                 * following makes sure we explore all rows.
-                 */
-                found = false;
-
-                for (j = 1; j <= (high - low) / 2; j++) {
-                    row = table.rows[rowOffset + i + j];
-
-                    if (row && this.getLineNum(row)) {
-                        i = i + j;
-                        found = true;
-                        break;
-                    } else {
-                        row = table.rows[rowOffset + i - j];
-
-                        if (row && this.getLineNum(row)) {
-                            i = i - j;
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (found) {
-                    value = this.getLineNum(row);
-                } else {
-                    return null;
-                }
-            }
-
-            /* See if we can use simple math to find the row quickly. */
-            guessRowNum = lineNum - value + rowOffset + i;
-
-            if (guessRowNum >= 0 && guessRowNum < table.rows.length) {
-                guessRow = table.rows[guessRowNum];
-
-                if (guessRow && this.getLineNum(guessRow) === lineNum) {
-                    /* We found it using maths! */
-                    return guessRow;
-                }
-            }
-
-            oldHigh = high;
-            oldLow = low;
-
-            if (value > lineNum) {
-                high = i;
-            } else if (value < lineNum) {
-                low = i;
-            } else {
-                return row;
-            }
-
-            /*
-             * Make sure we don't get stuck in an infinite loop. This can happen
-             * when a comment is placed in a line that isn't being shown.
-             */
-            if (oldHigh === high && oldLow === low) {
-                break;
-            }
-
-            i = Math.round((low + high) / 2);
-        }
-
-        // Well.. damn. Ignore this then.
-        return null;
-    },
-
-    /*
      * Places a CommentBlockView on the page.
      *
      * This will compute the row range for the CommentBlockView and then
@@ -302,24 +174,18 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * If it doesn't exist yet, the CommentBlockView will be stored in the
      * list of hidden comment blocks for later rendering.
      */
-    _placeCommentBlockView: function(commentBlockView) {
+    _placeCommentBlockView: function(commentBlockView, prevBeginRowIndex) {
         var commentBlock = commentBlockView.model,
-            numLines = commentBlock.getNumLines(),
-            beginLineNum = commentBlock.get('beginLineNum'),
-            endLineNum = commentBlock.get('endLineNum'),
-            beginRowEl = this._findLineNumRow(beginLineNum),
-            prevBeginRowIndex,
+            rowEls = this._selector.getRowsForRange(
+                commentBlock.get('beginLineNum'),
+                commentBlock.get('endLineNum'),
+                prevBeginRowIndex),
+            beginRowEl,
             endRowEl;
 
-        if (beginRowEl) {
-            prevBeginRowIndex = beginRowEl.rowIndex;
-
-            endRowEl = (endLineNum === beginLineNum
-                        ? beginRowEl
-                        : this._findLineNumRow(
-                            endLineNum,
-                            prevBeginRowIndex,
-                            prevBeginRowIndex + numLines - 1));
+        if (rowEls) {
+            beginRowEl = rowEls[0];
+            endRowEl = rowEls[1];
 
             /*
              * Note that endRow might be null if it exists in a collapsed
@@ -330,6 +196,8 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             commentBlockView.$el.appendTo(
                 commentBlockView.$beginRow[0].cells[0]);
             this._visibleCommentBlockViews.push(commentBlockView);
+
+            prevBeginRowIndex = beginRowEl.rowIndex;
         } else {
             this._hiddenCommentBlockViews.push(commentBlockView);
         }
@@ -578,22 +446,38 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      */
     _precalculateContentWidths: function() {
         var $cells,
+            containerExtents,
             cellPadding;
 
         if (!this.$el.hasClass('diff-error') && this._$revisionRow.length > 0) {
-            $cells = $(this._$revisionRow[0].cells);
-            cellPadding = this.$('pre:first').getExtents('p', 'lr');
+            containerExtents = this.$el.getExtents('p', 'lr');
 
-            this._reservedWidths = $cells.eq(0).width() + cellPadding;
+            /* Calculate the widths and state of the diff columns. */
+            $cells = $(this._$revisionRow[0].cells);
+            cellPadding = this.$('pre:first').parent().andSelf()
+                .getExtents('p', 'lr');
+
+            this._colReservedWidths = $cells.eq(0).outerWidth() + cellPadding +
+                                      containerExtents;
             this._numColumns = $cells.length;
 
             if (this._numColumns === 4) {
                 /* There's a left-hand side and a right-hand side. */
-                this._reservedWidths += $cells.eq(2).width() + cellPadding;
+                this._colReservedWidths += $cells.eq(2).outerWidth() +
+                                           cellPadding;
             }
+
+            /* Calculate the widths and state of the filename columns. */
+            $cells = $(this._$filenameRow[0].cells);
+            cellPadding = $cells.eq(0).getExtents('p', 'lr');
+            this._numFilenameColumns = $cells.length;
+            this._filenameReservedWidths = containerExtents +
+                                           2 * this._numFilenameColumns;
         } else {
-            this._reservedWidths = 0;
+            this._colReservedWidths = 0;
+            this._filenameReservedWidths = 0;
             this._numColumns = 0;
+            this._numFilenameColumns = 0;
         }
     },
 
@@ -606,26 +490,43 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * causing the other column to shrink too small.
      */
     _updateColumnSizes: function() {
-        var contentWidth;
+        var fullWidth,
+            contentWidth,
+            filenameWidth;
 
         if (this.$el.hasClass('diff-error')) {
             return;
         }
 
-        contentWidth = this.$el.parent().width() - this._reservedWidths;
+        fullWidth = this._$parent.width();
+
+        /* Calculate the desired widths of the diff columns. */
+        contentWidth = fullWidth - this._colReservedWidths;
 
         if (this._numColumns === 4) {
             contentWidth /= 2;
         }
 
-        if (contentWidth !== this._prevContentWidth) {
+        /* Calculate the desired widths of the filename columns. */
+        filenameWidth = fullWidth - this._filenameReservedWidths;
+
+        if (this._numFilenameColumns === 2) {
+            filenameWidth /= 2;
+        }
+
+        if (contentWidth !== this._prevContentWidth ||
+            filenameWidth !== this._prevFilenameWidth) {
+            /* The widths have changed, so force new minimums and maximums. */
             this._$css.html(this.cssTemplate({
                 id: this.el.id,
-                minWidth: Math.ceil(contentWidth * 0.66),
-                maxWidth: Math.ceil(contentWidth)
+                minColWidth: Math.ceil(contentWidth * 0.66),
+                maxColWidth: Math.ceil(contentWidth),
+                minFilenameWidth: Math.ceil(filenameWidth * 0.66),
+                maxFilenameWidth: Math.ceil(filenameWidth)
             }));
 
             this._prevContentWidth = contentWidth;
+            this._prevFilenameWidth = filenameWidth;
         }
     },
 
@@ -733,13 +634,6 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         e.preventDefault();
         this._expandOrCollapse($target, false);
-    },
-
-    /*
-     * Returns the line number for a row.
-     */
-    getLineNum: function(row) {
-        return parseInt(row.getAttribute('line'), 10);
     }
 });
 

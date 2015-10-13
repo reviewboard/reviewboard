@@ -58,6 +58,7 @@ class ReviewReplyResource(BaseReviewResource):
             'type': dict,
             'description': 'Extra data as part of the reply. '
                            'This can be set by the API or extensions.',
+            'added_in': '2.0',
         },
         'id': {
             'type': int,
@@ -136,6 +137,7 @@ class ReviewReplyResource(BaseReviewResource):
                            'text fields. The contents will be converted '
                            'to the requested type in the payload, but '
                            'will not be saved as that type.',
+            'added_in': '2.0.9',
         },
         'public': {
             'type': bool,
@@ -153,6 +155,12 @@ class ReviewReplyResource(BaseReviewResource):
                            'body_bottom_text_type instead.',
             'added_in': '2.0',
             'deprecated_in': '2.0.12',
+        },
+        'trivial': {
+            'type': bool,
+            'description': 'If true, the review does not send '
+                           'an email.',
+            'added_in': '2.5',
         },
     }
 
@@ -279,13 +287,13 @@ class ReviewReplyResource(BaseReviewResource):
         """
         pass
 
-    def _update_reply(self, request, reply, public=None, extra_fields={},
-                      *args, **kwargs):
+    def _update_reply(self, request, reply, public=None, trivial=False,
+                      extra_fields={}, *args, **kwargs):
         """Common function to update fields on a draft reply."""
         if not self.has_modify_permissions(request, reply):
             # Can't modify published replies or those not belonging
             # to the user.
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         for field in ('body_top', 'body_bottom'):
             value = kwargs.get(field, None)
@@ -305,9 +313,9 @@ class ReviewReplyResource(BaseReviewResource):
 
         if public:
             try:
-                reply.publish(user=request.user)
+                reply.publish(user=request.user, trivial=trivial)
             except PublishError as e:
-                return PUBLISH_ERROR.with_message(e.msg)
+                return PUBLISH_ERROR.with_message(six.text_type(e))
 
         else:
             reply.save()

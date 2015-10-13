@@ -3,9 +3,12 @@ from __future__ import unicode_literals
 import logging
 import os
 import re
+import platform
 
 from django.utils import six
-from django.utils.six.moves.urllib.parse import quote as urlquote
+from django.utils.six.moves.urllib.parse import (quote as urlquote,
+                                                 urlsplit as urlsplit,
+                                                 urlunsplit as urlunsplit)
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
@@ -82,13 +85,13 @@ class GitTool(SCMTool):
                                 credentials['password'],
                                 repository.encoding, local_site_name)
 
-    def get_file(self, path, revision=HEAD):
+    def get_file(self, path, revision=HEAD, **kwargs):
         if revision == PRE_CREATION:
             return ""
 
         return self.client.get_file(path, revision)
 
-    def file_exists(self, path, revision=HEAD):
+    def file_exists(self, path, revision=HEAD, **kwargs):
         if revision == PRE_CREATION:
             return False
 
@@ -151,6 +154,68 @@ class GitDiffParser(DiffParser):
     """
     pre_creation_regexp = re.compile(b"^0+$")
 
+    DIFF_GIT_LINE_RES = [
+        # Match with a/ and b/ prefixes. Common case.
+        re.compile(
+            b'^diff --git'
+            b' (?P<aq>")?a/(?P<orig_filename>[^"]+)(?(aq)")'
+            b' (?P<bq>")?b/(?P<new_filename>[^"]+)(?(bq)")$'),
+
+        # Match without a/ and b/ prefixes. Spaces are allowed only if using
+        # quotes around the filename.
+        re.compile(
+            b'^diff --git'
+            b' (?P<aq>")?(?!a/)(?P<orig_filename>(?(aq)[^"]|[^ ])+)(?(aq)")'
+            b' (?P<bq>")?(?!b/)(?P<new_filename>(?(bq)[^"]|[^ ])+)(?(bq)")$'),
+
+        # Match without a/ and b/ prefixes, without quotes, and with the
+        # original and new names being identical.
+        re.compile(
+            b'^diff --git'
+            b' (?!")(?!a/)(?P<orig_filename>[^"]+)(?!")'
+            b' (?!")(?!b/)(?P<new_filename>(?P=orig_filename))(?!")$'),
+    ]
+
+    EXTENDED_HEADERS_KEYS = set([
+        b'old mode',
+        b'new mode',
+        b'deleted file mode',
+        b'new file mode',
+        b'copy from',
+        b'copy to',
+        b'rename from',
+        b'rename to',
+        b'similarity index',
+        b'dissimilarity index',
+        b'index',
+    ])
+
+    def _parse_extended_headers(self, linenum):
+        """Parse an extended headers section.
+
+        A dictionary with keys being the header name and values
+        being a tuple of (header value, complete header line) will
+        be returned. The complete header lines will have a trailing
+        new line added for convenience.
+        """
+        headers = {}
+
+        while linenum < len(self.lines):
+            line = self.lines[linenum]
+
+            for key in self.EXTENDED_HEADERS_KEYS:
+                if line.startswith(key):
+                    headers[key] = line[len(key) + 1:], line + b'\n'
+                    break
+            else:
+                # No headers were found on this line so we're
+                # done parsing them.
+                break
+
+            linenum += 1
+
+        return headers, linenum
+
     def parse(self):
         """
         Parses the diff, returning a list of File objects representing each
@@ -194,9 +259,9 @@ class GitDiffParser(DiffParser):
         not to record it).
         """
         if self.lines[linenum].startswith(b"diff --git"):
-            parts = self._parse_git_diff(linenum)
+            line, info = self._parse_git_diff(linenum)
 
-            return parts[0], parts[1], True
+            return line, info, True
         else:
             return linenum + 1, None, False
 
@@ -207,24 +272,11 @@ class GitDiffParser(DiffParser):
         # then skip
 
         # Now we have a diff we are going to use so get the filenames + commits
+        diff_git_line = self.lines[linenum]
+
         file_info = File()
-        file_info.data = self.lines[linenum] + b'\n'
+        file_info.data = diff_git_line + b'\n'
         file_info.binary = False
-        # We split at the b/ to deal with space in filenames
-        diff_line = self.lines[linenum].split(b' b/')
-
-        try:
-            file_info.origFile = diff_line[-2].replace(b'diff --git a/', b'')
-            file_info.newFile = diff_line[-1]
-
-            if isinstance(file_info.origFile, six.binary_type):
-                file_info.origFile = file_info.origFile.decode('utf-8')
-
-            if isinstance(file_info.newFile, six.binary_type):
-                file_info.newFile = file_info.newFile.decode('utf-8')
-        except ValueError:
-            raise DiffParserError('The diff file is missing revision '
-                                  'information', linenum)
 
         linenum += 1
 
@@ -232,38 +284,50 @@ class GitDiffParser(DiffParser):
         if linenum >= len(self.lines):
             return linenum, None
 
-        # Parse the extended header to save the new file, deleted file,
-        # mode change, file move, and index.
-        if self._is_new_file(linenum):
-            file_info.data += self.lines[linenum] + b"\n"
-            linenum += 1
-        elif self._is_deleted_file(linenum):
-            file_info.data += self.lines[linenum] + b"\n"
-            linenum += 1
+        # Assume the blob / commit information is provided globally. If
+        # we found an index header we'll override this.
+        file_info.origInfo = self.base_commit_id
+        file_info.newInfo = self.new_commit_id
+
+        headers, linenum = self._parse_extended_headers(linenum)
+
+        if self._is_new_file(headers):
+            file_info.data += headers[b'new file mode'][1]
+            file_info.origInfo = PRE_CREATION
+        elif self._is_deleted_file(headers):
+            file_info.data += headers[b'deleted file mode'][1]
             file_info.deleted = True
-        elif self._is_mode_change(linenum):
-            file_info.data += self.lines[linenum] + b"\n"
-            file_info.data += self.lines[linenum + 1] + b"\n"
-            linenum += 2
-        elif self._is_moved_file(linenum):
-            file_info.data += self.lines[linenum] + b"\n"
-            file_info.data += self.lines[linenum + 1] + b"\n"
-            file_info.data += self.lines[linenum + 2] + b"\n"
-            linenum += 3
+        elif self._is_mode_change(headers):
+            file_info.data += headers[b'old mode'][1]
+            file_info.data += headers[b'new mode'][1]
+
+        if self._is_moved_file(headers):
+            file_info.origFile = headers[b'rename from'][0]
+            file_info.newFile = headers[b'rename to'][0]
             file_info.moved = True
-        elif self._is_copied_file(linenum):
-            file_info.data += self.lines[linenum] + b"\n"
-            file_info.data += self.lines[linenum + 1] + b"\n"
-            file_info.data += self.lines[linenum + 2] + b"\n"
-            linenum += 3
+
+            if b'similarity index' in headers:
+                file_info.data += headers[b'similarity index'][1]
+
+            file_info.data += headers[b'rename from'][1]
+            file_info.data += headers[b'rename to'][1]
+        elif self._is_copied_file(headers):
+            file_info.origFile = headers[b'copy from'][0]
+            file_info.newFile = headers[b'copy to'][0]
             file_info.copied = True
+
+            if b'similarity index' in headers:
+                file_info.data += headers[b'similarity index'][1]
+
+            file_info.data += headers[b'copy from'][1]
+            file_info.data += headers[b'copy to'][1]
 
         # Assume by default that the change is empty. If we find content
         # later, we'll clear this.
         empty_change = True
 
-        if self._is_index_range_line(linenum):
-            index_range = self.lines[linenum].split(None, 2)[1]
+        if b'index' in headers:
+            index_range = headers[b'index'][0].split()[0]
 
             if '..' in index_range:
                 file_info.origInfo, file_info.newInfo = index_range.split("..")
@@ -271,8 +335,7 @@ class GitDiffParser(DiffParser):
             if self.pre_creation_regexp.match(file_info.origInfo):
                 file_info.origInfo = PRE_CREATION
 
-            file_info.data += self.lines[linenum] + b"\n"
-            linenum += 1
+            file_info.data += headers[b'index'][1]
 
         # Get the changes
         while linenum < len(self.lines):
@@ -285,15 +348,63 @@ class GitDiffParser(DiffParser):
                 linenum += 1
                 break
             elif self._is_diff_fromfile_line(linenum):
-                if self.lines[linenum].split()[1] == b"/dev/null":
-                    file_info.origInfo = PRE_CREATION
+                orig_line = self.lines[linenum]
+                new_line = self.lines[linenum + 1]
 
-                file_info.data += self.lines[linenum] + b'\n'
-                file_info.data += self.lines[linenum + 1] + b'\n'
+                orig_filename = orig_line[len(b'--- '):]
+                new_filename = new_line[len(b'+++ '):]
+
+                # Some diffs may incorrectly contain filenames listed as:
+                #
+                # --- filename\t
+                # +++ filename\t
+                #
+                # We need to strip those single trailing tabs.
+                if orig_filename.endswith(b'\t'):
+                    orig_filename = orig_filename[:-1]
+
+                if new_filename.endswith(b'\t'):
+                    new_filename = new_filename[:-1]
+
+                # Strip the Git a/ and b/ prefixes, if set in the diff.
+                if orig_filename.startswith(b'a/'):
+                    orig_filename = orig_filename[2:]
+
+                if new_filename.startswith(b'b/'):
+                    new_filename = new_filename[2:]
+
+                if orig_filename == b'/dev/null':
+                    file_info.origInfo = PRE_CREATION
+                    file_info.origFile = new_filename
+                else:
+                    file_info.origFile = orig_filename
+
+                if new_filename == b'/dev/null':
+                    file_info.newFile = orig_filename
+                else:
+                    file_info.newFile = new_filename
+
+                file_info.data += orig_line + b'\n'
+                file_info.data += new_line + b'\n'
                 linenum += 2
             else:
                 empty_change = False
                 linenum = self.parse_diff_line(linenum, file_info)
+
+        if not file_info.origFile:
+            # This file didn't have any --- or +++ lines. This usually means
+            # the file was deleted or moved without changes. We'll need to
+            # fall back to parsing the diff --git line, which is more
+            # error-prone.
+            assert not file_info.newFile
+
+            self._parse_diff_git_line(diff_git_line, file_info, linenum)
+
+        if isinstance(file_info.origFile, six.binary_type):
+            file_info.origFile = file_info.origFile.decode('utf-8')
+
+        if isinstance(file_info.newFile, six.binary_type):
+            file_info.newFile = file_info.newFile.decode('utf-8')
 
         # For an empty change, we keep the file's info only if it is a new
         # 0-length file, a moved file, a copied file, or a deleted 0-length
@@ -311,29 +422,50 @@ class GitDiffParser(DiffParser):
 
         return linenum, file_info
 
-    def _is_new_file(self, linenum):
-        return self.lines[linenum].startswith(b"new file mode")
+    def _parse_diff_git_line(self, diff_git_line, file_info, linenum):
+        """Parses the "diff --git" line for filename information.
 
-    def _is_deleted_file(self, linenum):
-        return self.lines[linenum].startswith(b"deleted file mode")
+        Not all diffs have "---" and "+++" lines we can parse for the
+        filenames. Git leaves these out if there aren't any changes made
+        to the file.
 
-    def _is_mode_change(self, linenum):
-        return (self.lines[linenum].startswith(b"old mode")
-                and self.lines[linenum + 1].startswith(b"new mode"))
+        This function attempts to extract this information from the
+        "diff --git" lines in the diff. It supports the following:
 
-    def _is_copied_file(self, linenum):
-        return (self.lines[linenum].startswith(b'similarity index') and
-                self.lines[linenum + 1].startswith(b'copy from') and
-                self.lines[linenum + 2].startswith(b'copy to'))
+        * All filenames with quotes.
+        * All filenames with a/ and b/ prefixes.
+        * Filenames without quotes, prefixes, or spaces.
+        * Filenames without quotes or prefixes, where the original and
+          modified filenames are identical.
+        """
+        for regex in self.DIFF_GIT_LINE_RES:
+            m = regex.match(diff_git_line)
 
-    def _is_moved_file(self, linenum):
-        return (self.lines[linenum].startswith(b"similarity index") and
-                self.lines[linenum + 1].startswith(b"rename from") and
-                self.lines[linenum + 2].startswith(b"rename to"))
+            if m:
+                file_info.origFile = m.group('orig_filename')
+                file_info.newFile = m.group('new_filename')
+                return
 
-    def _is_index_range_line(self, linenum):
-        return (linenum < len(self.lines) and
-                self.lines[linenum].startswith(b"index "))
+        raise DiffParserError(
+            'Unable to parse the "diff --git" line for this file, due to '
+            'the use of filenames with spaces or --no-prefix, --src-prefix, '
+            'or --dst-prefix options.',
+            linenum)
+
+    def _is_new_file(self, headers):
+        return b'new file mode' in headers
+
+    def _is_deleted_file(self, headers):
+        return b'deleted file mode' in headers
+
+    def _is_mode_change(self, headers):
+        return b'old mode' in headers and b'new mode' in headers
+
+    def _is_copied_file(self, headers):
+        return b'copy from' in headers and b'copy to' in headers
+
+    def _is_moved_file(self, headers):
+        return b'rename from' in headers and b'rename to' in headers
 
     def _is_git_diff(self, linenum):
         return self.lines[linenum].startswith(b'diff --git')
@@ -386,7 +518,11 @@ class GitClient(SCMClient):
         url_parts = urllib_urlparse(self.path)
 
         if url_parts[0] == 'file':
-            self.git_dir = url_parts[2]
+            if platform.system() == "Windows":
+                # Windows requires drive letter (e.g. C:/)
+                self.git_dir = url_parts[1] + url_parts[2]
+            else:
+                self.git_dir = url_parts[2]
 
             p = self._run_git(['--git-dir=%s' % self.git_dir, 'config',
                                'core.repositoryformatversion'])
@@ -403,7 +539,27 @@ class GitClient(SCMClient):
 
     def is_valid_repository(self):
         """Checks if this is a valid Git repository."""
-        p = self._run_git(['ls-remote', self.path, 'HEAD'])
+        url_parts = urlsplit(self.path)
+
+        if (url_parts.scheme.lower() in ('http', 'https') and
+            url_parts.username is None and self.username):
+            # Git URLs, especially HTTP(s), that require authentication should
+            # be entered without the authentication info in the URL (because
+            # then it would be visible), but we need it in the URL when testing
+            # to make sure it exists. Reformat the path here to include them.
+            new_netloc = urlquote(self.username, safe='')
+
+            if self.password:
+                new_netloc += ':' + urlquote(self.password, safe='')
+
+            new_netloc += '@' + url_parts.netloc
+
+            path = urlunsplit((url_parts[0], new_netloc, url_parts[2],
+                               url_parts[3], url_parts[4]))
+        else:
+            path = self.path
+
+        p = self._run_git(['ls-remote', path, 'HEAD'])
         errmsg = p.stderr.read()
         failure = p.wait()
 

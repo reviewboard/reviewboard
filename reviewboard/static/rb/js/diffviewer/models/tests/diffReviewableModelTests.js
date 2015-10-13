@@ -30,7 +30,7 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
             spyOn($, 'ajax').andCallFake(function(request) {
                 expect(request.type).toBe('GET');
                 expect(request.url).toBe(
-                    '/r/1/diff/2/fragment/3/?index=4&' + AJAX_SERIAL);
+                    '/r/1/diff/2/fragment/3/?index=4&' + TEMPLATE_SERIAL);
 
                 request.success('abc');
                 request.complete('abc', 'success');
@@ -56,7 +56,7 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
             spyOn($, 'ajax').andCallFake(function(request) {
                 expect(request.type).toBe('GET');
                 expect(request.url).toBe(
-                    '/r/1/diff/2-3/fragment/3/?index=4&' + AJAX_SERIAL);
+                    '/r/1/diff/2-3/fragment/3/?index=4&' + TEMPLATE_SERIAL);
 
                 request.success('abc');
                 request.complete('abc', 'success');

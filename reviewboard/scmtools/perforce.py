@@ -10,14 +10,11 @@ import socket
 import subprocess
 import tempfile
 import time
+from contextlib import contextmanager
 
 from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
-try:
-    from P4 import P4Exception
-except ImportError:
-    pass
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate
@@ -106,6 +103,7 @@ class PerforceClient(object):
             raise AttributeError('stunnel proxy was requested, but stunnel '
                                  'binary is not in the exec path.')
 
+    @contextmanager
     def _connect(self):
         """
         Connect to the perforce server.
@@ -135,6 +133,10 @@ class PerforceClient(object):
 
         if self.use_ticket_auth:
             self.p4.run_login()
+
+        yield
+
+        self._disconnect()
 
     def _disconnect(self):
         """
@@ -177,22 +179,12 @@ class PerforceClient(object):
             raise SCMError(error)
 
     def _run_worker(self, worker):
-        result = None
-
-        # TODO: Move to using with: when we require a minimum of Python 2.5.
-        #       We should make it auto-disconnect.
+        from P4 import P4Exception
         try:
-            self._connect()
-            result = worker()
-            self._disconnect()
+            with self._connect():
+                return worker()
         except P4Exception as e:
-            self._disconnect()
             self._convert_p4exception_to_scmexception(e)
-        except:
-            self._disconnect()
-            raise
-
-        return result
 
     def _get_changeset(self, changesetid):
         changesetid = six.text_type(changesetid)
@@ -329,7 +321,7 @@ class PerforceTool(SCMTool):
     def get_diffs_use_absolute_paths(self):
         return True
 
-    def get_file(self, path, revision=HEAD):
+    def get_file(self, path, revision=HEAD, **kwargs):
         return self.client.get_file(path, revision)
 
     def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):

@@ -29,7 +29,8 @@ RB.DiffFileIndexView = Backbone.View.extend({
      * Renders the view to the page.
      */
     render: function() {
-        this._$itemsTable = $('<table/>').appendTo(this.el);
+        this.$el.empty();
+        this._$itemsTable = $('<table/>').appendTo(this.$el);
         this._$items = this.$('tr');
 
         // Add the files from the collection
@@ -45,7 +46,9 @@ RB.DiffFileIndexView = Backbone.View.extend({
         ' if (deleted) { print(" deleted-file"); }',
         ' if (destFilename !== depotFilename) { print(" renamed-file"); }',
         ' %>">',
-        ' <td class="diff-file-icon"></td>',
+        ' <td class="diff-file-icon">',
+        '  <span class="fa fa-spinner fa-pulse"></span>',
+        ' </td>',
         ' <td class="diff-file-info">',
         '  <a href="#<%- index %>"><%- destFilename %></a>',
         '  <% if (destFilename !== depotFilename) { %>',
@@ -107,8 +110,8 @@ RB.DiffFileIndexView = Backbone.View.extend({
      * icon.
      */
     _renderDiffError: function($item) {
-        $('<div class="rb-icon rb-icon-warning"/>')
-            .appendTo($item.find('.diff-file-icon'));
+        $item.find('.diff-file-icon')
+            .html('<div class="rb-icon rb-icon-warning"/>');
     },
 
     /*
@@ -163,7 +166,9 @@ RB.DiffFileIndexView = Backbone.View.extend({
             numReplaces: numReplaces,
             totalLines: linesEqual + numDeletes + numInserts + numReplaces
         });
-        iconView.$el.appendTo($item.find('.diff-file-icon'));
+        $item.find('.diff-file-icon')
+            .empty()
+            .append(iconView.$el);
         iconView.render();
 
         this.listenTo(diffReviewableView, 'chunkDimmed chunkUndimmed',

@@ -7,7 +7,7 @@
    </ol>
 {% if user.is_authenticated %}
    <ul class="controls">
-    <li><a href="#" class="add_comment_link">{% trans "Add comment" %}</a></li>
+    <li><a href="#" class="add_comment_link">{% if reply_to_is_empty %}<span class="fa fa-comment"></span> {% trans "Comment" %}{% else %}<span class="fa fa-reply"></span> {% trans "Reply" %}{% endif %}</a></li>
    </ul>
 {% endif %}
   </div>

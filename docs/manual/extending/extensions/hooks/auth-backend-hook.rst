@@ -48,6 +48,6 @@ Example
             return user
 
 
-      class SampleExtension(Extension):
-          def initialize(self):
-              AuthBackendHook(self, SampleAuthBackend)
+    class SampleExtension(Extension):
+        def initialize(self):
+            AuthBackendHook(self, SampleAuthBackend)

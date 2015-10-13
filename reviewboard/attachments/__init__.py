@@ -4,7 +4,7 @@ from reviewboard.signals import initializing
 
 
 def _register_mimetype_handlers(**kwargs):
-    """Registers all bundled Mimetype Handlers."""
+    """Register all bundled Mimetype Handlers."""
     from reviewboard.attachments.mimetypes import (ImageMimetype,
                                                    MarkDownMimetype,
                                                    MimetypeHandler,

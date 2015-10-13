@@ -101,3 +101,13 @@ class UnknownHostKeyError(SSHKeyError):
                         "not be determined.") % {'hostname': hostname}
 
         SSHKeyError.__init__(self, hostname, key, warning)
+
+
+class SSHInvalidPortError(SSHError):
+    """An error representing a port that is a non-integer value."""
+
+    def __init__(self, port):
+        super(SSHInvalidPortError, self).__init__(
+            _('"%s" is not a valid port number. Please ensure the path has '
+              'the correct port number specified.')
+            % port)

@@ -69,3 +69,13 @@ box.
 
           The view here is meant to be used only as a reference to see if
           other people have already said what you plan to say.
+
+
+Viewing Other Text Revisions
+============================
+
+.. versionadded:: 2.5
+
+As explained in :ref:`reviewing-file-attachments`, you can view and compare
+revisions of a text file attachment. When viewing :term:`interdiffs`, Review
+Board will display the two file revisions side by side.

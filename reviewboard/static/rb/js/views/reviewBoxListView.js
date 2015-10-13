@@ -51,7 +51,8 @@ RB.ReviewBoxListView = Backbone.View.extend({
                 box = new RB.ReviewBoxView({
                     el: $review,
                     model: review,
-                    pageEditState: pageEditState
+                    pageEditState: pageEditState,
+                    editorData: this.options.editorData
                 });
 
             review.set({

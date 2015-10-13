@@ -30,6 +30,7 @@ class AccountPageForm(ConfigPageForm):
 
 class AccountSettingsForm(AccountPageForm):
     """Form for the Settings page for an account."""
+
     form_id = 'settings'
     form_title = _('Settings')
     save_label = _('Save Settings')
@@ -59,6 +60,7 @@ class AccountSettingsForm(AccountPageForm):
         required=False)
 
     def load(self):
+        """Load data for the form."""
         self.set_initial({
             'open_an_issue': self.profile.open_an_issue,
             'should_send_email': self.profile.should_send_email,
@@ -74,6 +76,7 @@ class AccountSettingsForm(AccountPageForm):
             del self.fields['syntax_highlighting']
 
     def save(self):
+        """Save the form."""
         if 'syntax_highlighting' in self.cleaned_data:
             self.profile.syntax_highlighting = \
                 self.cleaned_data['syntax_highlighting']
@@ -93,6 +96,7 @@ class AccountSettingsForm(AccountPageForm):
 
 class APITokensForm(AccountPageForm):
     """Form for showing a user's API tokens."""
+
     form_id = 'api_tokens'
     form_title = _('API Tokens')
     save_label = None
@@ -100,6 +104,7 @@ class APITokensForm(AccountPageForm):
     js_view_class = 'RB.APITokensView'
 
     def get_js_view_data(self):
+        """Get data to pass to the JavaScript view."""
         # Fetch the list of the user's API tokens, globally.
         api_tokens = self.user.webapi_tokens.all()
 
@@ -143,6 +148,7 @@ class APITokensForm(AccountPageForm):
 
 class ChangePasswordForm(AccountPageForm):
     """Form for changing a user's password."""
+
     form_id = 'change_password'
     form_title = _('Change Password')
     save_label = _('Change Password')
@@ -161,11 +167,17 @@ class ChangePasswordForm(AccountPageForm):
         widget=widgets.PasswordInput())
 
     def is_visible(self):
+        """Get whether or not the "change password" form should be shown."""
         backend = get_enabled_auth_backends()[0]
 
         return backend.supports_change_password
 
     def clean_old_password(self):
+        """Validate the 'old_password' field.
+
+        This checks to make sure the old password is correct when changing the
+        password.
+        """
         backend = get_enabled_auth_backends()[0]
 
         password = self.cleaned_data['old_password']
@@ -185,6 +197,10 @@ class ChangePasswordForm(AccountPageForm):
             raise forms.ValidationError(_('This password is incorrect'))
 
     def clean_password2(self):
+        """Validate the 'password2' field.
+
+        This makes sure that the two password fields match.
+        """
         p1 = self.cleaned_data['password1']
         p2 = self.cleaned_data['password2']
 
@@ -194,6 +210,7 @@ class ChangePasswordForm(AccountPageForm):
         return p2
 
     def save(self):
+        """Save the form."""
         backend = get_enabled_auth_backends()[0]
 
         try:
@@ -215,6 +232,7 @@ class ChangePasswordForm(AccountPageForm):
 
 class ProfileForm(AccountPageForm):
     """Form for the Profile page for an account."""
+
     form_id = 'profile'
     form_title = _('Profile')
     save_label = _('Save Profile')
@@ -233,6 +251,7 @@ class ProfileForm(AccountPageForm):
         label=_("Keep profile information private"))
 
     def load(self):
+        """Load data for the form."""
         self.set_initial({
             'first_name': self.user.first_name,
             'last_name': self.user.last_name,
@@ -250,6 +269,7 @@ class ProfileForm(AccountPageForm):
             del self.fields['email']
 
     def save(self):
+        """Save the form."""
         backend = get_enabled_auth_backends()[0]
 
         if backend.supports_change_name:
@@ -293,6 +313,7 @@ class GroupsForm(AccountPageForm):
     representing the groups. The View handles group membership through the
     API.
     """
+
     form_id = 'groups'
     form_title = _('Groups')
     save_label = None
@@ -300,6 +321,7 @@ class GroupsForm(AccountPageForm):
     js_view_class = 'RB.JoinedGroupsView'
 
     def get_js_view_data(self):
+        """Get data to pass to the JavaScript view."""
         # Fetch the list of IDs of groups the user has joined.
         joined_group_ids = self.user.review_groups.values_list('pk', flat=True)
 

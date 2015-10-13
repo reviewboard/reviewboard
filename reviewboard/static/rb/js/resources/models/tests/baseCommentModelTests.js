@@ -107,7 +107,7 @@ suite('rb/resources/models/BaseComment', function() {
         describe('issue_opened field', function() {
             it('Default', function() {
                 var data = model.toJSON();
-                expect(data.issue_opened).toBe(true);
+                expect(data.issue_opened).toBe(null);
             });
 
             it('With value', function() {

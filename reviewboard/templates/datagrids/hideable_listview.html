@@ -1,0 +1,12 @@
+{% extends "datagrids/listview.html" %}
+{% load djblets_utils i18n %}
+
+{% block datagrid_filters %}
+<li class="datagrid-showarchived">
+{%  if datagrid.show_archived %}
+ <a href="{% querystring_with 'show-archived' '0' %}">{% trans "Hide archived" %}</a>
+{%  else %}
+ <a href="{% querystring_with 'show-archived' '1' %}">{% trans "Show archived" %}</a>
+{%  endif %}
+</li>
+{% endblock datagrid_filters %}

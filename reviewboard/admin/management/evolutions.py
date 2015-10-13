@@ -7,13 +7,14 @@ from reviewboard.diffviewer.models import FileDiff
 
 
 def init_evolutions(app, created_models, **kwargs):
-    """
-    Attempts to initialize the Django Evolution schema signatures to sane
-    values. This works around the issue where a first syncdb with Django
-    Evolution (even on existing databases) will cause Django Evolution to
-    assume the database is the most up to date, even if it's not. This will
-    break the database. Our workarounds prevent this by starting off with
-    sane values and doing some smart checks.
+    """Attempt to initialize the Django Evolution schema signatures.
+
+    This attempts to initialize the evolution signatures to sane values. This
+    works around the issue where a first syncdb with Django Evolution (even on
+    existing databases) will cause Django Evolution to assume the database is
+    the most up to date, even if it's not. This will break the database. Our
+    workarounds prevent this by starting off with sane values and doing some
+    smart checks.
     """
     if FileDiff in created_models:
         # This is a new install. Let it continue through. The database will

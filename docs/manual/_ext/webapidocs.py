@@ -73,6 +73,7 @@ class DummyRequest(HttpRequest):
         self.path = ''
         self.user = User.objects.all()[0]
         self.session = {}
+        self._local_site_name = None
 
         # This is normally set internally by Djblets, but we don't
         # go through the standard __call__ flow.
@@ -518,8 +519,9 @@ class ResourceDirective(Directive):
         related_links = resource.get_related_links(request=request, obj=obj)
 
         for key, info in related_links.iteritems():
-            names_to_resource[key] = \
-                (info['resource'], info.get('list-resource', False))
+            if 'resource' in info:
+                names_to_resource[key] = \
+                    (info['resource'], info.get('list-resource', False))
 
         links = resource.get_links(child_resources, request=DummyRequest(),
                                    obj=obj)

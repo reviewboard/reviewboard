@@ -6,57 +6,33 @@
 
 {% block review_ui_box_content_inner %}
  <div id="diffs">
-  <div class="diff-container text-review-ui {{review_ui.extra_css_classes|join:' '}}">
-   <div class="text-review-ui-header">
-    <h1 class="caption">
-{%  if filename == caption %}
-     {{filename}}
-{%  else %}
-{%   blocktrans %}
-     {{filename}} - {{caption}}
-{%   endblocktrans %}
+  <div class="diff-container text-review-ui {{review_ui.extra_css_classes|join:' '}}{%  if review_ui.can_render_text and not diff_type_mismatch %} text-review-ui-has-tabs{% endif %}">
+   <div class="review-ui-header">
+{%  if num_revisions > 1 %}
+    <div id="revision_label"></div>
+    <div id="attachment_revision_selector"></div>
 {%  endif %}
-    </h1>
 
-{%  if review_ui.can_render_text %}
-    <ul class="text-review-ui-views">
-     <li class="active" data-view-mode="rendered"><a href="#rendered">{% trans "Rendered" %}</a></li>
-     <li data-view-mode="source"><a href="#source">{% trans "Source" %}</a></li>
-    </ul>
+{%  if review_ui.can_render_text and not diff_type_mismatch %}
+    <div class="text-review-ui-views">
+     <ul>
+      <li class="active" data-view-mode="rendered"><a href="#rendered">{% trans "Rendered" %}</a></li>
+      <li data-view-mode="source"><a href="#source">{% trans "Source" %}</a></li>
+     </ul>
+    </div>
 {%  endif %}
    </div>
 
 {%  if review_ui.can_render_text %}
-   <table class="sidebyside text-review-ui-rendered-table">
-    <colgroup>
-     <col class="line" />
-     <col class="right" />
-    </colgroup>
-    <tbody>
-{%   for line in rendered_lines %}
-     <tr line="{{forloop.counter}}">
-      <th>{{forloop.counter}}</th>
-      <td class="l">{{line}}</td>
-     </tr>
-{%   endfor %}
-    </tbody>
-   </table>
+{%   block rendered_text_content %}
+{%    include "reviews/ui/_text_rendered_table.html" with lines=rendered_lines chunks=rendered_chunks %}
+{%   endblock rendered_text_content %}
 {%  endif %}
 
-   <table class="sidebyside text-review-ui-text-table"{% if review_ui.can_render_text %} style="display:none"{% endif %}>
-    <colgroup>
-     <col class="line" />
-     <col class="right" />
-    </colgroup>
-    <tbody>
-{%  for line in text_lines %}
-     <tr line="{{forloop.counter}}">
-      <th>{{forloop.counter}}</th>
-      <td class="l">{{line}}</td>
-     </tr>
-{%  endfor %}
-    </tbody>
-   </table>
+{%  block text_content %}
+{%   include "reviews/ui/_text_table.html" with hide=review_ui.can_render_text lines=text_lines chunks=source_chunks %}
+{%  endblock text_content %}
+
   </div>
  </div>
 {% endblock %}

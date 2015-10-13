@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils.safestring import SafeText
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
@@ -24,10 +25,14 @@ from reviewboard.testing import TestCase
 
 
 class BaseFileAttachmentTestCase(TestCase):
+    """Base functionality for FileAttachment test cases."""
+
     def setUp(self):
+        """Set up this test case."""
         initialize()
 
     def make_uploaded_file(self):
+        """Create a return a file to use for mocking in forms."""
         filename = os.path.join(settings.STATIC_ROOT,
                                 'rb', 'images', 'trophy.png')
         f = open(filename, 'r')
@@ -40,6 +45,7 @@ class BaseFileAttachmentTestCase(TestCase):
     def make_filediff(self, is_new=False, diffset_history=None,
                       diffset_revision=1, source_filename='file1',
                       dest_filename='file2'):
+        """Create and return a FileDiff with the given data."""
         if is_new:
             source_revision = PRE_CREATION
             dest_revision = ''
@@ -68,6 +74,8 @@ class BaseFileAttachmentTestCase(TestCase):
 
 
 class FileAttachmentTests(BaseFileAttachmentTestCase):
+    """Tests for the FileAttachment model."""
+
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_upload_file(self):
         """Testing uploading a file attachment"""
@@ -220,62 +228,88 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
 
             file_attachment = form.create()
 
-            self.assertEqual(file_attachment.thumbnail,
-                             '<div class="file-thumbnail-clipped"><pre>'
-                             'UTF-16le encoded sample plain-text file</pre>'
-                             '<pre>\u203e\u203e\u203e\u203e\u203e\u203e'
-                             '\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
-                             '\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
-                             '\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
-                             '\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
-                             '\u203e\u203e\u203e\u203e\u203e</pre><pre>'
-                             '</pre><pre>Markus Kuhn [\u02c8ma\u02b3k\u028as'
-                             ' ku\u02d0n] &lt;http://www.cl.cam.ac.uk/~mgk25/'
-                             '&gt; \u2014 2002-07-25</pre><pre></pre><pre>'
-                             '</pre><pre>The ASCII compatible UTF-8 encoding '
-                             'used in this plain-text file</pre><pre>is '
-                             'defined in Unicode, ISO 10646-1, and RFC 2279.'
-                             '</pre></div>')
+            self.assertEqual(
+                file_attachment.thumbnail,
+                '<div class="file-thumbnail"> <div class="file-thumbnail-clipp'
+                'ed"><pre>UTF-16le encoded sample plain-text file</pre><pre>'
+                '\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                '\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                '\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e'
+                '\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e\u203e</pre>'
+                '<pre></pre><pre>Markus Kuhn [\u02c8ma\u02b3k\u028as ku\u02d0'
+                'n] &lt;http://www.cl.cam.ac.uk/~mgk25/&gt; \u2014 2002-07-25'
+                '</pre><pre></pre><pre></pre><pre>The ASCII compatible UTF-8 '
+                'encoding used in this plain-text file</pre><pre>is defined '
+                'in Unicode, ISO 10646-1, and RFC 2279.</pre><pre></pre><pre>'
+                '</pre><pre>Using Unicode/UTF-8, you can write in emails and '
+                'source code things such as</pre><pre></pre><pre>Mathematics '
+                'and sciences:</pre><pre></pre><pre>  \u222e E\u22c5da = Q,  '
+                'n \u2192 \u221e, \u2211 f(i) = \u220f g(i),      \u23a7\u23a1'
+                '\u239b\u250c\u2500\u2500\u2500\u2500\u2500\u2510\u239e\u23a4'
+                '\u23ab</pre><pre>                                           '
+                ' \u23aa\u23a2\u239c\u2502a\xb2+b\xb3 \u239f\u23a5\u23aa'
+                '</pre><pre>  \u2200x\u2208</pre></div></div>')
 
 
 class MimetypeTest(MimetypeHandler):
+    """Handler for all test mimetypes."""
+
     supported_mimetypes = ['test/*']
 
 
 class TestAbcMimetype(MimetypeHandler):
+    """Handler for the test/abc mimetype."""
+
     supported_mimetypes = ['test/abc']
 
 
 class TestXmlMimetype(MimetypeHandler):
+    """Handler for the test/xml mimetype."""
+
     supported_mimetypes = ['test/xml']
 
 
 class Test2AbcXmlMimetype(MimetypeHandler):
+    """Handler for the test/abc+xml mimetype."""
+
     supported_mimetypes = ['test2/abc+xml']
 
 
 class StarDefMimetype(MimetypeHandler):
+    """Handler for all /def mimetypes."""
+
     supported_mimetypes = ['*/def']
 
 
 class StarAbcDefMimetype(MimetypeHandler):
+    """Handler for all /abc+def mimetypes."""
+
     supported_mimetypes = ['*/abc+def']
 
 
 class Test3XmlMimetype(MimetypeHandler):
+    """Handler for the test3/xml mimetype."""
+
     supported_mimetypes = ['test3/xml']
 
 
 class Test3AbcXmlMimetype(MimetypeHandler):
+    """Handler for the test3/abc+xml mimetype."""
+
     supported_mimetypes = ['test3/abc+xml']
 
 
 class Test3StarMimetype(MimetypeHandler):
+    """Handler for all test3 mimetypes."""
+
     supported_mimetypes = ['test3/*']
 
 
 class MimetypeHandlerTests(TestCase):
+    """Tests for mimetype handlers."""
+
     def setUp(self):
+        """Set up this test case."""
         super(MimetypeHandlerTests, self).setUp()
 
         # Register test cases in same order as they are defined
@@ -291,6 +325,7 @@ class MimetypeHandlerTests(TestCase):
         register_mimetype_handler(Test3StarMimetype)
 
     def tearDown(self):
+        """Tear down this test case."""
         super(MimetypeHandlerTests, self).tearDown()
 
         # Unregister test cases in same order as they are defined
@@ -336,7 +371,8 @@ class MimetypeHandlerTests(TestCase):
 
 
 class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
-    """Tests for FileAttachmentManager"""
+    """Tests for FileAttachmentManager."""
+
     fixtures = ['test_scmtools']
 
     def test_create_from_filediff_with_new_and_modified_true(self):
@@ -474,9 +510,11 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
 
 class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
     """Tests for inline diff file attachments in the diff viewer."""
+
     fixtures = ['test_users', 'test_scmtools', 'test_site']
 
     def setUp(self):
+        """Set up this test case."""
         super(DiffViewerFileAttachmentTests, self).setUp()
 
         # The diff viewer's caching breaks the result of these tests,
@@ -556,21 +594,28 @@ class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
 
 
 class SandboxMimetypeHandler(MimetypeHandler):
+    """Handler for image/png mimetypes, used for testing sandboxing."""
+
     supported_mimetypes = ['image/png']
 
     def get_icon_url(self):
+        """Raise an exception to test sandboxing."""
         raise Exception
 
     def get_thumbnail(self):
+        """Raise an exception to test sandboxing."""
         raise Exception
 
     def set_thumbnail(self, data):
+        """Raise an exception to test sandboxing."""
         raise Exception
 
 
 class SandboxTests(SpyAgency, BaseFileAttachmentTestCase):
     """Testing MimetypeHandler sandboxing."""
+
     def setUp(self):
+        """Set up this test case."""
         super(SandboxTests, self).setUp()
 
         register_mimetype_handler(SandboxMimetypeHandler)
@@ -583,6 +628,7 @@ class SandboxTests(SpyAgency, BaseFileAttachmentTestCase):
             review_request=review_request)
 
     def tearDown(self):
+        """Tear down this test case."""
         super(SandboxTests, self).tearDown()
 
         unregister_mimetype_handler(SandboxMimetypeHandler)
@@ -607,3 +653,47 @@ class SandboxTests(SpyAgency, BaseFileAttachmentTestCase):
 
         self.file_attachment.icon_url
         self.assertTrue(SandboxMimetypeHandler.get_icon_url.called)
+
+
+class TextMimetypeTests(SpyAgency, TestCase):
+    """Unit tests for reviewboard.attachments.mimetypes.TextMimetype."""
+
+    fixtures = ['test_users']
+
+    def setUp(self):
+        uploaded_file = SimpleUploadedFile(
+            'test.txt',
+            b'<p>This is a test</p>',
+            content_type='text/plain')
+
+        review_request = self.create_review_request(publish=True)
+
+        form = UploadFileForm(review_request, files={
+            'path': uploaded_file,
+        })
+        self.assertTrue(form.is_valid())
+
+        self.file_attachment = form.create()
+
+    def test_get_thumbnail_uncached_is_safe_text(self):
+        """Testing TextMimetype.get_thumbnail string type is SafeText
+        without cached thumbnail
+        """
+        thumbnail = self.file_attachment.thumbnail
+
+        self.assertIsInstance(thumbnail, SafeText)
+
+    def test_get_thumbnail_cached_is_safe_text(self):
+        """Testing TextMimetype.get_thumbnail string type is SafeText with
+        cached thumbnail
+        """
+        # Django's in-memory cache won't mangle the string types, so we can't
+        # rely on just calling thumbnail twice. We have to fake it, so that
+        # that we simulate the real-world behavior of getting a raw string
+        # back out of a real cache.
+        self.spy_on(self.file_attachment.mimetype_handler._generate_thumbnail,
+                    call_fake=lambda self: '<div>My thumbnail</div>')
+
+        thumbnail = self.file_attachment.thumbnail
+
+        self.assertIsInstance(thumbnail, SafeText)

@@ -9,12 +9,14 @@
  * Other resource models are expected to extend this. In particular, they
  * should generally be extending toJSON() and parse().
  */
-RB.BaseResource = Backbone.Model.extend({
-    defaults: {
-        extraData: {},
-        links: null,
-        loaded: false,
-        parentObject: null
+RB.BaseResource = Backbone.Model.extend(_.defaults({
+    defaults: function() {
+        return {
+            extraData: {},
+            links: null,
+            loaded: false,
+            parentObject: null
+        };
     },
 
     /* The key for the namespace for the object's payload in a response. */
@@ -30,7 +32,14 @@ RB.BaseResource = Backbone.Model.extend({
     /* The list of fields to expand in resource payloads. */
     expandedFields: [],
 
-    /* Extra query arguments for GET requests. */
+    /*
+     * Extra query arguments for GET requests.
+     *
+     * This may also be a function that returns the extra query arguments.
+     *
+     * These values can be overridden by the caller when making a request.
+     * They function as defaults for the queries.
+     */
     extraQueryArgs: {},
 
     /* Whether or not extra data can be associated on the resource. */
@@ -58,6 +67,12 @@ RB.BaseResource = Backbone.Model.extend({
 
     /* Special deserializer functions called in parseResourceData(). */
     deserializers: {},
+
+    initialize: function() {
+        if (this.supportsExtraData) {
+            this._setupExtraData();
+        }
+    },
 
     /*
      * Returns the URL for this resource's instance.
@@ -133,6 +148,7 @@ RB.BaseResource = Backbone.Model.extend({
         } else if (!this.isNew()) {
             // Fetch data from the server
             this.fetch({
+                data: options.data,
                 success: success,
                 error: error
             });
@@ -257,7 +273,7 @@ RB.BaseResource = Backbone.Model.extend({
     save: function(options, context) {
         options = options || {};
 
-        this.trigger('saving');
+        this.trigger('saving', options);
 
         this.ready({
             ready: function() {
@@ -307,7 +323,7 @@ RB.BaseResource = Backbone.Model.extend({
                     options.success.apply(context, arguments);
                 }
 
-                this.trigger('saved');
+                this.trigger('saved', options);
             }, this),
 
             error: _.bind(function() {
@@ -315,7 +331,7 @@ RB.BaseResource = Backbone.Model.extend({
                     options.error.apply(context, arguments);
                 }
 
-                this.trigger('saveFailed');
+                this.trigger('saveFailed', options);
             }, this)
         }, options);
 
@@ -447,7 +463,7 @@ RB.BaseResource = Backbone.Model.extend({
             destroyObject = _.bind(this._destroyObject,
                                    this, options, context);
 
-        this.trigger('destroying');
+        this.trigger('destroying', options);
 
         if (!this.isNew() && parentObject) {
             /*
@@ -528,7 +544,7 @@ RB.BaseResource = Backbone.Model.extend({
                     parentObject: parentObject
                 });
 
-                self.trigger('destroyed');
+                self.trigger('destroyed', options);
 
                 if (_.isFunction(options.success)) {
                     options.success.apply(context, arguments);
@@ -637,9 +653,7 @@ RB.BaseResource = Backbone.Model.extend({
         }
 
         if (this.supportsExtraData) {
-            _.each(this.get('extraData'), function(value, key) {
-                data['extra_data.' + key] = value;
-            }, this);
+            _.extend(data, this.extraData.toJSON());
         }
 
         return data;
@@ -660,6 +674,7 @@ RB.BaseResource = Backbone.Model.extend({
     sync: function(method, model, options) {
         var data,
             contentType,
+            extraQueryArgs,
             syncOptions;
 
         options = options || {};
@@ -667,8 +682,10 @@ RB.BaseResource = Backbone.Model.extend({
         if (method === 'read') {
             data = options.data || {};
 
-            if (!_.isEmpty(this.extraQueryArgs)) {
-                data = _.extend({}, this.extraQueryArgs, data);
+            extraQueryArgs = _.result(this, 'extraQueryArgs', {});
+
+            if (!_.isEmpty(extraQueryArgs)) {
+                data = _.extend({}, extraQueryArgs, data);
             }
         } else {
             if (options.form) {
@@ -753,11 +770,11 @@ RB.BaseResource = Backbone.Model.extend({
             }
         }
     }
-}, {
+}, RB.ExtraDataMixin), {
     strings: {
         UNSET_PARENT_OBJECT: 'parentObject must be set',
         INVALID_EXTRADATA_TYPE:
-            'extraData must be an object, null, or undefined',
+            'extraData must be an object or undefined',
         INVALID_EXTRADATA_VALUE_TYPE:
             'extraData.{key} must be null, a number, boolean, or string'
     }

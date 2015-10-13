@@ -55,7 +55,7 @@ class CVSTool(SCMTool):
 
         self.client = CVSClient(self.cvsroot, self.repopath, local_site_name)
 
-    def get_file(self, path, revision=HEAD):
+    def get_file(self, path, revision=HEAD, **kwargs):
         if not path:
             raise FileNotFoundError(path, revision)
 
@@ -86,6 +86,15 @@ class CVSTool(SCMTool):
 
     def get_parser(self, data):
         return CVSDiffParser(data, self.repopath)
+
+    def normalize_patch(self, patch, filename, revision=HEAD):
+        """Normalizes the content of a patch.
+
+        This will collapse any keywords in the patch, ensuring that we can
+        safely compare them against any files we cat from the repository,
+        without the keyword values conflicting.
+        """
+        return self.client.collapse_keywords(patch)
 
     @classmethod
     def build_cvsroot(cls, path, username, password):
@@ -233,6 +242,19 @@ class CVSDiffParser(DiffParser):
 
 
 class CVSClient(object):
+    keywords = [
+        'Author',
+        'Date',
+        'Header',
+        'Id',
+        'Locker',
+        'Name',
+        'RCSfile',
+        'Revision',
+        'Source',
+        'State',
+    ]
+
     def __init__(self, cvsroot, path, local_site_name):
         self.tempdir = ""
         self.currentdir = os.getcwd()
@@ -304,7 +326,7 @@ class CVSClient(object):
         self.tempdir = tempfile.mkdtemp()
         os.chdir(self.tempdir)
 
-        p = SCMTool.popen(['cvs', '-f', '-d', self.cvsroot, 'checkout',
+        p = SCMTool.popen(['cvs', '-f', '-d', self.cvsroot, 'checkout', '-kk',
                            '-r', six.text_type(revision), '-p', filename],
                           self.local_site_name)
         contents = p.stdout.read()
@@ -371,3 +393,18 @@ class CVSClient(object):
                         msg=line[len(auth_failed_prefix):].strip())
 
             raise SCMError(errmsg)
+
+    def collapse_keywords(self, data):
+        """Collapse CVS/RCS keywords in string.
+
+        CVS allows for several keywords (such as $Id$ and $Revision$) to
+        be expanded, though these keywords are limited to a fixed set
+        (and associated aliases) and must be enabled per-file.
+
+        When we cat a file on CVS, the keywords come back collapsed, but
+        the diffs uploaded may have expanded keywords. We use this function
+        to collapse them back down in order to be able to apply the patch.
+        """
+        regex = re.compile(br'\$(%s):([^\$\n\r]*)\$' % '|'.join(self.keywords),
+                           re.IGNORECASE)
+        return regex.sub(br'$\1$', data)

@@ -9,10 +9,12 @@ from reviewboard.accounts.models import Profile
 
 @simple_decorator
 def check_login_required(view_func):
-    """
-    A decorator that checks whether login is required on this installation
-    and, if so, checks if the user is logged in. If login is required and
-    the user is not logged in, they're redirected to the login link.
+    """Check whether the user needs to log in.
+
+    This is a view decorator that checks whether login is required on this
+    installation and, if so, checks if the user is logged in. If login is
+    required and the user is not logged in, they're redirected to the login
+    link.
     """
     def _check(*args, **kwargs):
         siteconfig = SiteConfiguration.objects.get_current()
@@ -27,10 +29,11 @@ def check_login_required(view_func):
 
 @simple_decorator
 def valid_prefs_required(view_func):
-    """
-    A decorator that checks whether the user has completed the first-time
-    setup by saving their preferences at least once. Redirects to the
-    preferences URL if they have not.
+    """Check whether the profile object exists.
+
+    Several views assume that the user profile object exists, and will break if
+    it doesn't. This decorator will ensure that the profile exists before the
+    view code runs.
 
     If the user is not logged in, this will do nothing. That allows it to
     be used with @check_login_required.

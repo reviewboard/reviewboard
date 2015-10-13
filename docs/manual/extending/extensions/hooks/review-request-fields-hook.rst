@@ -42,7 +42,7 @@ Example
 
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import ReviewRequestFieldsHook
-    from reviewboard.reviews.fields import BaseEditableField
+    from reviewboard.reviews.fields import BaseEditableField, BaseTextAreaField
 
 
     class MilestoneField(BaseEditableField):

@@ -62,12 +62,14 @@ class RBTestRunner(DjangoTestSuiteRunner):
         settings.SITE_ROOT = "/"
 
         settings.AJAX_SERIAL = 123
+        settings.TEMPLATE_SERIAL = 123
         settings.STATIC_URL = settings.SITE_ROOT + 'static/'
         settings.MEDIA_URL = settings.SITE_ROOT + 'media/'
         settings.PASSWORD_HASHERS = (
             'django.contrib.auth.hashers.SHA1PasswordHasher',
         )
         settings.RUNNING_TEST = True
+        os.environ[b'RB_RUNNING_TESTS'] = b'1'
 
         self._setup_media_dirs()
 
@@ -145,6 +147,7 @@ class RBTestRunner(DjangoTestSuiteRunner):
 
         settings.STATIC_ROOT = os.path.join(self.tempdir, 'static')
         settings.MEDIA_ROOT = os.path.join(self.tempdir, 'media')
+        settings.SITE_DATA_DIR = os.path.join(self.tempdir, 'data')
         images_dir = os.path.join(settings.MEDIA_ROOT, "uploaded", "images")
         legacy_extensions_media = os.path.join(settings.MEDIA_ROOT, 'ext')
         extensions_media = os.path.join(settings.STATIC_ROOT, 'ext')

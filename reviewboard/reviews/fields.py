@@ -6,12 +6,12 @@ from django.utils import six
 from django.utils.datastructures import SortedDict
 from django.utils.html import escape, strip_tags
 from django.utils.safestring import mark_safe
+from djblets.markdown import iter_markdown_lines
 
 from reviewboard.diffviewer.diffutils import get_line_changed_regions
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
 from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
-                                                iter_markdown_lines,
                                                 normalize_text_for_edit,
                                                 render_markdown)
 
@@ -113,6 +113,7 @@ class BaseReviewRequestField(object):
     is_required = False
     default_css_classes = set()
     change_entry_renders_inline = True
+    model = None
 
     can_record_change_entry = property(lambda self: self.is_editable)
 
@@ -147,6 +148,44 @@ class BaseReviewRequestField(object):
         This can be overridden to perform more specialized storage.
         """
         changedesc.record_field_change(self.field_id, old_value, new_value)
+
+    def serialize_change_entry(self, changedesc):
+        """Serializes the change entry for public consumption.
+
+        This will output a version of the change entry for use in the API.
+        It can be the same content stored in the ChangeDescription, but
+        does not need to be.
+        """
+        field_info = changedesc.fields_changed[self.field_id]
+
+        if self.model:
+            pks = [
+                value[2]
+                for key in ('new', 'old', 'added', 'removed')
+                for value in field_info[key]
+            ]
+            pk_to_objects = dict([
+                (obj.pk, obj)
+                for obj in self.model.objects.filter(pk__in=pks)
+            ])
+
+            return dict([
+                (key, pk_to_objects[field_info[key][2]])
+                for key in ('new', 'old', 'added', 'removed')
+                if key in field_info
+            ])
+        else:
+            return dict([
+                (key, field_info[key][0])
+                for key in ('new', 'old', 'added', 'removed')
+                if key in field_info
+            ])
+
+    def _serialize_change_entry_value(self, value):
+        if self.model:
+            return self.model.objects.get(pk=value[2])
+        else:
+            return value[0]
 
     def get_change_entry_sections_html(self, info):
         """Returns sections of change entries with titles and rendered HTML.
@@ -334,6 +373,44 @@ class BaseCommaEditableField(BaseEditableField):
             return old_value != new_value
         else:
             return set(old_value or []) != set(new_value or [])
+
+    def serialize_change_entry(self, changedesc):
+        """Serializes the change entry for public consumption.
+
+        This will output a version of the change entry for use in the API.
+        It can be the same content stored in the ChangeDescription, but
+        does not need to be.
+        """
+        field_info = changedesc.fields_changed[self.field_id]
+
+        if self.model:
+            pks = [
+                value[2]
+                for key in ('new', 'old', 'added', 'removed')
+                for value in field_info[key]
+            ]
+            pk_to_objects = dict([
+                (obj.pk, obj)
+                for obj in self.model.objects.filter(pk__in=pks)
+            ])
+
+            return dict([
+                (key, [
+                    pk_to_objects[value[2]]
+                    for value in field_info[key]
+                ])
+                for key in ('new', 'old', 'added', 'removed')
+                if key in field_info
+            ])
+        else:
+            return dict([
+                (key, [
+                    value[0]
+                    for value in field_info[key]
+                ])
+                for key in ('new', 'old', 'added', 'removed')
+                if key in field_info
+            ])
 
     def render_value(self, values):
         """Renders the list of items.

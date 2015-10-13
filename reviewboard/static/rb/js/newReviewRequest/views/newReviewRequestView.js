@@ -23,7 +23,6 @@ FilesOnlyPreCommitView = Backbone.View.extend({
 
     template: _.template([
         '<p><%- description %></p>',
-        '</p>',
         '<input type="submit" class="primary large" id="files-only-create"',
         '       value="<%- buttonText %>" />'
     ].join('')),
@@ -80,11 +79,20 @@ RB.NewReviewRequestView = Backbone.View.extend({
     el: '#new-review-request',
 
     template: _.template([
-        '<div class="sidebar"></div>',
-        '<div class="main">',
-        ' <div class="hint"><%- hint %></div>',
+        '<a href="#" class="show-repositories">',
+        ' <span class="fa fa-chevron-left"></span>',
+        ' <%- repositoriesLabel %>',
+        '</a>',
+        '<div class="new-review-request-container">',
+        ' <div class="main">',
+        '  <div class="hint"><%- hint %></div>',
+        ' </div>',
         '</div>'
     ].join('')),
+
+    events: {
+        'click .show-repositories': '_onShowRepositoriesClicked'
+    },
 
     /*
      * Initialize the view.
@@ -108,9 +116,10 @@ RB.NewReviewRequestView = Backbone.View.extend({
         this._rendered = true;
 
         this.$el.html(this.template({
-            hint: gettext('Select a repository')
+            hint: gettext('Select a repository'),
+            repositoriesLabel: gettext('Repositories')
         }));
-        this._$sidebar = this.$('.sidebar');
+        this._$sidebar = $('#page_sidebar');
         this._$content = this.$('.main');
         this._$hint = this.$('.hint');
 
@@ -158,14 +167,13 @@ RB.NewReviewRequestView = Backbone.View.extend({
             windowWidth = $window.width();
             windowHeight = $window.height();
             elTop = this.$el.offset().top;
-            height = (windowHeight - elTop - 14) + 'px';
+            height = windowHeight - elTop - 14;
 
             this.$el.height(height);
-            this.$('.repository-selector, .main').height(height);
-            this.$('.hint').css({
-                height: height,
-                'line-height': height
-            });
+
+            // Adjust for the "< Repositories" link on mobile.
+            height -= this._$content.position().top;
+            this._$content.height(height);
         }
     },
 
@@ -192,6 +200,12 @@ RB.NewReviewRequestView = Backbone.View.extend({
         }
 
         this.model.set('repository', repository);
+
+        if (repository === null) {
+            return;
+        }
+
+        $(document.body).removeClass('mobile-show-page-sidebar');
 
         if (repository.get('filesOnly')) {
             this._preCommitView = new FilesOnlyPreCommitView({
@@ -223,6 +237,16 @@ RB.NewReviewRequestView = Backbone.View.extend({
                 this._$content.append(this._postCommitView.render().el);
             }
         }
+    },
+
+    /*
+     * Handler for when the mobile-only Show Repositories link is clicked.
+     *
+     * Sets the page to slide back to the sidebar listing repositories.
+     */
+    _onShowRepositoriesClicked: function() {
+        this._repositorySelectionView.unselect();
+        $(document.body).addClass('mobile-show-page-sidebar');
     }
 });
 

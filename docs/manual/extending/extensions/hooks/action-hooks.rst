@@ -86,15 +86,17 @@ Example
 
             # A drop-down in the header that links to other pages.
             HeaderDropdownActionHook(self, actions=[
-                'label': 'Header Dropdown',
-                'items': [
-                    {
-                        'label': 'Item 1',
-                        'url': '...',
-                    },
-                    {
-                        'label': 'Item 2',
-                        'url': '...',
-                    },
-                ],
+                {
+                    'label': 'Header Dropdown',
+                    'items': [
+                        {
+                            'label': 'Item 1',
+                            'url': '...',
+                        },
+                        {
+                            'label': 'Item 2',
+                            'url': '...',
+                        },
+                    ],
+                },
             ])

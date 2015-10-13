@@ -190,8 +190,8 @@ WEB_API_ENCODERS = (
 
 # The backends that are used to authenticate requests against the web API.
 WEB_API_AUTH_BACKENDS = (
-    'djblets.webapi.auth.WebAPIBasicAuthBackend',
-    'reviewboard.webapi.auth_backends.WebAPITokenAuthBackend',
+    'djblets.webapi.auth.backends.basic.WebAPIBasicAuthBackend',
+    'djblets.webapi.auth.backends.api_tokens.WebAPITokenAuthBackend',
 )
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
@@ -221,6 +221,8 @@ CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30  # 1 month
 # gives us a somewhat more comprehensive test execution than django's built-in
 # runner, as well as some special features like a code coverage report.
 TEST_RUNNER = 'reviewboard.test.RBTestRunner'
+
+RUNNING_TEST = (os.environ.get('RB_RUNNING_TESTS') == '1')
 
 # Dependency checker functionality.  Gives our users nice errors when they
 # start out, instead of encountering them later on.  Most of the magic for this
@@ -273,6 +275,9 @@ SVNTOOL_BACKENDS = [
     'reviewboard.scmtools.svn.pysvn',
     'reviewboard.scmtools.svn.subvertpy',
 ]
+
+# Gravatar configuration.
+GRAVATAR_DEFAULT = 'mm'
 
 
 # Load local settings.  This can override anything in here, but at the very

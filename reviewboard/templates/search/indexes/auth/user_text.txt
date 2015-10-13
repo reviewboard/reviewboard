@@ -1,0 +1,4 @@
+{# Haystack data template for UserIndex #}
+{{object.username}}
+{{object.email}}
+{{object.get_full_name}}

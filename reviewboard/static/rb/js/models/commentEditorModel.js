@@ -7,7 +7,7 @@
  * informative text, dirty states, existing published comments on the
  * same region this comment is on, and more.
  */
-RB.CommentEditor = Backbone.Model.extend({
+RB.CommentEditor = Backbone.Model.extend(_.defaults({
     defaults: function() {
         var userSession = RB.UserSession.instance;
 
@@ -24,7 +24,6 @@ RB.CommentEditor = Backbone.Model.extend({
             publishedCommentsType: null,
             reviewRequest: null,
             richText: userSession.get('defaultUseRichText'),
-            statusText: '',
             text: ''
         };
     },
@@ -54,9 +53,6 @@ RB.CommentEditor = Backbone.Model.extend({
                     reviewRequestEditor.decr('editCount');
                 }
             }
-
-            this.set('statusText',
-                     dirty ? gettext('This comment has unsaved changes.') : '');
         }, this);
 
         this.on('change:openIssue change:richText change:text', function() {
@@ -67,27 +63,8 @@ RB.CommentEditor = Backbone.Model.extend({
         }, this);
 
         this._updateState();
-    },
 
-    /*
-     * Sets extra data for the comment.
-     *
-     * This data will generally be extension-specific. It will be stored
-     * along with the comment on the server.
-     */
-    setExtraData: function(key, value) {
-        var extraData = this.get('extraData');
-
-        extraData[key] = value;
-    },
-
-    /*
-     * Returns extra data for the comment.
-     *
-     * This data will generally be extension-specific.
-     */
-    getExtraData: function(key) {
-        return this.get('extraData')[key];
+        this._setupExtraData();
     },
 
     /*
@@ -164,7 +141,7 @@ RB.CommentEditor = Backbone.Model.extend({
         this.set({
             comment: null,
             dirty: false,
-            extraData: {},
+            extraData: new RB.ExtraData(),
             text: ''
         });
 
@@ -192,7 +169,8 @@ RB.CommentEditor = Backbone.Model.extend({
             text: this.get('text'),
             issueOpened: this.get('openIssue'),
             extraData: _.clone(this.get('extraData')),
-            richText: this.get('richText')
+            richText: this.get('richText'),
+            includeTextTypes: 'html,raw,markdown'
         });
 
         comment.save({
@@ -216,15 +194,17 @@ RB.CommentEditor = Backbone.Model.extend({
      */
     _updateFromComment: function() {
         var oldComment = this.previous('comment'),
-            comment = this.get('comment');
+            comment = this.get('comment'),
+            defaultRichText,
+            textFields;
 
         if (oldComment) {
             oldComment.destroyIfEmpty();
         }
 
-        this.set('statusText', '');
-
         if (comment) {
+            defaultRichText = this.defaults().richText;
+
             /*
              * Set the attributes based on what we know at page load time.
              *
@@ -235,15 +215,35 @@ RB.CommentEditor = Backbone.Model.extend({
              * Doing this before the ready() call ensures that we'll have the
              * text and state up-front and that it won't overwrite what the
              * user has typed after load.
+             *
+             * Note also that we'll always want to use our default richText
+             * value if it's true, and we'll fall back on the comment's value
+             * if false. This is so that we can keep a consistent experience
+             * when the "Always edit Markdown by default" value is set.
              */
             this.set({
                 dirty: false,
                 extraData: comment.get('extraData'),
-                openIssue: comment.get('loaded')
-                           ? comment.get('issueOpened')
-                           : this.defaults().openIssue,
-                text: comment.get('text')
+                openIssue: comment.get('issueOpened') === null
+                           ? this.defaults().openIssue
+                           : comment.get('issueOpened'),
+                richText: defaultRichText || !!comment.get('richText')
             });
+
+            /*
+             * We'll try to set the one from the appropriate text fields, if it
+             * exists and is not empty. If we have this, then it came from a
+             * previous save. If we don't have it, we'll fall back to "text",
+             * which should be normalized content from the initial page load.
+             */
+            textFields = (comment.get('richText') || !defaultRichText
+                          ? comment.get('rawTextFields')
+                          : comment.get('markdownTextFields'));
+
+            this.set('text',
+                     !_.isEmpty(textFields)
+                     ? textFields.text
+                     : comment.get('text'));
 
             comment.ready({
                 ready: this._updateState
@@ -282,4 +282,4 @@ RB.CommentEditor = Backbone.Model.extend({
             canSave: canEdit && editing && this.get('text') !== ''
         });
     }
-});
+}, RB.ExtraDataMixin));

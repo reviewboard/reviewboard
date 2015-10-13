@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from djblets.util.decorators import augment_method_from
-from djblets.webapi.resources import RootResource as DjbletsRootResource
+from djblets.webapi.resources.root import RootResource as DjbletsRootResource
 
 from reviewboard.webapi.server_info import get_server_info
 from reviewboard.webapi.decorators import (webapi_check_login_required,
@@ -38,6 +38,7 @@ class RootResource(WebAPIResource, DjbletsRootResource):
             resources.session,
             resources.user,
             resources.validation,
+            resources.webhook,
         ], *args, **kwargs)
 
     @webapi_check_login_required

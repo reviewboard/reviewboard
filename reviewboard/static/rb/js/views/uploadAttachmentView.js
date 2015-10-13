@@ -12,14 +12,14 @@ RB.UploadAttachmentView = Backbone.View.extend({
         '   <tbody>',
         '    <tr>',
         '     <td class="label"><label><%- captionText %></label></td>',
-        '     <td><input name="caption" type="text"></td>',
+        '     <td><input name="caption" type="text" value="<%- presetCaption %>"></td>',
         '     <td><ul class="errorlist" style="display: none;"></ul></td>',
         '    </tr>',
         '    <tr>',
         '     <td class="label">',
         '      <label class="required"><%- pathText %></label>',
         '     </td>',
-        '     <td><input name="path" type="file"></td>',
+        '     <td><input name="path" id="path" type="file"></td>',
         '     <td><ul class="errorlist" style="display: none;"></ul></td>',
         '    </tr>',
         '   </tbody>',
@@ -32,13 +32,18 @@ RB.UploadAttachmentView = Backbone.View.extend({
         '</div>'
     ].join('')),
 
+    events: {
+        'change #path': 'updateUploadButtonEnabledState'
+    },
+
     /*
      * Initializes the view. New attachments don't have attachmentHistoryID
      * specified, so we set it to default value of -1.
      */
     initialize: function(options) {
         this.options = $.extend({
-            attachmentHistoryID: -1
+            attachmentHistoryID: -1,
+            presetCaption: ''
         }, options);
     },
 
@@ -99,14 +104,15 @@ RB.UploadAttachmentView = Backbone.View.extend({
             .append(this.template({
                 attachmentHistoryID: this.options.attachmentHistoryID,
                 captionText: gettext("Caption:"),
-                pathText: gettext("Path:")
+                pathText: gettext("Path:"),
+                presetCaption: this.options.presetCaption
             }))
             .modalBox({
                 title: gettext("Upload File"),
                 buttons: [
                     $('<input type="button"/>')
                         .val(gettext("Cancel")),
-                    $('<input type="button"/>')
+                    $('<input id="upload" type="button" disabled/>')
                         .val(gettext("Upload"))
                         .click(function() {
                             self.send();
@@ -115,6 +121,16 @@ RB.UploadAttachmentView = Backbone.View.extend({
                 ]
             });
 
+        this._$path = $('#path');
+        this._$uploadBtn = $('#upload');
+
         return this;
+    },
+
+    /*
+     * Set the upload button to be clickable or not based on context.
+     */
+    updateUploadButtonEnabledState: function() {
+        this._$uploadBtn.enable(this._$path.val());
     }
 });

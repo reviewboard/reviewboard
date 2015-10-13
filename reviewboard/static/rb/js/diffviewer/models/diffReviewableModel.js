@@ -39,7 +39,7 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
     getRenderedDiff: function(callbacks, context) {
         this._fetchFragment({
             url: this._buildRenderedDiffURL() +
-                 '?index=' + this.get('fileIndex') + '&' + AJAX_SERIAL,
+                 '?index=' + this.get('fileIndex') + '&' + TEMPLATE_SERIAL,
             noActivityIndicator: true
         }, callbacks, context);
     },

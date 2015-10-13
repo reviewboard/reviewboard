@@ -7,7 +7,7 @@ from django.utils import six
 
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import (BadHostKeyError, SSHAuthenticationError,
-                                    SSHError)
+                                    SSHError, SSHInvalidPortError)
 from reviewboard.ssh.policy import RaiseUnknownHostKeyPolicy
 
 
@@ -56,7 +56,11 @@ def check_host(netloc, username=None, password=None, namespace=None):
 
     if ':' in netloc:
         hostname, port = netloc.split(':')
-        port = int(port)
+
+        try:
+            port = int(port)
+        except ValueError:
+            raise SSHInvalidPortError(port)
     else:
         hostname = netloc
         port = SSH_PORT
@@ -99,5 +103,7 @@ def register_rbssh(envvar):
     specifically place it in the system environment using ``os.putenv``,
     while in others (Mercurial, Bazaar), we need to place it in ``os.environ``.
     """
-    os.putenv(envvar, 'rbssh')
-    os.environ[envvar] = 'rbssh'
+    envvar = envvar.encode('utf-8')
+
+    os.putenv(envvar, b'rbssh')
+    os.environ[envvar] = b'rbssh'

@@ -60,6 +60,8 @@ storage_backend_map = {
 # A mapping of siteconfig setting names to Django settings.py names.
 # This also contains all the djblets-provided mappings as well.
 settings_map = {
+    'auth_digest_file_location':      'DIGEST_FILE_LOCATION',
+    'auth_digest_realm':              'DIGEST_REALM',
     'auth_ldap_anon_bind_uid':        'LDAP_ANON_BIND_UID',
     'auth_ldap_anon_bind_passwd':     'LDAP_ANON_BIND_PASSWD',
     'auth_ldap_given_name_attribute': 'LDAP_GIVEN_NAME_ATTRIBUTE',
@@ -151,7 +153,6 @@ defaults.update({
     'search_index_file': os.path.join(settings.SITE_DATA_DIR,
                                       'search-index'),
     'search_results_per_page': 20,
-    'max_search_results': 200,
 
     # Overwrite this.
     'site_media_url': settings.SITE_ROOT + "media/",
@@ -179,11 +180,13 @@ defaults.update({
 
 
 def load_site_config(full_reload=False):
-    """
-    Loads any stored site configuration settings and populates the Django
-    settings object with any that need to be there.
+    """Load stored site configuration settings.
+
+    This populates the Django settings object with any keys that need to be
+    there.
     """
     def apply_setting(settings_key, db_key, default=None):
+        """Apply the given siteconfig value to the Django settings object."""
         db_value = siteconfig.settings.get(db_key)
 
         if db_value:
@@ -192,7 +195,7 @@ def load_site_config(full_reload=False):
             setattr(settings, settings_key, default)
 
     def update_haystack_settings():
-        """Updates the haystack settings with settings in site config."""
+        """Update the haystack settings with settings in site config."""
         apply_setting("HAYSTACK_CONNECTIONS", None, {
             'default': {
                 'ENGINE': settings.HAYSTACK_CONNECTIONS['default']['ENGINE'],
@@ -377,9 +380,9 @@ def load_site_config(full_reload=False):
         siteconfig.get('swift_container_name'))
 
     if siteconfig.settings.get('site_domain_method', 'http') == 'https':
-        os.environ['HTTPS'] = 'on'
+        os.environ[b'HTTPS'] = b'on'
     else:
-        os.environ['HTTPS'] = 'off'
+        os.environ[b'HTTPS'] = b'off'
 
     # Save back changes if they have been made
     if dirty:

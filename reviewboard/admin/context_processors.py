@@ -5,6 +5,7 @@ from reviewboard import (get_manual_url, get_package_version,
 
 
 def version(request):
+    """Return a dictionary with version information."""
     return {
         'version': get_version_string(),
         'package_version': get_package_version(),

@@ -1,5 +1,8 @@
 from __future__ import unicode_literals
 
+import inspect
+import warnings
+
 from django.utils import six
 from djblets.extensions.hooks import (DataGridColumnsHook, ExtensionHook,
                                       ExtensionHookPoint, SignalHook,
@@ -18,10 +21,17 @@ from reviewboard.datagrids.grids import (DashboardDataGrid,
                                          UserPageReviewRequestDataGrid)
 from reviewboard.hostingsvcs.service import (register_hosting_service,
                                              unregister_hosting_service)
+from reviewboard.notifications.email import (register_email_hook,
+                                             unregister_email_hook)
 from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         register_review_request_fieldset,
                                         unregister_review_request_fieldset)
+from reviewboard.reviews.signals import (review_request_published,
+                                         review_published, reply_published,
+                                         review_request_closed)
 from reviewboard.reviews.ui.base import register_ui, unregister_ui
+from reviewboard.webapi.server_info import (register_webapi_capabilities,
+                                            unregister_webapi_capabilities)
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -84,10 +94,10 @@ class AccountPageFormsHook(ExtensionHook):
     This hook takes the ID of a registered page where the form should be
     placed. Review Board supplies the following built-in page IDs:
 
-        * ``settings``
-        * ``authentication``
-        * ``profile``
-        * ``groups``
+    * ``settings``
+    * ``authentication``
+    * ``profile``
+    * ``groups``
 
     Any registered page ID can be provided, whether from this extension
     or another.
@@ -225,9 +235,9 @@ class NavigationBarHook(ExtensionHook):
     This takes a list of entries. Each entry represents something
     on the navigation bar, and is a dictionary with the following keys:
 
-        * ``label``:    The label to display
-        * ``url``:      The URL to point to.
-        * ``url_name``: The name of the URL to point to.
+    * ``label``:    The label to display
+    * ``url``:      The URL to point to.
+    * ``url_name``: The name of the URL to point to.
 
     Only one of ``url`` or ``url_name`` is required. ``url_name`` will
     take precedence.
@@ -247,9 +257,27 @@ class NavigationBarHook(ExtensionHook):
         self.entries = entries
         self.is_enabled_for = is_enabled_for
 
+        if callable(is_enabled_for):
+            argspec = inspect.getargspec(is_enabled_for)
+
+            if argspec.keywords is None:
+                warnings.warn(
+                    'NavigationBarHook.is_enabled_for is being passed '
+                    'a function without keyword arguments by %r. This '
+                    'is deprecated.'
+                    % extension,
+                    DeprecationWarning)
+
+                self.is_enabled_for = \
+                    lambda user, **kwargs: is_enabled_for(user)
+
     def get_entries(self, context):
+        request = context['request']
+
         if (not callable(self.is_enabled_for) or
-            self.is_enabled_for(context.get('user', None))):
+            self.is_enabled_for(user=request.user,
+                                request=request,
+                                local_site_name=context['local_site_name'])):
             return self.entries
         else:
             return []
@@ -323,9 +351,9 @@ class ReviewRequestFieldsHook(ExtensionHook):
     field classes should be added. Review Board supplies three built-in
     fieldset IDs:
 
-        * ``main``      - The fieldset with Description and Testing Done.
-        * ``info``      - The "Information" fieldset on the side.
-        * ``reviewers`` - The "Reviewers" fieldset on the side.
+    * ``main``      - The fieldset with Description and Testing Done.
+    * ``info``      - The "Information" fieldset on the side.
+    * ``reviewers`` - The "Reviewers" fieldset on the side.
 
     Any registered fieldset ID can be provided, whether from this extension
     or another.
@@ -350,6 +378,24 @@ class ReviewRequestFieldsHook(ExtensionHook):
 
         for field_cls in self.fields:
             fieldset.remove_field(field_cls)
+
+
+@six.add_metaclass(ExtensionHookPoint)
+class WebAPICapabilitiesHook(ExtensionHook):
+    """This hook allows adding capabilities to the web API server info.
+
+    Note that this does not add the functionality, but adds to the server
+    info listing.
+    """
+    def __init__(self, extension, caps):
+        super(WebAPICapabilitiesHook, self).__init__(extension)
+
+        register_webapi_capabilities(extension.id, caps)
+
+    def shutdown(self):
+        super(WebAPICapabilitiesHook, self).shutdown()
+
+        unregister_webapi_capabilities(self.extension.id)
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -395,15 +441,11 @@ class FileAttachmentThumbnailHook(ExtensionHook):
     This accepts a list of Mimetype Handlers specified by the Extension
     that must:
 
-       *
-          Subclass
-          :py:class:`reviewboard.attachments.mimetypes.MimetypeHandler`
-       *
-          Define a list of file mimetypes it can handle in a class variable
-          called `supported_mimetypes`
-       *
-          Define how to generate a thumbnail of that mimetype by overriding
-          the instance function `def get_thumbnail(self):`
+    * Subclass :py:class:`reviewboard.attachments.mimetypes.MimetypeHandler`
+    * Define a list of file mimetypes it can handle in a class variable
+      called `supported_mimetypes`
+    * Define how to generate a thumbnail of that mimetype by overriding
+      the instance function `def get_thumbnail(self):`
 
     These MimetypeHandlers are registered when the hook is created. Likewise,
     it unregisters the same list of MimetypeHandlers when the Extension is
@@ -433,16 +475,16 @@ class ActionHook(ExtensionHook):
     The provided actions parameter must be a list of actions. Each
     action must be a dict with the following keys:
 
-       * `id`:           The ID of this action (optional).
-       * `image`:        The path to the image used for the icon (optional).
-       * `image_width`:  The width of the image (optional).
-       * `image_height`: The height of the image (optional).
-       * `label`:        The label for the action.
-       * `url`:          The URI to invoke when the action is clicked.
-                         If you want to invoke a javascript action, this should
-                         be '#', and you should use a selector on the `id`
-                         field to attach the handler (as opposed to a
-                         javascript: URL, which doesn't work on all browsers).
+    * ``id``:           The ID of this action (optional).
+    * ``image``:        The path to the image used for the icon (optional).
+    * ``image_width``:  The width of the image (optional).
+    * ``image_height``: The height of the image (optional).
+    * ``label``:        The label for the action.
+    * ``url``:          The URI to invoke when the action is clicked.
+                        If you want to invoke a javascript action, this should
+                        be '#', and you should use a selector on the `id`
+                        field to attach the handler (as opposed to a
+                        javascript: URL, which doesn't work on all browsers).
 
     If your hook needs to access the template context, it can override
     get_actions and return results from there.
@@ -467,9 +509,9 @@ class ReviewRequestDropdownActionHook(ActionHook):
 
     The actions for a drop down action should contain:
 
-       * `id`:      The ID of this action (optional).
-       * `label`:   The label of the drop-down.
-       * `items`:   A list of ActionHook-style dicts (see ActionHook params).
+    * ``id``:      The ID of this action (optional).
+    * ``label``:   The label of the drop-down.
+    * ``items``:   A list of ActionHook-style dicts (see ActionHook params).
 
     For example::
 
@@ -524,6 +566,340 @@ class UserPageSidebarItemsHook(DataGridSidebarItemsHook):
             extension, UserPageReviewRequestDataGrid, item_classes)
 
 
+@six.add_metaclass(ExtensionHookPoint)
+class EmailHook(ExtensionHook):
+    """A hook for changing the recipients of e-mails.
+
+    Extensions can use this hook to change the contents of the To and CC fields
+    of e-mails. This should be subclassed in an extension to provide the
+    desired behaviour. This class is a base class for more specialized
+    extension hooks. If modifying only one type of e-mail's fields is desired,
+    one of the following classes should be sub-classed instead.
+
+    * :py:class:`ReviewPublishedEmailHook`
+    * :py:class:`ReviewReplyPublishedEmailHook`
+    * :py:class:`ReviewRequestPublishedEmailHook`
+    * :py:class:`ReviewRequestClosedEmailHook`
+
+    However, if more specialized behaviour is desired, this class can be
+    sub-classed.
+    """
+
+    def __init__(self, extension, signals=None):
+        """Initialize the EmailHook.
+
+        Args:
+            extension (reviewboard.extensions.base.Extension):
+                The extension creating this hook.
+
+            signals (list):
+                A list of :py:class:`Signals <django.dispatch.Signal>` that,
+                when triggered, will cause e-mails to be sent. Valid signals
+                are:
+
+                * :py:data:`~reviewboard.reviews.signals.review_request_published`
+                * :py:data:`~reviewboard.reviews.signals.review_request_closed`
+                * :py:data:`~reviewboard.reviews.signals.review_published`
+                * :py:data:`~reviewboard.reviews.signals.reply_published`
+        """
+        super(EmailHook, self).__init__(extension)
+
+        self.signals = set(signals or [])
+
+        for signal in self.signals:
+            register_email_hook(signal, self)
+
+    def shutdown(self):
+        """Unregister the e-mail handlers."""
+        for signal in self.signals:
+            unregister_email_hook(signal, self)
+
+    def get_to_field(self, to_field, **kwargs):
+        """Return the To field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`Users <django.contrib.auth.models.User>`
+                and :py:class:`Groups <reviewboard.reviews.models.Group>`
+                that will receive the e-mail.
+
+            kwargs (dict):
+                Additional keyword arguments that will be passed based on the
+                type of e-mail being sent.
+
+        Returns:
+            set: The desired To field.
+        """
+        return to_field
+
+    def get_cc_field(self, cc_field, **kwargs):
+        """Return the CC field for the e-mail.
+
+        Args:
+            cc_field (set):
+                A set of :py:class:`Users <django.contrib.auth.models.User>`
+                and :py:class:`Groups <reviewboard.reviews.models.Group>`
+                that will receive a carbon copy of the e-mail.
+
+            kwargs (dict):
+                Additional keyword arguments that will be passed based on the
+                type of e-mail being sent.
+
+        Returns:
+            set: The desired CC field.
+        """
+        return cc_field
+
+
+class ReviewPublishedEmailHook(EmailHook):
+    """A hook for changing the recipients of review publishing e-mails."""
+
+    def __init__(self, extension):
+        """Initialize the ReviewPublishedEmailHook.
+
+        Args:
+            extension (reviewboard.extensions.base.Extension):
+                The extension registering this hook.
+        """
+        super(ReviewPublishedEmailHook, self).__init__(
+            extension,
+            signals=[review_published])
+
+    def get_to_field(self, to_field, review, user, review_request):
+        """Return the To field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`Users <django.contrib.auth.models.User>`
+                and :py:class:`Groups <reviewboard.reviews.models.Group>`
+                that will receive the e-mail.
+
+            review (reviewboard.reviews.models.Review):
+                The review that was published.
+
+            user (django.contrib.auth.models.User):
+                The user who published the review.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that was reviewed.
+
+        Returns:
+            set: The desired To field.
+        """
+        return to_field
+
+    def get_cc_field(self, cc_field, review, user, review_request):
+        """Return the CC field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`Users <django.contrib.auth.models.User>`
+                and :py:class:`Groups <reviewboard.reviews.models.Group>`
+                that will receive a carbon copy of the e-mail.
+
+            review (reviewboard.reviews.models.Review):
+                The review that was published.
+
+            user (django.contrib.auth.models.User):
+                The user who published the review.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that was reviewed.
+
+        Returns:
+            set: The desired CC field.
+        """
+        return cc_field
+
+
+class ReviewReplyPublishedEmailHook(EmailHook):
+    """A hook for changing the recipients of review reply publishing e-mails.
+    """
+
+    def __init__(self, extension):
+        """Initialize the ReviewReplyPublishedEmailHook.
+
+        Args:
+            extension (djblets.extensions.Extension):
+                The extension registering this hook.
+        """
+        super(ReviewReplyPublishedEmailHook, self).__init__(
+            extension,
+            signals=[reply_published])
+
+    def get_to_field(self, to_field, reply, user, review_request):
+        """Return the To field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`Users <django.contrib.auth.models.User>`
+                and :py:class:`Groups <reviewboard.reviews.models.Group>`
+                that will receive the e-mail.
+
+            reply (reviewboard.reviews.models.Review):
+                The review reply that was published.
+
+            user (django.contrib.auth.models.User):
+                The user who published the review reply.
+
+            review (reviewboard.reviews.model.Review):
+                The review the reply is in reply to.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that was reviewed.
+
+        Returns:
+            set: The desired To field.
+        """
+        return to_field
+
+    def get_cc_field(self, cc_field, reply, user, review_request):
+        """Return the CC field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`Users <django.contrib.auth.models.User>`
+                and :py:class:`Groups <reviewboard.reviews.models.Group>`
+                that will receive a carbon copy of the e-mail
+
+            reply (reviewboard.reviews.models.Review):
+                The review reply that was published.
+
+            user (django.contrib.auth.models.User):
+                The user who published the reply.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that was reviewed.
+
+        Returns:
+            set: The desired CC field.
+        """
+        return cc_field
+
+
+class ReviewRequestClosedEmailHook(EmailHook):
+    """A hook for changing the recipients of review request closing e-mails."""
+
+    def __init__(self, extension):
+        """Initialize the ReviewRequestClosedEmailHook.
+
+        Args:
+            extension (reviewboard.extensions.base.Extension):
+                The extension registering this hook.
+        """
+        super(ReviewRequestClosedEmailHook, self).__init__(
+            extension,
+            signals=[review_request_closed])
+
+    def get_to_field(self, to_field, review_request, user, close_type):
+        """Return the To field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`Users <django.contrib.auth.models.User>`
+                and :py:class:`Groups <reviewboard.reviews.models.Group>`
+                that will receive the e-mail.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that was published.
+
+            user (django.contrib.auth.models.User):
+                The user who closed the review request.
+
+            close_type (unicode):
+                How the review request was closed. This is one of
+                :py:attr:`~reviewboard.reviews.models.ReviewRequest.SUBMITTED`
+                or
+                :py:attr:`~reviewboard.reviews.models.ReviewRequest.DISCARDED`.
+
+        Returns:
+            set: The desired To field.
+        """
+        return to_field
+
+    def get_cc_field(self, cc_field, review_request, user, close_type):
+        """Return the CC field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`Users <django.contrib.auth.models.User>`
+                and :py:class:`Groups <reviewboard.reviews.models.Group>` that
+                will receive a carbon copy of the e-mail.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that was published.
+
+            user (django.contrib.auth.models.User):
+                The user who closed the review request.
+
+            close_type (unicode):
+                How the review request was closed. This is one of
+                :py:attr:`~reviewboard.reviews.models.ReviewRequest.SUBMITTED`
+                or
+                :py:attr:`~reviewboard.reviews.models.ReviewRequest.DISCARDED`.
+
+        Returns:
+            set: The desired CC field.
+        """
+        return cc_field
+
+
+class ReviewRequestPublishedEmailHook(EmailHook):
+    """A hook for changing the recipients of review request publishing e-mails.
+    """
+
+    def __init__(self, extension):
+        """Initialize the ReviewRequestPublishedEmailHook.
+
+        Args:
+            extension (reviewboard.extensions.base.Extension):
+                The extension registering this hook.
+        """
+        super(ReviewRequestPublishedEmailHook, self).__init__(
+            extension,
+            signals=[review_request_published])
+
+    def get_to_field(self, to_field, review_request, user):
+        """Return the To field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`Users <django.contrib.auth.models.User>`
+                and :py:class:`Groups <reviewboard.reviews.models.Group>` that
+                will receive the e-mail.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that was published.
+
+            user (django.contrib.auth.models.User):
+                The user who published the review request.
+
+        Returns:
+            set: The desired To field.
+        """
+        return to_field
+
+    def get_cc_field(self, cc_field, review_request, user):
+        """Return the CC field for the e-mail.
+
+        Args:
+            to_field (set):
+                A set of :py:class:`Users <django.contrib.auth.models.User>`
+                and :py:class:`Groups <reviewboard.reviews.models.Group>` that
+                will receive a carbon copy of the e-mail.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that was published.
+
+            user (django.contrib.auth.models.User):
+                The user who published the review request.
+
+        Returns:
+            set: The desired CC field.
+        """
+        return cc_field
+
+
 __all__ = [
     'AccountPageFormsHook',
     'AccountPagesHook',
@@ -536,6 +912,7 @@ __all__ = [
     'DataGridColumnsHook',
     'DataGridSidebarItemsHook',
     'DiffViewerActionHook',
+    'EmailHook',
     'ExtensionHook',
     'FileAttachmentThumbnailHook',
     'HeaderActionHook',
@@ -544,12 +921,17 @@ __all__ = [
     'NavigationBarHook',
     'ReviewRequestActionHook',
     'ReviewRequestApprovalHook',
+    'ReviewRequestClosedEmailHook',
     'ReviewRequestDropdownActionHook',
     'ReviewRequestFieldSetsHook',
     'ReviewRequestFieldsHook',
+    'ReviewRequestPublishedEmailHook',
+    'ReviewPublishedEmailHook',
+    'ReviewReplyPublishedEmailHook',
     'ReviewUIHook',
     'SignalHook',
     'TemplateHook',
     'URLHook',
     'UserPageSidebarItemsHook',
+    'WebAPICapabilitiesHook',
 ]

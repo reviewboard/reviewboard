@@ -1,3 +1,9 @@
+(function() {
+
+
+var parentProto = RB.Diff.prototype;
+
+
 /*
  * A resource for checking whether a diff will work.
  *
@@ -15,12 +21,16 @@
  * be used to act upon this information.
  */
 RB.ValidateDiffModel = RB.Diff.extend({
-    defaults: _.defaults({
-        repository: null,
-        localSitePrefix: ''
-    }, RB.Diff.prototype.defaults),
+    defaults: function() {
+        return _.defaults({
+            repository: null,
+            localSitePrefix: ''
+        }, RB.Diff.prototype.defaults());
+    },
 
-    serializedAttrs: ['repository'],
+    serializedAttrs: [
+        'repository'
+    ].concat(parentProto.serializedAttrs),
 
     url: function() {
         return SITE_ROOT + this.get('localSitePrefix') +
@@ -31,3 +41,6 @@ RB.ValidateDiffModel = RB.Diff.extend({
         // Do nothing
     }
 });
+
+
+})();

@@ -11,15 +11,19 @@ from django.template import Context, Template
 from django.test.client import RequestFactory
 from django.utils import six
 from django.utils.safestring import SafeText
+from djblets.auth.signals import user_registered
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
-from reviewboard.accounts.models import Profile, LocalSiteProfile
+from reviewboard.accounts.models import (Profile,
+                                         LocalSiteProfile,
+                                         _add_default_groups)
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.changedescs.models import ChangeDescription
+from reviewboard.reviews.errors import NotModifiedError, PublishError
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
-from reviewboard.reviews.markdown_utils import (markdown_escape,
-                                                markdown_unescape,
+from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
                                                 normalize_text_for_edit)
 from reviewboard.reviews.models import (Comment,
                                         DefaultReviewer,
@@ -29,9 +33,6 @@ from reviewboard.reviews.models import (Comment,
                                         ReviewRequestDraft,
                                         Review,
                                         Screenshot)
-from reviewboard.reviews.ui.base import (FileAttachmentReviewUI,
-                                         register_ui,
-                                         unregister_ui)
 from reviewboard.scmtools.core import ChangeSet, Commit
 from reviewboard.scmtools.errors import ChangeNumberInUseError
 from reviewboard.scmtools.models import Repository, Tool
@@ -214,6 +215,25 @@ class ReviewRequestManagerTests(TestCase):
             ])
 
     @add_fixtures(['test_scmtools'])
+    def test_public_with_repository_on_local_site(self):
+        """Testing ReviewRequest.objects.public with repository on a
+        Local Site
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(username='grumpy')
+        local_site.users.add(user)
+
+        repository = self.create_repository(local_site=local_site)
+        review_request = self.create_review_request(repository=repository,
+                                                    local_site=local_site,
+                                                    publish=True)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user,
+                                                       local_site=local_site)
+        self.assertEqual(review_requests.count(), 1)
+
+    @add_fixtures(['test_scmtools'])
     def test_public_without_private_repo_access(self):
         """Testing ReviewRequest.objects.public without access to private
         repositories
@@ -226,6 +246,26 @@ class ReviewRequestManagerTests(TestCase):
         self.assertFalse(review_request.is_accessible_by(user))
 
         review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 0)
+
+    @add_fixtures(['test_scmtools'])
+    def test_public_without_private_repo_access_on_local_site(self):
+        """Testing ReviewRequest.objects.public without access to private
+        repositories on a Local Site
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(username='grumpy')
+        local_site.users.add(user)
+
+        repository = self.create_repository(public=False,
+                                            local_site=local_site)
+        review_request = self.create_review_request(repository=repository,
+                                                    local_site=local_site,
+                                                    publish=True)
+        self.assertFalse(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user,
+                                                       local_site=local_site)
         self.assertEqual(review_requests.count(), 0)
 
     @add_fixtures(['test_scmtools'])
@@ -245,6 +285,27 @@ class ReviewRequestManagerTests(TestCase):
         self.assertEqual(review_requests.count(), 1)
 
     @add_fixtures(['test_scmtools'])
+    def test_public_with_private_repo_access_on_local_site(self):
+        """Testing ReviewRequest.objects.public with access to private
+        repositories on a Local Site
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(username='grumpy')
+        local_site.users.add(user)
+
+        repository = self.create_repository(public=False,
+                                            local_site=local_site)
+        repository.users.add(user)
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True,
+                                                    local_site=local_site)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user,
+                                                       local_site=local_site)
+        self.assertEqual(review_requests.count(), 1)
+
+    @add_fixtures(['test_scmtools'])
     def test_public_with_private_repo_access_through_group(self):
         """Testing ReviewRequest.objects.public with access to private
         repositories
@@ -260,6 +321,30 @@ class ReviewRequestManagerTests(TestCase):
         self.assertTrue(review_request.is_accessible_by(user))
 
         review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 1)
+
+    @add_fixtures(['test_scmtools'])
+    def test_public_with_private_repo_access_through_group_on_local_site(self):
+        """Testing ReviewRequest.objects.public with access to private
+        repositories on a Local Site
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(username='grumpy')
+        local_site.users.add(user)
+
+        group = self.create_review_group(invite_only=True)
+        group.users.add(user)
+
+        repository = self.create_repository(public=False,
+                                            local_site=local_site)
+        repository.review_groups.add(group)
+        review_request = self.create_review_request(repository=repository,
+                                                    local_site=local_site,
+                                                    publish=True)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user,
+                                                       local_site=local_site)
         self.assertEqual(review_requests.count(), 1)
 
     def test_public_without_private_group_access(self):
@@ -289,6 +374,27 @@ class ReviewRequestManagerTests(TestCase):
         self.assertTrue(review_request.is_accessible_by(user))
 
         review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 1)
+
+    def test_public_with_private_group_access_on_local_site(self):
+        """Testing ReviewRequest.objects.public with access to private
+        group on a Local Site
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(username='grumpy')
+        local_site.users.add(user)
+
+        group = self.create_review_group(invite_only=True,
+                                         local_site=local_site)
+        group.users.add(user)
+
+        review_request = self.create_review_request(publish=True,
+                                                    local_site=local_site)
+        review_request.target_groups.add(group)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user,
+                                                       local_site=local_site)
         self.assertEqual(review_requests.count(), 1)
 
     @add_fixtures(['test_scmtools'])
@@ -342,6 +448,27 @@ class ReviewRequestManagerTests(TestCase):
         review_requests = ReviewRequest.objects.public(user=user)
         self.assertEqual(review_requests.count(), 1)
 
+    @add_fixtures(['test_scmtools'])
+    def test_public_with_private_repo_and_owner_on_local_site(self):
+        """Testing ReviewRequest.objects.public without access to private
+        repository and as the submitter on a Local Site
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(username='grumpy')
+        local_site.users.add(user)
+
+        repository = self.create_repository(public=False,
+                                            local_site=local_site)
+        review_request = self.create_review_request(repository=repository,
+                                                    submitter=user,
+                                                    local_site=local_site,
+                                                    publish=True)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user,
+                                                       local_site=local_site)
+        self.assertEqual(review_requests.count(), 1)
+
     def test_public_with_private_group_and_owner(self):
         """Testing ReviewRequest.objects.public without access to private
         group and as the submitter
@@ -355,6 +482,27 @@ class ReviewRequestManagerTests(TestCase):
         self.assertTrue(review_request.is_accessible_by(user))
 
         review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 1)
+
+    def test_public_with_private_group_and_owner_on_local_site(self):
+        """Testing ReviewRequest.objects.public without access to private
+        group and as the submitter on a Local Site
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(username='grumpy')
+        local_site.users.add(user)
+
+        group = self.create_review_group(invite_only=True,
+                                         local_site=local_site)
+
+        review_request = self.create_review_request(submitter=user,
+                                                    local_site=local_site,
+                                                    publish=True)
+        review_request.target_groups.add(group)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user,
+                                                       local_site=local_site)
         self.assertEqual(review_requests.count(), 1)
 
     @add_fixtures(['test_scmtools'])
@@ -386,6 +534,27 @@ class ReviewRequestManagerTests(TestCase):
         self.assertTrue(review_request.is_accessible_by(user))
 
         review_requests = ReviewRequest.objects.public(user=user)
+        self.assertEqual(review_requests.count(), 1)
+
+    def test_public_with_private_group_and_target_people_on_local_site(self):
+        """Testing ReviewRequest.objects.public without access to private
+        group and user in target_people on a Local Site
+        """
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(username='grumpy')
+        local_site.users.add(user)
+
+        group = self.create_review_group(invite_only=True,
+                                         local_site=local_site)
+
+        review_request = self.create_review_request(publish=True,
+                                                    local_site=local_site)
+        review_request.target_groups.add(group)
+        review_request.target_people.add(user)
+        self.assertTrue(review_request.is_accessible_by(user))
+
+        review_requests = ReviewRequest.objects.public(user=user,
+                                                       local_site=local_site)
         self.assertEqual(review_requests.count(), 1)
 
     def test_to_group(self):
@@ -666,6 +835,8 @@ class ReviewRequestTests(SpyAgency, TestCase):
         review_request.reopen()
         self.assertFalse(review_request.public)
 
+        review_request.publish(review_request.submitter)
+
         review_request.close(ReviewRequest.SUBMITTED)
         self.assertTrue(review_request.public)
 
@@ -676,6 +847,16 @@ class ReviewRequestTests(SpyAgency, TestCase):
         self.assertEqual(review_request.commit_id, '123')
         review_request.close(ReviewRequest.DISCARDED)
 
+        self.assertIsNone(review_request.commit_id)
+
+    def test_changenum_against_changenum_and_commit_id(self):
+        """Testing create ReviewRequest with changenum against both changenum
+         and commit_id"""
+        changenum = 123
+        review_request = self.create_review_request(publish=True,
+                                                    changenum=changenum)
+        review_request = ReviewRequest.objects.get(pk=review_request.id)
+        self.assertEqual(review_request.changenum, changenum)
         self.assertIsNone(review_request.commit_id)
 
     @add_fixtures(['test_scmtools'])
@@ -725,6 +906,90 @@ class ReviewRequestTests(SpyAgency, TestCase):
         review_request = self.create_review_request(
             summary='\u203e\u203e', publish=True)
         self.assertEqual(six.text_type(review_request), '\u203e\u203e')
+
+    def test_discard_unpublished_private(self):
+        """Testing ReviewRequest.close with private requests on discard
+        to ensure changes from draft are copied over
+        """
+        review_request = self.create_review_request(
+            publish=False,
+            public=False)
+
+        self.assertFalse(review_request.public)
+        self.assertNotEqual(review_request.status, ReviewRequest.DISCARDED)
+
+        draft = ReviewRequestDraft.create(review_request)
+
+        summary = 'Test summary'
+        description = 'Test description'
+        testing_done = 'Test testing done'
+
+        draft.summary = summary
+        draft.description = description
+        draft.testing_done = testing_done
+        draft.save()
+
+        review_request.close(ReviewRequest.DISCARDED)
+
+        self.assertEqual(review_request.summary, summary)
+        self.assertEqual(review_request.description, description)
+        self.assertEqual(review_request.testing_done, testing_done)
+
+    def test_discard_unpublished_public(self):
+        """Testing ReviewRequest.close with public requests on discard
+        to ensure changes from draft are not copied over
+        """
+        review_request = self.create_review_request(
+            publish=False,
+            public=True)
+
+        self.assertTrue(review_request.public)
+        self.assertNotEqual(review_request.status, ReviewRequest.DISCARDED)
+
+        draft = ReviewRequestDraft.create(review_request)
+
+        summary = 'Test summary'
+        description = 'Test description'
+        testing_done = 'Test testing done'
+
+        draft.summary = summary
+        draft.description = description
+        draft.testing_done = testing_done
+        draft.save()
+
+        review_request.close(ReviewRequest.DISCARDED)
+
+        self.assertNotEqual(review_request.summary, summary)
+        self.assertNotEqual(review_request.description, description)
+        self.assertNotEqual(review_request.testing_done, testing_done)
+
+    def test_publish_changedesc_none(self):
+        """Testing ReviewRequest.publish on a new request to ensure there are
+        no change descriptions
+        """
+        review_request = self.create_review_request(publish=True)
+
+        review_request.publish(review_request.submitter)
+
+        with self.assertRaises(ChangeDescription.DoesNotExist):
+            review_request.changedescs.filter(public=True).latest()
+
+    def test_submit_nonpublic(self):
+        """ Testing ReviewRequest.close with non-public requests to ensure state
+        transitions to SUBMITTED from non-public review request is not allowed
+        """
+        review_request = self.create_review_request(public=False)
+
+        with self.assertRaises(PublishError):
+            review_request.close(ReviewRequest.SUBMITTED)
+
+    def test_submit_public(self):
+        """ Testing ReviewRequest.close with public requests to ensure
+        public requests can be transferred to SUBMITTED
+        """
+        review_request = self.create_review_request(public=True)
+
+        review_request.close(ReviewRequest.SUBMITTED)
 
 
 class ViewTests(TestCase):
@@ -1331,6 +1596,20 @@ class ViewTests(TestCase):
         self.assertEqual(response['Content-Disposition'],
                          'attachment; filename=diffset')
 
+    # Bug #3704
+    def test_diff_raw_multiple_content_disposition(self):
+        """Testing /diff/raw/ multiple Content-Disposition issue."""
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+
+        # Create a diffset with a comma in its name.
+        self.create_diffset(review_request=review_request, name="test, comma")
+
+        response = self.client.get('/r/%d/diff/raw/' % review_request.pk)
+        filename = response['Content-Disposition']\
+                           [len('attachment; filename='):]
+        self.assertFalse(',' in filename)
+
 
 class DraftTests(TestCase):
     fixtures = ['test_users', 'test_scmtools']
@@ -1474,12 +1753,13 @@ class PostCommitTests(SpyAgency, TestCase):
         self.assertEqual(fileDiff.source_file, 'readme')
         self.assertEqual(fileDiff.source_revision, 'd6613f5')
 
-    def test_update_from_committed_change_with_markdown_escaping(self):
-        """Testing post-commit update with markdown escaping"""
+    def test_update_from_committed_change_with_rich_text_reset(self):
+        """Testing post-commit update from commit resets rich text"""
         def get_change(repository, commit_to_get):
             commit = Commit()
-            commit.message = '* No escaping\n\n* but this needs escaping'
+            commit.message = '* This is a summary\n\n* This is a description.'
             diff_filename = os.path.join(self.testdata_dir, 'git_readme.diff')
+
             with open(diff_filename, 'r') as f:
                 commit.diff = f.read()
 
@@ -1497,9 +1777,32 @@ class PostCommitTests(SpyAgency, TestCase):
         review_request.description_rich_text = True
         review_request.update_from_commit_id('4')
 
-        self.assertEqual(review_request.summary, '* No escaping')
+        self.assertEqual(review_request.summary, '* This is a summary')
         self.assertEqual(review_request.description,
-                         '\\* but this needs escaping')
+                         '* This is a description.')
+        self.assertFalse(review_request.description_rich_text)
+
+    def test_update_from_pending_change_with_rich_text_reset(self):
+        """Testing post-commit update from changeset resets rich text"""
+        review_request = ReviewRequest.objects.create(self.user,
+                                                      self.repository)
+        review_request.description_rich_text = True
+        review_request.testing_done_rich_text = True
+
+        changeset = ChangeSet()
+        changeset.changenum = 4
+        changeset.summary = '* This is a summary'
+        changeset.description = '* This is a description.'
+        changeset.testing_done = '* This is some testing.'
+        review_request.update_from_pending_change(4, changeset)
+
+        self.assertEqual(review_request.summary, '* This is a summary')
+        self.assertEqual(review_request.description,
+                         '* This is a description.')
+        self.assertFalse(review_request.description_rich_text)
+        self.assertEqual(review_request.testing_done,
+                         '* This is some testing.')
+        self.assertFalse(review_request.testing_done_rich_text)
 
     def test_update_from_committed_change_without_repository_support(self):
         """Testing post-commit update failure conditions"""
@@ -1773,7 +2076,7 @@ class IfNeatNumberTagTests(TestCase):
         self.assertEqual(t.render(Context({})), expected)
 
 
-class ReviewRequestCounterTests(TestCase):
+class ReviewRequestCounterTests(SpyAgency, TestCase):
     fixtures = ['test_scmtools']
 
     def setUp(self):
@@ -1883,7 +2186,13 @@ class ReviewRequestCounterTests(TestCase):
         self._check_counters(total_outgoing=1,
                              pending_outgoing=1)
 
-        self.assertFalse(self.review_request.public)
+        self.review_request.publish(self.user)
+
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1,
+                             starred_public=1)
+
+        self.assertTrue(self.review_request.public)
         self.assertEqual(self.review_request.status,
                          ReviewRequest.PENDING_REVIEW)
 
@@ -2035,7 +2344,7 @@ class ReviewRequestCounterTests(TestCase):
 
     def test_reopen_submitted_draft_requests(self):
         """Testing counters with reopening submitted draft review requests"""
-        self.test_closing_draft_requests(ReviewRequest.SUBMITTED)
+        self.test_closing_requests(ReviewRequest.SUBMITTED)
 
         # We're simulating what a DefaultReviewer would do by populating
         # the ReviewRequest's target users and groups while not public and
@@ -2111,6 +2420,33 @@ class ReviewRequestCounterTests(TestCase):
                              pending_outgoing=1,
                              starred_public=1)
 
+    def test_remove_group_and_fail_publish(self):
+        """Testing counters when removing a group reviewer and then
+        failing to publish the draft
+        """
+        self.test_add_group()
+
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_groups.remove(self.group)
+
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1,
+                             total_incoming=1,
+                             group_incoming=1,
+                             starred_public=1)
+
+        self.spy_on(ReviewRequestDraft.publish,
+                    call_fake=self._raise_publish_error)
+
+        with self.assertRaises(NotModifiedError):
+            self.review_request.publish(self.user)
+
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1,
+                             total_incoming=1,
+                             group_incoming=1,
+                             starred_public=1)
+
     def test_add_person(self):
         """Testing counters when adding a person reviewer"""
         draft = ReviewRequestDraft.create(self.review_request)
@@ -2144,6 +2480,33 @@ class ReviewRequestCounterTests(TestCase):
 
         self._check_counters(total_outgoing=1,
                              pending_outgoing=1,
+                             starred_public=1)
+
+    def test_remove_person_and_fail_publish(self):
+        """Testing counters when removing a person reviewer and then
+        failing to publish the draft
+        """
+        self.test_add_person()
+
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_people.remove(self.user)
+
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1,
+                             direct_incoming=1,
+                             total_incoming=1,
+                             starred_public=1)
+
+        self.spy_on(ReviewRequestDraft.publish,
+                    call_fake=self._raise_publish_error)
+
+        with self.assertRaises(NotModifiedError):
+            self.review_request.publish(self.user)
+
+        self._check_counters(total_outgoing=1,
+                             pending_outgoing=1,
+                             direct_incoming=1,
+                             total_incoming=1,
                              starred_public=1)
 
     def test_populate_counters(self):
@@ -2270,6 +2633,9 @@ class ReviewRequestCounterTests(TestCase):
         self.site_profile2 = \
             LocalSiteProfile.objects.get(pk=self.site_profile2.pk)
         self.group = Group.objects.get(pk=self.group.pk)
+
+    def _raise_publish_error(self, *args, **kwargs):
+        raise NotModifiedError()
 
 
 class IssueCounterTests(TestCase):
@@ -2821,107 +3187,7 @@ class UserInfoboxTests(TestCase):
 
 
 class MarkdownUtilsTests(TestCase):
-    UNESCAPED_TEXT = r'\`*_{}[]()>#+-.!'
-    ESCAPED_TEXT = r'\\\`\*\_\{\}\[\]\(\)\>#+-.\!'
-
-    def test_markdown_escape(self):
-        """Testing markdown_escape"""
-        self.assertEqual(markdown_escape(self.UNESCAPED_TEXT),
-                         self.ESCAPED_TEXT)
-
-    def test_markdown_escape_periods(self):
-        """Testing markdown_escape with '.' placement"""
-        self.assertEqual(
-            markdown_escape('Line. 1.\n'
-                            '1. Line. 2.\n'
-                            '1.2. Line. 3.\n'
-                            '  1. Line. 4.'),
-            ('Line. 1.\n'
-             '1\\. Line. 2.\n'
-             '1\\.2\\. Line. 3.\n'
-             '  1\\. Line. 4.'))
-
-    def test_markdown_escape_atx_headers(self):
-        """Testing markdown_escape with '#' placement"""
-        self.assertEqual(
-            markdown_escape('### Header\n'
-                            '  ## Header ##\n'
-                            'Not # a header'),
-            ('\\#\\#\\# Header\n'
-             '  \\#\\# Header ##\n'
-             'Not # a header'))
-
-    def test_markdown_escape_hyphens(self):
-        """Testing markdown_escape with '-' placement"""
-        self.assertEqual(
-            markdown_escape('Header\n'
-                            '------\n'
-                            '\n'
-                            '- List item\n'
-                            '  - List item\n'
-                            'Just hyp-henated'),
-            ('Header\n'
-             '\\-\\-\\-\\-\\-\\-\n'
-             '\n'
-             '\\- List item\n'
-             '  \\- List item\n'
-             'Just hyp-henated'))
-
-    def test_markdown_escape_plusses(self):
-        """Testing markdown_escape with '+' placement"""
-        self.assertEqual(
-            markdown_escape('+ List item\n'
-                            'a + b'),
-            ('\\+ List item\n'
-             'a + b'))
-
-    def test_markdown_escape_underscores(self):
-        """Testing markdown_escape with '_' placement"""
-        self.assertEqual(markdown_escape('_foo_'), r'\_foo\_')
-        self.assertEqual(markdown_escape('__foo__'), r'\_\_foo\_\_')
-        self.assertEqual(markdown_escape(' _foo_ '), r' \_foo\_ ')
-        self.assertEqual(markdown_escape('f_o_o'), r'f_o_o')
-        self.assertEqual(markdown_escape('_f_o_o'), r'\_f_o_o')
-        self.assertEqual(markdown_escape('f_o_o_'), r'f_o_o\_')
-        self.assertEqual(markdown_escape('foo_ _bar'), r'foo\_ \_bar')
-        self.assertEqual(markdown_escape('foo__bar'), r'foo__bar')
-        self.assertEqual(markdown_escape('foo\n_bar'), 'foo\n\\_bar')
-        self.assertEqual(markdown_escape('(_foo_)'), r'(\_foo\_)')
-
-    def test_markdown_escape_asterisks(self):
-        """Testing markdown_escape with '*' placement"""
-        self.assertEqual(markdown_escape('*foo*'), r'\*foo\*')
-        self.assertEqual(markdown_escape('**foo**'), r'\*\*foo\*\*')
-        self.assertEqual(markdown_escape(' *foo* '), r' \*foo\* ')
-        self.assertEqual(markdown_escape('f*o*o'), r'f*o*o')
-        self.assertEqual(markdown_escape('f*o*o*'), r'f*o*o\*')
-        self.assertEqual(markdown_escape('foo* *bar'), r'foo\* \*bar')
-        self.assertEqual(markdown_escape('foo**bar'), r'foo**bar')
-        self.assertEqual(markdown_escape('foo\n*bar'), 'foo\n\\*bar')
-
-    def test_markdown_escape_parens(self):
-        """Testing markdown_escape with '(' and ')' placement"""
-        self.assertEqual(markdown_escape('[name](link)'), r'\[name\]\(link\)')
-        self.assertEqual(markdown_escape('(link)'), r'(link)')
-        self.assertEqual(markdown_escape('](link)'), r'\](link)')
-        self.assertEqual(markdown_escape('[foo] ](link)'),
-                         r'\[foo\] \](link)')
-
-    def test_markdown_unescape(self):
-        """Testing markdown_unescape"""
-        self.assertEqual(markdown_unescape(self.ESCAPED_TEXT),
-                         self.UNESCAPED_TEXT)
-
-        self.assertEqual(
-            markdown_unescape('&nbsp;   code\n'
-                              '&nbsp;   code'),
-            ('    code\n'
-             '    code'))
-        self.assertEqual(
-            markdown_unescape('&nbsp;\tcode\n'
-                              '&nbsp;\tcode'),
-            ('\tcode\n'
-             '\tcode'))
+    """Unit tests for reviewboard.reviews.markdown_utils."""
 
     def test_normalize_text_for_edit_rich_text_default_rich_text(self):
         """Testing normalize_text_for_edit with rich text and
@@ -2995,6 +3261,21 @@ class MarkdownUtilsTests(TestCase):
         self.assertEqual(text, '&lt; "test" **foo**')
         self.assertFalse(isinstance(text, SafeText))
 
+    def test_markdown_render_conditional_rich_text(self):
+        """Testing markdown_render_conditional with rich text"""
+        text = markdown_render_conditional(text='## <script>alert();</script>',
+                                           rich_text=True)
+        self.assertEqual(text,
+                         '<h2>&lt;script&gt;alert();&lt;/script&gt;</h2>')
+        self.assertFalse(isinstance(text, SafeText))
+
+    def test_markdown_render_conditional_plain_text(self):
+        """Testing markdown_render_conditional with plain text"""
+        text = markdown_render_conditional(text='## <script>alert();</script>',
+                                           rich_text=False)
+        self.assertEqual(text, r'## &lt;script&gt;alert();&lt;/script&gt;')
+        self.assertTrue(isinstance(text, SafeText))
+
 
 class MarkdownTemplateTagsTests(TestCase):
     """Unit tests for Markdown-related template tags."""
@@ -3030,247 +3311,86 @@ class MarkdownTemplateTagsTests(TestCase):
                          '\\u0026lt\\u003Bfoo **bar**')
 
 
-class InitReviewUI(FileAttachmentReviewUI):
-    supported_mimetypes = ['image/jpg']
+class DefaultGroupTest(SpyAgency, TestCase):
+    fixtures = ['test_users', 'test_site']
 
-    def __init__(self, review_request, obj):
-        raise Exception
+    def test_user_registeration(self):
+        """Testing if user registeration signal triggers _add_default_groups"""
+        self.spy_on(_add_default_groups)
 
+        user = User.objects.create_user(username='reviewboard', email='',
+                                        password='password')
 
-class SandboxReviewUI(FileAttachmentReviewUI):
-    supported_mimetypes = ['image/png']
+        user_registered.send(sender=None, user=user)
 
-    def is_enabled_for(self, user=None, review_request=None,
-                       file_attachment=None, **kwargs):
-        raise Exception
+        self.assertTrue(_add_default_groups.spy.called)
+        self.assertEqual(
+            _add_default_groups.spy.last_call.kwargs['user'],
+            user)
+        self.assertEqual(
+            _add_default_groups.spy.last_call.kwargs.get('local_site'),
+            None)
 
-    def get_comment_thumbnail(self, comment):
-        raise Exception
+    def test_local_site_add_user(self):
+        """Testing local_site.users.add(user)"""
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(id=3)
 
-    def get_comment_link_url(self, comment):
-        raise Exception
+        self.spy_on(_add_default_groups)
 
-    def get_comment_link_text(self, comment):
-        raise Exception
+        local_site.users.add(user)
 
-    def get_extra_context(self, request):
-        raise Exception
+        self.assertTrue(_add_default_groups.spy.called)
+        self.assertEqual(
+            _add_default_groups.spy.last_call.kwargs['user'],
+            user)
+        self.assertEqual(
+            _add_default_groups.spy.last_call.kwargs['local_site'],
+            local_site)
 
-    def get_js_view_data(self):
-        raise Exception
+    def test_user_add_local_site(self):
+        """Testing user.local_site.add(local_site)"""
+        local_site = LocalSite.objects.create(name='test')
+        user = User.objects.get(id=3)
 
-    def serialize_comments(self, comments):
-        raise Exception
+        self.spy_on(_add_default_groups)
 
+        user.local_site.add(local_site)
 
-class ConflictFreeReviewUI(FileAttachmentReviewUI):
-    supported_mimetypes = ['image/gif']
+        self.assertTrue(_add_default_groups.spy.called)
+        self.assertEqual(
+            _add_default_groups.spy.last_call.kwargs['user'],
+            user)
+        self.assertEqual(
+            _add_default_groups.spy.last_call.kwargs['local_site'],
+            local_site)
 
-    def serialize_comment(self, comment):
-        raise Exception
+    def test_add_default_groups(self):
+        """Testing if _add_default_groups works well with no local_site"""
+        user = User.objects.get(id=1)
+        group_count_before = user.review_groups.count()
 
-    def get_js_model_data(self):
-        raise Exception
+        _add_default_groups(sender=None, user=user)
 
+        self.assertEqual(group_count_before,
+                         User.objects.get(id=user.id).review_groups.count())
 
-class SandboxTests(SpyAgency, TestCase):
-    """Testing sandboxing extensions."""
-    fixtures = ['test_users']
+        self.create_review_group(is_default_group=True)
 
-    def setUp(self):
-        super(SandboxTests, self).setUp()
+        _add_default_groups(sender=None, user=user)
 
-        register_ui(InitReviewUI)
-        register_ui(SandboxReviewUI)
-        register_ui(ConflictFreeReviewUI)
+        self.assertEqual(group_count_before + 1,
+                         User.objects.get(id=user.id).review_groups.count())
 
-        self.factory = RequestFactory()
+    def test_add_default_groups_with_local_site(self):
+        """Testing if _add_default_groups works well with no local_site"""
+        user = User.objects.get(id=3)
+        local_site = LocalSite.objects.create(name='test')
+        self.create_review_group(is_default_group=True, local_site=local_site)
 
-        filename = os.path.join(settings.STATIC_ROOT,
-                                'rb', 'images', 'trophy.png')
+        group_count_before = user.review_groups.count()
 
-        with open(filename, 'r') as f:
-            self.file = SimpleUploadedFile(f.name, f.read(),
-                                           content_type='image/png')
+        _add_default_groups(sender=None, user=user, local_site=local_site)
 
-        self.user = User.objects.get(username='doc')
-        self.review_request = ReviewRequest.objects.create(self.user, None)
-        self.file_attachment1 = FileAttachment.objects.create(
-            mimetype='image/jpg',
-            file=self.file)
-        self.file_attachment2 = FileAttachment.objects.create(
-            mimetype='image/png',
-            file=self.file)
-        self.file_attachment3 = FileAttachment.objects.create(
-            mimetype='image/gif',
-            file=self.file)
-        self.review_request.file_attachments.add(self.file_attachment1)
-        self.review_request.file_attachments.add(self.file_attachment2)
-        self.review_request.file_attachments.add(self.file_attachment3)
-        self.draft = ReviewRequestDraft.create(self.review_request)
-
-    def tearDown(self):
-        super(SandboxTests, self).tearDown()
-
-        unregister_ui(InitReviewUI)
-        unregister_ui(SandboxReviewUI)
-        unregister_ui(ConflictFreeReviewUI)
-
-    def test_init_review_ui(self):
-        """Testing FileAttachmentReviewUI sandboxes for __init__"""
-        self.spy_on(InitReviewUI.__init__)
-
-        self.file_attachment1.review_ui
-
-        self.assertTrue(InitReviewUI.__init__.called)
-
-    def test_is_enabled_for(self):
-        """Testing FileAttachmentReviewUI sandboxes for
-        is_enabled_for"""
-        comment = "Comment"
-
-        self.spy_on(SandboxReviewUI.is_enabled_for)
-
-        review = Review.objects.create(review_request=self.review_request,
-                                       user=self.user)
-        review.file_attachment_comments.create(
-            file_attachment=self.file_attachment2,
-            text=comment)
-
-        self.client.login(username='doc', password='doc')
-        response = self.client.get('/r/%d/' % self.review_request.pk)
-        self.assertEqual(response.status_code, 200)
-
-        self.assertTrue(SandboxReviewUI.is_enabled_for.called)
-
-    def test_get_comment_thumbnail(self):
-        """Testing FileAttachmentReviewUI sandboxes for
-        get_comment_thumbnail"""
-        comment = "Comment"
-
-        review_ui = self.file_attachment2.review_ui
-
-        self.spy_on(review_ui.get_comment_thumbnail)
-
-        review = Review.objects.create(review_request=self.review_request,
-                                       user=self.user)
-        file_attachment_comments = review.file_attachment_comments.create(
-            file_attachment=self.file_attachment2,
-            text=comment)
-
-        file_attachment_comments.thumbnail
-
-        self.assertTrue(review_ui.get_comment_thumbnail.called)
-
-    def test_get_comment_link_url(self):
-        """Testing FileAttachmentReviewUI sandboxes for get_comment_link_url"""
-        comment = "Comment"
-
-        review_ui = self.file_attachment2.review_ui
-
-        self.spy_on(review_ui.get_comment_link_url)
-
-        review = Review.objects.create(review_request=self.review_request,
-                                       user=self.user)
-        file_attachment_comments = review.file_attachment_comments.create(
-            file_attachment=self.file_attachment2,
-            text=comment)
-
-        file_attachment_comments.get_absolute_url()
-
-        self.assertTrue(review_ui.get_comment_link_url.called)
-
-    def test_get_comment_link_text(self):
-        """Testing FileAttachmentReviewUI sandboxes for
-        get_comment_link_text"""
-        comment = "Comment"
-
-        review_ui = self.file_attachment2.review_ui
-
-        self.spy_on(review_ui.get_comment_link_text)
-
-        review = Review.objects.create(review_request=self.review_request,
-                                       user=self.user)
-        file_attachment_comments = review.file_attachment_comments.create(
-            file_attachment=self.file_attachment2,
-            text=comment)
-
-        file_attachment_comments.get_link_text()
-
-        self.assertTrue(review_ui.get_comment_link_text.called)
-
-    def test_get_extra_context(self):
-        """Testing FileAttachmentReviewUI sandboxes for
-        get_extra_context"""
-
-        review_ui = self.file_attachment2.review_ui
-        request = self.factory.get('test')
-        request.user = self.user
-
-        self.spy_on(review_ui.get_extra_context)
-
-        review_ui.render_to_string(request=request)
-
-        self.assertTrue(review_ui.get_extra_context.called)
-
-    def test_get_js_model_data(self):
-        """Testing FileAttachmentReviewUI sandboxes for
-        get_js_model_data"""
-        review_ui = self.file_attachment3.review_ui
-        request = self.factory.get('test')
-        request.user = self.user
-
-        self.spy_on(review_ui.get_js_model_data)
-
-        review_ui.render_to_response(request=request)
-
-        self.assertTrue(review_ui.get_js_model_data.called)
-
-    def test_get_js_view_data(self):
-        """Testing FileAttachmentReviewUI sandboxes for
-        get_js_view_data"""
-        review_ui = self.file_attachment2.review_ui
-        request = self.factory.get('test')
-        request.user = self.user
-
-        self.spy_on(review_ui.get_js_view_data)
-
-        review_ui.render_to_response(request=request)
-
-        self.assertTrue(review_ui.get_js_view_data.called)
-
-    def test_serialize_comments(self):
-        """Testing FileAttachmentReviewUI sandboxes for
-        serialize_comments"""
-
-        review_ui = self.file_attachment2.review_ui
-
-        self.spy_on(review_ui.serialize_comments)
-
-        review_ui.get_comments_json()
-
-        self.assertTrue(review_ui.serialize_comments.called)
-
-    def test_serialize_comment(self):
-        """Testing FileAttachmentReviewUI sandboxes for
-        serialize_comment"""
-        comment = 'comment'
-
-        review_ui = self.file_attachment3.review_ui
-        request = self.factory.get('test')
-        request.user = self.user
-        review_ui.request = request
-
-        review = Review.objects.create(review_request=self.review_request,
-                                       user=self.user, public=True)
-        file_attachment_comments = review.file_attachment_comments.create(
-            file_attachment=self.file_attachment3,
-            text=comment)
-
-        self.spy_on(review_ui.serialize_comment)
-
-        serial_comments = review_ui.serialize_comments(
-            comments=[file_attachment_comments])
-        self.assertRaises(StopIteration, next, serial_comments)
-
-        self.assertTrue(review_ui.serialize_comment.called)
+        self.assertEqual(group_count_before + 1,
+                         User.objects.get(id=user.id).review_groups.count())

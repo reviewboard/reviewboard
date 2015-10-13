@@ -1,12 +1,10 @@
 from __future__ import unicode_literals
 
-from django.contrib.auth.models import User
 from django.utils import six
 from djblets.util.decorators import augment_method_from
 
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.models import Group, Screenshot
+from reviewboard.reviews.fields import get_review_request_field
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
@@ -55,6 +53,8 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
     * ``new``: The new caption.
     * ``screenshot``: The screenshot that was updated.
     """
+    added_in = '1.6'
+
     model = ChangeDescription
     name = 'change'
     fields = {
@@ -75,6 +75,7 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The mode for the text field.',
+            'added_in': '2.0',
         },
         'timestamp': {
             'type': six.text_type,
@@ -84,66 +85,22 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
     }
     uri_object_key = 'change_id'
     model_parent_key = 'review_request'
-    last_modified_field = 'timestamp'
     allowed_methods = ('GET',)
     mimetype_list_resource_name = 'review-request-changes'
     mimetype_item_resource_name = 'review-request-change'
 
-    _changed_fields_to_models = {
-        'screenshots': Screenshot,
-        'target_people': User,
-        'target_groups': Group,
-    }
-
     def serialize_fields_changed_field(self, obj, **kwargs):
-        def get_object_cached(model, pk, obj_cache={}):
-            if model not in obj_cache:
-                obj_cache[model] = {}
+        review_request = obj.review_request.get()
+        fields_changed = {}
 
-            if pk not in obj_cache[model]:
-                obj_cache[model][pk] = model.objects.get(pk=pk)
+        for field_name, data in six.iteritems(obj.fields_changed):
+            field_cls = get_review_request_field(field_name)
 
-            return obj_cache[model][pk]
+            if field_cls:
+                field = field_cls(review_request)
 
-        fields_changed = obj.fields_changed.copy()
-
-        for field, data in six.iteritems(fields_changed):
-            if field in ('screenshot_captions', 'file_captions'):
-                fields_changed[field] = [
-                    {
-                        'old': data[pk]['old'][0],
-                        'new': data[pk]['new'][0],
-                        'screenshot': get_object_cached(Screenshot, pk),
-                    }
-                    for pk, values in six.iteritems(data)
-                ]
-            elif field == 'diff':
-                data['added'] = get_object_cached(DiffSet, data['added'][0][2])
-            elif field == 'bugs_closed':
-                for key in ('new', 'old', 'added', 'removed'):
-                    if key in data:
-                        data[key] = [bug[0] for bug in data[key]]
-            elif field in ('summary', 'description', 'testing_done', 'branch',
-                           'status'):
-                if 'old' in data:
-                    data['old'] = data['old'][0]
-
-                if 'new' in data:
-                    data['new'] = data['new'][0]
-            elif field in self._changed_fields_to_models:
-                model = self._changed_fields_to_models[field]
-
-                for key in ('new', 'old', 'added', 'removed'):
-                    if key in data:
-                        data[key] = [
-                            get_object_cached(model, item[2])
-                            for item in data[key]
-                        ]
-            else:
-                # Just ignore everything else. We don't want to have people
-                # depend on some sort of data that we later need to change the
-                # format of.
-                pass
+                fields_changed[field.field_id] = \
+                    field.serialize_change_entry(obj)
 
         return fields_changed
 

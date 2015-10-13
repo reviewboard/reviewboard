@@ -28,6 +28,7 @@ django.mo
 djangojs.mo
 
 # Directories/symlinks
+docs/manual/extending/coderef/python
 reviewboard/htdocs/media/djblets
 reviewboard/htdocs/media/uploaded
 docs/manual/data/htdocs/media/uploaded/
@@ -40,3 +41,4 @@ temp
 .idea
 bak
 reviewboard/scmtools/testdata/hg_repo/.hg/cache/branch2-served
+reviewboard/scmtools/testdata/hg_repo/.hg/cache/tags2-visible

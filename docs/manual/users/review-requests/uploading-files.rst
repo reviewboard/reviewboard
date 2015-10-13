@@ -11,7 +11,7 @@ data, audio, or anything else. This is especially helpful for files that are
 part of a change but can't be represented in diffs, as well as things like
 attaching a screenshot of changes that affect user interfaces.
 
-.. image:: file-attachment.png
+.. image:: file-attachments.png
 
 Many types of files, including text and images, can be displayed on Review
 Board and reviewed by clicking on the areas where you want to add comments.
@@ -41,3 +41,20 @@ There are two ways to upload a file attachment:
 
    Note that this requires a modern HTML5-capable browser, such as
    Google Chrome or Firefox 3.6+.
+
+
+Updating File Attachments
+-------------------------
+
+File attachments have an associated history similar to source code if they
+are updated throughout the life of a review request.
+
+To update a file attachment:
+
+In the file attachment thumbnail for the respective file on the review
+request page, click the :menuselection:`Down Arrow -->Update File` then
+browse for the new version of the file to upload, and optionally change the
+caption for the file.
+
+See :ref:`reviewing-file-attachments` for more information on how file
+attachments with multiple revisions are reviewed.

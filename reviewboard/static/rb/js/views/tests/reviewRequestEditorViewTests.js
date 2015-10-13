@@ -39,9 +39,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
             '         class="field field-text-area editable"></pre>',
             '   </div>',
             '   <div class="content">',
-            '    <pre id="field_my_custom"',
-            '         data-field-id="my_custom"',
-            '         class="field editable"></pre>',
+            '    <div class="field-container">',
+            '     <pre id="field_my_custom"',
+            '          data-field-id="my_custom"',
+            '          class="field editable"></pre>',
+            '    </div>',
             '   </div>',
             '  </div>',
             ' </div>',
@@ -174,8 +176,24 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
 
                 it('Show when saved', function() {
+                    var $summary = view.$el.find('#field_summary');
+
                     expect(view.banner).toBe(null);
-                    editor.trigger('saved');
+
+                    spyOn(reviewRequest.draft, 'ensureCreated')
+                        .andCallFake(function(options, context) {
+                            options.success.call(context);
+                        });
+                    spyOn(reviewRequest.draft, 'save')
+                        .andCallFake(function(options, context) {
+                            options.success.call(context);
+                        });
+
+                    $summary
+                        .inlineEditor('startEdit')
+                        .inlineEditor('setValue', 'New summary')
+                        .inlineEditor('save');
+
                     expect(view.banner).not.toBe(null);
                     expect(view.banner.$el.is(':visible')).toBe(true);
                 });
@@ -183,6 +201,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
             describe('Buttons actions', function() {
                 it('Discard Draft', function() {
+                    view.model.set('hasDraft', true);
                     view.showBanner();
 
                     spyOn(reviewRequest.draft, 'destroy');
@@ -194,6 +213,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 it('Discard Review Request', function() {
                     reviewRequest.set('public', false);
+                    view.model.set('hasDraft', true);
                     view.showBanner();
 
                     spyOn(reviewRequest, 'close')
@@ -207,32 +227,67 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     expect(reviewRequest.close).toHaveBeenCalled();
                 });
 
-                it('Publish', function() {
-                    view.showBanner();
+                describe('Publish', function() {
+                    beforeEach(function() {
+                        view.model.set('hasDraft', true);
 
-                    spyOn(editor, 'publishDraft').andCallThrough();
-                    spyOn(reviewRequest.draft, 'ensureCreated')
-                        .andCallFake(function(options, context) {
-                            options.success.call(context);
+                        spyOn(editor, 'publishDraft').andCallThrough();
+                        spyOn(reviewRequest.draft, 'ensureCreated')
+                            .andCallFake(function(options, context) {
+                                options.success.call(context);
+                            });
+                        spyOn(reviewRequest.draft, 'publish');
+
+                        /* Set up some basic state so that we pass validation. */
+                        reviewRequest.draft.set({
+                            targetGroups: [{
+                                name: 'foo',
+                                url: '/groups/foo'
+                            }],
+                            summary: 'foo',
+                            description: 'foo'
                         });
-                    spyOn(reviewRequest.draft, 'publish');
-
-                    /* Set up some basic state so that we pass validation. */
-                    reviewRequest.draft.set({
-                        targetGroups: [{
-                            name: 'foo',
-                            url: '/groups/foo'
-                        }],
-                        summary: 'foo',
-                        description: 'foo'
                     });
 
-                    $('#btn-draft-publish').click();
+                    it('Basic publishing', function() {
+                        view.showBanner();
 
-                    expect(editor.get('publishing')).toBe(true);
-                    expect(editor.get('pendingSaveCount')).toBe(0);
-                    expect(editor.publishDraft).toHaveBeenCalled();
-                    expect(reviewRequest.draft.publish).toHaveBeenCalled();
+                        $('#btn-draft-publish').click();
+
+                        expect(editor.get('publishing')).toBe(true);
+                        expect(editor.get('pendingSaveCount')).toBe(0);
+                        expect(editor.publishDraft).toHaveBeenCalled();
+                        expect(reviewRequest.draft.publish).toHaveBeenCalled();
+                    });
+
+                    it('With Send E-Mail turned on', function() {
+                        view.model.set('showSendEmail', true);
+                        view.showBanner();
+
+                        $('#btn-draft-publish').click();
+
+                        expect(editor.get('publishing')).toBe(true);
+                        expect(editor.get('pendingSaveCount')).toBe(0);
+                        expect(editor.publishDraft).toHaveBeenCalled();
+                        expect(reviewRequest.draft.publish).toHaveBeenCalled();
+                        expect(reviewRequest.draft.publish.calls[0].args[0].trivial)
+                            .toBe(0);
+                    });
+
+                    it('With Send E-Mail turned off', function() {
+                        view.model.set('showSendEmail', true);
+                        view.showBanner();
+
+                        $('.send-email').prop('checked', false);
+                        $('#btn-draft-publish').click();
+
+                        expect(editor.get('publishing')).toBe(true);
+                        expect(editor.get('pendingSaveCount')).toBe(0);
+                        expect(editor.publishDraft).toHaveBeenCalled();
+                        expect(reviewRequest.draft.publish).toHaveBeenCalled();
+                        expect(reviewRequest.draft.publish.calls[0].args[0].trivial)
+                            .toBe(1);
+                    });
                 });
             });
 
@@ -240,6 +295,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 var $buttons;
 
                 beforeEach(function() {
+                    view.model.set('hasDraft', true);
                     view.showBanner();
 
                     $buttons = view.banner.$buttons;
@@ -626,6 +682,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
             describe('Draft review requests', function() {
                 beforeEach(function() {
+                    view.model.set('hasDraft', true);
                     view.showBanner();
                 });
 
@@ -806,75 +863,6 @@ suite('rb/views/ReviewRequestEditorView', function() {
             expect($filesContainer.find('.file-container').length).toBe(1);
         });
 
-        describe('Importing on render', function() {
-            it('No file attachments', function() {
-                view.render();
-
-                expect(editor.fileAttachments.length).toBe(0);
-            });
-
-            describe('With file attachments', function() {
-                var $thumbnail,
-                    fileAttachment;
-
-                beforeEach(function() {
-                    $thumbnail = $('<div/>')
-                        .addClass(
-                            RB.FileAttachmentThumbnail.prototype.className)
-                        .data('file-id', 42)
-                        .html(RB.FileAttachmentThumbnail.prototype.template(
-                            {
-                                downloadURL: '',
-                                iconURL: '',
-                                deleteImageURL: '',
-                                filename: '',
-                                caption: '',
-                                deleteFileText: 'Delete File',
-                                noCaptionText: 'No caption'
-                            }))
-                        .appendTo($filesContainer);
-
-                    spyOn(RB.FileAttachmentThumbnail.prototype, 'render')
-                        .andCallThrough();
-
-                    expect($filesContainer.find('.file-container').length)
-                        .toBe(1);
-                });
-
-                it('Without caption', function() {
-                    view.render();
-
-                    expect(RB.FileAttachmentThumbnail.prototype.render)
-                        .toHaveBeenCalled();
-                    expect(editor.fileAttachments.length).toBe(1);
-
-                    fileAttachment = editor.fileAttachments.at(0);
-                    expect(fileAttachment.id).toBe(42);
-                    expect(fileAttachment.get('caption')).toBe(null);
-                    expect($filesContainer.find('.file-container').length)
-                        .toBe(1);
-                });
-
-                it('With caption', function() {
-                    $thumbnail.find('.file-caption .edit')
-                        .removeClass('empty-caption')
-                        .text('my caption');
-
-                    view.render();
-
-                    expect(RB.FileAttachmentThumbnail.prototype.render)
-                        .toHaveBeenCalled();
-                    expect(editor.fileAttachments.length).toBe(1);
-
-                    fileAttachment = editor.fileAttachments.at(0);
-                    expect(fileAttachment.id).toBe(42);
-                    expect(fileAttachment.get('caption')).toBe('my caption');
-                    expect($filesContainer.find('.file-container').length)
-                        .toBe(1);
-                });
-            });
-        });
-
         describe('Events', function() {
             var $thumbnail,
                 fileAttachment;
@@ -939,10 +927,12 @@ suite('rb/views/ReviewRequestEditorView', function() {
             it('No screenshots', function() {
                 view.render();
 
-                expect(editor.screenshots.length).toBe(0);
+                expect(editor.get('screenshots').length).toBe(0);
             });
 
             it('With screenshots', function() {
+                var screenshots = editor.get('screenshots');
+
                 $screenshotsContainer.append(
                     screenshotThumbnailTemplate({
                         id: 42
@@ -955,8 +945,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 expect(RB.ScreenshotThumbnail.prototype.render)
                     .toHaveBeenCalled();
-                expect(editor.screenshots.length).toBe(1);
-                expect(editor.screenshots.at(0).id).toBe(42);
+                expect(screenshots.length).toBe(1);
+                expect(screenshots.at(0).id).toBe(42);
             });
         });
 
@@ -972,7 +962,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 view.render();
 
-                screenshot = editor.screenshots.at(0);
+                screenshot = editor.get('screenshots').at(0);
             });
 
             describe('beginEdit', function() {

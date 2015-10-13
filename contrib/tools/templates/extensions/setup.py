@@ -17,7 +17,7 @@ setup(
             '%s = {{package_name}}.extension:{{class_name}}' % PACKAGE,
     },
     package_data={
-        '{{package_name}}': [
+        b'{{package_name}}': [
             'templates/{{package_name}}/*.txt',
             'templates/{{package_name}}/*.html',
         ],

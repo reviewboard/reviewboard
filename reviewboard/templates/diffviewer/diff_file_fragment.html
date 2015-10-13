@@ -77,7 +77,11 @@
 {%   if not file.is_new_file %}
    <th colspan="2"><a name="{{file.index}}" class="file-anchor"></a>{{ file.depot_filename }}</th>
 {%   endif %}
-   <th colspan="2">{{file.dest_filename}}{% if file.moved %}{% trans " (moved)" %}{% elif file.copied %}{% trans " (copied)" %}{% endif %}</th>
+   <th colspan="2">
+{%   if file.is_new_file %}
+    <a name="{{file.index}}" class="file-anchor"></a>
+{%   endif %}
+    {{file.dest_filename}}{% if file.moved %}{% trans " (moved)" %}{% elif file.copied %}{% trans " (copied)" %}{% endif %}</th>
 {%  endif %}{# file.dest_filename == file.depot_filename #}
   </tr>
   <tr class="revision-row">
@@ -86,7 +90,7 @@
 {%  else %}
 {%   if not file.is_new_file %}
    <th></th>
-   <th>
+   <th class="revision-col">
 {%    if download_orig_url %}
     <a class="rb-icon rb-icon-download download-link" href="{{download_orig_url}}" alt="{% trans 'Download' %}" title="{% trans 'Download' %}"></a>
 {%    endif %}
@@ -94,14 +98,16 @@
     </th>
 {%   endif %}
    <th></th>
-   <th>
 {%   if not file.deleted %}
+   <th class="revision-col">
 {%    if download_modified_url %}
     <a class="rb-icon rb-icon-download download-link" href="{{download_modified_url}}" alt="{% trans 'Download' %}" title="{% trans 'Download' %}"></a>
 {%    endif %}
     {{file.dest_revision}}
-{%   endif %}
    </th>
+{%   else %}
+   <th></th>
+{%   endif %}
 {%  endif %}{# num_changes and moved #}
   </tr>
  </thead>
@@ -176,7 +182,7 @@
    <td colspan="4">{% trans "No changes were made to this file." %}</td>
   </tr>
  </tbody>
-{% elif file.newfile and file.num_changes == 0 %}
+{% elif file.newfile and file.num_chunks == 0 %}
  <tbody class="new-empty-file">
   <tr>
    <td colspan="4">{% trans "This is an empty file." %}</td>
@@ -205,7 +211,7 @@
 {%  for chunk in file.chunks %}
 {%   if not chunk.collapsable or not collapseall %}
  <tbody id="chunk{{file.index}}.{{chunk.index}}"{% attr "class" %}{% if chunk.change != "equal" %}{{chunk.change}}{% if chunk.meta.whitespace_chunk%} whitespace-chunk{% endif %}{% else %}{% if chunk.collapsable %} collapsable{% endif %}{% endif %}{% if standalone %} loaded{% endif %}{% endattr %}>
-{%    diff_lines file chunk standalone line_fmt anchor_fmt begin_collapse_fmt end_collapse_fmt moved_fmt %}
+{%    diff_lines file.index chunk standalone line_fmt anchor_fmt begin_collapse_fmt end_collapse_fmt moved_fmt %}
  </tbody>
 {%   else %}
  <tbody class="diff-header" id="collapsed-chunk{{file.index}}.{{chunk.index}}">

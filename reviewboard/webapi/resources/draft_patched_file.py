@@ -10,6 +10,8 @@ from reviewboard.webapi.resources.base_patched_file import \
 
 class DraftPatchedFileResource(BasePatchedFileResource):
     """Provides the patched file corresponding to a draft file diff."""
+    added_in = '2.0.4'
+
     name = 'draft_patched_file'
 
     def get_filediff(self, request, *args, **kwargs):
@@ -22,7 +24,7 @@ class DraftPatchedFileResource(BasePatchedFileResource):
             return DOES_NOT_EXIST
 
         if not draft_resource.has_access_permissions(request, draft):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         try:
             return resources.draft_filediff.get_object(request, *args,

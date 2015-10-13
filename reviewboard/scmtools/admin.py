@@ -16,9 +16,11 @@ from reviewboard.scmtools.models import Repository, Tool
 
 
 class RepositoryAdmin(admin.ModelAdmin):
-    list_display = ('__str__', 'path', 'hosting', '_visible', 'inline_actions')
+    list_display = ('name', 'path', 'hosting', '_visible', 'inline_actions')
     list_select_related = ('hosting_account',)
+    search_fields = ('name', 'path', 'mirror_path', 'tool__name')
     raw_id_fields = ('local_site',)
+    ordering = ('name',)
     fieldsets = (
         (_('General Information'), {
             'fields': ('name', 'visible',),

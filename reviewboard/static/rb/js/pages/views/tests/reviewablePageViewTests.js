@@ -34,6 +34,10 @@ suite('rb/pages/views/ReviewablePageView', function() {
         pageView.render();
     });
 
+    afterEach(function() {
+        pageView.remove();
+    });
+
     describe('Public objects', function() {
         it('reviewRequest', function() {
             expect(pageView.reviewRequest).not.toBe(undefined);

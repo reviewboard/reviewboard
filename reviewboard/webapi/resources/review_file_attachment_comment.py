@@ -22,6 +22,8 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     changed on this list. However, if the review is already published,
     then no changes can be made.
     """
+    added_in = '1.6'
+
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     policy_id = 'review_file_attachment_comment'
     model_parent_key = 'review'
@@ -50,6 +52,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
                                'file_attachment_id is diffed. The comment '
                                'applies to the diff between these two '
                                'attachments.',
+                'added_in': '2.0',
             },
         }, **BaseFileAttachmentCommentResource.OPTIONAL_CREATE_FIELDS),
         allow_unknown=True
@@ -69,7 +72,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
             return DOES_NOT_EXIST
 
         if not resources.review.has_modify_permissions(request, review):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         try:
             file_attachment = \
@@ -136,7 +139,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
             return self.update_issue_status(request, self, *args, **kwargs)
 
         if not resources.review.has_modify_permissions(request, review):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         self.update_comment(file_comment, **kwargs)
 

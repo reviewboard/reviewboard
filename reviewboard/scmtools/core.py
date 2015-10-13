@@ -1,10 +1,12 @@
 from __future__ import unicode_literals
 
 import base64
+import inspect
 import logging
 import os
 import subprocess
 import sys
+import warnings
 
 from django.utils import six
 from django.utils.encoding import python_2_unicode_compatible
@@ -75,12 +77,13 @@ class Branch(object):
 
 class Commit(object):
     def __init__(self, author_name='', id='', date='', message='', parent='',
-                 diff=None):
+                 diff=None, base_commit_id=None):
         self.author_name = author_name
         self.id = id
         self.date = date
         self.message = message
         self.parent = parent
+        self.base_commit_id = base_commit_id
 
         # This field is only used when we're actually fetching the commit from
         # the server to create a new review request, and isn't part of the
@@ -146,12 +149,23 @@ class SCMTool(object):
     def __init__(self, repository):
         self.repository = repository
 
-    def get_file(self, path, revision=None):
+    def get_file(self, path, revision=None, base_commit_id=None,
+                 **kwargs):
         raise NotImplementedError
 
-    def file_exists(self, path, revision=HEAD):
+    def file_exists(self, path, revision=HEAD, base_commit_id=None,
+                    **kwargs):
+        argspec = inspect.getargspec(self.get_file)
+
         try:
-            self.get_file(path, revision)
+            if argspec.keywords is None:
+                warnings.warn('SCMTool.get_file() must take keyword '
+                              'arguments, signature for %s is deprecated.'
+                              % self.name, DeprecationWarning)
+                self.get_file(path, revision)
+            else:
+                self.get_file(path, revision, base_commit_id=base_commit_id)
+
             return True
         except FileNotFoundError:
             return False
@@ -229,9 +243,9 @@ class SCMTool(object):
         env = os.environ.copy()
 
         if local_site_name:
-            env['RB_LOCAL_SITE'] = local_site_name
+            env[b'RB_LOCAL_SITE'] = local_site_name.encode('utf-8')
 
-        env['PYTHONPATH'] = ':'.join(sys.path)
+        env[b'PYTHONPATH'] = (':'.join(sys.path)).encode('utf-8')
 
         return subprocess.Popen(command,
                                 env=env,

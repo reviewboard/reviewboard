@@ -1,3 +1,9 @@
+(function() {
+
+
+var parentProto = RB.BaseResource.prototype;
+
+
 /*
  * A diff to be uploaded to a server.
  *
@@ -6,15 +12,28 @@
  * It is expected that parentObject will be set to a ReviewRequest instance.
  */
 RB.Diff = RB.BaseResource.extend({
-    defaults: {
-        diff: null,
-        parentDiff: null,
-        basedir: null
+    defaults: function() {
+        return _.defaults({
+            diff: null,
+            parentDiff: null,
+            basedir: null
+        }, parentProto.defaults());
     },
 
-    payloadFileKeys: ['path', 'parent_diff_path'],
-
     rspNamespace: 'diff',
+
+    attrToJsonMap: {
+        diff: 'path',
+        parentDiff: 'parent_diff_path'
+    },
+
+    serializedAttrs: [
+        'basedir',
+        'diff',
+        'parentDiff'
+    ].concat(parentProto.serializedAttrs),
+
+    payloadFileKeys: ['path', 'parent_diff_path'],
 
     listKey: 'diffs',
 
@@ -30,21 +49,8 @@ RB.Diff = RB.BaseResource.extend({
         }
 
         return rsp.err.msg;
-    },
-
-    toJSON: function() {
-        var payload;
-
-        if (this.isNew()) {
-            payload = {
-                basedir: this.get('basedir'),
-                path: this.get('diff'),
-                parent_diff_path: this.get('parentDiff')
-            };
-        } else {
-            payload = RB.BaseResource.prototype.toJSON.apply(this, arguments);
-        }
-
-        return payload;
     }
 });
+
+
+})();

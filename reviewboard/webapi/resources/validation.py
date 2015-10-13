@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
 from djblets.util.decorators import augment_method_from
-from djblets.webapi.resources import RootResource as DjbletsRootResource
+from djblets.webapi.resources.root import RootResource as DjbletsRootResource
 
 from reviewboard.webapi.decorators import (webapi_check_local_site,
                                            webapi_check_login_required)
@@ -10,6 +10,8 @@ from reviewboard.webapi.resources import resources
 
 class ValidationResource(DjbletsRootResource):
     """Links to validation resources."""
+    added_in = '2.0'
+
     name = 'validation'
 
     def __init__(self, *args, **kwargs):

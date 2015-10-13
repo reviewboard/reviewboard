@@ -21,6 +21,8 @@ from reviewboard.webapi.resources import resources
 
 class BaseFileAttachmentResource(WebAPIResource):
     """A base resource representing file attachments."""
+    added_in = '1.6'
+
     model = FileAttachment
     name = 'file_attachment'
     fields = {
@@ -53,29 +55,39 @@ class BaseFileAttachmentResource(WebAPIResource):
         },
         'icon_url': {
             'type': six.text_type,
-            'description': 'The URL to a 24x24 icon representing this file.'
+            'description': 'The URL to a 24x24 icon representing this file. '
+                           'The use of these icons is deprecated and this '
+                           'property will be removed in a future version.',
+            'deprecated_in': '2.5',
         },
         'mimetype': {
             'type': six.text_type,
             'description': 'The mimetype for the file.',
+            'added_in': '2.0',
         },
         'thumbnail': {
             'type': six.text_type,
             'description': 'A thumbnail representing this file.',
+            'added_in': '1.7',
         },
         'review_url': {
             'type': six.text_type,
             'description': 'The URL to a review UI for this file.',
+            'added_in': '1.7',
+        },
+        'revision': {
+            'type': int,
+            'description': 'The revision of the file attachment.',
+            'added_in': '2.5',
         },
         'attachment_history_id': {
             'type': int,
             'description': 'ID of the corresponding FileAttachmentHistory.',
-            'added_in': '2.1',
+            'added_in': '2.5',
         },
     }
 
     uri_object_key = 'file_attachment_id'
-    autogenerate_etags = True
 
     def get_queryset(self, request, is_list=False, *args, **kwargs):
         review_request = resources.review_request.get_object(
@@ -108,15 +120,6 @@ class BaseFileAttachmentResource(WebAPIResource):
     def serialize_absolute_url_field(self, obj, request, **kwargs):
         return request.build_absolute_uri(obj.get_absolute_url())
 
-    def serialize_caption_field(self, obj, **kwargs):
-        # We prefer 'caption' here, because when creating a new file
-        # attachment, it won't be full of data yet (and since we're posting
-        # to file-attachments/, it doesn't hit DraftFileAttachmentResource).
-        # DraftFileAttachmentResource will prefer draft_caption, in case people
-        # are changing an existing one.
-
-        return obj.caption or obj.draft_caption
-
     def serialize_review_url_field(self, obj, **kwargs):
         if obj.review_ui:
             review_request = obj.get_review_request()
@@ -133,6 +136,9 @@ class BaseFileAttachmentResource(WebAPIResource):
                 })
 
         return ''
+
+    def serialize_revision_field(self, obj, *args, **kwargs):
+        return obj.attachment_revision
 
     def has_access_permissions(self, request, obj, *args, **kwargs):
         return obj.get_review_request().is_accessible_by(request.user)
@@ -164,7 +170,7 @@ class BaseFileAttachmentResource(WebAPIResource):
                 'type': int,
                 'description': 'ID of the corresponding '
                                'FileAttachmentHistory.',
-                'added_in': '2.1',
+                'added_in': '2.5',
             },
         },
     )
@@ -192,7 +198,7 @@ class BaseFileAttachmentResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         form_data = request.POST.copy()
         form = UploadFileForm(review_request, form_data, request.FILES)
@@ -228,6 +234,7 @@ class BaseFileAttachmentResource(WebAPIResource):
             'thumbnail': {
                 'type': six.text_type,
                 'description': 'The thumbnail data for the file.',
+                'added_in': '1.7.7',
             },
         }
     )
@@ -257,7 +264,7 @@ class BaseFileAttachmentResource(WebAPIResource):
                 resources.review_request_draft.prepare_draft(request,
                                                              review_request)
             except PermissionDenied:
-                return self._no_access_error(request.user)
+                return self.get_no_access_error(request)
 
             file.draft_caption = caption
             file.save()
@@ -293,13 +300,13 @@ class BaseFileAttachmentResource(WebAPIResource):
 
         if not self.has_delete_permissions(request, file_attachment, *args,
                                            **kwargs):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         try:
             draft = resources.review_request_draft.prepare_draft(
                 request, review_request)
         except PermissionDenied:
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if file_attachment.attachment_history_id is None:
             draft.inactive_file_attachments.add(file_attachment)

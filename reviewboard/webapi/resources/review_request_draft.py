@@ -53,7 +53,6 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     policy_id = 'review_request_draft'
     singleton = True
     model_parent_key = 'review_request'
-    last_modified_field = 'last_updated'
     mimetype_item_resource_name = 'review-request-draft'
     fields = {
         'id': {
@@ -87,6 +86,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                      'ReviewRequestResource'],
             'description': 'The list of review requests that this '
                            'review request depends on.',
+            'added_in': '1.7.8',
         },
         'changedescription': {
             'type': six.text_type,
@@ -122,6 +122,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': dict,
             'description': 'Extra data as part of the draft. '
                            'This can be set by the API or extensions.',
+            'added_in': '2.0',
         },
         'public': {
             'type': bool,
@@ -194,6 +195,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': 'The new list of dependencies of this review '
                            'request.',
+            'added_in': '1.7.8',
         },
         'changedescription': {
             'type': six.text_type,
@@ -223,6 +225,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                            'text fields. The contents will be converted '
                            'to the requested type in the payload, but '
                            'will not be saved as that type.',
+            'added_in': '2.0.9',
         },
         'public': {
             'type': bool,
@@ -266,6 +269,12 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                            'testing_done_text_type instead.',
             'added_in': '2.0',
             'deprecated_in': '2.0.12',
+        },
+        'trivial': {
+            'type': bool,
+            'description': 'Determines if the review request publish '
+                           'will not send an email.',
+            'added_in': '2.5',
         },
         'update_from_commit_id': {
             'type': bool,
@@ -370,7 +379,8 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         allow_unknown=True
     )
     def update(self, request, always_save=False, local_site_name=None,
-               update_from_commit_id=False, extra_fields={}, *args, **kwargs):
+               update_from_commit_id=False, trivial=None,
+               extra_fields={}, *args, **kwargs):
         """Updates a draft of a review request.
 
         This will update the draft with the newly provided data.
@@ -401,7 +411,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         try:
             draft = self.prepare_draft(request, review_request)
         except PermissionDenied:
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if (commit_id and commit_id != review_request.commit_id and
             commit_id != draft.commit_id):
@@ -480,11 +490,11 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
         if request.POST.get('public', False):
             try:
-                review_request.publish(user=request.user)
-            except PublishError as e:
-                return PUBLISH_ERROR.with_message(e.msg)
+                review_request.publish(user=request.user, trivial=trivial)
             except NotModifiedError:
                 return NOTHING_TO_PUBLISH
+            except PublishError as e:
+                return PUBLISH_ERROR.with_message(six.text_type(e))
 
         return 200, {
             self.item_result_key: draft,
@@ -512,7 +522,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_delete_permissions(request, draft, *args, **kwargs):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         draft.delete()
 

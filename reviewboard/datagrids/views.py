@@ -25,7 +25,7 @@ from reviewboard.site.decorators import check_local_site_access
 def all_review_requests(request,
                         local_site=None,
                         template_name='datagrids/datagrid.html'):
-    """Displays a list of all review requests."""
+    """Display a list of all review requests."""
     datagrid = ReviewRequestDataGrid(
         request,
         ReviewRequest.objects.public(user=request.user,
@@ -44,9 +44,10 @@ def all_review_requests(request,
 def dashboard(request,
               template_name='datagrids/dashboard.html',
               local_site=None):
-    """
-    The dashboard view, showing review requests organized by a variety of
-    lists, depending on the 'view' parameter.
+    """Display the dashboard.
+
+    This shows review requests organized by a variety of lists, depending on
+    the 'view' parameter.
 
     Valid 'view' parameters are:
 
@@ -67,9 +68,7 @@ def group(request,
           name,
           template_name='datagrids/datagrid.html',
           local_site=None):
-    """
-    A list of review requests belonging to a particular group.
-    """
+    """Display a list of review requests belonging to a particular group."""
     # Make sure the group exists
     group = get_object_or_404(Group, name=name, local_site=local_site)
 
@@ -84,7 +83,7 @@ def group(request,
                                        user=request.user,
                                        status=None,
                                        with_counts=True),
-        _("Review requests for %s") % name,
+        _('Review requests for %s') % group.display_name,
         local_site=local_site)
 
     return datagrid.render_to_response(template_name)
@@ -95,7 +94,7 @@ def group(request,
 def group_list(request,
                local_site=None,
                template_name='datagrids/datagrid.html'):
-    """Displays a list of all review groups."""
+    """Display a list of all review groups."""
     grid = GroupDataGrid(request, local_site=local_site)
     return grid.render_to_response(template_name)
 
@@ -106,9 +105,7 @@ def group_members(request,
                   name,
                   template_name='datagrids/datagrid.html',
                   local_site=None):
-    """
-    A list of users registered for a particular group.
-    """
+    """Display a list of users registered for a particular group."""
     # Make sure the group exists
     group = get_object_or_404(Group,
                               name=name,
@@ -132,7 +129,7 @@ def submitter(request,
               grid=None,
               template_name='datagrids/datagrid.html',
               local_site=None):
-    """A user's profile page, showing their review requests and reviews.
+    """Display a user's profile, showing their review requests and reviews.
 
     The 'grid' parameter determines which is displayed, and can take on the
     following values:
@@ -158,9 +155,9 @@ def submitter(request,
 
     datagrid = datagrid_cls(request, user, local_site=local_site)
     datagrid.tabs = [
-        (UserPageReviewRequestDataGrid.tab_title(username),
+        (UserPageReviewRequestDataGrid.tab_title,
          reverse('user', args=[username])),
-        (UserPageReviewsDataGrid.tab_title(username),
+        (UserPageReviewsDataGrid.tab_title,
          reverse('user-grid', args=[username, 'reviews'])),
     ]
 
@@ -172,6 +169,6 @@ def submitter(request,
 def users_list(request,
                local_site=None,
                template_name='datagrids/datagrid.html'):
-    """Displays a list of all users."""
+    """Display a list of all users."""
     grid = UsersDataGrid(request, local_site=local_site)
     return grid.render_to_response(template_name)

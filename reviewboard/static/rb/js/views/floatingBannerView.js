@@ -31,9 +31,18 @@ RB.FloatingBannerView = Backbone.View.extend({
      * Updates the size of the banner to match the spacer.
      */
     _updateSize: function() {
+        var rect;
+
         if (this._$floatSpacer !== null) {
-            this.$el.width(this._$floatSpacer.parent().width() -
-                           this.$el.getExtents('bpm', 'lr'));
+            if (this.$el.hasClass('floating')) {
+                rect = this._$floatSpacer.parent()[0].getBoundingClientRect();
+
+                this.$el.width(
+                    Math.ceil(rect.width) -
+                    this.$el.getExtents('bpm', 'lr'));
+            } else {
+                this.$el.width('auto');
+            }
         }
     },
 
@@ -56,14 +65,6 @@ RB.FloatingBannerView = Backbone.View.extend({
             outerHeight;
 
         if (this.$el.parent().length === 0) {
-            return;
-        }
-
-        /*
-         * Something about the below causes the "Publish" button to never
-         * show up on IE8. Turn it into a fixed box on IE.
-         */
-        if ($.browser.msie) {
             return;
         }
 

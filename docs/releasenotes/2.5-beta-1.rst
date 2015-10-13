@@ -1,0 +1,485 @@
+=====================================
+Review Board 2.5 Beta 1 Release Notes
+=====================================
+
+**Release date**: March 17, 2015
+
+
+This release contains all bug fixes and features found in Review Board version
+:doc:`2.0.15 <2.0.15>`.
+
+
+Installation
+============
+
+To install this release, run the following::
+
+    $ sudo easy_install \
+        -f http://downloads.reviewboard.org/releases/ReviewBoard/2.5/ \
+        -U ReviewBoard
+
+We **do not** recommend upgrading a production server with this version of
+Review Board. It's best to install on a test server, with a copy of your
+production database, in case there are any major problems.
+
+
+Upgrade Notes
+=============
+
+This release contains database schema changes to the following tables:
+
+* ``attachments_fileattachment``
+* ``diffviewer_filediffdata``
+* ``diffviewer_filediff``
+* ``reviews_group``
+* ``reviews_reviewrequest``
+
+This will take some time to migrate the database, particularly on large
+installs. Please test the upgrade on a copy of your database first, to
+ensure the upgrade is smooth and to time how long the upgrade takes.
+
+Do **not** cancel the upgrade on a production system for any reason.
+
+
+Compatibility Changes
+=====================
+
+* Upgraded to jQuery 1.11.
+
+  This release of jQuery offers performance and feature improvements we'll be
+  relying upon in the UI. If you're an extension author, you may need to check
+  that your extension continues to work properly.
+
+
+New User Features
+=================
+
+Expandable Diff Fragments in Reviews
+------------------------------------
+
+Fragments of diffs shown in reviews can now be expanded and collapsed, just
+like in the diff viewer. When hovering over the fragment, controls will be
+shown for expanding by 20 lines, expanding all lines, or expanding to the
+nearest function/class header.
+
+:bug:`2041`
+
+
+Double Click Lines to Create Comments
+-------------------------------------
+
+Double-clicking a line in the diff viewer will now create a comment on that
+line. You can still click-and-drag the line numbers to select multiple lines,
+but for a quick one-line comment, a double-click may be faster. It's also more
+familiar to those coming from services like GitHub or Bugzilla Splinter.
+
+Patch by Mike Conley.
+
+
+Revisioned File Attachments
+---------------------------
+
+File attachments on a review request can now be replaced without having to
+delete an old attachment and upload a new one. Simply hover over the down
+arrow on an attachment thumbnail and click :guilabel:`Update` to replace the
+attachment. The new attachment will take the place of the old one.
+
+Reviewers can view every revision of an attachment, and can diff between these
+attachments.
+
+Deleting a file attachment removes all revisions from that review request.
+
+Based on patches by Ryan Done and Vlodymyr Lyubinets.
+
+:bug:`800`
+
+
+Image Diffs for File Attachments
+--------------------------------
+
+As mentioned, you can now diff between file attachments. This includes images!
+You can compare any two revisions of an image and leave comments on the
+comparison.
+
+There are four comparison modes available:
+
+* **Difference:** Color differences between the two images will be shown.
+  Every pixel that's the same between the images will be shown in black.
+  Added pixels are shown in their original color. Differences in pixel values
+  are also shown.
+
+* **Onion skinning:** By using a transparency slider, you can see subtle
+  changes made between the images. The slider will change the transparency
+  of the modified image. This helps to see if any pixels move, disappear,
+  or otherwise change.
+
+* **Split:** The images will overlap, and a horizontal slider will control
+  how much of each image you're seeing, allowing you to compare the images
+  incrementally.
+
+* **Two-Up:** The images will be displayed side-by-side, unaltered. You will
+  only be able to select regions to comment on the modified file, but that
+  same area for both will be shown in the review.
+
+
+Movable/Resizable Image Comment Regions
+---------------------------------------
+
+You can already leave a comment on a region of an image, or a PDF file (if
+using `Power Pack`_). Now, you can move or resize that comment region before
+you publish it. Very handy if you realize you want to encompass a larger or
+smaller size.
+
+Patch by Stanley Yeo.
+
+.. _`Power Pack`: https://www.reviewboard.org/powerpack/
+
+
+Improved Review Dialog
+----------------------
+
+* Fields are now instant-apply.
+
+  The review dialog's fields are now instant-apply, meaning that you no longer
+  need to save the draft after making changes. Instead, every field will
+  save individually, just like fields on a review request.
+
+  This helps to prevent data loss if the browser were to crash or the page
+  were to close after making edits to the review, so long as any modified
+  fields were saved after editing.
+
+  The dialog no longer has individual :guilabel:`Save` and :guilabel:`Cancel`
+  buttons. They have been replaced with a :guilabel:`Close` button.
+
+* Added Markdown previews for text.
+
+  The text fields behave much like those for review replies. They now
+  show the rendered Markdown content, rather than the source text, by default.
+  Clicking the field or its pencil icon will allow the field to be edited.
+
+  This gives a much more accurate idea of how the review will look when
+  published.
+
+
+Deeper Bug Tracker Support
+--------------------------
+
+This release adds the foundation for deeper bug tracker support. Currently,
+this supports JIRA, GitHub, or modern versions of Bugzilla.
+
+When a repository is configured to use a supported bug tracker, hovering
+over a bug number will show an info box containing the bug's summary,
+status, and description.
+
+Based on work by Tomi Äijö.
+
+:bug:`193`
+
+
+API Tokens
+----------
+
+Users can now configure multiple API tokens, which are a more secure way
+of authenticating with the web API. API tokens don't require the user's
+password, and can be easily revoked at any time.
+
+Tokens can restrict the client's access to the API. Through a simple
+drop-down menu, an API token can be set to allow full read/write access to
+the API, read-only access, or a :ref:`custom policy <api-token-policies>`.
+
+Custom API token policies allow for very fine-grained access to the API,
+limiting what methods can be performed on exactly which resources, even
+down to the resource ID level.
+
+To add API tokens, simply open the My Account page, click
+:guilabel:`API Tokens`, and then :guilabel:`Generate a new API token`.
+That token can then be configured and used immediately.
+
+RBTools 0.6.3 and higher support authenticating with API tokens.
+
+
+Display of All Reviews by a User
+--------------------------------
+
+The user page now has a tab for showing all reviews of a change that were
+posted by the user.
+
+Patch by Tami Forrester.
+
+
+Easier Diff Updating
+--------------------
+
+The dialog for uploading a new diff on an existing review request now works
+much like diff uploading on the New Review Request page. Diffs can be
+drag-and-dropped onto the page, or browsed as before. The diff will be
+validated prior to upload, prompting for a parent diff or other
+information only if needed.
+
+
+Smart Pagination for Lists of Users
+-----------------------------------
+
+The Users page, which displays a list of all users on the server, now has
+a smarter alphabetical paginator. This makes it much easier to jump to users
+whose usernames start with a specific letter, number, or symbol.
+
+Patch by Ryan Done.
+
+:bug:`829`
+
+
+Improved Support for Trophies
+-----------------------------
+
+There's now a permanent record of all trophies received by your user.
+We're planning to add support for viewing all of your trophies in a
+future release.
+
+It's also possible for extensions to create new types of trophies.
+
+
+New Administration Features
+===========================
+
+Webhooks
+--------
+
+Review Board now has support for configuring webhooks_.
+
+Review Board can now be set to post review request information to specified
+URLs when publishing review requests, closing them, or reopening them.
+
+It also supports sending review API payloads for publishing a review or a
+reply to a review. The payload will also include all comments filed on the
+review.
+
+The payloads can be sent in JSON, XML, or HTTP form data formats. They can
+also be completely replaced by a custom template, powered by a subset of
+Django's templating language. This can make use of the original payload's
+contents as variables, allowing any custom payload format to be sent.
+
+The HTTP requests will contain a ``X-ReviewBoard-Event`` header that lists the
+event name, and a standard ``X-Hub-Signature`` header which contains a HMAC
+signaure of the payload. If the Webhook is configured with a "secret," that
+secret will be used as the key for the HMAC digest.
+
+Webhooks can be configured to be global across all repositories, tied to
+specific repositories, or to review requests/reviews not associated with
+a repsoitory. They can also be tied to any number of events.
+
+.. _webhooks: http://en.wikipedia.org/wiki/Webhook
+
+
+Manage Admin Widgets
+--------------------
+
+Widgets on the administrator dashboard can now be added or removed.
+
+This allows the dashboard to contain only the information useful to the
+administrator. To remove a widget, simply click the :guilabel:`X` on a widget.
+To add, click the :guilabel:`Add Small Widgets` or
+:guilabel:`Add Large Widgets` link in the desired column.
+
+Patch by Stephanie Su.
+
+
+E-Mail Improvements
+-------------------
+
+E-mail updates from review requests can now be sent both to the configured
+mailing list of a review group *and* to all members of that review group,
+instead of just one or the other. This can be configured separately for each
+review group.
+
+
+OpenStack Swift Support
+-----------------------
+
+Added support for `OpenStack Swift`_ for file storage.
+
+Swift is an alternative to Amazon S3 for private clouds.
+
+Patch by Omar Ali.
+
+.. _`OpenStack Swift`: http://swift.openstack.org/
+
+
+Support for Review Board Gateway
+--------------------------------
+
+Review Board Gateway is our upcoming standalone service that wraps your Git
+repositories with a fully-featured API, making it easier to integrate them
+with Review Board. Git repositories backed by Review Board Gateway include
+full support for browsing and posting commits in the New Review Request page.
+Future releases will provide even deeper integration, making it easy to
+manage all your repositories.
+
+Review Board Gateway is not yet released. We'll make an announcement as soon
+as it's ready.
+
+Patch by Jessica Yuen.
+
+
+Performance Improvements
+========================
+
+* Reduced the amount of work needed to compute settings on each request,
+  speeding up responses.
+
+* Reduced storage and processing requirements for stored diffs.
+
+  We've changed the storage mode used for diffs, reducing their
+  storage requirements by an average of 80%, and reducing both diff
+  generation and uploading times.
+
+  Existing diffs will be converted on-the-fly when accessed. Running
+  ``rb-site manage /path/to/site condensediffs`` will convert all stored
+  diffs.
+
+
+Usability Improvements
+======================
+
+* The username in the navigation bar at the top of the page now links
+  to the user's profile page instead of the preferences page.
+
+  Patch by Jessica Qian.
+
+
+Extensions
+==========
+
+AdminWidgetHook
+---------------
+
+:ref:`admin-widget-hook` allows extensions to register widgets to be shown in
+the administration UI. These hooks will be available for administrators to add
+to the dashboard. Widgets are automatically removed when the extension is
+disabled.
+
+Patch by Justin Maillet.
+
+
+WebAPICapabilitiesHook
+----------------------
+
+:ref:`webapi-capabilities-hook` allows extensions to register custom
+capability flags to show in the API's :ref:`webapi2.0-root-resource`. This
+helps clients of the API that support the extension to query its capabilities
+without loading a custom resource.
+
+Patch by Justin Maillet.
+
+
+Web API
+=======
+
+* The API now supports authentication with API tokens.
+
+  See the :ref:`API authentication <2.0-authenticating>` documentation
+  for instructions on logging in using API tokens.
+
+* Added support for returning only certain fields or links in the API.
+
+  API resources now support a couple new query arguments for limiting the
+  results in a payload, in order to reduce database queries and payload
+  sizes.
+
+  The ``?only-fields=`` query argument limits the returned fields in the
+  payload to the comma-separated list of field names. If the value is
+  blank, then no fields will be returned, leaving only links.
+
+  Likewise, the ``?only-links=`` query argument limits the returned links in
+  the payload. It behaves exactly like ``?only-fields=``.
+
+* Added :ref:`webapi2.0-hosting-service-list-resource` for accessing
+  information on registered hosting services.
+
+  This resource exposes information on each hosting service that can be
+  used with Review Board. Right now, the information is pretty basic,
+  but it will be used down the road to provide access to information
+  and functionality on the hosting services.
+
+  It also links to all associated hosting service accounts and local
+  configured repositories.
+
+  Note that this resource's payload data is not yet considered stable, and is
+  subject to change in future releases.
+
+* Added :ref:`webapi2.0-remote-repository-list-resource` for listing all
+  available remote repositories on a hosting service.
+
+  Repositories can be filtered by the owner, type of owner (organization or
+  user), and service-specific filters.
+
+  Note that this resource isn't available for all hosting services, and the
+  API is not yet considered stable.
+
+* :ref:`webapi2.0-hosting-service-account-list-resource` now allows for
+  filtering by username or hosting service ID.
+
+  The list resource now takes ``?username=`` and ``?service=`` arguments for
+  filtering the resulting list by the username and/or service ID.
+
+* Added :ref:`webapi2.0-api-token-list-resource` for working with your user's
+  list of API tokens.
+
+  This resource makes it easy to fetch your user's list of API tokens,
+  to create new tokens, update existing tokens, and delete tokens.
+
+  This resource is only accessible if using a username and password for
+  authentication, and cannot be accessed if using an API token. This is to
+  prevent a client with a valid read-only token to fetch the list of tokens
+  and swap out the one used for authentication.
+
+
+Bug Fixes
+=========
+
+Review Requests
+---------------
+
+* Fixed some syntax highlighting issues with entering Markdown in text
+  fields.
+
+* The issue summaries on a review request no longer show raw Markdown
+  source.
+
+  Patch by Teresa Fan.
+
+* Fixed downloading raw diffs with commas in their filenames on Chrome.
+  (:bug:`3704`)
+
+  Patch by Chester Li.
+
+
+Repositories
+------------
+
+* Fixed an error when invoking a repository hook for closing review requests
+  when the referenced review request was not yet published.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Chester Li
+* Christian Hammond
+* David Trowbridge
+* Jessica Qian
+* Jessica Yuen
+* Justin Maillet
+* Mark Russell
+* Mike Conley
+* Olessia Karpova
+* Omar Ali
+* Ryan Done
+* Stanley Yeo
+* Stephanie Su
+* Tami Forrester
+* Teresa Fan
+* Tomi Äijö
+* Volodymyr Lyubinets
+* Wu Di

@@ -1,3 +1,5 @@
+.. _clean-commit-histories:
+
 ==============================
 Keeping Commit Histories Clean
 ==============================
@@ -170,6 +172,9 @@ think it could be confusing).
 If there are any known problems you still intend to fix at the time of commit,
 that would be a good place for them. It can even help you later as a To Do
 when you're amending_ or `rewriting history`_.
+
+See also :ref:`writing-good-change-descriptions` for more details, with
+examples.
 
 
 Committing Only Parts of Changes

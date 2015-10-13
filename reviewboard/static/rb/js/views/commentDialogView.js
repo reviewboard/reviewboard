@@ -94,11 +94,11 @@ var CommentsListView = Backbone.View.extend({
  * used to reply to those comments.
  */
 RB.CommentDialogView = Backbone.View.extend({
-    DIALOG_TOTAL_HEIGHT: 300,
+    DIALOG_TOTAL_HEIGHT: 350,
     DIALOG_NON_EDITABLE_HEIGHT: 120,
     SLIDE_DISTANCE: 10,
     COMMENTS_BOX_WIDTH: 280,
-    FORM_BOX_WIDTH: 430,
+    FORM_BOX_WIDTH: 450,
 
     className: 'comment-dlg',
     template: _.template([
@@ -107,8 +107,8 @@ RB.CommentDialogView = Backbone.View.extend({
         ' <ul></ul>',
         '</div>',
         '<form method="post">',
-        ' <h1 class="title">',
-        '  <%- yourCommentText %>',
+        ' <h1 class="comment-dlg-header">',
+        '  <span class="title"></span>',
         '<% if (authenticated && !hasDraft) { %>',
         '  <a class="markdown-info" href="<%- markdownDocsURL %>"',
         '     target="_blank"><%- markdownText %></a>',
@@ -121,23 +121,28 @@ RB.CommentDialogView = Backbone.View.extend({
         '<% } else if (hasDraft) { %>',
         ' <p class="draft-warning"><%= draftWarning %></p>',
         '<% } %>',
-        ' <div class="comment-text-field"></div>',
-        ' <div class="comment-issue-options">',
-        '  <input type="checkbox" id="comment_issue" />',
-        '  <label for="comment_issue" accesskey="i"><%= openAnIssueText %></label>',
+        ' <div class="comment-dlg-body">',
+        '  <div class="comment-text-field"></div>',
+        '  <ul class="comment-dlg-options">',
+        '   <li class="comment-issue-options">',
+        '    <input type="checkbox" id="comment_issue" />',
+        '    <label for="comment_issue" accesskey="i"><%= openAnIssueText %></label>',
+        '   </li>',
+        '   <li class="comment-markdown-options">',
+        '    <input type="checkbox" id="enable_markdown" />',
+        '    <label for="enable_markdown" accesskey="m"><%= enableMarkdownText %></label>',
+        '   </li>',
+        '  </ul>',
         ' </div>',
-        ' <div class="comment-markdown-options">',
-        '  <input type="checkbox" id="enable_markdown" />',
-        '  <label for="enable_markdown" accesskey="m"><%= enableMarkdownText %></label>',
-        ' </div>',
-        ' <div class="status"></div>',
-        ' <div class="buttons">',
-        '  <input type="button" class="save" value="<%- saveButton %>" ',
-        '         disabled="true" />',
-        '  <input type="button" class="cancel" value="<%- cancelButton %>" />',
-        '  <input type="button" class="delete" value="<%- deleteButton %>" ',
-        '         disabled="true" />',
-        '  <input type="button" class="close" value="<%- closeButton %>" />',
+        ' <div class="comment-dlg-footer">',
+        '  <div class="buttons">',
+        '   <input type="button" class="save" value="<%- saveButton %>" ',
+        '          disabled="true" />',
+        '   <input type="button" class="cancel" value="<%- cancelButton %>" />',
+        '   <input type="button" class="delete" value="<%- deleteButton %>" ',
+        '          disabled="true" />',
+        '   <input type="button" class="close" value="<%- closeButton %>" />',
+        '  </div>',
         ' </div>',
         '</form>'
     ].join('')),
@@ -168,14 +173,13 @@ RB.CommentDialogView = Backbone.View.extend({
                 markdownDocsURL: MANUAL_URL + 'users/markdown/',
                 markdownText: gettext('Markdown'),
                 otherReviewsText: gettext('Other reviews'),
-                yourCommentText: gettext('Your comment'),
                 loginText: interpolate(
                     gettext('You must <a href="%s">log in</a> to post a comment.'),
                     [userSession.get('loginURL')]),
                 draftWarning: interpolate(
                     gettext('The review request\'s current <a href="%s">draft</a> needs to be published before you can comment.'),
                     [reviewRequest.get('reviewURL')]),
-                openAnIssueText: gettext('Open an <u>i</u>ssue'),
+                openAnIssueText: gettext('Open an <u>I</u>ssue'),
                 enableMarkdownText: gettext('Enable <u>M</u>arkdown'),
                 saveButton: gettext('Save'),
                 cancelButton: gettext('Cancel'),
@@ -183,14 +187,20 @@ RB.CommentDialogView = Backbone.View.extend({
                 closeButton: gettext('Close')
             }));
 
-        this._$draftForm    = this.$el.find('form');
-        this._$commentsPane = this.$el.find('.other-comments');
-        this._$statusField  = this._$draftForm.find(".status");
+        this._$commentsPane = this.$('.other-comments');
+        this._$draftForm = this.$('form');
+        this._$body = this._$draftForm.children('.comment-dlg-body');
+        this._$header = this._$draftForm.children('.comment-dlg-header');
+        this._$footer = this._$draftForm.children('.comment-dlg-footer');
+        this._$title = this._$header.children('.title');
 
-        this._$issueOptions = this._$draftForm.find(".comment-issue-options")
-            .bindVisibility(this.model, 'canEdit');
+        this._$commentOptions = this._$body.children('.comment-dlg-options');
+
+        this._$issueOptions =
+            this._$commentOptions.children(".comment-issue-options")
+                .bindVisibility(this.model, 'canEdit');
         this._$markdownOptions =
-            this._$draftForm.find(".comment-markdown-options")
+            this._$commentOptions.children(".comment-markdown-options")
                 .bindVisibility(this.model, 'canEdit');
 
         this._$issueField = this._$issueOptions.find('input')
@@ -207,7 +217,7 @@ RB.CommentDialogView = Backbone.View.extend({
                 inverse: true
             });
 
-        this.$buttons = this._$draftForm.find('.buttons');
+        this.$buttons = this._$footer.find('.buttons');
 
         this.$saveButton = this.$buttons.find('input.save')
             .bindVisibility(this.model, 'canEdit')
@@ -260,6 +270,7 @@ RB.CommentDialogView = Backbone.View.extend({
         this._textEditor.on('change', function() {
             this.model.set('text', this._textEditor.getText());
         }, this);
+        this._textEditor.bindRichTextCheckbox(this._$enableMarkdownField);
         this._textEditor.bindRichTextVisibility(
             this._$draftForm.find('.markdown-info'));
 
@@ -278,34 +289,21 @@ RB.CommentDialogView = Backbone.View.extend({
                  */
                 evt.stopPropagation();
             })
-            .proxyTouchEvents();
-
-        if (!$.browser.msie || $.browser.version >= 9) {
-            /*
-             * resizable is pretty broken in IE 6/7.
-             */
-            this.$el.resizable({
+            .resizable({
                 handles: $.support.touch ? "grip,se"
                                          : "grip,n,e,s,w,se,sw,ne,nw",
                 transparent: true,
                 resize: _.bind(this._handleResize, this)
-            });
-        }
+            })
+            .proxyTouchEvents();
 
-        this.$('.title').css('cursor', 'move');
+        this._$header.css('cursor', 'move');
         this.$el.draggable({
-            handle: '.title'
+            handle: '.comment-dlg-header'
         });
 
-        this.model.on('change:dirty', function() {
-            if (this.$el.is(':visible')) {
-                this._handleResize();
-            }
-        }, this);
-
-        this.model.on('change:statusText', function(model, text) {
-            this._$statusField.text(text || '');
-        }, this);
+        this.listenTo(this.model, 'change:dirty', this._updateTitle);
+        this._updateTitle();
 
         this.model.on('change:publishedComments',
                       this._onPublishedCommentsChanged, this);
@@ -424,6 +422,15 @@ RB.CommentDialogView = Backbone.View.extend({
     },
 
     /*
+     * Updates the title of the comment dialog, based on the current state.
+     */
+    _updateTitle: function() {
+        this._$title.text(this.model.get('dirty')
+                          ? gettext('Your comment (unsaved)')
+                          : gettext('Your comment'));
+    },
+
+    /*
      * Callback for when the list of published comments changes.
      *
      * Sets the list of comments in the CommentsList, and factors in some
@@ -460,44 +467,36 @@ RB.CommentDialogView = Backbone.View.extend({
             $commentsPane = this._$commentsPane,
             $commentsList = this.commentsList.$el,
             $textField = this._textEditor.$el,
-            textFieldPos,
             width = this.$el.width(),
             height = this.$el.height(),
-            formWidth = width - $draftForm.getExtents("bp", "lr"),
-            boxHeight = height,
             commentsWidth = 0;
 
         if ($commentsPane.is(":visible")) {
             $commentsPane
-                .width(this.COMMENTS_BOX_WIDTH -
-                       $commentsPane.getExtents("bp", "lr"))
-                .height(boxHeight - $commentsPane.getExtents("bp", "tb"))
+                .outerWidth(this.COMMENTS_BOX_WIDTH)
+                .outerHeight(height)
                 .move(0, 0, "absolute");
 
             $commentsList.height($commentsPane.height() -
-                                 $commentsList.position().top -
-                                 $commentsList.getExtents("bmp", "b"));
+                                 $commentsList.position().top);
 
             commentsWidth = $commentsPane.outerWidth(true);
-            formWidth -= commentsWidth;
+            width -= commentsWidth;
         }
 
         $draftForm
-            .width(formWidth)
-            .height(boxHeight - $draftForm.getExtents("bp", "tb"))
+            .outerWidth(width)
+            .outerHeight(height)
             .move(commentsWidth, 0, "absolute");
 
-        textFieldPos = $textField.position();
-
         this._textEditor.setSize(
-            ($draftForm.width() - textFieldPos.left -
-             $textField.getExtents("bmp", "r")),
-            ($draftForm.height() - textFieldPos.top -
-             this.$buttons.outerHeight(true) -
-             this._$statusField.height() -
-             this._$issueOptions.height() -
-             this._$markdownOptions.height() -
-             $textField.getExtents("bmp", "b")));
+            (this._$body.width() -
+             $textField.getExtents('b', 'lr')),
+            ($draftForm.height() -
+             this._$header.outerHeight() -
+             this._$commentOptions.outerHeight() -
+             this._$footer.outerHeight() -
+             $textField.getExtents('b', 'tb')));
     },
 
     /*

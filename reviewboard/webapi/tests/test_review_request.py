@@ -13,8 +13,13 @@ from reviewboard.accounts.backends import AuthBackend
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.reviews.models import (BaseComment, ReviewRequest,
                                         ReviewRequestDraft)
+from reviewboard.reviews.signals import (review_request_closing,
+                                         review_request_publishing,
+                                         review_request_reopening)
+from reviewboard.reviews.errors import CloseError, PublishError, ReopenError
 from reviewboard.site.models import LocalSite
-from reviewboard.webapi.errors import INVALID_REPOSITORY
+from reviewboard.webapi.errors import (CLOSE_ERROR, INVALID_REPOSITORY,
+                                       PUBLISH_ERROR, REOPEN_ERROR)
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (review_request_item_mimetype,
@@ -23,6 +28,7 @@ from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
                                                         ExtraDataListMixin)
 from reviewboard.webapi.tests.urls import (get_repository_item_url,
+                                           get_review_request_draft_url,
                                            get_review_request_item_url,
                                            get_review_request_list_url,
                                            get_user_item_url)
@@ -102,16 +108,33 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']), 6)
 
-        self._login_user(admin=True)
-        rsp = self.api_get(
-            url,
-            {
-                'status': 'all',
-                'show-all-unpublished': True,
-            },
-            expected_mimetype=review_request_list_mimetype)
+    @add_fixtures(['test_site'])
+    def test_get_unpublished(self):
+        """Testing the GET review-requests/?show-all-unpublished API"""
+        self.create_review_request(publish=True, status='P')
+        self.create_review_request(public=False, status='P')
+
+        url = get_review_request_list_url()
+        unpublished_params = {'status': 'all', 'show-all-unpublished': True}
+
+        rsp = self.api_get(url, unpublished_params,
+                           expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(len(rsp['review_requests']), 7)
+        self.assertEqual(len(rsp['review_requests']), 1)
+
+        self.user.user_permissions.add(
+            Permission.objects.get(codename='can_submit_as_another_user'))
+
+        rsp = self.api_get(url, unpublished_params,
+                           expected_mimetype=review_request_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']), 2)
+
+        self._login_user(admin=True)
+        rsp = self.api_get(url, unpublished_params,
+                           expected_mimetype=review_request_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']), 2)
 
     def test_get_with_counts_only(self):
         """Testing the GET review-requests/?counts-only=1 API"""
@@ -833,6 +856,28 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
         self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
 
     @add_fixtures(['test_scmtools'])
+    def test_post_with_conflicting_repos(self):
+        """Testing the POST review-requests/ API with conflicting repositories
+        """
+        repository = self.create_repository(tool_name='Test')
+        self.create_repository(tool_name='Test',
+                               name='Test 2',
+                               path='blah',
+                               mirror_path=repository.path)
+
+        rsp = self.api_post(
+            get_review_request_list_url(),
+            {'repository': repository.path},
+            expected_status=400)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_REPOSITORY.code)
+        self.assertEqual(rsp['err']['msg'],
+                         'Too many repositories matched "%s". Try '
+                         'specifying the repository by name instead.'
+                         % repository.path)
+        self.assertEqual(rsp['repository'], repository.path)
+
+    @add_fixtures(['test_scmtools'])
     def test_post_with_commit_id(self):
         """Testing the POST review-requests/ API with commit_id"""
         repository = self.create_repository()
@@ -1243,7 +1288,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(publish=True)
 
         self._testHttpCaching(get_review_request_item_url(review_request.id),
-                              check_last_modified=True)
+                              check_etags=True)
 
     #
     # HTTP PUT tests
@@ -1267,6 +1312,30 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
     def check_put_result(self, user, item_rsp, review_request):
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
         self.compare_item(item_rsp, review_request)
+
+    @add_fixtures(['test_scmtools'])
+    def test_put_changenum_for_published_request(self):
+        """Testing the PUT review-requests/<id>/?changenum=<integer> API"""
+        changenum = '3141592653'
+        commit_id = '1234567890'
+        repository = self.create_repository(tool_name='Test')
+        r = self.create_review_request(submitter=self.user, publish=True,
+                                       repository=repository,
+                                       changenum=commit_id,
+                                       commit_id=commit_id)
+
+        rsp = self.api_put(
+            get_review_request_item_url(r.display_id),
+            {'changenum': changenum},
+            expected_mimetype=review_request_item_mimetype)
+
+        rr = rsp['review_request']
+        self.assertEqual(rr["changenum"], int(changenum))
+        self.assertEqual(rr["commit_id"], changenum)
+
+        r = ReviewRequest.objects.get(pk=r.id)
+        self.assertEqual(r.changenum, int(changenum))
+        self.assertEqual(r.commit_id, changenum)
 
     def test_put_status_legacy_description(self):
         """Testing the PUT review-requests/<id>/?status= API
@@ -1498,3 +1567,93 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
         review_request = ReviewRequest.objects.get(pk=review_request.id)
         self.assertEqual(review_request.status, 'S')
+
+
+class ErrorTests(SpyAgency, BaseWebAPITestCase):
+    """Tests for handling errors."""
+    fixtures = ['test_users']
+
+    def test_publishing_error(self):
+        """Testing triggering a PublishError during a review request publish"""
+        def callback(*args, **kwargs):
+            raise PublishError('')
+
+        self.spy_on(callback)
+
+        review_request = self.create_review_request(submitter=self.user)
+        ReviewRequestDraft.create(review_request)
+
+        review_request_publishing.connect(callback)
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'public': 1
+            },
+            expected_status=PUBLISH_ERROR.http_status)
+        review_request_publishing.disconnect(callback)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+
+        self.assertTrue(callback.spy.called)
+        self.assertFalse(review_request.public)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('err', rsp)
+        self.assertIn('msg', rsp['err'])
+        self.assertEqual(rsp['err']['msg'], six.text_type(PublishError('')))
+
+    def test_reopening_error(self):
+        """Testing triggering a ReopenError during a review request reopen"""
+        def callback(*args, **kwargs):
+            raise ReopenError('')
+
+        self.spy_on(callback)
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    public=True)
+        review_request.close(ReviewRequest.SUBMITTED, user=self.user)
+
+        review_request_reopening.connect(callback)
+        rsp = self.api_put(
+            get_review_request_item_url(review_request.display_id),
+            {
+                'status': 'pending'
+            },
+            expected_status=REOPEN_ERROR.http_status)
+        review_request_reopening.disconnect(callback)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+
+        self.assertTrue(callback.spy.called)
+        self.assertEqual(review_request.status, ReviewRequest.SUBMITTED)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('err', rsp)
+        self.assertIn('msg', rsp['err'])
+        self.assertEqual(rsp['err']['msg'], six.text_type(ReopenError('')))
+
+    def test_closing_error(self):
+        """Testing triggering a CloseError during a review request close"""
+        def callback(*args, **kwargs):
+            raise CloseError('')
+
+        self.spy_on(callback)
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    public=True)
+
+        review_request_closing.connect(callback)
+        rsp = self.api_put(
+            get_review_request_item_url(review_request.display_id),
+            {
+                'status': 'discarded'
+            },
+            expected_status=CLOSE_ERROR.http_status)
+        review_request_closing.disconnect(callback)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+
+        self.assertTrue(callback.spy.called)
+        self.assertEqual(review_request.status, ReviewRequest.PENDING_REVIEW)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('err', rsp)
+        self.assertIn('msg', rsp['err'])
+        self.assertEqual(rsp['err']['msg'], six.text_type(CloseError('')))

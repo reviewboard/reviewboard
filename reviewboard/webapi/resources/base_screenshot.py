@@ -40,10 +40,12 @@ class BaseScreenshotResource(WebAPIResource):
         'filename': {
             'type': six.text_type,
             'description': "The base file name of the screenshot's image.",
+            'added_in': '1.7.10',
         },
         'review_url': {
             'type': six.text_type,
             'description': 'The URL to the review UI for this screenshot.',
+            'added_in': '1.7.10',
         },
         'url': {
             'type': six.text_type,
@@ -69,7 +71,6 @@ class BaseScreenshotResource(WebAPIResource):
     }
 
     uri_object_key = 'screenshot_id'
-    autogenerate_etags = True
 
     def get_queryset(self, request, is_list=False, *args, **kwargs):
         review_request = resources.review_request.get_object(
@@ -171,7 +172,7 @@ class BaseScreenshotResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         form_data = request.POST.copy()
         form = UploadScreenshotForm(form_data, request.FILES)
@@ -218,7 +219,7 @@ class BaseScreenshotResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         try:
             screenshot = resources.screenshot.get_object(request, *args,
@@ -230,7 +231,7 @@ class BaseScreenshotResource(WebAPIResource):
             resources.review_request_draft.prepare_draft(request,
                                                          review_request)
         except PermissionDenied:
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         screenshot.draft_caption = caption
         screenshot.save()
@@ -252,13 +253,13 @@ class BaseScreenshotResource(WebAPIResource):
 
         if not self.has_delete_permissions(request, screenshot, *args,
                                            **kwargs):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         try:
             draft = resources.review_request_draft.prepare_draft(
                 request, review_request)
         except PermissionDenied:
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         draft.screenshots.remove(screenshot)
         draft.inactive_screenshots.add(screenshot)

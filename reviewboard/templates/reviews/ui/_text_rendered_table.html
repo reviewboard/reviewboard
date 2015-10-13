@@ -1,0 +1,29 @@
+{% extends "reviews/ui/_text_table.html" %}
+
+{% load i18n %}
+
+{% block table_class %}text-review-ui-rendered-table{% endblock %}
+
+{% block table_content %}
+{%  if diff_type_mismatch %}
+    <thead>
+     <tr>
+{%   if is_diff %}
+      <td colspan="4">
+{%   else %}
+      <td colspan="2">
+{%   endif %}
+       <div class="review-ui-error">
+        <div class="rb-icon rb-icon-warning"></div>
+{%   blocktrans %}
+        These revisions cannot be compared because they are different
+        file types.
+{%   endblocktrans %}
+       </div>
+      </td>
+     </tr>
+    </thead>
+{%  else %}
+{{block.super}}
+{%  endif %}
+{% endblock table_content %}

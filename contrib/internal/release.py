@@ -68,7 +68,8 @@ def main():
     with git_use_clone('.'):
         build_settings()
         built_files = build_targets()
-        s3_upload_files(RELEASES_BUCKET_NAME, RELEASES_BUCKET_KEY, built_files)
+        s3_upload_files(RELEASES_BUCKET_NAME, RELEASES_BUCKET_KEY, built_files,
+                        build_index=True)
 
     git_tag_release(__version__)
     register_release()

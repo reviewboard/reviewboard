@@ -2,23 +2,44 @@ from __future__ import unicode_literals
 
 
 class OwnershipError(ValueError):
+    """An error that occurs when a user does not own a review request."""
     pass
 
 
 class PermissionError(Exception):
-    def __init__(self):
-        Exception.__init__(self, None)
+    """An error that occurs when a user does not have required permissions."""
+    pass
 
 
 class PublishError(Exception):
-    def __init__(self, msg):
-        Exception.__init__(self, None)
-        self.msg = msg
+    """An error that occurs when attempting to publish.
 
-    def __str__(self):
-        return 'Publish error: %s' % self.msg
+    The model triggering this error may be a review request, review, or reply.
+    """
+
+    def __init__(self, message):
+        super(PublishError, self).__init__('Error publishing: %s' % message)
 
 
-class NotModifiedError(Exception):
-    """Error when a review's state is not modified."""
-    pass
+class CloseError(Exception):
+    """An error that occurs while attempting to close a review request."""
+
+    def __init__(self, message):
+        super(CloseError, self).__init__(
+            'Error closing the review request: %s' % message)
+
+
+class ReopenError(Exception):
+    """An error that occurs while attempting to reopen a review request."""
+
+    def __init__(self, message):
+        super(ReopenError, self).__init__(
+            'Error reopening the review request: %s' % message)
+
+
+class NotModifiedError(PublishError):
+    """An error that occurs when a review's state is not modified."""
+
+    def __init__(self):
+        super(NotModifiedError, self).__init__(
+            'The draft has no modifications.')

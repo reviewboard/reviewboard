@@ -17,6 +17,7 @@
 # serve to show the default.
 import os
 import sys
+from datetime import datetime
 sys.path.append(os.path.abspath('_ext'))
 
 # Set this up to parse Django-driven code.
@@ -34,6 +35,8 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
 
 import reviewboard
 
+from github_linkcode import github_linkcode_resolve
+
 
 # If your extensions are in another directory, add it here. If the directory
 # is relative to the documentation root, use os.path.abspath to make it
@@ -48,9 +51,13 @@ import reviewboard
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
+    'sphinx.ext.linkcode',
+    'sphinx.ext.napoleon',
     'sphinx.ext.todo',
+    'autodoc_utils',
     'webapidocs',
     'httprole',
     'retina_images',
@@ -70,7 +77,7 @@ master_doc = 'contents'
 
 # General information about the project.
 project = u'Review Board Manual'
-copyright = u'2009-2010, Christian Hammond'
+copyright = u'2009-%s, Beanbag, Inc.' % datetime.now().year
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -96,7 +103,7 @@ release = reviewboard.get_version_string()
 
 # List of directories, relative to source directory, that shouldn't be searched
 # for source files.
-exclude_trees = ['_build']
+exclude_trees = ['_build', '_templates']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -107,7 +114,7 @@ add_function_parentheses = True
 
 # If true, the current module name will be prepended to all description
 # unit titles (such as .. function::).
-add_module_names = True
+add_module_names = False
 
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.
@@ -120,12 +127,12 @@ pygments_style = 'sphinx'
 # Options for HTML output
 # -----------------------
 
-html_theme = 'default'
+html_theme = 'classic'
 
 # The style sheet to use for HTML and HTML Help pages. A file of that name
 # must exist either in Sphinx' static/ path, or in one of the custom paths
 # given in html_static_path.
-html_style = 'default.css'
+html_style = 'classic.css'
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -145,7 +152,7 @@ html_title = "Review Board Manual"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
+# so a file named "classic.css" will overwrite the builtin "classic.css".
 html_static_path = ['_static']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
@@ -201,9 +208,9 @@ htmlhelp_basename = 'ReviewBoardManual'
 # [howto/manual]).
 latex_documents = [
   ('users/index', 'UserManual.tex', ur'Review Board User Manual',
-   ur'Christian Hammond', 'manual', False),
+   ur'Beanbag, Inc.', 'manual', False),
   ('admin/index', 'AdminGuide.tex', ur'Review Board Administration Guide',
-   ur'Christian Hammond', 'manual', False),
+   ur'Beanbag, Inc.', 'manual', False),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -228,7 +235,48 @@ latex_show_pagerefs = True
 
 
 intersphinx_mapping = {
-    'rbtools': ('https://reviewboard.org/docs/rbtools/dev/', None),
+    'django': ('https://docs.djangoproject.com/en/%s/'
+               % reviewboard.django_major_version,
+               'https://docs.djangoproject.com/en/%s/_objects/'
+               % reviewboard.django_major_version),
+    'python': ('https://docs.python.org/2.7', None),
+    'rbtools': ('https://www.reviewboard.org/docs/rbtools/dev/', None),
 }
 
 todo_include_todos = True
+
+autodoc_member_order = 'bysource'
+autoclass_content = 'class'
+autodoc_default_flags = [
+    'members',
+    'special-members',
+    'undoc-members',
+    'show-inheritance',
+]
+
+
+autodoc_excludes = {
+    '*': [
+        '__dict__',
+        '__doc__',
+        '__module__',
+        '__weakref__',
+    ],
+    'class': [
+        # Common to models.
+        'DoesNotExist',
+        'MultipleObjectsReturned',
+
+        # Common to forms.
+        'base_fields',
+        'media',
+    ],
+}
+
+autosummary_generate = True
+
+napolean_google_docstring = True
+napolean_numpy_docstring = False
+
+
+linkcode_resolve = github_linkcode_resolve

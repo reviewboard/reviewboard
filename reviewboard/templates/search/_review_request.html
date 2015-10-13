@@ -1,0 +1,12 @@
+{% load i18n %}
+
+<div class="search-result">
+ <h2><a href="{{result.url}}">{{result.summary}}</a></h2>
+ <div class="search-result-excerpt">{{result.description|truncatewords:30}}</div>
+ <div class="search-result-by">
+{% blocktrans with result.last_updated|timesince as last_updated and result.last_updated|date:"c" as last_updated_raw and result.user_display_name as added_by %}
+  Last updated <time class="timesince" datetime="{{last_updated_raw}}">{{last_updated}} ago</time>
+  by {{added_by}}
+{% endblocktrans %}
+ </div>
+</div>

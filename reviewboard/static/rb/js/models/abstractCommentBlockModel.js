@@ -26,7 +26,8 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
      */
     initialize: function() {
         var comments = this.get('serializedComments'),
-            newSerializedComments = [];
+            newSerializedComments = [],
+            comment_attr = {};
 
         console.assert(this.get('reviewRequest'),
                        'reviewRequest must be provided');
@@ -43,7 +44,13 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
                 comment.text = $("<div/>").html(comment.text).text();
 
                 if (comment.localdraft) {
-                    this.ensureDraftComment(comment.comment_id, comment.text);
+                    comment_attr.text = comment.text;
+                    comment_attr.richText = comment.rich_text;
+                    comment_attr.issueOpened = comment.issue_opened;
+                    comment_attr.issueStatus = comment.issue_status;
+                    comment_attr.html = comment.html;
+
+                    this.ensureDraftComment(comment.comment_id, comment_attr);
                 } else {
                     newSerializedComments.push(comment);
                 }
@@ -87,7 +94,7 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
      *
      * The actual comment object is up to the subclass to create.
      */
-    ensureDraftComment: function(id, text) {
+    ensureDraftComment: function(id, comment_attr) {
         var comment;
 
         if (this.has('draftComment')) {
@@ -96,9 +103,7 @@ RB.AbstractCommentBlock = Backbone.Model.extend({
 
         comment = this.createComment(id);
 
-        if (text) {
-            comment.set('text', text);
-        }
+        comment.set(comment_attr);
 
         comment.on('destroy', function() {
             this.set('draftComment', null);

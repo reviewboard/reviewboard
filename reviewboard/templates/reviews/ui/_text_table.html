@@ -1,0 +1,83 @@
+{% load difftags djblets_utils i18n %}
+
+{% definevar 'line_fmt' %}
+  <tr line="%(linenum_row)s"%(row_class_attr)s>
+{%  if not file.is_new_file %}
+   <th>%(anchor_html)s%(linenum1)s</th>
+   <td%(cell_1_class_attr)s>
+    %(moved_to_html)s
+    %(begin_collapse_html)s
+    <pre>%(line1)s</pre>
+    %(end_collapse_html)s
+   </td>
+{%  endif %}
+   <th>%(linenum2)s</th>
+   <td%(cell_2_class_attr)s>
+    %(moved_from_html)s
+    <pre>%(line2)s</pre>
+   </td>
+  </tr>
+{% enddefinevar %}
+
+{% definevar 'anchor_fmt' %}
+ <a name="%(anchor)s" class="chunk-anchor"></a>
+{% enddefinevar %}
+
+{% definevar 'moved_fmt' %}
+ <a href="#" class="%(class)s" data-line="%(line)s" target="%(target)s">%(text)s</a>
+{% enddefinevar %}
+
+
+<table class="sidebyside {% block table_class %}text-review-ui-text-table{% endblock %}"{% if hide %} style="display: none;"{% endif %}>
+ <colgroup>
+{% if is_diff %}
+  <col class="line" />
+  <col class="left" />
+{% endif %}
+  <col class="line" />
+  <col class="right" />
+ </colgroup>
+
+ <thead>
+  <tr class="revision-row">
+{% if is_diff %}
+   <th></th>
+   <th>
+     {{diff_caption|default:diff_filename}}
+{%  blocktrans %}
+     (revision {{diff_revision}})
+{%  endblocktrans %}
+   </th>
+{% endif %}
+
+   <th></th>
+   <th>
+     {{caption|default:filename}}
+{% if num_revisions > 1 %}
+{%  blocktrans %}
+     (revision {{revision}})
+{%  endblocktrans %}
+{% endif %}
+   </th>
+  </tr>
+ </thead>
+
+{% block table_content %}
+{%  if is_diff %}
+{%   for chunk in chunks %}
+ <tbody {% attr "class" %}{% if chunk.change != "equal" %}{{chunk.change}}{% if chunk.meta.whitespace_chunk %} whitespace-chunk{% endif %}{% endif %}{% endattr %}>
+{%    diff_lines 0 chunk True line_fmt anchor_fmt '' '' moved_fmt %}
+ </tbody>
+{%   endfor %}
+{%  else %}
+ <tbody>
+{%   for line in lines %}
+  <tr line="{{forloop.counter}}">
+   <th>{{forloop.counter}}</th>
+   <td class="l">{{line}}</td>
+  </tr>
+{%   endfor %}
+ </tbody>
+{%  endif %}
+{% endblock %}
+</table>

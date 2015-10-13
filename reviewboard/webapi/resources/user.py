@@ -10,7 +10,7 @@ from djblets.webapi.decorators import (webapi_request_fields,
                                        webapi_response_errors)
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
-from djblets.webapi.resources import UserResource as DjbletsUserResource
+from djblets.webapi.resources.user import UserResource as DjbletsUserResource
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.accounts.errors import UserQueryError
@@ -30,6 +30,8 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     """
     item_child_resources = [
         resources.api_token,
+        resources.archived_review_request,
+        resources.muted_review_request,
         resources.watched,
     ]
 
@@ -37,20 +39,11 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         'avatar_url': {
             'type': six.text_type,
             'description': 'The URL for an avatar representing the user.',
+            'added_in': '1.6.14',
         },
     }, **DjbletsUserResource.fields)
 
     hidden_fields = ('email', 'first_name', 'last_name', 'fullname')
-
-    def get_etag(self, request, obj, *args, **kwargs):
-        if obj.is_profile_visible(request.user):
-            return self.generate_etag(obj, six.iterkeys(self.fields), request)
-        else:
-            return self.generate_etag(obj, [
-                field
-                for field in six.iterkeys(self.fields)
-                if field not in self.hidden_fields
-            ], request)
 
     def get_queryset(self, request, local_site_name=None, *args, **kwargs):
         search_q = request.GET.get('q', None)
@@ -144,7 +137,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             'fullname': {
                 'type': bool,
                 'description': 'Specifies whether ``q`` should also match '
-                               'the beginning of the first name or last name.'
+                               'the beginning of the first name or last name.',
             },
         },
         allow_unknown=True

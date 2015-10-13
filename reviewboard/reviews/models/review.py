@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.functional import cached_property
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import CounterField, JSONField
@@ -26,6 +27,9 @@ from reviewboard.reviews.signals import (reply_publishing, reply_published,
 @python_2_unicode_compatible
 class Review(models.Model):
     """A review of a review request."""
+
+    SHIP_IT_TEXT = 'Ship It!'
+
     review_request = models.ForeignKey(ReviewRequest,
                                        related_name="reviews",
                                        verbose_name=_("review request"))
@@ -114,6 +118,22 @@ class Review(models.Model):
     # to fix duplicate reviews.
     objects = ReviewManager()
 
+    @cached_property
+    def ship_it_only(self):
+        """Return if the review only contains a "Ship It!".
+
+        Returns:
+            bool: ``True`` if the review is only a "Ship It!" and ``False``
+            otherwise.
+        """
+        return (self.ship_it and
+                (not self.body_top or
+                 self.body_top == Review.SHIP_IT_TEXT) and
+                not (self.body_bottom or
+                     self.comments.exists() or
+                     self.file_attachment_comments.exists() or
+                     self.screenshot_comments.exists()))
+
     def get_participants(self):
         """Returns a list of participants in a review's discussion."""
         # This list comprehension gives us every user in every reply,
@@ -190,7 +210,7 @@ class Review(models.Model):
 
         super(Review, self).save()
 
-    def publish(self, user=None):
+    def publish(self, user=None, trivial=False, to_submitter_only=False):
         """Publishes this review.
 
         This will make the review public and update the timestamps of all
@@ -222,7 +242,7 @@ class Review(models.Model):
 
         if self.is_reply():
             reply_published.send(sender=self.__class__,
-                                 user=user, reply=self)
+                                 user=user, reply=self, trivial=trivial)
         else:
             issue_counts = fetch_issue_counts(self.review_request,
                                               Q(pk=self.pk))
@@ -248,7 +268,8 @@ class Review(models.Model):
                 })
 
             review_published.send(sender=self.__class__,
-                                  user=user, review=self)
+                                  user=user, review=self,
+                                  to_submitter_only=to_submitter_only)
 
     def delete(self):
         """Deletes this review.

@@ -1,104 +1,84 @@
 @import (reference) "../defs.less";
+@import (reference) "../mixins/upload-diff.less";
 
 
 @img_base: '../../images';
 @djblets_img_base: '../../../djblets/images';
 
 
+#page-container #page_sidebar.new-review-request-sidebar {
+  .repository-selector {
+    .search-icon-wrapper {
+      margin: 1em;
+      position: relative;
+      height: 22px;
+
+      .fa-search {
+        color: #999;
+        font-size: 1.2em;
+        position: absolute;
+        left: 4px;
+        top: 4px;
+      }
+
+      .repository-search {
+        border: 1px solid #999;
+        .border-radius(@box-border-radius);
+        .box-shadow(none);
+        .box-sizing(border-box);
+        padding: 2px 4px 4px 20px;
+        width: 100%;
+        height: 100%;
+        z-index: (@z-index-banner + 1);
+      }
+    }
+  }
+}
+
 #new-review-request {
   @default-height: 55em;
 
-  border: 1px solid @box-border-color;
-  width: 100%;
-  height: @default-height;
   display: none;
-
-  .repository-selector {
-    float: left;
-    width: 20em;
-    height: @default-height;
-    border-right: 1px @grey solid;
-    background-color: @headerbar-bg;
-    color: white;
-    overflow-y: auto;
-    overflow-x: hidden;
-    position: relative;
-
-    h3 {
-      padding: 0;
-      margin: 1em;
-      overflow: hidden;
-    }
-
-    .repository {
-      cursor: pointer;
-      width: 18em;
-      padding: 1em;
-
-      &.selected {
-        background-color: #444444;
-        #gradient > .vertical-three-colors(#444444, #555555, 15%, #444444);
-      }
-    }
-
-    .search-icon-wrapper {
-      position: absolute;
-      top: 0;
-      background-color: @headerbar-bg;
-      z-index: @z-index-banner;
-    }
-
-    .repository-search-icon {
-      margin: 9px;
-    }
-
-    .repository-search {
-      position: absolute;
-      right: 8px;
-      top: 0.75em;
-      width: 0;
-      visibility: hidden;
-      background-color: lighten(@headerbar-bg, 10%);
-      border: 1px solid #999;
-      color: #ccc;
-      .box-shadow(none);
-      padding: 2px;
-      z-index: (@z-index-banner + 1);
-    }
-  }
+  position: relative;
+  width: 100%;
 
   .main {
     height: @default-height;
-    overflow: scroll;
-    margin-left: 20em;
-    background-color: lighten(@light-grey, 4%);
+    .border-radius(@box-border-radius);
+    .box-sizing(border-box);
+    .scrollable-y();
 
     .hint {
-      background-color: white;
-      height: @default-height;
-      line-height: @default-height;
-      width: 100%;
-      vertical-align: middle;
+      .border-radius(@box-border-radius);
+      position: relative;
+      top: 50%;
       text-align: center;
+      vertical-align: middle;
+      width: 100%;
     }
   }
 
+  .new-review-request-container {
+    background-color: @new-review-request-bg;
+    border: 1px solid @box-border-color;
+    .border-radius(@box-border-radius);
+    .box-shadow(@box-shadow);
+    .box-sizing(border-box);
+    overflow: hidden;
+  }
+
   .pre-commit {
-    background-color: lighten(@light-grey, 4%);
+    .upload-diff-ui();
 
     .tip {
       margin: 2em 2em 1em 2em;
       text-align: center;
-    }
 
-    #prompt-for-basedir,
-    #prompt-for-diff,
-    #prompt-for-parent-diff,
-    #prompt-for-change-number,
-    #processing-diff,
-    #uploading-diffs,
-    #error-indicator {
-      display: none;
+      a {
+        color: @link-color;
+        font-weight: bold;
+        text-decoration: none;
+      }
     }
 
     #prompt-for-parent-diff {
@@ -111,83 +91,123 @@
 
     #error-contents,
     #parent-diff-error-contents {
-      position: relative;
       margin: 0 10em;
-      line-height: 12pt;
-      margin-bottom: 1em;
-
-      img {
-        margin-right: 5px;
-        vertical-align: sub;
-      }
-    }
-
-    #processing-diff,
-    #uploading-diffs {
-      background: url('@{img_base}/spinner.gif') center center no-repeat;
     }
 
     .input {
-      text-align: center;
-      vertical-align: middle;
       height: 14em;
       line-height: 14em;
-      margin: 2em 2em 6em 2em;
-      border: 1px solid @grey;
-      .border-radius(@box-border-radius);
-      background-color: lighten(@light-grey, 10%);
-      position: relative;
+      margin: 2em;
+      border: 2px dashed @grey;
 
-      .startover {
-        position: absolute;
-        bottom: 0;
-        right: 5px;
-        line-height: 14pt;
-      }
-    }
-
-    .drag-hover {
-      border: 1px solid darken(@grey, 4%);
-      .box-shadow(inset @box-shadow);
+      .on-mobile-medium-screen-720({
+        height: 6em;
+        line-height: 6em;
+      });
     }
   }
 
   .section-header {
+    background-color: @box-title-bg;
+    border-bottom: 1px @box-border-color solid;
     padding: 0.5em;
-    border-bottom: 1px @grey solid;
-    font-size: 12pt;
+    font-size: 120%;
+    font-weight: bold;
     text-align: center;
-    background-color: @light-blue;
+  }
+
+  .show-repositories {
+    color: @mobile-back-forward-link-color;
+    display: block;
+    margin-bottom: 1em;
+    font-size: 120%;
+    text-decoration: none;
+
+    .mobile-only();
   }
 
   .branches {
-    select {
-      vertical-align: top;
+    border-top: 1px @box-border-color solid;
+    padding: 0;
+
+    span, select {
+      display: inline-block;
+      margin: 0.5em;
+      vertical-align: middle;
     }
   }
 
   .commit {
-    border-bottom: 1px @grey solid;
+    border-bottom: 1px @datagrid-row-border-color solid;
     position: relative;
     padding: 1em;
     cursor: pointer;
 
+    &.disabled {
+      color: #888;
+      cursor: default;
+    }
+
+    &.has-review-request {
+      .summary {
+        color: @new-review-request-summary-posted-color;
+      }
+    }
+
+    .commit-info {
+      color: @new-review-request-commit-info-color;
+
+      .author, .revision {
+        margin-right: 1em;
+      }
+
+      .author, .revision, .time {
+        display: inline-block;
+        margin-top: 0.5em;
+        white-space: nowrap;
+
+        .on-mobile-medium-screen-720({
+          display: block;
+          float: none;
+          margin-top: 0.8em;
+        });
+      }
+
+      .revision {
+        font-family: monospace;
+      }
+
+      .time {
+        float: right;
+
+        .on-mobile-medium-screen-720({
+          float: none;
+        });
+      }
+    }
+
+    .fa {
+      color: @new-review-request-commit-icon-color;
+      font-size: 1.2em;
+
+      &.fa-code-fork {
+        margin-left: 0;
+      }
+    }
+
     .summary {
-      font-size: 10pt;
+      font-size: 13px;
       font-weight: 600;
-      width: 52em;
-      padding-bottom: 2px;
+      margin-bottom: 0.6em;
       overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
       vertical-align: bottom;
     }
 
     .jump-to-commit {
-      position: absolute;
-      right: 20px;
-      top: 50%;
-      margin-top: -9px;
+      color: @new-review-request-jump-to-commit-color;
+      margin: 0;
+      float: right;
+      font-size: 1.5em;
     }
 
     .progress {
@@ -195,21 +215,20 @@
       position: absolute;
       width: 16px;
       right: 1em;
-      top: 0;
       height: 100%;
-      background: url('@{img_base}/spinner.gif') center center no-repeat;
+      font-size: 16px;
     }
 
     &:nth-child(even) {
-      background-color: lighten(@light-grey, 2%);
+      background-color: @datagrid-row-even-bg;
     }
 
     &:nth-child(odd) {
-      background-color: darken(@light-grey, 2%);
+      background-color: @datagrid-row-odd-bg;
     }
 
     &:hover {
-      background-color: lighten(@light-grey, 6%);
+      background-color: darken(@datagrid-row-even-bg, 3%);
     }
   }
 

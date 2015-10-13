@@ -34,8 +34,12 @@ class DiffParser(object):
     INDEX_SEP = b"=" * 67
 
     def __init__(self, data):
+        from reviewboard.diffviewer.diffutils import split_line_endings
+
+        self.base_commit_id = None
+        self.new_commit_id = None
         self.data = data
-        self.lines = data.splitlines()
+        self.lines = split_line_endings(data)
 
     def parse(self):
         """

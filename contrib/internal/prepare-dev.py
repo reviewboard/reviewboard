@@ -38,12 +38,17 @@ def create_settings():
                 out_fp.write("        'ENGINE': 'django.db.backends.%s',\n" %
                              options.db_type)
             elif line.strip().startswith("'NAME': "):
-                if options.db_type == 'sqlite':
-                    name = os.path.abspath(options.db_name)
+                if options.db_type == 'sqlite3':
+                    if options.db_name is not None:
+                        name = os.path.abspath(options.db_name)
+                        out_fp.write("        'NAME': '%s',\n" % name)
+                    else:
+                        out_fp.write("        'NAME': os.path.join(ROOT_PATH,"
+                                     " 'reviewboard-%d.%d.db' % (VERSION[0], "
+                                     "VERSION[1])),\n")
                 else:
                     name = options.db_name
-
-                out_fp.write("        'NAME': '%s',\n" % name)
+                    out_fp.write("        'NAME': '%s',\n" % name)
             elif line.strip().startswith("'USER': "):
                 out_fp.write("        'USER': '%s',\n" % options.db_user)
             elif line.strip().startswith("'PASSWORD': "):
@@ -86,7 +91,7 @@ def parse_options(args):
                       default='sqlite3',
                       help="Database type (postgresql, mysql, sqlite3)")
     parser.add_option('--database-name', dest='db_name',
-                      default='reviewboard.db',
+                      default=None,
                       help="Database name (or path, for sqlite3)")
     parser.add_option('--database-user', dest='db_user',
                       default='',
@@ -117,7 +122,8 @@ def main():
     reviewboard.cmdline.rbsite.ui = ConsoleUI()
 
     # Re-use the Site class, since it has some useful functions.
-    site = Site("reviewboard", SiteOptions)
+    site_path = os.path.abspath('reviewboard')
+    site = Site(site_path, SiteOptions)
 
     create_settings()
     build_egg_info()
@@ -125,14 +131,20 @@ def main():
     if options.install_media:
         install_media(site)
 
-    if options.sync_db:
-        print("Synchronizing database...")
-        site.abs_install_dir = os.getcwd()
-        site.sync_database(allow_input=True)
+    try:
+        if options.sync_db:
+            print("Synchronizing database...")
+            site.abs_install_dir = os.getcwd()
+            site.sync_database(allow_input=True)
 
-    print()
-    print("Your Review Board tree is ready for development.")
-    print()
+        print()
+        print("Your Review Board tree is ready for development.")
+        print()
+    except KeyboardInterrupt:
+        sys.stderr.write(
+            'The process was canceled in the middle of creating the database, '
+            'which can result in a corrupted setup. Please remove the '
+            'database file and run prepare-dev.py again.')
 
 
 if __name__ == "__main__":

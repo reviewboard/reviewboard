@@ -1,0 +1,198 @@
+@import (reference) "../defs.less";
+
+
+/*
+ * Set the page to have a sidebar in desktop mode, with the content
+ * area moving to the right of the sidebar.
+ */
+body {
+  &.has-sidebar {
+    #content {
+      margin-left: @page-sidebar-width;
+
+      .transition-transform(@mobile-menu-animate-duration,
+                            @mobile-menu-animate-timing-func);
+
+      .on-mobile-medium-screen-720({
+        margin-left: 0;
+      });
+    }
+  }
+
+  &.mobile-show-page-sidebar {
+    .on-mobile-medium-screen-720({
+      #content {
+        .transform(translate(120%));
+      }
+
+      #page-container #page_sidebar {
+        /*
+         * Show the sidebar by default on mobile. It'll be the first thing
+         * seen by the user, and the user will navigate from there.
+         */
+        display: block;
+
+        .transform(translate(0));
+      }
+    });
+  }
+}
+
+#page-container {
+  #page_sidebar {
+    .box-sizing(border-box);
+    direction: rtl;  /* Position the scrollbar on the left. */
+    float: none;
+    padding: 1em 0;
+    position: absolute;
+    top: 0;
+    bottom: 1px;
+    margin: 3em -1px 0 1px;
+    width: @page-sidebar-width;
+    z-index: @z-index-deco;
+    .scrollable-y();
+
+    .transition-transform(@mobile-menu-animate-duration,
+                          @mobile-menu-animate-timing-func);
+
+    .on-mobile-medium-screen-720({
+      display: none;
+      .transform(translate(-120%));
+      direction: ltr;
+      margin: 0;
+      padding: 0;
+      width: 100%;
+    });
+
+    .page-sidebar-items {
+      direction: ltr;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+
+      li {
+        display: block;
+        list-style: none;
+        margin: 0;
+        text-align: left;
+        word-break: break-all;
+
+        &.has-url {
+          cursor: pointer;
+        }
+
+        &.active,
+        &.active.has-url:hover {
+          .page-sidebar-row {
+            background: @page-sidebar-active-bg;
+            border: 1px @page-sidebar-active-border-color solid;
+            border-right: 1px transparent solid;
+
+            .on-mobile-medium-screen-720({
+              border-right-color: @page-sidebar-active-border-color;
+            });
+          }
+        }
+
+        &.has-url:hover .page-sidebar-row {
+          background: @page-sidebar-hover-bg;
+          border: 1px @page-sidebar-hover-border-color solid;
+          border-right: 1px @datagrid-border-color solid;
+
+          .on-mobile-medium-screen-720({
+            border-right-color: @page-sidebar-hover-border-color;
+          });
+        }
+
+        &.has-url:hover,
+        &.active {
+          .page-sidebar-row {
+            .border-radius(15px 0 0 15px);
+            .box-shadow(@box-shadow);
+
+            .on-mobile-medium-screen-720({
+              .border-radius(15px);
+            });
+          }
+        }
+
+        &.section {
+          margin: 0 0 1em 0;
+
+          & > .page-sidebar-row .label {
+            color: #444;
+            font-size: 110%;
+            font-weight: bold;
+            margin: 0;
+            padding: 0;
+            text-transform: uppercase;
+          }
+        }
+
+        a {
+          color: black;
+          text-decoration: none;
+          padding: 0;
+        }
+
+        ul {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+
+          li {
+            &.has-count .label {
+              /* Give room for the counts. */
+              margin-right: 4em;
+            }
+
+            &.new-subsection {
+              margin-top: 1em;
+            }
+
+            .label {
+              display: inline-block;
+
+              /* Give room for the icons. */
+              margin-left: 20px;
+            }
+
+            .rb-icon {
+              position: absolute;
+              top: @page-sidebar-vert-padding;
+              left: @page-sidebar-horiz-padding;
+            }
+          }
+        }
+
+        .count {
+          color: @page-sidebar-count-color;
+          position: absolute;
+          top: 0.3em;
+          right: 2 * @page-sidebar-horiz-padding;
+          font-size: 95%;
+          padding: @page-sidebar-count-vert-padding
+                   @page-sidebar-count-horiz-padding;
+          margin-top: -@page-sidebar-count-vert-padding;
+
+          &.count-zero {
+            color: @page-sidebar-count-zero-color;
+          }
+        }
+
+        .page-sidebar-row {
+          line-height: 20px;
+          padding: @page-sidebar-vert-padding @page-sidebar-horiz-padding;
+          position: relative;
+
+          /* Match the border on the active row, to prevent content jumps. */
+          border: 1px transparent solid;
+
+          .rb-icon {
+            vertical-align: middle;
+          }
+        }
+      }
+    }
+  }
+}

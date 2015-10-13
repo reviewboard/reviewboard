@@ -68,6 +68,8 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
      * Renders the view.
      */
     renderContent: function() {
+        var $fileHeader;
+
         this._$viewTabs = this.$('.text-review-ui-views li');
 
         /* Set up the source text table. */
@@ -92,9 +94,65 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
 
         this.listenTo(this.model, 'change:viewMode', this._onViewChanged);
 
+        $fileHeader = this.$('.review-ui-header');
+
+        if (this.model.get('numRevisions') > 1) {
+            this._revisionSelectorView = new RB.FileAttachmentRevisionSelectorView({
+                el: $fileHeader.find('#attachment_revision_selector'),
+                model: this.model
+            });
+            this._revisionSelectorView.render();
+            this.listenTo(this._revisionSelectorView, 'revisionSelected',
+                          this._onRevisionSelected);
+
+            this._revisionLabelView = new RB.FileAttachmentRevisionLabelView({
+                el: $fileHeader.find('#revision_label'),
+                model: this.model
+            });
+            this._revisionLabelView.render();
+            this.listenTo(this._revisionLabelView, 'revisionSelected',
+                          this._onRevisionSelected);
+        }
+
         Backbone.history.start({
             root: window.location
         });
+    },
+
+    /*
+     * Callback for when a new file revision is selected.
+     *
+     * This supports single revisions and diffs. If `base is 0, a
+     * single revision is selected, If not, the diff between `base` and
+     * `tip` will be shown.
+     */
+    _onRevisionSelected: function(revisions) {
+        var revisionIDs = this.model.get('attachmentRevisionIDs'),
+            base = revisions[0],
+            tip = revisions[1],
+            revisionBase,
+            revisionTip,
+            redirectURL;
+
+        // Ignore clicks on No Diff Label
+        if (tip === 0) {
+            return;
+        }
+
+        revisionTip = revisionIDs[tip-1];
+
+        /* Eventually these hard redirects will use a router
+         * (see diffViewerPageView.js for example)
+         * this.router.navigate(base + '-' + tip + '/', {trigger: true});
+         */
+
+        if (base === 0) {
+            redirectURL = '../' + revisionTip + '/';
+        } else {
+            revisionBase = revisionIDs[base-1];
+            redirectURL = '../' + revisionBase + '-' + revisionTip + '/';
+        }
+        window.location.replace(redirectURL);
     },
 
     /*
@@ -106,8 +164,7 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
             $row;
 
         /* Normalize this to a valid row index. */
-        lineNum--;
-        lineNum = Math.max(0, Math.min(lineNum, rows.length - 1));
+        lineNum = RB.MathUtils.clip(lineNum, 1, rows.length) - 1;
 
         $row = $($table[0].tBodies[0].rows[lineNum]);
         $(window).scrollTop($row.offset().top);
@@ -129,26 +186,60 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
     },
 
     /*
+     * Returns the row selector for the given view mode.
+     */
+    _getRowSelectorForViewMode: function(viewMode) {
+        if (viewMode === 'source') {
+            return this._textSelector;
+        } else if (viewMode === 'rendered' &&
+                   this.model.get('hasRenderedView')) {
+            return this._renderedSelector;
+        } else {
+            console.assert(false, 'Unexpected viewMode ' + viewMode);
+            return null;
+        }
+    },
+
+    /*
      * Adds the comment view to the line the comment was created on.
      */
     _placeCommentBlockView: function(commentBlockView) {
         var commentBlock = commentBlockView.model,
             beginLineNum = commentBlock.get('beginLineNum'),
             endLineNum = commentBlock.get('endLineNum'),
-            $table,
+            rowSelector,
             viewMode,
+            rowEls,
             rows;
 
         if (beginLineNum && endLineNum) {
             viewMode = commentBlock.get('viewMode');
-            $table = this._getTableForViewMode(viewMode);
+            rowSelector = this._getRowSelectorForViewMode(viewMode);
 
-            if ($table !== null) {
-                rows = $table[0].tBodies[0].rows;
+            if (!rowSelector) {
+                return;
+            }
+
+            if (this.model.get('diffRevision')) {
+                /*
+                 * We're showing a diff, so we need to do a search for the
+                 * rows matching the given line numbers.
+                 */
+                rowEls = rowSelector.getRowsForRange(beginLineNum, endLineNum);
+            } else {
+                /*
+                 * Since we know we have the entire content of the text in one
+                 * list, we don't need to use getRowsForRange here, and instead
+                 * can look up the lines directly in the lists of rows.
+                 */
+                rows = rowSelector.el.tBodies[0].rows;
 
                 /* The line numbers are 1-based, so normalize for the rows. */
-                commentBlockView.setRows($(rows[beginLineNum - 1]),
-                                         $(rows[endLineNum - 1]));
+                rowEls = [rows[beginLineNum - 1], rows[endLineNum - 1]];
+            }
+
+            if (rowEls) {
+                commentBlockView.setRows($(rowEls[0]), $(rowEls[1]));
                 commentBlockView.$el.appendTo(
                     commentBlockView.$beginRow[0].cells[0]);
             }

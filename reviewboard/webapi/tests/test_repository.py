@@ -586,6 +586,12 @@ class ResourceListTests(BaseRepositoryTests):
         self._login_user()
         self._post_repository(False, expected_status=403)
 
+    def test_post_duplicate(self):
+        """Testing the POST repositories/ API with a duplicate repository"""
+        self._login_user(admin=True)
+        self._post_repository(False)
+        self._post_repository(False, expected_status=409)
+
     def _post_repository(self, use_local_site, data={}, expected_status=201):
         repo_name = 'Test Repository'
 

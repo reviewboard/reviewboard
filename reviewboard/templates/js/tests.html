@@ -69,6 +69,13 @@ $(document).ready(function() {
                 throw Error(msg);
             }
         });
+
+        /*
+         * We don't have actual gravatar sources when running tests, so avoid
+         * spurious error output and HTTP requests.
+         */
+        spyOn($.fn, 'retinaGravatar')
+            .andCallFake(function() { return this; });
     });
 
     afterEach(function() {

@@ -60,92 +60,10 @@ function registerToggleStar() {
             'data-starred': on,
             title: altTitle
         });
+
+        return false;
     });
 }
-
-/*
- * The wrapper function of autocomplete for the search field.
- * Currently, quick search searches for users, groups, and review
- * requests through the usage of search resource.
- */
-var SUMMARY_TRIM_LEN = 28;
-
-$.fn.searchAutoComplete = function() {
-    this.rbautocomplete({
-        formatItem: function(data) {
-            var s;
-
-            if (data.username) {
-                // For the format of users
-                s = data.username;
-
-                if (data.fullname) {
-                    s += " <span>(" + _.escape(data.fullname) + ")</span>";
-                }
-
-            } else if (data.name) {
-                // For the format of groups
-                s = data.name;
-                s += " <span>(" + _.escape(data.display_name) + ")</span>";
-            } else if (data.summary) {
-                // For the format of review requests
-                if (data.summary.length < SUMMARY_TRIM_LEN) {
-                    s = data.summary;
-                } else {
-                    s = data.summary.substring(0, SUMMARY_TRIM_LEN);
-                }
-
-                s += " <span>(" + _.escape(data.id) + ")</span>";
-            }
-
-            return s;
-        },
-        matchCase: false,
-        multiple: false,
-        clickToURL: true,
-        selectFirst: false,
-        width: 240,
-        enterToURL: true,
-        parse: function(data) {
-            var jsonData = data,
-                jsonDataSearch = jsonData.search,
-                parsed = [],
-                objects = ["users", "groups", "review_requests"],
-                values = ["username", "name", "summary"],
-                value,
-                items,
-                i,
-                j;
-
-            for (j = 0; j < objects.length; j++) {
-                items = jsonDataSearch[objects[j]];
-
-                for (i = 0; i < items.length; i++) {
-                    value = items[i];
-
-                    if (j !== 2) {
-                        parsed.push({
-                            data: value,
-                            value: value[values[j]],
-                            result: value[values[j]]
-                        });
-                    } else if (value['public']) {
-                        // Only show review requests that are public
-                        value.url = SITE_ROOT + "r/" + value.id;
-                        parsed.push({
-                            data: value,
-                            value: value[values[j]],
-                            result: value[values[j]]
-                        });
-                    }
-                }
-            }
-
-            return parsed;
-        },
-        url: SITE_ROOT + "api/" + "search/"
-    });
-};
 
 var gInfoBoxCache = {};
 
@@ -172,7 +90,6 @@ $.fn.infobox = function(id) {
     function showInfobox(url, $target) {
         $infobox
             .empty()
-            .addClass('loading')
             .html(gInfoBoxCache[url])
             .positionToSide($target, {
                 side: 'tb',
@@ -240,15 +157,9 @@ $.fn.bug_infobox = function() {
 
 
 $(document).ready(function() {
-    $('<div id="activity-indicator" />')
-        .text(gettext("Loading..."))
-        .hide()
-        .appendTo("body");
-
-    $("#search_field").searchAutoComplete();
     $('.user').user_infobox();
     $('.bug').bug_infobox();
-    $("time.timesince").timesince();
+    $('time.timesince').timesince();
 
     $('.gravatar').retinaGravatar();
 

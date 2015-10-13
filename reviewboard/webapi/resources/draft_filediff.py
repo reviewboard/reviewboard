@@ -21,6 +21,8 @@ class DraftFileDiffResource(FileDiffResource):
     Each of these contains a single, self-contained diff file that
     applies to exactly one file on a repository.
     """
+    added_in = '2.0'
+
     name = 'draft_file'
     policy_id = 'draft_file_diff'
     uri_name = 'files'
@@ -107,7 +109,7 @@ class DraftFileDiffResource(FileDiffResource):
             return DOES_NOT_EXIST
 
         if not review_request_draft.is_mutable_by(request.user):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if 'dest_attachment_file' in request.FILES:
             if not filediff.binary:

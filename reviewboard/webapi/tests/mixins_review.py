@@ -1,12 +1,13 @@
 from __future__ import unicode_literals
 
-from reviewboard.webapi.tests.mixins import test_template
+from djblets.webapi.testing.decorators import webapi_test_template
+
 from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
                                                         ExtraDataListMixin)
 
 
 class ReviewListMixin(ExtraDataListMixin):
-    @test_template
+    @webapi_test_template
     def test_post_with_text_type_markdown(self):
         """Testing the POST <URL> API with text_type=markdown"""
         self._test_post_with_text_types(
@@ -15,7 +16,7 @@ class ReviewListMixin(ExtraDataListMixin):
             expected_body_top_text_type='markdown',
             expected_body_bottom_text_type='markdown')
 
-    @test_template
+    @webapi_test_template
     def test_post_with_text_type_plain(self):
         """Testing the POST <URL> API with text_type=plain"""
         self._test_post_with_text_types(
@@ -24,7 +25,7 @@ class ReviewListMixin(ExtraDataListMixin):
             expected_body_top_text_type='plain',
             expected_body_bottom_text_type='plain')
 
-    @test_template
+    @webapi_test_template
     def test_post_with_body_top_text_type_markdown(self):
         """Testing the POST <URL> API with body_top_text_type=markdown"""
         self._test_post_with_text_types(
@@ -33,7 +34,7 @@ class ReviewListMixin(ExtraDataListMixin):
             expected_body_top_text_type='markdown',
             expected_body_bottom_text_type='plain')
 
-    @test_template
+    @webapi_test_template
     def test_post_with_body_top_text_type_plain(self):
         """Testing the POST <URL> API with body_top_text_type=plain"""
         self._test_post_with_text_types(
@@ -42,7 +43,7 @@ class ReviewListMixin(ExtraDataListMixin):
             expected_body_top_text_type='plain',
             expected_body_bottom_text_type='plain')
 
-    @test_template
+    @webapi_test_template
     def test_post_with_body_bottom_text_type_markdown(self):
         """Testing the POST <URL> API with body_bottom_text_type=markdown"""
         self._test_post_with_text_types(
@@ -51,7 +52,7 @@ class ReviewListMixin(ExtraDataListMixin):
             expected_body_top_text_type='plain',
             expected_body_bottom_text_type='markdown')
 
-    @test_template
+    @webapi_test_template
     def test_post_with_body_bottom_text_type_plain(self):
         """Testing the POST <URL> API with body_bottom_text_type=plain"""
         self._test_post_with_text_types(
@@ -92,7 +93,7 @@ class ReviewListMixin(ExtraDataListMixin):
 
 
 class ReviewItemMixin(ExtraDataItemMixin):
-    @test_template
+    @webapi_test_template
     def test_get_with_markdown_and_force_text_type_markdown(self):
         """Testing the GET <URL> API with text_type=markdown and
         ?force-text-type=markdown
@@ -103,7 +104,7 @@ class ReviewItemMixin(ExtraDataItemMixin):
             force_text_type='markdown',
             expected_text=r'\# `This` is a **test**')
 
-    @test_template
+    @webapi_test_template
     def test_get_with_markdown_and_force_text_type_plain(self):
         """Testing the GET <URL> API with text_type=markdown and
         ?force-text-type=plain
@@ -114,7 +115,7 @@ class ReviewItemMixin(ExtraDataItemMixin):
             force_text_type='plain',
             expected_text='# `This` is a **test**')
 
-    @test_template
+    @webapi_test_template
     def test_get_with_markdown_and_force_text_type_html(self):
         """Testing the GET <URL> API with text_type=markdown and
         ?force-text-type=html
@@ -126,7 +127,7 @@ class ReviewItemMixin(ExtraDataItemMixin):
             expected_text='<p># <code>This</code> is a '
                           '<strong>test</strong></p>')
 
-    @test_template
+    @webapi_test_template
     def test_get_with_plain_and_force_text_type_markdown(self):
         """Testing the GET <URL> API with text_type=plain and
         ?force-text-type=markdown
@@ -135,9 +136,9 @@ class ReviewItemMixin(ExtraDataItemMixin):
             text='#<`This` is a **test**>',
             rich_text=False,
             force_text_type='markdown',
-            expected_text=r'\#<\`This\` is a \*\*test\*\*\>')
+            expected_text=r'\#<\`This\` is a \*\*test\*\*>')
 
-    @test_template
+    @webapi_test_template
     def test_get_with_plain_and_force_text_type_plain(self):
         """Testing the GET <URL> API with text_type=plain and
         ?force-text-type=plain
@@ -148,7 +149,7 @@ class ReviewItemMixin(ExtraDataItemMixin):
             force_text_type='plain',
             expected_text='#<`This` is a **test**>')
 
-    @test_template
+    @webapi_test_template
     def test_get_with_plain_and_force_text_type_html(self):
         """Testing the GET <URL> API with text_type=plain and
         ?force-text-type=html
@@ -159,7 +160,7 @@ class ReviewItemMixin(ExtraDataItemMixin):
             force_text_type='html',
             expected_text='#&lt;`This` is a **test**&gt;')
 
-    @test_template
+    @webapi_test_template
     def test_put_with_text_type_markdown(self):
         """Testing the POST <URL> API with text_type=markdown"""
         self._test_put_with_text_types(
@@ -168,7 +169,7 @@ class ReviewItemMixin(ExtraDataItemMixin):
             expected_body_top_text_type='markdown',
             expected_body_bottom_text_type='markdown')
 
-    @test_template
+    @webapi_test_template
     def test_put_with_text_type_plain(self):
         """Testing the POST <URL> API with text_type=plain"""
         self._test_put_with_text_types(
@@ -177,7 +178,7 @@ class ReviewItemMixin(ExtraDataItemMixin):
             expected_body_top_text_type='plain',
             expected_body_bottom_text_type='plain')
 
-    @test_template
+    @webapi_test_template
     def test_put_with_body_top_text_type_markdown(self):
         """Testing the POST <URL> API with body_top_text_type=markdown"""
         self._test_put_with_text_types(
@@ -186,7 +187,7 @@ class ReviewItemMixin(ExtraDataItemMixin):
             expected_body_top_text_type='markdown',
             expected_body_bottom_text_type='plain')
 
-    @test_template
+    @webapi_test_template
     def test_put_with_body_top_text_type_plain(self):
         """Testing the POST <URL> API with body_top_text_type=plain"""
         self._test_put_with_text_types(
@@ -195,7 +196,7 @@ class ReviewItemMixin(ExtraDataItemMixin):
             expected_body_top_text_type='plain',
             expected_body_bottom_text_type='plain')
 
-    @test_template
+    @webapi_test_template
     def test_put_with_body_bottom_text_type_markdown(self):
         """Testing the POST <URL> API with body_bottom_text_type=markdown"""
         self._test_put_with_text_types(
@@ -204,7 +205,7 @@ class ReviewItemMixin(ExtraDataItemMixin):
             expected_body_top_text_type='plain',
             expected_body_bottom_text_type='markdown')
 
-    @test_template
+    @webapi_test_template
     def test_put_with_body_bottom_text_type_plain(self):
         """Testing the POST <URL> API with body_bottom_text_type=plain"""
         self._test_put_with_text_types(

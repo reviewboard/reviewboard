@@ -1,20 +1,6 @@
 @import (reference) "defs.less";
 
 
-span {
-  &.label-draft {
-    color: #008000;
-  }
-
-  &.label-submitted {
-    color: #b7a93e;
-  }
-
-  &.label-discarded {
-    color: #fe5757;
-  }
-}
-
 .loading img {
   margin-right: 4px;
   vertical-align: text-bottom;
@@ -22,134 +8,6 @@ span {
 
 .box .star {
   cursor: pointer;
-}
-
-.datagrid-wrapper {
-  .datagrid-titlebox {
-    padding-left: 0px;
-
-    .datagrid-title {
-      padding-left: 10px;
-    }
-
-    .datagrid-showclosed {
-      display: inline-block ;
-    }
-  }
-
-  .datagrid-title,
-  .datagrid-titlebox {
-    background: @box-title-bg;
-    .border-radius(@box-border-radius @box-border-radius 0 0);
-  }
-}
-
-#dashboard-main {
-  display: block;
-
-  .datagrid-title-tabs {
-    display: block;
-    height: 1.5em;
-    list-style: none;
-
-    .datagrid-tab {
-      float: left;
-
-      &.active {
-        &:hover {
-          .datagrid-title {
-            background: darken(@box-title-bg, 20%);
-          }
-        }
-
-        .datagrid-title {
-          background: darken(@box-title-bg, 10%);
-        }
-      }
-
-      .datagrid-title {
-        border-radius: 0;
-        border-right: 1px solid gray;
-
-        &:hover {
-          background: darken(@box-title-bg, 10%);
-        }
-
-        a {
-          text-decoration: none;
-          color: black;
-        }
-      }
-    }
-
-    .datagrid-showclosed {
-      padding: 2px 0px 0px 10px ;
-    }
-  }
-}
-
-.datagrid-main {
-  .border-radius(@box-border-radius);
-}
-
-.datagrid-header {
-  border-top: 0 !important;
-
-  &:last-child {
-    border-right: 0;
-  }
-}
-
-.datagrid-menu {
-  border: 1px #888A85 solid;
-}
-
-.datagrid {
-  tr:last-child {
-    td:first-child {
-      .border-radius(0 0 0 @box-border-radius);
-    }
-
-    td:last-child {
-      .border-radius(0 0 @box-border-radius 0);
-    }
-  }
-
-  td:last-child {
-    border-right: 0;
-  }
-
-  .issue-count,
-  .shipit-count {
-    display: inline-block;
-    font-weight: bold;
-    padding: 0.05em 0.8em;
-    white-space: nowrap;
-    .border-radius(10px);
-  }
-
-  .issue-count {
-    border: 1px darken(@issue-opened-bg, 50%) solid;
-    color: #205003;
-    #gradient > .vertical-three-colors(@issue-opened-bg, @issue-opened-bg, 25%,
-                                       darken(@issue-opened-bg, 30%));
-
-    .issue-icon {
-      color: darken(@issue-opened-bg, 60%);
-      display: inline-block;
-      padding: 0 3px 0 1px;
-      text-align: center;
-    }
-  }
-
-  .shipit-count {
-    background-image: url("../images/shipit_bg.png");
-    background-position: top left;
-    background-repeat: repeat-x;
-    background-color: #6bc810;
-    border: 1px #478a06 solid;
-    color: #205003;
-  }
 }
 
 
@@ -347,15 +205,6 @@ span {
   }
 }
 
-body.admin #navbar {
-  background: url("../images/admin/yellow_bg_small.png") repeat-x #F9F2C9;
-  margin: 0;
-
-  a {
-    color: black;
-  }
-}
-
 
 /****************************************************************************
  * Login/Register pages
@@ -469,6 +318,33 @@ body.admin #navbar {
       margin: 0 0 1em 0;;
     }
   }
+
+  .on-mobile-medium-screen-720({
+    /* Waste less vertical space on mobile devices. */
+    margin-top: 3em;
+
+    .auth-form-row {
+      /* Change the labels to appear above the fields and not to the side. */
+      padding-left: 0;
+
+      &.auth-field-row {
+        label {
+          display: block;
+          float: none;
+          padding: 0.5em 0;
+          text-align: left;
+          width: auto;
+        }
+      }
+    }
+
+    .auth-section {
+      &.main-auth-section {
+        /* Reset the margin that was providing room for the side labels. */
+        margin-left: 0;
+      }
+    }
+  });
 }
 
 #auth_container #login_form {
@@ -510,10 +386,30 @@ body.admin #navbar {
   width: 100%;
   z-index: @z-index-menu;
 
+  .on-mobile-medium-screen-720({
+    &.search-results {
+      /*
+       * On mobile, set the autoresults list to take up the entire size of
+       * the #page-container, overriding anything set by the widget.
+       */
+      left: 0 !important;
+      top: -@page-container-padding !important;
+      width: 100% !important;
+      height: 100%;
+      border: 0;
+      overflow-y: auto;
+    }
+  });
+
   ul {
+    list-style: none;
     margin: 0;
     padding: 0;
     width: 100%;
+
+    .on-mobile-medium-screen-720({
+      max-height: none !important;
+    });
 
     li {
       cursor: pointer;
@@ -521,6 +417,16 @@ body.admin #navbar {
       padding: 3px 6px;
       position: relative;
       white-space: nowrap;
+
+      .on-mobile-medium-screen-720({
+        /*
+         * Give each item a border and more padding to help define the click
+         * area (and to fit in with typical search results on mobile devices.
+         */
+        border-top: 1px #EEE solid;
+        margin: 0 1em;
+        padding: 1.5em;
+      });
 
       span {
         margin-left: 6px;
@@ -548,12 +454,6 @@ body.admin #navbar {
  ****************************************************************************/
 
 #user_infobox {
-  &.loading {
-    background-image: url("../images/spinner.gif");
-    background-position: 1em 1em;
-    background-repeat: no-repeat;
-  }
-
   .infobox-pic {
     float: left;
     width: 85px;

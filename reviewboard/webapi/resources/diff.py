@@ -45,6 +45,7 @@ class DiffResource(WebAPIResource):
             'type': dict,
             'description': 'Extra data as part of the diff. '
                            'This can be set by the API or extensions.',
+            'added_in': '2.0',
         },
         'name': {
             'type': six.text_type,
@@ -72,6 +73,7 @@ class DiffResource(WebAPIResource):
                            'of repositories. The directory must be between '
                            'the root of the repository and the top directory '
                            'referenced in the diff paths.',
+            'added_in': '1.7',
         },
         'base_commit_id': {
             'type': six.text_type,
@@ -80,6 +82,7 @@ class DiffResource(WebAPIResource):
                            'for that diff. This may not be provided for all '
                            'diffs or repository types, depending on how the '
                            'diff was uploaded.',
+            'added_in': '1.7.13',
         },
     }
     item_child_resources = [
@@ -217,6 +220,7 @@ class DiffResource(WebAPIResource):
                                'for that diff. This may not be provided for '
                                'all diffs or repository types, depending on '
                                'how the diff was uploaded.',
+                'added_in': '1.7.13',
             },
         },
         allow_unknown=True
@@ -270,7 +274,7 @@ class DiffResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if review_request.repository is None:
             return INVALID_ATTRIBUTE, {
@@ -326,7 +330,7 @@ class DiffResource(WebAPIResource):
                 draft = ReviewRequestDraftResource.prepare_draft(
                     request, review_request)
             except PermissionDenied:
-                return self._no_access_error(request.user)
+                return self.get_no_access_error(request)
 
         draft.diffset = diffset
 
@@ -374,7 +378,7 @@ class DiffResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if extra_fields:
             self.import_extra_data(diffset, diffset.extra_data, extra_fields)

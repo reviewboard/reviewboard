@@ -9,6 +9,9 @@ api_token_list_mimetype = _build_mimetype('api-tokens')
 api_token_item_mimetype = _build_mimetype('api-token')
 
 
+archived_item_mimetype = _build_mimetype('archived-review-request')
+
+
 change_list_mimetype = _build_mimetype('review-request-changes')
 change_item_mimetype = _build_mimetype('review-request-change')
 
@@ -168,3 +171,6 @@ watched_review_request_item_mimetype = \
     _build_mimetype('watched-review-request')
 watched_review_request_list_mimetype = \
     _build_mimetype('watched-review-requests')
+
+webhook_list_mimetype = _build_mimetype('webhooks')
+webhook_item_mimetype = _build_mimetype('webhook')

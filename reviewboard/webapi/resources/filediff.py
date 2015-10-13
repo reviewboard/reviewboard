@@ -44,6 +44,7 @@ class FileDiffResource(WebAPIResource):
             'type': dict,
             'description': 'Extra data as part of the diff. '
                            'This can be set by the API or extensions.',
+            'added_in': '2.0',
         },
         'source_file': {
             'type': six.text_type,
@@ -71,12 +72,14 @@ class FileDiffResource(WebAPIResource):
             'description': "The file attachment for the contents of the "
                            "original file for this file diff, if representing "
                            "a binary file.",
+            'added_in': '2.0',
         },
         'dest_attachment': {
             'type': DiffFileAttachmentResource,
             'description': "The file attachment for the contents of the "
                            "patched file for this file diff, if representing "
                            "a binary file.",
+            'added_in': '2.0',
         },
     }
     item_child_resources = [
@@ -375,7 +378,7 @@ class FileDiffResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if extra_fields:
             self.import_extra_data(filediff, filediff.extra_data, extra_fields)

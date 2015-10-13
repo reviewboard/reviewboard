@@ -1,0 +1,33 @@
+{% extends "datagrid/listview.html" %}
+
+{% block datagrid_titlebox %}
+<div class="datagrid-title-filter-wrapper">
+{%  if datagrid.tabs %}
+ <ul class="datagrid-title-tabs">
+{%   for tab_title, url in datagrid.tabs %}
+  <li class="datagrid-tab{% if tab_title == datagrid.tab_title %} active{% endif %}">
+   <a href="{{url}}">{{tab_title}}</a>
+  </li>
+{%   endfor %}
+ </ul>
+{%  endif %}
+
+{{block.super}}
+</div>
+{% endblock datagrid_titlebox %}
+
+{% block datagrid_title %}
+{%  if not datagrid.tabs %}
+ {{block.super}}
+{%  endif %}
+
+{%  block datagrid_filters_container %}
+<div class="datagrid-top-filters">
+ <div class="datagrid-filters-menu fa fa-cog"></div>
+ <ul class="datagrid-filters">
+{%   block datagrid_filters %}{% endblock %}
+ </ul>
+</div>
+{%  endblock datagrid_filters_container %}
+{% endblock %}
+

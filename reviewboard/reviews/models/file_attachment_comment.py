@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import logging
 
 from django.db import models
+from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.attachments.models import FileAttachment
@@ -25,6 +26,29 @@ class FileAttachmentComment(BaseComment):
         null=True,
         blank=True)
 
+    @cached_property
+    def review_ui(self):
+        """Return a ReviewUI appropriate for this comment.
+
+        If a ReviewUI is available for this type of file, an instance of
+        one will be returned that's associated with this comment's
+        FileAttachment and the one being diffed against (if any).
+        """
+        from reviewboard.reviews.ui.base import FileAttachmentReviewUI
+
+        # Note that we need to create our own instance here, so that we don't
+        # end up altering the state of another ReviewUI's file attachment
+        # (particularly with calling set_diff_against below).
+        review_ui = FileAttachmentReviewUI.for_type(self.file_attachment)
+
+        if not review_ui:
+            return None
+
+        if review_ui.supports_diffing and self.diff_against_file_attachment:
+            review_ui.set_diff_against(self.diff_against_file_attachment)
+
+        return review_ui
+
     @property
     def thumbnail(self):
         """Returns the thumbnail for this comment, if any, as HTML.
@@ -32,7 +56,7 @@ class FileAttachmentComment(BaseComment):
         The thumbnail will be generated from the appropriate ReviewUI,
         if there is one for this type of file.
         """
-        review_ui = self.file_attachment.review_ui
+        review_ui = self.review_ui
 
         if review_ui:
             try:
@@ -46,7 +70,8 @@ class FileAttachmentComment(BaseComment):
 
     def get_absolute_url(self):
         """Returns the URL for this comment."""
-        review_ui = self.file_attachment.review_ui
+        review_ui = self.review_ui
+
         if review_ui:
             try:
                 return review_ui.get_comment_link_url(self)
@@ -59,13 +84,14 @@ class FileAttachmentComment(BaseComment):
 
     def get_link_text(self):
         """Returns the text for the link to the file."""
-        review_ui = self.file_attachment.review_ui
+        review_ui = self.review_ui
+
         if review_ui:
             try:
                 return review_ui.get_comment_link_text(self)
             except Exception as e:
-                logging.error('Error when calling get_comment_thumbnail for '
+                logging.error('Error when calling get_comment_link_text for '
                               'FileAttachmentReviewUI %r: %s',
                               review_ui, e, exc_info=1)
         else:
-            return self.file_attachment.filename
+            return self.file_attachment.display_name

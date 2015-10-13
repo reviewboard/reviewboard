@@ -102,6 +102,9 @@ This is available if `Authentication Method`_ is set to ``Active Directory``.
     The Active Directory Domain to authenticate against.
     For example: ``MYDOMAIN``
 
+    If you can't login, you may need to use the fully qualified name.
+    For example: ``MYDOMAIN.subdomain.topleveldomain``
+
     This setting is required.
 
 * **Use TLS for authentication:**

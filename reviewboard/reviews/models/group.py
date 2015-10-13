@@ -52,7 +52,18 @@ class Group(models.Model):
     users = models.ManyToManyField(User, blank=True,
                                    related_name="review_groups",
                                    verbose_name=_("users"))
-    local_site = models.ForeignKey(LocalSite, blank=True, null=True)
+    local_site = models.ForeignKey(LocalSite,
+                                   blank=True,
+                                   null=True,
+                                   related_name='groups')
+    is_default_group = models.BooleanField(
+        _('add new users by default'),
+        default=False,
+        help_text=_('If a local site is set, this will automatically add '
+                    'users to this group when those users are added to the '
+                    'local site. If there is no local site, users will be '
+                    'automatically added to this group when they are '
+                    'registered.'))
 
     incoming_request_count = CounterField(
         _('incoming review request count'),
@@ -69,13 +80,14 @@ class Group(models.Model):
 
     objects = ReviewGroupManager()
 
-    def is_accessible_by(self, user, request=None):
+    def is_accessible_by(self, user, request=None, silent=False):
         """Returns true if the user can access this group."""
         if self.local_site and not self.local_site.is_accessible_by(user):
-            logging.warning('Group pk=%d (%s) is not accessible by user %s '
-                            'because its local_site is not accessible by '
-                            'that user.',
-                            self.pk, self.name, user, request=request)
+            if not silent:
+                logging.warning('Group pk=%d (%s) is not accessible by user '
+                                '%s because its local_site is not accessible '
+                                'by that user.',
+                                self.pk, self.name, user, request=request)
             return False
 
         if not self.invite_only or user.is_superuser:
@@ -84,10 +96,11 @@ class Group(models.Model):
         if user.is_authenticated() and self.users.filter(pk=user.pk).exists():
             return True
 
-        logging.warning('Group pk=%d (%s) is not accessible by user %s '
-                        'because it is invite only, and the user is not a '
-                        'member.',
-                        self.pk, self.name, user, request=request)
+        if not silent:
+            logging.warning('Group pk=%d (%s) is not accessible by user %s '
+                            'because it is invite only, and the user is not a '
+                            'member.',
+                            self.pk, self.name, user, request=request)
 
         return False
 

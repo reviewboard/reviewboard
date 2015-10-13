@@ -195,6 +195,11 @@ directory, you'll need to embed the configuration file in your global
 Apache configuration file (usually :file:`/etc/httpd/httpd.conf` or
 :file:`/etc/httpd/apache2.conf`).
 
+.. note::
+
+   On Fedora, you can do
+   $ ln -s /path/to/apache-wsgi.conf /etc/httpd/conf.d/reviewboard-sitename.conf
+
 Of course, the configuration file can be placed anywhere so long as it's
 at some point included by your main Apache configuration file.
 
@@ -213,6 +218,12 @@ try going to your site.
     :file:`/etc/apache2/sites-enabled` directory. This may be
     called something like :file:`default` or :file:`000-default`.
 
+.. note::
+
+   On Fedora and Red Hat-derived systems, the following commands
+   should be run (as root) to avoid SELinux denials::
+   $ setsebool -P httpd_can_sendmail 1
+   $ setsebool -P httpd_can_network_memcache 1
 
 lighttpd
 --------

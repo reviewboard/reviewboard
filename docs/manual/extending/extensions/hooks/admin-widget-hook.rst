@@ -4,7 +4,7 @@
 AdminWidgetHook
 ===============
 
-.. versionadded:: 2.1
+.. versionadded:: 2.5
 
 :py:class:`reviewboard.extensions.hooks.AdminWidgetHook` allows extensions to
 register new widgets for the administration dashboard.
@@ -22,17 +22,17 @@ Example
 .. code-block:: python
 
     from django.utils.translation import ugettext_lazy as _
-    from reviewboard.admin.widgets import AdminWidget
+    from reviewboard.admin.widgets import Widget
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import AdminWidgetHook
 
 
-    class SampleAdminWidget(AdminWidget):
+    class SampleWidget(Widget):
         widget_id = 'myvendor_sample_widget'
         title = _('Sample Widget')
-        template = 'admin/widgets/sample-widget.html'
+        template = 'sample/widgets/sample-widget.html'
 
 
     class SampleExtension(Extension):
         def initialize(self):
-            AdminWidgetHook(self, SampleAdminWidget)
+            AdminWidgetHook(self, SampleWidget)

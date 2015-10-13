@@ -17,6 +17,7 @@ $.widget("ui.rbautocomplete", {
         inputClass: "ui-autocomplete-input",
         resultsClass: "ui-autocomplete-results",
         loadingClass: "ui-autocomplete-loading",
+        resultsParentEl: document.body,
         minChars: 1,
         ajaxDelay: 400,
         localDelay: 10,
@@ -196,7 +197,8 @@ $.widget("ui.rbautocomplete", {
         // Private methods
         function selectCurrent() {
             var selected = select.selected();
-            if( !selected )
+
+            if ( !selected || !matchCurrent(selected) )
                 return false;
 
             var v = selected.result;
@@ -204,6 +206,7 @@ $.widget("ui.rbautocomplete", {
 
             if ( options.multiple ) {
                 var words = trimWords($input.val());
+
                 if ( words.length > 1 ) {
                     v = words.slice(0, words.length - 1).join( options.multipleSeparator ) + options.multipleSeparator + v;
                 }
@@ -216,12 +219,37 @@ $.widget("ui.rbautocomplete", {
             return true;
         };
 
-        function onChange(crap, skipPrevCheck) {
-            if( lastKeyPressCode == $.ui.keyCode.DELETE ) {
-                select.hide();
-                return;
+        // Check if the current user input matches the currently selected item.
+        function matchCurrent(selected) {
+            var toMatch = [selected.result];
+
+            if (selected.data.display_name)
+                toMatch.push(selected.data.display_name);
+
+            else if (selected.data.fullname)
+                toMatch = toMatch.concat([selected.data.first_name, selected.data.last_name]);
+
+            var currentValue = lastWord($input.val());
+            var matched = false;
+
+            for (i = 0; i < toMatch.length && !matched; i++) {
+                var match = toMatch[i];
+
+                if (!options.matchCase) {
+                    match = match.toLowerCase();
+                    currentValue = currentValue.toLowerCase();
+                }
+
+                if (options.matchContains)
+                    matched = match.indexOf(currentValue) >= 0
+                else // check if prefix
+                    matched = match.indexOf(currentValue) === 0
             }
 
+            return matched;
+        };
+
+        function onChange(crap, skipPrevCheck) {
             var currentValue = $input.val();
 
             if ( !skipPrevCheck && currentValue == previousValue )
@@ -251,8 +279,7 @@ $.widget("ui.rbautocomplete", {
             var words = value.split( options.multipleSeparator );
             var result = [];
             $.each(words, function(i, value) {
-                if ( $.trim(value) )
-                    result[i] = $.trim(value);
+                result[i] = $.trim(value);
             });
             return result;
         };
@@ -595,7 +622,7 @@ $.ui.rbautocomplete.select = function (options, input, select, config) {
         .hide()
         .addClass(options.resultsClass)
         .css("position", "absolute")
-        .appendTo(document.body);
+        .appendTo(options.resultsParentEl);
 
         list = $("<ul/>").appendTo(element).mouseover( function(event) {
             if(target(event).nodeName && target(event).nodeName.toUpperCase() == 'LI') {

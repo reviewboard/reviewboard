@@ -266,7 +266,7 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
 
         self._testHttpCaching(
             get_diff_item_url(review_request, diffset.revision),
-            check_last_modified=True)
+            check_etags=True)
 
     #
     # HTTP PUT tests

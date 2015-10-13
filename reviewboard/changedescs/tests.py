@@ -5,7 +5,8 @@ from reviewboard.testing.testcase import TestCase
 
 
 class ChangeDescTests(TestCase):
-    """Tests the ChangeDescription model."""
+    """Tests for the ChangeDescription model."""
+
     def test_record_string(self):
         """Testing ChangeDescription.record_field_change with a string value"""
         old_value = "abc"

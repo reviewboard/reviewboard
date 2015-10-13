@@ -8,9 +8,19 @@ RB.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
 
     template: _.template([
         '<h1><%- draftText %></h1>',
-        ' Be sure to publish when finished.',
-        '<input type="button" value="Publish" class="publish-button" />',
-        '<input type="button" value="Discard" class="discard-button" />'
+        '<p>Be sure to publish when finished.</p>',
+        '<span class="banner-actions">',
+        ' <input type="button" value="<%- publishText %>"',
+        '        class="publish-button" />',
+        ' <input type="button" value="<%- discardText %>"',
+        '        class="discard-button" />',
+        '</span>',
+        '<% if (showSendEmail) { %>',
+        ' <label>',
+        '  <input type="checkbox" class="send-email" checked />',
+        '  <%- sendEmailText %>',
+        '</label>',
+        '<% } %>'
     ].join('')),
 
     events: {
@@ -25,7 +35,11 @@ RB.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
         _super(this).render.call(this);
 
         this.$el.html(this.template({
-            draftText: gettext('This reply is a draft.')
+            draftText: gettext('This reply is a draft.'),
+            publishText: gettext('Publish'),
+            discardText: gettext('Discard'),
+            sendEmailText: gettext('Send E-Mail'),
+            showSendEmail: this.options.showSendEmail
         }));
 
         this.model.on('saving destroying', function() {
@@ -49,10 +63,10 @@ RB.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
      * Publishes the reply.
      */
     _onPublishClicked: function() {
+        var $sendEmail = this.$('.send-email');
+
         this.model.publish({
-            error: function(model, xhr) {
-                this.model.trigger('publishError', xhr.errorText);
-            }
+            trivial: $sendEmail.length === 1 && !$sendEmail.is(':checked')
         }, this);
     },
 

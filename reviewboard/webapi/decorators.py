@@ -115,8 +115,12 @@ def webapi_check_local_site(view_func):
             elif (restrict_to_local_site and
                   restrict_to_local_site != local_site.pk):
                 return PERMISSION_DENIED
+
+            kwargs['local_site'] = local_site
         elif restrict_to_local_site is not None:
             return PERMISSION_DENIED
+        else:
+            kwargs['local_site'] = None
 
         return view_func(*args, **kwargs)
 

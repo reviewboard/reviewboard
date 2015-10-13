@@ -481,7 +481,7 @@ suite('rb/resources/models/BaseResource', function() {
                     expect($.ajax).toHaveBeenCalled();
                     expect(callbacks.success).toHaveBeenCalled();
                     expect(callbacks.error).not.toHaveBeenCalled();
-                    expect(model.trigger).toHaveBeenCalledWith('saved');
+                    expect(model.trigger).toHaveBeenCalledWith('saved', callbacks);
                 });
 
                 it('Without callbacks', function() {
@@ -491,7 +491,7 @@ suite('rb/resources/models/BaseResource', function() {
                     expect(parentObject.ensureCreated).toHaveBeenCalled();
                     expect(RB.apiCall).toHaveBeenCalled();
                     expect($.ajax).toHaveBeenCalled();
-                    expect(model.trigger).toHaveBeenCalledWith('saved');
+                    expect(model.trigger).toHaveBeenCalledWith('saved', {});
                 });
             });
 
@@ -511,7 +511,7 @@ suite('rb/resources/models/BaseResource', function() {
                     expect($.ajax).not.toHaveBeenCalled();
                     expect(callbacks.success).not.toHaveBeenCalled();
                     expect(callbacks.error).toHaveBeenCalled();
-                    expect(model.trigger).not.toHaveBeenCalledWith('saved');
+                    expect(model.trigger).not.toHaveBeenCalledWith('saved', callbacks);
                 });
 
                 it('Without callbacks', function() {
@@ -544,13 +544,13 @@ suite('rb/resources/models/BaseResource', function() {
                     expect(Backbone.Model.prototype.save).toHaveBeenCalled();
                     expect(callbacks.success).toHaveBeenCalled();
                     expect(callbacks.error).not.toHaveBeenCalled();
-                    expect(model.trigger).toHaveBeenCalledWith('saved');
+                    expect(model.trigger).toHaveBeenCalledWith('saved', callbacks);
                 });
 
                 it('Without callbacks', function() {
                     model.save();
                     expect(Backbone.Model.prototype.save).toHaveBeenCalled();
-                    expect(model.trigger).toHaveBeenCalledWith('saved');
+                    expect(model.trigger).toHaveBeenCalledWith('saved', {});
                 });
             });
 
@@ -595,7 +595,7 @@ suite('rb/resources/models/BaseResource', function() {
                     expect(RB.apiCall).toHaveBeenCalled();
                     expect($.ajax).toHaveBeenCalled();
                     expect(callbacks.error).not.toHaveBeenCalled();
-                    expect(model.trigger).toHaveBeenCalledWith('saved');
+                    expect(model.trigger).toHaveBeenCalledWith('saved', callbacks);
                 });
 
                 it('Without callbacks', function() {
@@ -605,7 +605,7 @@ suite('rb/resources/models/BaseResource', function() {
                     expect(Backbone.Model.prototype.save).toHaveBeenCalled();
                     expect(RB.apiCall).toHaveBeenCalled();
                     expect($.ajax).toHaveBeenCalled();
-                    expect(model.trigger).toHaveBeenCalledWith('saved');
+                    expect(model.trigger).toHaveBeenCalledWith('saved', {});
                 });
             });
 

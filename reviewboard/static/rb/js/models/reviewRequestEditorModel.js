@@ -6,33 +6,47 @@
  */
 RB.ReviewRequestEditor = Backbone.Model.extend({
     defaults: {
+        changeDescriptionRenderedText: '',
+        closeDescriptionRenderedText: '',
         commentIssueManager: null,
         editable: false,
         editCount: 0,
         hasDraft: false,
+        fileAttachments: null,
         fileAttachmentComments: {},
         mutableByUser: false,
         pendingSaveCount: 0,
         publishing: false,
         reviewRequest: null,
+        screenshots: null,
+        showSendEmail: false,
         statusEditable: false,
         statusMutableByUser: false
     },
 
     initialize: function() {
-        var reviewRequest = this.get('reviewRequest');
+        var reviewRequest = this.get('reviewRequest'),
+            fileAttachments = this.get('fileAttachments'),
+            screenshots = this.get('screenshots');
 
-        this.fileAttachments = new Backbone.Collection([], {
-            model: RB.FileAttachment
-        });
-        this.fileAttachments.on('add', this._onFileAttachmentOrScreenshotAdded,
-                                this);
+        if (fileAttachments === null) {
+            fileAttachments = new Backbone.Collection([], {
+                model: RB.FileAttachment
+            });
+            this.set('fileAttachments', fileAttachments);
+        }
 
-        this.screenshots = new Backbone.Collection([], {
-            model: RB.Screenshot
-        });
-        this.screenshots.on('add', this._onFileAttachmentOrScreenshotAdded,
-                            this);
+        fileAttachments.on('add', this._onFileAttachmentOrScreenshotAdded,
+                           this);
+
+        if (screenshots === null) {
+            screenshots = new Backbone.Collection([], {
+                model: RB.Screenshot
+            });
+            this.set('screenshots', screenshots);
+        }
+
+        screenshots.on('add', this._onFileAttachmentOrScreenshotAdded, this);
 
         reviewRequest.draft.on('saving', function() {
             this.trigger('saving');
@@ -49,17 +63,19 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
     /*
      * Creates a file attachment tracked by the editor.
      *
-     * This wraps ReviewRequest.createFileAttachment and stores the
+     * This wraps RB.ReviewRequestDraft.createFileAttachment and stores the
      * file attachment in the fileAttachments collection.
      *
-     * This should be used instead of ReviewRequest.createFileAttachment
-     * for any existing or newly uploaded file attachments.
+     * This should be used instead of
+     * RB.ReviewRequestDraft.createFileAttachment for any existing or newly
+     * uploaded file attachments.
      */
     createFileAttachment: function(attributes) {
         var draft = this.get('reviewRequest').draft,
+            fileAttachments = this.get('fileAttachments'),
             fileAttachment = draft.createFileAttachment(attributes);
 
-        this.fileAttachments.add(fileAttachment);
+        fileAttachments.add(fileAttachment);
 
         return fileAttachment;
     },
@@ -198,6 +214,8 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
                 }
             },
             success: function() {
+                this.set('hasDraft', true);
+
                 if (_.isFunction(options.success)) {
                     options.success.call(context);
                 }
@@ -222,11 +240,13 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      * event will be triggered with the error message. Otherwise, upon
      * success, the "publish" event will be triggered.
      */
-    publishDraft: function() {
+    publishDraft: function(options) {
         var reviewRequest = this.get('reviewRequest'),
             onError = function(model, xhr) {
                 this.trigger('publishError', xhr.errorText);
             };
+
+        options = options || {};
 
         reviewRequest.draft.ensureCreated({
             success: function() {
@@ -234,7 +254,8 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
                     success: function() {
                         this.trigger('published');
                     },
-                    error: onError
+                    error: onError,
+                    trivial: options.trivial ? 1 : 0
                 }, this);
             },
             error: onError
@@ -309,6 +330,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         }, this);
 
         fileAttachment.on('saved destroy', function() {
+            this.set('hasDraft', true);
             this.trigger('saved');
         }, this);
     }

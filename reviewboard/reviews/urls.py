@@ -3,8 +3,7 @@ from __future__ import unicode_literals
 from django.conf.urls import include, patterns, url
 
 from reviewboard.reviews.views import (ReviewsDiffFragmentView,
-                                       ReviewsDiffViewerView,
-                                       ReviewRequestSearchView)
+                                       ReviewsDiffViewerView)
 
 
 download_diff_urls = patterns(
@@ -28,7 +27,7 @@ diffviewer_revision_urls = patterns(
     url(r'^fragment/(?P<filediff_id>[0-9]+)/$',
         ReviewsDiffFragmentView.as_view()),
 
-    url(r'^fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunkindex>[0-9]+)/$',
+    url(r'^fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunk_index>[0-9]+)/$',
         ReviewsDiffFragmentView.as_view()),
 
     url(r'^download/(?P<filediff_id>[0-9]+)/', include(download_diff_urls)),
@@ -44,7 +43,7 @@ diffviewer_interdiff_urls = patterns(
     url(r'^fragment/(?P<filediff_id>[0-9]+)/$',
         ReviewsDiffFragmentView.as_view()),
 
-    url(r'^fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunkindex>[0-9]+)/$',
+    url(r'^fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunk_index>[0-9]+)/$',
         ReviewsDiffFragmentView.as_view()),
 )
 
@@ -83,6 +82,10 @@ review_request_urls = patterns(
     url(r'^file/(?P<file_attachment_id>[0-9]+)/$',
         'review_file_attachment',
         name='file-attachment'),
+    url(r'^file/(?P<file_attachment_diff_id>[0-9]+)'
+        r'-(?P<file_attachment_id>[0-9]+)/$',
+        'review_file_attachment',
+        name='file-attachment'),
 
     # Screenshots
     url(r'^s/(?P<screenshot_id>[0-9]+)/$',
@@ -114,5 +117,4 @@ urlpatterns = patterns(
 
     url(r'^new/$', 'new_review_request', name="new-review-request"),
     url(r'^(?P<review_request_id>[0-9]+)/', include(review_request_urls)),
-    url(r'^search/$', ReviewRequestSearchView(), name="search"),
 )

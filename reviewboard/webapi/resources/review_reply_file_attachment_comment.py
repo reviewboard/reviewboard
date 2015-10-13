@@ -27,6 +27,8 @@ class ReviewReplyFileAttachmentCommentResource(
     changed on this list. However, if the reply is already published,
     then no changed can be made.
     """
+    added_in = '1.6'
+
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
     policy_id = 'review_reply_file_attachment_comment'
     model_parent_key = 'review'
@@ -71,7 +73,7 @@ class ReviewReplyFileAttachmentCommentResource(
             return DOES_NOT_EXIST
 
         if not resources.review_reply.has_modify_permissions(request, reply):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         try:
             comment = resources.review_file_attachment_comment.get_object(
@@ -138,7 +140,7 @@ class ReviewReplyFileAttachmentCommentResource(
             return DOES_NOT_EXIST
 
         if not resources.review_reply.has_modify_permissions(request, reply):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         self.update_comment(file_comment, is_reply=True, **kwargs)
 

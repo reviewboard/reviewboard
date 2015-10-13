@@ -23,7 +23,7 @@ from distutils.command.install import INSTALL_SCHEMES
 from distutils.core import Command
 
 from reviewboard import (get_package_version,
-                         is_release, VERSION,
+                         VERSION,
                          django_version)
 
 
@@ -134,11 +134,8 @@ if sys.platform == "darwin":
 
 PACKAGE_NAME = 'ReviewBoard'
 
-if is_release():
-    download_url = 'http://downloads.reviewboard.org/releases/%s/%s.%s/' % \
-                   (PACKAGE_NAME, VERSION[0], VERSION[1])
-else:
-    download_url = 'http://downloads.reviewboard.org/nightlies/'
+download_url = 'http://downloads.reviewboard.org/releases/%s/%s.%s/' % \
+               (PACKAGE_NAME, VERSION[0], VERSION[1])
 
 
 # Build the reviewboard package.
@@ -172,6 +169,7 @@ setup(name=PACKAGE_NAME,
               'googlecode = reviewboard.hostingsvcs.googlecode:GoogleCode',
               'jira = reviewboard.hostingsvcs.jira:JIRA',
               'kiln = reviewboard.hostingsvcs.kiln:Kiln',
+              'rbgateway = reviewboard.hostingsvcs.rbgateway:ReviewBoardGateway',
               'redmine = reviewboard.hostingsvcs.redmine:Redmine',
               'sourceforge = reviewboard.hostingsvcs.sourceforge:SourceForge',
               'trac = reviewboard.hostingsvcs.trac:Trac',
@@ -193,19 +191,21 @@ setup(name=PACKAGE_NAME,
               'ldap = reviewboard.accounts.backends:LDAPBackend',
               'nis = reviewboard.accounts.backends:NISBackend',
               'x509 = reviewboard.accounts.backends:X509Backend',
+              'digest = reviewboard.accounts.backends:HTTPDigestBackend',
           ],
       },
       cmdclass=cmdclasses,
       install_requires=[
           django_version,
-          'django_evolution>=0.7.4,<=0.7.999',
-          'django-haystack>=2.1',
+          'django_evolution>=0.7.5,<=0.7.999',
+          'django-haystack>=2.3.1',
           'django-multiselectfield',
-          'Djblets>=0.8.12,<=0.8.999',
+          'Djblets>=0.9rc1,<=0.9.999',
           'docutils',
           'markdown>=2.4.0,<2.4.999',
           'mimeparse>=0.1.3',
           'paramiko>=1.12',
+          'pycrypto>=2.6',
           'Pygments>=1.6',
           'python-dateutil==1.5',
           'python-memcached',
@@ -215,9 +215,8 @@ setup(name=PACKAGE_NAME,
       ],
       dependency_links=[
           'http://downloads.reviewboard.org/mirror/',
-          'http://downloads.reviewboard.org/releases/Djblets/0.8/',
+          'http://downloads.reviewboard.org/releases/Djblets/0.9/',
           'http://downloads.reviewboard.org/releases/django-evolution/0.7/',
-          download_url,
       ],
       include_package_data=True,
       zip_safe=False,

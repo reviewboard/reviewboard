@@ -55,6 +55,8 @@ class RemoteRepositoryResource(WebAPIResource):
     repositories that are accessible to the linked hosting service account
     (i.e., that of the parent resource) will be provided by this resource.
     """
+    added_in = '2.5'
+
     name = 'remote_repository'
     name_plural = 'remote_repositories'
 
