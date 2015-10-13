@@ -3,9 +3,14 @@
 This is an automatically generated e-mail. To reply, visit:
 {{domain_method}}://{{domain}}{{review.get_absolute_url}}
 -----------------------------------------------------------
-{% if review.ship_it %}
+{% if ship_it %}
+{%  if has_issues %}
+Fix it, then Ship it!
+{%  else %}
 Ship it!
+{%  endif %}
 {% endif %}
+
 {% if review.body_top %}
 {{review.body_top|markdown_email_text:review.body_top_rich_text}}
 {% endif %}{% for comment in review.file_attachment_comments.all %}
