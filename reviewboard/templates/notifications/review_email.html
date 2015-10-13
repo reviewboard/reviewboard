@@ -2,9 +2,15 @@
 {% load djblets_email djblets_utils markdown_email rb_extensions %}
 
 {% block content %}
-{%  if review.ship_it %}
- <p>Ship it!</p>
+{% if ship_it %}
+<p>
+{%  if has_issues %}
+Fix it, then Ship it!
+{%  else %}
+Ship it!
 {%  endif %}
+</p>
+{% endif %}
 
 {% if review.body_top %}
  <pre style="{{precss}}">{{review.body_top|markdown_email_html:review.body_top_rich_text}}</pre>

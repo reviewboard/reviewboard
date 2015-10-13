@@ -785,9 +785,16 @@ def mail_review(review, user):
     review.ordered_comments = \
         review.comments.order_by('filediff', 'first_line')
 
+    has_issues = (
+        review.comments.filter(issue_opened=True).exists() or
+        review.file_attachment_comments.filter(issue_opened=True).exists() or
+        review.screenshot_comments.filter(issue_opened=True).exists()
+    )
+
     extra_context = {
         'user': review.user,
         'review': review,
+        'has_issues': has_issues,
     }
 
     extra_headers = {}
