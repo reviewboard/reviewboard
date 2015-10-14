@@ -64,7 +64,9 @@ Payload
   being spoofed by some nefarious third party.
 
 
-Custom payloads
+.. _webhook-custom-payloads:
+
+Custom Payloads
 ===============
 
 Defining custom payloads allows you to use WebHooks to talk to services which
