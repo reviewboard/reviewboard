@@ -1,8 +1,10 @@
 from __future__ import unicode_literals
 
 from django.utils.html import escape
+from django.utils.six.moves.urllib.parse import urlparse
 from djblets.util.templatetags.djblets_images import crop_image
 
+from reviewboard.admin.server import build_server_url
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 
 
@@ -58,6 +60,10 @@ class ImageReviewUI(FileAttachmentReviewUI):
 
         image_url = crop_image(comment.file_attachment.file,
                                x, y, width, height)
+
+        if not urlparse(image_url).netloc:
+            image_url = build_server_url(image_url)
+
         image_html = (
             '<img class="modified-image" src="%s" width="%s" height="%s" '
             'alt="%s" />'

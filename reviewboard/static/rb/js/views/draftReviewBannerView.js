@@ -9,7 +9,6 @@
 RB.DraftReviewBannerView = Backbone.View.extend({
     events: {
         'click #review-banner-edit': '_onEditReviewClicked',
-        'click #review-banner-publish': '_onPublishClicked',
         'click #review-banner-discard': '_onDiscardClicked'
     },
 
