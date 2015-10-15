@@ -159,6 +159,9 @@ class ReviewRequestManager(ConcurrencyManager):
         review_request.validate_unique()
         review_request.save()
 
+        if commit_id and create_from_commit_id:
+            review_request.add_default_reviewers()
+
         if local_site:
             # We want to atomically set the local_id to be a monotonically
             # increasing ID unique to the local_site. This isn't really
