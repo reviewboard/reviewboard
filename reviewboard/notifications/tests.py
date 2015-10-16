@@ -509,7 +509,7 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
         """Testing sending review e-mails and filtering out the review
         submitter when they are part of a review group assigned to the request
         """
-        # See issue 3895.
+        # See issue 3985.
         submitter = User.objects.get(username='doc')
         profile = Profile.objects.get_or_create(user=submitter)[0]
         profile.should_send_own_updates = False
