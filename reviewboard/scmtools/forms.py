@@ -603,8 +603,11 @@ class RepositoryForm(forms.ModelForm):
 
         try:
             self.cleaned_data.update(hosting_service_cls.get_repository_fields(
-                hosting_account.username, hosting_account.hosting_url, plan,
-                tool_name, field_vars))
+                username=hosting_account.username,
+                hosting_url=hosting_account.hosting_url,
+                plan=plan,
+                tool_name=tool_name,
+                field_vars=field_vars))
         except KeyError as e:
             raise ValidationError([six.text_type(e)])
 

@@ -157,6 +157,7 @@ setup(name=PACKAGE_NAME,
               'rbssh = reviewboard.cmdline.rbssh:main',
           ],
           'reviewboard.hosting_services': [
+              'assembla = reviewboard.hostingsvcs.assembla:Assembla',
               'beanstalk = reviewboard.hostingsvcs.beanstalk:Beanstalk',
               'bitbucket = reviewboard.hostingsvcs.bitbucket:Bitbucket',
               'bugzilla = reviewboard.hostingsvcs.bugzilla:Bugzilla',
