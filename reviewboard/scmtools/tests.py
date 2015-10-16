@@ -1459,6 +1459,20 @@ class PerforceTests(SCMTestCase):
         self.assertEqual(md5(file).hexdigest(),
                          '227bdd87b052fcad9369e65c7bf23fd0')
 
+    @online_only
+    def test_custom_host(self):
+        """Testing Perforce client initialization with a custom P4HOST"""
+        repo = Repository(name='Perforce.com',
+                          path='public.perforce.com:1666',
+                          tool=Tool.objects.get(name='Perforce'),
+                          encoding='utf8')
+        repo.extra_data['p4_host'] = 'my-custom-host'
+
+        tool = repo.get_scmtool()
+
+        with tool.client._connect():
+            self.assertEqual(tool.client.p4.host, 'my-custom-host')
+
     def test_empty_diff(self):
         """Testing Perforce empty diff parsing"""
         diff = b"==== //depot/foo/proj/README#2 ==M== /src/proj/README ====\n"
