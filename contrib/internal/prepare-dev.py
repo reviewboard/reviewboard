@@ -72,8 +72,10 @@ def install_media(site):
     site.mkdir(ext_media_path)
 
 
-def build_egg_info():
-    os.system("%s setup.py egg_info" % sys.executable)
+def install_dependencies():
+    os.system('%s setup.py egg_info' % sys.executable)
+    os.system('pip%s.%s install -f dev-requirements.txt'
+              % sys.version_info[:2])
 
 
 def parse_options(args):
@@ -125,7 +127,7 @@ def main():
     site = Site(site_path, SiteOptions)
 
     create_settings()
-    build_egg_info()
+    install_dependencies()
 
     if options.install_media:
         install_media(site)
