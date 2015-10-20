@@ -580,7 +580,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
          * created.
          */
         this.on('commentBlockViewAdded', function(commentBlockView) {
-            commentBlockView.setSelectionRegionSize(_.bind(function() {
+            commentBlockView.setSelectionRegionSizeFunc(_.bind(function() {
                 var region = this._imageView.getSelectionRegion();
 
                 return {
