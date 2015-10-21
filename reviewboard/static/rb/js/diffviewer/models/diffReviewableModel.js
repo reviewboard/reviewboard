@@ -86,7 +86,8 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
      */
     _buildRenderedDiffURL: function() {
         var revisionStr,
-            interdiffRevision = this.get('interdiffRevision');
+            interdiffRevision = this.get('interdiffRevision'),
+            interFileDiffID = this.get('interFileDiffID');
 
         revisionStr = this.get('revision');
 
@@ -95,6 +96,8 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
         }
 
         return this.get('reviewRequest').get('reviewURL') + 'diff/' +
-               revisionStr + '/fragment/' + this.get('fileDiffID') + '/';
+               revisionStr + '/fragment/' + this.get('fileDiffID') +
+               (interFileDiffID ? '-' + interFileDiffID : '') +
+               '/';
     }
 });

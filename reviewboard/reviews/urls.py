@@ -24,10 +24,8 @@ diffviewer_revision_urls = patterns(
         'raw_diff',
         name='raw-diff-revision'),
 
-    url(r'^fragment/(?P<filediff_id>[0-9]+)/$',
-        ReviewsDiffFragmentView.as_view()),
-
-    url(r'^fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunk_index>[0-9]+)/$',
+    url(r'^fragment/(?P<filediff_id>[0-9]+)/'
+        r'(chunk/(?P<chunk_index>[0-9]+)/)?$',
         ReviewsDiffFragmentView.as_view()),
 
     url(r'^download/(?P<filediff_id>[0-9]+)/', include(download_diff_urls)),
@@ -40,10 +38,8 @@ diffviewer_interdiff_urls = patterns(
         ReviewsDiffViewerView.as_view(),
         name="view-interdiff"),
 
-    url(r'^fragment/(?P<filediff_id>[0-9]+)/$',
-        ReviewsDiffFragmentView.as_view()),
-
-    url(r'^fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunk_index>[0-9]+)/$',
+    url(r'^fragment/(?P<filediff_id>[0-9]+)(-(?P<interfilediff_id>[0-9]+))?/'
+        r'(chunk/(?P<chunk_index>[0-9]+)/)?$',
         ReviewsDiffFragmentView.as_view()),
 )
 

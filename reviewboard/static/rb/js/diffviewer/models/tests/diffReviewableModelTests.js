@@ -107,12 +107,13 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
                 fileDiffID: 3,
                 fileIndex: 5,
                 revision: 2,
-                interdiffRevision: 3
+                interdiffRevision: 3,
+                interFileDiffID: 4
             });
 
             spyOn($, 'ajax').andCallFake(function(request) {
                 expect(request.type).toBe('GET');
-                expect(request.url).toBe('/r/1/diff/2-3/fragment/3/chunk/4/');
+                expect(request.url).toBe('/r/1/diff/2-3/fragment/3-4/chunk/4/');
                 expect(request.data.index).toBe(5);
                 expect(request.data['lines-of-context']).toBe(6);
 
