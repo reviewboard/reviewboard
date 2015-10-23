@@ -257,13 +257,13 @@ class HostingService(object):
         if not self.supports_repositories:
             raise NotImplementedError
 
-        return repository.get_scmtool().get_file(path, revision)
+        return repository.get_scmtool().get_file(path, revision, **kwargs)
 
     def get_file_exists(self, repository, path, revision, *args, **kwargs):
         if not self.supports_repositories:
             raise NotImplementedError
 
-        return repository.get_scmtool().file_exists(path, revision)
+        return repository.get_scmtool().file_exists(path, revision, **kwargs)
 
     def get_branches(self, repository):
         """Get a list of all branches in the repositories.
