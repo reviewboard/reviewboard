@@ -42,7 +42,7 @@
    <col width="100%" />
   </colgroup>
 {% for_review_request_fieldset review_request_details %}
-  <thead{% if forloop.first %} class="first-fieldset"{% endif %}>
+  <thead id="fieldset_{{fieldset.fieldset_id}}_head"{% if forloop.first %} class="first-fieldset"{% endif %}>
    <tr>
     <th colspan="2">{{fieldset.label}}
 {%  if show_fieldset_required %}
@@ -50,7 +50,7 @@
 {%  endif %}
    </tr>
   </thead>
-  <tbody>
+  <tbody id="fieldset_{{fieldset.fieldset_id}}_body">
 {%  for_review_request_field review_request_details fieldset %}
    <tr>
     <th><label for="field_{{field.field_id}}">{{field.label}}:</label></th>
