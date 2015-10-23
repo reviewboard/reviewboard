@@ -289,14 +289,24 @@ class DiffFragmentView(View):
           - A DiffSet object or the ID for one representing the other end of
             an interdiff range.
 
+        * interfilediff_id
+          - A FileDiff ID for the other end of a revision range.
+
         * chunkindex
           - The index (0-based) of the chunk to render. If left out, the
             entire file will be rendered.
+
+    Both ``filediff_id` and ``interfilediff_id`` need to be available in the
+    URL (or otherwise passed to :py:meth:`get`). ``diffset_or_id`` and
+    ``interdiffset_or_id`` are needed in :py:meth:`process_diff_info`, and
+    so must be passed either in the URL or in a subclass's definition of
+    that method.
 
     The caller may also pass ``?lines-of-context=`` as a query parameter to
     the URL to indicate how many lines of context should be provided around
     the chunk.
     """
+
     template_name = 'diffviewer/diff_file_fragment.html'
     error_template_name = 'diffviewer/diff_fragment_error.html'
 
@@ -349,17 +359,39 @@ class DiffFragmentView(View):
         return response
 
     def make_etag(self, renderer_settings, filediff_id,
-                  interdiffset_or_id=None, **kwargs):
-        """Return an ETag identifying this render."""
-        if interdiffset_or_id and isinstance(interdiffset_or_id, DiffSet):
-            interdiffset_or_id = interdiffset_or_id.pk
+                  interfilediff_id=None, **kwargs):
+        """Return an ETag identifying this render.
 
+        Args:
+            renderer_settings (dict):
+                The settings determining how to render this diff.
+
+                The following keys are required: ``collapse_all`` and
+                ``highlighting``.
+
+            filediff_id (int):
+                The ID of the
+                :py:class:`~reviewboard.diffviewer.models.FileDiff` being
+                rendered.
+
+            interfilediff_id (int):
+                The ID of the
+                :py:class:`~reviewboard.diffviewer.models.FileDiff` on the
+                other side of the diff revision, if viewing an interdiff.
+
+            **kwargs (dict):
+                Additional keyword arguments passed to the function.
+
+        Return:
+            unicode:
+            The encoded ETag identifying this render.
+        """
         etag = '%s:%s:%s:%s:%s:%s' % (
             get_diff_renderer_class(),
             renderer_settings['collapse_all'],
             renderer_settings['highlighting'],
             filediff_id,
-            interdiffset_or_id,
+            interfilediff_id,
             settings.TEMPLATE_SERIAL)
 
         return encode_etag(etag)

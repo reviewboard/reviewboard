@@ -15,7 +15,7 @@ RB.RegionCommentBlock = RB.FileAttachmentCommentBlock.extend({
     serializedFields: ['x', 'y', 'width', 'height'],
 
     initialize: function() {
-        _super(this).initialize.call(this);
+        RB.AbstractCommentBlock.prototype.initialize.call(this);
 
         this.on(
             'change:x change:y change:width change:height',
@@ -77,4 +77,3 @@ RB.RegionCommentBlock = RB.FileAttachmentCommentBlock.extend({
         }, this);
     }
 });
-

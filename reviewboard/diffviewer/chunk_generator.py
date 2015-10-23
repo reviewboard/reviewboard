@@ -83,7 +83,7 @@ class RawDiffChunkGenerator(object):
         self.orig_filename = orig_filename
         self.modified_filename = modified_filename
         self.enable_syntax_highlighting = enable_syntax_highlighting
-        self.encoding_list = encoding_list
+        self.encoding_list = encoding_list or ['iso-8859-15']
         self.diff_compat = diff_compat
         self.differ = None
 
@@ -256,8 +256,7 @@ class RawDiffChunkGenerator(object):
 
         Subclasses can override this to provide custom behavior.
         """
-        if self.encoding_list:
-            s = convert_to_unicode(s, self.encoding_list)[1]
+        s = convert_to_unicode(s, self.encoding_list)[1]
 
         # Normalize the input so that if there isn't a trailing newline, we
         # add it.
