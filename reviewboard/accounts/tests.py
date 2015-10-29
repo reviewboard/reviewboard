@@ -11,7 +11,8 @@ from kgb import SpyAgency
 
 from reviewboard.accounts.backends import (AuthBackend,
                                            get_enabled_auth_backends,
-                                           INVALID_USERNAME_CHAR_REGEX)
+                                           INVALID_USERNAME_CHAR_REGEX,
+                                           StandardAuthBackend)
 from reviewboard.accounts.forms.pages import (AccountPageForm,
                                               ChangePasswordForm,
                                               ProfileForm)
@@ -24,6 +25,59 @@ from reviewboard.accounts.pages import (AccountPage, get_page_classes,
                                         unregister_account_page_class,
                                         _clear_page_defaults)
 from reviewboard.testing import TestCase
+
+
+class AuthBackendTests(TestCase):
+    """Testing authentication backends."""
+
+    def _get_standard_auth_backend(self):
+        # The StandardAuthBackend **SHOULD** be the last backend in the list.
+        backend = get_enabled_auth_backends()[-1]
+        self.assertIsInstance(backend, StandardAuthBackend)
+
+        return backend
+
+    @add_fixtures(['test_users'])
+    def test_get_or_create_user_exists(self):
+        """Testing StandardAuthBackend.get_or_create_user when the requested
+        user already exists
+        """
+        user = User.objects.get(username='doc')
+        backend = self._get_standard_auth_backend()
+        result, created = backend.get_or_create_user('doc', None)
+
+        self.assertFalse(created)
+        self.assertEqual(user, result)
+
+    def test_get_or_create_user_new(self):
+        """Testing StandardAuthBackend.get_or_create_user when the requested
+        user does not exist
+        """
+        backend = self._get_standard_auth_backend()
+        self.assertIsInstance(backend, StandardAuthBackend)
+        _, created = backend.get_or_create_user('doc', None)
+
+        self.assertTrue(created)
+
+    @add_fixtures(['test_users'])
+    def test_get_user_exists(self):
+        """Testing StandardAuthBackend.get_user when the requested user already
+        exists
+        """
+        user = User.objects.get(username='doc')
+        backend = self._get_standard_auth_backend()
+        result = backend.get_user(user.pk)
+
+        self.assertEquals(user, result)
+
+    def test_get_user_not_exists(self):
+        """Testing StandardAuthBackend.get_user when the requested user does
+        not exist
+        """
+        backend = self._get_standard_auth_backend()
+        result = backend.get_user(1)
+
+        self.assertIsNone(result)
 
 
 class ReviewRequestVisitTests(TestCase):
