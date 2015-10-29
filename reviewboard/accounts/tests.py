@@ -45,13 +45,11 @@ class AuthBackendTests(TestCase):
         """Testing StandardAuthBackend.get_or_create_user when the requested
         user does not exist
         """
-        self.assertEqual(User.objects.count(), 0)
-
         backend = self._get_standard_auth_backend()
         self.assertIsInstance(backend, StandardAuthBackend)
         user = backend.get_or_create_user('doc', None)
 
-        self.assertEquals(user.pk, 1)
+        self.assertIsNone(user)
 
     @add_fixtures(['test_users'])
     def test_get_user_exists(self):

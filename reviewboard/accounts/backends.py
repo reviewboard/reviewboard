@@ -181,7 +181,8 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
         return ModelBackend.authenticate(self, username, password)
 
     def get_or_create_user(self, username, request):
-        return User.objects.get_or_create(username=username)[0]
+        """Get an existing user, or create one if it does not exist."""
+        return get_object_or_none(User, username=username)
 
     def update_password(self, user, password):
         user.password = hashers.make_password(password)
