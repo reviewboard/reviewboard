@@ -19,7 +19,11 @@ CodeMirrorWrapper = Backbone.View.extend({
         var codeMirrorOptions = {
             mode: {
                 name: 'gfm',
-                classOverrides: {
+                /*
+                 *The following token type overrides will be prefixed with
+                 * ``cm-`` when used as classes.
+                 */
+                tokenTypeOverrides: {
                     code: 'rb-markdown-code',
                     list1: 'rb-markdown-list1',
                     list2: 'rb-markdown-list2',
