@@ -32,22 +32,26 @@ class AuthBackendTests(TestCase):
         """Testing StandardAuthBackend.get_or_create_user when the requested
         user already exists
         """
+        original_count = User.objects.count()
+
         user = User.objects.get(username='doc')
         backend = self._get_standard_auth_backend()
-        result, created = backend.get_or_create_user('doc', None)
+        result = backend.get_or_create_user('doc', None)
 
-        self.assertFalse(created)
+        self.assertEqual(original_count, User.objects.count())
         self.assertEqual(user, result)
 
     def test_get_or_create_user_new(self):
         """Testing StandardAuthBackend.get_or_create_user when the requested
         user does not exist
         """
+        self.assertEqual(User.objects.count(), 0)
+
         backend = self._get_standard_auth_backend()
         self.assertIsInstance(backend, StandardAuthBackend)
-        _, created = backend.get_or_create_user('doc', None)
+        user = backend.get_or_create_user('doc', None)
 
-        self.assertTrue(created)
+        self.assertEquals(user.pk, 1)
 
     @add_fixtures(['test_users'])
     def test_get_user_exists(self):
