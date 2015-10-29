@@ -759,6 +759,9 @@ RB.ReviewDialogView = Backbone.View.extend({
 
                     this._loadComments();
                 }
+
+                this.listenTo(this.model, 'change:bodyBottom',
+                              this._handleEmptyReview);
             }
         }, this);
 
@@ -791,12 +794,12 @@ RB.ReviewDialogView = Backbone.View.extend({
      * Properly set the view when the review is empty.
      */
     _handleEmptyReview: function() {
-        if (this._commentViews.length === 0) {
-            /*
-             * We only display the bottom textarea if we have
-             * comments. Otherwise, it's weird to have both
-             * textareas visible with nothing inbetween.
-             */
+        /*
+         * We only display the bottom textarea if we have comments or the user
+         * has previously set the bottom textarea -- we don't want the user to
+         * not be able to remove their text.
+         */
+        if (this._commentViews.length === 0 && !this.model.get('bodyBottom')) {
             this._bodyBottomView.$el.hide();
             this._bodyTopView.setLinkText(gettext('Add text'));
         }

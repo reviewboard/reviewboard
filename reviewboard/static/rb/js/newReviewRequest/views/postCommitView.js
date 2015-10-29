@@ -196,6 +196,7 @@ RB.PostCommitView = Backbone.View.extend({
      */
     _onCreateReviewRequest: function(commit) {
         var repository = this.model.get('repository'),
+            branch = this.model.get('branch'),
             reviewRequest;
 
         if (this._createPending) {
@@ -207,6 +208,7 @@ RB.PostCommitView = Backbone.View.extend({
         this._commitsView.setPending(commit);
 
         reviewRequest = new RB.ReviewRequest({
+            branch: branch.get('name'),
             repository: repository.id,
             localSitePrefix: repository.get('localSitePrefix')
         });

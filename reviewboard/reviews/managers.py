@@ -101,8 +101,8 @@ class ReviewRequestManager(ConcurrencyManager):
     def get_query_set(self):
         return ReviewRequestQuerySet(self.model)
 
-    def create(self, user, repository, commit_id=None, local_site=None,
-               create_from_commit_id=False):
+    def create(self, user, repository, commit_id=None, branch=None,
+               local_site=None, create_from_commit_id=False):
         """
         Creates a new review request, optionally filling in fields based off
         a commit ID.
@@ -141,6 +141,7 @@ class ReviewRequestManager(ConcurrencyManager):
             status='P',
             public=False,
             repository=repository,
+            branch=branch,
             diffset_history=diffset_history,
             local_site=local_site)
 

@@ -2,7 +2,7 @@
 Review Board 2.5 Release Notes
 ==============================
 
-**Release date:** TBD
+**Release date:** October 28, 2015
 
 This release contains all bug fixes and features found in Review Board version
 :doc:`2.0.20 <2.0.20>`.
@@ -113,6 +113,11 @@ E-mail Changes
   other content (for instance, if it's the result of the pressing the
   :guilabel:`Ship It!` button), it will also contain a
   ``X-ReviewBoard-ShipIt-Only`` header.
+
+* The "Fix it, then Ship It!" state is now shown in e-mail notifications.
+  (:bug:`3904`)
+
+  Patch by Sherman Cheung.
 
 
 Archive and Mute Review Requests
@@ -238,6 +243,13 @@ on another branch.
 
 Diff Viewer
 -----------
+
+* Smarter detection of file types for syntax highlighting. (:bug:`337`)
+
+  The diff viewer now displays more accurate syntax highlighting for files,
+  based on the contents of the files, rather than simply making a
+  determination based off the file extension. This means smarter highlighting
+  for specialized XML files, HTML templates, Objective C++, and more.
 
 * Allow double-click to create a comment.
 
@@ -430,6 +442,18 @@ as it's ready.
 Patch by Jessica Yuen.
 
 
+Support for Assembla
+--------------------
+
+Assembla_ is a repository hosting and project management service that supports
+Git, Subversion, and Perforce repositories.
+
+Review Board now supports configuring Subversion and Perforce repositories
+hosted on Assembla. Git is not supported, though, due to missing API features.
+
+.. _Assembla: https://www.assembla.com/
+
+
 Miscellaneous Admin Features
 ----------------------------
 
@@ -599,6 +623,11 @@ Other API Features
 * Added a :ref:`webapi2.0-web-hook-resource` for managing webhooks. See
   :ref:`Webhooks <webhooks-feature>` for more information on this new feature.
 
+* Added a ``review_requests.trivial_publish`` API capability.
+
+  Clients can use this to determine if they can publish review requests and
+  reviews without sending e-mail.
+
 
 Extensions
 ==========
@@ -672,12 +701,26 @@ Diff viewer
 
 * Fixed displaying trophies on the diff viewer page.
 
+* Fixed caching issues with interdiffs.
+
 
 E-mail
 ------
 
 * Fixed Unicode errors when sending e-mails with UTF-8 content.
   (:bug:`3926`, :bug:`3943`)
+
+* Image comments now contain absolute URLs, instead of relative URLs.
+  (:bug:`3944`)
+
+  Patch by Daniel Arteaga.
+
+* Fixed an issue with the "Get e-mail notifications for my own activity."
+  (:bug:`3895`)
+
+  This setting was not working when posting a change against both a target
+  group of which the user is a member and another target user, and then
+  posting a review on that review request.
 
 
 File Attachments
@@ -732,6 +775,18 @@ Review Requests
   Patch by Yorie Nakayama.
 
 
+New Review Request
+------------------
+
+* Default reviewers are now added when posting commits for review using the
+  web UI. (:bug:`3900`)
+
+  Patch by Xutong Liu.
+
+* Fixed posting commits from GitLab for review when the commits were lacking a
+  commit message.
+
+
 Web API
 -------
 
@@ -754,21 +809,32 @@ Subversion
   Patch by Maxime Besson.
 
 
+SSH
+---
+
+* Repository paths containing invalid ports no longer generate cryptic
+  error messages. (:bug:`3891`)
+
+  Patch by Justin Wu.
+
 
 Contributors
 ============
 
 * Barret Rennie
+* Brett Kochendorfer
 * Chester Li
 * Chris Arnold
 * Christian Hammond
 * Chronicle Yu
+* Daniel Arteaga
 * David Trowbridge
 * Halvor Lund
 * Jason Tseng
 * Jessica Qian
 * Jessica Yuen
 * Justin Maillet
+* Justin Wu
 * Kristina Vandergulik
 * Mark Russell
 * Maxime Besson
@@ -776,6 +842,7 @@ Contributors
 * Olessia Karpova
 * Omar Ali
 * Ryan Done
+* Sherman Cheung
 * Stanley Yeo
 * Stephanie Su
 * Tami Forrester
@@ -784,4 +851,5 @@ Contributors
 * Vincent Le
 * Volodymyr Lyubinets
 * Wu Di
+* Xutong Liu
 * Yorie Nakayama
