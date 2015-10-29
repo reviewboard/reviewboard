@@ -173,11 +173,11 @@ RB.RegionCommentBlockView = RB.AbstractCommentBlockView.extend({
      * If not, which means the event was actually a 'click' event, call
      * super class's click handler.
      */
-    _onWindowMouseUp: function() {
+    _onWindowMouseUp: function(e) {
         if (this.moveState.hasMoved) {
             this.model.saveDraftCommentBounds();
         } else {
-            _super(this)._onClicked.call(this);
+            _super(this)._onClicked.call(this, e);
         }
         this.endDragging();
     },
@@ -261,7 +261,7 @@ RB.RegionCommentBlockView = RB.AbstractCommentBlockView.extend({
      *    to update view accordingly.
      */
     delegateEvents: function() {
-        _super(this).delegateEvents.call(this);
+        RB.AbstractCommentBlockView.prototype.delegateEvents.call(this);
 
         this.listenTo(
             this.model,
@@ -276,7 +276,7 @@ RB.RegionCommentBlockView = RB.AbstractCommentBlockView.extend({
      * that were 'on'ed in delegateEvents.
      */
     undelegateEvents: function() {
-        _super(this).undelegateEvents.call(this);
+        RB.AbstractCommentBlockView.prototype.undelegateEvents.call(this);
 
         $(window).off('mousemove', this._onDrag);
 
@@ -284,18 +284,28 @@ RB.RegionCommentBlockView = RB.AbstractCommentBlockView.extend({
     },
 
     /*
-     * Setter for selectionRegionSize. This property is used to limit
-     * the position/size of the underlying comment mode.
+     * Set the selection region size function.
+     *
+     * This function is meant to return the maximum size of the selection
+     * region for the given comment.
+     *
+     * Args:
+     *     func (Function): A function which will return a size Object.
      */
-    setSelectionRegionSize: function(value) {
-        this.selectionRegionSize = value;
+    setSelectionRegionSizeFunc: function(func) {
+        this.selectionRegionSizeFunc = func;
     },
 
     /*
-     * Getter for selectionRegionSize.
+     * Return the selection region size.
+     *
+     * Returns:
+     *     Object:
+     *         An object with ``x``, ``y``, ``width``, and ``height`` fields,
+     *         in pixels.
      */
     getSelectionRegionSize: function() {
-        return _.result(this, 'selectionRegionSize');
+        return _.result(this, 'selectionRegionSizeFunc');
     },
 
     /*

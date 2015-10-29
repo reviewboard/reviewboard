@@ -86,12 +86,13 @@ class STunnelProxy(object):
 
 
 class PerforceClient(object):
-    def __init__(self, p4port, username, password, encoding, use_stunnel=False,
-                 use_ticket_auth=False):
+    def __init__(self, p4port, username, password, encoding, p4host=None,
+                 use_stunnel=False, use_ticket_auth=False):
         self.p4port = p4port
         self.username = username
         self.password = password
         self.encoding = encoding
+        self.p4host = p4host
         self.use_stunnel = use_stunnel
         self.use_ticket_auth = use_ticket_auth
         self.proxy = None
@@ -128,6 +129,9 @@ class PerforceClient(object):
             p4_port = self.p4port
 
         self.p4.port = p4_port.encode('utf-8')
+
+        if self.p4host:
+            self.p4.host = self.p4host.encode('utf-8')
 
         self.p4.connect()
 
@@ -259,22 +263,25 @@ class PerforceTool(SCMTool):
         credentials = repository.get_credentials()
 
         self.client = self._create_client(
-            six.text_type(repository.mirror_path or repository.path),
-            six.text_type(credentials['username']),
-            six.text_type(credentials['password'] or ''),
-            six.text_type(repository.encoding),
-            repository.extra_data.get('use_ticket_auth', False))
+            path=six.text_type(repository.mirror_path or repository.path),
+            username=six.text_type(credentials['username']),
+            password=six.text_type(credentials['password'] or ''),
+            encoding=six.text_type(repository.encoding),
+            host=six.text_type(repository.extra_data.get('p4_host', '')),
+            use_ticket_auth=repository.extra_data.get('use_ticket_auth',
+                                                      False))
 
     @staticmethod
-    def _create_client(path, username, password, encoding='',
+    def _create_client(path, username, password, encoding='', host=None,
                        use_ticket_auth=False):
         if path.startswith('stunnel:'):
             path = path[8:]
             use_stunnel = True
         else:
             use_stunnel = False
-        return PerforceClient(path, username, password, encoding, use_stunnel,
-                              use_ticket_auth)
+
+        return PerforceClient(path, username, password, encoding, host,
+                              use_stunnel, use_ticket_auth)
 
     @staticmethod
     def _convert_p4exception_to_scmexception(e):
@@ -288,16 +295,45 @@ class PerforceTool(SCMTool):
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,
-                         local_site_name=None):
-        """
-        Performs checks on a repository to test its validity.
+                         p4_host=None, local_site_name=None):
+        """Perform checks on a repository to test its validity.
 
-        This should check if a repository exists and can be connected to.
+        This checks if a repository exists and can be connected to.
 
-        The result is returned as an exception. The exception may contain extra
-        information, such as a human-readable description of the problem. If
-        the repository is valid and can be connected to, no exception will be
-        thrown.
+        A failed result is returned as an exception. The exception may contain
+        extra information, such as a human-readable description of the problem.
+        If the repository is valid and can be connected to, no exception will
+        be thrown.
+
+        Args:
+            path (unicode):
+                The Perforce repository path (equivalent to :env:`P4PORT`).
+
+            username (unicode):
+                The username used to authenticate.
+
+            password (unicode):
+                The password used to authenticate.
+
+            p4_host (unicode):
+                The optional Perforce host name (equivalent to
+                :env:`P4HOST`).
+
+            local_site_name (unicode):
+                The optional Local Site name.
+
+        Raises:
+            reviewboard.scmtools.errors.AuthenticationError:
+                There was an error authenticating with Perforce.
+
+            reviewboard.scmtools.errors.RepositoryNotFoundError:
+                The repository at the given path could not be found.
+
+            reviewboard.scmtools.errors.SCMError:
+                There was a general error communicating with Perforce.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The Perforce SSL certificate could not be verified.
         """
         super(PerforceTool, cls).check_repository(path, username, password,
                                                   local_site_name)
@@ -307,7 +343,8 @@ class PerforceTool(SCMTool):
         # trouble of handling tickets here.
         client = cls._create_client(six.text_type(path),
                                     six.text_type(username),
-                                    six.text_type(password))
+                                    six.text_type(password),
+                                    host=six.text_type(p4_host or ''))
         client.get_info()
 
     def get_changeset(self, changesetid, allow_empty=False):
