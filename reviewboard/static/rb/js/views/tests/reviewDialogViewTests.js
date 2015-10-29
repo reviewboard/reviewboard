@@ -175,6 +175,35 @@ suite('rb/views/ReviewDialogView', function() {
                 expect(dlg._$spinner).toBe(null);
             });
 
+            describe('With body and top text', function() {
+                var bodyTopText = 'My body top',
+                    bodyBottomText = 'My body bottom';
+
+                beforeEach(function() {
+                    review.set({
+                        bodyTop: bodyTopText,
+                        bodyBottom: bodyBottomText,
+                        loaded: true
+                    });
+                });
+
+                it('Clearing body bottom hides footer', function() {
+                    dlg = RB.ReviewDialogView.create({
+                        review: review,
+                        container: $testsScratch,
+                        reviewRequestEditor: reviewRequestEditor
+                    });
+
+                    expect(dlg._bodyBottomView.$editor.text())
+                        .toBe(bodyBottomText);
+                    expect(dlg._bodyBottomView.$el.is(':visible')).toBe(true);
+
+                    review.set('bodyBottom', '');
+
+                    expect(dlg._bodyBottomView.$el.is(':visible')).toBe(false);
+                });
+            });
+
             describe('With existing review', function() {
                 var bodyTopText = 'My body top',
                     bodyBottomText = 'My body bottom',
@@ -236,7 +265,7 @@ suite('rb/views/ReviewDialogView', function() {
                         expect(dlg._bodyBottomView.$editor.text())
                             .toBe(bodyBottomText);
                         expect(dlg._bodyBottomView.$el.is(':visible'))
-                            .toBe(false);
+                            .toBe(true);
                         expect(dlg._$shipIt.prop('checked')).toBe(shipIt);
                         expect(dlg._$comments.children().length).toBe(0);
                         expect(dlg._$spinner).toBe(null);
