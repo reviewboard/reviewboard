@@ -2,12 +2,15 @@ from __future__ import print_function, unicode_literals
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.test.client import RequestFactory
 from django.utils import six
+from djblets.datagrid.grids import DataGrid
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.datagrids.builtin_items import UserGroupsItem, UserProfileItem
+from reviewboard.datagrids.columns import SummaryColumn
 from reviewboard.reviews.models import (Group,
                                         ReviewRequest,
                                         ReviewRequestDraft,
@@ -33,6 +36,28 @@ class BaseViewTestCase(TestCase):
                 return context[varname]
 
         return None
+
+
+class BaseColumnTestCase(TestCase):
+    """Base class for defining a column unit test."""
+
+    #: An instance of the column to use on the datagrid.
+    column = None
+
+    fixtures = ['test_users']
+
+    def setUp(self):
+        super(BaseColumnTestCase, self).setUp()
+
+        class TestDataGrid(DataGrid):
+            column = self.column
+
+        request_factory = RequestFactory()
+        self.request = request_factory.get('/')
+        self.request.user = User.objects.get(username='doc')
+
+        self.grid = TestDataGrid(self.request)
+        self.stateful_column = self.grid.get_stateful_column(self.column)
 
 
 class AllReviewRequestViewTests(BaseViewTestCase):
@@ -647,3 +672,169 @@ class SubmitterViewTests(BaseViewTestCase):
         self.assertEqual(len(datagrid.rows), 1)
         self.assertEqual(datagrid.rows[0]['object'].review_request,
                          review_request1)
+
+
+class SummaryColumnTests(BaseColumnTestCase):
+    """Testing reviewboard.datagrids.columns.SummaryColumn."""
+
+    column = SummaryColumn()
+
+    def test_render_data(self):
+        """Testing SummaryColumn.render_data"""
+        review_request = self.create_review_request(summary='Summary 1',
+                                                    publish=True)
+
+        # These are generally set by the column's augment_queryset().
+        review_request.draft_summary = None
+        review_request.visibility = ReviewRequestVisit.VISIBLE
+
+        self.assertEqual(
+            self.column.render_data(self.stateful_column, review_request),
+            '<span>Summary 1</span>')
+
+    def test_render_data_with_draft(self):
+        """Testing SummaryColumn.render_data with draft review request"""
+        review_request = self.create_review_request(
+            summary='Summary 1',
+            submitter=self.request.user)
+
+        # These are generally set by the column's augment_queryset().
+        review_request.draft_summary = None
+        review_request.visibility = ReviewRequestVisit.VISIBLE
+
+        self.assertEqual(
+            self.column.render_data(self.stateful_column, review_request),
+            '<label class="label-draft">Draft</label><span>Summary 1</span>')
+
+    def test_render_data_with_draft_summary(self):
+        """Testing SummaryColumn.render_data with draft summary"""
+        review_request = self.create_review_request(
+            summary='Summary 1',
+            submitter=self.request.user)
+
+        # These are generally set by the column's augment_queryset().
+        review_request.draft_summary = 'Draft Summary 1'
+        review_request.visibility = ReviewRequestVisit.VISIBLE
+
+        self.assertEqual(
+            self.column.render_data(self.stateful_column, review_request),
+            '<label class="label-draft">Draft</label>'
+            '<span>Draft Summary 1</span>')
+
+    def test_render_data_with_draft_and_no_summary(self):
+        """Testing SummaryColumn.render_data with draft and no summary"""
+        review_request = self.create_review_request(
+            submitter=self.request.user)
+
+        # These are generally set by the column's augment_queryset().
+        review_request.draft_summary = None
+        review_request.visibility = ReviewRequestVisit.VISIBLE
+
+        review_request.summary = None
+
+        self.assertEqual(
+            self.column.render_data(self.stateful_column, review_request),
+            '<label class="label-draft">Draft</label>'
+            '<span class="no-summary">No Summary</span>')
+
+    def test_render_data_with_archived(self):
+        """Testing SummaryColumn.render_data with archived review request"""
+        review_request = self.create_review_request(
+            summary='Summary 1',
+            submitter=self.request.user,
+            publish=True)
+
+        # These are generally set by the column's augment_queryset().
+        review_request.draft_summary = None
+        review_request.visibility = ReviewRequestVisit.ARCHIVED
+
+        self.assertEqual(
+            self.column.render_data(self.stateful_column, review_request),
+            '<label class="label-archived">Archived</label>'
+            '<span>Summary 1</span>')
+
+    def test_render_data_with_muted(self):
+        """Testing SummaryColumn.render_data with muted review request"""
+        review_request = self.create_review_request(
+            summary='Summary 1',
+            submitter=self.request.user,
+            publish=True)
+
+        # These are generally set by the column's augment_queryset().
+        review_request.draft_summary = None
+        review_request.visibility = ReviewRequestVisit.MUTED
+
+        self.assertEqual(
+            self.column.render_data(self.stateful_column, review_request),
+            '<label class="label-muted">Muted</label>'
+            '<span>Summary 1</span>')
+
+    def test_render_data_with_draft_and_archived(self):
+        """Testing SummaryColumn.render_data with draft and archived
+        review request
+        """
+        review_request = self.create_review_request(
+            summary='Summary 1',
+            submitter=self.request.user)
+
+        # These are generally set by the column's augment_queryset().
+        review_request.draft_summary = None
+        review_request.visibility = ReviewRequestVisit.ARCHIVED
+
+        self.assertEqual(
+            self.column.render_data(self.stateful_column, review_request),
+            '<label class="label-draft">Draft</label>'
+            '<label class="label-archived">Archived</label>'
+            '<span>Summary 1</span>')
+
+    def test_render_data_with_draft_and_muted(self):
+        """Testing SummaryColumn.render_data with draft and muted
+        review request
+        """
+        review_request = self.create_review_request(
+            summary='Summary 1',
+            submitter=self.request.user)
+
+        # These are generally set by the column's augment_queryset().
+        review_request.draft_summary = None
+        review_request.visibility = ReviewRequestVisit.MUTED
+
+        self.assertEqual(
+            self.column.render_data(self.stateful_column, review_request),
+            '<label class="label-draft">Draft</label>'
+            '<label class="label-muted">Muted</label>'
+            '<span>Summary 1</span>')
+
+    def test_render_data_with_submitted(self):
+        """Testing SummaryColumn.render_data with submitted review request"""
+        review_request = self.create_review_request(
+            summary='Summary 1',
+            status=ReviewRequest.SUBMITTED,
+            submitter=self.request.user,
+            public=True)
+
+        # These are generally set by the column's augment_queryset().
+        review_request.draft_summary = None
+        review_request.visibility = ReviewRequestVisit.VISIBLE
+
+        self.assertEqual(
+            self.column.render_data(self.stateful_column, review_request),
+            '<label class="label-submitted">Submitted</label>'
+            '<span>Summary 1</span>')
+
+    def test_render_data_with_discarded(self):
+        """Testing SummaryColumn.render_data with discarded review request"""
+        review_request = self.create_review_request(
+            summary='Summary 1',
+            status=ReviewRequest.DISCARDED,
+            submitter=self.request.user,
+            public=True)
+
+        # These are generally set by the column's augment_queryset().
+        review_request.draft_summary = None
+        review_request.visibility = ReviewRequestVisit.VISIBLE
+
+        self.assertEqual(
+            self.column.render_data(self.stateful_column, review_request),
+            '<label class="label-discarded">Discarded</label>'
+            '<span>Summary 1</span>')
