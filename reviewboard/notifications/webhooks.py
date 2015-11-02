@@ -142,9 +142,9 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
         urlopen(Request(webhook_target.url, body, headers))
 
 
-def _serialize_review(review, request, review_key):
+def _serialize_review(review, request, review_key, resource):
     return {
-        review_key: resources.review.serialize_object(
+        review_key: resource.serialize_object(
             review, request=request),
         'diff_comments': [
             resources.filediff_comment.serialize_object(
@@ -247,7 +247,8 @@ def review_published_cb(sender, user, review, **kwargs):
 
     if webhook_targets:
         request = FakeHTTPRequest(user)
-        payload = _serialize_review(review, request, 'review')
+        payload = _serialize_review(review, request, 'review',
+                                    resources.review)
         payload['event'] = event
         dispatch_webhook_event(request, webhook_targets, event, payload)
 
@@ -260,7 +261,8 @@ def reply_published_cb(sender, user, reply, **kwargs):
 
     if webhook_targets:
         request = FakeHTTPRequest(user)
-        payload = _serialize_review(reply, request, 'reply')
+        payload = _serialize_review(reply, request, 'reply',
+                                    resources.review_reply)
         payload['event'] = event
         dispatch_webhook_event(request, webhook_targets, event, payload)
 

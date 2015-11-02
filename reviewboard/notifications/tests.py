@@ -1538,6 +1538,11 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         self.assertIn('screenshot_comments', payload)
         self.assertIn('file_attachment_comments', payload)
 
+        # Test for bug 3999
+        self.assertEqual(payload['reply']['links']['diff_comments']['href'],
+                         'http://example.com/api/review-requests/1/reviews/1/'
+                         'replies/2/diff-comments/')
+
 
 class EmailUtilsTests(TestCase):
     """Testing e-mail utilities that do not send e-mails."""
