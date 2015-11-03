@@ -669,12 +669,12 @@ class SummaryColumn(Column):
             labels.append(('label-discarded', _('Discarded')))
 
         display_data = format_html_join(
-            '', '<label class="{}">{}</label>', labels)
+            '', '<label class="{0}">{1}</label>', labels)
 
         if summary:
-            display_data += format_html('<span>{}</span>', summary)
+            display_data += format_html('<span>{0}</span>', summary)
         else:
-            display_data += format_html('<span class="no-summary">{}</span>',
+            display_data += format_html('<span class="no-summary">{0}</span>',
                                         _('No Summary'))
 
         return display_data

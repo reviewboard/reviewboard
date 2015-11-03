@@ -244,12 +244,15 @@
       }
 
       th {
-        background: @diff-linenum-color;
+        color: @diff-linenum-color;
+        font-weight: normal;
+        background: @diff-linenum-background-color;
+        cursor: pointer;
         padding-left: 1em;
         padding-right: @linenum-padding-right;
         text-align: right;
         vertical-align: top;
-        cursor: pointer;
+
         /*
          * The minimum width is calculated so that the th is always as wide as
          * the expand by 20 lines button, which is 28px wide.
