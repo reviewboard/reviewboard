@@ -805,7 +805,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         $selector
             .appendTo(this._$modeBar)
             .addClass('selected');
-        selectorWidth = $selector.width();
+        selectorWidth = $selector.outerWidth(true);
         $selector
             .removeClass('selected')
             .width(selectorWidth);
@@ -828,8 +828,6 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         if (this._imageView) {
             this._diffModeSelectors[this._imageView.mode]
                 .removeClass('selected');
-            this._diffModeSelectors[newView.mode]
-                .addClass('selected');
 
             newView.$el.show();
             height = newView.$el.height();
@@ -849,6 +847,9 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         } else {
             this._showDiffMode(newView);
         }
+
+        this._diffModeSelectors[newView.mode]
+            .addClass('selected');
     },
 
     /*
