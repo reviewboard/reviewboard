@@ -567,7 +567,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     )
     def create(self, request, repository=None, submit_as=None, changenum=None,
                commit_id=None, local_site_name=None,
-               create_from_commit_id=False, branch=None, extra_fields={},
+               create_from_commit_id=False, branch="", extra_fields={},
                *args, **kwargs):
         """Creates a new review request.
 
