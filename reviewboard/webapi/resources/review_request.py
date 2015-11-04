@@ -536,13 +536,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'will be based on this commit ID.',
                 'added_in': '2.0',
             },
-            'branch': {
-                'type': six.text_type,
-                'description': 'The branch that the code was changed on or '
-                               'that the code will be committed to. This is a '
-                               'free-form field that can store any text.',
-                'added_in': '2.5',
-            },
             'create_from_commit_id': {
                 'type': bool,
                 'description': 'If true, and if ``commit_id`` is provided, '
@@ -577,8 +570,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     )
     def create(self, request, repository=None, submit_as=None, changenum=None,
                commit_id=None, local_site_name=None,
-               create_from_commit_id=False, branch=None, extra_fields={},
-               *args, **kwargs):
+               create_from_commit_id=False, extra_fields={}, *args, **kwargs):
         """Creates a new review request.
 
         The new review request will start off as private and pending, and
@@ -667,7 +659,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
 
         try:
             review_request = ReviewRequest.objects.create(
-                user, repository, commit_id, branch, local_site,
+                user, repository, commit_id, local_site,
                 create_from_commit_id=create_from_commit_id)
 
             if extra_fields:
