@@ -135,10 +135,10 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
 
         options = options || {};
 
-        success = options.ready ? _.bind(options.ready, context)
-                                : undefined;
-        error = options.error ? _.bind(options.error, context)
-                              : undefined;
+        success = _.isFunction(options.ready) ? _.bind(options.ready, context)
+                                              : undefined;
+        error = _.isFunction(options.error) ? _.bind(options.error, context)
+                                            : undefined;
 
         if (this.get('loaded')) {
             // We already have data--just call the callbacks
@@ -528,28 +528,28 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
      * of the object on success.
      */
     _finishDestroy: function(options, context) {
-        var self = this,
-            parentObject = this.get('parentObject');
+        var parentObject = this.get('parentObject');
 
         Backbone.Model.prototype.destroy.call(this, _.defaults({
             wait: true,
-            success: function() {
+            success: _.bind(function() {
                 /*
                  * Reset the object so it's new again, but with the same
                  * parentObject.
                  */
-                self.set(_.result(self, 'defaults'));
-                self.set({
-                    id: null,
-                    parentObject: parentObject
-                });
+                this.set(_.defaults(
+                    {
+                        id: null,
+                        parentObject: parentObject
+                    },
+                    _.result(this, 'defaults')));
 
-                self.trigger('destroyed', options);
+                this.trigger('destroyed', options);
 
                 if (_.isFunction(options.success)) {
                     options.success.apply(context, arguments);
                 }
-            }
+            }, this)
         }, _.bindCallbacks(options, context)));
     },
 
