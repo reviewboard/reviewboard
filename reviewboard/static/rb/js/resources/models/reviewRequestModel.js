@@ -367,8 +367,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
      * Serialize for sending to the server.
      */
     toJSON: function(options) {
-        var branch = this.get('branch'),
-            commitID = this.get('commitID'),
+        var commitID = this.get('commitID'),
             repository = this.get('repository'),
             result = {};
 
@@ -385,10 +384,6 @@ RB.ReviewRequest = RB.BaseResource.extend({
 
             if (repository) {
                 result.repository = repository;
-            }
-
-            if (branch) {
-                result.branch = branch;
             }
 
             return result;
