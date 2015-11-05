@@ -142,24 +142,46 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
         urlopen(Request(webhook_target.url, body, headers))
 
 
-def _serialize_review(review, request, review_key, resource):
+def _serialize_review(review, request):
     return {
-        review_key: resource.serialize_object(
+        'review': resources.review.serialize_object(
             review, request=request),
         'diff_comments': [
             resources.filediff_comment.serialize_object(
                 comment, request=request)
             for comment in review.comments.all()
         ],
+        'file_attachment_comments': [
+            resources.file_attachment_comment.serialize_object(
+                comment, request=request)
+            for comment in review.file_attachment_comments.all()
+        ],
         'screenshot_comments': [
             resources.screenshot_comment.serialize_object(
                 comment, request=request)
             for comment in review.screenshot_comments.all()
         ],
-        'file_attachment_comments': [
-            resources.file_attachment_comment.serialize_object(
+    }
+
+
+def _serialize_reply(reply, request):
+    return {
+        'reply': resources.review_reply.serialize_object(
+            reply, request=request),
+        'diff_comments': [
+            resources.review_reply_diff_comment.serialize_object(
                 comment, request=request)
-            for comment in review.file_attachment_comments.all()
+            for comment in reply.comments.all()
+        ],
+        'file_attachment_comments': [
+            resources.review_reply_file_attachment_comment.serialize_object(
+                comment, request=request)
+            for comment in reply.file_attachment_comments.all()
+        ],
+        'screenshot_comments': [
+            resources.review_reply_screenshot_comment.serialize_object(
+                comment, request=request)
+            for comment in reply.screenshot_comments.all()
         ],
     }
 
@@ -247,8 +269,7 @@ def review_published_cb(sender, user, review, **kwargs):
 
     if webhook_targets:
         request = FakeHTTPRequest(user)
-        payload = _serialize_review(review, request, 'review',
-                                    resources.review)
+        payload = _serialize_review(review, request)
         payload['event'] = event
         dispatch_webhook_event(request, webhook_targets, event, payload)
 
@@ -261,8 +282,7 @@ def reply_published_cb(sender, user, reply, **kwargs):
 
     if webhook_targets:
         request = FakeHTTPRequest(user)
-        payload = _serialize_review(reply, request, 'reply',
-                                    resources.review_reply)
+        payload = _serialize_reply(reply, request)
         payload['event'] = event
         dispatch_webhook_event(request, webhook_targets, event, payload)
 
