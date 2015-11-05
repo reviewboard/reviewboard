@@ -17,7 +17,7 @@ _ = lambda s: s
 DEBUG = True
 
 ADMINS = (
-    ('Example Joe', 'admin@example.com')
+    ('Example Admin', 'admin@example.com'),
 )
 
 MANAGERS = ADMINS
