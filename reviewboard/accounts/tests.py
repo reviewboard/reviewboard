@@ -21,9 +21,15 @@ class AuthBackendTests(TestCase):
     """Testing authentication backends."""
 
     def _get_standard_auth_backend(self):
-        # The StandardAuthBackend **SHOULD** be the last backend in the list.
-        backend = get_enabled_auth_backends()[-1]
-        self.assertIsInstance(backend, StandardAuthBackend)
+        backend = None
+
+        for backend in get_enabled_auth_backends():
+            # We do not use isinstance here because we specifically want a
+            # StandardAuthBackend and not an instance of a subclass of it.
+            if type(backend) is StandardAuthBackend:
+                break
+
+        self.assertIs(type(backend), StandardAuthBackend)
 
         return backend
 
