@@ -18,7 +18,14 @@ _head_ref = None
 
 def _run_git(cmd):
     """Run git with the given arguments, returning the output."""
-    return subprocess.check_output(['git'] + cmd)
+    p = subprocess.Popen(['git'] + cmd, stdout=subprocess.PIPE)
+    output, error = p.communicate()
+    ret_code = p.poll()
+
+    if ret_code:
+        raise subprocess.CalledProcessError(ret_code, 'git')
+
+    return output
 
 
 def _get_branch_for_version():
@@ -46,6 +53,13 @@ def _get_branch_for_version():
 def git_get_nearest_tracking_branch(ref='HEAD', remote='origin'):
     """Return the nearest tracking branch for the given Git repository."""
     merge_base = _get_branch_for_version()
+
+    try:
+        _run_git(['fetch', 'origin', '%s:%s' % (merge_base, merge_base)])
+    except Exception:
+        # Ignore, as we may already have this. Hopefully it won't fail later.
+        pass
+
     lines = _run_git(['branch', '-rv', '--contains', merge_base]).splitlines()
 
     remote_prefix = '%s/' % remote

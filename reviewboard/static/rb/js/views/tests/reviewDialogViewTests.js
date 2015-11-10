@@ -252,7 +252,10 @@ suite('rb/views/ReviewDialogView', function() {
                         _.clone(emptyGeneralCommentsPayload);
 
                     spyOn($, 'ajax').andCallFake(function(options) {
-                        if (options.url === '/file-attachment-comments/') {
+                        if (options.type === 'DELETE') {
+                            options.success({});
+                        } else if (options.url ===
+                                   '/file-attachment-comments/') {
                             options.success(fileAttachmentCommentsPayload);
                         } else if (options.url === '/diff-comments/') {
                             options.success(diffCommentsPayload);
@@ -430,6 +433,30 @@ suite('rb/views/ReviewDialogView', function() {
                             'include-text-types': 'raw'
                         });
                     });
+
+                    it('Deleting comment', function() {
+                        spyOn(window, 'confirm').andCallFake(function() {
+                            return true;
+                        });
+
+                        testLoadDiffComments();
+
+                        expect(dlg._diffCommentsCollection.length).toBe(1);
+                        dlg.$('.delete-comment').click();
+                        expect(dlg._diffCommentsCollection.length).toBe(0);
+                    });
+
+                    it('Deleting comment and cancelling', function() {
+                        spyOn(window, 'confirm').andCallFake(function() {
+                            return false;
+                        });
+
+                        testLoadDiffComments();
+
+                        expect(dlg._diffCommentsCollection.length).toBe(1);
+                        dlg.$('.delete-comment').click();
+                        expect(dlg._diffCommentsCollection.length).toBe(1);
+                    });
                 });
 
                 describe('File attachment comments', function() {
@@ -497,6 +524,35 @@ suite('rb/views/ReviewDialogView', function() {
                             'force-text-type': 'html',
                             'include-text-types': 'raw'
                         });
+                    });
+
+                    it('Deleting comment', function() {
+                        spyOn(window, 'confirm').andCallFake(function() {
+                            return true;
+                        });
+
+                        testLoadFileAttachmentComments();
+
+                        expect(dlg._fileAttachmentCommentsCollection.length)
+                            .toBe(1);
+                        dlg.$('.delete-comment').click();
+                        expect(dlg._fileAttachmentCommentsCollection.length)
+                            .toBe(0);
+                    });
+
+                    it('Deleting comment and cancelling', function() {
+                        spyOn(window, 'confirm').andCallFake(function() {
+                            return false;
+                        });
+
+                        testLoadFileAttachmentComments();
+
+                        expect(dlg._fileAttachmentCommentsCollection.length)
+                            .toBe(1);
+
+                        dlg.$('.delete-comment').click();
+                        expect(dlg._fileAttachmentCommentsCollection.length)
+                            .toBe(1);
                     });
                 });
 
@@ -573,6 +629,36 @@ suite('rb/views/ReviewDialogView', function() {
                             'force-text-type': 'html',
                             'include-text-types': 'raw'
                         });
+                    });
+
+                    it('Deleting comment', function() {
+                        spyOn(window, 'confirm').andCallFake(function() {
+                            return true;
+                        });
+
+                        testLoadScreenshotComments();
+
+                        expect(dlg._screenshotCommentsCollection.length)
+                            .toBe(1);
+
+                        dlg.$('.delete-comment').click();
+                        expect(dlg._screenshotCommentsCollection.length)
+                            .toBe(0);
+                    });
+
+                    it('Deleting comment and cancelling', function() {
+                        spyOn(window, 'confirm').andCallFake(function() {
+                            return false;
+                        });
+
+                        testLoadScreenshotComments();
+
+                        expect(dlg._screenshotCommentsCollection.length)
+                            .toBe(1);
+
+                        dlg.$('.delete-comment').click();
+                        expect(dlg._screenshotCommentsCollection.length)
+                            .toBe(1);
                     });
                 });
             });

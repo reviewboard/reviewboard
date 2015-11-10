@@ -24,13 +24,27 @@ BaseCommentView = Backbone.View.extend({
 
     thumbnailTemplate: '',
 
+    events: {
+        'click .delete-comment': '_deleteComment'
+    },
+
     editorTemplate: _.template([
         '<div class="edit-fields">',
         ' <div class="edit-field">',
         '  <div class="comment-text-field">',
         '   <dl>',
         '    <dt>',
-        '     <label for="<%= id %>"><%- editCommentText %></label>',
+        '     <label for="<%= id %>">',
+        '      <%- commentText %>',
+
+        // The indentation is messy here to avoid having whitespace in the <a>.
+        '<a href="#" role="button" class="delete-comment"',
+        '   aria-label="<%- deleteCommentText %>"',
+        '   title="<%- deleteCommentText %>">',
+        '<span class="fa fa-trash-o" class="delete-comment"></span>',
+        '</a>',
+
+        '     </label>',
         '    </dt>',
         '    <dd><pre id="<%= id %>" class="reviewtext rich-text" ',
         '             data-rich-text="true"><%- text %></pre></dd>',
@@ -44,6 +58,8 @@ BaseCommentView = Backbone.View.extend({
         ' </div>',
         '</div>'
     ].join('')),
+
+    _DELETE_COMMENT_TEXT: gettext('Are you sure you want to delete this comment?'),
 
     initialize: function() {
         this.$issueOpened = null;
@@ -61,7 +77,7 @@ BaseCommentView = Backbone.View.extend({
 
         this._hookViews = [];
 
-        _super(this).remove.call(this);
+        Backbone.View.prototype.remove.call(this);
     },
 
     /*
@@ -111,7 +127,8 @@ BaseCommentView = Backbone.View.extend({
             .addClass('draft')
             .append(this.renderThumbnail())
             .append($(this.editorTemplate({
-                editCommentText: gettext('Edit comment'),
+                deleteCommentText: gettext('Delete comment'),
+                commentText: gettext('Comment'),
                 id: _.uniqueId('draft_comment_'),
                 issueOpenedID: _.uniqueId('issue-opened'),
                 openAnIssueText: gettext('Open an Issue'),
@@ -167,6 +184,10 @@ BaseCommentView = Backbone.View.extend({
         this.listenTo(this.model, 'change:text', this.renderText);
         this.renderText(this.model, text);
 
+        this.listenTo(this.model, 'destroying', function() {
+            this.stopListening(this.model)
+        });
+
         RB.ReviewDialogCommentHook.each(function(hook) {
             var HookView = hook.get('viewType'),
                 hookView = new HookView({
@@ -208,6 +229,15 @@ BaseCommentView = Backbone.View.extend({
                 isHTMLEncoded: true,
                 bugTrackerURL: reviewRequest.get('bugTrackerURL')
             });
+        }
+    },
+
+    /*
+     * Delete the comment associated with the model.
+     */
+    _deleteComment: function() {
+        if (confirm(this._DELETE_COMMENT_TEXT)) {
+            this.model.destroy();
         }
     },
 
@@ -381,7 +411,7 @@ HeaderFooterCommentView = Backbone.View.extend({
         '<div class="comment-text-field">',
         ' <dl>',
         '  <dt>',
-        '   <label for="<%= id %>"><%- editText %></label>',
+        '   <label for="<%= id %>"><%- commentText %></label>',
         '  </dt>',
         '  <dd><pre id="<%= id %>" class="reviewtext rich-text" ',
         '           data-rich-text="true"><%- text %></pre></dd>',
@@ -397,7 +427,7 @@ HeaderFooterCommentView = Backbone.View.extend({
         this.propertyName = options.propertyName;
         this.richTextPropertyName = options.richTextPropertyName;
         this.linkText = options.linkText;
-        this.editText = options.editText;
+        this.commentText = options.commentText;
 
         this.$editor = null;
         this.textEditor = null;
@@ -416,7 +446,7 @@ HeaderFooterCommentView = Backbone.View.extend({
         this.$el
             .addClass('draft')
             .append($(this.editorTemplate({
-                editText: this.editText,
+                commentText: this.commentText,
                 id: this.propertyName,
                 linkText: this.linkText,
                 text: text || ''
@@ -528,6 +558,10 @@ HeaderFooterCommentView = Backbone.View.extend({
         }
 
         return false;
+    },
+
+    _deleteComment: function() {
+        /* Headers and footers cannot be deleted. */
     },
 
     _updateRawValue: function() {
@@ -736,7 +770,7 @@ RB.ReviewDialogView = Backbone.View.extend({
             propertyName: 'bodyTop',
             richTextPropertyName: 'bodyTopRichText',
             linkText: gettext('Add header'),
-            editText: gettext('Edit header')
+            commentText: gettext('Header')
         });
 
         this._bodyBottomView = new HeaderFooterCommentView({
@@ -745,7 +779,7 @@ RB.ReviewDialogView = Backbone.View.extend({
             propertyName: 'bodyBottom',
             richTextPropertyName: 'bodyBottomRichText',
             linkText: gettext('Add footer'),
-            editText: gettext('Edit footer')
+            commentText: gettext('Footer')
         });
 
         /*
@@ -868,6 +902,18 @@ RB.ReviewDialogView = Backbone.View.extend({
         this._setTextTypeAttributes(view.model);
 
         this._commentViews.push(view);
+
+        this.listenTo(view.model, 'destroyed', function() {
+            view.$el.fadeOut({
+                complete: _.bind(function() {
+                    view.remove();
+                    this._handleEmptyReview();
+                }, this)
+            });
+
+            this._commentViews = _.without(this._commentViews, view);
+        });
+
         view.$el.appendTo(this._$comments);
         view.render();
     },
