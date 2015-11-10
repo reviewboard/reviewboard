@@ -591,7 +591,6 @@ suite('rb/views/ReviewDialogView', function() {
                             .toBe(1);
                     });
                 });
-                });
             });
         });
 
