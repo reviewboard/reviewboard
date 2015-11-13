@@ -3,7 +3,7 @@
 This is an automatically generated e-mail. To reply, visit:
 {{domain_method}}://{{domain}}{{review.get_absolute_url}}
 -----------------------------------------------------------
-{% if ship_it %}
+{% if review.ship_it %}
 {%  if has_issues %}
 Fix it, then Ship it!
 {%  else %}
