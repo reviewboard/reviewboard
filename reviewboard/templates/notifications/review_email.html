@@ -2,7 +2,7 @@
 {% load djblets_email djblets_utils markdown_email rb_extensions %}
 
 {% block content %}
-{% if ship_it %}
+{% if review.ship_it %}
 <p>
 {%  if has_issues %}
 Fix it, then Ship it!
