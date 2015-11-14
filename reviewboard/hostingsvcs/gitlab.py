@@ -306,7 +306,7 @@ class GitLab(HostingService):
             author_name = commit['author_name']
             date = commit['created_at']
             parent_revision = commit['parent_ids'][0]
-            message = commit['message']
+            message = commit.get('message', '')
 
         # Step 2: Get the diff. The revision is the commit header in here.
         # Firstly, a diff url should be built up, which has the format of
