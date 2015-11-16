@@ -128,6 +128,7 @@ BaseImageView = Backbone.View.extend({
  * image and allows it to be commented on.
  */
 ImageAttachmentView = BaseImageView.extend({
+    mode: 'attachment',
     tagName: 'img',
 
     /*
