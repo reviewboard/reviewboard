@@ -296,7 +296,7 @@ class GitLab(HostingService):
             author_name = commit['author_name']
             date = commit['created_at']
             parent_revision = commit['parent_ids'][0]
-            message = commit['message']
+            message = commit.get('message', '')
 
         # Step 2: Get the diff. The revision is the commit header in here.
         # Firstly, a diff url should be built up, which has the format of
@@ -310,8 +310,9 @@ class GitLab(HostingService):
         path_with_namespace = project['path_with_namespace']
 
         # Build up diff url and get diff.
-        diff_url = ('https://gitlab.com/%s/commit/%s.diff?private_token=%s'
-                    % (path_with_namespace, revision, private_token))
+        diff_url = ('%s/%s/commit/%s.diff?private_token=%s'
+                    % (self.account.hosting_url, path_with_namespace,
+                       revision, private_token))
         diff, headers = self.client.http_get(
             diff_url,
             headers={'Accept': 'text/plain'})
