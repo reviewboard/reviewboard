@@ -15,6 +15,7 @@ from reviewboard.admin.validation import validate_bug_tracker
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             SSHKeyAssociationError,
                                             TwoFactorAuthCodeRequiredError)
+from reviewboard.hostingsvcs.fake import FAKE_HOSTING_SERVICES
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import (get_hosting_services,
                                              get_hosting_service)
@@ -220,6 +221,8 @@ class RepositoryForm(forms.ModelForm):
             local_site=self.local_site)
         self.fields['hosting_account'].queryset = hosting_accounts
 
+        hosting_accounts = list(hosting_accounts)
+
         # Standard forms don't support 'instance', so don't pass it through
         # to any created hosting service forms.
         if 'instance' in kwargs:
@@ -229,7 +232,13 @@ class RepositoryForm(forms.ModelForm):
         hosting_service_choices = []
         bug_tracker_choices = []
 
+        hosting_services = set()
+
         for hosting_service in get_hosting_services():
+            class_name = '%s.%s' % (hosting_service.__module__,
+                                    hosting_service.__name__)
+            hosting_services.add(class_name)
+
             if hosting_service.supports_repositories:
                 hosting_service_choices.append((hosting_service.id,
                                                 hosting_service.name))
@@ -240,29 +249,9 @@ class RepositoryForm(forms.ModelForm):
 
             self.bug_tracker_forms[hosting_service.id] = {}
             self.repository_forms[hosting_service.id] = {}
-            self.hosting_service_info[hosting_service.id] = {
-                'scmtools': hosting_service.supported_scmtools,
-                'plans': [],
-                'planInfo': {},
-                'self_hosted': hosting_service.self_hosted,
-                'needs_authorization': hosting_service.needs_authorization,
-                'supports_bug_trackers': hosting_service.supports_bug_trackers,
-                'supports_ssh_key_association':
-                    hosting_service.supports_ssh_key_association,
-                'supports_two_factor_auth':
-                    hosting_service.supports_two_factor_auth,
-                'needs_two_factor_auth_code': False,
-                'accounts': [
-                    {
-                        'pk': account.pk,
-                        'hosting_url': account.hosting_url,
-                        'username': account.username,
-                        'is_authorized': account.is_authorized,
-                    }
-                    for account in hosting_accounts
-                    if account.service_name == hosting_service.id
-                ],
-            }
+            self.hosting_service_info[hosting_service.id] = \
+                self._get_hosting_service_info(hosting_service,
+                                               hosting_accounts)
 
             try:
                 if hosting_service.plans:
@@ -287,6 +276,16 @@ class RepositoryForm(forms.ModelForm):
                 logging.error('Error loading hosting service %s: %s'
                               % (hosting_service.id, e),
                               exc_info=1)
+
+        for class_name, cls in six.iteritems(FAKE_HOSTING_SERVICES):
+            if class_name not in hosting_services:
+                service_info = self._get_hosting_service_info(cls, [])
+                service_info['fake'] = True
+                self.hosting_service_info[cls.hosting_service_id] = \
+                    service_info
+
+                hosting_service_choices.append((cls.hosting_service_id,
+                                                cls.name))
 
         # Build the list of hosting service choices, sorted, with
         # "None" being first.
@@ -332,6 +331,46 @@ class RepositoryForm(forms.ModelForm):
             self._populate_repository_info_fields()
             self._populate_hosting_service_fields()
             self._populate_bug_tracker_fields()
+
+    def _get_hosting_service_info(self, hosting_service, hosting_accounts):
+        """Return the information for a hosting service.
+
+        Arguments:
+            hosting_service (type):
+                The hosting service class, which should be a subclass of
+                :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
+
+            hosting_accounts (list):
+                A list of the registered
+                `py:class:`~reviewboard.hostingsvcs.models.HostingServiceAccount`s
+
+        Returns:
+            dict:
+            Information about the hosting service.
+        """
+        return {
+            'scmtools': hosting_service.supported_scmtools,
+            'plans': [],
+            'planInfo': {},
+            'self_hosted': hosting_service.self_hosted,
+            'needs_authorization': hosting_service.needs_authorization,
+            'supports_bug_trackers': hosting_service.supports_bug_trackers,
+            'supports_ssh_key_association':
+                hosting_service.supports_ssh_key_association,
+            'supports_two_factor_auth':
+                hosting_service.supports_two_factor_auth,
+            'needs_two_factor_auth_code': False,
+            'accounts': [
+                {
+                    'pk': account.pk,
+                    'hosting_url': account.hosting_url,
+                    'username': account.username,
+                    'is_authorized': account.is_authorized,
+                }
+                for account in hosting_accounts
+                if account.service_name == hosting_service.id
+            ],
+        }
 
     def _load_hosting_service(self, hosting_service_id, hosting_service,
                               repo_type_id, repo_type_label, form_class,
