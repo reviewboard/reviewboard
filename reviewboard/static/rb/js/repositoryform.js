@@ -1,5 +1,11 @@
 var prevTypes = {},
-    origRepoTypes = [];
+    origRepoTypes = [],
+    powerPackTemplate = [
+        '<h3>', gettext('Power Pack Required'), '</h3>',
+        '<p>',
+        gettext('<span class="power-pack-advert-hosting-type"></span> support is available with <a href="https://www.reviewboard.org/powerpack/">Power Pack</a>, an extension which also offers powerful reports, document review, and more.'),
+        '</p>'
+    ].join('');
 
 function updateFormDisplay(id, tools_info) {
     var type = $('#id_' + id).val(),
@@ -92,7 +98,7 @@ function updateRepositoryType() {
 
     $repoTypes.empty();
 
-    $(origRepoTypes).each(function(i) {
+    $(origRepoTypes).each(function (i) {
         var repoType = origRepoTypes[i];
 
         if (newRepoTypes.length === 0 ||
@@ -122,8 +128,7 @@ $(document).ready(function() {
         $hostingAccountTwoFactorAuthCodeRow =
             $('#row-hosting_account_two_factor_auth_code'),
         $hostingAccountRelink = $('<p/>')
-            .text('The authentication requirements for this account has ' +
-                  'changed. You will need to re-authenticate.')
+            .text(gettext('The authentication requirements for this account have changed. You will need to re-authenticate.'))
             .addClass('errornote')
             .hide()
             .appendTo($hostingAccountRow),
@@ -146,9 +151,15 @@ $(document).ready(function() {
         $repoPlan = $('#id_repository_plan'),
         $publicAccess = $('#id_public'),
         $tool = $('#id_tool'),
+        $toolRow = $('#row-tool'),
         $publicKeyPopup = $('#ssh-public-key-popup'),
         $repoForms = $('.repo-form'),
-        $bugTrackerForms = $('.bug-tracker-form');
+        $bugTrackerForms = $('.bug-tracker-form'),
+        $submitButtons = $('input[type="submit"]'),
+        $powerPackAdvert = $('<div class="powerpack-advert" />')
+            .html(powerPackTemplate)
+            .hide()
+            .appendTo($hostingType.closest('fieldset'));
 
     prevTypes.bug_tracker_type = 'none';
     prevTypes.hosting_type = 'custom';
@@ -197,7 +208,9 @@ $(document).ready(function() {
     $hostingType
         .change(function() {
             var hostingType = $hostingType.val(),
-                isCustom = (hostingType === 'custom');
+                isCustom = (hostingType === 'custom'),
+                isFake = (!isCustom &&
+                          HOSTING_SERVICES[hostingType].fake === true);
 
             updateRepositoryType();
 
@@ -246,6 +259,22 @@ $(document).ready(function() {
 
             $hostingURLRow.setVisible(
                 !isCustom && HOSTING_SERVICES[hostingType].self_hosted);
+
+            if (isFake) {
+                $powerPackAdvert
+                    .find('.power-pack-advert-hosting-type')
+                    .text($hostingType.find(':selected').text());
+            }
+
+            $bugTrackerTypeRow.setVisible(!isFake);
+            $repoPlanRow.setVisible(!isFake);
+            $hostingAccountRow.setVisible(!isFake);
+            $hostingAccountUserRow.setVisible(!isFake);
+            $hostingAccountPassRow.setVisible(!isFake);
+            $toolRow.setVisible(!isFake);
+
+            $powerPackAdvert.setVisible(isFake);
+            $submitButtons.prop('disabled', isFake);
         })
         .triggerHandler('change');
 
@@ -318,35 +347,36 @@ $(document).ready(function() {
             } else {
                 hostingInfo = HOSTING_SERVICES[hostingType];
 
-                $hostingAccountRow.show();
+                if (hostingInfo.fake !== true) {
+                    $hostingAccountRow.show();
 
-                if (hostingInfo.self_hosted) {
-                    $hostingURLRow.show();
-                }
+                    if (hostingInfo.self_hosted) {
+                        $hostingURLRow.show();
+                    }
 
-                if ($hostingAccount.val() === '') {
-                    $hostingAccountUserRow.show();
+                    if ($hostingAccount.val() === '') {
+                        $hostingAccountUserRow.show();
 
                     $hostingAccountPassRow.setVisible(
                         hostingInfo.needs_authorization);
 
-
-                    if (hostingInfo.needs_two_factor_auth_code) {
-                        $hostingAccountTwoFactorAuthCodeRow.show();
-                    }
-                } else {
-                    selectedIndex = $hostingAccount[0].selectedIndex;
-                    $selectedOption = $(hostingAccount[0])
-                        .options[selectedIndex];
-                    account = $selectedOption.data('account');
-
-                    $hostingAccountUserRow.hide();
-
-                    if (account.is_authorized) {
-                        $hostingAccountPassRow.hide();
+                        if (hostingInfo.needs_two_factor_auth_code) {
+                            $hostingAccountTwoFactorAuthCodeRow.show();
+                        }
                     } else {
-                        $hostingAccountPassRow.show();
-                        $hostingAccountRelink.show();
+                        selectedIndex = $hostingAccount[0].selectedIndex;
+                        $selectedOption = $($hostingAccount[0]
+                            .options[selectedIndex]);
+                        account = $selectedOption.data('account');
+
+                        $hostingAccountUserRow.hide();
+
+                        if (account.is_authorized) {
+                            $hostingAccountPassRow.hide();
+                        } else {
+                            $hostingAccountPassRow.show();
+                            $hostingAccountRelink.show();
+                        }
                     }
                 }
             }
