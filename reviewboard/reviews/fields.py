@@ -150,42 +150,106 @@ class BaseReviewRequestField(object):
         changedesc.record_field_change(self.field_id, old_value, new_value)
 
     def serialize_change_entry(self, changedesc):
-        """Serializes the change entry for public consumption.
+        """Serialize a change entry for public consumption.
 
         This will output a version of the change entry for use in the API.
-        It can be the same content stored in the ChangeDescription, but
+        It can be the same content stored in the
+        :py:class:`~reviewboard.changedescs.models.ChangeDescription`, but
         does not need to be.
+
+        Args:
+            changedesc (reviewboard.changedescs.models.ChangeDescription):
+                The change description whose field is to be serialized.
+
+        Returns:
+            dict:
+            An appropriate serialization for the field.
         """
         field_info = changedesc.fields_changed[self.field_id]
 
         if self.model:
-            pks = [
-                value[2]
-                for key in ('new', 'old', 'added', 'removed')
+            return self.serialize_change_entry_for_model_list(field_info)
+        else:
+            return self.serialize_change_entry_for_singleton(field_info)
+
+    def serialize_change_entry_for_model_list(self, field_info):
+        """Return the change entry for a list of models.
+
+        Args:
+            field_info (dict):
+                A dictionary describing how the field has changed. This is
+                guaranteed to have ``new`` and ``old`` keys, but may also
+                contain ``added`` and ``removed`` keys as well.
+
+        Returns:
+            dict:
+            A mapping of each key present in ``field_info`` to its list of
+            model instances.
+        """
+        pks = [
+            value[2]
+            for key in ('new', 'old', 'added', 'removed')
+            if key in field_info
+            for value in field_info[key]
+        ]
+        pk_to_objects = dict([
+            (obj.pk, obj)
+            for obj in self.model.objects.filter(pk__in=pks)
+        ])
+
+        return dict([
+            (key, [
+                pk_to_objects[value[2]]
                 for value in field_info[key]
-            ]
-            pk_to_objects = dict([
-                (obj.pk, obj)
-                for obj in self.model.objects.filter(pk__in=pks)
             ])
+            for key in ('new', 'old', 'added', 'removed')
+            if key in field_info
+        ])
 
-            return dict([
-                (key, pk_to_objects[field_info[key][2]])
-                for key in ('new', 'old', 'added', 'removed')
-                if key in field_info
-            ])
-        else:
-            return dict([
-                (key, field_info[key][0])
-                for key in ('new', 'old', 'added', 'removed')
-                if key in field_info
-            ])
+    def serialize_change_entry_for_singleton(self, field_info):
+        """Return the change entry for a singleton.
 
-    def _serialize_change_entry_value(self, value):
-        if self.model:
-            return self.model.objects.get(pk=value[2])
-        else:
-            return value[0]
+        Singleton fields (e.g., summaries) are stored in
+        :py:class:`~reviewboard.changedescs.models.ChangeDescription`s as
+        a list with a single element.
+
+        Args:
+            field_info (dict):
+                A dictionary describing how the field has changed. This is
+                guaranteed to have ``new`` and ``old`` keys, but may also
+                contain ``added`` and ``removed`` keys as well.
+
+        Returns:
+            dict:
+            A mapping of each key in ``field_info`` to a single value.
+        """
+        return dict([
+            (key, field_info[key][0])
+            for key in ('new', 'old', 'added', 'removed')
+            if key in field_info
+        ])
+
+    def serialize_change_entry_for_list(self, field_info):
+        """Return the change entry for a list of plain data.
+
+        Args:
+            field_info (dict):
+                A dictionary describing how the field has changed. This is
+                guaranteed to have ``new`` and ``old`` keys, but may also
+                contain ``added`` and ``removed`` keys as well.
+
+        Returns:
+            dict:
+            A mapping of each key in ``field_info`` to a list of values.
+        """
+        return dict([
+            (key, [
+                value[0]
+                for value in field_info[key]
+            ])
+            for key in ('new', 'old', 'added', 'removed')
+            if key in field_info
+        ])
 
     def get_change_entry_sections_html(self, info):
         """Returns sections of change entries with titles and rendered HTML.
@@ -375,42 +439,27 @@ class BaseCommaEditableField(BaseEditableField):
             return set(old_value or []) != set(new_value or [])
 
     def serialize_change_entry(self, changedesc):
-        """Serializes the change entry for public consumption.
+        """Serialize a change entry for public consumption.
 
         This will output a version of the change entry for use in the API.
-        It can be the same content stored in the ChangeDescription, but
+        It can be the same content stored in the
+        :py:class:`~reviewboard.changedescs.models.ChangeDescription`, but
         does not need to be.
+
+        Args:
+            changedesc (reviewboard.changedescs.models.ChangeDescription):
+                The change description whose field is to be serialized.
+
+        Returns:
+            dict:
+            An appropriate serialization for the field.
         """
         field_info = changedesc.fields_changed[self.field_id]
 
         if self.model:
-            pks = [
-                value[2]
-                for key in ('new', 'old', 'added', 'removed')
-                for value in field_info[key]
-            ]
-            pk_to_objects = dict([
-                (obj.pk, obj)
-                for obj in self.model.objects.filter(pk__in=pks)
-            ])
-
-            return dict([
-                (key, [
-                    pk_to_objects[value[2]]
-                    for value in field_info[key]
-                ])
-                for key in ('new', 'old', 'added', 'removed')
-                if key in field_info
-            ])
+            return self.serialize_change_entry_for_model_list(field_info)
         else:
-            return dict([
-                (key, [
-                    value[0]
-                    for value in field_info[key]
-                ])
-                for key in ('new', 'old', 'added', 'removed')
-                if key in field_info
-            ])
+            return self.serialize_change_entry_for_list(field_info)
 
     def render_value(self, values):
         """Renders the list of items.
