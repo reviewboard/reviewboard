@@ -73,7 +73,7 @@ function updatePlanEl($row, $plan, serviceType) {
 
 function updateHostingForm($hostingType, formPrefix, $plan, $forms) {
     var formID = formPrefix + '-' + $hostingType.val() + '-' +
-        ($plan.val() || 'default');
+                 ($plan.val() || 'default');
 
     $forms.hide();
     $('#' + formID).show();
@@ -132,9 +132,9 @@ $(document).ready(function() {
             .addClass('errornote')
             .hide()
             .appendTo($hostingAccountRow),
-        $associateSSHKeyFieldset =
-            $('#row-associate_ssh_key').parent('fieldset'),
-        $associateSshKey= $('#id_associate_ssh_key'),
+        $associateSshKeyFieldset =
+            $('#row-associate_ssh_key').parents('fieldset'),
+        $associateSshKey = $('#id_associate_ssh_key'),
         associateSshKeyDisabled = $associateSshKey.prop('disabled'),
         $bugTrackerUseHosting = $('#id_bug_tracker_use_hosting'),
         $bugTrackerType = $('#id_bug_tracker_type'),
@@ -230,31 +230,30 @@ $(document).ready(function() {
 
             if (isCustom ||
                 !HOSTING_SERVICES[hostingType].supports_bug_trackers) {
-                $bugTrackerUseHosting.prop({
-                    disabled: true,
-                    checked: false
-                });
-                $bugTrackerUseHosting.triggerHandler('change');
+                $bugTrackerUseHosting
+                    .prop({
+                        disabled: true,
+                        checked: false
+                    })
+                    .triggerHandler('change');
             } else {
                 $bugTrackerUseHosting.prop('disabled', false);
             }
 
             if (isCustom ||
                 !HOSTING_SERVICES[hostingType].supports_ssh_key_association) {
-                $associateSSHKeyFieldset.hide();
-
-                $associateSSHKeyFieldset.hide()
-                    .prop({
-                        disabled: true,
-                        checked: false
-                    });
+                $associateSshKeyFieldset.hide();
+                $associateSshKey.prop({
+                    disabled: true,
+                    checked: false
+                });
             } else {
                 /*
                  * Always use the original state of the checkbox (i.e. the
                  * state on page load)
                  */
-                $associateSshKey.prop('disabled', associateSshKeyDisabled)
-                    .show();
+                $associateSshKey.prop('disabled', associateSshKeyDisabled);
+                $associateSshKeyFieldset.show();
             }
 
             $hostingURLRow.setVisible(
@@ -357,8 +356,8 @@ $(document).ready(function() {
                     if ($hostingAccount.val() === '') {
                         $hostingAccountUserRow.show();
 
-                    $hostingAccountPassRow.setVisible(
-                        hostingInfo.needs_authorization);
+                        $hostingAccountPassRow.setVisible(
+                            hostingInfo.needs_authorization);
 
                         if (hostingInfo.needs_two_factor_auth_code) {
                             $hostingAccountTwoFactorAuthCodeRow.show();
