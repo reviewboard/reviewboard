@@ -102,7 +102,7 @@ class Command(NoArgsCommand):
         else:
             time_remaining_s = self.CALC_TIME_REMAINING_STR
 
-        prefix_s = '  [%s%%] %s/%s - ' % (pct, processed_count, total_count)
+        prefix_s = '  [%d%%] %s/%s - ' % (pct, processed_count, total_count)
 
         # NOTE: We use sys.stdout here instead of self.stderr in order
         #       to control newlines. Command.stderr will force a \n for
