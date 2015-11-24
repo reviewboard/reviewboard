@@ -641,6 +641,26 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
             "Re: Review Request %s: My Summary" % review_request.pk)
         self.assertValidRecipients(["doc", "grumpy"])
 
+    def test_put_publish_with_new_submitter(self):
+        """Testing the PUT review-requests/<id>/draft/?public=1 API
+        with new submitter"""
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+        draft = ReviewRequestDraft.create(review_request)
+        draft.owner = User.objects.get(username='doc')
+        draft.save()
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {'public': True},
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request = ReviewRequest.objects.get(pk=review_request.id)
+        self.assertEqual(review_request.submitter.username, "doc")
+        self.assertTrue(review_request.public)
+
     def test_put_publish_with_new_review_request(self):
         """Testing the PUT review-requests/<id>/draft/?public=1 API
         with a new review request

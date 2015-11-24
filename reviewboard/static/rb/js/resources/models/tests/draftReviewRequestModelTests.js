@@ -91,7 +91,10 @@ suite('rb/resources/models/DraftReviewRequest', function() {
                 target_groups: 'targetGroups',
                 target_people: 'targetPeople',
                 testing_done: 'testingDone',
-                testing_done_text_type: 'plain'
+                testing_done_text_type: 'plain',
+                links: {
+                    submitter: 'submitter'
+                }
             }
         });
 
@@ -105,6 +108,7 @@ suite('rb/resources/models/DraftReviewRequest', function() {
         expect(data.descriptionRichText).toBe(true);
         expect(data['public']).toBe('public');
         expect(data.summary).toBe('summary');
+        expect(data.submitter).toBe('submitter');
         expect(data.targetGroups).toBe('targetGroups');
         expect(data.targetPeople).toBe('targetPeople');
         expect(data.testingDone).toBe('testingDone');

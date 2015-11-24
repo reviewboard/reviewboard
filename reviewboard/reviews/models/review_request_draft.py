@@ -35,6 +35,11 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         _("summary"),
         max_length=BaseReviewRequestDetails.MAX_SUMMARY_LENGTH)
 
+    owner = models.ForeignKey(
+        User,
+        verbose_name=_('owner'),
+        null=True,
+        related_name='draft')
     review_request = models.ForeignKey(
         ReviewRequest,
         related_name="draft",
@@ -85,7 +90,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         related_name="inactive_drafts",
         blank=True)
 
-    submitter = property(lambda self: self.review_request.submitter)
+    submitter = property(lambda self: self.owner or
+                         self.review_request.submitter)
     repository = property(lambda self: self.review_request.repository)
     local_site = property(lambda self: self.review_request.local_site)
 
@@ -173,12 +179,13 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         contains the changed fields. This is used by the e-mail template
         to tell people what's new and interesting.
 
-        The draft's assocated ReviewRequest object will be used if one isn't
+        The draft's associated ReviewRequest object will be used if one isn't
         passed in.
 
         The keys that may be saved in ``fields_changed`` in the
         ChangeDescription are:
 
+        *  'submitter'
         *  ``summary``
         *  ``description``
         *  ``testing_done``

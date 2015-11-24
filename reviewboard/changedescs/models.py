@@ -83,7 +83,14 @@ class ChangeDescription(models.Model):
                 'added': serialize_changed_obj_list(new_set - old_set,
                                                     name_field),
                 'removed': serialize_changed_obj_list(old_set - new_set,
-                                                      name_field),
+                                                      name_field)
+            }
+        elif field == 'submitter':
+            self.fields_changed[field] = {
+                # We put old_value and new_value into tuples so that
+                # we can reuse serialize_changed_obj_list function.
+                'old': serialize_changed_obj_list((old_value,), name_field),
+                'new': serialize_changed_obj_list((new_value,), name_field)
             }
         else:
             self.fields_changed[field] = {
