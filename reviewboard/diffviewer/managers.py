@@ -160,7 +160,7 @@ class FileDiffManager(models.Manager):
                         raw_fdd.save()
                     except IntegrityError:
                         raw_fdd = RawFileDiffData.objects.get(
-                            binary_hash=binary_hash)
+                            binary_hash=raw_fdd.binary_hash)
 
             if filediff_hashes:
                 self._transition_hashes(cursor, 'diff_hash', filediff_hashes)
