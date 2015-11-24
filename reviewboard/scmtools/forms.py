@@ -6,6 +6,7 @@ import sys
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.core.exceptions import ValidationError
+from djblets.db.query import get_object_or_none
 from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
@@ -21,6 +22,7 @@ from reviewboard.hostingsvcs.service import (get_hosting_services,
                                              get_hosting_service)
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          UnverifiedCertificateError)
+from reviewboard.scmtools.fake import FAKE_SCMTOOLS
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -102,11 +104,9 @@ class RepositoryForm(forms.ModelForm):
         widget=forms.TextInput(attrs={'size': 30, 'autocomplete': 'off'}))
 
     # Repository Information fields
-    tool = forms.ModelChoiceField(
+    tool = forms.ChoiceField(
         label=_("Repository type"),
-        required=True,
-        empty_label=None,
-        queryset=Tool.objects.all())
+        required=True)
 
     repository_plan = forms.ChoiceField(
         label=_('Repository plan'),
@@ -195,6 +195,12 @@ class RepositoryForm(forms.ModelForm):
         self.repository_forms = {}
         self.bug_tracker_forms = {}
         self.hosting_service_info = {}
+        self.tool_info = {
+            'none': {
+                'fields': ['raw_file_url', 'username', 'password',
+                           'use_ticket_auth'],
+            },
+        }
         self.validate_repository = True
         self.cert = None
 
@@ -302,6 +308,47 @@ class RepositoryForm(forms.ModelForm):
         bug_tracker_choices.insert(1, (self.CUSTOM_BUG_TRACKER_ID,
                                        self.CUSTOM_BUG_TRACKER_NAME))
         self.fields['bug_tracker_type'].choices = bug_tracker_choices
+
+        # Load the list of SCM tools.
+        available_scmtools = set()
+        scmtool_choices = []
+
+        # Tools are referred to by their numeric ID. We keep track of the last
+        # used ID and will use it to generate further IDs if fake SCMTools are
+        # to be displayed.
+        last_tool_pk = 0
+
+        for tool in Tool.objects.order_by('pk'):
+            scmtool_choices.append((tool.pk, tool.name))
+            available_scmtools.add(tool.class_name)
+
+            tool_fields = ['username', 'password']
+
+            if tool.supports_raw_file_urls:
+                tool_fields.append('raw_file_url')
+
+            if tool.supports_ticket_auth:
+                tool_fields.append('use_ticket_auth')
+
+            self.tool_info[tool.id] = {
+                'fields': tool_fields,
+                'help_text': tool.field_help_text,
+            }
+
+            last_tool_pk = tool.pk
+
+        for pk, (class_name, name) in enumerate(six.iteritems(FAKE_SCMTOOLS),
+                                                start=last_tool_pk + 1):
+            if class_name not in available_scmtools:
+                scmtool_choices.append((pk, name))
+
+                self.tool_info[six.text_type(pk)] = {
+                    'fields': [],
+                    'help_text': {},
+                    'fake': True,
+                }
+
+        self.fields['tool'].choices = scmtool_choices
 
         # Get the current SSH public key that would be used for repositories,
         # if one has been created.
@@ -1042,10 +1089,13 @@ class RepositoryForm(forms.ModelForm):
         If one or more dependencies aren't found, they will be presented
         as validation errors.
         """
-        tool = self.cleaned_data['tool']
-        scmtool_class = tool.get_scmtool_class()
-
         errors = []
+        tool = get_object_or_none(Tool, pk=self.cleaned_data['tool'])
+
+        if not tool:
+            raise ValidationError(['Invalid SCMTool.'])
+
+        scmtool_class = tool.get_scmtool_class()
 
         for dep in scmtool_class.dependencies.get('modules', []):
             if not has_module(dep):
