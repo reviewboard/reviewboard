@@ -268,6 +268,14 @@ class SubmitterField(BuiltinFieldMixin, BaseEditableField):
         else:
             return escape(label)
 
+    def serialize_change_entry(self, changedesc):
+        entry = super(SubmitterField, self).serialize_change_entry(changedesc)
+
+        return dict(
+            (key, value[0])
+            for key, value in six.iteritems(entry)
+        )
+
 
 class RepositoryField(BuiltinFieldMixin, BaseReviewRequestField):
     """The Repository field on a review request."""

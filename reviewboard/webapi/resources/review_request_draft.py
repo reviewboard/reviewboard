@@ -240,6 +240,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         'submitter': {
             'type': six.text_type,
             'description': 'The user who submitted the review request.',
+            'added_in': '2.6',
         },
         'summary': {
             'type': six.text_type,

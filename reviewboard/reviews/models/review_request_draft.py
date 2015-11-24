@@ -225,6 +225,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         if not self.changedesc and review_request.public:
             self.changedesc = ChangeDescription()
 
+
         self.copy_fields_to_request(review_request)
 
         if self.diffset:
@@ -236,6 +237,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             raise NotModifiedError()
 
         if self.changedesc:
+            self.changedesc.user = user
             self.changedesc.timestamp = timezone.now()
             self.changedesc.public = True
             self.changedesc.save()

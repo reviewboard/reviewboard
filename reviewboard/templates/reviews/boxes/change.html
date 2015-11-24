@@ -1,4 +1,4 @@
-{% load djblets_deco djblets_utils gravatars i18n reviewtags tz %}
+{% load changedescs djblets_deco djblets_utils gravatars i18n reviewtags tz %}
 
 <div class="changedesc">
  <a name="changedesc{{entry.changedesc.id}}"></a>
@@ -6,7 +6,8 @@
   <div class="box-status">
    <div class="gravatar-container">
 {% if siteconfig_settings.integration_gravatars %}
-    {% gravatar review_request.submitter 48 %}
+    {% changedesc_user entry.changedesc review_request as changedesc_user %}
+    {% gravatar changedesc_user 48 %}
 {% endif %}
    </div>
   </div>
