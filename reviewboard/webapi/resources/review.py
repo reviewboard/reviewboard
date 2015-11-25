@@ -10,9 +10,10 @@ from reviewboard.webapi.resources.base_review import BaseReviewResource
 class ReviewResource(BaseReviewResource):
     """Provides information on reviews made on a review request.
 
-    Each review can contain zero or more comments on diffs, screenshots or
-    file attachments. It may also have text preceding the comments (the
-    ``body_top`` field), and text following the comments (``body_bottom``).
+    Each review can contain zero or more comments on diffs, screenshots,
+    file attachments or general comments not tied to any code or file.
+    It may also have text preceding the comments (the ``body_top`` field),
+    and text following the comments (``body_bottom``).
 
     A review may have replies made. Replies are flat, not threaded. Like a
     review, there may be body text and there may be comments (which are replies
@@ -30,6 +31,7 @@ class ReviewResource(BaseReviewResource):
         resources.review_reply,
         resources.review_screenshot_comment,
         resources.review_file_attachment_comment,
+        resources.review_general_comment,
     ]
 
     list_child_resources = [

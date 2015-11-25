@@ -151,6 +151,9 @@ suite('rb/resources/models/ReviewReply', function() {
                         },
                         file_attachment_comments: {
                             href: '/api/file-attachment-comments/'
+                        },
+                        general_comments: {
+                            href: '/api/general-comments/'
                         }
                     }
                 });
@@ -232,6 +235,17 @@ suite('rb/resources/models/ReviewReply', function() {
 
             it('With file attachment comment', function() {
                 commentsData.file_attachment_comments = [{
+                    id: 1
+                }];
+
+                model.discardIfEmpty(callbacks);
+
+                expect(model.destroy).not.toHaveBeenCalled();
+                expect(callbacks.success).toHaveBeenCalledWith(false);
+            });
+
+            it('With general comment', function() {
+                commentsData.general_comments = [{
                     id: 1
                 }];
 

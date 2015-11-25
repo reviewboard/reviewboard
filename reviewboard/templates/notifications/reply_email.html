@@ -67,6 +67,29 @@
 <br />
 {% endfor %}
 
+{% for comment in reply.general_comments.all %}
+<blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
+ <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
+ <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
+  {# Prevents a display glitch on the table in Outlook 2007 #}
+  <br style="display: none;" />
+  <pre style="{{precss}}">{{comment.reply_to.text}}</pre>
+ </blockquote>
+{%  for reply_comment in comment.reply_to.public_replies %}
+{%   if reply_comment.text %}
+{%    if reply_comment != comment %}
+ <p>On {{reply_comment.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
+ <blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
+  <pre style="{{precss}}">{{reply_comment.text|markdown_email_html:reply_comment.rich_text}}</pre>
+ </blockquote>
+{%    endif %}
+{%   endif %}
+{%  endfor %}
+</blockquote>
+<pre style="margin-left: 1em; {{precss}}">{{comment.text|markdown_email_html:comment.rich_text}}</pre>
+<br />
+{% endfor %}
+
 {% for comment in reply.screenshot_comments.all %}
 <blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
  <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
