@@ -279,14 +279,16 @@ RB.ReviewablePageView = Backbone.View.extend({
      * Displays a comment dialog.
      */
     _onAddCommentClicked: function() {
-        var comment = this.pendingReview.createGeneralComment(),
-            dlg;
+        var comment = this.pendingReview.createGeneralComment(
+            undefined,
+            RB.UserSession.instance.get('commentsOpenAnIssue')
+        );
 
         comment.on('saved',function(){
             RB.DraftReviewBannerView.instance.show();
         }, this);
 
-        dlg = RB.CommentDialogView.create({
+        RB.CommentDialogView.create({
             comment: comment,
             reviewRequestEditor: this.reviewRequestEditor
         });

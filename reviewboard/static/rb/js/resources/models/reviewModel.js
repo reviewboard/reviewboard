@@ -146,10 +146,11 @@ RB.Review = RB.BaseResource.extend({
         });
     },
 
-    createGeneralComment: function(id) {
+    createGeneralComment: function(id, issueOpened) {
         return new RB.GeneralComment({
             parentObject: this,
-            id: id
+            id: id,
+            issueOpened: issueOpened
         });
     },
 

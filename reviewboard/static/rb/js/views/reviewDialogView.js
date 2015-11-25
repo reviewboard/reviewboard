@@ -22,7 +22,7 @@ function _getRawValueFieldsName() {
 BaseCommentView = Backbone.View.extend({
     tagName: 'li',
 
-    thumbnailTemplate: '',
+    thumbnailTemplate: null,
 
     events: {
         'click .delete-comment': '_deleteComment'
@@ -143,9 +143,19 @@ BaseCommentView = Backbone.View.extend({
             .change(_.bind(function() {
                 this.model.set('issueOpened',
                                this.$issueOpened.prop('checked'));
-                this.model.save({
-                    attrs: ['forceTextType', 'includeTextTypes', 'issueOpened']
-                });
+
+                if (!this.model.isNew()) {
+                    /*
+                     * We don't save the issueOpened attribute for unsaved
+                     * models because the comment won't exist yet. If we did,
+                     * clicking cancel when creating a new comment wouldn't
+                     * delete the comment.
+                     */
+                    this.model.save({
+                        attrs: ['forceTextType', 'includeTextTypes',
+                                'issueOpened']
+                    });
+                }
             }, this));
 
         $editFields = this.$('.edit-fields');
@@ -164,13 +174,25 @@ BaseCommentView = Backbone.View.extend({
             })))
             .on({
                 complete: _.bind(function(e, value) {
+                    var attrs = ['forceTextType', 'includeTextTypes',
+                                 'richText', 'text'];
+
+                    if (this.model.isNew()) {
+                        /*
+                         * If this is a new comment, we have to send whether or
+                         * not an issue was opened because toggling the
+                         * issue opened checkbox before it is completed won't
+                         * save the status to the server.
+                         */
+                        attrs.push('issueOpened');
+                    }
+
                     this.model.set({
                         text: value,
                         richText: this.textEditor.richText
                     });
                     this.model.save({
-                        attrs: ['forceTextType', 'includeTextTypes',
-                                'richText', 'text']
+                        attrs: attrs
                     });
                 }, this)
             });
@@ -619,6 +641,8 @@ RB.ReviewDialogView = Backbone.View.extend({
         this._commentViews = [];
         this._hookViews = [];
 
+        _.bindAll(this, '_onAddCommentClicked');
+
         this._diffQueue = new RB.DiffFragmentQueueView({
             containerPrefix: 'review_draft_comment_container',
             reviewRequestPath: reviewRequest.get('reviewURL'),
@@ -657,12 +681,13 @@ RB.ReviewDialogView = Backbone.View.extend({
             parentResource: this.model
         });
 
-        this.listenTo(this._generalCommentsCollection, 'add',
-                      function(comment) {
-            this._renderComment(new GeneralCommentView({
-                model: comment
-            }));
-        });
+        this.listenTo(
+            this._generalCommentsCollection, 'add',
+            function(comment) {
+                this._renderComment(new GeneralCommentView({
+                    model: comment
+                }));
+            });
 
         this._screenshotCommentsCollection = new RB.ResourceCollection([], {
             model: RB.ScreenshotComment,
@@ -937,6 +962,10 @@ RB.ReviewDialogView = Backbone.View.extend({
                 stretchX: true,
                 stretchY: true,
                 buttons: [
+                    $('<input type="button"/>')
+                        .val(gettext('Add Comment'))
+                        .click(this._onAddCommentClicked),
+
                     $('<div id="review-form-publish-split-btn-container" />'),
 
                     $('<input type="button"/>')
@@ -985,6 +1014,28 @@ RB.ReviewDialogView = Backbone.View.extend({
         this._$buttons = this._$dlg.modalBox('buttons');
     },
 
+    /*
+     * Handler for the Add Comment button.
+     *
+     * Returns:
+     *     boolean:
+     *     This always returns false to indicate that the dialog should not
+     *     close.
+     */
+    _onAddCommentClicked: function() {
+        var comment = this.model.createGeneralComment(
+            undefined,
+            RB.UserSession.instance.get('commentsOpenAnIssue')
+        );
+
+        this._generalCommentsCollection.add(comment);
+        this._bodyBottomView.$el.show();
+        this._commentViews[this._commentViews.length - 1]
+            .$editor
+            .inlineEditor('startEdit');
+
+        return false;
+    },
 
     /*
      * Handler for the Discard Review button.

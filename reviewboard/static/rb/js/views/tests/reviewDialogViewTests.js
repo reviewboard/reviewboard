@@ -367,6 +367,32 @@ suite('rb/views/ReviewDialogView', function() {
                             'include-text-types': 'raw'
                         });
                     });
+
+                     it('Deleting comment', function() {
+                        spyOn(window, 'confirm').andCallFake(function() {
+                            return true;
+                        });
+
+                        testLoadGeneralComments();
+
+                        expect(dlg._generalCommentsCollection.length).toBe(1);
+
+                        dlg.$('.delete-comment').click();
+                        expect(dlg._generalCommentsCollection.length).toBe(0);
+                    });
+
+                    it('Deleting comment and cancelling', function() {
+                        spyOn(window, 'confirm').andCallFake(function() {
+                            return false;
+                        });
+
+                        testLoadGeneralComments();
+
+                        expect(dlg._generalCommentsCollection.length).toBe(1);
+
+                        dlg.$('.delete-comment').click();
+                        expect(dlg._generalCommentsCollection.length).toBe(1);
+                    });
                 });
 
                 describe('Diff comments', function() {

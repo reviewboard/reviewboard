@@ -67,7 +67,7 @@ class ReviewReplyGeneralCommentResource(BaseReviewGeneralCommentResource):
             return DOES_NOT_EXIST
 
         if not resources.review_reply.has_modify_permissions(request, reply):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         try:
             comment = resources.review_general_comment.get_object(
@@ -132,7 +132,7 @@ class ReviewReplyGeneralCommentResource(BaseReviewGeneralCommentResource):
             return DOES_NOT_EXIST
 
         if not resources.review_reply.has_modify_permissions(request, reply):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         self.update_comment(general_comment, is_reply=True, **kwargs)
 

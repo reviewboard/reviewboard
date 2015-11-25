@@ -161,6 +161,11 @@ def _serialize_review(review, request):
                 comment, request=request)
             for comment in review.screenshot_comments.all()
         ],
+        'general_comments': [
+            resources.general_comment.serialize_object(
+                comment, request=request)
+            for comment in review.general_comments.all()
+        ],
     }
 
 
@@ -184,9 +189,9 @@ def _serialize_reply(reply, request):
             for comment in reply.screenshot_comments.all()
         ],
         'general_comments': [
-            resources.general_comment.serialize_object(
+            resources.review_reply_general_comment.serialize_object(
                 comment, request=request)
-            for comment in review.general_comments.all()
+            for comment in reply.general_comments.all()
         ],
     }
 

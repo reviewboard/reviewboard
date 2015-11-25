@@ -51,7 +51,7 @@ class ReviewGeneralCommentResource(BaseReviewGeneralCommentResource):
             return DOES_NOT_EXIST
 
         if not resources.review.has_modify_permissions(request, review):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request.user)
 
         new_comment = self.create_comment(fields=(), review=review, **kwargs)
         review.general_comments.add(new_comment)
@@ -85,7 +85,7 @@ class ReviewGeneralCommentResource(BaseReviewGeneralCommentResource):
             return self.update_issue_status(request, self, *args, **kwargs)
 
         if not resources.review.has_modify_permissions(request, review):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         self.update_comment(general_comment, **kwargs)
 
