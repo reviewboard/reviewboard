@@ -1509,6 +1509,7 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         self.assertIn('diff_comments', payload)
         self.assertIn('screenshot_comments', payload)
         self.assertIn('file_attachment_comments', payload)
+        self.assertIn('general_comments', payload)
 
     @add_fixtures(['test_users'])
     def test_reply_published(self):
@@ -1535,6 +1536,7 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         self.assertIn('diff_comments', payload)
         self.assertIn('screenshot_comments', payload)
         self.assertIn('file_attachment_comments', payload)
+        self.assertIn('general_comments', payload)
 
         # Test for bug 3999
         self.assertEqual(payload['reply']['links']['diff_comments']['href'],

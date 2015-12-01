@@ -26,6 +26,19 @@
 
 
 {% endfor %}
+{% for comment in reply.general_comments.all %}
+> On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
+> > <{{domain_method}}://{{domain}}{{comment.get_review_url}}>
+> >
+{{ comment.reply_to.text|markdown_email_text:comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  ifnotequal comment reply_comment %}
+>
+> {{reply_comment.review.get.user|user_displayname}} wrote:
+{{reply_comment.text|markdown_email_text:reply_comment.rich_text|indent|quote_text}}{%  endifnotequal %}{% endfor %}
+
+{{comment.text|markdown_email_text:comment.rich_text}}
+
+
+{% endfor %}
 {% for comment in reply.screenshot_comments.all %}
 > On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
 > > Screenshot: {{ comment.screenshot.caption }}
