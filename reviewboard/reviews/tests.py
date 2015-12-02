@@ -1942,10 +1942,10 @@ class DefaultReviewerTests(TestCase):
         self.assertTrue(form.is_valid())
         default_reviewer = form.save()
 
-        self.assertEquals(default_reviewer.local_site, test_site)
-        self.assertEquals(default_reviewer.repository.get(), repo)
-        self.assertEquals(default_reviewer.people.get(), user)
-        self.assertEquals(default_reviewer.groups.get(), group)
+        self.assertEqual(default_reviewer.local_site, test_site)
+        self.assertEqual(default_reviewer.repository.get(), repo)
+        self.assertEqual(default_reviewer.people.get(), user)
+        self.assertEqual(default_reviewer.groups.get(), group)
 
     def test_form_with_localsite_and_bad_user(self):
         """Testing DefaultReviewerForm with a User not on the same LocalSite.
@@ -2029,8 +2029,8 @@ class GroupTests(TestCase):
         self.assertTrue(form.is_valid())
         group = form.save()
 
-        self.assertEquals(group.local_site, test_site)
-        self.assertEquals(group.users.get(), user)
+        self.assertEqual(group.local_site, test_site)
+        self.assertEqual(group.users.get(), user)
 
     def test_form_with_localsite_and_bad_user(self):
         """Tests GroupForm with a User not on the same LocalSite."""
