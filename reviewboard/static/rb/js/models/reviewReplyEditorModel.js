@@ -20,7 +20,8 @@ RB.ReviewReplyEditor = Backbone.Model.extend({
     replyClasses: {
         diff_comments: RB.DiffCommentReply,
         screenshot_comments: RB.ScreenshotCommentReply,
-        file_attachment_comments: RB.FileAttachmentCommentReply
+        file_attachment_comments: RB.FileAttachmentCommentReply,
+        general_comments: RB.GeneralCommentReply
     },
 
     initialize: function() {

@@ -57,6 +57,10 @@ filediff_comment_list_mimetype = _build_mimetype('file-diff-comments')
 filediff_comment_item_mimetype = _build_mimetype('file-diff-comment')
 
 
+general_comment_list_mimetype = _build_mimetype('general-comments')
+general_comment_item_mimetype = _build_mimetype('general-comment')
+
+
 hosting_service_list_mimetype = _build_mimetype('hosting-services')
 hosting_service_item_mimetype = _build_mimetype('hosting-service')
 
@@ -114,6 +118,12 @@ review_reply_file_attachment_comment_list_mimetype = \
     _build_mimetype('review-reply-file-attachment-comments')
 review_reply_file_attachment_comment_item_mimetype = \
     _build_mimetype('review-reply-file-attachment-comment')
+
+
+review_reply_general_comment_list_mimetype = \
+    _build_mimetype('review-reply-general-comments')
+review_reply_general_comment_item_mimetype = \
+    _build_mimetype('review-reply-general-comment')
 
 
 review_reply_screenshot_comment_list_mimetype = \

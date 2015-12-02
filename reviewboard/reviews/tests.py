@@ -27,6 +27,7 @@ from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
                                                 normalize_text_for_edit)
 from reviewboard.reviews.models import (Comment,
                                         DefaultReviewer,
+                                        GeneralComment,
                                         Group,
                                         ReviewRequest,
                                         ReviewRequestDraft,
@@ -1144,6 +1145,56 @@ class ViewTests(TestCase):
         self.assertEqual(replies[0].text, comment_text_3)
         self.assertEqual(replies[1].text, comment_text_2)
 
+    def test_review_detail_general_comment_ordering(self):
+        """Testing review_detail and ordering of general comments on a
+        review
+        """
+        comment_text_1 = "Comment text 1"
+        comment_text_2 = "Comment text 2"
+        comment_text_3 = "Comment text 3"
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        # Create the users who will be commenting.
+        user1 = User.objects.get(username='doc')
+        user2 = User.objects.get(username='dopey')
+
+        # Create the master review.
+        main_review = self.create_review(review_request, user=user1)
+        main_comment = self.create_general_comment(main_review,
+                                                   text=comment_text_1)
+        main_review.publish()
+
+        # First reply
+        reply1 = self.create_reply(
+            main_review,
+            user=user1,
+            timestamp=(main_review.timestamp + timedelta(days=1)))
+        self.create_general_comment(reply1, text=comment_text_2,
+                                    reply_to=main_comment)
+
+        # Second reply
+        reply2 = self.create_reply(
+            main_review,
+            user=user2,
+            timestamp=(main_review.timestamp + timedelta(days=2)))
+        self.create_general_comment(reply2, text=comment_text_3,
+                                    reply_to=main_comment)
+
+        # Publish them out of order.
+        reply2.publish()
+        reply1.publish()
+
+        # Make sure they published in the order expected.
+        self.assertTrue(reply1.timestamp > reply2.timestamp)
+
+        # Make sure they're looked up in the order expected.
+        comments = list(GeneralComment.objects.filter(
+            review__review_request=review_request))
+        self.assertEqual(len(comments), 3)
+        self.assertEqual(comments[0].text, comment_text_1)
+        self.assertEqual(comments[1].text, comment_text_3)
+        self.assertEqual(comments[2].text, comment_text_2)
+
     def test_review_detail_file_attachment_visibility(self):
         """Testing visibility of file attachments on review requests."""
         caption_1 = 'File Attachment 1'
@@ -1915,10 +1966,10 @@ class DefaultReviewerTests(TestCase):
         self.assertTrue(form.is_valid())
         default_reviewer = form.save()
 
-        self.assertEquals(default_reviewer.local_site, test_site)
-        self.assertEquals(default_reviewer.repository.get(), repo)
-        self.assertEquals(default_reviewer.people.get(), user)
-        self.assertEquals(default_reviewer.groups.get(), group)
+        self.assertEqual(default_reviewer.local_site, test_site)
+        self.assertEqual(default_reviewer.repository.get(), repo)
+        self.assertEqual(default_reviewer.people.get(), user)
+        self.assertEqual(default_reviewer.groups.get(), group)
 
     def test_form_with_localsite_and_bad_user(self):
         """Testing DefaultReviewerForm with a User not on the same LocalSite.
@@ -2002,8 +2053,8 @@ class GroupTests(TestCase):
         self.assertTrue(form.is_valid())
         group = form.save()
 
-        self.assertEquals(group.local_site, test_site)
-        self.assertEquals(group.users.get(), user)
+        self.assertEqual(group.local_site, test_site)
+        self.assertEqual(group.users.get(), user)
 
     def test_form_with_localsite_and_bad_user(self):
         """Tests GroupForm with a User not on the same LocalSite."""
@@ -2648,6 +2699,14 @@ class IssueCounterTests(TestCase):
             lambda review, issue_opened: self.create_file_attachment_comment(
                 review, file_attachment, issue_opened=issue_opened))
 
+    def test_init_with_general_comments(self):
+        """Testing ReviewRequest issue counter initialization
+        from general comments
+        """
+        self._test_issue_counts(
+            lambda review, issue_opened: self.create_general_comment(
+                review, issue_opened=issue_opened))
+
     def test_init_with_screenshot_comments(self):
         """Testing ReviewRequest issue counter initialization
         from screenshot comments
@@ -2692,6 +2751,11 @@ class IssueCounterTests(TestCase):
         self.create_screenshot_comment(review, screenshot, issue_opened=True)
         self.create_screenshot_comment(review, screenshot, issue_opened=True)
 
+        # Three open general comments
+        self.create_general_comment(review, issue_opened=True)
+        self.create_general_comment(review, issue_opened=True)
+        self.create_general_comment(review, issue_opened=True)
+
         # The issue counts should be end up being 0, since they'll initialize
         # during load.
         self._reload_object(clear_counters=True)
@@ -2699,23 +2763,25 @@ class IssueCounterTests(TestCase):
         self.assertEqual(self.review_request.issue_resolved_count, 0)
         self.assertEqual(self.review_request.issue_dropped_count, 0)
 
-        # Now publish. We should have 7 open issues, by way of incrementing
+        # Now publish. We should have 10 open issues, by way of incrementing
         # during publish.
         review.publish()
 
         self._reload_object()
-        self.assertEqual(self.review_request.issue_open_count, 7)
+        self.assertEqual(self.review_request.issue_open_count, 10)
         self.assertEqual(self.review_request.issue_dropped_count, 0)
         self.assertEqual(self.review_request.issue_resolved_count, 0)
 
         # Make sure we get the same number back when initializing counters.
         self._reload_object(clear_counters=True)
-        self.assertEqual(self.review_request.issue_open_count, 7)
+        self.assertEqual(self.review_request.issue_open_count, 10)
         self.assertEqual(self.review_request.issue_dropped_count, 0)
         self.assertEqual(self.review_request.issue_resolved_count, 0)
 
-    def test_init_with_replies(self):
-        """Testing ReviewRequest issue counter initialization and replies."""
+    def test_init_file_attachment_comment_with_replies(self):
+        """Testing ReviewRequest file attachment comment issue counter
+        initialization and replies.
+        """
         file_attachment = self.create_file_attachment(self.review_request)
 
         review = self.create_review(self.review_request)
@@ -2734,8 +2800,28 @@ class IssueCounterTests(TestCase):
         self.assertEqual(self.review_request.issue_resolved_count, 0)
         self.assertEqual(self.review_request.issue_dropped_count, 0)
 
-    def test_save_reply_comment(self):
-        """Testing ReviewRequest issue counter and saving reply comments."""
+    def test_init_general_comment_with_replies(self):
+        """Testing ReviewRequest general comment issue counter initialization
+        and replies.
+        """
+        review = self.create_review(self.review_request)
+        comment = self.create_general_comment(review, issue_opened=True)
+        review.publish()
+
+        reply = self.create_reply(review)
+        self.create_general_comment(reply, reply_to=comment,
+                                    issue_opened=True)
+        reply.publish()
+
+        self._reload_object(clear_counters=True)
+        self.assertEqual(self.review_request.issue_open_count, 1)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+
+    def test_save_reply_comment_to_file_attachment_comment(self):
+        """Testing ReviewRequest file attachment comment issue counter and
+        saving reply comments.
+        """
         file_attachment = self.create_file_attachment(self.review_request)
 
         review = self.create_review(self.review_request)
@@ -2753,6 +2839,35 @@ class IssueCounterTests(TestCase):
             reply, file_attachment,
             reply_to=comment,
             issue_opened=True)
+        reply.publish()
+
+        self._reload_object()
+        self.assertEqual(self.review_request.issue_open_count, 1)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+
+        reply_comment.save()
+        self._reload_object()
+        self.assertEqual(self.review_request.issue_open_count, 1)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+
+    def test_save_reply_comment_to_general_comment(self):
+        """Testing ReviewRequest general comment issue counter and saving
+        reply comments.
+        """
+        review = self.create_review(self.review_request)
+        comment = self.create_general_comment(review, issue_opened=True)
+        review.publish()
+
+        self._reload_object(clear_counters=True)
+        self.assertEqual(self.review_request.issue_open_count, 1)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+
+        reply = self.create_reply(review)
+        reply_comment = self.create_general_comment(
+            reply, reply_to=comment, issue_opened=True)
         reply.publish()
 
         self._reload_object()

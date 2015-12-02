@@ -24,7 +24,8 @@ from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
                                                 normalize_text_for_edit)
 from reviewboard.reviews.models import (BaseComment, Group,
                                         ReviewRequest, ScreenshotComment,
-                                        FileAttachmentComment)
+                                        FileAttachmentComment,
+                                        GeneralComment)
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 
 
@@ -131,9 +132,9 @@ def reply_list(context, entry, comment, context_type, context_id):
     to display replies to a type of object. In each case, the replies will
     be rendered using the template :template:`reviews/review_reply.html`.
 
-    If ``context_type`` is ``"diff_comments"``, ``"screenshot_comments"``
-    or ``"file_attachment_comments"``, the generated list of replies are to
-    ``comment``.
+    If ``context_type`` is ``"diff_comments"``, ``"screenshot_comments"``,
+    ``"general_comments"`` or ``"file_attachment_comments"``, the generated
+    list of replies are to ``comment``.
 
     If ``context_type`` is ``"body_top"`` or ```"body_bottom"``,
     the generated list of replies are to ``review``. Depending on the
@@ -189,7 +190,7 @@ def reply_list(context, entry, comment, context_type, context_id):
     s = ""
 
     if context_type in ('diff_comments', 'screenshot_comments',
-                        'file_attachment_comments'):
+                        'file_attachment_comments', 'general_comments'):
         for reply_comment in comment.public_replies(user):
             s += generate_reply_html(reply_comment.get_review(),
                                      reply_comment.timestamp,
@@ -232,6 +233,8 @@ def reply_section(context, entry, comment, context_type, context_id,
             context_id += 's'
         elif type(comment) is FileAttachmentComment:
             context_id += 'f'
+        elif type(comment) is GeneralComment:
+            context_id += 'g'
 
         context_id += six.text_type(comment.id)
 

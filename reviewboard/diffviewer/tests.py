@@ -66,7 +66,7 @@ class MyersDifferTest(TestCase):
 
     def _test_diff(self, a, b, expected):
         opcodes = list(MyersDiffer(a, b).get_opcodes())
-        self.assertEquals(opcodes, expected)
+        self.assertEqual(opcodes, expected)
 
 
 class InterestingLinesTest(TestCase):
@@ -1349,56 +1349,56 @@ class HighlightRegionTest(TestCase):
 
     def test_highlight_region(self):
         """Testing highlightregion"""
-        self.assertEquals(highlightregion("", None), "")
+        self.assertEqual(highlightregion("", None), "")
 
-        self.assertEquals(highlightregion("abc", None), "abc")
+        self.assertEqual(highlightregion("abc", None), "abc")
 
-        self.assertEquals(highlightregion("abc", [(0, 3)]),
+        self.assertEqual(highlightregion("abc", [(0, 3)]),
                           '<span class="hl">abc</span>')
 
-        self.assertEquals(highlightregion("abc", [(0, 1)]),
+        self.assertEqual(highlightregion("abc", [(0, 1)]),
                           '<span class="hl">a</span>bc')
 
-        self.assertEquals(highlightregion(
+        self.assertEqual(highlightregion(
             '<span class="xy">a</span>bc',
             [(0, 1)]),
             '<span class="xy"><span class="hl">a</span></span>bc')
 
-        self.assertEquals(highlightregion(
+        self.assertEqual(highlightregion(
             '<span class="xy">abc</span>123',
             [(1, 4)]),
             '<span class="xy">a<span class="hl">bc</span></span>' +
             '<span class="hl">1</span>23')
 
-        self.assertEquals(highlightregion(
+        self.assertEqual(highlightregion(
             '<span class="xy">abc</span><span class="z">12</span>3',
             [(1, 4)]),
             '<span class="xy">a<span class="hl">bc</span></span>' +
             '<span class="z"><span class="hl">1</span>2</span>3')
 
-        self.assertEquals(highlightregion(
+        self.assertEqual(highlightregion(
             'foo<span class="xy">abc</span><span class="z">12</span>3',
             [(0, 6), (7, 9)]),
             '<span class="hl">foo</span><span class="xy">' +
             '<span class="hl">abc</span></span><span class="z">1' +
             '<span class="hl">2</span></span><span class="hl">3</span>')
 
-        self.assertEquals(highlightregion(
+        self.assertEqual(highlightregion(
             'foo&quot;bar',
             [(0, 7)]),
             '<span class="hl">foo&quot;bar</span>')
 
-        self.assertEquals(highlightregion(
+        self.assertEqual(highlightregion(
             '&quot;foo&quot;',
             [(0, 1)]),
             '<span class="hl">&quot;</span>foo&quot;')
 
-        self.assertEquals(highlightregion(
+        self.assertEqual(highlightregion(
             '&quot;foo&quot;',
             [(2, 5)]),
             '&quot;f<span class="hl">oo&quot;</span>')
 
-        self.assertEquals(highlightregion(
+        self.assertEqual(highlightregion(
             'foo=<span class="ab">&quot;foo&quot;</span>)',
             [(4, 9)]),
             'foo=<span class="ab"><span class="hl">&quot;foo&quot;' +
@@ -1423,7 +1423,7 @@ class DbTests(TestCase):
         filediff.save()
 
         filediff = FileDiff.objects.get(pk=filediff.id)
-        self.assertEquals(filediff.source_file, long_filename)
+        self.assertEqual(filediff.source_file, long_filename)
 
     def test_diff_hashes(self):
         """Testing that uploading two of the same diff will result in only
@@ -1458,7 +1458,7 @@ class DbTests(TestCase):
         filediff1 = FileDiff.objects.create(diff=data, diffset=diffset)
         filediff2 = FileDiff.objects.create(diff=data, diffset=diffset)
 
-        self.assertEquals(filediff1.diff_hash, filediff2.diff_hash)
+        self.assertEqual(filediff1.diff_hash, filediff2.diff_hash)
 
 
 class DiffCommitManagerTests(SpyAgency, TestCase):

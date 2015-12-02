@@ -95,7 +95,8 @@ var UpdatesBubbleView = Backbone.View.extend({
 RB.ReviewablePageView = Backbone.View.extend({
     events: {
         'click #review-link': '_onEditReviewClicked',
-        'click #shipit-link': '_onShipItClicked'
+        'click #shipit-link': '_onShipItClicked',
+        'click #general-comment-link': '_onAddCommentClicked'
     },
 
     /*
@@ -266,6 +267,29 @@ RB.ReviewablePageView = Backbone.View.extend({
     _onEditReviewClicked: function() {
         RB.ReviewDialogView.create({
             review: this.pendingReview,
+            reviewRequestEditor: this.reviewRequestEditor
+        });
+
+        return false;
+    },
+
+    /*
+     * Handler for when Add Comment is clicked.
+     *
+     * Displays a comment dialog.
+     */
+    _onAddCommentClicked: function() {
+        var comment = this.pendingReview.createGeneralComment(
+            undefined,
+            RB.UserSession.instance.get('commentsOpenAnIssue')
+        );
+
+        comment.on('saved',function(){
+            RB.DraftReviewBannerView.instance.show();
+        }, this);
+
+        RB.CommentDialogView.create({
+            comment: comment,
             reviewRequestEditor: this.reviewRequestEditor
         });
 

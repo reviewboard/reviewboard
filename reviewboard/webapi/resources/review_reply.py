@@ -93,6 +93,7 @@ class ReviewReplyResource(BaseReviewResource):
         resources.review_reply_diff_comment,
         resources.review_reply_screenshot_comment,
         resources.review_reply_file_attachment_comment,
+        resources.review_reply_general_comment,
     ]
 
     list_child_resources = [
