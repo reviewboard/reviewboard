@@ -66,7 +66,7 @@ class AuthBackendTests(TestCase):
         backend = self._get_standard_auth_backend()
         result = backend.get_user(user.pk)
 
-        self.assertEquals(user, result)
+        self.assertEqual(user, result)
 
     def test_get_user_not_exists(self):
         """Testing StandardAuthBackend.get_user when the requested user does
