@@ -155,10 +155,10 @@ class TemplateTagTests(TestCase):
         context = Context({})
 
         t = Template('{% url "dashboard" %}')
-        self.assertEquals(t.render(context), '/dashboard/')
+        self.assertEqual(t.render(context), '/dashboard/')
 
         t = Template('{% url "user" "sample-user" %}')
-        self.assertEquals(t.render(context), '/users/sample-user/')
+        self.assertEqual(t.render(context), '/users/sample-user/')
 
     def test_local_site_url_with_local_site(self):
         """Testing localsite's {% url %} with local site"""
@@ -171,7 +171,7 @@ class TemplateTagTests(TestCase):
         })
 
         t = Template('{% url "dashboard" %}')
-        self.assertEquals(t.render(context), '/s/test/dashboard/')
+        self.assertEqual(t.render(context), '/s/test/dashboard/')
 
         t = Template('{% url "user" "sample-user" %}')
-        self.assertEquals(t.render(context), '/s/test/users/sample-user/')
+        self.assertEqual(t.render(context), '/s/test/users/sample-user/')
