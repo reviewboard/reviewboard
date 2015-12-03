@@ -64,4 +64,5 @@ Related Resources
 
 .. _`Django documentation`: https://docs.djangoproject.com/
 .. _`The Django Book`: http://djangobook.com/
-.. _`Git Cheat Sheets`: https://help.github.com/git-cheat-sheets/
+.. _`Git Cheat Sheets`:
+   https://training.github.com/kit/downloads/github-git-cheat-sheet.pdf
