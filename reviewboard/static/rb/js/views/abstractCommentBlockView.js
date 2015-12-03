@@ -38,6 +38,19 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
     },
 
     /*
+     * Hide the tooltip from the page.
+     *
+     * This will force the tooltip to hide, preventing it from interfering
+     * with operations such as moving a comment block.
+     *
+     * It will automatically show again the next time there is a mouse enter
+     * event.
+     */
+    hideTooltip: function() {
+        this._$tooltip.hide();
+    },
+
+    /*
      * Positions the comment dlg to the right side of comment block.
      *
      * This can be overridden to change where the comment dialog will
