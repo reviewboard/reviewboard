@@ -1,4 +1,4 @@
-.. _unittestfixtures:
+.. _unit-test-fixtures:
 
 ==================
 Unit Test Fixtures
