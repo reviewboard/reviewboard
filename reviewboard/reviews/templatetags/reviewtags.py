@@ -331,8 +331,9 @@ def for_review_request_field(context, nodelist, review_request_details,
         try:
             field = field_cls(review_request_details, request=request)
         except Exception as e:
-            logging.error('Error instantiating ReviewRequestFieldset %r: %s',
-                          field_cls, e, exc_info=1)
+            logging.exception('Error instantiating field %r: %s',
+                              field_cls, e)
+            continue
 
         try:
             if field.should_render(field.value):
@@ -341,9 +342,9 @@ def for_review_request_field(context, nodelist, review_request_details,
                 s.append(nodelist.render(context))
                 context.pop()
         except Exception as e:
-            logging.error('Error running should_render for '
-                          'ReviewRequestFieldset %r: %s', field_cls, e,
-                          exc_info=1)
+            logging.exception(
+                'Error running should_render for field %r: %s',
+                field_cls, e)
 
     return ''.join(s)
 
