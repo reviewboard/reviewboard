@@ -46,7 +46,7 @@ First, you'll need an account on GitHub, which your fork will be
 associated with.
 
 Then go to the page for the repository you want to fork. These can be
-found at http://github.com/djblets/ and http://github.com/reviewboard/.
+found at https://github.com/djblets/ and https://github.com/reviewboard/.
 The most common repositories are reviewboard_, rbtools_, and djblets_.
 
 Once you are on the desired repository page, click the :guilabel:`fork`
@@ -71,10 +71,10 @@ You would type::
     $ git fetch REMOTE_NAME
 
 
-.. _GitHub: http://github.com/
-.. _reviewboard: http://github.com/reviewboard/reviewboard/
-.. _rbtools: http://github.com/reviewboard/rbtools/
-.. _djblets: http://github.com/djblets/djblets/
+.. _GitHub: https://github.com/
+.. _reviewboard: https://github.com/reviewboard/reviewboard/
+.. _rbtools: https://github.com/reviewboard/rbtools/
+.. _djblets: https://github.com/djblets/djblets/
 
 
 Using a Custom Solution
@@ -87,7 +87,7 @@ into is Gitosis (see `Hosting Git repositories, The Easy (and Secure) Way
 
 To prepare your fork, you will need to first know the public clone URL from
 the repository you want to clone. These can be found at
-http://github.com/djblets/ and http://github.com/reviewboard/.  The most
+https://github.com/djblets/ and https://github.com/reviewboard/.  The most
 common repositories are reviewboard_, rbtools_, and djblets_.
 
 You will then want to clone this repository and host it on Gitosis or another
