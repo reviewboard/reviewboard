@@ -2,7 +2,7 @@
 Review Board 2.5.2 Release Notes
 ================================
 
-**Release date:** TBD
+**Release date:** December 4th, 2015
 
 
 Django Security Notice
