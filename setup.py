@@ -198,7 +198,7 @@ setup(name=PACKAGE_NAME,
       cmdclass=cmdclasses,
       install_requires=[
           django_version,
-          'django_evolution>=0.7.5,<=0.7.999',
+          'django_evolution>=0.7.6,<=0.7.999',
           'django-haystack>=2.3.1',
           'django-multiselectfield',
           'Djblets>=0.9,<=0.9.999',
