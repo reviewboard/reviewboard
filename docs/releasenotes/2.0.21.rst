@@ -1,0 +1,229 @@
+=================================
+Review Board 2.0.21 Release Notes
+=================================
+
+**Release date**: December 4, 2015
+
+
+Django Security Notice
+======================
+
+Django 1.6.x is no longer maintained by the Django project, and will no longer
+be receiving security fixes directly. Since we still depend on this version,
+and will have users depending on it for years to come, we're maintaining our
+own unofficial branch and handling all backports of security fixes to Django.
+
+We highly recommend installing Django 1.6.11.2 which contains all current
+Django security fixes, and will be continuing to release new versions as
+security vulnerabilities are discovered.
+
+We cannot automatically install this yet, due to restrictions in
+:command:`pip`, so you'll need to be sure to upgrade manually for now.
+
+We'll continue to provide this notice for all affected releases of Review
+Board until we are able to auto-install the appropriate version of Django.
+
+Please see our `security announcement`_ for instructions.
+
+.. _security announcement:
+   https://www.reviewboard.org/news/2015/11/24/
+   new-django-1-6-11-2-security-releases/
+
+
+New Features
+============
+
+* Added support for Perforce and Subversion repositories hosted on
+  Assembla_.
+
+  Assembla offers source code and project management, and supports Perforce,
+  Subversion, and Git repositories.
+
+  Currently, their API prevents us from supporting Git repositories, but
+  Subversion and Perforce repositories are supported. It can also be
+  configured to link bugs to your Assembla project's bug tracker.
+
+* The "Fix it, then Ship It!" state is now shown in e-mail notifications.
+  (:bug:`3904`)
+
+  This makes it easy to see at a glance that an e-mail has issues remaining,
+  but is approved for shipping by that reviewer once those issues are fixed.
+  It's also useful for filtering e-mails.
+
+  Patch by Sherman Cheung.
+
+* Extra data for review groups can be edited in the administration UI.
+  (:bug:`3738`)
+
+  The administration UI now allows the ``extra_data`` field for a review
+  group to be edited. This is where extensions and clients of the API can
+  store custom state. Most other types of objects (such as reviews and
+  review requests) allowed this information to be edited already.
+
+  Patch by Adriano Arce.
+
+
+.. _Assembla: https://www.assembla.com/
+
+
+Extensions
+==========
+
+* Groups of fields on the right-hand side of a review request now contain
+  element IDs.
+
+  This allows extensions to hide entire sections of fields from the UI without
+  actually having to unregister fields, giving them more control of how
+  that information is rendered.
+
+  Each ``<thead>`` on the right-hand side now has an ID in the form of
+  :samp:`fieldset_{fieldsetID}_head`, and each ``<tbody>`` now has an ID
+  in the form of :samp:`fieldset_{fieldsetID}_body`.
+
+  Patch by Byron Jones.
+
+* The :js:class:`RB.ReviewRequest` JavaScript model now contains reviewer
+  approval information.
+
+  This model now contains ``approved`` and ``approvalFailure`` attributes,
+  which can be used by extensions to find out whether the review request
+  has been approved for landing, or the reasons it hasn't.
+
+
+Bug Fixes
+=========
+
+Dashboard
+---------
+
+* Group pages now show the group's display name, and not the group ID.
+
+  Patch by Kristina Vandergulik.
+
+
+E-Mail
+------
+
+* New review e-mails no longer go out to reviewer if the "Get e-mail
+  notifications for my own activity" setting is turned off. (:bug:`3985`)
+
+  If a user had this setting turned off and then created a review request
+  that had a review group containing both themselves and another user already
+  listed as a target reviewer, and then reviewed their own review request,
+  they'd receive the e-mail.
+
+* E-mails containing comments on images now point to the correct absolute
+  URL. (:bug:`3944`)
+
+  Patch by Daniel Arteaga.
+
+
+New Review Request Page
+-----------------------
+
+* Default reviewers are now applied when posting an existing commit for
+  review. (:bug:`3900`)
+
+  Patch by Xutong Liu.
+
+
+Diff Viewer
+-----------
+
+* Fixed browser caching issues when viewing interdiffs. (:bug:`3993`)
+
+  Updating an existing draft diff and then viewing its interdiff failed
+  to take the new diff's information into account when sending the caching
+  headers. This resulted in the browser showing the old diff, until the
+  cache was cleared.
+
+* Fixed an internal issue where some state could be missing when looking up
+  files from a repository on a hosting service.
+
+  If a hosting service implementation made use of additional information to
+  locate a file, and talked to the repository directory instead of through
+  an API, it would fail to retain that information when talking to the
+  repository.
+
+  Patch by Dan Minor.
+
+
+Review Requests
+---------------
+
+* Fixed modifying review requests containing circular dependencies.
+  (:bug:`3955`)
+
+  It was possible before to get review requests into a broken state where
+  both depend on each other, and any update made to the review request
+  would result in a HTTP 500 error. We've reworked all this to prevent such
+  breakages when using the web UI.
+
+  We still don't recommend allowing two review requests to depend on each
+  other.
+
+* Discarded review requests listed in the Depends On field are now shown
+  with a strikethrough. (:bug:`3758`)
+
+  This matches the display of review requests closed as submitted.
+
+  Patch by Yorie Nakayama.
+
+
+GitLab
+------
+
+* Removed a hard-coded default for fetching a diff for a commit.
+
+  Posting existing commits for review now works once again with locally-hosted
+  GitLab installs.
+
+* Fixed posting existing commits with empty commit messages for review.
+
+  Patch by Brett Kochendorfer.
+
+
+SSH
+---
+
+* SSH-based repository paths that contain an invalid port number now show a
+  meaningful error. (:bug:`3891`)
+
+  Previously, providing an invalid port number would result in a cryptic,
+  hard-to-diagnose error message. The new error explains exactly what's wrong.
+
+  Patch by Justin Wu.
+
+
+Administration
+--------------
+
+* Fixed errors that could occur when trying to upgrade MySQL databases.
+
+  This release depends on a newer version of `Django Evolution`_, the module
+  we use to handle database migrations. It fixes an upgrade bug that could
+  result in some people experiencing failures prior to performing an upgrade
+  to the database, which would not break the database but would prevent an
+  upgrade.
+
+
+.. _Django Evolution: https://github.com/beanbaginc/django-evolution
+
+
+Contributors
+============
+
+* Adriano Arce
+* Barret Rennie
+* Brett Kochendorfer
+* Byron Jones
+* Christian Hammond
+* Chronicle Yu
+* Dan Minor
+* Daniel Arteaga
+* David Trowbridge
+* Justin Wu
+* Kristina Vandergulik
+* Sherman Cheung
+* Xutong Liu
+* Yorie Nakayama
