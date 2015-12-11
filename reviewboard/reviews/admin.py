@@ -55,12 +55,11 @@ class GroupAdmin(admin.ModelAdmin):
     form = GroupForm
     list_display = ('name', 'display_name', 'mailing_list', 'invite_only',
                     'visible')
-    filter_horizontal = ('users',)
-    raw_id_fields = ('local_site',)
+    raw_id_fields = ('local_site', 'users',)
     fieldsets = (
         (_('General Information'), {
             'fields': ('name', 'display_name', 'mailing_list',
-                       'visible'),
+                       'email_list_only', 'visible'),
         }),
         (_('Access Control'), {
             'fields': ('invite_only', 'users', 'local_site',

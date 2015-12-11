@@ -45,7 +45,7 @@ class Group(models.Model):
         _('send e-mail only to the mailing list'),
         default=True,
         help_text=_('If a mailing list is specified and this option is '
-                    'checked, group memebers will not be individually '
+                    'checked, group members will not be individually '
                     'included on e-mails, and only the mailing list '
                     'will be used. This is highly recommended for '
                     'large groups.'))
