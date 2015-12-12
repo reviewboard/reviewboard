@@ -324,7 +324,7 @@ You can download this from the `Perforce downloads`_ page.
 
 You'll then need to install the Python bindings by typing the following::
 
-    $ easy_install P4PythonInstaller
+    $ pip install p4python
 
 This should fetch the appropriate versions of the ``p4api`` library and
 compile it. This will require that you have standard build tools
