@@ -64,9 +64,10 @@ def markdown_escape_field(obj, field_name):
     a particular field in a model or dictionary.
     """
     if isinstance(obj, Model):
-        setattr(obj, field_name, markdown_escape(getattr(obj, field_name)))
+        setattr(obj, field_name,
+                djblets_markdown.markdown_escape(getattr(obj, field_name)))
     elif isinstance(obj, dict):
-        obj[field_name] = markdown_escape(obj[field_name])
+        obj[field_name] = djblets_markdown.markdown_escape(obj[field_name])
     else:
         raise TypeError('Unexpected type %r passed to markdown_escape_field'
                         % obj)
@@ -103,7 +104,7 @@ def normalize_text_for_edit(user, text, rich_text, escape_html=True):
     if not rich_text and is_rich_text_default_for_user(user):
         # This isn't rich text, but it's going to be edited as rich text,
         # so escape it.
-        text = markdown_escape(text)
+        text = djblets_markdown.markdown_escape(text)
 
     if escape_html:
         text = escape(text)
