@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import hashlib
 import logging
-import pkg_resources
 import re
 import sre_constants
 import sys
@@ -16,11 +15,15 @@ from django.contrib.auth import hashers
 from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.query import get_object_or_none
+from djblets.registries.errors import ItemLookupError
 from djblets.siteconfig.models import SiteConfiguration
 try:
     from ldap.filter import filter_format
 except ImportError:
     pass
+
+from djblets.registries.registry import (ALREADY_REGISTERED, NOT_REGISTERED,
+                                         UNREGISTER)
 
 from reviewboard.accounts.forms.auth import (ActiveDirectorySettingsForm,
                                              LDAPSettingsForm,
@@ -30,12 +33,11 @@ from reviewboard.accounts.forms.auth import (ActiveDirectorySettingsForm,
                                              HTTPBasicSettingsForm)
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.site.models import LocalSite
+from reviewboard.registries.registry import (EntryPointRegistry,
+                                             LOAD_ENTRY_POINT)
 
-
-_registered_auth_backends = {}
 _enabled_auth_backends = []
 _auth_backend_setting = None
-_populated = False
 
 
 INVALID_USERNAME_CHAR_REGEX = re.compile(r'[^\w.@+-]')
@@ -917,103 +919,6 @@ class X509Backend(AuthBackend):
         return user
 
 
-def _populate_defaults():
-    """Populate the default list of authentication backends."""
-    global _populated
-
-    if not _populated:
-        _populated = True
-
-        # Always ensure that the standard built-in auth backend is included.
-        register_auth_backend(StandardAuthBackend)
-
-        entrypoints = \
-            pkg_resources.iter_entry_points('reviewboard.auth_backends')
-
-        for entry in entrypoints:
-            try:
-                cls = entry.load()
-
-                # All backends should include an ID, but we need to handle
-                # legacy modules.
-                if not cls.backend_id:
-                    logging.warning('The authentication backend %r did '
-                                    'not provide a backend_id attribute. '
-                                    'Setting it to the entrypoint name "%s".',
-                                    cls, entry.name)
-                    cls.backend_id = entry.name
-
-                register_auth_backend(cls)
-            except Exception as e:
-                logging.error('Error loading authentication backend %s: %s',
-                              entry.name, e, exc_info=1)
-
-
-def get_registered_auth_backends():
-    """Return all registered Review Board authentication backends.
-
-    This will return all backends provided both by Review Board and by
-    third parties that have properly registered with the
-    "reviewboard.auth_backends" entry point.
-    """
-    _populate_defaults()
-
-    return six.itervalues(_registered_auth_backends)
-
-
-def get_registered_auth_backend(backend_id):
-    """Return the authentication backends with the specified ID.
-
-    If the authentication backend could not be found, this will return None.
-    """
-    _populate_defaults()
-
-    try:
-        return _registered_auth_backends[backend_id]
-    except KeyError:
-        return None
-
-
-def register_auth_backend(backend_cls):
-    """Register an authentication backend.
-
-    This backend will appear in the list of available backends.
-
-    The backend class must have a backend_id attribute set, and can only
-    be registerd once. A KeyError will be thrown if attempting to register
-    a second time.
-    """
-    _populate_defaults()
-
-    backend_id = backend_cls.backend_id
-
-    if not backend_id:
-        raise KeyError('The backend_id attribute must be set on %r'
-                       % backend_cls)
-
-    if backend_id in _registered_auth_backends:
-        raise KeyError('"%s" is already a registered auth backend'
-                       % backend_id)
-
-    _registered_auth_backends[backend_id] = backend_cls
-
-
-def unregister_auth_backend(backend_cls):
-    """Unregister a previously registered authentication backend."""
-    _populate_defaults()
-
-    backend_id = backend_cls.backend_id
-
-    if backend_id not in _registered_auth_backends:
-        logging.error('Failed to unregister unknown authentication '
-                      'backend "%s".',
-                      backend_id)
-        raise KeyError('"%s" is not a registered authentication backend'
-                       % backend_id)
-
-    del _registered_auth_backends[backend_id]
-
-
 def get_enabled_auth_backends():
     """Get all authentication backends being used by Review Board.
 
@@ -1055,3 +960,138 @@ def set_enabled_auth_backend(backend_id):
     """Set the authentication backend to be used."""
     siteconfig = SiteConfiguration.objects.get_current()
     siteconfig.set('auth_backend', backend_id)
+
+
+class AuthBackendRegistry(EntryPointRegistry):
+    """A registry for managing authentication backends."""
+
+    entry_point = 'reviewboard.auth.backends'
+    lookup_attrs = ('backend_id',)
+
+    errors = {
+        ALREADY_REGISTERED: _(
+            '"%(item)r" is already a registered authentication backend.'
+        ),
+        LOAD_ENTRY_POINT: _(
+            'Error loading authentication backend %(entry_point)s: %(error)s'
+        ),
+        NOT_REGISTERED: _(
+            'No authentication backend registered with %(attr_name) = '
+            '%(attr_value)s.'
+        ),
+        UNREGISTER: _(
+            '"%(item)r is not a registered authentication backend.'
+        ),
+    }
+
+    def process_value_from_entry_point(self, entry_point):
+        """Load the class from the entry point.
+
+        If the class lacks a ``backend_id``, it will be set as the entry
+        point's name.
+
+        Args:
+           entry_point (pkg_resources.EntryPoint):
+                The entry point.
+
+        Returns:
+            type:
+            The :py:class:`AuthBackend` subclass.
+        """
+
+        cls = entry_point.load()
+
+        if not cls.backend_id:
+            logging.warning('The authentication backend %r did not provide '
+                            'a backend_id attribute. Setting it to the '
+                            'entry point name ("%s")',
+                            cls, entry_point.name)
+
+            cls.backend_id = entry_point.name
+
+        return cls
+
+    def get(self, attr_name, attr_value):
+        """Return the requested authentication backend.
+
+        Args:
+            attr_name (unicode):
+                The attribute name to find the authentication backend by.
+
+            attr_value (object):
+                The corresponding attribute value.
+
+        Returns:
+            type:
+            Either the requested :py:class:`AuthBackend` subclass, or ``None``
+            if it could not be found.
+        """
+        try:
+            return super(AuthBackendRegistry, self).get(attr_name, attr_value)
+        except ItemLookupError:
+            return None
+
+    def get_defaults(self):
+        """Yield the authentication backends.
+
+        This will make sure the StandardAuthBackend is always registered.
+
+        Yields:
+            type:
+            The :py:class:`~reviewboard.accounts.backends.AuthBackend`
+            subclasses.
+        """
+        yield StandardAuthBackend
+
+        for value in super(AuthBackendRegistry, self).get_defaults():
+            yield value
+
+
+auth_backends = AuthBackendRegistry()
+
+
+def get_registered_auth_backends():
+    """Yield all registered Review Board authentication backends.
+
+    This will return all backends provided both by Review Board and by
+    third parties that have properly registered with the
+    "reviewboard.auth_backends" entry point.
+
+    Yields:
+        type:
+        The :py:class:`~reviewboard.accounts.backends.AuthBackend`
+        subclasses.
+    """
+    for backend in auth_backends:
+        yield backend
+
+
+def get_registered_auth_backend(backend_id):
+    """Return the authentication backends with the specified ID.
+
+    If the authentication backend could not be found, this will return None.
+    """
+    return auth_backends.get('backend_id', backend_id)
+
+
+def register_auth_backend(backend_cls):
+    """Register an authentication backend.
+
+    This backend will appear in the list of available backends.
+
+    The backend class must have a backend_id attribute set, and can only
+    be registered once. A KeyError will be thrown if attempting to register
+    a second time.
+    """
+    auth_backends.register(backend_cls)
+
+
+def unregister_auth_backend(backend_cls):
+    """Unregister a previously registered authentication backend."""
+    try:
+        auth_backends.unregister_item(backend_cls)
+    except ItemLookupError as e:
+        logging.error('Failed to unregister unknown authentication '
+                      'backend "%s".',
+                      backend_cls.backend_id)
+        raise e
