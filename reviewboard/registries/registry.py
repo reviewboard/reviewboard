@@ -4,8 +4,9 @@ import logging
 from pkg_resources import iter_entry_points
 
 from django.utils.translation import ugettext as _
+from djblets.registries.errors import ItemLookupError
 from djblets.registries.registry import (DEFAULT_ERRORS as DJBLETS_ERRORS,
-                                         Registry)
+                                         Registry as DjbletsRegistry)
 
 
 LOAD_ENTRY_POINT = 'load_entry_point'
@@ -17,6 +18,30 @@ DEFAULT_ERRORS.update({
         'Could not load entry point %(entry_point)s: %(error)s'
     ),
 })
+
+
+class Registry(DjbletsRegistry):
+    """A registry that does not throw exceptions for failed lookups."""
+
+    def get(self, attr_name, attr_value):
+        """Return the requested registered item.
+
+        Args:
+            attr_name (unicode):
+                The attribute name.
+
+            attr_value (object):
+                The attribute value.
+
+        Returns:
+            object:
+            The matching registered item, if found. Otherwise, ``None`` is
+            returned.
+        """
+        try:
+            return super(Registry, self).get(attr_name, attr_value)
+        except ItemLookupError:
+            return None
 
 
 class EntryPointRegistry(Registry):
