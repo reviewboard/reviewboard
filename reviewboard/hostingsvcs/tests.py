@@ -14,6 +14,7 @@ from django.utils import six
 from django.utils.six.moves import cStringIO as StringIO
 from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.parse import urlparse
+from djblets.registries.errors import AlreadyRegisteredError, ItemLookupError
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
@@ -3763,14 +3764,14 @@ class HostingServiceRegistrationTests(TestCase):
         # This will match whichever service we added for testing.
         try:
             unregister_hosting_service('dummy-service')
-        except KeyError:
+        except ItemLookupError:
             pass
 
     def test_register_without_urls(self):
         """Testing HostingService registration"""
         register_hosting_service('dummy-service', self.DummyService)
 
-        with self.assertRaises(KeyError):
+        with self.assertRaises(AlreadyRegisteredError):
             register_hosting_service('dummy-service', self.DummyService)
 
     def test_unregister(self):
@@ -3802,7 +3803,7 @@ class HostingServiceRegistrationTests(TestCase):
             '/s/test-site/repos/1/dummy-service/hooks/pre-commit/')
 
         # Once registered, should not be able to register again
-        with self.assertRaises(KeyError):
+        with self.assertRaises(AlreadyRegisteredError):
             register_hosting_service('dummy-service',
                                      self.DummyServiceWithURLs)
 
@@ -3820,5 +3821,5 @@ class HostingServiceRegistrationTests(TestCase):
                 }),
 
         # Once unregistered, should not be able to unregister again
-        with self.assertRaises(KeyError):
+        with self.assertRaises(ItemLookupError):
             unregister_hosting_service('dummy-service')
