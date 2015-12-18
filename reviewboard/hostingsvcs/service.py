@@ -14,11 +14,11 @@ from django.utils.six.moves.urllib.request import (Request as BaseURLRequest,
                                                    urlopen)
 from django.utils.translation import ugettext_lazy as _
 from djblets.registries.errors import ItemLookupError
-from djblets.registries.registry import (ALREADY_REGISTERED, NOT_REGISTERED)
+from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
+                                         NOT_REGISTERED)
 
 import reviewboard.hostingsvcs.urls as hostingsvcs_urls
-from reviewboard.registries.registry import (EntryPointRegistry,
-                                             LOAD_ENTRY_POINT)
+from reviewboard.registries.registry import EntryPointRegistry
 from reviewboard.signals import initializing
 
 
