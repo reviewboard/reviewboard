@@ -22,8 +22,8 @@ try:
 except ImportError:
     pass
 
-from djblets.registries.registry import (ALREADY_REGISTERED, NOT_REGISTERED,
-                                         UNREGISTER)
+from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
+                                         NOT_REGISTERED, UNREGISTER)
 
 from reviewboard.accounts.forms.auth import (ActiveDirectorySettingsForm,
                                              LDAPSettingsForm,
@@ -33,8 +33,7 @@ from reviewboard.accounts.forms.auth import (ActiveDirectorySettingsForm,
                                              HTTPBasicSettingsForm)
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.site.models import LocalSite
-from reviewboard.registries.registry import (EntryPointRegistry,
-                                             LOAD_ENTRY_POINT)
+from reviewboard.registries.registry import EntryPointRegistry
 
 _enabled_auth_backends = []
 _auth_backend_setting = None
