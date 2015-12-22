@@ -10,24 +10,23 @@ from djblets.markdown import iter_markdown_lines
 from djblets.registries.errors import ItemLookupError
 from djblets.registries.registry import ALREADY_REGISTERED, NOT_REGISTERED
 
-
 from reviewboard.diffviewer.diffutils import get_line_changed_regions
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
-from reviewboard.registries.registry import Registry
+from reviewboard.registries.registry import Registry, OrderedRegistry
 from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
                                                 normalize_text_for_edit,
                                                 render_markdown)
 
 
-class FieldSetRegistry(Registry):
+class FieldSetRegistry(OrderedRegistry):
     """A registry for field sets.
 
     This keeps the fieldsets in the registered order, so iterating through them
     will do so in the same order.
     """
 
-    lookup_attrs = ['fieldset_id']
+    lookup_attrs = ('fieldset_id',)
 
     errors = {
         ALREADY_REGISTERED: _(
@@ -54,7 +53,6 @@ class FieldSetRegistry(Registry):
                 :py:class:`BaseReviewRequestFieldSet` subclass.
         """
         super(FieldSetRegistry, self).register(fieldset)
-        self._key_order.append(fieldset.fieldset_id)
 
         # Set the field_classes to an empty list by default if it doesn't
         # explicitly provide its own, so that entries don't go into
@@ -77,7 +75,6 @@ class FieldSetRegistry(Registry):
                 :py:class:`BaseReviewRequestFieldSet` subclass.
         """
         super(FieldSetRegistry, self).unregister(fieldset)
-        self._key_order.remove(fieldset.fieldset_id)
 
         for field_cls in fieldset.field_classes:
             fieldset.remove_field(field_cls)
@@ -94,16 +91,6 @@ class FieldSetRegistry(Registry):
         from reviewboard.reviews.builtin_fields import builtin_fieldsets
 
         return builtin_fieldsets
-
-    def __iter__(self):
-        """Yield the fieldsets in the order they were registered.
-
-        Yields:
-            type:
-            The :py:class:`BaseReviewRequestFieldSet` subclasses.
-        """
-        for fieldset_id in self._key_order:
-            yield self.get('fieldset_id', fieldset_id)
 
 
 class FieldRegistry(Registry):
