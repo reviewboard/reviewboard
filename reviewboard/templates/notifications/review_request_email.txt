@@ -24,7 +24,7 @@ Review request for {% reviewer_list review_request %}.
 Changes
 -------
 
-{{change_text}}
+{{change_text|markdown_email_text:change_rich_text}}
 {% endif %}
 
 {% if changes %}{% if changes.summary %}Summary (updated)
