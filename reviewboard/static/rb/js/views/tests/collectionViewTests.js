@@ -106,5 +106,59 @@ suite('rb/views/CollectionView', function() {
             expect($children.length).toBe(1);
             expect($children[0].innerHTML).toBe('Item 2');
         });
+
+        it('Changing sort order', function() {
+            var $children;
+
+            collection.add([
+                { data: 'Item 2' },
+                { data: 'Item 3' },
+                { data: 'Item 1' }
+            ]);
+
+            view.render();
+
+            $children = view.$el.children();
+            expect($children.length).toBe(3);
+            expect($children[0].innerHTML).toBe('Item 2');
+            expect($children[1].innerHTML).toBe('Item 3');
+            expect($children[2].innerHTML).toBe('Item 1');
+
+            collection.comparator = 'data';
+            collection.sort();
+
+            $children = view.$el.children();
+            expect($children[0].innerHTML).toBe('Item 1');
+            expect($children[1].innerHTML).toBe('Item 2');
+            expect($children[2].innerHTML).toBe('Item 3');
+        });
+
+        it('When reset', function() {
+            var $children;
+
+            collection.add([
+                { data: 'Item 1' },
+                { data: 'Item 2' }
+            ]);
+
+            view.render();
+
+            $children = view.$el.children();
+            expect($children.length).toBe(2);
+            expect($children[0].innerHTML).toBe('Item 1');
+            expect($children[1].innerHTML).toBe('Item 2');
+
+            collection.reset([
+                { data: 'Item 3' },
+                { data: 'Item 4' },
+                { data: 'Item 5' }
+            ]);
+
+            $children = view.$el.children();
+            expect($children.length).toBe(3);
+            expect($children[0].innerHTML).toBe('Item 3');
+            expect($children[1].innerHTML).toBe('Item 4');
+            expect($children[2].innerHTML).toBe('Item 5');
+        });
     });
 });
