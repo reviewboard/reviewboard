@@ -115,7 +115,7 @@ Now to prepare that copy for development use, type the following::
 
     $ cd djblets
     $ python setup.py develop
-    $ pip install -f dev-requirements.txt
+    $ pip install -r dev-requirements.txt
 
 This will create a special installation of Djblets that will reference
 your bleeding-edge copy. Note that this version will take precedence on
