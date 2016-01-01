@@ -1,4 +1,4 @@
-suite('reviewboard/configForms/models/ResourceListItem', function() {
+suite('rb/configForms/models/ResourceListItem', function() {
     var TestListItem,
         resource,
         listItem;
