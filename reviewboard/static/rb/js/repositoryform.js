@@ -341,6 +341,7 @@ $(document).ready(function() {
             if (hostingType === 'custom') {
                 $hostingAccountRow.hide();
                 $hostingURLRow.hide();
+                $repoPlanRow.hide();
                 $hostingAccountUserRow.hide();
                 $hostingAccountPassRow.hide();
             } else {
