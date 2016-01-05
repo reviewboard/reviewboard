@@ -13,23 +13,29 @@ RB.CollectionView = Backbone.View.extend({
     itemViewType: null,
 
     /*
-     * Initializes CollectionView.
+     * Initialize the CollectionView.
      */
     initialize: function(options) {
         var collection = options.collection;
 
+        if (options.itemViewType) {
+            this.itemViewType = options.itemViewType;
+        }
+
+        this.itemViewOptions = options.itemViewOptions || {};
+
         this.collection = collection;
         this.views = [];
 
-        collection.each(this._add, this);
-        collection.on({
-            add: this._add,
-            remove: this._remove
-        }, this);
+        collection.each(this._onAdded, this);
+        this.listenTo(collection, 'add', this._onAdded);
+        this.listenTo(collection, 'remove', this._onRemoved);
+        this.listenTo(collection, 'sort', this._onSorted);
+        this.listenTo(collection, 'reset', this._onReset);
     },
 
     /*
-     * Renders the view.
+     * Render the view.
      *
      * This will iterate over all the child views and render them as well.
      */
@@ -37,7 +43,7 @@ RB.CollectionView = Backbone.View.extend({
         this._rendered = true;
 
         this.$el.empty();
-        _.each(this.views, function(view) {
+        this.views.forEach(function(view) {
             this.$el.append(view.render().el);
         }, this);
 
@@ -50,14 +56,14 @@ RB.CollectionView = Backbone.View.extend({
      * This will instantiate the itemViewType, and if the CollectionView has
      * been rendered, render and append it as well.
      */
-    _add: function(item) {
+    _onAdded: function(item) {
         var view;
 
         console.assert(this.itemViewType,
                        'itemViewType must be defined by the subclass');
-        view = new this.itemViewType({
+        view = new this.itemViewType(_.defaults({
             model: item
-        });
+        }, this.itemViewOptions));
         this.views.push(view);
 
         if (this._rendered) {
@@ -68,7 +74,7 @@ RB.CollectionView = Backbone.View.extend({
     /*
      * Remove a view for an item in the collection.
      */
-    _remove: function(item) {
+    _onRemoved: function(item) {
         var toRemove = _.find(this.views, function(view) {
             return view.model === item;
         });
@@ -77,5 +83,46 @@ RB.CollectionView = Backbone.View.extend({
         if (this._rendered) {
             toRemove.remove();
         }
+    },
+
+    /*
+     * Respond to a change in the collection's sort order.
+     *
+     * This will detach all of the child views and re-add them in the new
+     * order.
+     */
+    _onSorted: function() {
+        var views = this.views;
+
+        this.views = this.collection.map(function(model) {
+            var view = _.find(views, function(view) {
+                return view.model === model;
+            });
+
+            views = _.without(views, view);
+            return view;
+        });
+
+        if (this._rendered) {
+            this.$el.children().detach();
+            this.views.forEach(function(view) {
+                this.$el.append(view.$el);
+            }, this);
+        }
+    },
+
+    /*
+     * Handle the collection being reset.
+     *
+     * This will remove all existing views and create new ones for the new
+     * state of the collection.
+     */
+    _onReset: function() {
+        this.views.forEach(function(view) {
+            view.remove();
+        });
+
+        this.views = [];
+        this.collection.each(this._onAdded, this);
     }
 });
