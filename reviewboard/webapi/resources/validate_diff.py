@@ -176,15 +176,12 @@ class ValidateDiffResource(DiffResource):
                 'revision': six.text_type(e.revision),
             }
         except SCMError as e:
-            return DIFF_PARSE_ERROR, {
-                'reason': six.text_type(e),
-            }
+            return DIFF_PARSE_ERROR.with_message(six.text_type(e))
         except Exception as e:
             logging.exception('Unexpected error when validating diff.')
 
-            return DIFF_PARSE_ERROR, {
-                'reason': six.text_type(e),
-            }
+            return DIFF_PARSE_ERROR.with_message(
+                'Unexpected error when validating the diff: %s' % e)
 
         return 200, {}
 
