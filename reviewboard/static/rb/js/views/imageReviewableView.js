@@ -604,7 +604,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
      */
     renderContent: function() {
         var self = this,
-            hasDiff = this.model.get('diffAgainstFileAttachmentID') !== null,
+            hasDiff = !!this.model.get('diffAgainstFileAttachmentID'),
             captionItems = [],
             $header,
             $revisionLabel,
