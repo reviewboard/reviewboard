@@ -1026,8 +1026,32 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
         return build_email_address(user.get_full_name(), self.sender)
 
 
+class WebHookPayloadTests(SpyAgency, TestCase):
+    """Tests for payload rendering."""
+
+    ENDPOINT_URL = 'http://example.com/endpoint/'
+
+    @add_fixtures(['test_scmtools', 'test_users'])
+    def test_diffset_rendered(self):
+        """Testing JSON-serializability of DiffSets in WebHook payloads"""
+        self.spy_on(urlopen, call_original=False)
+        WebHookTarget.objects.create(url=self.ENDPOINT_URL,
+                                     events='review_request_published')
+
+        review_request = self.create_review_request(create_repository=True)
+        self.create_diffset(review_request)
+        review_request.publish(review_request.submitter)
+
+        self.assertTrue(urlopen.spy.called)
+
+        self.create_diffset(review_request, draft=True)
+        review_request.publish(review_request.submitter)
+        self.assertEqual(len(urlopen.spy.calls), 2)
+
+
 class WebHookCustomContentTests(TestCase):
     """Unit tests for render_custom_content."""
+
     def test_with_valid_template(self):
         """Tests render_custom_content with a valid template"""
         s = render_custom_content(
@@ -1084,6 +1108,7 @@ class WebHookCustomContentTests(TestCase):
 
 class WebHookDispatchTests(SpyAgency, TestCase):
     """Unit tests for dispatching webhooks."""
+
     ENDPOINT_URL = 'http://example.com/endpoint/'
 
     def test_dispatch_custom_payload(self):
