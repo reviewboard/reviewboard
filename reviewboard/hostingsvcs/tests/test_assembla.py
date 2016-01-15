@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import nose
+
 from reviewboard.hostingsvcs.tests.testcases import ServiceTests
 from reviewboard.scmtools.models import Repository, Tool
 
@@ -41,36 +43,42 @@ class AssemblaTests(ServiceTests):
 
     def test_save_form_perforce(self):
         """Testing Assembla configuration form with Perforce"""
-        account = self._get_hosting_account()
-        service = account.service
-        service.authorize('myuser', 'abc123', None)
+        try:
+            account = self._get_hosting_account()
+            service = account.service
+            service.authorize('myuser', 'abc123', None)
 
-        repository = Repository(hosting_account=account,
-                                tool=Tool.objects.get(name='Perforce'))
+            repository = Repository(hosting_account=account,
+                                    tool=Tool.objects.get(name='Perforce'))
 
-        form = self._get_form(fields={'assembla_project_id': 'myproject'})
-        form.save(repository)
+            form = self._get_form(fields={'assembla_project_id': 'myproject'})
+            form.save(repository)
 
-        self.assertIn('use_ticket_auth', repository.extra_data)
-        self.assertTrue(repository.extra_data['use_ticket_auth'])
-        self.assertIn('p4_host', repository.extra_data)
-        self.assertEqual(repository.extra_data['p4_host'], 'myproject')
+            self.assertIn('use_ticket_auth', repository.extra_data)
+            self.assertTrue(repository.extra_data['use_ticket_auth'])
+            self.assertIn('p4_host', repository.extra_data)
+            self.assertEqual(repository.extra_data['p4_host'], 'myproject')
+        except ImportError:
+            raise nose.SkipTest
 
     def test_save_form_subversion(self):
         """Testing Assembla configuration form with Subversion"""
-        account = self._get_hosting_account()
-        service = account.service
-        service.authorize('myuser', 'abc123', None)
+        try:
+            account = self._get_hosting_account()
+            service = account.service
+            service.authorize('myuser', 'abc123', None)
 
-        repository = Repository(path='https://svn.example.com/',
-                                hosting_account=account,
-                                tool=Tool.objects.get(name='Subversion'))
+            repository = Repository(path='https://svn.example.com/',
+                                    hosting_account=account,
+                                    tool=Tool.objects.get(name='Subversion'))
 
-        form = self._get_form(fields={'assembla_project_id': 'myproject'})
-        form.save(repository)
+            form = self._get_form(fields={'assembla_project_id': 'myproject'})
+            form.save(repository)
 
-        self.assertNotIn('use_ticket_auth', repository.extra_data)
-        self.assertNotIn('p4_host', repository.extra_data)
+            self.assertNotIn('use_ticket_auth', repository.extra_data)
+            self.assertNotIn('p4_host', repository.extra_data)
+        except ImportError:
+            raise nose.SkipTest
 
     def test_authorize(self):
         """Testing Assembla authorization password storage"""
@@ -87,46 +95,52 @@ class AssemblaTests(ServiceTests):
 
     def test_check_repository_perforce(self):
         """Testing Assembla check_repository with Perforce"""
-        account = self._get_hosting_account()
-        service = account.service
+        try:
+            account = self._get_hosting_account()
+            service = account.service
 
-        service.authorize('myuser', 'abc123', None)
+            service.authorize('myuser', 'abc123', None)
 
-        repository = Repository(hosting_account=account,
-                                tool=Tool.objects.get(name='Perforce'))
-        scmtool = repository.get_scmtool()
-        self.spy_on(scmtool.check_repository, call_original=False)
+            repository = Repository(hosting_account=account,
+                                    tool=Tool.objects.get(name='Perforce'))
+            scmtool = repository.get_scmtool()
+            self.spy_on(scmtool.check_repository, call_original=False)
 
-        service.check_repository(path='mypath',
-                                 username='myusername',
-                                 password='mypassword',
-                                 scmtool_class=scmtool.__class__,
-                                 local_site_name=None,
-                                 assembla_project_id='myproject')
+            service.check_repository(path='mypath',
+                                     username='myusername',
+                                     password='mypassword',
+                                     scmtool_class=scmtool.__class__,
+                                     local_site_name=None,
+                                     assembla_project_id='myproject')
 
-        self.assertTrue(scmtool.check_repository.called)
-        self.assertIn('p4_host', scmtool.check_repository.last_call.kwargs)
-        self.assertEqual(scmtool.check_repository.last_call.kwargs['p4_host'],
-                         'myproject')
+            self.assertTrue(scmtool.check_repository.called)
+            self.assertIn('p4_host', scmtool.check_repository.last_call.kwargs)
+            self.assertEqual(scmtool.check_repository.last_call.kwargs['p4_host'],
+                             'myproject')
+        except ImportError:
+            raise nose.SkipTest
 
     def test_check_repository_subversion(self):
         """Testing Assembla check_repository with Subversion"""
-        account = self._get_hosting_account()
-        service = account.service
+        try:
+            account = self._get_hosting_account()
+            service = account.service
 
-        service.authorize('myuser', 'abc123', None)
+            service.authorize('myuser', 'abc123', None)
 
-        repository = Repository(path='https://svn.example.com/',
-                                hosting_account=account,
-                                tool=Tool.objects.get(name='Subversion'))
-        scmtool = repository.get_scmtool()
-        self.spy_on(scmtool.check_repository, call_original=False)
+            repository = Repository(path='https://svn.example.com/',
+                                    hosting_account=account,
+                                    tool=Tool.objects.get(name='Subversion'))
+            scmtool = repository.get_scmtool()
+            self.spy_on(scmtool.check_repository, call_original=False)
 
-        service.check_repository(path='https://svn.example.com/',
-                                 username='myusername',
-                                 password='mypassword',
-                                 scmtool_class=scmtool.__class__,
-                                 local_site_name=None)
+            service.check_repository(path='https://svn.example.com/',
+                                     username='myusername',
+                                     password='mypassword',
+                                     scmtool_class=scmtool.__class__,
+                                     local_site_name=None)
 
-        self.assertTrue(scmtool.check_repository.called)
-        self.assertNotIn('p4_host', scmtool.check_repository.last_call.kwargs)
+            self.assertTrue(scmtool.check_repository.called)
+            self.assertNotIn('p4_host', scmtool.check_repository.last_call.kwargs)
+        except ImportError:
+            raise nose.SkipTest
