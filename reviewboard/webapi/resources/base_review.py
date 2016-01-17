@@ -27,6 +27,12 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
     """
     model = Review
     fields = {
+        'absolute_url': {
+            'type': six.text_type,
+            'description': "The absolute URL to the review request's page on "
+                           "the site.",
+            'added_in': '2.6',
+        },
         'body_bottom': {
             'type': six.text_type,
             'description': 'The review content below the comments.',
@@ -174,6 +180,9 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
 
     def has_delete_permissions(self, request, review, *args, **kwargs):
         return review.is_mutable_by(request.user)
+
+    def serialize_absolute_url_field(self, obj, request, **kwargs):
+        return request.build_absolute_uri(obj.get_absolute_url())
 
     def serialize_body_top_text_type_field(self, obj, **kwargs):
         # This will be overridden by MarkdownFieldsMixin.
