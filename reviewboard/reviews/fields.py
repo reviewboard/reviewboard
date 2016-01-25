@@ -210,7 +210,7 @@ class BaseReviewRequestField(object):
         """Return the change entry for a singleton.
 
         Singleton fields (e.g., summaries) are stored in
-        :py:class:`~reviewboard.changedescs.models.ChangeDescription`s as
+        :py:class:`~reviewboard.changedescs.models.ChangeDescription`\s as
         a list with a single element.
 
         Args:

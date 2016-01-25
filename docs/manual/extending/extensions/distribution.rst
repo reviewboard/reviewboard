@@ -67,7 +67,7 @@ Static Files
 
 Any static files (such as css, html, and javascript) the extension requires
 should be listed in the extension class's ``css_bundles`` or ``js_bundles``
-attributes. Providing you are using the py:func:`setup` method from
+attributes. Providing you are using the :py:func:`setup` method from
 :py:mod:`reviewboard.extensions.packaging`, all listed CSS and JavaScript
 media bundles will be automatically compiled, minified, combined, and packaged
 along with your extension.
@@ -86,7 +86,7 @@ them in the ``package_data`` section in :file:`setup.py`. For example:
            ],
        }
 
-Here is an example of a full setup.py file including the static files:
+Here is an example of a full :file:`setup.py` file including the static files:
 
 .. code-block:: python
 
@@ -122,7 +122,7 @@ Dependencies
 
 Any dependencies of the extension are defined in the :file:`setup.py` file
 using :py:attr:`install_requires`. Here is an example of a full
-:file`setup.py` file including a dependency:
+:file:`setup.py` file including a dependency:
 
 .. code-block:: python
 
