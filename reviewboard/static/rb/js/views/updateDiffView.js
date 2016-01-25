@@ -29,7 +29,7 @@ RB.UpdateDiffView = RB.UploadDiffView.extend({
         ' <div class="spinner"><span class="fa fa-spinner fa-pulse"></div>',
         '</div>',
         '<div class="input" id="uploading-diffs">',
-        ' <div><span class="fa fa-spinner fa-pulse"></div>',
+        ' <div class="spinner"><span class="fa fa-spinner fa-pulse"></div>',
         '</div>',
         '<div class="input" id="error-indicator">',
         ' <div id="error-contents" />',
