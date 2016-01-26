@@ -138,7 +138,8 @@ class GitTool(SCMTool):
         If the repository is valid and can be connected to, no exception
         will be thrown.
         """
-        client = GitClient(path, local_site_name=local_site_name)
+        client = GitClient(path, local_site_name=local_site_name,
+                           username=username, password=password)
 
         super(GitTool, cls).check_repository(client.path, username, password,
                                              local_site_name)
