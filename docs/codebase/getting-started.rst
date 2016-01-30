@@ -1,4 +1,4 @@
-.. _gettingstarted:
+.. _getting-started:
 
 ===============
 Getting Started
@@ -398,57 +398,9 @@ Specify the port you want to use in ``PORT_NUMBER`` above.
 Running Unit Tests
 ------------------
 
-Djblets, Review Board and RBTools all have unit tests that can be run
-to make sure you don't break anything. It is important that you run
-these before posting code for review. We also request that new code
-include additions to the unit tests.
+.. note::
 
-To run our unit test suite for Djblets, type::
-
-    $ cd djblets
-    $ ./tests/runtests.py
-
-For Review Board, type::
-
-    $ cd reviewboard
-    $ ./reviewboard/manage.py test
-
-For RBTools, type::
-
-    $ cd rbtools
-    $ nosetests -v
-
-Running all Review Board unit tests may take a while. To speed up unit
-testing, there are options to run subsets of Review Board tests.
-
-To run only the tests in a specific module::
-
-    $ ./reviewboard/manage.py test -- reviewboard.scmtools.tests
-
-To run the tests in a specific class::
-
-    $ ./reviewboard/manage.py test -- reviewboard.scmtools.tests:GitTests
-
-To run only a specific test case::
-
-    $ ./reviewboard/manage.py test -- reviewboard.scmtools.tests:GitTests.testFilemodeWithFollowingDiff
-
-Some other flags which come in handy are -x, --pdb, and --pdb-failures.
-
-To stop the test runner after the first encountered failure::
-
-    $ ./reviewboard/manage.py test -- -x
-
-To drop into pdb (the python debugger shell) when an error occurs::
-
-    $ ./reviewboard/manage.py test -- --pdb
-
-To drop into pdb when a test case assertion fails::
-
-    $ ./reviewboard/manage.py test -- --pdb-failures
-
-If you're updating the unit tests, you may want to see the
-:ref:`unit-test-fixtures` documentation.
+   This section has moved. See :ref:`running-unit-tests`.
 
 
 Posting Changes for Review

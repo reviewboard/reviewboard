@@ -32,6 +32,7 @@ Contributor Guides
    contributing-patches
    writing-good-descriptions
    custom-forks
+   unit-tests/running-tests
    unit-tests/fixtures
 
 .. `Creating SCMTools`
