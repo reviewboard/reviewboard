@@ -48,6 +48,7 @@ Documentation Guides
 .. toctree::
    :maxdepth: 1
 
+   docs/writing-codebase-docs
    generating-documentation
 
 
