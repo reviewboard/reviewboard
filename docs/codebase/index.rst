@@ -20,39 +20,55 @@ The source code for Review Board is available from our `Git repository`_.
 .. _Django: https://www.djangoproject.com/
 
 
-Contributor Guides
-==================
-
-.. toctree::
-   :maxdepth: 1
-
-   getting-started
-   generating-documentation
-   coding-standards
-   contributing-patches
-   writing-good-descriptions
-   custom-forks
-   unit-tests/fixtures
-
-.. `Creating SCMTools`
-
-
-Common Tasks
+Contributing
 ============
 
 .. toctree::
    :maxdepth: 1
 
-   tasks/database-evolutions
+   getting-started
+   contributing-patches
+   custom-forks
 
 
-Git Guides
-==========
+Styles and Standards
+====================
 
 .. toctree::
    :maxdepth: 1
 
    git/clean-commits
+   writing-good-descriptions
+   coding-standards
+
+
+Documentation Guides
+====================
+
+.. toctree::
+   :maxdepth: 1
+
+   docs/writing-codebase-docs
+   generating-documentation
+
+
+Unit Test Guides
+================
+
+.. toctree::
+   :maxdepth: 1
+
+   unit-tests/running-tests
+   unit-tests/fixtures
+
+
+Database Guides
+===============
+
+.. toctree::
+   :maxdepth: 1
+
+   tasks/database-evolutions
 
 
 Related Resources
