@@ -103,7 +103,17 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      */
     hideAndReload: function() {
         this.hide(function() {
-            window.location = this.model.get('parentObject').get('reviewURL');
+            /*
+             * hideAndReload might have been called from within a $.funcQueue.
+             * With Firefox, later async functions that are queued in the
+             * $.funcQueue will not run when we change window.location, which
+             * means that we might miss out on some teardown that was
+             * scheduled. We defer changing the location until the next tick
+             * of the event loop to let any teardown occur.
+             */
+            _.defer(_.bind(function() {
+                window.location = this.model.get('parentObject').get('reviewURL');
+            }, this));
         }, this);
     },
 
