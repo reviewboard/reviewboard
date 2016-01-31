@@ -149,7 +149,7 @@ def main(settings, in_subprocess):
     execute_from_command_line(sys.argv)
 
 
-if __name__ == "__main__":
+def run():
     # Add the parent directory of 'manage.py' to the python path, so
     # manage.py can be run from any directory.
     # From http://www.djangosnippets.org/snippets/281/
@@ -185,3 +185,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     main(settings, in_subprocess)
+
+
+if __name__ == "__main__":
+    run()
