@@ -54,13 +54,20 @@ def get_cache_stats():
     for hostname in hostnames:
         try:
             host, port = hostname.split(":")
+            if host == 'unix':
+                socket_af = socket.AF_UNIX
+                connect_param = port
+            else:
+                socket_af = socket.AF_INET
+                connect_param = (host, int(port))
+
         except ValueError:
             logging.error('Invalid cache hostname "%s"' % hostname)
             continue
 
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s = socket.socket(socket_af, socket.SOCK_STREAM)
         try:
-            s.connect((host, int(port)))
+            s.connect(connect_param)
         except socket.error:
             s.close()
             continue
