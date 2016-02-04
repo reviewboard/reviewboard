@@ -107,8 +107,14 @@ RB.DiffFileIndexView = Backbone.View.extend({
      * icon.
      */
     _renderDiffError: function($item) {
+        var $fileIcon = $item.find('.diff-file-icon');
+
         $('<div class="rb-icon rb-icon-warning"/>')
-            .appendTo($item.find('.diff-file-icon'));
+            .appendTo($fileIcon);
+
+        $fileIcon.attr(
+            'title',
+            gettext('There was an error loading this diff. See the details below.'));
     },
 
     /*
@@ -123,7 +129,10 @@ RB.DiffFileIndexView = Backbone.View.extend({
             numInserts = 0,
             numReplaces = 0,
             chunksList = [],
-            iconView;
+            iconView,
+            $fileIcon = $item.find('.diff-file-icon'),
+            tooltip = '',
+            tooltipParts = [];
 
         if (fileAdded) {
             numInserts = 1;
@@ -163,8 +172,37 @@ RB.DiffFileIndexView = Backbone.View.extend({
             numReplaces: numReplaces,
             totalLines: linesEqual + numDeletes + numInserts + numReplaces
         });
-        iconView.$el.appendTo($item.find('.diff-file-icon'));
+        iconView.$el.appendTo($fileIcon);
         iconView.render();
+
+        /* Add tooltip for icon */
+        if (fileAdded) {
+            tooltip = gettext('New file');
+        } else if (fileDeleted) {
+            tooltip = gettext('Deleted file');
+        } else {
+            if (numInserts > 0) {
+                tooltipParts.push(interpolate(
+                    ngettext('%d new line', '%d new lines', numInserts),
+                    [numInserts]));
+            }
+
+            if (numReplaces > 0) {
+                tooltipParts.push(interpolate(
+                    ngettext('%d line changed', '%d lines changed', numReplaces),
+                    [numReplaces]));
+            }
+
+            if (numDeletes > 0) {
+                tooltipParts.push(interpolate(
+                    ngettext('%d line removed', '%d lines removed', numDeletes),
+                    [numDeletes]));
+            }
+
+            tooltip = tooltipParts.join(', ');
+        }
+
+        $fileIcon.attr('title', tooltip);
 
         this.listenTo(diffReviewableView, 'chunkDimmed chunkUndimmed',
                       function(chunkID) {
