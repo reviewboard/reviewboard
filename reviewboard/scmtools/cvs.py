@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import logging
 import os
 import re
+import shutil
 import tempfile
 
 from django.utils import six
@@ -256,7 +257,7 @@ class CVSClient(object):
     ]
 
     def __init__(self, cvsroot, path, local_site_name):
-        self.tempdir = ""
+        self.tempdir = None
         self.currentdir = os.getcwd()
         self.cvsroot = cvsroot
         self.path = path
@@ -272,8 +273,8 @@ class CVSClient(object):
             # Restore current working directory
             os.chdir(self.currentdir)
             # Remove temporary directory
-            if self.tempdir != "":
-                os.rmdir(self.tempdir)
+            if self.tempdir:
+                shutil.rmtree(self.tempdir)
 
     def cat_file(self, filename, revision):
         # We strip the repo off of the fully qualified path as CVS does
