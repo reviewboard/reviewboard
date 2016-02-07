@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-{% load avatars compressed djblets_deco djblets_extensions djblets_utils %}
-{% load i18n staticfiles %}
+{% load avatars djblets_deco djblets_extensions djblets_utils i18n pipeline staticfiles %}
 
 <html>
  <head>
@@ -21,7 +20,7 @@
   </script>
   <link rel="shortcut icon" type="image/x-icon" href="{% static "rb/images/favicon.ico" %}" />
   <link rel="apple-touch-icon-precomposed" type="image/png" href="{% static "rb/images/apple-home-icon.png" %}" />
-{% compressed_css "common" %}
+{% stylesheet 'common' %}
 {% block css %}{% endblock %}
 {% load_extensions_css "reviewboard.extensions" %}
 {% template_hook_point "base-css" %}
@@ -103,10 +102,10 @@
   </div>
   <script src="{% url 'js-catalog' %}"></script>
   {% include "js/jquery-ui.html" %}
-  {% compressed_js "3rdparty" %}
-  {% compressed_js "djblets-gravy" %}
-  {% compressed_js "djblets-extensions" %}
-  {% compressed_js "common" %}
+  {% javascript '3rdparty' %}
+  {% javascript 'djblets-gravy' %}
+  {% javascript 'djblets-extensions' %}
+  {% javascript 'common' %}
   <script>
     RB.UserSession.create({
 {% if request.user.is_authenticated %}

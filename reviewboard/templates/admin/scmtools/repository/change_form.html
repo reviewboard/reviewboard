@@ -1,9 +1,9 @@
 {% extends "admin/change_form.html" %}
-{% load admin_urls compressed i18n %}
+{% load admin_urls i18n pipeline %}
 
 {% block scripts %}
 {{block.super}}
-{% compressed_js "repositoryform" %}
+{% javascript 'repositoryform' %}
 
 <script type="text/javascript">
 {% with adminform.form as form %}

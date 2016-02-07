@@ -1,11 +1,12 @@
 from __future__ import unicode_literals
 
-from djblets.settings import (PIPELINE_JS as DJBLETS_PIPELINE_JS,
-                              PIPELINE_CSS as DJBLETS_PIPELINE_CSS)
+from djblets.staticbundles import (
+    PIPELINE_JAVASCRIPT as DJBLETS_PIPELINE_JAVASCRIPT,
+    PIPELINE_STYLESHEETS as DJBLETS_PIPELINE_STYLESHEETS)
 
 
 # Media compression
-PIPELINE_JS = dict({
+PIPELINE_JAVASCRIPT = dict({
     '3rdparty': {
         'source_filenames': (
             'lib/js/flot/jquery.flot.min.js',
@@ -301,10 +302,10 @@ PIPELINE_JS = dict({
         ),
         'output_filename': 'rb/js/webhooks-form.min.js',
     },
-}, **DJBLETS_PIPELINE_JS)
+}, **DJBLETS_PIPELINE_JAVASCRIPT)
 
 
-PIPELINE_CSS = dict({
+PIPELINE_STYLESHEETS = dict({
     'common': {
         'source_filenames': (
             'lib/css/codemirror.css',
@@ -365,4 +366,4 @@ PIPELINE_CSS = dict({
         'output_filename': 'rb/css/admin.min.css',
         'absolute_paths': False,
     },
-}, **DJBLETS_PIPELINE_CSS)
+}, **DJBLETS_PIPELINE_STYLESHEETS)

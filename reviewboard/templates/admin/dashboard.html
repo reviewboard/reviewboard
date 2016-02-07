@@ -1,5 +1,5 @@
 {% extends "admin/base_site.html" %}
-{% load compressed i18n log rbadmintags staticfiles %}
+{% load i18n log pipeline rbadmintags staticfiles %}
 
 {% block coltype %}colM{% endblock %}
 {% block bodyclass %}dashboard{% endblock %}
@@ -7,7 +7,7 @@
 
 {% block scripts-post %}
 <!--[if IE]><script src="{% static "lib/js/flot/excanvas.min.js" %}"></script><![endif]-->
-{% compressed_js "admin" %}
+{% javascript 'admin' %}
 {% endblock %}
 
 {% block content_title %}{% endblock %}

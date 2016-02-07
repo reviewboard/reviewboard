@@ -282,6 +282,9 @@ SVNTOOL_BACKENDS = [
 # Gravatar configuration.
 GRAVATAR_DEFAULT = 'mm'
 
+# Default less arguments
+PIPELINE_LESS_ARGUMENTS = None
+
 
 # Load local settings.  This can override anything in here, but at the very
 # least it needs to define database connectivity.
@@ -372,12 +375,6 @@ LOGIN_URL = SITE_ROOT + 'account/login/'
 LOGIN_REDIRECT_URL = SITE_ROOT + 'dashboard/'
 
 
-# Static media setup
-from reviewboard.staticbundles import PIPELINE_CSS, PIPELINE_JS
-
-PIPELINE_CSS_COMPRESSOR = None
-PIPELINE_JS_COMPRESSOR = 'pipeline.compressors.uglifyjs.UglifyJSCompressor'
-
 # On production (site-installed) builds, we always want to use the pre-compiled
 # versions. We want this regardless of the DEBUG setting (since they may
 # turn DEBUG on in order to get better error output).
@@ -393,6 +390,35 @@ if PRODUCTION or not DEBUG or os.getenv('FORCE_BUILD_MEDIA', ''):
 elif DEBUG:
     PIPELINE_COMPILERS = []
     PIPELINE_ENABLED = False
+
+# Static media setup
+from reviewboard.staticbundles import PIPELINE_STYLESHEETS, PIPELINE_JAVASCRIPT
+
+NODE_PATH = os.path.join(REVIEWBOARD_ROOT, '..', 'node_modules')
+os.environ['NODE_PATH'] = NODE_PATH
+
+if PIPELINE_LESS_ARGUMENTS is None:
+    # If settings_local.py didn't define these (i.e. we're not building static
+    # media), add expected global variables.
+    PIPELINE_LESS_ARGUMENTS = ' '.join([
+        '--include-path=%s' % ':'.join([
+            os.path.join(REVIEWBOARD_ROOT, 'static'),
+            os.path.join(os.path.dirname(djblets.__file__), 'static'),
+        ]),
+        '--global-var="STATIC_ROOT=\\"%s\\""' % STATIC_URL
+    ])
+
+PIPELINE = {
+    'PIPELINE_ENABLED': PIPELINE_ENABLED,
+    'PIPELINE_COLLECTOR_ENABLED': True,
+    'COMPILERS': PIPELINE_COMPILERS,
+    'JAVASCRIPT': PIPELINE_JAVASCRIPT,
+    'JS_COMPRESSOR': 'pipeline.compressors.uglifyjs.UglifyJSCompressor',
+    'CSS_COMPRESSOR': None,
+    'LESS_ARGUMENTS': PIPELINE_LESS_ARGUMENTS,
+    'STYLESHEETS': PIPELINE_STYLESHEETS,
+}
+
 
 # Packages to unit test
 TEST_PACKAGES = ['reviewboard']
