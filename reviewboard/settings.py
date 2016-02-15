@@ -381,7 +381,7 @@ if RUNNING_TEST:
 else:
     PIPELINE_COMPILERS = [
         'djblets.pipeline.compilers.es6.ES6Compiler',
-        'pipeline.compilers.less.LessCompiler',
+        'djblets.pipeline.compilers.less.LessCompiler',
     ]
 
 NODE_PATH = os.path.join(REVIEWBOARD_ROOT, '..', 'node_modules')
@@ -398,16 +398,16 @@ PIPELINE = {
     'JS_COMPRESSOR': 'pipeline.compressors.uglifyjs.UglifyJSCompressor',
     'CSS_COMPRESSOR': None,
     'BABEL_ARGUMENTS': '--presets es2015 -s true',
-    'LESS_ARGUMENTS': ' '.join([
-        '--include-path=%s' % ':'.join([
-            os.path.join(REVIEWBOARD_ROOT, 'static'),
-            os.path.join(os.path.dirname(djblets.__file__), 'static'),
-        ]),
+    'LESS_BINARY': os.path.join(NODE_PATH, '.bin', 'lessc'),
+    'LESS_ARGUMENTS': [
+        '--include-path=%s' % STATIC_ROOT,
+        '--no-color',
+        '--source-map',
         # This is just here for backwards-compatibility with any stylesheets
         # that still have this. It's no longer necessary because compilation
         # happens on the back-end instead of in the browser.
-        '--global-var="STATIC_ROOT=\\"\\""',
-    ]),
+        '--global-var=STATIC_ROOT=""',
+    ],
     'STYLESHEETS': PIPELINE_STYLESHEETS,
 }
 
