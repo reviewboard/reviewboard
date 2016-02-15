@@ -9,6 +9,7 @@ from djblets.staticbundles import (
 PIPELINE_JAVASCRIPT = dict({
     '3rdparty': {
         'source_filenames': (
+            'lib/js/babel-polyfill-6.5.0.js',
             'lib/js/flot/jquery.flot.min.js',
             'lib/js/flot/jquery.flot.pie.min.js',
             'lib/js/flot/jquery.flot.selection.min.js',
