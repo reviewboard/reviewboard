@@ -15,7 +15,7 @@ suite('rb/resources/models/ReviewRequest', function() {
         spyOn(callbacks, 'success');
         spyOn(callbacks, 'error');
 
-        spyOn(reviewRequest, 'ready').andCallFake(function(options, context) {
+        spyOn(reviewRequest, 'ready').and.callFake(function(options, context) {
             options.ready.call(context);
         });
     });
@@ -81,8 +81,8 @@ suite('rb/resources/models/ReviewRequest', function() {
     });
 
     it('reopen', function() {
-        spyOn(RB, 'apiCall').andCallThrough();
-        spyOn($, 'ajax').andCallFake(function(request) {
+        spyOn(RB, 'apiCall').and.callThrough();
+        spyOn($, 'ajax').and.callFake(function(request) {
             expect(request.type).toBe('PUT');
             expect(request.data.status).toBe('pending');
 
@@ -141,14 +141,14 @@ suite('rb/resources/models/ReviewRequest', function() {
             });
 
             spyOn(session.watchedReviewRequests, 'addImmediately')
-                .andCallThrough();
+                .and.callThrough();
             spyOn(session.watchedReviewRequests, 'removeImmediately')
-                .andCallThrough();
-            spyOn(RB, 'apiCall').andCallThrough();
+                .and.callThrough();
+            spyOn(RB, 'apiCall').and.callThrough();
         });
 
         it('true', function() {
-            spyOn($, 'ajax').andCallFake(function(request) {
+            spyOn($, 'ajax').and.callFake(function(request) {
                 expect(request.type).toBe('POST');
                 expect(request.url).toBe(url);
 
@@ -168,7 +168,7 @@ suite('rb/resources/models/ReviewRequest', function() {
         });
 
         it('false', function() {
-            spyOn($, 'ajax').andCallFake(function(request) {
+            spyOn($, 'ajax').and.callFake(function(request) {
                 expect(request.type).toBe('DELETE');
                 expect(request.url).toBe(url + '1/');
 
@@ -190,8 +190,8 @@ suite('rb/resources/models/ReviewRequest', function() {
 
     describe('close', function() {
         it('With type=CLOSE_DISCARDED', function() {
-            spyOn(RB, 'apiCall').andCallThrough();
-            spyOn($, 'ajax').andCallFake(function(request) {
+            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn($, 'ajax').and.callFake(function(request) {
                 expect(request.type).toBe('PUT');
                 expect(request.data.status).toBe('discarded');
                 expect(request.data.description).toBe(undefined);
@@ -218,8 +218,8 @@ suite('rb/resources/models/ReviewRequest', function() {
         });
 
         it('With type=CLOSE_SUBMITTED', function() {
-            spyOn(RB, 'apiCall').andCallThrough();
-            spyOn($, 'ajax').andCallFake(function(request) {
+            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn($, 'ajax').and.callFake(function(request) {
                 expect(request.type).toBe('PUT');
                 expect(request.data.status).toBe('submitted');
                 expect(request.data.description).toBe(undefined);
@@ -246,7 +246,7 @@ suite('rb/resources/models/ReviewRequest', function() {
         });
 
         it('With invalid type', function() {
-            spyOn(RB, 'apiCall').andCallThrough();
+            spyOn(RB, 'apiCall').and.callThrough();
             spyOn($, 'ajax');
 
             reviewRequest.close({
@@ -262,8 +262,8 @@ suite('rb/resources/models/ReviewRequest', function() {
         });
 
         it('With description', function() {
-            spyOn(RB, 'apiCall').andCallThrough();
-            spyOn($, 'ajax').andCallFake(function(request) {
+            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn($, 'ajax').and.callFake(function(request) {
                 expect(request.type).toBe('PUT');
                 expect(request.data.status).toBe('submitted');
                 expect(request.data.close_description).toBe('test');

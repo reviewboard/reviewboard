@@ -10,7 +10,7 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
             supportsPostCommit: true
         });
 
-        spyOn(repository.branches, 'sync').andCallFake(
+        spyOn(repository.branches, 'sync').and.callFake(
             function(method, collection, options) {
                 options.success({
                     stat: 'ok',
@@ -35,14 +35,14 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
             }
         );
 
-        spyOn(repository, 'getCommits').andCallFake(function(options) {
+        spyOn(repository, 'getCommits').and.callFake(function(options) {
             commits = new RB.RepositoryCommits([], {
                 urlBase: _.result(this, 'url') + 'commits/',
                 start: options.start,
                 branch: options.branch
             });
 
-            spyOn(commits, 'sync').andCallFake(
+            spyOn(commits, 'sync').and.callFake(
                 function(method, collection, options) {
                     options.success({
                         stat: 'ok',
@@ -76,7 +76,7 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
         model = new RB.PostCommitModel({ repository: repository });
         view = new RB.PostCommitView({ model: model });
 
-        spyOn(RB.PostCommitView.prototype, '_onCreateReviewRequest').andCallThrough();
+        spyOn(RB.PostCommitView.prototype, '_onCreateReviewRequest').and.callThrough();
 
         expect(repository.branches.sync).toHaveBeenCalled();
     });
@@ -96,7 +96,7 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
 
         view.render();
 
-        spyOn(RB.ReviewRequest.prototype, 'save').andReturn();
+        spyOn(RB.ReviewRequest.prototype, 'save').and.returnValue();
 
         commit = commits.models[1];
         commit.trigger('create', commit);
@@ -104,9 +104,9 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
         expect(RB.PostCommitView.prototype._onCreateReviewRequest).toHaveBeenCalled();
         expect(RB.ReviewRequest.prototype.save).toHaveBeenCalled();
 
-        expect(RB.ReviewRequest.prototype.save.calls.length).toBe(1);
+        expect(RB.ReviewRequest.prototype.save.calls.count()).toBe(1);
 
-        call = RB.ReviewRequest.prototype.save.mostRecentCall;
+        call = RB.ReviewRequest.prototype.save.calls.mostRecent();
         expect(call.object.get('commitID')).toBe(commit.get('id'));
     });
 
@@ -118,7 +118,7 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
                 returnError;
 
             beforeEach(function() {
-                spyOn(repository.branches, 'fetch').andCallFake(
+                spyOn(repository.branches, 'fetch').and.callFake(
                     function(options, context) {
                         if (returnError) {
                             options.error.call(context, repository.branches,
@@ -131,7 +131,7 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
                 returnError = true;
 
                 spyOn(RB.PostCommitView.prototype, '_showLoadError')
-                    .andCallThrough();
+                    .and.callThrough();
 
                 view._loadBranches();
             });
@@ -151,7 +151,7 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
 
             it('Reloading', function() {
                 var $reload;
-                spyOn(view, '_loadBranches').andCallThrough();
+                spyOn(view, '_loadBranches').and.callThrough();
 
                 /* Make sure the spy is called from the event handler. */
                 view.delegateEvents();
@@ -179,7 +179,7 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
             beforeEach(function() {
                 view.render();
 
-                spyOn(RB.RepositoryCommits.prototype, 'fetch').andCallFake(
+                spyOn(RB.RepositoryCommits.prototype, 'fetch').and.callFake(
                     function(options, context) {
                         if (returnError) {
                             options.error.call(context, repository.commits,
@@ -192,7 +192,7 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
                 returnError = true;
 
                 spyOn(RB.PostCommitView.prototype, '_showLoadError')
-                    .andCallThrough();
+                    .and.callThrough();
 
                 view._loadCommits();
             });
@@ -213,7 +213,7 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
 
             it('Reloading', function() {
                 var $reload;
-                spyOn(view, '_loadCommits').andCallThrough();
+                spyOn(view, '_loadCommits').and.callThrough();
 
                 /* Make sure the spy is called from the event handler. */
                 view.delegateEvents();

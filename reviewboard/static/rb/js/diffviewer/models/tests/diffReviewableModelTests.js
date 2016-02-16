@@ -27,7 +27,7 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
                 revision: 2
             });
 
-            spyOn($, 'ajax').andCallFake(function(request) {
+            spyOn($, 'ajax').and.callFake(function(request) {
                 expect(request.type).toBe('GET');
                 expect(request.url).toBe(
                     '/r/1/diff/2/fragment/3/?index=4&' + TEMPLATE_SERIAL);
@@ -53,7 +53,7 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
                 interdiffRevision: 3
             });
 
-            spyOn($, 'ajax').andCallFake(function(request) {
+            spyOn($, 'ajax').and.callFake(function(request) {
                 expect(request.type).toBe('GET');
                 expect(request.url).toBe(
                     '/r/1/diff/2-3/fragment/3/?index=4&' + TEMPLATE_SERIAL);
@@ -80,7 +80,7 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
                 revision: 2
             });
 
-            spyOn($, 'ajax').andCallFake(function(request) {
+            spyOn($, 'ajax').and.callFake(function(request) {
                 expect(request.type).toBe('GET');
                 expect(request.url).toBe('/r/1/diff/2/fragment/3/chunk/4/');
                 expect(request.data.index).toBe(5);
@@ -111,7 +111,7 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
                 interFileDiffID: 4
             });
 
-            spyOn($, 'ajax').andCallFake(function(request) {
+            spyOn($, 'ajax').and.callFake(function(request) {
                 expect(request.type).toBe('GET');
                 expect(request.url).toBe('/r/1/diff/2-3/fragment/3-4/chunk/4/');
                 expect(request.data.index).toBe(5);

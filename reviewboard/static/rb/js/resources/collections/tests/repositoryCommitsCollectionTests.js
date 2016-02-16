@@ -12,7 +12,7 @@ suite('rb/resources/collections/RepositoryCommits', function() {
 
     describe('Methods', function() {
         it('fetch', function() {
-            spyOn($, 'ajax').andCallFake(function(request) {
+            spyOn($, 'ajax').and.callFake(function(request) {
                 expect(request.url)
                     .toBe(url + '?start=' + start);
                 expect(request.type).toBe('GET');

@@ -18,7 +18,7 @@ suite('rb/models/UserSession', function() {
             });
 
             expect(console.assert).toHaveBeenCalled();
-            expect(console.assert.calls[0].args[0]).toBeTruthy();
+            expect(console.assert.calls.argsFor(0)[0]).toBeTruthy();
 
             expect(function() {
                 RB.UserSession.create({
@@ -27,7 +27,7 @@ suite('rb/models/UserSession', function() {
             }).toThrow();
 
             expect(console.assert).toHaveBeenCalled();
-            expect(console.assert.calls[1].args[0]).toBeFalsy();
+            expect(console.assert.calls.argsFor(1)[0]).toBeFalsy();
         });
     });
 
@@ -41,7 +41,7 @@ suite('rb/models/UserSession', function() {
         describe('diffsShowExtraWhitespace', function() {
             describe('Loads from cookie', function() {
                 it('When "true"', function() {
-                    spyOn($, 'cookie').andReturn('true');
+                    spyOn($, 'cookie').and.returnValue('true');
 
                     RB.UserSession.instance = null;
                     session = RB.UserSession.create({
@@ -53,7 +53,7 @@ suite('rb/models/UserSession', function() {
                 });
 
                 it('When "false"', function() {
-                    spyOn($, 'cookie').andReturn('false');
+                    spyOn($, 'cookie').and.returnValue('false');
 
                     RB.UserSession.instance = null;
                     session = RB.UserSession.create({
