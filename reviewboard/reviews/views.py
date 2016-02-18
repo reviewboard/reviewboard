@@ -1296,6 +1296,9 @@ def preview_review_request_email(
 
     This is mainly used for debugging.
     """
+    if not settings.DEBUG:
+        raise Http404
+
     review_request, response = \
         _find_review_request(request, review_request_id, local_site)
 
@@ -1305,7 +1308,8 @@ def preview_review_request_email(
     extra_context = {}
 
     if changedesc_id:
-        changedesc = get_object_or_404(ChangeDescription, pk=changedesc_id)
+        changedesc = get_object_or_404(review_request.changedescs,
+                                       pk=changedesc_id)
         extra_context['change_text'] = changedesc.text
         extra_context['changes'] = changedesc.fields_changed
 
@@ -1344,6 +1348,9 @@ def preview_review_email(request, review_request_id, review_id, format,
 
     This is mainly used for debugging.
     """
+    if not settings.DEBUG:
+        raise Http404
+
     review_request, response = \
         _find_review_request(request, review_request_id, local_site)
 
@@ -1398,6 +1405,9 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
 
     This is mainly used for debugging.
     """
+    if not settings.DEBUG:
+        raise Http404
+
     review_request, response = \
         _find_review_request(request, review_request_id, local_site)
 
@@ -1451,7 +1461,20 @@ def review_file_attachment(request, review_request_id, file_attachment_id,
     if not review_request:
         return response
 
-    file_attachment = get_object_or_404(FileAttachment, pk=file_attachment_id)
+    draft = review_request.get_draft(request.user)
+
+    # Make sure the attachment returned is part of either the review request
+    # or an accessible draft.
+    review_request_q = (Q(review_request=review_request) |
+                        Q(inactive_review_request=review_request))
+
+    if draft:
+        review_request_q |= Q(drafts=draft) | Q(inactive_drafts=draft)
+
+    file_attachment = get_object_or_404(
+        FileAttachment,
+        Q(pk=file_attachment_id) & review_request_q)
+
     review_ui = file_attachment.review_ui
 
     try:
@@ -1484,7 +1507,18 @@ def view_screenshot(request, review_request_id, screenshot_id,
     if not review_request:
         return response
 
-    screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
+    draft = review_request.get_draft(request.user)
+
+    # Make sure the screenshot returned is part of either the review request
+    # or an accessible draft.
+    review_request_q = (Q(review_request=review_request) |
+                        Q(inactive_review_request=review_request))
+
+    if draft:
+        review_request_q |= Q(drafts=draft) | Q(inactive_drafts=draft)
+
+    screenshot = get_object_or_404(Screenshot,
+                                   Q(pk=screenshot_id) & review_request_q)
     review_ui = LegacyScreenshotReviewUI(review_request, screenshot)
 
     return review_ui.render_to_response(request)
