@@ -1,0 +1,62 @@
+=================================
+Review Board 2.0.22 Release Notes
+=================================
+
+**Release date**: TBD
+
+
+New Features
+============
+
+* Added tooltips to the file summary graphs in the diff viewer file list.
+  (:bug:`3812`)
+
+  The small circular graphs which show a summary of the size and type of
+  changes to each file now have tooltips that list the exact number of added,
+  removed, or changed lines.
+
+  Patch by Evan Huntzinger.
+
+
+Bug Fixes
+=========
+
+Review Requests
+---------------
+
+* Fix incorrect "Are you sure you want to leave this page" pop-ups on Firefox.
+  (:bug:`3727`)
+
+  Editing fields in Firefox could cause an issue where the unsaved changes
+  confirmation box was shown even when there were no unsaved changes.
+
+  Patch by Mike Conley.
+
+
+Git
+---
+
+* Repositories using git URLs with inline authentication credentials can now be
+  successfully added.
+
+  Patch by Matt Comben.
+
+
+Web API
+-------
+
+* Diff validation now includes more detailed error messages.
+
+  If a diff fails to validate due to an error communicating with the
+  repository, the reported error would be that the diff could not be parsed.
+  The :ref:`webapi2.0-validate-diff-resource` now reports a much more detailed
+  error that actually explains what went wrong.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Evan Huntzinger
+* Matt Comben
+* Mike Conley
