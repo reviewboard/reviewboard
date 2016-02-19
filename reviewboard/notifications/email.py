@@ -282,7 +282,7 @@ class SpiffyEmailMessage(EmailMultiAlternatives):
             not isinstance(headers, MultiValueDict)):
             # Instantiating a MultiValueDict from a dict does not ensure that
             # the values are lists, so we have to do that ourselves.
-            self._headers = MultiValueDict(dict(
+            headers = MultiValueDict(dict(
                 (key, [value])
                 for key, value in six.iteritems(headers)
             ))
