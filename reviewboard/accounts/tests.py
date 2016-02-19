@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.test.client import RequestFactory
+from djblets.registries.errors import ItemLookupError, RegistrationError
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
@@ -22,8 +23,7 @@ from reviewboard.accounts.models import (LocalSiteProfile,
                                          Trophy)
 from reviewboard.accounts.pages import (AccountPage, get_page_classes,
                                         register_account_page_class,
-                                        unregister_account_page_class,
-                                        _clear_page_defaults)
+                                        unregister_account_page_class)
 from reviewboard.testing import TestCase
 
 
@@ -164,8 +164,8 @@ class AccountPageTests(TestCase):
 
     def tearDown(self):
         """Uninitialize this test case."""
-        # Force the next request to re-populate the list of default pages.
-        _clear_page_defaults()
+        super(AccountPageTests, self).tearDown()
+        AccountPage.registry.reset()
 
     def test_default_pages(self):
         """Testing default list of account pages."""
@@ -194,8 +194,9 @@ class AccountPageTests(TestCase):
             page_title = 'Test Page'
 
         register_account_page_class(MyPage)
-        self.assertRaises(KeyError,
-                          lambda: register_account_page_class(MyPage))
+
+        with self.assertRaises(RegistrationError):
+            register_account_page_class(MyPage)
 
     def test_unregister_account_page_class(self):
         """Testing unregister_account_page_class."""
@@ -215,8 +216,8 @@ class AccountPageTests(TestCase):
             page_id = 'test-page'
             page_title = 'Test Page'
 
-        self.assertRaises(KeyError,
-                          lambda: unregister_account_page_class(MyPage))
+        with self.assertRaises(ItemLookupError):
+            unregister_account_page_class(MyPage)
 
     def test_add_form_to_page(self):
         """Testing AccountPage.add_form."""
@@ -243,7 +244,10 @@ class AccountPageTests(TestCase):
             form_classes = [MyForm]
 
         register_account_page_class(MyPage)
-        self.assertRaises(KeyError, lambda: MyPage.add_form(MyForm))
+
+        with self.assertRaises(RegistrationError):
+            MyPage.add_form(MyForm)
+
         self.assertEqual(MyPage.form_classes, [MyForm])
 
     def test_remove_form_from_page(self):
@@ -271,7 +275,9 @@ class AccountPageTests(TestCase):
             page_title = 'Test Page'
 
         register_account_page_class(MyPage)
-        self.assertRaises(KeyError, lambda: MyPage.remove_form(MyForm))
+
+        with self.assertRaises(ItemLookupError):
+            MyPage.remove_form(MyForm)
 
     def test_default_form_classes_for_page(self):
         """Testing AccountPage._default_form_classes persistence"""
