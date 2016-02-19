@@ -1633,7 +1633,11 @@ def bug_url(request, review_request_id, bug_id, local_site=None):
     if not review_request:
         return response
 
-    return HttpResponseRedirect(review_request.repository.bug_tracker % bug_id)
+    # Need to create a custom HttpResponse because a non-HTTP url scheme will
+    # cause HttpResponseRedirect to fail with a "Disallowed Redirect".
+    response = HttpResponse(status=302)
+    response['Location'] = review_request.repository.bug_tracker % bug_id
+    return response
 
 
 def bug_infobox(request, review_request_id, bug_id,
