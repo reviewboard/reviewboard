@@ -156,7 +156,6 @@ RB_BUILTIN_APPS = [
     'djblets.gravatars',
     'djblets.log',
     'djblets.pipeline',
-    'djblets.recaptcha',
     'djblets.siteconfig',
     'djblets.util',
     'haystack',
