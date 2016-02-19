@@ -39,6 +39,7 @@ from django.conf import settings, global_settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import six
 from djblets.log import restart_logging, siteconfig as log_siteconfig
+from djblets.recaptcha import siteconfig as recaptcha_siteconfig
 from djblets.siteconfig.django_settings import (apply_django_settings,
                                                 get_django_defaults,
                                                 get_django_settings_map)
@@ -90,6 +91,7 @@ settings_map = {
 }
 settings_map.update(get_django_settings_map())
 settings_map.update(log_siteconfig.settings_map)
+settings_map.update(recaptcha_siteconfig.settings_map)
 
 # Settings for django-storages
 settings_map.update({
@@ -116,6 +118,7 @@ settings_map.update({
 # All the default values for settings.
 defaults = get_django_defaults()
 defaults.update(log_siteconfig.defaults)
+defaults.update(recaptcha_siteconfig.defaults)
 defaults.update({
     'auth_ldap_anon_bind_uid':             '',
     'auth_ldap_anon_bind_passwd':          '',
