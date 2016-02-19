@@ -660,6 +660,7 @@ def mail_review_request(review_request, user, changedesc=None,
 
     if changedesc:
         extra_context['change_text'] = changedesc.text
+        extra_context['change_rich_text'] = changedesc.rich_text
         extra_context['changes'] = changedesc.fields_changed
 
         fields_changed = changedesc.fields_changed

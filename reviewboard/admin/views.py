@@ -130,8 +130,7 @@ def security(request, template_name="admin/security.html"):
 
 @csrf_protect
 @staff_member_required
-def site_settings(request, form_class,
-                  template_name="siteconfig/settings.html"):
+def site_settings(request, form_class, template_name='admin/settings.html'):
     """Render the general site settings page."""
     return djblets_site_settings(request, form_class, template_name, {
         'root_path': settings.SITE_ROOT + "admin/db/"

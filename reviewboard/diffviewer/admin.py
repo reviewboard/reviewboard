@@ -51,7 +51,8 @@ class FileDiffAdmin(admin.ModelAdmin):
 class FileDiffInline(admin.StackedInline):
     model = FileDiff
     extra = 0
-    raw_id_fields = ('diff_hash', 'parent_diff_hash')
+    raw_id_fields = ('diff_hash', 'legacy_diff_hash', 'parent_diff_hash',
+                     'legacy_parent_diff_hash')
 
 
 class DiffCommitInline(admin.StackedInline):
