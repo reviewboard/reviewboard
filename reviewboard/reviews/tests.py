@@ -7,6 +7,7 @@ import os
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.urlresolvers import reverse
 from django.template import Context, Template
 from django.test.client import RequestFactory
 from django.utils import six
@@ -1609,6 +1610,21 @@ class ViewTests(TestCase):
         filename = response['Content-Disposition']\
                            [len('attachment; filename='):]
         self.assertFalse(',' in filename)
+
+    # Bug #4080
+    def test_bug_url_with_custom_scheme(self):
+        """Testing whether bug url with non-HTTP scheme loads correctly"""
+        # Create a repository with a bug tracker that uses a non-standard
+        # url scheme.
+        repository = self.create_repository(public=True,
+                                            bug_tracker='scheme://bugid=%s')
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        url = reverse('bug_url', args=(review_request.pk, '1'))
+        response = self.client.get(url)
+
+        # Test if we redirected to the correct url with correct bugID.
+        self.assertEqual(response['Location'], 'scheme://bugid=1')
 
 
 class DraftTests(TestCase):
