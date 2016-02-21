@@ -17,6 +17,24 @@ Extensions
 Bug Fixes
 =========
 
+* Make it easier to copy the :guilabel:`Install Key` on Firefox.
+
+  Firefox does not allow users to select and copy the contents of a "disabled"
+  text input, which made it difficult to copy the :guilabel:`Install Key`.
+  We've fixed this so you can now select and copy it to the clipboard.
+
+* Fix a syntax bug in the old :py:class:`SequenceMatcher` differ.
+
+  The :py:class:`SequenceMatcher` diff method is only used in very old review
+  requests, but for those, they were unable to be loaded due to a syntax error.
+  This has been fixed.
+
+* Fix Python 2.4/2.5 compatibility with the Pygments dependency.
+
+  Pygments 2.0 dropped support for Python 2.4 and 2.5. Review Board now
+  intelligently limits the dependency version when running on older Python
+  versions.
+
 * Fix Python 2.6 compatibility for the :command:`condensediffs` management
   command.
 
@@ -34,5 +52,6 @@ Bug Fixes
 Contributors
 ============
 
+* Barret Rennie
 * Christian Hammond
 * David Trowbridge
