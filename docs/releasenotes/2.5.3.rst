@@ -1,0 +1,138 @@
+================================
+Review Board 2.5.3 Release Notes
+================================
+
+**Release date:** TBD
+
+
+New Features
+============
+
+* Added tooltips to the file summary graphs in the diff viewer file list.
+  (:bug:`3812`)
+
+  The small circular graphs which show a summary of the size and type of
+  changes to each file now have tooltips that list the exact number of added,
+  removed, or changed lines.
+
+  Patch by Evan Huntzinger.
+
+* Allow using unix sockets for memcached.
+
+  The cache backend now supports the ``unix:/path/to/socket`` URL scheme.
+
+  Patch by André Klitzing.
+
+* Improved the look and feel on mobile devices.
+
+  The look of the header and menu on mobile devices has been improved.
+
+
+Bug Fixes
+=========
+
+Admin
+-----
+
+* Fixed the display of the :guilabel:`Send e-mail only to the mailing list`
+  field.
+
+  In 2.5, groups gained the ability to send e-mail to the individual group
+  members in addition to the mailing list (the default behavior is still to
+  send only to the configured mailing list if present). This was hidden because
+  a bug was preventing the field from being shown in the admin UI.
+
+* Fixed very long load times for the DiffSet admin pages.
+
+  A couple fields in the DiffSet admin page were creating very large
+  ``<select>`` elements involving huge database queries. These have been
+  updated to use a different widget that does not place such a burden on the
+  server.
+
+
+E-Mail
+------
+
+* Correctly render Markdown in the "Changes" field. (:bug:`3974`)
+
+  The change description text was rendered as Markdown in the Web UI, but was
+  being shown as markdown source in e-mails.
+
+  Patch by Griffin Myers.
+
+
+Git
+---
+
+* Repositories using git URLs with inline authentication credentials can now be
+  successfully added.
+
+  Patch by Matt Comben.
+
+
+Review Requests
+---------------
+
+* Fix incorrect "Are you sure you want to leave this page" pop-ups on Firefox.
+  (:bug:`3727`)
+
+  Editing fields in Firefox could cause an issue where the unsaved changes
+  confirmation box was shown even when there were no unsaved changes.
+
+  Patch by Mike Conley.
+
+* Fix the display of legacy screenshots. (:bug:`4010`)
+
+  Old Review requests which used the old "screenshot" feature were not
+  displaying properly. These have now been fixed to display the same as the
+  more modern file attachments.
+
+* Fixed the display of :guilabel:`Start Over` in the Update Diff UI.
+  (:bug:`4034`)
+
+  The :guilabel:`Start Over` link was being shown outside of the pop-up box
+  instead of inside.
+
+  Patch by Sam Churney.
+
+* Fixed redirection when bug tracker URLs used a non-standard scheme.
+  (:bug:`4080`).
+
+  If a configured bug URL had a non-standard URL scheme (such as
+  ``bugs://some/path?id=%s``), the redirect would fail.
+
+  Patch by Shaurya Sengar.
+
+
+Web API
+-------
+
+* Diff validation now includes more detailed error messages.
+
+  If a diff fails to validate due to an error communicating with the
+  repository, the reported error would be that the diff could not be parsed.
+  The :ref:`webapi2.0-validate-diff-resource` now reports a much more detailed
+  error that actually explains what went wrong.
+
+
+Webhooks
+--------
+
+* Fix JSON serialization for new diffs. (:bug:`4042`)
+
+  Review request updates which contained a new diff would fail to trigger any
+  configured Webhooks due to a serialization error.
+
+
+Contributors
+============
+
+* André Klitzing
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Griffin Myers
+* Peter Smith
+* Sam Churney
+* Shaurya Sengar
+* Stephen Gallagher
