@@ -2,7 +2,32 @@
 Review Board 1.7.29 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: February 22, 2016
+
+
+Upgrade Instructions
+====================
+
+To upgrade to Review Board 1.7.29, run::
+
+    easy_install ReviewBoard==1.7.29
+
+
+Security Updates
+================
+
+This release fixes two security issues we discovered this week in Review
+Board, which may impact installations that make use of private review requests
+(through invite-only review groups, private repositories, Local Site
+functionality.)
+
+If a user had access to a review request, it could access the file
+attachments, legacy screenshots, and review request update metadata of another
+review request, even those that were private. This required either a
+brute-force attempt at looking up database IDs, or pre-existing knowledge of
+those IDs.
+
+CVEs are pending.
 
 
 Extensions
