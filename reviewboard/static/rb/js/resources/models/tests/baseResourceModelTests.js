@@ -26,15 +26,15 @@ suite('rb/resources/models/BaseResource', function() {
                 };
 
                 spyOn(model, 'save')
-                    .andCallFake(function(options) {
+                    .and.callFake(function(options) {
                         if (options && _.isFunction(options.success)) {
                             options.success();
                         }
                     });
-                spyOn(model, 'fetch').andCallFake(function(options, context) {
+                spyOn(model, 'fetch').and.callFake(function(options, context) {
                     options.success.call(context);
                 });
-                spyOn(model, 'ready').andCallThrough();
+                spyOn(model, 'ready').and.callThrough();
 
                 spyOn(callbacks, 'success');
                 spyOn(callbacks, 'error');
@@ -125,7 +125,7 @@ suite('rb/resources/models/BaseResource', function() {
                 };
 
                 spyOn(Backbone.Model.prototype, 'fetch')
-                    .andCallFake(function(options) {
+                    .and.callFake(function(options) {
                         if (options && _.isFunction(options.success)) {
                             options.success();
                         }
@@ -182,7 +182,7 @@ suite('rb/resources/models/BaseResource', function() {
                     });
 
                     spyOn(parentObject, 'ready')
-                        .andCallFake(function(options, context) {
+                        .and.callFake(function(options, context) {
                             options.ready.call(context);
                         });
                 });
@@ -213,7 +213,7 @@ suite('rb/resources/models/BaseResource', function() {
                     });
 
                     spyOn(parentObject, 'ready')
-                        .andCallFake(function(options, context) {
+                        .and.callFake(function(options, context) {
                             if (options && _.isFunction(options.error)) {
                                 options.error.call(context, "Oh nosers.");
                             }
@@ -253,7 +253,7 @@ suite('rb/resources/models/BaseResource', function() {
             });
 
             it('Custom response parsing', function() {
-                spyOn(model, 'parse').andCallFake(function(rsp) {
+                spyOn(model, 'parse').and.callFake(function(rsp) {
                     return {
                         a: rsp.a + 1,
                         b: rsp.b,
@@ -261,7 +261,7 @@ suite('rb/resources/models/BaseResource', function() {
                     };
                 });
 
-                spyOn($, 'ajax').andCallFake(function(request) {
+                spyOn($, 'ajax').and.callFake(function(request) {
                     request.success({
                         a: 10,
                         b: 20,
@@ -278,9 +278,9 @@ suite('rb/resources/models/BaseResource', function() {
             });
 
             it('Default response parsing', function() {
-                spyOn(model, 'parse').andCallThrough();
+                spyOn(model, 'parse').and.callThrough();
 
-                spyOn($, 'ajax').andCallFake(function(request) {
+                spyOn($, 'ajax').and.callFake(function(request) {
                     request.success({
                         stat: 'ok',
                         foo: {
@@ -319,7 +319,7 @@ suite('rb/resources/models/BaseResource', function() {
             describe('GET', function() {
                 it('No contentType sent', function() {
                     spyOn(Backbone, 'sync')
-                        .andCallFake(function(method, model, options) {
+                        .and.callFake(function(method, model, options) {
                             expect(options.contentType).toBe(undefined);
                         });
 
@@ -330,7 +330,7 @@ suite('rb/resources/models/BaseResource', function() {
 
                 it('No model data sent', function() {
                     spyOn(Backbone, 'sync')
-                        .andCallFake(function(method, model, options) {
+                        .and.callFake(function(method, model, options) {
                             expect(_.isEmpty(options.data)).toBe(true);
                         });
 
@@ -348,7 +348,7 @@ suite('rb/resources/models/BaseResource', function() {
 
                 it('Query attributes sent', function() {
                     spyOn(Backbone, 'sync')
-                        .andCallFake(function(method, model, options) {
+                        .and.callFake(function(method, model, options) {
                             expect(_.isEmpty(options.data)).toBe(false);
                             expect(options.data.foo).toBe('bar');
                         });
@@ -381,7 +381,7 @@ suite('rb/resources/models/BaseResource', function() {
                 error: function() {}
             };
 
-            spyOn(model, 'fetch').andCallFake(function(options) {
+            spyOn(model, 'fetch').and.callFake(function(options) {
                 options.success();
             });
             spyOn(callbacks, 'ready');
@@ -433,7 +433,7 @@ suite('rb/resources/models/BaseResource', function() {
 
                 /* This is needed for any ready() calls. */
                 spyOn(Backbone.Model.prototype, 'fetch')
-                    .andCallFake(function(options) {
+                    .and.callFake(function(options) {
                         if (options && _.isFunction(options.success)) {
                             options.success();
                         }
@@ -447,22 +447,22 @@ suite('rb/resources/models/BaseResource', function() {
             describe('With isNew=true and parentObject', function() {
                 beforeEach(function() {
                     spyOn(parentObject, 'ensureCreated')
-                        .andCallFake(function(options) {
+                        .and.callFake(function(options) {
                             if (options && _.isFunction(options.success)) {
                                 options.success();
                             }
                         });
                     spyOn(parentObject, 'ready')
-                        .andCallFake(function(options, context) {
+                        .and.callFake(function(options, context) {
                             options.ready.call(context);
                         });
 
-                    spyOn(Backbone.Model.prototype, 'save').andCallThrough();
+                    spyOn(Backbone.Model.prototype, 'save').and.callThrough();
 
                     model.set('parentObject', parentObject);
 
-                    spyOn(RB, 'apiCall').andCallThrough();
-                    spyOn($, 'ajax').andCallFake(function(request) {
+                    spyOn(RB, 'apiCall').and.callThrough();
+                    spyOn($, 'ajax').and.callFake(function(request) {
                         expect(request.type).toBe('POST');
 
                         request.success({
@@ -497,9 +497,9 @@ suite('rb/resources/models/BaseResource', function() {
 
             describe('With isNew=true and no parentObject', function() {
                 beforeEach(function() {
-                    spyOn(Backbone.Model.prototype, 'save').andCallThrough();
-                    spyOn(RB, 'apiCall').andCallThrough();
-                    spyOn($, 'ajax').andCallFake(function() {});
+                    spyOn(Backbone.Model.prototype, 'save').and.callThrough();
+                    spyOn(RB, 'apiCall').and.callThrough();
+                    spyOn($, 'ajax').and.callFake(function() {});
                 });
 
                 it('With callbacks', function() {
@@ -531,7 +531,7 @@ suite('rb/resources/models/BaseResource', function() {
                     model.url = '/api/foos/1/';
 
                     spyOn(Backbone.Model.prototype, 'save')
-                        .andCallFake(function(attrs, options) {
+                        .and.callFake(function(attrs, options) {
                             if (options && _.isFunction(options.success)) {
                                 options.success();
                             }
@@ -557,13 +557,13 @@ suite('rb/resources/models/BaseResource', function() {
             describe('With isNew=false and parentObject', function() {
                 beforeEach(function() {
                     spyOn(parentObject, 'ensureCreated')
-                        .andCallFake(function(options) {
+                        .and.callFake(function(options) {
                             if (options && _.isFunction(options.success)) {
                                 options.success();
                             }
                         });
 
-                    spyOn(Backbone.Model.prototype, 'save').andCallThrough();
+                    spyOn(Backbone.Model.prototype, 'save').and.callThrough();
 
                     model.set({
                         parentObject: parentObject,
@@ -571,12 +571,12 @@ suite('rb/resources/models/BaseResource', function() {
                     });
 
                     spyOn(parentObject, 'ready')
-                        .andCallFake(function(options, context) {
+                        .and.callFake(function(options, context) {
                             options.ready.call(context);
                         });
 
-                    spyOn(RB, 'apiCall').andCallThrough();
-                    spyOn($, 'ajax').andCallFake(function(request) {
+                    spyOn(RB, 'apiCall').and.callThrough();
+                    spyOn($, 'ajax').and.callFake(function(request) {
                         expect(request.type).toBe('PUT');
 
                         request.success({
@@ -618,14 +618,14 @@ suite('rb/resources/models/BaseResource', function() {
                     });
 
                     spyOn(parentObject, 'ready')
-                        .andCallFake(function(options, context) {
+                        .and.callFake(function(options, context) {
                             if (options && _.isFunction(options.error)) {
                                 options.error.call(context, "Oh nosers.");
                             }
                         });
 
                     spyOn(Backbone.Model.prototype, 'save')
-                        .andCallFake(function(attrs, options) {
+                        .and.callFake(function(attrs, options) {
                             if (options && _.isFunction(options.success)) {
                                 options.success();
                             }
@@ -661,7 +661,7 @@ suite('rb/resources/models/BaseResource', function() {
 
                 expect(model.isNew()).toBe(false);
 
-                spyOn(model, 'toJSON').andCallFake(function() {
+                spyOn(model, 'toJSON').and.callFake(function() {
                     return {
                         a: 10,
                         b: 20,
@@ -669,13 +669,13 @@ suite('rb/resources/models/BaseResource', function() {
                     };
                 });
 
-                spyOn(model, 'ready').andCallFake(function(options,
+                spyOn(model, 'ready').and.callFake(function(options,
                                                            context) {
                     options.ready.call(context);
                 });
 
-                spyOn(RB, 'apiCall').andCallThrough();
-                spyOn($, 'ajax').andCallFake(function(request) {
+                spyOn(RB, 'apiCall').and.callThrough();
+                spyOn($, 'ajax').and.callFake(function(request) {
                     expect(request.url).toBe(model.url);
                     expect(request.contentType)
                         .toBe('application/x-www-form-urlencoded');
@@ -716,174 +716,147 @@ suite('rb/resources/models/BaseResource', function() {
                     };
                 };
 
-                spyOn(Backbone.Model.prototype, 'save').andCallThrough();
-                spyOn(RB, 'apiCall').andCallThrough();
+                spyOn(Backbone.Model.prototype, 'save').and.callThrough();
+                spyOn(RB, 'apiCall').and.callThrough();
             });
 
-            it('With file', function() {
-                var seenComplete = false,
-                    boundary = '-----multipartformboundary';
-
-                runs(function() {
-                    var blob = new Blob(['Hello world!'], {
+            it('With file', function(done) {
+                var boundary = '-----multipartformboundary',
+                    blob = new Blob(['Hello world!'], {
                         type: 'text/plain'
                     });
-                    blob.name = 'myfile';
 
-                    spyOn($, 'ajax').andCallFake(function(request) {
-                        expect(request.type).toBe('POST');
-                        expect(request.processData).toBe(false);
-                        expect(request.contentType.indexOf(
-                            'multipart/form-data; boundary=')).toBe(0);
-                        expect(request.data).toBe(
-                            '--' + boundary + '\r\n' +
-                            'Content-Disposition: form-data; name="file"' +
-                            '; filename="myfile"\r\n' +
-                            'Content-Type: text/plain\r\n\r\n' +
-                            'Hello world!' +
-                            '\r\n' +
-                            '--' + boundary + '\r\n' +
-                            'Content-Disposition: form-data; ' +
-                            'name="myfield"\r\n\r\n' +
-                            'myvalue\r\n' +
-                            '--' + boundary + '--\r\n\r\n');
+                blob.name = 'myfile';
 
-                        request.success({
-                            stat: 'ok',
-                            foo: {
-                                id: 42
-                            }
-                        });
-                    });
+                spyOn($, 'ajax').and.callFake(function(request) {
+                    expect(request.type).toBe('POST');
+                    expect(request.processData).toBe(false);
+                    expect(request.contentType.indexOf(
+                        'multipart/form-data; boundary=')).toBe(0);
+                    expect(request.data).toBe(
+                        '--' + boundary + '\r\n' +
+                        'Content-Disposition: form-data; name="file"' +
+                        '; filename="myfile"\r\n' +
+                        'Content-Type: text/plain\r\n\r\n' +
+                        'Hello world!' +
+                        '\r\n' +
+                        '--' + boundary + '\r\n' +
+                        'Content-Disposition: form-data; ' +
+                        'name="myfield"\r\n\r\n' +
+                        'myvalue\r\n' +
+                        '--' + boundary + '--\r\n\r\n');
 
-                    model.set('file', blob);
-                    model.save({
-                        success: function() {
-                            seenComplete = true;
-                        },
-                        boundary: boundary
-                    });
-                });
-
-                waitsFor(function() {
-                    return seenComplete;
-                });
-
-                runs(function() {
-                    expect(Backbone.Model.prototype.save).toHaveBeenCalled();
-                    expect(RB.apiCall).toHaveBeenCalled();
-                    expect($.ajax).toHaveBeenCalled();
-                });
-            });
-
-            it('With multiple files', function() {
-                var seenComplete = false,
-                    boundary = '-----multipartformboundary';
-
-                runs(function() {
-                    var blob1 = new Blob(['Hello world!'], {
-                            type: 'text/plain'
-                        }),
-                        blob2 = new Blob(['Goodbye world!'], {
-                            type: 'text/plain'
-                        });
-
-                    blob1.name = 'myfile1';
-                    blob2.name = 'myfile2';
-
-                    model.payloadFileKeys = ['file1', 'file2'];
-                    model.toJSON = function() {
-                        return {
-                            file1: this.get('file1'),
-                            file2: this.get('file2'),
-                            myfield: 'myvalue'
-                        };
-                    };
-
-                    spyOn($, 'ajax').andCallFake(function(request) {
-                        expect(request.type).toBe('POST');
-                        expect(request.processData).toBe(false);
-                        expect(request.contentType.indexOf(
-                            'multipart/form-data; boundary=')).toBe(0);
-                        expect(request.data).toBe(
-                            '--' + boundary + '\r\n' +
-                            'Content-Disposition: form-data; name="file1"' +
-                            '; filename="myfile1"\r\n' +
-                            'Content-Type: text/plain\r\n\r\n' +
-                            'Hello world!' +
-                            '\r\n' +
-                            '--' + boundary + '\r\n' +
-                            'Content-Disposition: form-data; name="file2"' +
-                            '; filename="myfile2"\r\n' +
-                            'Content-Type: text/plain\r\n\r\n' +
-                            'Goodbye world!' +
-                            '\r\n' +
-                            '--' + boundary + '\r\n' +
-                            'Content-Disposition: form-data; ' +
-                            'name="myfield"\r\n\r\n' +
-                            'myvalue\r\n' +
-                            '--' + boundary + '--\r\n\r\n');
-
-                        request.success({
-                            stat: 'ok',
-                            foo: {
-                                id: 42
-                            }
-                        });
-                    });
-
-                    model.set('file1', blob1);
-                    model.set('file2', blob2);
-                    model.save({
-                        success: function() {
-                            seenComplete = true;
-                        },
-                        boundary: boundary
-                    });
-                });
-
-                waitsFor(function() {
-                    return seenComplete;
-                });
-
-                runs(function() {
-                    expect(Backbone.Model.prototype.save).toHaveBeenCalled();
-                    expect(RB.apiCall).toHaveBeenCalled();
-                    expect($.ajax).toHaveBeenCalled();
-                });
-            });
-
-            it('Without file', function() {
-                runs(function() {
-                    spyOn($, 'ajax').andCallFake(function(request) {
-                        expect(request.type).toBe('POST');
-                        expect(request.processData).toBe(true);
-                        expect(request.contentType).toBe(
-                            'application/x-www-form-urlencoded');
-
-                        request.success({
-                            stat: 'ok',
-                            foo: {
-                                id: 42
-                            }
-                        });
-                    });
-
-                    model.save({
-                        success: function() {
-                            seenComplete = true;
+                    request.success({
+                        stat: 'ok',
+                        foo: {
+                            id: 42
                         }
                     });
                 });
 
-                waitsFor(function() {
-                    return seenComplete;
+                model.set('file', blob);
+                model.save({
+                    success: function() {
+                        expect(Backbone.Model.prototype.save).toHaveBeenCalled();
+                        expect(RB.apiCall).toHaveBeenCalled();
+                        expect($.ajax).toHaveBeenCalled();
+
+                        done();
+                    },
+                    boundary: boundary
+                });
+            });
+
+            it('With multiple files', function(done) {
+                var blob1 = new Blob(['Hello world!'], {
+                        type: 'text/plain'
+                    }),
+                    blob2 = new Blob(['Goodbye world!'], {
+                        type: 'text/plain'
+                    }),
+                    boundary = '-----multipartformboundary';
+
+                blob1.name = 'myfile1';
+                blob2.name = 'myfile2';
+
+                model.payloadFileKeys = ['file1', 'file2'];
+                model.toJSON = function() {
+                    return {
+                        file1: this.get('file1'),
+                        file2: this.get('file2'),
+                        myfield: 'myvalue'
+                    };
+                };
+
+                spyOn($, 'ajax').and.callFake(function(request) {
+                    expect(request.type).toBe('POST');
+                    expect(request.processData).toBe(false);
+                    expect(request.contentType.indexOf(
+                        'multipart/form-data; boundary=')).toBe(0);
+                    expect(request.data).toBe(
+                        '--' + boundary + '\r\n' +
+                        'Content-Disposition: form-data; name="file1"' +
+                        '; filename="myfile1"\r\n' +
+                        'Content-Type: text/plain\r\n\r\n' +
+                        'Hello world!' +
+                        '\r\n' +
+                        '--' + boundary + '\r\n' +
+                        'Content-Disposition: form-data; name="file2"' +
+                        '; filename="myfile2"\r\n' +
+                        'Content-Type: text/plain\r\n\r\n' +
+                        'Goodbye world!' +
+                        '\r\n' +
+                        '--' + boundary + '\r\n' +
+                        'Content-Disposition: form-data; ' +
+                        'name="myfield"\r\n\r\n' +
+                        'myvalue\r\n' +
+                        '--' + boundary + '--\r\n\r\n');
+
+                    request.success({
+                        stat: 'ok',
+                        foo: {
+                            id: 42
+                        }
+                    });
                 });
 
-                runs(function() {
-                    expect(Backbone.Model.prototype.save).toHaveBeenCalled();
-                    expect(RB.apiCall).toHaveBeenCalled();
-                    expect($.ajax).toHaveBeenCalled();
+                model.set('file1', blob1);
+                model.set('file2', blob2);
+                model.save({
+                    success: function() {
+                        expect(Backbone.Model.prototype.save).toHaveBeenCalled();
+                        expect(RB.apiCall).toHaveBeenCalled();
+                        expect($.ajax).toHaveBeenCalled();
+
+                        done();
+                    },
+                    boundary: boundary
+                });
+            });
+
+            it('Without file', function(done) {
+                spyOn($, 'ajax').and.callFake(function(request) {
+                    expect(request.type).toBe('POST');
+                    expect(request.processData).toBe(true);
+                    expect(request.contentType).toBe(
+                        'application/x-www-form-urlencoded');
+
+                    request.success({
+                        stat: 'ok',
+                        foo: {
+                            id: 42
+                        }
+                    });
+                });
+
+                model.save({
+                    success: function() {
+                        expect(Backbone.Model.prototype.save).toHaveBeenCalled();
+                        expect(RB.apiCall).toHaveBeenCalled();
+                        expect($.ajax).toHaveBeenCalled();
+
+                        done();
+                    }
                 });
             });
         });
@@ -903,8 +876,8 @@ suite('rb/resources/models/BaseResource', function() {
                     };
                 };
 
-                spyOn(Backbone, 'sync').andCallThrough();
-                spyOn(RB, 'apiCall').andCallThrough();
+                spyOn(Backbone, 'sync').and.callThrough();
+                spyOn(RB, 'apiCall').and.callThrough();
                 spyOn($, 'ajax');
                 spyOn(form, 'ajaxSubmit');
 
@@ -915,8 +888,8 @@ suite('rb/resources/models/BaseResource', function() {
                 expect(RB.apiCall).toHaveBeenCalled();
                 expect(form.ajaxSubmit).toHaveBeenCalled();
                 expect($.ajax).not.toHaveBeenCalled();
-                expect(Backbone.sync.calls[0].args[2].data).toBe(null);
-                expect(RB.apiCall.calls[0].args[0].data).toBe(null);
+                expect(Backbone.sync.calls.argsFor(0)[2].data).toBe(null);
+                expect(RB.apiCall.calls.argsFor(0)[0].data).toBe(null);
             });
 
             it('Overriding file attributes', function() {
@@ -930,9 +903,9 @@ suite('rb/resources/models/BaseResource', function() {
                     };
                 };
 
-                spyOn(model, '_saveWithFiles').andCallThrough();
-                spyOn(Backbone, 'sync').andCallThrough();
-                spyOn(RB, 'apiCall').andCallThrough();
+                spyOn(model, '_saveWithFiles').and.callThrough();
+                spyOn(Backbone, 'sync').and.callThrough();
+                spyOn(RB, 'apiCall').and.callThrough();
                 spyOn($, 'ajax');
                 spyOn(form, 'ajaxSubmit');
 
@@ -944,8 +917,8 @@ suite('rb/resources/models/BaseResource', function() {
                 expect(RB.apiCall).toHaveBeenCalled();
                 expect(form.ajaxSubmit).toHaveBeenCalled();
                 expect($.ajax).not.toHaveBeenCalled();
-                expect(Backbone.sync.calls[0].args[2].data).toBe(null);
-                expect(RB.apiCall.calls[0].args[0].data).toBe(null);
+                expect(Backbone.sync.calls.argsFor(0)[2].data).toBe(null);
+                expect(RB.apiCall.calls.argsFor(0)[0].data).toBe(null);
             });
         });
     });

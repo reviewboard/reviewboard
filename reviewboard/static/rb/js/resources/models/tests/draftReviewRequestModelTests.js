@@ -22,16 +22,16 @@ suite('rb/resources/models/DraftReviewRequest', function() {
         spyOn(callbacks, 'success');
         spyOn(callbacks, 'error');
 
-        spyOn(reviewRequest, 'ready').andCallFake(function(options, context) {
+        spyOn(reviewRequest, 'ready').and.callFake(function(options, context) {
             options.ready.call(context);
         });
 
         spyOn(reviewRequest, 'ensureCreated')
-            .andCallFake(function(options, context) {
+            .and.callFake(function(options, context) {
                 options.success.call(context);
             });
 
-        spyOn(draft, 'ready').andCallFake(function(options, context) {
+        spyOn(draft, 'ready').and.callFake(function(options, context) {
             options.ready.call(context);
         });
     });
@@ -41,8 +41,8 @@ suite('rb/resources/models/DraftReviewRequest', function() {
     });
 
     it('publish', function() {
-        spyOn(RB, 'apiCall').andCallThrough();
-        spyOn($, 'ajax').andCallFake(function(request) {
+        spyOn(RB, 'apiCall').and.callThrough();
+        spyOn($, 'ajax').and.callFake(function(request) {
             expect(request.data['public']).toBe(1);
 
             request.success({

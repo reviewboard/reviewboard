@@ -32,8 +32,9 @@ PIPELINE_JS = dict({
     },
     'js-tests': {
         'source_filenames': (
-            'lib/js/jasmine-1.3.1.js',
-            'lib/js/jasmine-html-1.3.1.js',
+            'lib/js/jasmine-2.4.1.js',
+            'lib/js/jasmine-html-2.4.1.js',
+            'lib/js/jasmine-boot-2.4.1.js',
             'lib/js/jasmine.suites-1.0.js',
             'rb/js/collections/tests/filteredCollectionTests.js',
             'rb/js/configForms/models/tests/resourceListItemModelTests.js',
@@ -326,7 +327,7 @@ PIPELINE_CSS = dict({
     },
     'js-tests': {
         'source_filenames': (
-            'rb/css/pages/js-tests.less',
+            'lib/css/jasmine-2.4.1.css',
         ),
         'output_filename': 'rb/css/js-tests.min.css',
         'absolute_paths': False,

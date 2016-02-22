@@ -106,8 +106,8 @@ suite('rb/views/ReviewBoxListView', function() {
         describe('openCommentEditor', function() {
             beforeEach(function() {
                 spyOn(RB.ReviewReplyEditorView.prototype, 'openCommentEditor');
-                spyOn(box1, 'getReviewReplyEditorView').andCallThrough();
-                spyOn(box2, 'getReviewReplyEditorView').andCallThrough();
+                spyOn(box1, 'getReviewReplyEditorView').and.callThrough();
+                spyOn(box2, 'getReviewReplyEditorView').and.callThrough();
             });
 
             it('With body_top', function() {

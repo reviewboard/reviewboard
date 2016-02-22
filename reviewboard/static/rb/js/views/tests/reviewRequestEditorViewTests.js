@@ -101,7 +101,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
         spyOn(view, '_refreshPage');
 
         spyOn(reviewRequest.draft, 'ready')
-            .andCallFake(function(options, context) {
+            .and.callFake(function(options, context) {
                 options.ready.call(context);
             });
     });
@@ -116,7 +116,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 var $buttons = $();
 
                 spyOn(reviewRequest, 'destroy');
-                spyOn($.fn, 'modalBox').andCallFake(function(options) {
+                spyOn($.fn, 'modalBox').and.callFake(function(options) {
                     _.each(options.buttons, function($btn) {
                         $buttons = $buttons.add($btn);
                     });
@@ -139,11 +139,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
 
             it('Discarded', function() {
-                spyOn(reviewRequest, 'close').andCallFake(function(options) {
+                spyOn(reviewRequest, 'close').and.callFake(function(options) {
                     expect(options.type).toBe(RB.ReviewRequest.CLOSE_DISCARDED);
                 });
 
-                spyOn(window, 'confirm').andReturn(true);
+                spyOn(window, 'confirm').and.returnValue(true);
 
                 $('#discard-review-request-link').click();
 
@@ -151,7 +151,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
 
             it('Submitted', function() {
-                spyOn(reviewRequest, 'close').andCallFake(function(options) {
+                spyOn(reviewRequest, 'close').and.callFake(function(options) {
                     expect(options.type).toBe(RB.ReviewRequest.CLOSE_SUBMITTED);
                 });
 
@@ -181,11 +181,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     expect(view.banner).toBe(null);
 
                     spyOn(reviewRequest.draft, 'ensureCreated')
-                        .andCallFake(function(options, context) {
+                        .and.callFake(function(options, context) {
                             options.success.call(context);
                         });
                     spyOn(reviewRequest.draft, 'save')
-                        .andCallFake(function(options, context) {
+                        .and.callFake(function(options, context) {
                             options.success.call(context);
                         });
 
@@ -217,7 +217,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     view.showBanner();
 
                     spyOn(reviewRequest, 'close')
-                        .andCallFake(function(options) {
+                        .and.callFake(function(options) {
                             expect(options.type).toBe(
                                 RB.ReviewRequest.CLOSE_DISCARDED);
                         });
@@ -231,9 +231,9 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     beforeEach(function() {
                         view.model.set('hasDraft', true);
 
-                        spyOn(editor, 'publishDraft').andCallThrough();
+                        spyOn(editor, 'publishDraft').and.callThrough();
                         spyOn(reviewRequest.draft, 'ensureCreated')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.success.call(context);
                             });
                         spyOn(reviewRequest.draft, 'publish');
@@ -270,8 +270,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
                         expect(editor.get('pendingSaveCount')).toBe(0);
                         expect(editor.publishDraft).toHaveBeenCalled();
                         expect(reviewRequest.draft.publish).toHaveBeenCalled();
-                        expect(reviewRequest.draft.publish.calls[0].args[0].trivial)
-                            .toBe(0);
+                        expect(reviewRequest.draft.publish.calls
+                               .argsFor(0)[0].trivial).toBe(0);
                     });
 
                     it('With Send E-Mail turned off', function() {
@@ -285,8 +285,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
                         expect(editor.get('pendingSaveCount')).toBe(0);
                         expect(editor.publishDraft).toHaveBeenCalled();
                         expect(reviewRequest.draft.publish).toHaveBeenCalled();
-                        expect(reviewRequest.draft.publish.calls[0].args[0].trivial)
-                            .toBe(1);
+                        expect(reviewRequest.draft.publish.calls
+                               .argsFor(0)[0].trivial).toBe(1);
                     });
                 });
             });
@@ -402,7 +402,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 };
             }
 
-            spyOn(reviewRequest.draft, 'save').andCallFake(saveSpyFunc);
+            spyOn(reviewRequest.draft, 'save').and.callFake(saveSpyFunc);
 
             view.render();
         });
@@ -430,9 +430,12 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
         }
 
-        function runSavingTest(richText, textType) {
-            runs(function() {
-                var textEditor;
+        function runSavingTest(richText, textType, supportsRichTextEV) {
+            beforeEach(function(done) {
+                var textEditor,
+                    t;
+
+                expect(supportsRichText).toBe(supportsRichTextEV);
 
                 $field.inlineEditor('startEdit');
 
@@ -448,13 +451,16 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 $input.triggerHandler('keyup');
                 expect($field.inlineEditor('value')).toBe('My Value');
+
+                t = setInterval(function() {
+                    if ($field.inlineEditor('dirty')) {
+                        clearInterval(t);
+                        done();
+                    }
+                }, 100);
             });
 
-            waitsFor(function() {
-                return $field.inlineEditor('dirty');
-            });
-
-            runs(function() {
+            it('', function() {
                 var expectedData = {},
                     fieldPrefix = (useExtraData ? 'extra_data.' : '');
 
@@ -472,28 +478,25 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 $field.inlineEditor('submit');
 
                 expect(reviewRequest.draft.save).toHaveBeenCalled();
-                expect(reviewRequest.draft.save.calls[0].args[0].data)
+                expect(reviewRequest.draft.save.calls.argsFor(0)[0].data)
                     .toEqual(expectedData);
             });
         }
 
         function savingTest() {
-            it('Saves', function() {
-                expect(supportsRichText).toBe(false);
-                runSavingTest();
+            describe('Saves', function() {
+                runSavingTest(undefined, undefined, false);
             });
         }
 
         function richTextSavingTest() {
             describe('Saves', function() {
-                it('For Markdown', function() {
-                    expect(supportsRichText).toBe(true);
-                    runSavingTest(true, 'markdown');
+                describe('For Markdown', function() {
+                    runSavingTest(true, 'markdown', true);
                 });
 
-                it('For plain text', function() {
-                    expect(supportsRichText).toBe(true);
-                    runSavingTest(false, 'plain');
+                describe('For plain text', function() {
+                    runSavingTest(false, 'plain', true);
                 });
             });
         }
@@ -591,7 +594,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     reviewRequest.set('state', options.closeType);
                     view.showBanner();
 
-                    spyOn(reviewRequest, 'close').andCallThrough();
+                    spyOn(reviewRequest, 'close').and.callThrough();
                     spyOn(reviewRequest, 'save');
                 });
 
@@ -632,7 +635,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                         expect(reviewRequest.close).toHaveBeenCalled();
                         expect(reviewRequest.save).toHaveBeenCalled();
-                        expect(reviewRequest.save.calls[0].args[0].data)
+                        expect(reviewRequest.save.calls.argsFor(0)[0].data)
                             .toEqual(expectedData);
                     }
 
@@ -851,7 +854,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
     describe('File attachments', function() {
         it('Rendering when added', function() {
             spyOn(RB.FileAttachmentThumbnail.prototype, 'render')
-                .andCallThrough();
+                .and.callThrough();
 
             expect($filesContainer.find('.file-container').length).toBe(0);
 
@@ -904,7 +907,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                     it('On submit', function() {
                         spyOn(fileAttachment, 'ready')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.ready.call(context);
                             });
                         spyOn(fileAttachment, 'save');
@@ -939,7 +942,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     }));
 
                 spyOn(RB.ScreenshotThumbnail.prototype, 'render')
-                    .andCallThrough();
+                    .and.callThrough();
 
                 view.render();
 
@@ -994,7 +997,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                     it('On submit', function() {
                         spyOn(screenshot, 'ready')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.ready.call(context);
                             });
                         spyOn(screenshot, 'save');

@@ -27,14 +27,14 @@ suite('rb/resources/models/ReviewReply', function() {
             };
 
             spyOn(Backbone.Model.prototype, 'destroy')
-                .andCallFake(function(options) {
+                .and.callFake(function(options) {
                     if (options && _.isFunction(options.success)) {
                         options.success();
                     }
                 });
-            spyOn(model, '_retrieveDraft').andCallThrough();
+            spyOn(model, '_retrieveDraft').and.callThrough();
             spyOn(parentObject, 'ready')
-                .andCallFake(function(options, context) {
+                .and.callFake(function(options, context) {
                     if (options && _.isFunction(options.ready)) {
                         options.ready.call(context);
                     }
@@ -49,7 +49,7 @@ suite('rb/resources/models/ReviewReply', function() {
                 expect(model.get('loaded')).toBe(false);
 
                 spyOn(Backbone.Model.prototype, 'fetch')
-                    .andCallFake(function(options) {
+                    .and.callFake(function(options) {
                         if (options && _.isFunction(options.success)) {
                             options.error(model, {
                                 status: 404
@@ -102,19 +102,19 @@ suite('rb/resources/models/ReviewReply', function() {
             };
 
             spyOn(model, 'destroy')
-                .andCallFake(function(options) {
+                .and.callFake(function(options) {
                     if (options && _.isFunction(options.success)) {
                         options.success();
                     }
                 });
             spyOn(parentObject, 'ready')
-                .andCallFake(function(options, context) {
+                .and.callFake(function(options, context) {
                     if (options && _.isFunction(options.ready)) {
                         options.ready.call(context);
                     }
                 });
             spyOn(model, 'ready')
-                .andCallFake(function(options, context) {
+                .and.callFake(function(options, context) {
                     if (options && _.isFunction(options.ready)) {
                         options.ready.call(context);
                     }
@@ -158,7 +158,7 @@ suite('rb/resources/models/ReviewReply', function() {
                     }
                 });
 
-                spyOn(RB, 'apiCall').andCallFake(function(options) {
+                spyOn(RB, 'apiCall').and.callFake(function(options) {
                     var links = model.get('links'),
                         data = {},
                         key = _.find(
@@ -177,7 +177,7 @@ suite('rb/resources/models/ReviewReply', function() {
                     }
                 });
                 spyOn(Backbone.Model.prototype, 'fetch')
-                    .andCallFake(function(options) {
+                    .and.callFake(function(options) {
                         if (options && _.isFunction(options.success)) {
                             options.success();
                         }
@@ -267,7 +267,7 @@ suite('rb/resources/models/ReviewReply', function() {
             };
 
             spyOn(parentObject, 'ready')
-                .andCallFake(function(options, context) {
+                .and.callFake(function(options, context) {
                     if (options && _.isFunction(options.ready)) {
                         options.ready.call(context);
                     }
@@ -282,13 +282,13 @@ suite('rb/resources/models/ReviewReply', function() {
                 expect(model.get('loaded')).toBe(false);
 
                 spyOn(Backbone.Model.prototype, 'fetch')
-                    .andCallFake(function(options) {
+                    .and.callFake(function(options) {
                         if (options && _.isFunction(options.success)) {
                             options.success();
                         }
                     });
                 spyOn(model, '_retrieveDraft')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         if (options && _.isFunction(options.ready)) {
                             options.ready.call(context);
                         }
@@ -311,13 +311,13 @@ suite('rb/resources/models/ReviewReply', function() {
                 });
 
                 spyOn(Backbone.Model.prototype, 'fetch')
-                    .andCallFake(function(options) {
+                    .and.callFake(function(options) {
                         if (options && _.isFunction(options.success)) {
                             options.success();
                         }
                     });
                 spyOn(model, '_retrieveDraft')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         if (options && _.isFunction(options.ready)) {
                             options.ready.call(context);
                         }
@@ -334,9 +334,9 @@ suite('rb/resources/models/ReviewReply', function() {
         });
 
         it('After destruction', function() {
-            spyOn(model, '_retrieveDraft').andCallThrough();
+            spyOn(model, '_retrieveDraft').and.callThrough();
 
-            spyOn(Backbone.Model.prototype, 'fetch').andCallFake(
+            spyOn(Backbone.Model.prototype, 'fetch').and.callFake(
                 function(options) {
                     model.set({
                         id: 123,
@@ -351,7 +351,7 @@ suite('rb/resources/models/ReviewReply', function() {
                     options.success();
                 });
 
-            spyOn(Backbone.Model.prototype, 'destroy').andCallFake(
+            spyOn(Backbone.Model.prototype, 'destroy').and.callFake(
                 function(options) {
                     options.success();
                 });
@@ -378,9 +378,9 @@ suite('rb/resources/models/ReviewReply', function() {
             expect(model.get('loaded')).toBe(false);
             expect(model._needDraft).toBe(true);
 
-            parentObject.ready.reset();
-            model._retrieveDraft.reset();
-            callbacks.ready.reset();
+            parentObject.ready.calls.reset();
+            model._retrieveDraft.calls.reset();
+            callbacks.ready.calls.reset();
 
             /* Now that it's destroyed, try to fetch it again. */
             model.ready(callbacks);

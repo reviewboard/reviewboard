@@ -21,15 +21,15 @@ suite('rb/resources/models/ReviewGroup', function() {
                 error: function() {}
             };
 
-            spyOn(session.watchedGroups, 'addImmediately').andCallThrough();
-            spyOn(session.watchedGroups, 'removeImmediately').andCallThrough();
-            spyOn(RB, 'apiCall').andCallThrough();
+            spyOn(session.watchedGroups, 'addImmediately').and.callThrough();
+            spyOn(session.watchedGroups, 'removeImmediately').and.callThrough();
+            spyOn(RB, 'apiCall').and.callThrough();
             spyOn(callbacks, 'success');
             spyOn(callbacks, 'error');
         });
 
         it('true', function() {
-            spyOn($, 'ajax').andCallFake(function(request) {
+            spyOn($, 'ajax').and.callFake(function(request) {
                 expect(request.type).toBe('POST');
                 expect(request.url).toBe(url);
 
@@ -48,7 +48,7 @@ suite('rb/resources/models/ReviewGroup', function() {
         });
 
         it('false', function() {
-            spyOn($, 'ajax').andCallFake(function(request) {
+            spyOn($, 'ajax').and.callFake(function(request) {
                 expect(request.type).toBe('DELETE');
                 expect(request.url).toBe(url + '1/');
 
@@ -82,13 +82,13 @@ suite('rb/resources/models/ReviewGroup', function() {
                 error: function() {}
             };
 
-            spyOn(RB, 'apiCall').andCallThrough();
+            spyOn(RB, 'apiCall').and.callThrough();
             spyOn(callbacks, 'success');
             spyOn(callbacks, 'error');
         });
 
         it('Loaded group', function() {
-            spyOn($, 'ajax').andCallFake(function(request) {
+            spyOn($, 'ajax').and.callFake(function(request) {
                 expect(request.type).toBe('POST');
                 expect(request.data.username).toBe('my-user');
 
@@ -133,13 +133,13 @@ suite('rb/resources/models/ReviewGroup', function() {
                 error: function() {}
             };
 
-            spyOn(RB, 'apiCall').andCallThrough();
+            spyOn(RB, 'apiCall').and.callThrough();
             spyOn(callbacks, 'success');
             spyOn(callbacks, 'error');
         });
 
         it('Loaded group', function() {
-            spyOn($, 'ajax').andCallFake(function(request) {
+            spyOn($, 'ajax').and.callFake(function(request) {
                 expect(request.type).toBe('DELETE');
 
                 request.success();

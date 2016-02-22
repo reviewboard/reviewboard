@@ -13,7 +13,7 @@ suite('rb/resources/collections/ResourceCollection', function() {
             }
         });
 
-        spyOn(reviewRequest, 'ready').andCallFake(function(options, context) {
+        spyOn(reviewRequest, 'ready').and.callFake(function(options, context) {
             options.ready.call(context);
         });
 
@@ -26,7 +26,7 @@ suite('rb/resources/collections/ResourceCollection', function() {
     describe('Methods', function() {
         describe('fetch', function() {
             it('Populates collection', function() {
-                spyOn($, 'ajax').andCallFake(function(request) {
+                spyOn($, 'ajax').and.callFake(function(request) {
                     expect(request.url).toBe(
                         '/api/review-requests/123/reviews/');
                     expect(request.type).toBe('GET');
@@ -69,7 +69,7 @@ suite('rb/resources/collections/ResourceCollection', function() {
             });
 
             it('With start=', function() {
-                spyOn($, 'ajax').andCallFake(function(request) {
+                spyOn($, 'ajax').and.callFake(function(request) {
                     expect(request.url).toBe(
                         '/api/review-requests/123/reviews/');
                     expect(request.data).not.toBe(undefined);
@@ -101,7 +101,7 @@ suite('rb/resources/collections/ResourceCollection', function() {
                 var numFetches = 0,
                     result;
 
-                spyOn($, 'ajax').andCallFake(function(request) {
+                spyOn($, 'ajax').and.callFake(function(request) {
                     console.assert(numFetches < 2);
 
                     expect(request.type).toBe('GET');
@@ -203,7 +203,7 @@ suite('rb/resources/collections/ResourceCollection', function() {
             it('With hasNext == true', function() {
                 var result;
 
-                spyOn($, 'ajax').andCallFake(function(request) {
+                spyOn($, 'ajax').and.callFake(function(request) {
                     expect(request.url).toBe(
                         '/api/review-requests/123/reviews/?start=25');
                     expect(request.type).toBe('GET');
@@ -249,7 +249,7 @@ suite('rb/resources/collections/ResourceCollection', function() {
                     }
                 };
 
-                spyOn(collection, 'fetch').andCallThrough();
+                spyOn(collection, 'fetch').and.callThrough();
 
                 result = collection.fetchNext();
 
@@ -278,7 +278,7 @@ suite('rb/resources/collections/ResourceCollection', function() {
             it('With hasPrev == true', function() {
                 var result;
 
-                spyOn($, 'ajax').andCallFake(function(request) {
+                spyOn($, 'ajax').and.callFake(function(request) {
                     expect(request.url).toBe(
                         '/api/review-requests/123/reviews/?start=25');
                     expect(request.type).toBe('GET');
@@ -324,7 +324,7 @@ suite('rb/resources/collections/ResourceCollection', function() {
                     }
                 };
 
-                spyOn(collection, 'fetch').andCallThrough();
+                spyOn(collection, 'fetch').and.callThrough();
 
                 result = collection.fetchPrev();
 

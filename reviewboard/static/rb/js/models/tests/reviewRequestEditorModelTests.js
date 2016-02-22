@@ -40,7 +40,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 expect(function() { editor.decr('foo'); }).toThrow();
 
                 expect(console.assert).toHaveBeenCalled();
-                expect(console.assert.mostRecentCall.args[0]).toBe(false);
+                expect(console.assert.calls.mostRecent().args[0]).toBe(false);
                 expect(editor.get('foo')).toBe('abc');
             });
 
@@ -77,7 +77,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 expect(function() { editor.incr('foo'); }).toThrow();
 
                 expect(console.assert).toHaveBeenCalled();
-                expect(console.assert.mostRecentCall.args[0]).toBe(false);
+                expect(console.assert.calls.mostRecent().args[0]).toBe(false);
                 expect(editor.get('foo')).toBe('abc');
             });
         });
@@ -145,7 +145,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                 it('Successful saves', function() {
                     spyOn(draft, 'save')
-                        .andCallFake(function(options, context) {
+                        .and.callFake(function(options, context) {
                             options.success.call(context);
                         });
                     editor.setDraftField('summary', 'My Summary', callbacks);
@@ -158,7 +158,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                 it('Field set errors', function() {
                     spyOn(draft, 'save')
-                        .andCallFake(function(options, context) {
+                        .and.callFake(function(options, context) {
                             options.error.call(context, draft, {
                                 errorPayload: {
                                     fields: {
@@ -203,7 +203,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                                 .toHaveBeenCalled();
 
                             expect(
-                                reviewRequest.draft.save.calls[0].args[0].data
+                                reviewRequest.draft.save.calls.argsFor(0)[0].data
                             ).toEqual({
                                 changedescription_text_type: textType,
                                 changedescription: 'My description',
@@ -225,7 +225,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 describe('closeDescription', function() {
                     function testCloseDescription(closeType, richText) {
                         spyOn(reviewRequest, 'close')
-                            .andCallFake(function(options) {
+                            .and.callFake(function(options) {
                                 expect(options.type).toBe(closeType);
                                 expect(options.description)
                                     .toBe('My description');
@@ -279,7 +279,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 describe('targetGroups', function() {
                     it('Empty', function() {
                         spyOn(draft, 'save')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.success.call(context);
                             });
 
@@ -290,7 +290,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                     it('With values', function() {
                         spyOn(draft, 'save')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.success.call(context);
                             });
 
@@ -302,7 +302,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                     it('With invalid groups', function() {
                         spyOn(draft, 'save')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.error.call(context, draft, {
                                     errorPayload: {
                                         fields: {
@@ -327,7 +327,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 describe('targetPeople', function() {
                     it('Empty', function() {
                         spyOn(draft, 'save')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.success.call(context);
                             });
 
@@ -340,7 +340,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                     it('With values', function() {
                         spyOn(draft, 'save')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.success.call(context);
                             });
 
@@ -355,7 +355,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                     it('With invalid users', function() {
                         spyOn(draft, 'save')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.error.call(context, draft, {
                                     errorPayload: {
                                         fields: {
@@ -399,7 +399,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                         expect(reviewRequest.draft.save)
                             .toHaveBeenCalled();
                         expect(
-                            reviewRequest.draft.save.calls[0].args[0].data
+                            reviewRequest.draft.save.calls.argsFor(0)[0].data
                         ).toEqual({
                             'extra_data.myfield_text_type': textType,
                             'extra_data.myfield': 'Test text.',
@@ -428,7 +428,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                     draft = editor.get('reviewRequest').draft;
 
                 spyOn(draft, 'ensureCreated')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         options.success.call(context);
                     });
 
@@ -471,7 +471,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                     draft = editor.get('reviewRequest').draft;
 
                 spyOn(draft, 'ensureCreated')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         options.success.call(context);
                     });
 
