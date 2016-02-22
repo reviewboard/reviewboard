@@ -93,19 +93,23 @@ review_request_urls = patterns(
 
     # E-mail previews
     url(r'^preview-email/(?P<format>(text|html))/$',
-        'preview_review_request_email'),
+        'preview_review_request_email',
+        name='preview-review-request-email'),
 
     url(r'^changes/(?P<changedesc_id>[0-9]+)/preview-email/'
         r'(?P<format>(text|html))/$',
-        'preview_review_request_email'),
+        'preview_review_request_email',
+        name='preview-review-request-email'),
 
     url(r'^reviews/(?P<review_id>[0-9]+)/preview-email/'
         r'(?P<format>(text|html))/$',
-        'preview_review_email'),
+        'preview_review_email',
+        name='preview-review-email'),
 
     url(r'^reviews/(?P<review_id>[0-9]+)/replies/(?P<reply_id>[0-9]+)/'
         r'preview-email/(?P<format>(text|html))/$',
-        'preview_reply_email'),
+        'preview_reply_email',
+        name='preview-review-reply-email'),
 )
 
 urlpatterns = patterns(
