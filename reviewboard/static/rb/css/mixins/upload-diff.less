@@ -34,7 +34,7 @@
   }
 
   .input {
-    .border-radius(@box-border-radius);
+    border-radius: @box-border-radius;
     background-color: lighten(@light-grey, 10%);
     position: relative;
     text-align: center;
@@ -50,6 +50,6 @@
 
   .drag-hover {
     border: 1px solid darken(@grey, 4%);
-    .box-shadow(inset @box-shadow);
+    box-shadow: inset @box-shadow;
   }
 }
