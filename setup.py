@@ -38,9 +38,15 @@ if sys.hexversion < 0x02050000:
 elif sys.hexversion < 0x02060000:
     markdown_requirement = 'markdown==2.2.1'
     pygments_requirement = 'Pygments>=1.5,<=1.6.9999'
+    python_memcached_requirement = 'python-memcached<=1.53'
 else:
-    markdown_requirement = 'markdown>=2.2.1'
+    if sys.hexversion < 0x02070000:
+        markdown_requirement = 'markdown>=2.2.1,<=2.3.999'
+    else:
+        markdown_requirement = 'markdown>=2.2.1'
+
     pygments_requirement = 'Pygments>=1.5'
+    python_memcached_requirement = 'python-memcached'
 
 
 # Make sure we're actually in the directory containing setup.py.
@@ -174,8 +180,8 @@ setup(name=PACKAGE_NAME,
       cmdclass=cmdclasses,
       install_requires=[
           django_version,
-          'django_evolution>=0.6.9,<0.7',
-          'Djblets>=0.7.31,<0.8',
+          'django_evolution>=0.6.9,<0.6.999',
+          'Djblets>=0.7.32,<0.8',
           'django-pipeline>=1.2.24,<1.3',
           'docutils',
           markdown_requirement,
@@ -183,7 +189,7 @@ setup(name=PACKAGE_NAME,
           'paramiko>=1.9.0',
           pygments_requirement,
           'python-dateutil==1.5',
-          'python-memcached',
+          python_memcached_requirement,
           'pytz',
           'recaptcha-client',
       ],
