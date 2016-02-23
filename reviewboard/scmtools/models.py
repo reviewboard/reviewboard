@@ -478,15 +478,21 @@ class Repository(models.Model):
 
     def _make_file_cache_key(self, path, revision, base_commit_id):
         """Makes a cache key for fetched files."""
-        return "file:%s:%s:%s:%s" % (self.pk, urlquote(path),
-                                     urlquote(revision),
-                                     urlquote(base_commit_id or ''))
+        return 'file:%s:%s:%s:%s:%s' % (
+            self.pk,
+            urlquote(path),
+            urlquote(revision),
+            urlquote(base_commit_id or ''),
+            urlquote(self.raw_file_url or ''))
 
     def _make_file_exists_cache_key(self, path, revision, base_commit_id):
         """Makes a cache key for file existence checks."""
-        return "file-exists:%s:%s:%s:%s" % (self.pk, urlquote(path),
-                                            urlquote(revision),
-                                            urlquote(base_commit_id or ''))
+        return 'file-exists:%s:%s:%s:%s:%s' % (
+            self.pk,
+            urlquote(path),
+            urlquote(revision),
+            urlquote(base_commit_id or ''),
+            urlquote(self.raw_file_url or ''))
 
     def _get_file_uncached(self, path, revision, base_commit_id, request):
         """Internal function for fetching an uncached file.
@@ -544,7 +550,7 @@ class Repository(models.Model):
                                   request):
         """Internal function for checking that a file exists.
 
-        This is called by get_file_eixsts if the file isn't already in the
+        This is called by get_file_exists if the file isn't already in the
         cache.
 
         This function is smart enough to check if the file exists in cache,
