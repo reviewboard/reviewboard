@@ -99,8 +99,8 @@ $.fn.infobox = function(id) {
             })
             .fadeIn();
 
-        $infobox.find('.gravatar')
-            .retinaGravatar();
+        $infobox.find('.avatar')
+            .retinaAvatar();
     }
 
     function fetchInfobox(url, $target) {
@@ -161,7 +161,7 @@ $(document).ready(function() {
     $('.bug').bug_infobox();
     $('time.timesince').timesince();
 
-    $('.gravatar').retinaGravatar();
+    $('.avatar').retinaAvatar();
 
     registerToggleStar();
 });

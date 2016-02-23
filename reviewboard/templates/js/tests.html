@@ -64,12 +64,11 @@ $(document).ready(function() {
         });
 
         /*
-         * We don't have actual gravatar sources when running tests, so avoid
+         * We don't have actual avatar sources when running tests, so avoid
          * spurious error output and HTTP requests.
          */
-        spyOn($.fn, 'retinaGravatar').and.callFake(function() {
-            return this;
-        });
+        spyOn($.fn, 'retinaAvatar')
+            .andCallFake(function() { return this; });
     });
 
     afterEach(function() {

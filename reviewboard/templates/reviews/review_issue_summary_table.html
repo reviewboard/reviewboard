@@ -1,4 +1,4 @@
-{% load djblets_utils gravatars i18n reviewtags %}
+{% load avatars djblets_utils i18n reviewtags %}
 
 {% if issues.total > 0 %}
 <div class="content" id="issue-summary">
@@ -62,8 +62,8 @@
      </td>
      <td class="reviewer">
       <a href="{% url 'user' entry.review.user %}" class="user">
-{% if siteconfig_settings.integration_gravatars %}
-       {% gravatar entry.review.user 24 %}
+{% if siteconfig_settings.avatars_enabled %}
+       {% avatar entry.review.user 24 %}
 {% endif %}
        {{entry.review.user|user_displayname}}</a>
       </a>

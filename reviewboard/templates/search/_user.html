@@ -1,10 +1,9 @@
-{% load djblets_utils gravatars i18n %}
+{% load avatars djblets_utils i18n %}
 
 <div class="search-result">
-{% if siteconfig_settings.integration_gravatars %}
+{% if siteconfig_settings.avatars_enabled %}
  <div class="search-result-icon">
-  <img src="{% gravatar_url result.email 48 %}" width="48" height="48"
-       alt="{{result.full_name|default:result.username}}" class="gravatar" />
+ {% avatar result.user 48 %}
  </div>
 {% endif %}
  <div class="search-result-body">

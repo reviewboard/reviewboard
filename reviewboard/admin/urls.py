@@ -38,35 +38,61 @@ NEWS_FEED = "https://www.reviewboard.org/news/feed/"
 settings_urlpatterns = patterns(
     'reviewboard.admin.views',
 
-    url(r'^general/$', 'site_settings',
-        {'form_class': forms.GeneralSettingsForm,
-         'template_name': 'admin/general_settings.html'},
-        name="settings-general"),
-    url(r'^authentication/$', 'site_settings',
-        {'form_class': forms.AuthenticationSettingsForm,
-         'template_name': 'admin/authentication_settings.html'},
-        name="settings-authentication"),
-    url(r'^email/$', 'site_settings',
-        {'form_class': forms.EMailSettingsForm,
-         'template_name': 'admin/settings.html'},
-        name="settings-email"),
-    url(r'^diffs/$', 'site_settings',
-        {'form_class': forms.DiffSettingsForm,
-         'template_name': 'admin/settings.html'},
-        name="settings-diffs"),
+    url(r'^general/$',
+        'site_settings',
+        {
+            'form_class': forms.GeneralSettingsForm,
+            'template_name': 'admin/general_settings.html'
+        },
+        name='settings-general'),
+    url(r'^authentication/$',
+        'site_settings',
+        {
+            'form_class': forms.AuthenticationSettingsForm,
+            'template_name': 'admin/authentication_settings.html'
+        },
+        name='settings-authentication'),
+    url(r'^avatars/$',
+        'site_settings',
+        {
+            'form_class': forms.AvatarServicesForm,
+            'template_name': 'admin/avatar_settings.html'
+        },
+        name='settings-avatars'),
+    url(r'^email/$',
+        'site_settings',
+        {
+            'form_class': forms.EMailSettingsForm,
+            'template_name': 'admin/settings.html'
+        },
+        name='settings-email'),
+    url(r'^diffs/$',
+        'site_settings',
+        {
+            'form_class': forms.DiffSettingsForm,
+            'template_name': 'admin/settings.html'
+        },
+        name='settings-diffs'),
     url(r'^logging/$', 'site_settings',
-        {'form_class': forms.LoggingSettingsForm,
-         'template_name': 'admin/settings.html'},
-        name="settings-logging"),
-    url(r'^ssh/$', 'ssh_settings', name="settings-ssh"),
-    url(r'^storage/$', 'site_settings',
-        {'form_class': forms.StorageSettingsForm,
-         'template_name': 'admin/storage_settings.html'},
-        name="settings-storage"),
+        {
+            'form_class': forms.LoggingSettingsForm,
+            'template_name': 'admin/settings.html'
+        },
+        name='settings-logging'),
+    url(r'^ssh/$', 'ssh_settings', name='settings-ssh'),
+    url(r'^storage/$',
+        'site_settings',
+        {
+            'form_class': forms.StorageSettingsForm,
+            'template_name': 'admin/storage_settings.html'
+        },
+        name='settings-storage'),
     url(r'^support/$', 'site_settings',
-        {'form_class': forms.SupportSettingsForm,
-         'template_name': 'admin/settings.html'},
-        name="settings-support"),
+        {
+            'form_class': forms.SupportSettingsForm,
+            'template_name': 'admin/settings.html'
+        },
+        name='settings-support'),
 )
 
 urlpatterns = patterns(
