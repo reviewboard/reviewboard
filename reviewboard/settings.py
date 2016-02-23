@@ -136,6 +136,7 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     'djblets.extensions.staticfiles.ExtensionFinder',
+    'pipeline.finders.PipelineFinder',
 )
 
 STATICFILES_STORAGE = 'pipeline.storage.PipelineCachedStorage'
@@ -373,26 +374,44 @@ LOGIN_REDIRECT_URL = SITE_ROOT + 'dashboard/'
 
 
 # Static media setup
-from reviewboard.staticbundles import PIPELINE_CSS, PIPELINE_JS
+from reviewboard.staticbundles import PIPELINE_STYLESHEETS, PIPELINE_JAVASCRIPT
 
-PIPELINE_CSS_COMPRESSOR = None
-PIPELINE_JS_COMPRESSOR = 'pipeline.compressors.uglifyjs.UglifyJSCompressor'
-
-# On production (site-installed) builds, we always want to use the pre-compiled
-# versions. We want this regardless of the DEBUG setting (since they may
-# turn DEBUG on in order to get better error output).
-#
-# On a build running out of a source tree, for testing purposes, we want to
-# use the raw .less and JavaScript files when DEBUG is set. When DEBUG is
-# turned off in a non-production build, though, we want to be able to play
-# with the built output, so treat it like a production install.
-
-if PRODUCTION or not DEBUG or os.getenv('FORCE_BUILD_MEDIA', ''):
-    PIPELINE_COMPILERS = ['pipeline.compilers.less.LessCompiler']
-    PIPELINE_ENABLED = True
-elif DEBUG:
+if RUNNING_TEST:
     PIPELINE_COMPILERS = []
-    PIPELINE_ENABLED = False
+else:
+    PIPELINE_COMPILERS = [
+        'djblets.pipeline.compilers.es6.ES6Compiler',
+        'djblets.pipeline.compilers.less.LessCompiler',
+    ]
+
+NODE_PATH = os.path.join(REVIEWBOARD_ROOT, '..', 'node_modules')
+os.environ['NODE_PATH'] = NODE_PATH
+
+PIPELINE = {
+    # On production (site-installed) builds, we always want to use the
+    # pre-compiled versions. We want this regardless of the DEBUG setting
+    # (since they may turn DEBUG on in order to get better error output).
+    'PIPELINE_ENABLED': (PRODUCTION or not DEBUG or
+                         os.getenv('FORCE_BUILD_MEDIA', '')),
+    'COMPILERS': PIPELINE_COMPILERS,
+    'JAVASCRIPT': PIPELINE_JAVASCRIPT,
+    'JS_COMPRESSOR': 'pipeline.compressors.uglifyjs.UglifyJSCompressor',
+    'CSS_COMPRESSOR': None,
+    'BABEL_ARGUMENTS': '--presets es2015 -s true',
+    'LESS_BINARY': os.path.join(NODE_PATH, '.bin', 'lessc'),
+    'LESS_ARGUMENTS': [
+        '--include-path=%s' % STATIC_ROOT,
+        '--no-color',
+        '--source-map',
+        '--autoprefix=> 2%, ie >= 9',
+        # This is just here for backwards-compatibility with any stylesheets
+        # that still have this. It's no longer necessary because compilation
+        # happens on the back-end instead of in the browser.
+        '--global-var=STATIC_ROOT=""',
+    ],
+    'STYLESHEETS': PIPELINE_STYLESHEETS,
+}
+
 
 # Packages to unit test
 TEST_PACKAGES = ['reviewboard']

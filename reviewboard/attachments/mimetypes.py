@@ -3,13 +3,13 @@ from __future__ import unicode_literals
 import logging
 import os
 
+from django.contrib.staticfiles.storage import staticfiles_storage
 from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.utils.html import escape
 from django.utils.encoding import smart_str, force_unicode
 from django.utils.safestring import mark_safe
 from djblets.cache.backend import cache_memoize
 from djblets.util.templatetags.djblets_images import thumbnail
-from pipeline.storage import default_storage
 from pygments import highlight
 from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
                              TextLexer)
@@ -126,7 +126,7 @@ class MimetypeHandler(object):
         """Initialize the handler."""
         self.attachment = attachment
         self.mimetype = mimetype
-        self.storage = default_storage
+        self.storage = staticfiles_storage
 
     @classmethod
     def get_best_handler(cls, mimetype):

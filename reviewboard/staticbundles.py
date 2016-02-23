@@ -1,13 +1,15 @@
 from __future__ import unicode_literals
 
-from djblets.settings import (PIPELINE_JS as DJBLETS_PIPELINE_JS,
-                              PIPELINE_CSS as DJBLETS_PIPELINE_CSS)
+from djblets.staticbundles import (
+    PIPELINE_JAVASCRIPT as DJBLETS_PIPELINE_JAVASCRIPT,
+    PIPELINE_STYLESHEETS as DJBLETS_PIPELINE_STYLESHEETS)
 
 
 # Media compression
-PIPELINE_JS = dict({
+PIPELINE_JAVASCRIPT = dict({
     '3rdparty': {
         'source_filenames': (
+            'lib/js/babel-polyfill-6.5.0.js',
             'lib/js/flot/jquery.flot.min.js',
             'lib/js/flot/jquery.flot.pie.min.js',
             'lib/js/flot/jquery.flot.selection.min.js',
@@ -102,7 +104,7 @@ PIPELINE_JS = dict({
             'rb/js/utils/compatUtils.js',
             'rb/js/utils/consoleUtils.js',
             'rb/js/utils/underscoreUtils.js',
-            'rb/js/common.js',
+            'rb/js/common.es6.js',
             'rb/js/utils/apiErrors.js',
             'rb/js/utils/apiUtils.js',
             'rb/js/utils/linkifyUtils.js',
@@ -301,10 +303,10 @@ PIPELINE_JS = dict({
         ),
         'output_filename': 'rb/js/webhooks-form.min.js',
     },
-}, **DJBLETS_PIPELINE_JS)
+}, **DJBLETS_PIPELINE_JAVASCRIPT)
 
 
-PIPELINE_CSS = dict({
+PIPELINE_STYLESHEETS = dict({
     'common': {
         'source_filenames': (
             'lib/css/codemirror.css',
@@ -365,4 +367,4 @@ PIPELINE_CSS = dict({
         'output_filename': 'rb/css/admin.min.css',
         'absolute_paths': False,
     },
-}, **DJBLETS_PIPELINE_CSS)
+}, **DJBLETS_PIPELINE_STYLESHEETS)

@@ -1,5 +1,5 @@
 {% extends "datagrid/datagrid.html" %}
-{% load compressed djblets_deco djblets_js staticfiles %}
+{% load djblets_deco djblets_js pipeline staticfiles %}
 
 {% block extrahead %}
 {# Empty this out. We use "scripts" and "scripts-post" in Review Board. #}
@@ -9,9 +9,9 @@
 
 {% block css %}
 {{block.super}}
-{%  compressed_css "djblets-datagrid" %}
+{%  stylesheet 'djblets-datagrid' %}
 {%  for css_bundle in datagrid.css_bundle_names %}
-{%   compressed_css css_bundle %}
+{%   stylesheet css_bundle %}
 {%  endfor %}
 {% endblock %}
 
@@ -44,10 +44,10 @@
 {% endblock content %}
 
 {% block scripts-post %}
-{%  compressed_js "djblets-datagrid" %}
-{%  compressed_js "datagrid-pages" %}
+{%  javascript 'djblets-datagrid' %}
+{%  javascript 'datagrid-pages' %}
 {%  for js_bundle in datagrid.js_bundle_names %}
-{%   compressed_js js_bundle %}
+{%   javascript js_bundle %}
 {%  endfor %}
 
 <script>

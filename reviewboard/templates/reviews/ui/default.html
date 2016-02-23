@@ -1,15 +1,15 @@
 {% extends base_template %}
-{% load compressed djblets_js %}
+{% load djblets_js pipeline %}
 
 {% block review_ui_css %}
 {%  for bundle_name in review_ui.css_bundle_names %}
-{%   compressed_css bundle_name %}
+{%   stylesheet bundle_name %}
 {%  endfor %}
 {% endblock %}
 
 {% block review_ui_scripts %}
 {%  for bundle_name in review_ui.js_bundle_names %}
-{%   compressed_js bundle_name %}
+{%   javascript bundle_name %}
 {%  endfor %}
 {%  for js_file in review_ui.js_files %}
 <script src="{{js_file}}"></script>

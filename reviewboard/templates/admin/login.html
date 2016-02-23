@@ -1,10 +1,10 @@
 {% extends "accounts/login.html" %}
-{% load compressed i18n %}
+{% load i18n pipeline %}
 
 {% block title %}{{title}} | {% trans "Administration" %}{% endblock %}
 
 {% block css %}
-{%  compressed_css "admin" %}
+{%  stylesheet 'admin' %}
 {% endblock %}
 
 {% block bodytag %}

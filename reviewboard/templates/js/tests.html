@@ -1,21 +1,21 @@
 {% extends "base.html" %}
-{% load compressed %}
+{% load pipeline %}
 
 {% block title %}JavaScript Unit Tests{% endblock %}
 
 {% block css %}
-{%  compressed_css "js-tests" %}
+{%  stylesheet 'js-tests' %}
 {% endblock %}
 
 {% block js_extensions %}{% endblock %}
 
 {% block scripts-post %}
-{%  compressed_js "djblets-config-forms" %}
-{%  compressed_js "config-forms" %}
-{%  compressed_js "reviews" %}
-{%  compressed_js "newReviewRequest" %}
-{%  compressed_js "js-tests" %}
-{%  compressed_js "djblets-js-tests" %}
+{%  javascript 'djblets-config-forms' %}
+{%  javascript 'config-forms' %}
+{%  javascript 'reviews' %}
+{%  javascript 'newReviewRequest' %}
+{%  javascript 'js-tests' %}
+{%  javascript 'djblets-js-tests' %}
 
 <script type="text/javascript">
 $(document).ready(function() {
