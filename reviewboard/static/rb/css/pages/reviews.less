@@ -73,7 +73,7 @@
           text-decoration: none;
         }
 
-        .gravatar-container {
+        .avatar-container {
           background: white;
           .border-radius(50%);
           display: inline-block;
@@ -804,13 +804,13 @@
       .transition(0.2s linear all);
 
       &.has-issues {
-        .gravatar-container {
+        .avatar-container {
           border-color: darken(@issue-opened-bg, 45%);
         }
       }
 
       &.ship-it {
-        .gravatar-container {
+        .avatar-container {
           border-color: #6ebf20;
         }
 
@@ -821,7 +821,7 @@
       }
 
       &.ship-it.has-issues {
-        .gravatar-container {
+        .avatar-container {
           border-color: darken(@issue-opened-bg, 45%);
         }
 
@@ -838,7 +838,7 @@
         }
       }
 
-      .gravatar-container {
+      .avatar-container {
         background: white;
         border: 2px #CCC dotted;
         .border-radius(50%);
@@ -2527,7 +2527,7 @@
 }
 
 #issue-summary-table {
-  @issue-status-gravatar-width: 24px;
+  @issue-status-avatar-width: 24px;
   @issue-status-icon-width: 16px;
   @issue-status-icon-right-margin: 2px;
 
@@ -2652,7 +2652,7 @@
     }
 
     .on-mobile-medium-screen-720({
-      @issue-status-icon-mobile-margin-horiz: (@issue-status-gravatar-width -
+      @issue-status-icon-mobile-margin-horiz: (@issue-status-avatar-width -
                                                @issue-status-icon-width) / 2;
 
       /*
@@ -2689,7 +2689,7 @@
 
       .last-updated time {
         /* Align the text. */
-        margin-left: (@issue-status-gravatar-width +
+        margin-left: (@issue-status-avatar-width +
                       @issue-status-icon-mobile-margin-horiz);
       }
 

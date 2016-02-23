@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-{% load compressed djblets_deco djblets_extensions djblets_utils gravatars %}
+{% load avatars compressed djblets_deco djblets_extensions djblets_utils %}
 {% load i18n staticfiles %}
 
 <html>
@@ -116,7 +116,16 @@
 {%  endif %}
         defaultUseRichText: {{user_profile.should_use_rich_text|yesno:"true,false"}},
         fullName: "{{request.user|user_displayname|escapejs}}",
-        gravatarURL: "{% filter escapejs %}{% gravatar_url request.user.email %}{% endfilter %}",
+{% if siteconfig_settings.avatars_enabled %}
+        avatarURLs: {
+            32: {
+               '1x': "{% filter escapejs %}{% avatar_url request.user 32 "1x" %}{% endfilter %}",
+               '2x': "{% filter escapejs %}{% avatar_url request.user 32 "2x" %}{% endfilter %}"
+            }
+        },
+{% else %}
+        avatarURLs: {},
+{% endif %}
         username: "{{request.user.username|escapejs}}",
         userPageURL: "{% url 'user' request.user %}",
         sessionURL: "{% url 'session-resource' %}",

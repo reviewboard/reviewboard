@@ -24,6 +24,32 @@ class AvatarServiceRegistry(ExceptionFreeGetterMixin,
     #: The key for migrating avatars.
     AVATARS_MIGRATED_KEY = 'avatars_migrated'
 
+    @property
+    def avatars_enabled(self):
+        """Whether or not avatars are enabled.
+
+        Returns:
+            bool: Whether or not avatars are enabled.
+        """
+        self.populate()
+
+        siteconfig = SiteConfiguration.objects.get_current()
+        return siteconfig.get(self.AVATARS_ENABLED_KEY)
+
+    @avatars_enabled.setter
+    def avatars_enabled(self, value):
+        """Set whether or not avatars are enabled.
+
+        Args:
+            value (bool):
+                Whether or not avatars are to be enabled.
+        """
+        self.populate()
+
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set(self.AVATARS_ENABLED_KEY, value)
+        siteconfig.save()
+
     def populate(self):
         """Populate the avatar service registry.
 
@@ -48,3 +74,28 @@ class AvatarServiceRegistry(ExceptionFreeGetterMixin,
             siteconfig.save()
 
         super(AvatarServiceRegistry, self).populate()
+
+    def get_or_default(self, service_id=None):
+        """Return either the requested avatar service or the default.
+
+        If the requested service is unregistered or disabled, the default
+        avatar service will be returned (which may be ``None`` if there is no
+        default).
+
+        Args:
+            service_id (unicode, optional):
+                The unique identifier of the service that is to be retrieved.
+                If this is ``None``, the default service will be used.
+
+        Returns:
+            djblets.avatars.services.base.AvatarService:
+            Either the requested avatar service, if it is both registered and
+            enabled, or the default avatar service. If there is no default
+            avatar service, this will return ``None``.
+        """
+        if (service_id is not None and
+            self.has_service(service_id) and
+            self.is_enabled(service_id)):
+            return self.get('id', service_id)
+
+        return self.default_service

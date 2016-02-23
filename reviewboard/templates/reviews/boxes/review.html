@@ -1,4 +1,4 @@
-{% load djblets_deco djblets_extensions djblets_utils gravatars i18n %}
+{% load avatars djblets_deco djblets_extensions djblets_utils i18n %}
 {% load rb_extensions reviewtags tz %}
 
 <a name="review{{entry.review.id}}"></a>
@@ -8,9 +8,9 @@
 {% endif %}
  <div class="box-statuses">
   <div class="box-status{% if entry.review.ship_it %} ship-it{% endif %}{% if entry.issue_open_count > 0 %} has-issues{% endif %}">
-   <div class="gravatar-container">
-{% if siteconfig_settings.integration_gravatars %}
-    {% gravatar entry.review.user 48 %}
+   <div class="avatar-container">
+{% if siteconfig_settings.avatars_enabled %}
+    {% avatar entry.review.user 48 %}
 {% endif %}
    </div>
    <div class="labels-container">

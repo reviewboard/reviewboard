@@ -1,4 +1,4 @@
-{% load djblets_utils i18n gravatars rb_extensions %}
+{% load avatars djblets_utils i18n rb_extensions %}
 
 <li>
  <a href="#">{% trans "Support" %} &#9662;</a>
@@ -11,8 +11,8 @@
   <li>
 {%  spaceless %}
    <a class="user-nav-item" href="{% url 'user' request.user.username %}">
-{%   if siteconfig_settings.integration_gravatars %}
-    {% gravatar user 32 %}
+{%   if siteconfig_settings.avatars_enabled %}
+    {% avatar user 32 %}
 {%   endif %}
      {{request.user.username}} &#9662;
    </a>
