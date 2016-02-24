@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load compressed djblets_extensions %}
+
+{% block title %}JavaScript Unit Tests{% endblock %}
+
+{% block css %}
+{%  compressed_css "js-tests" %}
+{% endblock %}
+
+{% block js_extensions %}{% endblock %}
+
+{% block scripts-post %}
+{%  compressed_js "djblets-config-forms" %}
+{%  compressed_js "reviews" %}
+{%  compressed_js "newReviewRequest" %}
+{%  compressed_js "js-test-libs" %}
+
+{%  block scripts-test %}{% endblock %}
+
+<script>
+$(document).ready(function() {
+    var jasmineEnv = jasmine.getEnv(),
+        htmlReporter = new jasmine.HtmlReporter();
+
+    RB.ajaxOptions.enableQueuing = false;
+    RB.ajaxOptions.enableIndicator = false;
+
+    // Disable animations so we don't have to worry about them in tests.
+    $.fx.off = true;
+
+    // Disable throttling of callbacks when possible.
+    _.throttle = function(cb) {
+        return cb;
+    };
+
+    jasmineEnv.specFilter = function(spec) {
+        return htmlReporter.specFilter(spec);
+    };
+
+    window.$testsScratch = $("<div id='tests-scratch'/>")
+        .width(1)
+        .height(1)
+        .move(-10000, -10000, 'absolute')
+        .appendTo(document.body);
+
+    beforeEach(function() {
+        /*
+         * Set the session to be authenticated by default. If tests need
+         * it to be unauthenticated, they can reset this.
+         */
+        RB.UserSession.instance = null;
+        RB.UserSession.create({
+            authenticated: true,
+            commentsOpenAnIssue: true,
+            username: 'testuser',
+            userPageURL: '{{SITE_ROOT}}users/test/'
+        });
+
+        /*
+         * Capture all assertions, so we can sanely inspect them.
+         * We don't want to call the original version, though, or we'll
+         * possibly get errors in the console.
+         *
+         * We do this after creating the UserSession, since that will also
+         * assert.
+         */
+        spyOn(console, 'assert').andCallFake(function(condition, msg) {
+            if (!condition) {
+                throw Error(msg);
+            }
+        });
+    });
+
+    afterEach(function() {
+        $testsScratch.empty();
+    });
+
+    jasmineEnv.addReporter(htmlReporter);
+    jasmineEnv.execute();
+});
+</script>
+{% endblock %}
