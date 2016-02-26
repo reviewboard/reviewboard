@@ -68,8 +68,10 @@ class AvatarServiceRegistry(ExceptionFreeGetterMixin,
             siteconfig.set(self.AVATARS_ENABLED_KEY, avatars_enabled)
 
             if avatars_enabled:
-                siteconfig.set(self.ENABLED_SERVICES_KEY, [GravatarService.id])
-                siteconfig.set(self.DEFAULT_SERVICE_KEY, GravatarService.id)
+                siteconfig.set(self.ENABLED_SERVICES_KEY,
+                               [GravatarService.avatar_service_id])
+                siteconfig.set(self.DEFAULT_SERVICE_KEY,
+                               GravatarService.avatar_service_id)
 
             siteconfig.save()
 
@@ -96,6 +98,6 @@ class AvatarServiceRegistry(ExceptionFreeGetterMixin,
         if (service_id is not None and
             self.has_service(service_id) and
             self.is_enabled(service_id)):
-            return self.get('id', service_id)
+            return self.get('avatar_service_id', service_id)
 
         return self.default_service
