@@ -2974,6 +2974,7 @@ class TestService(HostingService):
     needs_authorization = True
     supports_repositories = True
     supports_bug_trackers = True
+    has_repository_hook_instructions = True
     supported_scmtools = ['Git']
     bug_tracker_field = ('http://example.com/%(hosting_account_username)s/'
                          '%(test_repo_name)s/issue/%%s')
