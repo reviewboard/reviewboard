@@ -283,6 +283,13 @@ class BaseFileAttachmentResource(WebAPIResource):
                                            **kwargs):
             return self._no_access_error(request.user)
 
+        # If this file attachment has never been made public,
+        # delete the model itself.
+        if (not file_attachment.review_request.exists() and
+            not file_attachment.inactive_review_request.exists()):
+            file_attachment.delete()
+            return 204, {}
+
         try:
             draft = resources.review_request_draft.prepare_draft(
                 request, review_request)

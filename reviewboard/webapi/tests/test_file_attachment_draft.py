@@ -133,10 +133,33 @@ class ResourceItemTests(BaseWebAPITestCase):
     def check_delete_result(self, user, review_request, file_attachment):
         draft = review_request.get_draft()
         self.assertIsNotNone(draft)
-        self.assertIn(file_attachment, draft.inactive_file_attachments.all())
+        self.assertNotIn(file_attachment,
+                         draft.inactive_file_attachments.all())
         self.assertNotIn(file_attachment, draft.file_attachments.all())
         self.assertNotIn(file_attachment,
                          review_request.file_attachments.all())
+        self.assertNotIn(file_attachment,
+                         review_request.inactive_file_attachments.all())
+        with self.assertRaises(FileAttachment.DoesNotExist):
+            FileAttachment.objects.get(pk=file_attachment.pk)
+
+    def test_delete_file_with_publish(self):
+        """Testing delete the published DraftFileAttachment"""
+        review_request = self.create_review_request()
+        self._login_user(admin=True)
+        file_attachment = self.create_file_attachment(review_request,
+                                                      draft=True)
+        review_request.get_draft().publish()
+        self.api_delete(get_draft_file_attachment_item_url(review_request,
+                                                           file_attachment.pk))
+        draft = review_request.get_draft()
+        file_attachment = FileAttachment.objects.get(pk=file_attachment.pk)
+
+        self.assertFalse(file_attachment.inactive_review_request.exists())
+        self.assertIsNotNone(draft)
+        self.assertIn(file_attachment,
+                      draft.inactive_file_attachments.all())
+        self.assertNotIn(file_attachment, draft.file_attachments.all())
 
     #
     # HTTP GET tests
