@@ -600,8 +600,11 @@ textarea {
     }
 
     &.section {
-      margin-top: 1.5em;
       padding: 0;
+
+      &:not(:first-child) {
+        margin-top: 1.5em;
+      }
 
       h3.label {
         margin-left: 0;
@@ -618,10 +621,6 @@ textarea {
       padding-left: 8px;
       position: absolute;
       right: 1.5em;
-    }
-
-    .label {
-      margin-left: 20px;
     }
 
     .rb-icon {
