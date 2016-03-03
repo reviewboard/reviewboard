@@ -101,6 +101,15 @@ class GeneralSettingsForm(SiteSettingsForm):
         required=False,
         widget=forms.TextInput(attrs={'size': '30'}))
 
+    site_static_url = forms.CharField(
+        label=_('Static URL'),
+        help_text=_('The URL to the static files, such as JavaScript files, '
+                    'CSS files, and images that are bundled with Review Board '
+                    'or third-party extensions. Leave blank to use the '
+                    'default static path on this server.'),
+        required=False,
+        widget=forms.TextInput(attrs={'size': '30'}))
+
     site_admin_name = forms.CharField(
         label=_("Administrator Name"),
         required=True,
@@ -307,8 +316,8 @@ class GeneralSettingsForm(SiteSettingsForm):
                 'classes': ('wide',),
                 'title': _("Site Settings"),
                 'fields': ('company', 'server', 'site_media_url',
-                           'site_admin_name', 'site_admin_email',
-                           'locale_timezone'),
+                           'site_static_url', 'site_admin_name',
+                           'site_admin_email', 'locale_timezone'),
             },
             {
                 'classes': ('wide',),

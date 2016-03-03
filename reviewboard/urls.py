@@ -72,7 +72,12 @@ if settings.DEBUG and not settings.PRODUCTION:
         '',
 
         url(r'^js-tests/$',
-            TemplateView.as_view(template_name='js/tests.html')),
+            TemplateView.as_view(template_name='js/tests.html'),
+            name='js-tests'),
+
+        url(r'^js-tests/extensions/$',
+            TemplateView.as_view(template_name='js/extension_tests.html'),
+            name='js-extensions-tests'),
     )
 
 localsite_urlpatterns = patterns(
