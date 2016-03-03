@@ -32,12 +32,17 @@ PIPELINE_JAVASCRIPT = dict({
         ),
         'output_filename': 'lib/js/3rdparty-jsonlint.min.js',
     },
-    'js-tests': {
+    'js-test-libs': {
         'source_filenames': (
             'lib/js/jasmine-2.4.1.js',
             'lib/js/jasmine-html-2.4.1.js',
             'lib/js/jasmine-boot-2.4.1.js',
             'lib/js/jasmine.suites-1.0.js',
+        ),
+        'output_filename': 'rb/js/js-test-libs.min.js',
+    },
+    'js-tests': {
+        'source_filenames': (
             'rb/js/collections/tests/filteredCollectionTests.js',
             'rb/js/configForms/models/tests/resourceListItemModelTests.js',
             'rb/js/diffviewer/models/tests/diffFileModelTests.js',
