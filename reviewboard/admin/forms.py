@@ -491,14 +491,15 @@ class AvatarServicesForm(SiteSettingsForm):
         self.fields['default_service'].choices = default_choices
         self.fields['enabled_services'].choices = enable_choices
         self.fields['enabled_services'].initial = [
-            service.id
+            service.avatar_service_id
             for service in avatar_services.enabled_services
         ]
 
         default_service = avatar_services.default_service
 
         if avatar_services.default_service is not None:
-            self.fields['default_service'].initial = default_service.id
+            self.fields['default_service'].initial = \
+                default_service.avatar_service_id
 
     def clean_enabled_services(self):
         """Clean the enabled_services field.
@@ -545,7 +546,9 @@ class AvatarServicesForm(SiteSettingsForm):
             avatar_services.get('avatar_service_id', service_id)
             for service_id in self.cleaned_data['enabled_services']
         ]
-        avatar_services.default_service = self.cleaned_data['default_service']
+        avatar_services.set_default_service(
+            self.cleaned_data['default_service'],
+            save=False)
         avatar_services.avatars_enabled = self.cleaned_data['avatars_enabled']
         avatar_services.save()
 
