@@ -54,7 +54,8 @@ class AvatarServiceRegistryTests(TestCase):
 
         # Verify that the Gravatar service is the only service and it is
         # enabled and default.
-        gravatar_service = registry.get('id', GravatarService.id)
+        gravatar_service = registry.get('avatar_service_id',
+                                        GravatarService.avatar_service_id)
         self.assertIsNotNone(gravatar_service)
         self.assertIs(type(gravatar_service), GravatarService)
         self.assertSetEqual(set(registry), set([gravatar_service]))
@@ -70,10 +71,10 @@ class AvatarServiceRegistryTests(TestCase):
             siteconfig.get(AvatarServiceRegistry.AVATARS_ENABLED_KEY))
         self.assertListEqual(
             siteconfig.get(AvatarServiceRegistry.ENABLED_SERVICES_KEY),
-            [GravatarService.id])
+            [GravatarService.avatar_service_id])
         self.assertEqual(
             siteconfig.get(AvatarServiceRegistry.DEFAULT_SERVICE_KEY),
-            GravatarService.id)
+            GravatarService.avatar_service_id)
 
     def test_migrate_disabled(self):
         """Testing AvatarServiceRegistry migrates avatar settings for disabled
@@ -92,7 +93,8 @@ class AvatarServiceRegistryTests(TestCase):
         registry = AvatarServiceRegistry()
 
         # Verify the GravatarService is the only service and that is disabled.
-        gravatar_service = registry.get('id', GravatarService.id)
+        gravatar_service = registry.get('avatar_service_id',
+                                        GravatarService.avatar_service_id)
         self.assertIsNotNone(gravatar_service)
         self.assertIs(type(gravatar_service), GravatarService)
         self.assertSetEqual(set(registry), set([gravatar_service]))
@@ -135,6 +137,8 @@ class TemplateTagTests(TestCase):
 
         self.assertIsNotNone(avatar_services.default_service)
 
+        default_service = avatar_services.default_service
+
         self.assertEqual(
             default_avatar_template.render(Context({
                 'user': self.user,
@@ -142,14 +146,14 @@ class TemplateTagTests(TestCase):
             })),
             gravatar_template.render(Context({
                 'user': self.user,
-                'avatar_service_id': avatar_services.default_service.id,
+                'avatar_service_id': default_service.avatar_service_id,
                 'request': self.request,
             })))
 
     def test_custom_avatar_service(self):
         """Test avatar template tag rendering a specific avatar service"""
         avatar_services.register(DummyAvatarService())
-        avatar_services.enable_service(DummyAvatarService.id)
+        avatar_services.enable_service(DummyAvatarService.avatar_service_id)
 
         t = Template('{% load avatars %}'
                      '{% avatar user 32 avatar_service_id %}')
@@ -157,11 +161,12 @@ class TemplateTagTests(TestCase):
         self.assertEqual(
             t.render(Context({
                 'user': self.user,
-                'avatar_service_id': DummyAvatarService.id,
+                'avatar_service_id': DummyAvatarService.avatar_service_id,
                 'request': self.request,
             })),
             '<img src="http://example.com/avatar.png" alt="%s" width="32"'
-            ' height="32" srcset="http://example.com/avatar.png 1x">\n'
+            ' height="32" srcset="http://example.com/avatar.png 1x"'
+            ' class="avatar">\n'
             % self.user.get_full_name() or self.user.username
         )
 
@@ -194,14 +199,15 @@ class TemplateTagTests(TestCase):
         escaped_user = escape(user.get_full_name())
 
         avatar_services.register(DummyAvatarService())
-        avatar_services.enable_service(DummyAvatarService.id)
+        avatar_services.enable_service(DummyAvatarService.avatar_service_id)
 
         self.assertEqual(
             t.render(Context({
                 'user': user,
                 'request': self.request,
-                'avatar_service_id': DummyAvatarService.id,
+                'avatar_service_id': DummyAvatarService.avatar_service_id,
             })),
             '<img src="http://example.com/avatar.png" alt="%s" width="32"'
-            ' height="32" srcset="http://example.com/avatar.png 1x">\n'
+            ' height="32" srcset="http://example.com/avatar.png 1x"'
+            ' class="avatar">\n'
             % escaped_user)
