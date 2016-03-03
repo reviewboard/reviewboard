@@ -62,7 +62,7 @@ urlpatterns += extension_manager.get_url_patterns()
 # Add static media if running in DEBUG mode on a non-production host.
 if settings.DEBUG and not settings.PRODUCTION:
     urlpatterns += static(settings.STATIC_DIRECTORY,
-                          view='django.contrib.staticfiles.views.serve',
+                          document_root=settings.STATIC_ROOT,
                           show_indexes=True)
     urlpatterns += static(settings.MEDIA_DIRECTORY,
                           document_root=settings.MEDIA_ROOT,
