@@ -1,0 +1,14 @@
+{% extends "js/tests_base.html" %}
+{% load compressed djblets_extensions %}
+
+{% block title %}JavaScript Extension Unit Tests{% endblock %}
+
+{% block css %}
+{{block.super}}
+{%  load_extensions_css "reviewboard.extensions" %}
+{% endblock %}
+
+{% block scripts-test %}
+{%  load_extensions_js "reviewboard.extensions" %}
+{%  load_extensions_js "reviewboard.extensions" "default,tests" %}
+{% endblock %}
