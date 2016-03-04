@@ -211,7 +211,6 @@ setup(name=PACKAGE_NAME,
           'python-dateutil==1.5',
           'python-memcached',
           'pytz',
-          'recaptcha-client',
           'Whoosh>=2.6',
       ],
       dependency_links=[
