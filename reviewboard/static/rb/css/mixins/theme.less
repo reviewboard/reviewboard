@@ -27,6 +27,21 @@
           li:hover {
             background: @topbar-menu-selected-bg;
           }
+
+          li.menu-info-box,
+          li.menu-info-box:hover {
+            /*
+             * These are currently only used in RBCommons, but may be useful
+             * for future accountnav features.
+             */
+            background: lighten(@topbar-menu-bg, 5%);
+            border-bottom: 1px darken(@topbar-menu-bg, 5%) solid;
+            padding: 1em;
+
+            &, * {
+              cursor: default;
+            }
+          }
         }
       }
 
