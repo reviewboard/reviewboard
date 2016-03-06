@@ -29,6 +29,7 @@ Contributing
    getting-started
    contributing-patches
    custom-forks
+   faq
 
 
 Styles and Standards
