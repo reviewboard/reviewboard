@@ -1,0 +1,101 @@
+@import (reference) "../ui/banners.less";
+
+
+#page-container {
+  display: none;
+}
+
+.jasmine_html-reporter {
+  margin: @page-container-padding;
+
+  .jasmine-banner {
+    @banner-text-color: #666;
+    @banner-content-height: 25px;
+    @banner-padding: 8px;
+
+    .banner();
+    margin-top: 0;
+    padding: @banner-padding;
+
+    .jasmine-title {
+      vertical-align: middle;
+      height: @banner-content-height;
+    }
+
+    .jasmine-version {
+      color: @banner-text-color;
+      line-height: @banner-content-height;
+      margin-left: @banner-padding;
+      top: 1px;  // Needed to align with the content in the logo.
+      vertical-align: middle;
+    }
+
+    .jasmine-run-options {
+      border: 0;
+      line-height: @banner-content-height;
+      margin-right: 0;
+
+      .jasmine-trigger {
+        border: 0;
+        color: @banner-text-color;
+        padding: @banner-padding;
+      }
+    }
+  }
+
+  .jasmine-bar {
+    &.jasmine-failed {
+      background: #deabab;
+      color: #222;
+    }
+
+    &.jasmine-passed {
+      background: #a6b779;
+    }
+
+    &.jasmine-skipped {
+      background: #ddd;
+      color: #333;
+    }
+
+    a {
+      color: #444;
+    }
+  }
+
+  .jasmine-duration {
+    color: #444;
+  }
+
+  .jasmine-failures {
+    .jasmine-spec-detail {
+      .jasmine-description {
+        background: #b03911;
+      }
+    }
+  }
+
+  .jasmine-spec-detail {
+    &.jasmine-failed {
+      .jasmine-description {
+        background: #b7514c;
+      }
+    }
+
+    .jasmine-description {
+      padding: 6px 12px;
+    }
+  }
+
+  .jasmine-summary {
+    li.jasmine-passed a {
+      color: #5e7d09;
+    }
+  }
+
+  .jasmine-symbol-summary {
+    li.jasmine-passed:before {
+      color: #5e7d00;
+    }
+  }
+}
