@@ -335,6 +335,7 @@ PIPELINE_STYLESHEETS = dict({
     'js-tests': {
         'source_filenames': (
             'lib/css/jasmine-2.4.1.css',
+            'rb/css/pages/js-tests.less',
         ),
         'output_filename': 'rb/css/js-tests.min.css',
         'absolute_paths': False,
