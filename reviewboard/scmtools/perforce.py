@@ -13,6 +13,7 @@ import time
 from contextlib import contextmanager
 
 from django.utils import six
+from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
@@ -40,29 +41,105 @@ class STunnelProxy(object):
         self.target = target
         self.pid = None
 
+    @cached_property
+    def stunnel_use_config(self):
+        """Whether stunnel uses a config-based model.
+
+        stunnel 4+ switched to a config-based model, instead of passing
+        arguments on the command line. This property returns whether that
+        mode should be used.
+        """
+        # Try to run with stunnel -version, which is available in stunnel 4+.
+        # If this succeeds, we're using a config-based version of stunnel.
+        try:
+            subprocess.check_call(['stunnel', '-version'],
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
+            return True
+        except subprocess.CalledProcessError:
+            return False
+
     def start_server(self, certfile):
-        self._start(['-p', certfile])
+        self._start(server=True, certfile=certfile)
 
     def start_client(self):
-        self._start(['-c'])
+        self._start(server=False)
 
-    def _start(self, additional_args):
+    def _start(self, server, certfile=None):
         self.port = self._find_port()
 
         tempdir = tempfile.mkdtemp()
-        filename = os.path.join(tempdir, 'stunnel.pid')
-        args = ['stunnel', '-P', filename,
+        pid_filename = os.path.join(tempdir, 'stunnel.pid')
+
+        # There are two major versions of stunnel we're supporting today:
+        # stunnel 3, and stunnel 4+.
+        #
+        # stunnel 3 used command line arguments instead of a config file, and
+        # stunnel 4 (released in 2002) completely changed to a config-based
+        # model.
+        #
+        # It's probably not worth continuing to support version 3 at this
+        # point, given that any modern install supporting Review Board's other
+        # dependencies will also have a newer version of stunnel. However,
+        # we'll continue to keep this code for those rare cases where an older
+        # version is still needed.
+        if self.stunnel_use_config:
+            conf_filename = os.path.join(tempdir, 'stunnel.conf')
+
+            with open(conf_filename, 'w') as fp:
+                fp.write('pid = %s\n' % pid_filename)
+
+                if server:
+                    fp.write('[p4d]\n')
+
+                    if certfile:
+                        fp.write('cert = %s\n' % certfile)
+
+                    fp.write('accept = %s\n' % self.port)
+                    fp.write('connect = %s\n' % self.target)
+                else:
+                    fp.write('[p4]\n')
+                    fp.write('client = yes\n')
+                    fp.write('accept = 127.0.0.1:%s\n' % self.port)
+                    fp.write('connect = %s\n' % self.target)
+
+            args = [conf_filename]
+        else:
+            args = [
+                '-P', pid_filename,
                 '-d', '127.0.0.1:%d' % self.port,
-                '-r', self.target] + additional_args
+                '-r', self.target,
+            ]
 
-        subprocess.check_call(args)
+            if server:
+                args += ['-p', certfile]
+            else:
+                args.append('-c')
 
-        # It can sometimes be racy to immediately open the file. We therefore
-        # have to wait a fraction of a second =/
-        time.sleep(0.1)
-        with open(filename) as f:
-            self.pid = int(f.read())
-            f.close()
+        try:
+            subprocess.check_call(['stunnel'] + args)
+        except subprocess.CalledProcessError:
+            if self.stunnel_use_config:
+                with open(conf_filename, 'r') as fp:
+                    logging.error('Unable to create an stunnel using '
+                                  'config:\n%s\n'
+                                  % fp.read())
+            else:
+                logging.error('Unable to create an stunnel with args: %s\n'
+                              % ' '.join(args))
+        else:
+            # It can sometimes be racy to immediately open the file. We
+            # therefore have to wait a fraction of a second =/
+            time.sleep(0.1)
+
+            try:
+                with open(pid_filename) as f:
+                    self.pid = int(f.read())
+                    f.close()
+            except IOError as e:
+                logging.exception('Unable to open stunnel PID file %s: %s\n'
+                                  % (pid_filename, e))
+
         shutil.rmtree(tempdir)
 
     def shutdown(self):
@@ -76,13 +153,16 @@ class STunnelProxy(object):
         while True:
             port = random.randint(30000, 60000)
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
             try:
                 s.bind(('127.0.0.1', port))
                 s.listen(1)
-                s.shutdown(socket.SHUT_RDWR)
                 return port
-            except:
-                pass
+            finally:
+                try:
+                    s.close()
+                except:
+                    pass
 
 
 class PerforceClient(object):
