@@ -183,19 +183,19 @@ RB.DiffFileIndexView = Backbone.View.extend({
         } else {
             if (numInserts > 0) {
                 tooltipParts.push(interpolate(
-                    ngettext('%d new line', '%d new lines', numInserts),
+                    ngettext('%s new line', '%s new lines', numInserts),
                     [numInserts]));
             }
 
             if (numReplaces > 0) {
                 tooltipParts.push(interpolate(
-                    ngettext('%d line changed', '%d lines changed', numReplaces),
+                    ngettext('%s line changed', '%s lines changed', numReplaces),
                     [numReplaces]));
             }
 
             if (numDeletes > 0) {
                 tooltipParts.push(interpolate(
-                    ngettext('%d line removed', '%d lines removed', numDeletes),
+                    ngettext('%s line removed', '%s lines removed', numDeletes),
                     [numDeletes]));
             }
 
