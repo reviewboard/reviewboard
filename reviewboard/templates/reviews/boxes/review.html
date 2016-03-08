@@ -125,12 +125,12 @@
     </dt>
     <dd>
 {%    comment_detail_display_hook comment "review" %}
-     <pre class="reviewtext comment-text rich-text" id="{{comment.anchor_prefix}}{{comment.id}}" data-rich-text="true">{{comment.text|render_markdown:comment.rich_text}}</pre>
 {%    if comment.issue_opened %}
      <div class="issue-indicator">
 {%     comment_issue review_request_details comment "general_comments" %}
      </div>
 {%    endif %}
+     <pre class="reviewtext comment-text rich-text" id="{{comment.anchor_prefix}}{{comment.id}}" data-rich-text="true">{{comment.text|render_markdown:comment.rich_text}}</pre>
 {%    reply_section entry comment "general_comments" "rc" %}
     </dd>
 {%   endfor %}
