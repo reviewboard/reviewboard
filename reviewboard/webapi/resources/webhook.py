@@ -326,7 +326,12 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
         Returns:
             list: A list of event names as strings.
         """
-        return re.split(r',\s+', value)
+        value = value.strip()
+
+        if not value:
+            return []
+
+        return re.split(r'\s*,\s*', value)
 
     @webapi_login_required
     @augment_method_from(WebAPIResource)

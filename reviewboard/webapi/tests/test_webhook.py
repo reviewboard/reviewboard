@@ -211,6 +211,52 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
                              for repo in repositories
                          ]))
 
+    @add_fixtures(['test_scmtools'])
+    def test_post_multiple_events(self):
+        """Testing adding a webhook that listens for multiple events"""
+        self.user.is_superuser = True
+        self.user.save()
+
+        rsp = self.api_post(
+            get_webhook_list_url(),
+            {
+                'enabled': 0,
+                'events': '*,review_request_published',
+                'url': 'http://example.com',
+                'encoding': 'application/json',
+                'custom_content': '',
+                'apply_to': 'all'
+            },
+            expected_mimetype=webhook_item_mimetype)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('webhook', rsp)
+        self.compare_item(rsp['webhook'], WebHookTarget.objects.get())
+
+    @add_fixtures(['test_scmtools'])
+    def test_post_no_events(self):
+        """Testing adding a webhook that listens on no events"""
+        self.user.is_superuser = True
+        self.user.save()
+
+        rsp = self.api_post(
+            get_webhook_list_url(),
+            {
+                'enabled': 0,
+                'events': '',
+                'url': 'http://example.com',
+                'encoding': 'application/json',
+                'custom_content': '',
+                'apply_to': 'all'
+            },
+            expected_mimetype=webhook_item_mimetype)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('webhook', rsp)
+        self.compare_item(rsp['webhook'], WebHookTarget.objects.get())
+
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
