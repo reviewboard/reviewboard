@@ -275,6 +275,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                                orig_filename='filename.png',
                                caption='My Caption',
                                draft=False,
+                               active=True,
                                **kwargs):
         """Creates a FileAttachment for testing.
 
@@ -295,9 +296,18 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         if draft:
             review_request_draft = ReviewRequestDraft.create(review_request)
-            review_request_draft.file_attachments.add(file_attachment)
+
+            if active:
+                attachments = review_request_draft.file_attachments
+            else:
+                attachments = review_request_draft.inactive_file_attachments
         else:
-            review_request.file_attachments.add(file_attachment)
+            if active:
+                attachments = review_request.file_attachments
+            else:
+                attachments = review_request.inactive_file_attachments
+
+        attachments.add(file_attachment)
 
         return file_attachment
 
@@ -539,7 +549,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         return reply
 
     def create_screenshot(self, review_request, caption='My caption',
-                          draft=False):
+                          draft=False, active=True):
         """Creates a Screenshot for testing.
 
         The Screenshot is tied to the given ReviewRequest. It's populated
@@ -554,9 +564,18 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         if draft:
             review_request_draft = ReviewRequestDraft.create(review_request)
-            review_request_draft.screenshots.add(screenshot)
+
+            if active:
+                screenshots = review_request_draft.screenshots
+            else:
+                screenshots = review_request_draft.inactive_screenshots
         else:
-            review_request.screenshots.add(screenshot)
+            if active:
+                screenshots = review_request.screenshots
+            else:
+                screenshots = review_request.inactive_screenshots
+
+        screenshots.add(screenshot)
 
         return screenshot
 

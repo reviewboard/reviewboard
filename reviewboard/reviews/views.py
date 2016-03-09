@@ -1397,6 +1397,9 @@ def preview_review_request_email(
 
     This is mainly used for debugging.
     """
+    if not settings.DEBUG:
+        raise Http404
+
     review_request, response = \
         _find_review_request(request, review_request_id, local_site)
 
@@ -1406,7 +1409,8 @@ def preview_review_request_email(
     extra_context = {}
 
     if changedesc_id:
-        changedesc = get_object_or_404(ChangeDescription, pk=changedesc_id)
+        changedesc = get_object_or_404(review_request.changedescs,
+                                       pk=changedesc_id)
         extra_context['change_text'] = changedesc.text
         extra_context['changes'] = changedesc.fields_changed
 
@@ -1445,6 +1449,9 @@ def preview_review_email(request, review_request_id, review_id, format,
 
     This is mainly used for debugging.
     """
+    if not settings.DEBUG:
+        raise Http404
+
     review_request, response = \
         _find_review_request(request, review_request_id, local_site)
 
@@ -1499,6 +1506,9 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
 
     This is mainly used for debugging.
     """
+    if not settings.DEBUG:
+        raise Http404
+
     review_request, response = \
         _find_review_request(request, review_request_id, local_site)
 
@@ -1552,16 +1562,31 @@ def review_file_attachment(request, review_request_id, file_attachment_id,
     if not review_request:
         return response
 
-    file_attachment = get_object_or_404(FileAttachment, pk=file_attachment_id)
+    draft = review_request.get_draft(request.user)
+
+    # Make sure the attachment returned is part of either the review request
+    # or an accessible draft.
+    review_request_q = (Q(review_request=review_request) |
+                        Q(inactive_review_request=review_request))
+
+    if draft:
+        review_request_q |= Q(drafts=draft) | Q(inactive_drafts=draft)
+
+    file_attachment = get_object_or_404(
+        FileAttachment,
+        Q(pk=file_attachment_id) & review_request_q)
+
     review_ui = file_attachment.review_ui
+
     if not review_ui:
         review_ui = FileAttachmentReviewUI(review_request, file_attachment)
 
     if file_attachment_diff_id:
         file_attachment_revision = get_object_or_404(
-            FileAttachment.objects.filter(
-                attachment_history=file_attachment.attachment_history),
-            pk=file_attachment_diff_id)
+            FileAttachment,
+            Q(pk=file_attachment_diff_id) &
+            Q(attachment_history=file_attachment.attachment_history) &
+            review_request_q)
         review_ui.set_diff_against(file_attachment_revision)
 
     try:
@@ -1594,7 +1619,18 @@ def view_screenshot(request, review_request_id, screenshot_id,
     if not review_request:
         return response
 
-    screenshot = get_object_or_404(Screenshot, pk=screenshot_id)
+    draft = review_request.get_draft(request.user)
+
+    # Make sure the screenshot returned is part of either the review request
+    # or an accessible draft.
+    review_request_q = (Q(review_request=review_request) |
+                        Q(inactive_review_request=review_request))
+
+    if draft:
+        review_request_q |= Q(drafts=draft) | Q(inactive_drafts=draft)
+
+    screenshot = get_object_or_404(Screenshot,
+                                   Q(pk=screenshot_id) & review_request_q)
     review_ui = LegacyScreenshotReviewUI(review_request, screenshot)
 
     return review_ui.render_to_response(request)
@@ -1642,7 +1678,11 @@ def bug_url(request, review_request_id, bug_id, local_site=None):
     if not review_request:
         return response
 
-    return HttpResponseRedirect(review_request.repository.bug_tracker % bug_id)
+    # Need to create a custom HttpResponse because a non-HTTP url scheme will
+    # cause HttpResponseRedirect to fail with a "Disallowed Redirect".
+    response = HttpResponse(status=302)
+    response['Location'] = review_request.repository.bug_tracker % bug_id
+    return response
 
 
 def bug_infobox(request, review_request_id, bug_id,

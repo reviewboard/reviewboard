@@ -10,7 +10,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
             filename: 'file.png'
         });
 
-        spyOn(model, 'trigger').andCallThrough();
+        spyOn(model, 'trigger').and.callThrough();
     });
 
     describe('Rendering', function() {
@@ -135,7 +135,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
             $testsScratch.append(view.$el);
             view.render();
 
-            spyOn(view, 'trigger').andCallThrough();
+            spyOn(view, 'trigger').and.callThrough();
         });
 
         it('Begin caption editing', function() {
@@ -168,11 +168,11 @@ suite('rb/views/FileAttachmentThumbnail', function() {
         });
 
         it('Delete', function() {
-            spyOn(model, 'destroy').andCallThrough();
-            spyOn($, 'ajax').andCallFake(function(options) {
+            spyOn(model, 'destroy').and.callThrough();
+            spyOn($, 'ajax').and.callFake(function(options) {
                 options.success();
             });
-            spyOn(view.$el, 'fadeOut').andCallFake(function(done) {
+            spyOn(view.$el, 'fadeOut').and.callFake(function(done) {
                 done();
             });
 
@@ -182,7 +182,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
 
             expect($.ajax).toHaveBeenCalled();
             expect(model.destroy).toHaveBeenCalled();
-            expect(model.trigger.calls[2].args[0]).toBe('destroying');
+            expect(model.trigger.calls.argsFor(2)[0]).toBe('destroying');
             expect(view.$el.fadeOut).toHaveBeenCalled();
             expect(view.remove).toHaveBeenCalled();
         });

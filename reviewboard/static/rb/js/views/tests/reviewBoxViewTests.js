@@ -102,7 +102,7 @@ suite('rb/views/ReviewBoxView', function() {
                 spyOn(view, '_setupNewReply');
 
                 spyOn(reviewReply, 'discardIfEmpty')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         options.success.call(context);
                     });
 
@@ -130,16 +130,16 @@ suite('rb/views/ReviewBoxView', function() {
             it('Signals connected', function() {
                 var reviewReply = new RB.ReviewReply();
 
-                spyOn(view, 'listenTo').andCallThrough();
+                spyOn(view, 'listenTo').and.callThrough();
 
                 view._setupNewReply(reviewReply);
 
-                expect(view.listenTo.calls[0].args[1])
+                expect(view.listenTo.calls.argsFor(0)[1])
                     .toBe('destroyed published');
             });
 
             it('Signals disconnected from old reviewReply', function() {
-                spyOn(view, 'stopListening').andCallThrough();
+                spyOn(view, 'stopListening').and.callThrough();
 
                 view._setupNewReply();
 
@@ -171,7 +171,7 @@ suite('rb/views/ReviewBoxView', function() {
             it('Shown on hasDraft', function() {
                 var editor = view._replyEditorViews[1].model;
 
-                view._showReplyDraftBanner.reset();
+                view._showReplyDraftBanner.calls.reset();
 
                 expect(editor.get('hasDraft')).toBe(false);
                 expect(view._showReplyDraftBanner).not.toHaveBeenCalled();

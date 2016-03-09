@@ -1,6 +1,6 @@
 @import (reference) "../defs.less";
 @import (reference) "../mixins/upload-diff.less";
-@import (reference) "@{STATIC_ROOT}djblets/css/mixins/markdown.less";
+@import (reference) "djblets/css/mixins/markdown.less";
 
 
 @img_base: '../../images';
@@ -73,9 +73,9 @@
           text-decoration: none;
         }
 
-        .gravatar-container {
+        .avatar-container {
           background: white;
-          .border-radius(50%);
+          border-radius: 50%;
           display: inline-block;
           overflow: hidden;
           width: 32px;
@@ -107,10 +107,10 @@
 /* Sets up an element to appear as a pop-up review request action menu. */
 .review-request-action-popup-menu() {
   display: block !important;
+  opacity: 0;
+  transition: visibility 0.1s, opacity 0.1s;;
   visibility: hidden;
   z-index: @z-index-menu;
-  .opacity(0);
-  .transition(visibility 0.1s, opacity 0.1s;);
 }
 
 
@@ -121,9 +121,9 @@
   background: @review-request-action-bg;
   border: 1px @review-request-action-border-color solid;
   border-bottom: 0;
+  border-radius: @box-inner-border-radius @box-inner-border-radius 0 0;
+  box-sizing: border-box;
   overflow: hidden;
-  .border-radius(@box-inner-border-radius @box-inner-border-radius 0 0);
-  .box-sizing(border-box);
 
   /*
    * This adds some content to the actions list, ensuring that even if it's
@@ -139,7 +139,7 @@
 
 
 .actions {
-  .box-sizing(border-box);
+  box-sizing: border-box;
   float: right;
   list-style: none;
   margin: 0;
@@ -188,7 +188,7 @@
     &.has-menu {
       &:hover > ul {
         visibility: visible;
-        .opacity(100);
+        opacity: 1;
       }
 
       > .menu {
@@ -215,14 +215,14 @@
   .menu {
     background: @review-request-action-menu-bg;
     border: 1px @review-request-action-menu-border-color solid;
+    border-radius: 0 0 @box-border-radius @box-border-radius;
+    box-shadow: @box-shadow;
     float: none;
     list-style: none;
     margin: 0;
     padding: 0;
     position: absolute;
     z-index: @z-index-menu;
-    .border-radius(0 0 @box-border-radius @box-border-radius);
-    .box-shadow(@box-shadow);
 
     li {
       background: @review-request-action-bg;
@@ -237,7 +237,7 @@
       });
 
       &:last-child {
-        .border-radius(0 0 @box-border-radius @box-border-radius);
+        border-radius: 0 0 @box-border-radius @box-border-radius;
       }
 
       &:hover {
@@ -285,17 +285,17 @@
       > li {
         .on-mobile-medium-screen-720({
           background: transparent;
-          .border-radius(0);
+          border-radius: 0;
           display: inline-block;
           padding: @review-request-action-mobile-padding;
           text-align: left;
         });
 
         &:last-child {
-          .border-radius(0 @box-inner-border-radius 0 0);
+          border-radius: 0 @box-inner-border-radius 0 0;
 
           .on-mobile-medium-screen-720({
-            .border-radius(0);
+            border-radius: 0;
           });
         }
       }
@@ -315,7 +315,7 @@
   background: @review-request-action-bg;
   border: 1px @review-request-border-color solid;
   border-bottom-width: 0;
-  .border-radius(@box-border-radius @box-border-radius 0 0);
+  border-radius: @box-border-radius @box-border-radius 0 0;
   margin-left: 1.5em;
   overflow: hidden;
 
@@ -461,11 +461,11 @@
       position: relative;
 
       &>pre {
-        .pre-wrap;
         background-color: #FFFFFF;
         border: @textarea-border;
         margin: @textarea-editor-margin;
         padding: @textarea-editor-padding;
+        white-space: pre-wrap;
       }
     }
   }
@@ -481,7 +481,7 @@
     }
 
     input[type='text']:not(:focus) {
-      .box-shadow(0px 0px 4px rgba(255, 0, 0, .75));
+      box-shadow: 0px 0px 4px rgba(255, 0, 0, .75);
     }
   }
 
@@ -491,7 +491,7 @@
                           @review-request-bg-gradient-end);
     border: 1px @review-request-border-color solid;
     border-top: 0;
-    .border-radius(0 0 @box-border-radius @box-border-radius);
+    border-radius: 0 0 @box-border-radius @box-border-radius;
     clear: both;
     padding: 0.5em;
   }
@@ -723,18 +723,18 @@
  ****************************************************************************/
 .review-ui-box {
   &.has-review-ui-box-content .actions-container {
-    .border-radius(@box-inner-border-radius @box-inner-border-radius 0 0);
+    border-radius: @box-inner-border-radius @box-inner-border-radius 0 0;
 
     .actions > li:last-child {
-      .border-radius(0 @box-inner-border-radius 0 0);
+      border-radius: 0 @box-inner-border-radius 0 0;
     }
   }
 
   .actions-container {
-    .border-radius(@box-inner-border-radius);
+    border-radius: @box-inner-border-radius;
 
     .actions > li:last-child {
-      .border-radius(0 @box-inner-border-radius @box-inner-border-radius 0);
+      border-radius: 0 @box-inner-border-radius @box-inner-border-radius 0;
     }
   }
 
@@ -801,16 +801,16 @@
 
     .box-status {
       position: relative;
-      .transition(0.2s linear all);
+      transition: 0.2s linear all;
 
       &.has-issues {
-        .gravatar-container {
+        .avatar-container {
           border-color: darken(@issue-opened-bg, 45%);
         }
       }
 
       &.ship-it {
-        .gravatar-container {
+        .avatar-container {
           border-color: #6ebf20;
         }
 
@@ -821,7 +821,7 @@
       }
 
       &.ship-it.has-issues {
-        .gravatar-container {
+        .avatar-container {
           border-color: darken(@issue-opened-bg, 45%);
         }
 
@@ -838,15 +838,15 @@
         }
       }
 
-      .gravatar-container {
+      .avatar-container {
         background: white;
         border: 2px #CCC dotted;
-        .border-radius(50%);
+        border-radius: 50%;
         overflow: hidden;
         width: 48px;
         height: 48px;
         margin: 0 5px;
-        .transition(border-color 0.4s ease-in-out);
+        transition: border-color 0.4s ease-in-out;
 
         .on-mobile-medium-screen-720({
           display: inline-block;
@@ -855,8 +855,8 @@
 
         img {
           border: 2px white solid;
-          .border-radius(50%);
-          .box-sizing(border-box);
+          border-radius: 50%;
+          box-sizing: border-box;
         }
       }
 
@@ -873,7 +873,7 @@
 
       label {
         border: 1px #888888 solid;
-        .border-radius(@box-border-radius);
+        border-radius: @box-border-radius;
         display: block;
         line-height: 1.5;
         margin-bottom: @page-container-padding;
@@ -891,24 +891,17 @@
           border: 1px darken(#aeff60, 40%) solid;
           background: #aeff60;
 
-          /*
-           * NOTE: The ';' at the end here is intentional. It forces Less to
-           *       preserve the commas, rather than assuming they're separating
-           *       arguments to the mixin.
-           */
-          .transition(padding 0.2s ease-in-out,
+          transition: padding 0.2s ease-in-out,
                       top 0.2s ease-in-out,
-                      margin 0.2s ease-in-out
-                      ;);
+                      margin 0.2s ease-in-out;
         }
 
         &.fix-it-label {
           border: 1px darken(@issue-opened-bg, 50%) solid;
           background: @issue-opened-bg;
 
-          .transition(left 0.5s ease-in-out,
-                      opacity 0.8s ease
-                      ;);
+          transition: left 0.5s ease-in-out,
+                      opacity 0.8s ease;
         }
       }
     }
@@ -978,7 +971,7 @@
       border-left: 0;
       border-right: 0;
       border-top: 0;
-      .box-sizing(border-box);
+      box-sizing: border-box;
 
       &.floating {
         border-top: 0;
@@ -992,7 +985,7 @@
 
     pre {
       margin-bottom: 0;
-      .pre-wrap;
+      white-space: pre-wrap;
     }
 
     .comment-text:target {
@@ -1045,7 +1038,7 @@
       border: 1px #C3C3C3 solid;
       margin-top: 1em;
       padding: 0.6em 1em;
-      .border-radius(@box-border-radius);
+      border-radius: @box-border-radius;
 
       &:hover {
         background: #F3F3F3;
@@ -1199,7 +1192,7 @@
   a {
     background: #E0E0E0;
     border: 1px #C3C3C3 solid;
-    .border-radius(@box-border-radius);
+    border-radius: @box-border-radius;
     color: black;
     display: inline-block;
     padding: 0.6em 1em;
@@ -1242,7 +1235,7 @@
  * Change Descriptions
  ****************************************************************************/
 #field_changedescription {
-  .pre-wrap;
+  white-space: pre-wrap;
   background-color: @textarea-editor-background;
   border: @textarea-border;
   margin: @textarea-editor-margin;
@@ -1318,7 +1311,7 @@
       border: @textarea-border;
       padding: @textarea-editor-padding;
       font-size: 9pt;
-      .pre-wrap;
+      white-space: pre-wrap;
     }
 
     /*
@@ -1415,14 +1408,14 @@
         border: 0;
         margin: 0;
         padding: 0;
-        .pre-wrap;
+        white-space: pre-wrap;
       }
 
       td {
         font-family: @textarea-font-family;
         padding: 2px 4px;
         vertical-align: top;
-        .pre-wrap;
+        white-space: pre-wrap;
       }
 
       .delete {
@@ -1610,7 +1603,7 @@
 }
 
 .box .header {
-  .border-radius(@box-border-radius @box-border-radius 0 0);
+  border-radius: @box-border-radius @box-border-radius 0 0;
   padding: 9px;
 
   a {
@@ -1660,8 +1653,8 @@
   border-top: 1px #888866 solid;
   border-left: 1px #888866 solid;
   bottom: 0;
-  .border-radius(10px 0 0 0);
-  .box-shadow(-1px -1px 2px rgba(0, 0, 0, 0.15));
+  border-radius: 10px 0 0 0;
+  box-shadow: -1px -1px 2px rgba(0, 0, 0, 0.15);
   font-size: 110%;
   padding: 1em;
   position: fixed;
@@ -1721,7 +1714,7 @@
     background: none;
 
     pre {
-      .pre-wrap;
+      white-space: pre-wrap;
     }
 
     .spinner {
@@ -1787,14 +1780,14 @@
     @file-attachment-caption-height: 31px;
 
     border: 1px @file-attachment-border-color solid;
+    box-shadow: @box-shadow;
+    box-sizing: border-box;
     display: block;
     position: relative;
     margin: 1em 1.5em 0.5em 0;
     max-width: @file-attachment-width;
-    .transition(0.2s opacity linear);
+    transition: 0.2s opacity linear;
     width: @file-attachment-width;
-    .box-shadow(@box-shadow);
-    .box-sizing(border-box);
 
     .on-mobile-medium-screen-720({
       margin: 1.5em 0 0 0;
@@ -1844,8 +1837,8 @@
     .file-actions {
       background-color: @file-attachment-overlay-bg;
       border: 1px @file-attachment-border-color solid;
-      .box-shadow(@box-shadow);
-      .box-sizing(border-box);
+      box-shadow: @box-shadow;
+      box-sizing: border-box;
       height: @file-attachment-height - @file-attachment-caption-height;
       list-style: none;
       margin: 0;
@@ -1884,11 +1877,11 @@
       }
 
       .thumbnail-properties () {
+        box-sizing: border-box;
         max-height: @file-attachment-height;
         max-width: 100%;
         margin: 0;
         padding: 0;
-        .box-sizing(border-box);
       }
 
       .file-thumbnail-overlay {
@@ -1930,11 +1923,11 @@
     .file-caption-container {
       @file-caption-padding: 30px;
 
-      .box-sizing(border-box);
-      .opacity(90);
+      opacity: 0.9;
       background-color: @file-attachment-overlay-bg;
       border-top: 1px @file-attachment-overlay-border-color solid;
       bottom: 0;
+      box-sizing: border-box;
       line-height: 2.5em;
       padding: 0 @file-caption-padding;
       position: absolute;
@@ -1956,7 +1949,7 @@
 
       .file-caption {
         .ellipsize();
-        .opacity(100);
+        opacity: 1;
         line-height: @file-attachment-caption-height;
         height: @file-attachment-caption-height;
         text-shadow: 0px 0px 2px white;
@@ -1968,21 +1961,21 @@
            */
           @buttons-padding-vert: 5px;
 
-          position: absolute;
-          padding: @buttons-padding-vert 0;
 
           /* Line up with .file's side borders. */
           margin: 0 0 0 (-1px - @file-caption-padding);
 
-          text-align: center;
           background: darken(@file-attachment-bg, 5%);
           border: 1px @file-attachment-border-color solid;
           border-top: 0;
+          border-radius: 0 0 @box-border-radius @box-border-radius;
+          box-shadow: @box-shadow;
+          box-sizing: border-box;
           display: block;
+          padding: @buttons-padding-vert 0;
+          position: absolute;
+          text-align: center;
           width: @file-attachment-width;
-          .border-radius(0 0 @box-border-radius @box-border-radius);
-          .box-sizing(border-box);
-          .box-shadow(@box-shadow);
           z-index: @z-index-deco;
         }
       }
@@ -1990,12 +1983,15 @@
       .inline-editor-form > input[type='text'] {
         background: transparent;
         border: 0;
+        box-sizing: border-box;
         font-family: inherit;
         font-size: inherit;
         height: @file-attachment-caption-height;
         margin: 0;
-        padding-top: 0;
         padding-bottom: 0;
+        padding-top: 0;
+        text-align: inherit;
+        vertical-align: bottom;
 
         /*
          * The 4px is needed to align the input with the text. It matches
@@ -2003,9 +1999,6 @@
          */
         padding: 0 @edit-icon-margin 0 0;
 
-        text-align: inherit;
-        vertical-align: bottom;
-        .box-sizing(border-box);
 
         &:focus {
           outline: 0;
@@ -2017,7 +2010,7 @@
          */
         &:not(:focus) {
           background: rgba(255, 0, 0, 0.15);
-          .box-shadow(none);
+          box-shadow: none;
         }
 
         &::-ms-clear {
@@ -2044,7 +2037,7 @@
   border: 1px #999999 solid;
   border-top: 1px #CCCCCC solid;
   padding: 2px 8px;
-  .border-radius(0 0 @box-border-radius @box-border-radius);
+  border-radius: 0 0 @box-border-radius @box-border-radius;
 
   img {
     vertical-align: bottom;
@@ -2062,7 +2055,7 @@
   text-align: center;
   vertical-align: middle;
   position: relative;
-  .border-radius(@box-border-radius);
+  border-radius: @box-border-radius;
 
   &:hover {
     background-color: #F6F6F6;
@@ -2080,16 +2073,16 @@
   .image {
     border: 1px #999999 solid;
     border-bottom: 0;
+    border-radius: @box-border-radius @box-border-radius 0 0;
     cursor: pointer;
     height: 100px;
     line-height: 100px;
     margin: 0 auto;
     vertical-align: bottom;
-    .border-radius(@box-border-radius @box-border-radius 0 0);
 
     img {
+      border-radius: @box-inner-border-radius @box-inner-border-radius 0 0;
       vertical-align: middle;
-      .border-radius(@box-inner-border-radius @box-inner-border-radius 0 0);
     }
   }
 }
@@ -2144,8 +2137,8 @@
  ****************************************************************************/
 .comment-dlg {
   border: 1px @comment-dlg-border-color solid;
-  .border-radius(@box-border-radius);
-  .box-shadow(@box-shadow);
+  border-radius: @box-border-radius;
+  box-shadow: @box-shadow;
   cursor: default;
   margin-top: 8px;
   overflow: hidden;
@@ -2275,7 +2268,7 @@
         }
 
         pre {
-          .pre-wrap;
+          white-space: pre-wrap;
           font-size: 90%;
         }
       }
@@ -2304,7 +2297,7 @@
   margin-bottom: 2em;
   min-height: @issue-state-height;
   padding: 0.6em;
-  .transition(0.1s linear all);
+  transition: 0.1s linear all;
 
   input, .back-to-issue-summary {
     /*
@@ -2409,7 +2402,7 @@
   border-top: 0;
   border-left: 0;
   border-right: 0;
-  .box-shadow(@box-shadow);
+  box-shadow: @box-shadow;
   margin-top: -@page-container-padding;
   margin-left: -@page-container-padding;
   margin-right: -@page-container-padding;
@@ -2443,12 +2436,12 @@
     border-left: 0;
     border-right: 0;
     border-top: 0;
+    box-shadow: @box-shadow;
     left: 0;
     position: fixed;
     top: 0;
     width: 100%;
     z-index: @z-index-banner;
-    .box-shadow(@box-shadow);
   }
 }
 
@@ -2491,10 +2484,10 @@
         }
 
         pre {
-          .pre-wrap;
           font-size: 8pt;
           margin: 0;
           padding: 0;
+          white-space: pre-wrap;
         }
       }
     }
@@ -2508,13 +2501,13 @@
 .bubble {
   background-color: white;
   border: 1px black solid;
+  border-radius: 8px;
   font-size: 10pt;
   font-weight: bold;
   padding: 6px;
   position: absolute;
   white-space: nowrap;
   z-index: @z-index-dialog;
-  .border-radius(8px);
 }
 
 
@@ -2527,12 +2520,12 @@
 }
 
 #issue-summary-table {
-  @issue-status-gravatar-width: 24px;
+  @issue-status-avatar-width: 24px;
   @issue-status-icon-width: 16px;
   @issue-status-icon-right-margin: 2px;
 
   border: 1px @issue-table-border-color solid;
-  .border-radius(@box-border-radius);
+  border-radius: @box-border-radius;
   border-spacing: 0;
   overflow: hidden;
   width: 100%;
@@ -2652,7 +2645,7 @@
     }
 
     .on-mobile-medium-screen-720({
-      @issue-status-icon-mobile-margin-horiz: (@issue-status-gravatar-width -
+      @issue-status-icon-mobile-margin-horiz: (@issue-status-avatar-width -
                                                @issue-status-icon-width) / 2;
 
       /*
@@ -2689,7 +2682,7 @@
 
       .last-updated time {
         /* Align the text. */
-        margin-left: (@issue-status-gravatar-width +
+        margin-left: (@issue-status-avatar-width +
                       @issue-status-icon-mobile-margin-horiz);
       }
 
@@ -2735,7 +2728,7 @@
       .issue-summary-tab {
         border: 1px transparent solid;
         border-bottom: 0;
-        .border-radius(@box-border-radius @box-border-radius 0 0);
+        border-radius: @box-border-radius @box-border-radius 0 0;
         cursor: pointer;
         display: inline-block;
         margin: 0 0.5em 1px 0;

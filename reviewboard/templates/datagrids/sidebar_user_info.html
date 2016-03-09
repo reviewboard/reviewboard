@@ -1,9 +1,9 @@
-{% load gravatars i18n tz %}
+{% load avatars i18n tz %}
 
 <li id="user_page_profile">
-{% if siteconfig_settings.integration_gravatars %}
+{% if siteconfig_settings.avatars_enabled %}
  <div class="page-sidebar-row">
-  {% gravatar profile_user 175 %}
+  {% avatar profile_user 175 %}
  </div>
 {% endif %}
 

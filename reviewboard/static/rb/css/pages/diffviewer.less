@@ -128,7 +128,7 @@
   }
 
   pre {
-    .pre-wrap;
+    white-space: pre-wrap;
     font-size: 8pt;
     line-height: 140%;
     margin: 0;
@@ -180,8 +180,8 @@
 
   .moved-to-start, .moved-from-start {
     .moved-flag {
+      border-radius: 0, 8px, 8px, 0;
       padding: 3px 1em 3px 0.5em;
-      .border-radius(0, 8px, 8px, 0);
     }
   }
 
@@ -304,7 +304,7 @@
 
       .inline-actions-right, .inline-actions-left {
         li {
-          .border-radius(0 0 0 0);
+          border-radius: 0;
 
           &:hover {
             background-color: @inline-actions-hover-bg;
@@ -498,7 +498,7 @@
 }
 
 .commentflag {
-  .border-radius(@comment-flag-border-radius);
+  border-radius: @comment-flag-border-radius;
   height: 20px;
   left: -0.7em;
   margin-top: -0.3em;
@@ -506,8 +506,8 @@
   width: 1.6em;
 
   .commentflag-shadow {
-    .border-radius(@comment-flag-border-radius);
-    .opacity(10);
+    border-radius: @comment-flag-border-radius;
+    opacity: 0.1;
     background-color: black;
     border: 1px solid black;
     bottom: 0;
@@ -519,8 +519,8 @@
   }
 
   .commentflag-inner {
-    .border-radius(@comment-flag-border-radius);
-    .opacity(95);
+    border-radius: @comment-flag-border-radius;
+    opacity: 0.95;
     background-color: @comment-flag-color;
     border: 1px solid @comment-flag-border-color;
     bottom: 0.2em;
@@ -599,10 +599,10 @@
   }
 
   .diff-box {
-    .border-radius(@box-border-radius);
     border: 1px @diff-border-color solid;
+    border-radius: @box-border-radius;
+    box-shadow: @box-shadow;
     overflow: hidden;
-    .box-shadow(@box-shadow);
   }
 
   .diff-highlight {
@@ -751,11 +751,11 @@ td.diff-file-icon {
         text-align: right;
 
         a {
+          border-radius: 50%;
           display: inline-block;
           margin: 3px 2px 0 2px;
           width: 8px;
           height: 8px;
-          .border-radius(50%);
 
           &.insert {
             background-color: @diff-insert-dot-color;
@@ -809,7 +809,7 @@ td.diff-file-icon {
 
 .revision-selector-grabbed,
 .revision-selector-grabbed * {
-  .grabbing-cursor-important;
+  cursor: grabbing !important;
 }
 
 .revision-selector {
@@ -842,7 +842,7 @@ td.diff-file-icon {
     position: absolute;
     top: -9px;
     z-index: 2;
-    .grab-cursor;
+    cursor: grab;
   }
 
   .revision-selector-range {

@@ -4,7 +4,6 @@ import logging
 
 from django.db.models import Q
 from django.utils import six
-from djblets.gravatars import get_gravatar_url
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_request_fields,
                                        webapi_response_errors)
@@ -14,6 +13,7 @@ from djblets.webapi.resources.user import UserResource as DjbletsUserResource
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.accounts.errors import UserQueryError
+from reviewboard.avatars import avatar_services
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
@@ -36,10 +36,10 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     ]
 
     fields = dict({
-        'avatar_url': {
+        'avatar_urls': {
             'type': six.text_type,
-            'description': 'The URL for an avatar representing the user.',
-            'added_in': '1.6.14',
+            'description': 'The URLs for an avatar representing the user.',
+            'added_in': '2.6',
         },
     }, **DjbletsUserResource.fields)
 
@@ -116,8 +116,13 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         return local_site_reverse('user', kwargs['request'],
                                   kwargs={'username': user.username})
 
-    def serialize_avatar_url_field(self, user, request=None, **kwargs):
-        return get_gravatar_url(request, user)
+    def serialize_avatar_urls_field(self, user, request=None, **kwargs):
+        service = avatar_services.default_service
+
+        if service:
+            return service.get_avatar_urls(request, user, 48)
+
+        return None
 
     def has_access_permissions(self, *args, **kwargs):
         return True

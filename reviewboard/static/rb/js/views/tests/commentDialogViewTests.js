@@ -716,11 +716,19 @@ suite('rb/views/CommentDialogView', function() {
             describe('Comment text', function() {
                 var $textarea;
 
-                function simulateTyping(text) {
-                    runs(function() {
+                beforeEach(function() {
+                    dlg.open();
+                    $textarea = $(dlg._textEditor.$('textarea'));
+                });
+
+                describe('Dialog to editor', function() {
+                    var text = 'foo';
+
+                    beforeEach(function(done) {
                         var i,
                             c,
-                            e;
+                            e,
+                            t;
 
                         dlg._textEditor.on('change', function() {
                             changed = true;
@@ -746,24 +754,16 @@ suite('rb/views/CommentDialogView', function() {
                             e.which = c;
                             $textarea.trigger(e);
                         }
+
+                        t = setInterval(function() {
+                            if (dlg._textEditor.getText() === text) {
+                                clearInterval(t);
+                                done();
+                            }
+                        }, 100);
                     });
 
-                    waitsFor(function() {
-                        return dlg._textEditor.getText() === text;
-                    });
-                }
-
-                beforeEach(function() {
-                    dlg.open();
-                    $textarea = $(dlg._textEditor.$('textarea'));
-                });
-
-                it('Dialog to editor', function() {
-                    var text = 'foo';
-
-                    simulateTyping(text);
-
-                    runs(function() {
+                    it('', function() {
                         expect(editor.get('text')).toEqual(text);
                     });
                 });

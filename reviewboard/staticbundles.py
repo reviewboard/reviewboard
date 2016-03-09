@@ -1,13 +1,15 @@
 from __future__ import unicode_literals
 
-from djblets.settings import (PIPELINE_JS as DJBLETS_PIPELINE_JS,
-                              PIPELINE_CSS as DJBLETS_PIPELINE_CSS)
+from djblets.staticbundles import (
+    PIPELINE_JAVASCRIPT as DJBLETS_PIPELINE_JAVASCRIPT,
+    PIPELINE_STYLESHEETS as DJBLETS_PIPELINE_STYLESHEETS)
 
 
 # Media compression
-PIPELINE_JS = dict({
+PIPELINE_JAVASCRIPT = dict({
     '3rdparty': {
         'source_filenames': (
+            'lib/js/babel-polyfill-6.5.0.js',
             'lib/js/flot/jquery.flot.min.js',
             'lib/js/flot/jquery.flot.pie.min.js',
             'lib/js/flot/jquery.flot.selection.min.js',
@@ -30,11 +32,17 @@ PIPELINE_JS = dict({
         ),
         'output_filename': 'lib/js/3rdparty-jsonlint.min.js',
     },
+    'js-test-libs': {
+        'source_filenames': (
+            'lib/js/jasmine-2.4.1.js',
+            'lib/js/jasmine-html-2.4.1.js',
+            'lib/js/jasmine-boot-2.4.1.js',
+            'lib/js/jasmine.suites-1.0.js',
+        ),
+        'output_filename': 'rb/js/js-test-libs.min.js',
+    },
     'js-tests': {
         'source_filenames': (
-            'lib/js/jasmine-1.3.1.js',
-            'lib/js/jasmine-html-1.3.1.js',
-            'lib/js/jasmine.suites-1.0.js',
             'rb/js/collections/tests/filteredCollectionTests.js',
             'rb/js/configForms/models/tests/resourceListItemModelTests.js',
             'rb/js/diffviewer/models/tests/diffFileModelTests.js',
@@ -101,7 +109,7 @@ PIPELINE_JS = dict({
             'rb/js/utils/compatUtils.js',
             'rb/js/utils/consoleUtils.js',
             'rb/js/utils/underscoreUtils.js',
-            'rb/js/common.js',
+            'rb/js/common.es6.js',
             'rb/js/utils/apiErrors.js',
             'rb/js/utils/apiUtils.js',
             'rb/js/utils/linkifyUtils.js',
@@ -303,10 +311,10 @@ PIPELINE_JS = dict({
         ),
         'output_filename': 'rb/js/webhooks-form.min.js',
     },
-}, **DJBLETS_PIPELINE_JS)
+}, **DJBLETS_PIPELINE_JAVASCRIPT)
 
 
-PIPELINE_CSS = dict({
+PIPELINE_STYLESHEETS = dict({
     'common': {
         'source_filenames': (
             'lib/css/codemirror.css',
@@ -329,6 +337,7 @@ PIPELINE_CSS = dict({
     },
     'js-tests': {
         'source_filenames': (
+            'lib/css/jasmine-2.4.1.css',
             'rb/css/pages/js-tests.less',
         ),
         'output_filename': 'rb/css/js-tests.min.css',
@@ -367,4 +376,4 @@ PIPELINE_CSS = dict({
         'output_filename': 'rb/css/admin.min.css',
         'absolute_paths': False,
     },
-}, **DJBLETS_PIPELINE_CSS)
+}, **DJBLETS_PIPELINE_STYLESHEETS)

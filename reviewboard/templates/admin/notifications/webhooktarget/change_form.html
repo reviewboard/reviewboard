@@ -1,9 +1,9 @@
 {% extends "admin/change_form.html" %}
-{% load compressed %}
+{% load pipeline %}
 
 {% block scripts-post %}
 {{block.super}}
-{%  compressed_js "webhooks-form" %}
+{%  javascript 'webhooks-form' %}
 
 <script>
 $(document).ready(function() {

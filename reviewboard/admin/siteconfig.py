@@ -39,6 +39,7 @@ from django.conf import settings, global_settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import six
 from djblets.log import restart_logging, siteconfig as log_siteconfig
+from djblets.recaptcha import siteconfig as recaptcha_siteconfig
 from djblets.siteconfig.django_settings import (apply_django_settings,
                                                 get_django_defaults,
                                                 get_django_settings_map)
@@ -90,6 +91,7 @@ settings_map = {
 }
 settings_map.update(get_django_settings_map())
 settings_map.update(log_siteconfig.settings_map)
+settings_map.update(recaptcha_siteconfig.settings_map)
 
 # Settings for django-storages
 settings_map.update({
@@ -116,6 +118,7 @@ settings_map.update({
 # All the default values for settings.
 defaults = get_django_defaults()
 defaults.update(log_siteconfig.defaults)
+defaults.update(recaptcha_siteconfig.defaults)
 defaults.update({
     'auth_ldap_anon_bind_uid':             '',
     'auth_ldap_anon_bind_passwd':          '',
@@ -159,23 +162,27 @@ defaults.update({
 })
 
 defaults.update({
-    'aws_access_key_id':       '',
-    'aws_secret_access_key':   '',
-    'aws_headers':             {},
-    'aws_calling_format':      2,
-    'aws_default_acl':         'public-read',
-    'aws_querystring_auth':    False,
-    'aws_querystring_active':  False,
-    'aws_querystring_expire':  60,
-    'aws_s3_secure_urls':      False,
-    'aws_s3_bucket_name':      '',
-    'swift_auth_url':          '',
-    'swift_username':          '',
-    'swift_key':               '',
-    'swift_auth_version':      '1',
-    'swift_container_name':    '',
-    'couchdb_default_server':  '',
+    'avatars_enabled': True,
+    'avatars_enabled_services': [],
+    'avatars_default_service': None,
+    'avatars_migrated': False,
+    'aws_access_key_id': '',
+    'aws_calling_format': 2,
+    'aws_default_acl': 'public-read',
+    'aws_headers': {},
+    'aws_querystring_active': False,
+    'aws_querystring_auth': False,
+    'aws_querystring_expire': 60,
+    'aws_s3_bucket_name': '',
+    'aws_s3_secure_urls': False,
+    'aws_secret_access_key': '',
+    'couchdb_default_server': '',
     'couchdb_storage_options': {},
+    'swift_auth_url': '',
+    'swift_auth_version': '1',
+    'swift_container_name': '',
+    'swift_key': '',
+    'swift_username': '',
 })
 
 

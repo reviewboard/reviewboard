@@ -35,19 +35,19 @@ suite('rb/resources/models/DraftReview', function() {
         describe('ready', function() {
             beforeEach(function() {
                 spyOn(Backbone.Model.prototype, 'fetch')
-                    .andCallFake(function(options) {
+                    .and.callFake(function(options) {
                         if (options && _.isFunction(options.success)) {
                             options.success();
                         }
                     });
                 spyOn(parentObject, 'ready')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         if (options && _.isFunction(options.ready)) {
                             options.ready.call(context);
                         }
                     });
                 spyOn(model, '_retrieveDraft')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         if (options && _.isFunction(options.ready)) {
                             options.ready.call(context);
                         }
@@ -88,7 +88,7 @@ suite('rb/resources/models/DraftReview', function() {
 
         describe('publish', function() {
             beforeEach(function() {
-                spyOn(model, 'save').andCallFake(function(options, context) {
+                spyOn(model, 'save').and.callFake(function(options, context) {
                     options.success.call(context);
                 });
             });
@@ -105,7 +105,7 @@ suite('rb/resources/models/DraftReview', function() {
             it('Triggers "published" event after publish', function() {
                 spyOn(model, 'trigger');
 
-                spyOn(model, 'ready').andCallFake(function(options, context) {
+                spyOn(model, 'ready').and.callFake(function(options, context) {
                     options.ready.call(context);
                 });
 
@@ -116,7 +116,7 @@ suite('rb/resources/models/DraftReview', function() {
             });
 
             it('Sets "public" to true', function() {
-                spyOn(model, 'ready').andCallFake(function(options, context) {
+                spyOn(model, 'ready').and.callFake(function(options, context) {
                     options.ready.call(context);
                 });
 

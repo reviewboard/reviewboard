@@ -89,7 +89,7 @@ suite('rb/views/ReviewDialogView', function() {
             parentObject: reviewRequest
         });
 
-        spyOn(review, 'ready').andCallFake(function(options, context) {
+        spyOn(review, 'ready').and.callFake(function(options, context) {
             options.ready.call(context);
         });
 
@@ -98,7 +98,7 @@ suite('rb/views/ReviewDialogView', function() {
          * cause the box to flash on screen during tests. Override this to
          * disallow fixed.
          */
-        spyOn($.fn, 'move').andCallFake(function(x, y, pos) {
+        spyOn($.fn, 'move').and.callFake(function(x, y, pos) {
             if (pos === 'fixed') {
                 pos = 'absolute';
             }
@@ -251,7 +251,7 @@ suite('rb/views/ReviewDialogView', function() {
                     generalCommentsPayload =
                         _.clone(emptyGeneralCommentsPayload);
 
-                    spyOn($, 'ajax').andCallFake(function(options) {
+                    spyOn($, 'ajax').and.callFake(function(options) {
                         if (options.type === 'DELETE') {
                             options.success({});
                         } else if (options.url ===
@@ -291,7 +291,7 @@ suite('rb/views/ReviewDialogView', function() {
 
                         testLoadReview();
 
-                        expect(review.ready.calls[0].args[0].data).toEqual({
+                        expect(review.ready.calls.argsFor(0)[0].data).toEqual({
                             'force-text-type': 'html',
                             'include-text-types': 'raw,markdown'
                         });
@@ -303,7 +303,7 @@ suite('rb/views/ReviewDialogView', function() {
 
                         testLoadReview();
 
-                        expect(review.ready.calls[0].args[0].data)
+                        expect(review.ready.calls.argsFor(0)[0].data)
                             .toEqual({
                                 'force-text-type': 'html',
                                 'include-text-types': 'raw'
@@ -325,9 +325,9 @@ suite('rb/views/ReviewDialogView', function() {
                         });
 
                         expect($.ajax).toHaveBeenCalled();
-                        expect($.ajax.calls[0].args[0].url).toBe(
+                        expect($.ajax.calls.argsFor(0)[0].url).toBe(
                             '/general-comments/');
-                        ajaxData = $.ajax.calls[0].args[0].data;
+                        ajaxData = $.ajax.calls.argsFor(0)[0].data;
 
                         expect(dlg._commentViews.length).toBe(1);
 
@@ -369,7 +369,7 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                      it('Deleting comment', function() {
-                        spyOn(window, 'confirm').andCallFake(function() {
+                        spyOn(window, 'confirm').and.callFake(function() {
                             return true;
                         });
 
@@ -382,7 +382,7 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                     it('Deleting comment and cancelling', function() {
-                        spyOn(window, 'confirm').andCallFake(function() {
+                        spyOn(window, 'confirm').and.callFake(function() {
                             return false;
                         });
 
@@ -410,11 +410,11 @@ suite('rb/views/ReviewDialogView', function() {
                         });
 
                         expect($.ajax).toHaveBeenCalled();
-                        expect($.ajax.calls[3].args[0].url).toBe(
+                        expect($.ajax.calls.argsFor(3)[0].url).toBe(
                             '/diff-comments/');
-                        ajaxData = $.ajax.calls[3].args[0].data;
+                        ajaxData = $.ajax.calls.argsFor(3)[0].data;
 
-                        expect(diffQueueProto.queueLoad.calls.length).toBe(1);
+                        expect(diffQueueProto.queueLoad.calls.count()).toBe(1);
                         expect(diffQueueProto.loadFragments).toHaveBeenCalled();
                         expect(dlg._commentViews.length).toBe(1);
 
@@ -461,7 +461,7 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                     it('Deleting comment', function() {
-                        spyOn(window, 'confirm').andCallFake(function() {
+                        spyOn(window, 'confirm').and.callFake(function() {
                             return true;
                         });
 
@@ -473,7 +473,7 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                     it('Deleting comment and cancelling', function() {
-                        spyOn(window, 'confirm').andCallFake(function() {
+                        spyOn(window, 'confirm').and.callFake(function() {
                             return false;
                         });
 
@@ -498,9 +498,9 @@ suite('rb/views/ReviewDialogView', function() {
                         });
 
                         expect($.ajax).toHaveBeenCalled();
-                        expect($.ajax.calls[2].args[0].url).toBe(
+                        expect($.ajax.calls.argsFor(2)[0].url).toBe(
                             '/file-attachment-comments/');
-                        ajaxData = $.ajax.calls[2].args[0].data;
+                        ajaxData = $.ajax.calls.argsFor(2)[0].data;
 
                         expect(dlg._commentViews.length).toBe(1);
 
@@ -553,7 +553,7 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                     it('Deleting comment', function() {
-                        spyOn(window, 'confirm').andCallFake(function() {
+                        spyOn(window, 'confirm').and.callFake(function() {
                             return true;
                         });
 
@@ -567,7 +567,7 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                     it('Deleting comment and cancelling', function() {
-                        spyOn(window, 'confirm').andCallFake(function() {
+                        spyOn(window, 'confirm').and.callFake(function() {
                             return false;
                         });
 
@@ -595,9 +595,9 @@ suite('rb/views/ReviewDialogView', function() {
                         dlg = createReviewDialog();
 
                         expect($.ajax).toHaveBeenCalled();
-                        expect($.ajax.calls[1].args[0].url).toBe(
+                        expect($.ajax.calls.argsFor(1)[0].url).toBe(
                             '/screenshot-comments/');
-                        ajaxData = $.ajax.calls[1].args[0].data;
+                        ajaxData = $.ajax.calls.argsFor(1)[0].data;
 
                         expect(dlg._commentViews.length).toBe(1);
 
@@ -658,7 +658,7 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                     it('Deleting comment', function() {
-                        spyOn(window, 'confirm').andCallFake(function() {
+                        spyOn(window, 'confirm').and.callFake(function() {
                             return true;
                         });
 
@@ -673,7 +673,7 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                     it('Deleting comment and cancelling', function() {
-                        spyOn(window, 'confirm').andCallFake(function() {
+                        spyOn(window, 'confirm').and.callFake(function() {
                             return false;
                         });
 
@@ -751,14 +751,14 @@ suite('rb/views/ReviewDialogView', function() {
                 generalCommentsPayload =
                     _.clone(emptyGeneralCommentsPayload);
 
-                spyOn(review, 'save').andCallFake(
+                spyOn(review, 'save').and.callFake(
                     function(options, context) {
                         if (options && options.success) {
                             options.success.call(context);
                         }
                     });
 
-                spyOn($, 'ajax').andCallFake(function(options) {
+                spyOn($, 'ajax').and.callFake(function(options) {
                     if (options.url === '/file-attachment-comments/') {
                         options.success(fileAttachmentCommentsPayload);
                     } else if (options.url === '/diff-comments/') {

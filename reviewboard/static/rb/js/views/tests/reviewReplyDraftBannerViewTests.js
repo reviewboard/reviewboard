@@ -60,7 +60,7 @@ suite('rb/views/ReviewReplyDraftBannerView', function() {
     describe('Publish', function() {
         beforeEach(function() {
             spyOn(reviewReply, 'ensureCreated')
-                .andCallFake(function(options, context) {
+                .and.callFake(function(options, context) {
                     options.success.call(context);
                 });
 
@@ -84,7 +84,7 @@ suite('rb/views/ReviewReplyDraftBannerView', function() {
                 $('.publish-button').click();
 
                 expect(reviewReply.publish).toHaveBeenCalled();
-                expect(reviewReply.publish.calls[0].args[0].trivial)
+                expect(reviewReply.publish.calls.argsFor(0)[0].trivial)
                     .toBe(false);
             });
 
@@ -94,7 +94,7 @@ suite('rb/views/ReviewReplyDraftBannerView', function() {
                 $('.publish-button').click();
 
                 expect(reviewReply.publish).toHaveBeenCalled();
-                expect(reviewReply.publish.calls[0].args[0].trivial)
+                expect(reviewReply.publish.calls.argsFor(0)[0].trivial)
                     .toBe(true);
             });
         });
@@ -104,7 +104,7 @@ suite('rb/views/ReviewReplyDraftBannerView', function() {
 
             expect($('.send-email').length).toEqual(0);
             expect(reviewReply.publish).toHaveBeenCalled();
-            expect(reviewReply.publish.calls[0].args[0].trivial).toBe(false);
+            expect(reviewReply.publish.calls.argsFor(0)[0].trivial).toBe(false);
         });
     });
 });

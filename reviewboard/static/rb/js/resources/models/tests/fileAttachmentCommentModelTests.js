@@ -61,7 +61,7 @@ suite('rb/resources/models/FileAttachmentComment', function() {
 
     describe('toJSON', function() {
         it('BaseComment.toJSON called', function() {
-            spyOn(RB.BaseComment.prototype, 'toJSON').andCallThrough();
+            spyOn(RB.BaseComment.prototype, 'toJSON').and.callThrough();
             model.toJSON();
             expect(RB.BaseComment.prototype.toJSON).toHaveBeenCalled();
         });

@@ -69,6 +69,7 @@ system's package manager:
 
 * gettext
 * git
+* npm
 * patch
 * pysvn
 

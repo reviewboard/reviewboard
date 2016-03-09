@@ -1,12 +1,12 @@
-RB = {};
+window.RB = {};
 
 
-/*
- * Registers handlers for the toggleable stars.
+/**
+ * Register handlers for the toggleable stars.
  *
  * These will listen for when a star is clicked, which will toggle
- * whether an object is starred. Right now, we support "reviewrequests"
- * and "groups" types. Loads parameters from data attributes on the element.
+ * whether an object is starred. Right now, we support 'reviewrequests'
+ * and 'groups' types. Loads parameters from data attributes on the element.
  * Attaches at the document level so it applies to future stars.
  *
  * @param {string} object-type  The type used for constructing the path.
@@ -15,57 +15,46 @@ RB = {};
  */
 function registerToggleStar() {
     $(document).on('click', '.star', function() {
-        var self = $(this),
-            obj = self.data("rb.obj"),
-            type,
-            objid,
-            on,
-            altTitle;
+        const $el = $(this);
+        let obj = $el.data('rb.obj');
 
         if (!obj) {
-            type = self.attr("data-object-type");
-            objid = self.attr("data-object-id");
+            const type = $el.attr('data-object-type'),
+                  objid = $el.attr('data-object-id');
 
-            if (type === "reviewrequests") {
+            if (type === 'reviewrequests') {
                 obj = new RB.ReviewRequest({
                     id: objid
                 });
-            } else if (type === "groups") {
+            } else if (type === 'groups') {
                 obj = new RB.ReviewGroup({
                     id: objid
                 });
             } else {
-                self.remove();
+                $el.remove();
                 return;
             }
         }
 
-        on = (parseInt(self.attr("data-starred"), 10) === 1) ? 0 : 1;
+        const on = (parseInt($el.attr('data-starred'), 10) !== 1);
         obj.setStarred(on);
-        self.data("rb.obj", obj);
 
-        altTitle = on ? gettext("Starred") : gettext("Click to star");
-
-        if (on) {
-            self
-                .removeClass('rb-icon-star-off')
-                .addClass('rb-icon-star-on');
-        } else {
-            self
-                .removeClass('rb-icon-star-on')
-                .addClass('rb-icon-star-off');
-        }
-
-        self.attr({
-            'data-starred': on,
-            title: altTitle
-        });
+        $el
+            .toggleClass('rb-icon-star-on', on)
+            .toggleClass('rb-icon-star-off', !on)
+            .data('rb.obj', obj)
+            .attr({
+                'data-starred': on ? 1 : 0,
+                title: on ? gettext('Starred') : gettext('Click to star')
+            });
 
         return false;
     });
 }
 
-var gInfoBoxCache = {};
+
+const gInfoBoxCache = {};
+
 
 /*
  * Bug and user infoboxes. These are shown when hovering over links to users
@@ -74,17 +63,18 @@ var gInfoBoxCache = {};
  * The infobox is displayed after a 1 second delay.
  */
 $.fn.infobox = function(id) {
-    var POPUP_DELAY_MS = 500,
-        HIDE_DELAY_MS = 300,
-        OFFSET_LEFT = -20,
-        OFFSET_TOP = 10,
-        $infobox = $('#' + id);
+    const POPUP_DELAY_MS = 500,
+          HIDE_DELAY_MS = 300,
+          OFFSET_LEFT = -20,
+          OFFSET_TOP = 10;
+
+    let $infobox = $(`#${id}`);
 
     if ($infobox.length === 0) {
         $infobox = $('<div/>')
             .attr('id', id)
-            .hide();
-        $(document.body).append($infobox);
+            .hide()
+            .appendTo(document.body);
     }
 
     function showInfobox(url, $target) {
@@ -99,31 +89,27 @@ $.fn.infobox = function(id) {
             })
             .fadeIn();
 
-        $infobox.find('.gravatar')
-            .retinaGravatar();
+        $infobox.find('.avatar')
+            .retinaAvatar();
     }
 
     function fetchInfobox(url, $target) {
         if (!gInfoBoxCache[url]) {
-            $.get(url, function(responseText) {
-                gInfoBoxCache[url] = responseText;
-            }).done(function() {
-                showInfobox(url, $target);
-            });
+            $.get(url, responseText => { gInfoBoxCache[url] = responseText; })
+                .done(() => showInfobox(url, $target));
         } else {
             showInfobox(url, $target);
         }
     }
 
     return this.each(function() {
-        var $target = $(this),
-            timeout = null,
-            url = $target.attr('href') + 'infobox/';
+        const $target = $(this),
+              url = `${$target.attr('href')}infobox/`;
+        let timeout = null;
 
         $target.on('mouseover', function() {
-            timeout = setTimeout(function() {
-                fetchInfobox(url, $target);
-            }, POPUP_DELAY_MS);
+            timeout = setTimeout(() => fetchInfobox(url, $target),
+                                 POPUP_DELAY_MS);
         });
 
         $([$target[0], $infobox[0]]).on({
@@ -136,19 +122,20 @@ $.fn.infobox = function(id) {
                 clearTimeout(timeout);
 
                 if ($infobox.is(':visible')) {
-                    timeout = setTimeout(function() {
-                        $infobox.fadeOut();
-                    }, HIDE_DELAY_MS);
+                    timeout = setTimeout(() => $infobox.fadeOut(),
+                                         HIDE_DELAY_MS);
                 }
             }
         });
     });
 };
 
+
 $.fn.user_infobox = function() {
     $(this).infobox('user_infobox');
     return this;
 };
+
 
 $.fn.bug_infobox = function() {
     $(this).infobox('bug_infobox');
@@ -161,7 +148,7 @@ $(document).ready(function() {
     $('.bug').bug_infobox();
     $('time.timesince').timesince();
 
-    $('.gravatar').retinaGravatar();
+    $('.avatar').retinaAvatar();
 
     registerToggleStar();
 });

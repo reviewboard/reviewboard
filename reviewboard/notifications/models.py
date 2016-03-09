@@ -63,6 +63,7 @@ class WebHookTarget(models.Model):
     events = MultiSelectField(
         _('events'),
         choices=EVENT_CHOICES,
+        blank=True,
         help_text=_('Select any or all events that should trigger this '
                     'Webhook.'))
 
