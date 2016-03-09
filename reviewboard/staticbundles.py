@@ -105,8 +105,6 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'common': {
         'source_filenames': (
-            'rb/js/utils/backboneUtils.js',
-            'rb/js/utils/compatUtils.js',
             'rb/js/utils/consoleUtils.js',
             'rb/js/utils/underscoreUtils.js',
             'rb/js/common.es6.js',
