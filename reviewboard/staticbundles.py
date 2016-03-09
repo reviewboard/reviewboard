@@ -111,7 +111,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/utils/underscoreUtils.js',
             'rb/js/common.es6.js',
             'rb/js/utils/apiErrors.js',
-            'rb/js/utils/apiUtils.js',
+            'rb/js/utils/apiUtils.es6.js',
             'rb/js/utils/linkifyUtils.js',
             'rb/js/utils/mathUtils.js',
             'rb/js/utils/keyBindingUtils.js',
