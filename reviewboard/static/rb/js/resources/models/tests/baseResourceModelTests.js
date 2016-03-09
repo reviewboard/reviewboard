@@ -729,29 +729,43 @@ suite('rb/resources/models/BaseResource', function() {
                 blob.name = 'myfile';
 
                 spyOn($, 'ajax').and.callFake(function(request) {
+                    var fileReader = new FileReader();
+
                     expect(request.type).toBe('POST');
                     expect(request.processData).toBe(false);
                     expect(request.contentType.indexOf(
                         'multipart/form-data; boundary=')).toBe(0);
-                    expect(request.data).toBe(
-                        '--' + boundary + '\r\n' +
-                        'Content-Disposition: form-data; name="file"' +
-                        '; filename="myfile"\r\n' +
-                        'Content-Type: text/plain\r\n\r\n' +
-                        'Hello world!' +
-                        '\r\n' +
-                        '--' + boundary + '\r\n' +
-                        'Content-Disposition: form-data; ' +
-                        'name="myfield"\r\n\r\n' +
-                        'myvalue\r\n' +
-                        '--' + boundary + '--\r\n\r\n');
 
-                    request.success({
-                        stat: 'ok',
-                        foo: {
-                            id: 42
+                    fileReader.onload = function() {
+                        var array = new Uint8Array(this.result),
+                            data = [],
+                            i;
+
+                        for (i = 0; i < array.length; i++) {
+                            data.push(String.fromCharCode(array[i]));
                         }
-                    });
+
+                        expect(data.join('')).toBe(
+                            '--' + boundary + '\r\n' +
+                            'Content-Disposition: form-data; name="file"' +
+                            '; filename="myfile"\r\n' +
+                            'Content-Type: text/plain\r\n\r\n' +
+                            'Hello world!' +
+                            '\r\n' +
+                            '--' + boundary + '\r\n' +
+                            'Content-Disposition: form-data; ' +
+                            'name="myfield"\r\n\r\n' +
+                            'myvalue\r\n' +
+                            '--' + boundary + '--\r\n\r\n');
+
+                        request.success({
+                            stat: 'ok',
+                            foo: {
+                                id: 42
+                            }
+                        });
+                    };
+                    fileReader.readAsArrayBuffer(request.data);
                 });
 
                 model.set('file', blob);
@@ -789,35 +803,50 @@ suite('rb/resources/models/BaseResource', function() {
                 };
 
                 spyOn($, 'ajax').and.callFake(function(request) {
+                    var fileReader = new FileReader();
+
                     expect(request.type).toBe('POST');
                     expect(request.processData).toBe(false);
                     expect(request.contentType.indexOf(
                         'multipart/form-data; boundary=')).toBe(0);
-                    expect(request.data).toBe(
-                        '--' + boundary + '\r\n' +
-                        'Content-Disposition: form-data; name="file1"' +
-                        '; filename="myfile1"\r\n' +
-                        'Content-Type: text/plain\r\n\r\n' +
-                        'Hello world!' +
-                        '\r\n' +
-                        '--' + boundary + '\r\n' +
-                        'Content-Disposition: form-data; name="file2"' +
-                        '; filename="myfile2"\r\n' +
-                        'Content-Type: text/plain\r\n\r\n' +
-                        'Goodbye world!' +
-                        '\r\n' +
-                        '--' + boundary + '\r\n' +
-                        'Content-Disposition: form-data; ' +
-                        'name="myfield"\r\n\r\n' +
-                        'myvalue\r\n' +
-                        '--' + boundary + '--\r\n\r\n');
 
-                    request.success({
-                        stat: 'ok',
-                        foo: {
-                            id: 42
+                    fileReader.onload = function() {
+                        var array = new Uint8Array(this.result),
+                            data = [],
+                            i;
+
+                        for (i = 0; i < array.length; i++) {
+                            data.push(String.fromCharCode(array[i]));
                         }
-                    });
+
+                        expect(data.join('')).toBe(
+                            '--' + boundary + '\r\n' +
+                            'Content-Disposition: form-data; name="file1"' +
+                            '; filename="myfile1"\r\n' +
+                            'Content-Type: text/plain\r\n\r\n' +
+                            'Hello world!' +
+                            '\r\n' +
+                            '--' + boundary + '\r\n' +
+                            'Content-Disposition: form-data; name="file2"' +
+                            '; filename="myfile2"\r\n' +
+                            'Content-Type: text/plain\r\n\r\n' +
+                            'Goodbye world!' +
+                            '\r\n' +
+                            '--' + boundary + '\r\n' +
+                            'Content-Disposition: form-data; ' +
+                            'name="myfield"\r\n\r\n' +
+                            'myvalue\r\n' +
+                            '--' + boundary + '--\r\n\r\n');
+
+                        request.success({
+                            stat: 'ok',
+                            foo: {
+                                id: 42
+                            }
+                        });
+                    };
+
+                    fileReader.readAsArrayBuffer(request.data);
                 });
 
                 model.set('file1', blob1);

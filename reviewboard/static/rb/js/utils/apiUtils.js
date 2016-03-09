@@ -133,7 +133,7 @@ RB.apiCall = function(options) {
         };
 
         if (data.data === null || data.data === undefined ||
-            typeof data.data === 'object') {
+            (data.data instanceof Object && !(data.data instanceof Blob))) {
             data.data = $.extend({
                 api_format: 'json'
             }, data.data || {});
@@ -228,18 +228,6 @@ RB.ajaxOptions = {
 Backbone.ajax = function(options) {
     return RB.apiCall(options);
 };
-
-
-if (!XMLHttpRequest.prototype.sendAsBinary) {
-    XMLHttpRequest.prototype.sendAsBinary = function(datastr) {
-        var data = new Uint8Array(
-            Array.prototype.map.call(datastr, function(x) {
-                return x.charCodeAt(0) & 0xFF;
-            }));
-
-        XMLHttpRequest.prototype.send.call(this, data.buffer);
-    };
-}
 
 
 // vim: set et:sw=4:
