@@ -156,9 +156,9 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/resources/collections/resourceCollection.js',
             'rb/js/resources/collections/repositoryBranchesCollection.js',
             'rb/js/resources/collections/repositoryCommitsCollection.js',
-            'rb/js/ui/views/dialogView.js',
-            'rb/js/ui/views/textEditorView.js',
-            'rb/js/ui/views/splitButtonView.js',
+            'rb/js/ui/views/dialogView.es6.js',
+            'rb/js/ui/views/textEditorView.es6.js',
+            'rb/js/ui/views/splitButtonView.es6.js',
             'rb/js/models/userSessionModel.js',
             'rb/js/views/headerView.js',
             'rb/js/views/collectionView.js'
