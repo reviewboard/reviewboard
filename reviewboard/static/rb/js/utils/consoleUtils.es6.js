@@ -1,10 +1,9 @@
-var _origAssert;
+{
+
 
 if (typeof window.console === 'undefined') {
     window.console = {};
 }
-
-_origAssert = console.assert;
 
 if (typeof console.log === 'undefined') {
     console.log = function() {};
@@ -17,6 +16,9 @@ if (typeof console.warn === 'undefined') {
 if (typeof console.error === 'undefined') {
     console.error = function() {};
 }
+
+
+const _origAssert = console.assert;
 
 /*
  * console.assert may not behave as we'd hope on all implementations.
@@ -33,3 +35,6 @@ console.assert = function(conditional, msg) {
         throw new Error(msg);
     }
 };
+
+
+}
