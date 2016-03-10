@@ -1304,7 +1304,7 @@ msgstr ""
 
 #: admin/security_checks.py:52
 msgid "Checking that uploaded files won't be executed by the server"
-msgstr ""
+msgstr "检查上传的文件不会被服务器执行"
 
 #: admin/security_checks.py:53
 msgid ""
@@ -1313,6 +1313,9 @@ msgid ""
 "html, .htm, .shtml, .php, .php3, .php4, .php5, .phps, .asp, .pl, .py, ."
 "fcgi, .cgi, .phtml, .phtm, .pht, .jsp, .sh, and .rb."
 msgstr ""
+"网页服务器的错误配置会让附在审查请求上的文件当作代码被执行．该测试检查的文件"
+"类型: .html, .htm, .shtml, .php, .php3, .php4, .php5, .phps, .asp, .pl, .py, ."
+"fcgi, .cgi, .phtml, .phtm, .pht, .jsp, .sh, and .rb."
 
 #: admin/security_checks.py:58
 msgid ""
@@ -1340,7 +1343,7 @@ msgstr ""
 
 #: admin/security_checks.py:219
 msgid "Checking ALLOWED_HOSTS setting"
-msgstr ""
+msgstr "检查 ALLOWED_HOSTS 设置"
 
 #: admin/security_checks.py:220
 msgid ""
@@ -1350,7 +1353,8 @@ msgid ""
 "links to malicious hosts by submitting requests with a fake HTTP Host "
 "header, which is possible even under many seemingly-safe web server "
 "configurations."
-msgstr ""
+msgstr "ALLOWED_HOSTS 列表包含 Review Board 认为安全的主机/域名．这是安全衡量"
+"以防来自缓存和重置密码的攻击，伪造一个 HTTP 主机头发送请求．"
 
 #: admin/security_checks.py:227
 msgid ""
@@ -1392,11 +1396,11 @@ msgstr "管理仪表盘"
 #: admin/views.py:115 admin/widgets.py:280
 #: templates/admin/widgets/w-actions.html:72
 msgid "Server Cache"
-msgstr ""
+msgstr "服务缓存"
 
 #: admin/views.py:127 templates/admin/widgets/w-actions.html:128
 msgid "Security Checklist"
-msgstr ""
+msgstr "安全测试"
 
 #: admin/widgets.py:136
 msgid "User Activity"
@@ -1804,13 +1808,14 @@ msgstr ""
 
 #: diffviewer/admin.py:20 scmtools/admin.py:78
 msgid "Internal State"
-msgstr ""
+msgstr "内部状态"
 
 #: diffviewer/admin.py:21 reviews/admin.py:137 scmtools/admin.py:79
 msgid ""
 "<p>This is advanced state that should not be modified unless something is "
 "wrong.</p>"
 msgstr ""
+"<p>这个是高级状态除非出错请不要修改．</p>"
 
 #: diffviewer/admin.py:34 diffviewer/forms.py:20 reviews/builtin_fields.py:448
 #: templates/diffviewer/view_diff.html:36
@@ -2007,7 +2012,7 @@ msgstr ""
 #: reviews/models/default_reviewer.py:31 reviews/models/group.py:36
 #: site/models.py:54
 msgid "name"
-msgstr ""
+msgstr "名称"
 
 #: diffviewer/models.py:490
 msgid "revision"
@@ -2504,27 +2509,27 @@ msgstr ""
 
 #: notifications/models.py:24
 msgid "All events"
-msgstr ""
+msgstr "全部事件"
 
 #: notifications/models.py:25
 msgid "Review request closed"
-msgstr ""
+msgstr "审查请求已关闭"
 
 #: notifications/models.py:26
 msgid "Review request published"
-msgstr ""
+msgstr "审查请求已发布"
 
 #: notifications/models.py:27
 msgid "Review request reopened"
-msgstr ""
+msgstr "审查请求已重新打开"
 
 #: notifications/models.py:28
 msgid "Review published"
-msgstr ""
+msgstr "审查已发布"
 
 #: notifications/models.py:29
 msgid "Reply published"
-msgstr ""
+msgstr "回复已发布"
 
 #: notifications/models.py:43
 msgid "JSON"
@@ -2540,20 +2545,20 @@ msgstr ""
 
 #: notifications/models.py:53
 msgid "All review requests"
-msgstr ""
+msgstr "全部审查请求"
 
 #: notifications/models.py:55
 msgid "Only review requests on selected repositories"
-msgstr ""
+msgstr "仅在选中的仓库进行审查请求"
 
 #: notifications/models.py:57
 msgid ""
 "Only review requests not associated with a repository (file attachments only)"
-msgstr ""
+msgstr "和仓库无关的审查请求(仅为文件附件)"
 
 #: notifications/models.py:64
 msgid "events"
-msgstr ""
+msgstr "事件"
 
 #: notifications/models.py:66
 msgid "Select any or all events that should trigger this Webhook."
@@ -2563,10 +2568,11 @@ msgstr ""
 msgid ""
 "When the event is triggered, HTTP requests will be made against this URL."
 msgstr ""
+"当事件触发，发出该 URl 的　HTTP 请求．"
 
 #: notifications/models.py:75
 msgid "encoding"
-msgstr ""
+msgstr "编码"
 
 #: notifications/models.py:79
 msgid "Payload contents will be encoded in this format."
@@ -2598,7 +2604,7 @@ msgstr ""
 
 #: notifications/models.py:102
 msgid "apply to"
-msgstr ""
+msgstr "应用于"
 
 #: notifications/models.py:113
 msgid "If set, this Webhook will be limited to these repositories."
@@ -2850,7 +2856,7 @@ msgstr ""
 
 #: reviews/models/file_attachment_comment.py:20
 msgid "file attachment"
-msgstr ""
+msgstr "文件附件"
 
 #: reviews/models/file_attachment_comment.py:24
 msgid "diff against file attachment"
@@ -3052,7 +3058,7 @@ msgstr ""
 #: reviews/models/review_request.py:205
 #: reviews/models/review_request_draft.py:80
 msgid "file attachments"
-msgstr ""
+msgstr "文件附件"
 
 #: reviews/models/review_request.py:209
 msgid "inactive file attachments"
@@ -3172,7 +3178,7 @@ msgstr "仓库主机"
 
 #: scmtools/admin.py:74
 msgid "Advanced Settings"
-msgstr ""
+msgstr "高级设置"
 
 #: scmtools/admin.py:106
 msgid "Hooks"
@@ -3462,7 +3468,7 @@ msgstr ""
 
 #: scmtools/models.py:110
 msgid "Hosting service account"
-msgstr ""
+msgstr "主机服务帐号"
 
 #: scmtools/models.py:118
 #, python-format
@@ -3476,6 +3482,7 @@ msgid ""
 "The encoding used for files in this repository. This is an advanced setting "
 "and should only be used if you're sure you need it."
 msgstr ""
+"这个仓库里的文件使用的编码．这是个高级设置请确认你真的需要设置它．"
 
 #: scmtools/models.py:127
 msgid "Show this repository"
@@ -3496,14 +3503,14 @@ msgstr ""
 
 #: scmtools/models.py:147
 msgid "publicly accessible"
-msgstr ""
+msgstr "公开可访问"
 
 #: scmtools/models.py:149
 msgid ""
 "Review requests and files on public repositories are visible to anyone. "
 "Private repositories must explicitly list the users and groups that can "
 "access them."
-msgstr ""
+msgstr "公开仓库里的审查请求和文件对任何人均可见．私有仓库只对相关用户和组开放．"
 
 #: scmtools/models.py:158
 msgid "Users with access"
@@ -3529,7 +3536,7 @@ msgstr ""
 
 #: scmtools/models.py:174
 msgid "Unique identifier used for validating incoming webhooks."
-msgstr ""
+msgstr "唯一的标识鉴别接收的 webhooks．"
 
 #: scmtools/models.py:639
 msgid "A repository with this name already exists"
@@ -3858,11 +3865,11 @@ msgstr ""
 
 #: templates/admin/base_site.html:56
 msgid "Database"
-msgstr ""
+msgstr "数据库"
 
 #: templates/admin/base_site.html:57
 msgid "Extensions"
-msgstr ""
+msgstr "扩展"
 
 #: templates/admin/cache_stats.html:28
 msgid "Memory usage:"
@@ -3894,7 +3901,7 @@ msgstr ""
 
 #: templates/admin/cache_stats.html:73
 msgid "Statistics are not available for this backend."
-msgstr ""
+msgstr "该后端不支持状态统计．"
 
 #: templates/admin/change_form.html:21
 msgid "Home"
@@ -4534,41 +4541,39 @@ msgstr ""
 
 #: templates/admin/widgets/w-actions.html:59
 msgid "Hosting Accounts"
-msgstr ""
+msgstr "主机帐号"
 
 #: templates/admin/widgets/w-actions.html:69
 msgid "System Information"
-msgstr ""
+msgstr "系统信息"
 
 #: templates/admin/widgets/w-actions.html:79
 msgid "Public Read-only Access"
-msgstr ""
+msgstr "公开只读访问"
 
 #: templates/admin/widgets/w-actions.html:86
 msgid "Syntax Highlighting"
-msgstr ""
+msgstr "语法高亮"
 
 #: templates/admin/widgets/w-actions.html:93
 msgid "Server Log"
-msgstr ""
+msgstr "服务器日志"
 
 #: templates/admin/widgets/w-actions.html:100
 msgid "Log Profiling"
-msgstr ""
+msgstr "日志设置"
 
 #: templates/admin/widgets/w-actions.html:107
 msgid "Review E-mails"
-msgstr ""
+msgstr "审查的电子邮件"
 
 #: templates/admin/widgets/w-actions.html:114
-#, fuzzy
-#| msgid "Authentication"
 msgid "E-mail TLS Authentication"
-msgstr "认证"
+msgstr "电子邮件 TLS 认证"
 
 #: templates/admin/widgets/w-actions.html:121
 msgid "Indexed Search"
-msgstr ""
+msgstr "索引搜索"
 
 #: templates/admin/widgets/w-groups.html:12
 msgid "No Groups Available."
@@ -4913,7 +4918,7 @@ msgstr "显示空格变更"
 
 #: templates/extensions/extension_list.html:5
 msgid "Get more extensions"
-msgstr ""
+msgstr "获取更多扩展"
 
 #: templates/hostingsvcs/bitbucket/repo_hook_instructions.html:4
 #: templates/hostingsvcs/github/repo_hook_instructions.html:4
