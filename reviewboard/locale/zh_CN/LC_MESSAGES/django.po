@@ -30,20 +30,20 @@ msgstr ""
 #: accounts/admin.py:27 accounts/admin.py:37 accounts/forms/auth.py:389
 #: admin/forms.py:503 datagrids/grids.py:410
 msgid "Username"
-msgstr ""
+msgstr "用户名"
 
 #: accounts/admin.py:49 accounts/forms/pages.py:35 accounts/pages.py:62
 msgid "Settings"
-msgstr ""
+msgstr "设置"
 
 #: accounts/admin.py:61
 msgid "Dashboard"
-msgstr ""
+msgstr "仪表盘"
 
 #: accounts/admin.py:72 reviews/admin.py:68 reviews/admin.py:99
 #: reviews/admin.py:136 reviews/admin.py:220
 msgid "State"
-msgstr ""
+msgstr "状态"
 
 #: accounts/admin.py:93
 msgid "Counters"
@@ -589,7 +589,7 @@ msgstr ""
 
 #: accounts/models.py:122
 msgid "enable Markdown by default"
-msgstr ""
+msgstr "默认启用 Markdown"
 
 #: accounts/models.py:123
 msgid ""
@@ -948,147 +948,149 @@ msgstr "电子邮件服务器设置"
 
 #: admin/forms.py:583
 msgid "Show syntax highlighting"
-msgstr ""
+msgstr "显示语法高亮"
 
 #: admin/forms.py:587
 msgid "Syntax highlighting threshold"
-msgstr ""
+msgstr "语法高亮阈值"
 
 #: admin/forms.py:588
 msgid ""
 "Files with lines greater than this number will not have syntax "
 "highlighting.  Enter 0 for no limit."
-msgstr ""
+msgstr "多于该行数的文件将没有语法高亮。0表示没有限制。"
 
 #: admin/forms.py:594
 msgid "Show trailing whitespace"
-msgstr ""
+msgstr "显示尾部的空格"
 
 #: admin/forms.py:595
 msgid ""
 "Show excess trailing whitespace as red blocks. This helps to visualize when "
 "a text editor added unwanted whitespace to the end of a line."
-msgstr ""
+msgstr "用红色区块儿显示多余的尾部空格。有助于发现文本编辑器在一行的末尾添加了"
+"不想要的空格。"
 
 #: admin/forms.py:601
 msgid "Show all whitespace for"
-msgstr ""
+msgstr "显示空格"
 
 #: admin/forms.py:603
 msgid ""
 "A comma-separated list of file patterns for which all whitespace changes "
 "should be shown. (e.g., \"*.py, *.txt\")"
-msgstr ""
+msgstr "显示所有空格变更，用逗号隔开的文件格式列表。(例如，\"*.py, *.txt\")"
 
 #: admin/forms.py:609
 msgid "Lines of Context"
-msgstr ""
+msgstr "上下文行数"
 
 #: admin/forms.py:610
 msgid "The number of unchanged lines shown above and below changed lines."
-msgstr ""
+msgstr "显示变更的和未变更的行数。"
 
 #: admin/forms.py:616
 msgid "Paginate by"
-msgstr ""
+msgstr "分页"
 
 #: admin/forms.py:617
 msgid "The number of files to display per page in the diff viewer."
-msgstr ""
+msgstr "在diff浏览器中每页显示文件的个数。"
 
 #: admin/forms.py:623
 msgid "Paginate orphans"
-msgstr ""
+msgstr "分页"
 
 #: admin/forms.py:624
 msgid ""
 "The number of extra files required before adding another page to the diff "
 "viewer."
-msgstr ""
+msgstr "需要额外的文件的个数，足以向 diff 浏览器中添加另一页。"
 
 #: admin/forms.py:630
 msgid "Max diff size (bytes)"
-msgstr ""
+msgstr "最大 diff 大小(字节)"
 
 #: admin/forms.py:631
 msgid ""
 "The maximum size (in bytes) for any given diff. Enter 0 to disable size "
 "restrictions."
-msgstr ""
+msgstr "diff 的最大字节数。0表示没有限制。"
 
 #: admin/forms.py:650
 msgid "Diff Viewer Settings"
-msgstr ""
+msgstr "变更浏览器设置"
 
 #: admin/forms.py:661 admin/forms.py:753 notifications/admin.py:33
 msgid "Advanced"
-msgstr ""
+msgstr "高级"
 
 #: admin/forms.py:663
 msgid ""
 "These are advanced settings that control the behavior and display of the "
 "diff viewer. In general, these settings do not need to be changed."
-msgstr ""
+msgstr "这些高级设置控制变更浏览器的行为和呈现。通常，这些设置不需要被改变。"
 
 #: admin/forms.py:680
 msgid "Debug"
-msgstr ""
+msgstr "调式"
 
 #: admin/forms.py:681
 msgid "Info"
-msgstr ""
+msgstr "信息"
 
 #: admin/forms.py:682
 msgid "Warning"
-msgstr ""
+msgstr "警告"
 
 #: admin/forms.py:683
 msgid "Error"
-msgstr ""
+msgstr "错误"
 
 #: admin/forms.py:684
 msgid "Critical"
-msgstr ""
+msgstr "严重"
 
 #: admin/forms.py:688
 msgid "Enable logging"
-msgstr ""
+msgstr "开启日志"
 
 #: admin/forms.py:689
 msgid ""
 "Enables logging of Review Board operations. This is in addition to your web "
 "server's logging and does not log all page visits."
-msgstr ""
+msgstr "开启 Review Board 的操作日志。不同于网页服务器的日志，不会记录所有的"
+"页面访问。"
 
 #: admin/forms.py:695
 msgid "Log directory"
-msgstr ""
+msgstr "日志目录"
 
 #: admin/forms.py:696
 msgid ""
 "The directory where log files will be stored. This must be writable by the "
 "web server."
-msgstr ""
+msgstr "用于存储日志文件的目录。必须对网页服务可写。"
 
 #: admin/forms.py:702
 msgid "Log level"
-msgstr ""
+msgstr "日志等级"
 
 #: admin/forms.py:703
 msgid ""
 "Indicates the logging threshold. Please note that this may increase the size "
 "of the log files if a low threshold is selected."
-msgstr ""
+msgstr "暗示日志阈值。请注意如果选择了一个低阈值，可能增加日志文件的大小。"
 
 #: admin/forms.py:710
 msgid "Allow code profiling"
-msgstr ""
+msgstr "允许代码分析"
 
 #: admin/forms.py:711
 msgid ""
 "Logs the time spent on certain operations. This is useful for debugging but "
 "may greatly increase the size of log files."
-msgstr ""
+msgstr "记录某种操作花费的时间。对调式很有用但可能大大地增大日志文件的大小。"
 
 #: admin/forms.py:725
 msgid "This path does not exist."
@@ -1104,7 +1106,7 @@ msgstr ""
 
 #: admin/forms.py:744
 msgid "Logging Settings"
-msgstr ""
+msgstr "日志设置"
 
 #: admin/forms.py:766
 msgid "Key file"
@@ -1132,29 +1134,30 @@ msgstr ""
 
 #: admin/forms.py:818
 msgid "SSH Settings"
-msgstr ""
+msgstr "SSH 设置"
 
 #: admin/forms.py:825
 msgid "File storage method"
-msgstr ""
+msgstr "文件存储方式"
 
 #: admin/forms.py:827
 msgid "Host file system"
-msgstr ""
+msgstr "主机文件系统"
 
 #: admin/forms.py:828
 msgid "Amazon S3"
-msgstr ""
+msgstr "亚马逊 S3"
 
 #: admin/forms.py:829
 msgid "OpenStack Swift"
-msgstr ""
+msgstr "OpenStack Swift"
 
 #: admin/forms.py:833
 msgid ""
 "Storage method and location for uploaded files, such as screenshots and file "
 "attachments."
 msgstr ""
+"存储方式和上传文件的位置，例如截屏和文件附件。"
 
 #: admin/forms.py:838
 msgid "Amazon AWS access key"
@@ -1252,21 +1255,19 @@ msgstr ""
 
 #: admin/forms.py:982
 msgid "File Storage Settings"
-msgstr ""
+msgstr "文件存储设置"
 
 #: admin/forms.py:992
 msgid "Amazon S3 Settings"
-msgstr ""
+msgstr "亚马逊 S3 设置"
 
 #: admin/forms.py:1001
-#, fuzzy
-#| msgid "Site Settings"
 msgid "OpenStack Swift Settings"
-msgstr "站点设置"
+msgstr "OpenStack Swift 设置"
 
 #: admin/forms.py:1011
 msgid "CouchDB Settings"
-msgstr ""
+msgstr "CouchDB 设置"
 
 #: admin/forms.py:1021
 msgid "Install key"
@@ -1303,7 +1304,7 @@ msgstr ""
 
 #: admin/security_checks.py:52
 msgid "Checking that uploaded files won't be executed by the server"
-msgstr ""
+msgstr "检查上传的文件不会被服务器执行"
 
 #: admin/security_checks.py:53
 msgid ""
@@ -1312,6 +1313,9 @@ msgid ""
 "html, .htm, .shtml, .php, .php3, .php4, .php5, .phps, .asp, .pl, .py, ."
 "fcgi, .cgi, .phtml, .phtm, .pht, .jsp, .sh, and .rb."
 msgstr ""
+"网页服务器的错误配置会让附在审查请求上的文件当作代码被执行．该测试检查的文件"
+"类型: .html, .htm, .shtml, .php, .php3, .php4, .php5, .phps, .asp, .pl, .py, ."
+"fcgi, .cgi, .phtml, .phtm, .pht, .jsp, .sh, and .rb."
 
 #: admin/security_checks.py:58
 msgid ""
@@ -1339,7 +1343,7 @@ msgstr ""
 
 #: admin/security_checks.py:219
 msgid "Checking ALLOWED_HOSTS setting"
-msgstr ""
+msgstr "检查 ALLOWED_HOSTS 设置"
 
 #: admin/security_checks.py:220
 msgid ""
@@ -1349,7 +1353,8 @@ msgid ""
 "links to malicious hosts by submitting requests with a fake HTTP Host "
 "header, which is possible even under many seemingly-safe web server "
 "configurations."
-msgstr ""
+msgstr "ALLOWED_HOSTS 列表包含 Review Board 认为安全的主机/域名．这是安全衡量"
+"以防来自缓存和重置密码的攻击，伪造一个 HTTP 主机头发送请求．"
 
 #: admin/security_checks.py:227
 msgid ""
@@ -1386,16 +1391,16 @@ msgstr ""
 
 #: admin/views.py:91 templates/admin/base_site.html:55
 msgid "Admin Dashboard"
-msgstr ""
+msgstr "管理仪表盘"
 
 #: admin/views.py:115 admin/widgets.py:280
 #: templates/admin/widgets/w-actions.html:72
 msgid "Server Cache"
-msgstr ""
+msgstr "服务缓存"
 
 #: admin/views.py:127 templates/admin/widgets/w-actions.html:128
 msgid "Security Checklist"
-msgstr ""
+msgstr "安全测试"
 
 #: admin/widgets.py:136
 msgid "User Activity"
@@ -1431,19 +1436,19 @@ msgstr ""
 
 #: admin/widgets.py:252 templates/admin/widgets/w-actions.html:39
 msgid "Review Groups"
-msgstr ""
+msgstr "审查组"
 
 #: admin/widgets.py:293
 msgid "days"
-msgstr ""
+msgstr "天"
 
 #: admin/widgets.py:296
 msgid "hours"
-msgstr ""
+msgstr "小时"
 
 #: admin/widgets.py:299
 msgid "minutes"
-msgstr ""
+msgstr "分钟"
 
 #: admin/widgets.py:314
 msgid "Review Board News"
@@ -1574,7 +1579,7 @@ msgstr "给我的"
 #: datagrids/builtin_items.py:77 datagrids/columns.py:33
 #: datagrids/columns.py:34 reviews/templatetags/reviewtags.py:496
 msgid "Starred"
-msgstr ""
+msgstr "已加星"
 
 #: datagrids/columns.py:61 reviews/builtin_fields.py:245
 msgid "Submitter"
@@ -1594,7 +1599,7 @@ msgstr ""
 
 #: datagrids/columns.py:274 datagrids/columns.py:275
 msgid "My Comments"
-msgstr ""
+msgstr "我的评论"
 
 #: datagrids/columns.py:334
 msgid "Comments drafted"
@@ -1610,7 +1615,7 @@ msgstr ""
 
 #: datagrids/columns.py:358 datagrids/columns.py:359
 msgid "New Updates"
-msgstr ""
+msgstr "新的变更"
 
 #: datagrids/columns.py:392 reviews/builtin_fields.py:731
 msgid "People"
@@ -1721,28 +1726,28 @@ msgstr ""
 
 #: datagrids/grids.py:334
 msgid "All Outgoing Review Requests"
-msgstr ""
+msgstr "全部发出的审查请求"
 
 #: datagrids/grids.py:338
 msgid "All My Review Requests"
-msgstr ""
+msgstr "我的全部审查请求"
 
 #: datagrids/grids.py:342
 msgid "Incoming Review Requests to Me"
-msgstr ""
+msgstr "发给我的审查请求"
 
 #: datagrids/grids.py:359
 #, python-format
 msgid "Incoming Review Requests to %s"
-msgstr ""
+msgstr "发给 %s 的审查请求"
 
 #: datagrids/grids.py:363
 msgid "All Incoming Review Requests to My Groups"
-msgstr ""
+msgstr "所有属于我的组收到的审查请求"
 
 #: datagrids/grids.py:367
 msgid "Starred Review Requests"
-msgstr ""
+msgstr "加星的审查请求"
 
 #: datagrids/grids.py:371
 msgid "All Incoming Review Requests"
@@ -1750,31 +1755,31 @@ msgstr "全部收到的评审请求"
 
 #: datagrids/grids.py:411
 msgid "Full Name"
-msgstr ""
+msgstr "全名"
 
 #: datagrids/grids.py:413 datagrids/grids.py:451
 msgid "Open Review Requests"
-msgstr ""
+msgstr "打开的审查请求"
 
 #: datagrids/grids.py:419
 msgid "All users"
-msgstr ""
+msgstr "全部用户"
 
 #: datagrids/grids.py:448
 msgid "Group ID"
-msgstr ""
+msgstr "组 ID"
 
 #: datagrids/grids.py:449
 msgid "Group Name"
-msgstr ""
+msgstr "组名"
 
 #: datagrids/grids.py:455
 msgid "Members"
-msgstr ""
+msgstr "成员"
 
 #: datagrids/grids.py:459
 msgid "All groups"
-msgstr ""
+msgstr "全部组"
 
 #: datagrids/grids.py:516
 #, python-format
@@ -1803,19 +1808,20 @@ msgstr ""
 
 #: diffviewer/admin.py:20 scmtools/admin.py:78
 msgid "Internal State"
-msgstr ""
+msgstr "内部状态"
 
 #: diffviewer/admin.py:21 reviews/admin.py:137 scmtools/admin.py:79
 msgid ""
 "<p>This is advanced state that should not be modified unless something is "
 "wrong.</p>"
 msgstr ""
+"<p>这个是高级状态除非出错请不要修改．</p>"
 
 #: diffviewer/admin.py:34 diffviewer/forms.py:20 reviews/builtin_fields.py:448
 #: templates/diffviewer/view_diff.html:36
 #: templates/reviews/review_detail.html:25 templates/reviews/ui/base.html:26
 msgid "Diff"
-msgstr "变更"
+msgstr ""
 
 #: diffviewer/admin.py:39
 msgid "Parent diff"
@@ -1857,7 +1863,7 @@ msgstr ""
 
 #: diffviewer/diffutils.py:368
 msgid "New Change"
-msgstr ""
+msgstr "新变更"
 
 #: diffviewer/forms.py:16
 msgid "Base Directory"
@@ -1956,7 +1962,7 @@ msgstr ""
 
 #: diffviewer/models.py:134
 msgid "Deleted"
-msgstr ""
+msgstr "已删除"
 
 #: diffviewer/models.py:135
 msgid "Modified"
@@ -2006,7 +2012,7 @@ msgstr ""
 #: reviews/models/default_reviewer.py:31 reviews/models/group.py:36
 #: site/models.py:54
 msgid "name"
-msgstr ""
+msgstr "名称"
 
 #: diffviewer/models.py:490
 msgid "revision"
@@ -2022,7 +2028,7 @@ msgstr ""
 
 #: diffviewer/models.py:498 reviews/models/review_request.py:167
 msgid "repository"
-msgstr ""
+msgstr "仓库"
 
 #: diffviewer/models.py:500
 msgid "differ compatibility version"
@@ -2158,11 +2164,11 @@ msgstr ""
 #: hostingsvcs/gitorious.py:18 hostingsvcs/kiln.py:45
 #: hostingsvcs/rbgateway.py:29 hostingsvcs/unfuddle.py:41
 msgid "Repository name"
-msgstr ""
+msgstr "仓库名"
 
 #: hostingsvcs/bitbucket.py:46
 msgid "Team name"
-msgstr ""
+msgstr "团队名"
 
 #: hostingsvcs/bitbucket.py:50
 msgid ""
@@ -2218,7 +2224,7 @@ msgstr ""
 
 #: hostingsvcs/codebasehq.py:25
 msgid "Repository short name"
-msgstr ""
+msgstr "仓库短名称"
 
 #: hostingsvcs/codebasehq.py:29
 msgid ""
@@ -2429,7 +2435,7 @@ msgstr ""
 
 #: hostingsvcs/models.py:22 scmtools/models.py:143
 msgid "Local site"
-msgstr ""
+msgstr "本地站点"
 
 #: hostingsvcs/rbgateway.py:33
 msgid ""
@@ -2503,27 +2509,27 @@ msgstr ""
 
 #: notifications/models.py:24
 msgid "All events"
-msgstr ""
+msgstr "全部事件"
 
 #: notifications/models.py:25
 msgid "Review request closed"
-msgstr ""
+msgstr "审查请求已关闭"
 
 #: notifications/models.py:26
 msgid "Review request published"
-msgstr ""
+msgstr "审查请求已发布"
 
 #: notifications/models.py:27
 msgid "Review request reopened"
-msgstr ""
+msgstr "审查请求已重新打开"
 
 #: notifications/models.py:28
 msgid "Review published"
-msgstr ""
+msgstr "审查已发布"
 
 #: notifications/models.py:29
 msgid "Reply published"
-msgstr ""
+msgstr "回复已发布"
 
 #: notifications/models.py:43
 msgid "JSON"
@@ -2539,20 +2545,20 @@ msgstr ""
 
 #: notifications/models.py:53
 msgid "All review requests"
-msgstr ""
+msgstr "全部审查请求"
 
 #: notifications/models.py:55
 msgid "Only review requests on selected repositories"
-msgstr ""
+msgstr "仅在选中的仓库进行审查请求"
 
 #: notifications/models.py:57
 msgid ""
 "Only review requests not associated with a repository (file attachments only)"
-msgstr ""
+msgstr "和仓库无关的审查请求(仅为文件附件)"
 
 #: notifications/models.py:64
 msgid "events"
-msgstr ""
+msgstr "事件"
 
 #: notifications/models.py:66
 msgid "Select any or all events that should trigger this Webhook."
@@ -2562,10 +2568,11 @@ msgstr ""
 msgid ""
 "When the event is triggered, HTTP requests will be made against this URL."
 msgstr ""
+"当事件触发，发出该 URl 的　HTTP 请求．"
 
 #: notifications/models.py:75
 msgid "encoding"
-msgstr ""
+msgstr "编码"
 
 #: notifications/models.py:79
 msgid "Payload contents will be encoded in this format."
@@ -2597,7 +2604,7 @@ msgstr ""
 
 #: notifications/models.py:102
 msgid "apply to"
-msgstr ""
+msgstr "应用于"
 
 #: notifications/models.py:113
 msgid "If set, this Webhook will be limited to these repositories."
@@ -2624,7 +2631,7 @@ msgstr ""
 #: reviews/admin.py:38 reviews/admin.py:60 reviews/admin.py:85
 #: reviews/admin.py:117 reviews/admin.py:203 scmtools/admin.py:25
 msgid "General Information"
-msgstr ""
+msgstr "常用信息"
 
 #: reviews/admin.py:42 reviews/admin.py:127 reviews/admin.py:212
 #: reviews/builtin_fields.py:777
@@ -2636,10 +2643,11 @@ msgid ""
 "<p>A default reviewer will cover all repositories, unless assigned one or "
 "more specific repositories below.</p>"
 msgstr ""
+"<p>一个默认的审查者将负责所有的仓库，除非指定一个或多个仓库．</p>"
 
 #: reviews/admin.py:64 scmtools/admin.py:70
 msgid "Access Control"
-msgstr ""
+msgstr "访问控制"
 
 #: reviews/admin.py:90 reviews/admin.py:130 reviews/admin.py:215
 msgid "Related Objects"
@@ -2742,28 +2750,29 @@ msgstr "信息"
 
 #: reviews/forms.py:28 templates/admin/widgets/w-repositories.html:7
 msgid "Name"
-msgstr ""
+msgstr "用户名"
 
 #: reviews/forms.py:33
 msgid "File regular expression"
-msgstr ""
+msgstr "文件正则表达式"
 
 #: reviews/forms.py:37 reviews/models/default_reviewer.py:35
 msgid ""
 "File paths are matched against this regular expression to determine if these "
 "reviewers should be added."
-msgstr ""
+msgstr "匹配该正则表达式的文件路径来决定是否添加这些审查者．"
 
 #: reviews/forms.py:44
 msgid ""
 "The list of repositories to specifically match this default reviewer for. If "
 "left empty, this will match all repositories."
 msgstr ""
+"与默认审查者匹配的仓库列表．如果左边为空，将匹配所有仓库．"
 
 #: reviews/forms.py:67
 #, python-format
 msgid "The repository '%s' doesn't exist on the local site."
-msgstr ""
+msgstr "仓库 '%s' 在本地站点上不存在．"
 
 #: reviews/models/base_comment.py:21
 msgid "Resolved"
@@ -2823,11 +2832,11 @@ msgstr ""
 
 #: reviews/models/default_reviewer.py:38
 msgid "default groups"
-msgstr ""
+msgstr "默认组"
 
 #: reviews/models/default_reviewer.py:40
 msgid "default users"
-msgstr ""
+msgstr "默认用户"
 
 #: reviews/models/diff_comment.py:19
 msgid "file diff"
@@ -2847,7 +2856,7 @@ msgstr ""
 
 #: reviews/models/file_attachment_comment.py:20
 msgid "file attachment"
-msgstr ""
+msgstr "文件附件"
 
 #: reviews/models/file_attachment_comment.py:24
 msgid "diff against file attachment"
@@ -2859,22 +2868,23 @@ msgstr ""
 
 #: reviews/models/group.py:39
 msgid "mailing list"
-msgstr ""
+msgstr "邮件列表"
 
 #: reviews/models/group.py:42
 msgid "The mailing list review requests and discussions are sent to."
-msgstr ""
+msgstr "审查请求和讨论会发给该邮件列表。"
 
 #: reviews/models/group.py:45
 msgid "send e-mail only to the mailing list"
-msgstr ""
+msgstr "仅向邮件列表发送电子邮件"
 
 #: reviews/models/group.py:47
 msgid ""
 "If a mailing list is specified and this option is checked, group members "
 "will not be individually included on e-mails, and only the mailing list will "
 "be used. This is highly recommended for large groups."
-msgstr ""
+msgstr "如果指定了邮件列表并且该选项已勾选，组成员将不会单独包含在电子邮件，而"
+"仅使用邮件列表。强烈推荐给大组。"
 
 #: reviews/models/group.py:54
 msgid "users"
@@ -2882,28 +2892,29 @@ msgstr ""
 
 #: reviews/models/group.py:60
 msgid "add new users by default"
-msgstr ""
+msgstr "默认添加新用户"
 
 #: reviews/models/group.py:62
 msgid ""
 "If a local site is set, this will automatically add users to this group when "
 "those users are added to the local site. If there is no local site, users "
 "will be automatically added to this group when they are registered."
-msgstr ""
+msgstr "如果设置了本地站点，当用户添加到本地站点就会被自动添加到该组．如果没有"
+"本地站点，当新用户注册就会被自动添加到该组．"
 
 #: reviews/models/group.py:69
 msgid "incoming review request count"
-msgstr ""
+msgstr "接收的审查请求总数"
 
 #: reviews/models/group.py:73
 msgid "invite only"
-msgstr ""
+msgstr "仅邀请"
 
 #: reviews/models/group.py:75
 msgid ""
 "If checked, only the users listed below will be able to view review requests "
 "sent to this group."
-msgstr ""
+msgstr "如果勾选，只有下面的用户才能浏览发送给该组的审查请求．"
 
 #: reviews/models/group.py:141
 msgid "A group with this name already exists"
@@ -2911,7 +2922,7 @@ msgstr ""
 
 #: reviews/models/group.py:147
 msgid "review group"
-msgstr ""
+msgstr "审查组"
 
 #: reviews/models/review.py:34 reviews/models/review_request_draft.py:41
 msgid "review request"
@@ -3047,7 +3058,7 @@ msgstr ""
 #: reviews/models/review_request.py:205
 #: reviews/models/review_request_draft.py:80
 msgid "file attachments"
-msgstr ""
+msgstr "文件附件"
 
 #: reviews/models/review_request.py:209
 msgid "inactive file attachments"
@@ -3163,11 +3174,11 @@ msgstr ""
 
 #: scmtools/admin.py:29
 msgid "Repository Hosting"
-msgstr ""
+msgstr "仓库主机"
 
 #: scmtools/admin.py:74
 msgid "Advanced Settings"
-msgstr ""
+msgstr "高级设置"
 
 #: scmtools/admin.py:106
 msgid "Hooks"
@@ -3186,6 +3197,7 @@ msgid ""
 "The path to the repository. This will generally be the URL you would use to "
 "check out the repository."
 msgstr ""
+"仓库路径．将生成 URL 检出仓库．"
 
 #: scmtools/errors.py:30
 #, python-format
@@ -3225,11 +3237,11 @@ msgstr ""
 
 #: scmtools/forms.py:42
 msgid "Repository Information"
-msgstr ""
+msgstr "仓库信息"
 
 #: scmtools/forms.py:43
 msgid "Bug Tracker"
-msgstr ""
+msgstr "缺陷跟踪"
 
 #: scmtools/forms.py:44
 msgid "Review Board Server SSH Key"
@@ -3237,19 +3249,19 @@ msgstr ""
 
 #: scmtools/forms.py:47
 msgid "(None - Custom Repository)"
-msgstr ""
+msgstr "(无 - 自定义仓库)"
 
 #: scmtools/forms.py:50
 msgid "(None)"
-msgstr ""
+msgstr "(无)"
 
 #: scmtools/forms.py:53
 msgid "(Custom Bug Tracker)"
-msgstr ""
+msgstr "(自定义缺陷跟踪)"
 
 #: scmtools/forms.py:58
 msgid "Default"
-msgstr ""
+msgstr "默认"
 
 #: scmtools/forms.py:62 templates/admin/repository_confirmations.html:59
 msgid "Re-edit repository"
@@ -3261,7 +3273,7 @@ msgstr ""
 
 #: scmtools/forms.py:71
 msgid "Hosting service"
-msgstr ""
+msgstr "主机服务"
 
 #: scmtools/forms.py:76
 msgid "Service URL"
@@ -3284,11 +3296,11 @@ msgstr ""
 
 #: scmtools/forms.py:91 scmtools/forms.py:159
 msgid "Account username"
-msgstr ""
+msgstr "帐号用户名"
 
 #: scmtools/forms.py:96
 msgid "Account password"
-msgstr ""
+msgstr "帐号密码"
 
 #: scmtools/forms.py:102
 msgid "Two-factor auth code"
@@ -3296,11 +3308,11 @@ msgstr ""
 
 #: scmtools/forms.py:108
 msgid "Repository type"
-msgstr ""
+msgstr "仓库类型"
 
 #: scmtools/forms.py:112
 msgid "Repository plan"
-msgstr ""
+msgstr "仓库计划"
 
 #: scmtools/forms.py:114
 msgid ""
@@ -3327,11 +3339,11 @@ msgstr ""
 
 #: scmtools/forms.py:140
 msgid "Use hosting service's bug tracker"
-msgstr ""
+msgstr "使用主机服务的缺陷跟踪"
 
 #: scmtools/forms.py:145 templates/admin/widgets/w-repositories.html:8
 msgid "Type"
-msgstr ""
+msgstr "类型"
 
 #: scmtools/forms.py:150
 msgid "URL"
@@ -3339,11 +3351,11 @@ msgstr ""
 
 #: scmtools/forms.py:155
 msgid "Bug tracker plan"
-msgstr ""
+msgstr "缺陷跟踪计划"
 
 #: scmtools/forms.py:164 scmtools/models.py:115
 msgid "Bug tracker URL"
-msgstr ""
+msgstr "缺陷跟踪 URL"
 
 #: scmtools/forms.py:169
 #, python-format
@@ -3430,6 +3442,8 @@ msgid ""
 "Review Board can read from. For remote Git repositories, it should be the "
 "clone URL."
 msgstr ""
+"本地 Git 仓库，该路径必须是 Review Board 可以读到的 .git 目录．远程 Git 仓库，"
+"它必须是 clone URL．"
 
 #: scmtools/git.py:535
 #, python-format
@@ -3442,7 +3456,7 @@ msgstr ""
 
 #: scmtools/models.py:92
 msgid "Raw file URL mask"
-msgstr ""
+msgstr "元文件 URL 掩码"
 
 #: scmtools/models.py:95
 msgid ""
@@ -3454,7 +3468,7 @@ msgstr ""
 
 #: scmtools/models.py:110
 msgid "Hosting service account"
-msgstr ""
+msgstr "主机服务帐号"
 
 #: scmtools/models.py:118
 #, python-format
@@ -3468,16 +3482,18 @@ msgid ""
 "The encoding used for files in this repository. This is an advanced setting "
 "and should only be used if you're sure you need it."
 msgstr ""
+"这个仓库里的文件使用的编码．这是个高级设置请确认你真的需要设置它．"
 
 #: scmtools/models.py:127
 msgid "Show this repository"
-msgstr ""
+msgstr "显示这个仓库"
 
 #: scmtools/models.py:129
 msgid ""
 "Use this to control whether or not a repository is shown when creating new "
 "review requests. Existing review requests are unaffected."
 msgstr ""
+"使用这个来控制当创建新审查请求是否显示该仓库．已存在的审查请求不受影响．"
 
 #: scmtools/models.py:136
 msgid ""
@@ -3487,14 +3503,14 @@ msgstr ""
 
 #: scmtools/models.py:147
 msgid "publicly accessible"
-msgstr ""
+msgstr "公开可访问"
 
 #: scmtools/models.py:149
 msgid ""
 "Review requests and files on public repositories are visible to anyone. "
 "Private repositories must explicitly list the users and groups that can "
 "access them."
-msgstr ""
+msgstr "公开仓库里的审查请求和文件对任何人均可见．私有仓库只对相关用户和组开放．"
 
 #: scmtools/models.py:158
 msgid "Users with access"
@@ -3520,7 +3536,7 @@ msgstr ""
 
 #: scmtools/models.py:174
 msgid "Unique identifier used for validating incoming webhooks."
-msgstr ""
+msgstr "唯一的标识鉴别接收的 webhooks．"
 
 #: scmtools/models.py:639
 msgid "A repository with this name already exists"
@@ -3849,11 +3865,11 @@ msgstr ""
 
 #: templates/admin/base_site.html:56
 msgid "Database"
-msgstr ""
+msgstr "数据库"
 
 #: templates/admin/base_site.html:57
 msgid "Extensions"
-msgstr ""
+msgstr "扩展"
 
 #: templates/admin/cache_stats.html:28
 msgid "Memory usage:"
@@ -3885,7 +3901,7 @@ msgstr ""
 
 #: templates/admin/cache_stats.html:73
 msgid "Statistics are not available for this backend."
-msgstr ""
+msgstr "该后端不支持状态统计．"
 
 #: templates/admin/change_form.html:21
 msgid "Home"
@@ -4393,6 +4409,9 @@ msgid ""
 "   SSH-backend repositories.\n"
 "  "
 msgstr ""
+"\n"
+"   这里配置的SSH 钥匙将用于SSH后端的仓库。\n"
+"  "
 
 #: templates/admin/ssh_settings.html:18
 msgid "Key type:"
@@ -4412,7 +4431,7 @@ msgstr ""
 
 #: templates/admin/ssh_settings.html:45
 msgid "Generate an SSH Key"
-msgstr ""
+msgstr "生成 SSH 钥匙"
 
 #: templates/admin/ssh_settings.html:47
 msgid ""
@@ -4421,6 +4440,9 @@ msgid ""
 "   Review Board.\n"
 "  "
 msgstr ""
+"\n"
+"   你可以生成新的 RSA 钥匙特别用于 Review Board 的安装。\n"
+"  "
 
 #: templates/admin/ssh_settings.html:53
 msgid ""
@@ -4429,14 +4451,17 @@ msgid ""
 "once.\n"
 "  "
 msgstr ""
+"\n"
+"   注意生成一个钥匙需要一些时间。不要点击太多次。\n"
+"  "
 
 #: templates/admin/ssh_settings.html:60
 msgid "Generate Key"
-msgstr ""
+msgstr "生成钥匙"
 
 #: templates/admin/ssh_settings.html:63
 msgid "Upload an SSH Key"
-msgstr ""
+msgstr "上传一个 SSH 钥匙"
 
 #: templates/admin/ssh_settings.html:65
 msgid ""
@@ -4446,22 +4471,26 @@ msgid ""
 "   by the web server, so provide one you feel safe using.\n"
 "  "
 msgstr ""
+"\n"
+"   如果你已经有了 SSH 钥匙(<tt>id_dsa</tt> 或 <tt>id_rsa</tt>文件)\n"
+"   你可以上传它。注意这个钥匙将被网页服务器可读，所以提供一个你觉得安全的钥匙。\n"
+"  "
 
 #: templates/admin/ssh_settings.html:75
 msgid "Upload Key"
-msgstr ""
+msgstr "上传钥匙"
 
 #: templates/admin/widgets/w-actions.html:4
 msgid "Enabled"
-msgstr ""
+msgstr "已允许"
 
 #: templates/admin/widgets/w-actions.html:8
 msgid "Disabled"
-msgstr ""
+msgstr "已禁用"
 
 #: templates/admin/widgets/w-actions.html:13
 msgid "System Settings"
-msgstr ""
+msgstr "系统设置"
 
 #: templates/admin/widgets/w-actions.html:16
 msgid "General"
@@ -4474,11 +4503,11 @@ msgstr "电子邮件"
 #: templates/admin/widgets/w-actions.html:19
 #: templates/diffviewer/view_diff.html:5
 msgid "Diff Viewer"
-msgstr ""
+msgstr "Diff 浏览器"
 
 #: templates/admin/widgets/w-actions.html:20
 msgid "Logging"
-msgstr ""
+msgstr "日志"
 
 #: templates/admin/widgets/w-actions.html:21
 msgid "SSH"
@@ -4486,7 +4515,7 @@ msgstr ""
 
 #: templates/admin/widgets/w-actions.html:22
 msgid "File Storage"
-msgstr ""
+msgstr "文件存储"
 
 #: templates/admin/widgets/w-actions.html:23
 #: templates/base/_mobile_navbar.html:39
@@ -4496,7 +4525,7 @@ msgstr "支持"
 
 #: templates/admin/widgets/w-actions.html:29
 msgid "Manage"
-msgstr ""
+msgstr "管理"
 
 #: templates/admin/widgets/w-actions.html:31
 msgid "Common management operations."
@@ -4504,7 +4533,7 @@ msgstr ""
 
 #: templates/admin/widgets/w-actions.html:44
 msgid "Default Reviewers"
-msgstr ""
+msgstr "默认审查者"
 
 #: templates/admin/widgets/w-actions.html:54
 msgid "Webhooks"
@@ -4512,41 +4541,39 @@ msgstr ""
 
 #: templates/admin/widgets/w-actions.html:59
 msgid "Hosting Accounts"
-msgstr ""
+msgstr "主机帐号"
 
 #: templates/admin/widgets/w-actions.html:69
 msgid "System Information"
-msgstr ""
+msgstr "系统信息"
 
 #: templates/admin/widgets/w-actions.html:79
 msgid "Public Read-only Access"
-msgstr ""
+msgstr "公开只读访问"
 
 #: templates/admin/widgets/w-actions.html:86
 msgid "Syntax Highlighting"
-msgstr ""
+msgstr "语法高亮"
 
 #: templates/admin/widgets/w-actions.html:93
 msgid "Server Log"
-msgstr ""
+msgstr "服务器日志"
 
 #: templates/admin/widgets/w-actions.html:100
 msgid "Log Profiling"
-msgstr ""
+msgstr "日志设置"
 
 #: templates/admin/widgets/w-actions.html:107
 msgid "Review E-mails"
-msgstr ""
+msgstr "审查的电子邮件"
 
 #: templates/admin/widgets/w-actions.html:114
-#, fuzzy
-#| msgid "Authentication"
 msgid "E-mail TLS Authentication"
-msgstr "认证"
+msgstr "电子邮件 TLS 认证"
 
 #: templates/admin/widgets/w-actions.html:121
 msgid "Indexed Search"
-msgstr ""
+msgstr "索引搜索"
 
 #: templates/admin/widgets/w-groups.html:12
 msgid "No Groups Available."
@@ -4558,7 +4585,7 @@ msgstr ""
 
 #: templates/admin/widgets/w-repositories.html:9
 msgid "Visible"
-msgstr ""
+msgstr "可视"
 
 #: templates/admin/widgets/w-repositories.html:29
 msgid "No Repositories available."
@@ -4664,7 +4691,7 @@ msgstr ""
 #: templates/base/_mobile_navbar.html:41
 #: templates/base/_nav_support_menu.html:23
 msgid "Admin"
-msgstr ""
+msgstr "管理"
 
 #: templates/base/_nav_support_menu.html:6
 msgid "Documentation"
@@ -4737,7 +4764,7 @@ msgstr ""
 
 #: templates/diffviewer/diff_file_fragment.html:32
 msgid "Collapse lines"
-msgstr ""
+msgstr "折叠行"
 
 #: templates/diffviewer/diff_file_fragment.html:84
 msgid " (moved)"
@@ -4800,19 +4827,19 @@ msgstr ""
 #, python-format
 msgid "%(lines)s line"
 msgid_plural "%(lines)s lines"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%(lines)s 行"
+msgstr[1] "%(lines)s 行"
 
 #: templates/diffviewer/diff_file_fragment.html:226
 #: templates/reviews/diff_comment_fragment.html:35
 #: templates/reviews/diff_comment_fragment.html:119
 msgid "Show all lines"
-msgstr ""
+msgstr "显示全部行"
 
 #: templates/diffviewer/diff_file_fragment.html:231
 #: templates/reviews/diff_comment_fragment.html:115
 msgid "Show 20 more lines below"
-msgstr ""
+msgstr "显示以下20多行"
 
 #: templates/diffviewer/diff_fragment_error.html:16
 #, python-format
@@ -4863,35 +4890,35 @@ msgstr ""
 #: templates/diffviewer/view_diff.html:47
 #: templates/reviews/review_detail.html:47 templates/reviews/ui/base.html:38
 msgid "Download Diff"
-msgstr "下载补丁"
+msgstr "下载 Diff"
 
 #: templates/diffviewer/view_diff.html:73
 msgid "Expand changes"
-msgstr ""
+msgstr "展开变更"
 
 #: templates/diffviewer/view_diff.html:75
 msgid "Collapse changes"
-msgstr ""
+msgstr "折叠变更"
 
 #: templates/diffviewer/view_diff.html:78
 msgid "Hide extra whitespace"
-msgstr ""
+msgstr "隐藏多余空格"
 
 #: templates/diffviewer/view_diff.html:79
 msgid "Show extra whitespace"
-msgstr ""
+msgstr "显示多余空格"
 
 #: templates/diffviewer/view_diff.html:81
 msgid "Hide whitespace changes"
-msgstr ""
+msgstr "隐藏空格变更"
 
 #: templates/diffviewer/view_diff.html:82
 msgid "Show whitespace changes"
-msgstr ""
+msgstr "显示空格变更"
 
 #: templates/extensions/extension_list.html:5
 msgid "Get more extensions"
-msgstr ""
+msgstr "获取更多扩展"
 
 #: templates/hostingsvcs/bitbucket/repo_hook_instructions.html:4
 #: templates/hostingsvcs/github/repo_hook_instructions.html:4
@@ -4958,7 +4985,7 @@ msgstr ""
 
 #: templates/reviews/boxes/change.html:21
 msgid "Review request changed"
-msgstr ""
+msgstr "审查请求变更"
 
 #: templates/reviews/boxes/change.html:22
 #: templates/reviews/boxes/review.html:34
@@ -4970,27 +4997,27 @@ msgstr ""
 
 #: templates/reviews/boxes/change.html:28
 msgid "Status:"
-msgstr ""
+msgstr "状态:"
 
 #: templates/reviews/boxes/change.html:31
 msgid "Closed (submitted)"
-msgstr ""
+msgstr "关闭(已发布)"
 
 #: templates/reviews/boxes/change.html:35
 msgid "Re-opened"
-msgstr ""
+msgstr "重新打开"
 
 #: templates/reviews/boxes/change.html:42
 msgid "Change Summary:"
-msgstr ""
+msgstr "变更概述:"
 
 #: templates/reviews/boxes/review.html:18
 msgid "Ship it!"
-msgstr ""
+msgstr "发布它!"
 
 #: templates/reviews/boxes/review.html:21
 msgid "Fix it!"
-msgstr ""
+msgstr "修复它!"
 
 #: templates/reviews/boxes/review.html:89
 #, python-format
@@ -5068,7 +5095,7 @@ msgstr "关闭"
 
 #: templates/reviews/review_request_actions_secondary.html:13
 msgid "Delete Permanently"
-msgstr ""
+msgstr "永久性删除"
 
 #: templates/reviews/review_request_actions_secondary.html:22
 msgid "Update"
@@ -5076,11 +5103,11 @@ msgstr "更新"
 
 #: templates/reviews/review_request_actions_secondary.html:25
 msgid "Update Diff"
-msgstr "更新补丁"
+msgstr "更新 Diff"
 
 #: templates/reviews/review_request_actions_secondary.html:25
 msgid "Upload Diff"
-msgstr "上传补丁"
+msgstr "上传 Diff"
 
 #: templates/reviews/review_request_actions_secondary.html:27
 msgid "Add File"
@@ -5140,7 +5167,7 @@ msgstr ""
 
 #: templates/reviews/review_request_box.html:85
 msgid "Delete Screenshot"
-msgstr ""
+msgstr "删除截图"
 
 #: templates/reviews/review_request_permission_denied.html:9
 msgid "You don't have access to this review request."
