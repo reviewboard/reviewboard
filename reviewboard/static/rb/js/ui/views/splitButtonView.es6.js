@@ -1,18 +1,6 @@
-/*
+/**
  * A SplitButtonView is a split button with a drop down which, when hovered
  * over, will drop down (or up) a list of alternative options.
- *
- * The split button takes a number of options:
- *  - text: the primary button text;
- *  - click: the primary button click handler;
- *  - id: the id for the primary button;
- *  - direction: the direction the drop-down will show, either 'up' or 'down';
- *  - zIndex: the z-index of the drop down (optional); and
- *  - alternatives: a list of objects which provide the alternative buttons in
- *                  the menu; each object has the following properties:
- *      - text: the alternative button text;
- *      - click: the alternative button click handler; and
- *      - id: the DOM ID for the alternative button (optional).
  *
  *  If the view is to be removed, the remove() method must be called as this
  *  view adds elements to the DOM that are not under its root element.
@@ -33,18 +21,45 @@ RB.SplitButtonView = Backbone.View.extend({
         '<div class="btn drop-down-btn">&#9662;</div>'
     ].join('')),
 
-    /*
+    /**
      * The delay time for animations.
      */
     _delayTime: 250,
 
-    /*
+    /**
      * Set up all initial state and event listeners.
+     *
+     * Args:
+     *     options (object):
+     *         Options for view construction.
+     *
+     * Option Args:
+     *     text (string):
+     *         The primary button text.
+     *
+     *     click (function or string):
+     *         The handler for click events on the primary button.
+     *
+     *     id (string):
+     *         The DOM ID to use for the primary button.
+     *
+     *     direction (string):
+     *         The direction the drop-down will show; either ``up`` or
+     *         ``down``.
+     *
+     *     zIndex (number):
+     *         The optional z-index for the drop-down menu.
+     *
+     *     alternatives (Array of object):
+     *         A list of alternative buttons. Each item includes ``text``,
+     *         ``click``, and ``id`` keys which are equivalent to the options
+     *         for the primary button.
      */
-    initialize: function() {
+    initialize(options={}) {
         this._dropDownShown = false;
         this._animating = false;
 
+        this.options = options;
         this.options.alternatives = this.options.alternatives || [];
 
         if (this.options.direction === 'up') {
@@ -59,10 +74,10 @@ RB.SplitButtonView = Backbone.View.extend({
         $(window).on('resize', this._onResize);
     },
 
-    /*
+    /**
      * Remove the SplitButtonView from the DOM.
      */
-    remove: function() {
+    remove() {
         $(window).off('resize', this._onResize);
         this.stopListening();
 
@@ -75,15 +90,14 @@ RB.SplitButtonView = Backbone.View.extend({
         }
     },
 
-    /*
+    /**
      * Render the split button.
+     *
+     * Returns:
+     *     RB.SplitButtonView:
+     *     This object, for chaining.
      */
-    render: function() {
-        var i,
-            alt,
-            $btn,
-            width;
-
+    render() {
         this.$el
             .empty()
             .addClass(this.className)
@@ -106,10 +120,8 @@ RB.SplitButtonView = Backbone.View.extend({
             this._$alternatives.css('zIndex', this.options.zIndex);
         }
 
-        for (i = 0; i != this.options.alternatives.length; i++) {
-            alt = this.options.alternatives[i];
-
-            $btn = $('<div class="btn" />')
+        for (let alt of this.options.alternatives) {
+            const $btn = $('<div class="btn" />')
                 .text(alt.text)
                 .on('click', alt.click)
                 .appendTo(this._$alternatives);
@@ -119,7 +131,7 @@ RB.SplitButtonView = Backbone.View.extend({
             }
         }
 
-        width = Math.max(this._$alternatives.width(), this.$el.width());
+        const width = Math.max(this._$alternatives.width(), this.$el.width());
 
         this._$alternatives.width(width);
         this._$primaryBtn.width(
@@ -134,17 +146,17 @@ RB.SplitButtonView = Backbone.View.extend({
         return this;
     },
 
-    /*
+    /**
      * Handle the primary button being clicked.
      */
-    _onClick: function() {
+    _onClick() {
         this.options.click();
     },
 
-    /*
+    /**
      * Show the alternatives in a drop down (or up) menu.
      */
-    _showDropDown: function() {
+    _showDropDown() {
 
         if (!this._dropDownShown && !this._animating) {
             this._$primaryBtn.addClass(this._dropDownShownClass);
@@ -154,20 +166,20 @@ RB.SplitButtonView = Backbone.View.extend({
             this._reposition();
 
             this._$alternatives
-                .fadeIn(this._delayTime, _.bind(function() {
+                .fadeIn(this._delayTime, () => {
                     this._dropDownShown = true;
                     this._animating = false;
-                }, this));
+                });
 
         }
     },
 
-    /*
+    /**
      * Try to hide the drop down menu.
      *
      * The menu will only be hidden if it is shown and
      */
-    _tryHideDropDown: function() {
+    _tryHideDropDown() {
         if (this._dropDownShown &&
             !this._animating &&
             !this._$dropDownBtn.is(':hover') &&
@@ -177,33 +189,33 @@ RB.SplitButtonView = Backbone.View.extend({
             this._$primaryBtn.removeClass(this._dropDownShownClass);
             this._animating = true;
 
-            this._$alternatives.fadeOut(this._delayTime, _.bind(function() {
+            this._$alternatives.fadeOut(this._delayTime, () => {
                 this._dropDownShown = false;
                 this._animating = false;
                 this._$alternatives.removeClass(this._dropDownShownClass);
-            }, this));
+            });
         }
     },
 
-    /*
+    /**
      * Schedule a hover check to try to hide the drop down when the mouse
      * leaves.
      */
-    _delayCheckHover: function() {
+    _delayCheckHover() {
         _.delay(this._tryHideDropDown, this._delayTime);
     },
 
-    /*
+    /**
      * Position the drop-down menu above or below the button.
      */
-    _reposition: function() {
+    _reposition() {
         this._$alternatives.positionToSide(this.$el, {
             side: this.options.direction === 'down' ? 'b' : 't'
         });
     },
 
-    /*
-     * Handle a screen resize event to reposition the
+    /**
+     * Handle a screen resize event to reposition the drop-down.
      */
     _onResize: _.debounce(function() {
         if (this._dropDownShown) {
