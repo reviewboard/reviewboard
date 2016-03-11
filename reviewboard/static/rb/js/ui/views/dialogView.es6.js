@@ -141,10 +141,11 @@ RB.DialogView = Backbone.View.extend({
      */
     _getButtons() {
         return this.buttons.map(buttonInfo => {
+            console.log(buttonInfo);
             const $button = $('<input type="button" />')
                 .val(buttonInfo.label)
-                .toggleClass('primary', buttonInfo.primary)
-                .toggleClass('danger', buttonInfo.danger);
+                .toggleClass('primary', !!buttonInfo.primary)
+                .toggleClass('danger', !!buttonInfo.danger);
 
             if (buttonInfo.onClick) {
                 if (_.isFunction(buttonInfo.onClick)) {
