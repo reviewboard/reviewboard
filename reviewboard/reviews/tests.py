@@ -2469,6 +2469,35 @@ class DefaultReviewerTests(TestCase):
         self.assertEqual(len(default_reviewers), 1)
         self.assertIn(default_reviewer2, default_reviewers)
 
+    def test_review_request_add_default_reviewer_with_inactive_user(self):
+        """Testing adding default reviewer with inactive user to review request
+        """
+        tool = Tool.objects.get(name='CVS')
+
+        default_reviewer1 = DefaultReviewer(name="Test", file_regex=".*")
+        default_reviewer1.save()
+
+        repo1 = Repository(name='Test1', path='path1', tool=tool)
+        repo1.save()
+        default_reviewer1.repository.add(repo1)
+
+        user1 = User(username='User1')
+        user1.save()
+        default_reviewer1.people.add(user1)
+
+        user2 = User(username='User2', is_active=False)
+        user2.save()
+        default_reviewer1.people.add(user2)
+
+        review_request = self.create_review_request(repository=repo1,
+                                                    submitter=user1)
+        diffset = self.create_diffset(review_request)
+        self.create_filediff(diffset)
+        review_request.add_default_reviewers()
+        self.assertIn(user1, review_request.target_people.all())
+        self.assertNotIn(user2, review_request.target_people.all())
+
+
     def test_form_with_localsite(self):
         """Testing DefaultReviewerForm with a LocalSite."""
         test_site = LocalSite.objects.create(name='test')
