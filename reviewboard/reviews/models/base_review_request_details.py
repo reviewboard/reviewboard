@@ -152,7 +152,8 @@ class BaseReviewRequestDetails(models.Model):
             for filediff in files:
                 if regex.match(filediff.source_file or filediff.dest_file):
                     for person in default.people.all():
-                        people.add(person)
+                        if person.is_active:
+                            people.add(person)
 
                     for group in default.groups.all():
                         groups.add(group)
