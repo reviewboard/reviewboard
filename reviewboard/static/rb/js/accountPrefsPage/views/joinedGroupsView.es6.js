@@ -1,12 +1,7 @@
-(function() {
+{
 
 
-var GroupMembershipItem,
-    GroupMembershipItemView,
-    SiteGroupsView;
-
-
-/*
+/**
  * An item representing the user's membership with a group.
  *
  * This keeps track of the group's information and the membership state
@@ -14,7 +9,7 @@ var GroupMembershipItem,
  *
  * This provides two actions: 'Join', and 'Leave'.
  */
-GroupMembershipItem = Djblets.Config.ListItem.extend({
+const GroupMembershipItem = Djblets.Config.ListItem.extend({
     defaults: _.defaults({
         localSiteName: null,
         displayName: null,
@@ -24,18 +19,18 @@ GroupMembershipItem = Djblets.Config.ListItem.extend({
         url: null
     }, Djblets.Config.ListItem.prototype.defaults),
 
-    /*
-     * Initializes the item.
+    /**
+     * Initialize the item.
      *
      * The item's name and URL will be taken from the serialized group
      * information, and a proxy ReviewGroup will be created to handle
      * membership.
      */
-    initialize: function() {
-        var name = this.get('name'),
-            localSiteName = this.get('localSiteName');
+    initialize() {
+        Djblets.Config.ListItem.prototype.initialize.apply(this, arguments);
 
-        Djblets.Config.ListItem.prototype.initialize.call(this);
+        const name = this.get('name');
+        const localSiteName = this.get('localSiteName');
 
         this.set({
             text: name,
@@ -52,48 +47,42 @@ GroupMembershipItem = Djblets.Config.ListItem.extend({
         this._updateActions();
     },
 
-    /*
-     * Joins the group.
+    /**
+     * Join the group.
      *
      * This will add the user to the group, and set the 'joined' property
      * to true upon completion.
      */
-    joinGroup: function() {
+    joinGroup() {
         this.group.addUser(
             RB.UserSession.instance.get('username'),
             {
-                success: function() {
-                    this.set('joined', true);
-                }
-            },
-            this);
+                success: () => this.set('joined', true)
+            });
     },
 
-    /*
-     * Leaves the group.
+    /**
+     * Leave the group.
      *
      * This will remove the user from the group, and set the 'joined' property
      * to false upon completion.
      */
-    leaveGroup: function() {
+    leaveGroup() {
         this.group.removeUser(
             RB.UserSession.instance.get('username'),
             {
-                success: function() {
-                    this.set('joined', false);
-                }
-            },
-            this);
+                success: () => this.set('joined', false)
+            });
     },
 
-    /*
-     * Updates the list of actions.
+    /**
+     * Update the list of actions.
      *
      * This will replace the existing action, if any, with a new action
      * allowing the user to join or leave the group, depending on their
      * current membership status.
      */
-    _updateActions: function() {
+    _updateActions() {
         if (this.get('joined')) {
             this.actions = [{
                 id: 'leave',
@@ -111,13 +100,13 @@ GroupMembershipItem = Djblets.Config.ListItem.extend({
 });
 
 
-/*
+/**
  * Provides UI for showing a group membership.
  *
  * This will display the group information and provide buttons for
  * the Join/Leave actions.
  */
-GroupMembershipItemView = Djblets.Config.ListItemView.extend({
+const GroupMembershipItemView = Djblets.Config.ListItemView.extend({
     actionHandlers: {
         'join': '_onJoinClicked',
         'leave': '_onLeaveClicked'
@@ -130,27 +119,27 @@ GroupMembershipItemView = Djblets.Config.ListItemView.extend({
         '<span class="config-group-display-name"><%- displayName %></span>'
     ].join('')),
 
-    /*
+    /**
      * Handler for when Join is clicked.
      *
      * Tells the model to join the group.
      */
-    _onJoinClicked: function() {
+    _onJoinClicked() {
         this.model.joinGroup();
     },
 
-    /*
+    /**
      * Handler for when Leave is clicked.
      *
      * Tells the model to leave the group.
      */
-    _onLeaveClicked: function() {
+    _onLeaveClicked() {
         this.model.leaveGroup();
     }
 });
 
 
-/*
+/**
  * Displays a list of group membership items, globally or for a Local Site.
  *
  * If displaying for a Local Site, then the name of the site will be shown
@@ -161,7 +150,7 @@ GroupMembershipItemView = Djblets.Config.ListItemView.extend({
  * The list of groups are filterable. When filtering, if there are no groups
  * that match the filter, then the whole view will be hidden.
  */
-SiteGroupsView = Backbone.View.extend({
+const SiteGroupsView = Backbone.View.extend({
     template: _.template([
         '<% if (name) { %>',
         ' <h3><%- name %></h3>',
@@ -169,12 +158,20 @@ SiteGroupsView = Backbone.View.extend({
         '<div class="groups" />'
     ].join('')),
 
-    /*
-     * Initializes the view.
+    /**
+     * Initialize the view.
      *
      * This will create a list for all groups in this view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for view construction.
+     *
+     * Option Args:
+     *     name (string):
+     *         The name of the local site, if any.
      */
-    initialize: function(options) {
+    initialize(options) {
         this.name = options.name;
         this.collection = new RB.FilteredCollection(null, {
             collection: new Backbone.Collection(options.groups, {
@@ -186,10 +183,14 @@ SiteGroupsView = Backbone.View.extend({
         });
     },
 
-    /*
-     * Renders the view.
+    /**
+     * Render the view.
+     *
+     * Returns:
+     *     SiteGroupsView:
+     *     This object, for chaining.
      */
-    render: function() {
+    render() {
         this._listView = new Djblets.Config.ListView({
             ItemView: GroupMembershipItemView,
             model: this.groupList
@@ -207,12 +208,16 @@ SiteGroupsView = Backbone.View.extend({
         return this;
     },
 
-    /*
-     * Filters the list of groups by name.
+    /**
+     * Filter the list of groups by name.
      *
      * If no groups are found, then the view will hide itself.
+     *
+     * Args:
+     *     name (string):
+     *         The group name to search for.
      */
-    filterBy: function(name) {
+    filterBy(name) {
         this.collection.setFilters({
             'name': name
         });
@@ -222,7 +227,7 @@ SiteGroupsView = Backbone.View.extend({
 });
 
 
-/*
+/**
  * Provides UI for managing a user's group memberships.
  *
  * All accessible groups will be shown to the user, sectioned by
@@ -246,10 +251,18 @@ RB.JoinedGroupsView = Backbone.View.extend({
         'change .search input': '_onGroupSearchChanged'
     },
 
-    /*
-     * Initializes the view.
+    /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for view construction.
+     *
+     * Option Args:
+     *     groups (Array of object):
+     *         Initial set of groups.
      */
-    initialize: function(options) {
+    initialize(options) {
         this.groups = options.groups;
 
         this._$listsContainer = null;
@@ -258,22 +271,24 @@ RB.JoinedGroupsView = Backbone.View.extend({
         this._groupViews = [];
     },
 
-    /*
-     * Renders the view.
+    /**
+     * Render the view.
      *
      * This will set up the elements and the list of SiteGroupsViews.
+     *
+     * Returns:
+     *     RB.JoinedGroupsView.
+     *     This object, for chaining.
      */
-    render: function() {
+    render() {
         this.$el.html(this.template());
 
         this._$listsContainer = this.$('.group-lists');
         this._$search = this.$('.search input');
 
-        _.each(this.groups, function(groups, localSiteName) {
-            var view;
-
+        for (let [localSiteName, groups] of Object.entries(this.groups)) {
             if (groups.length > 0) {
-                view = new SiteGroupsView({
+                const view = new SiteGroupsView({
                     name: localSiteName,
                     groups: groups
                 });
@@ -283,29 +298,26 @@ RB.JoinedGroupsView = Backbone.View.extend({
 
                 this._groupViews.push(view);
             }
-        }, this);
+        }
 
         return this;
     },
 
-    /*
+    /**
      * Handler for when the search box changes.
      *
      * This will instruct the SiteGroupsViews to filter their contents
      * by the text entered into the search box.
      */
-    _onGroupSearchChanged: function() {
-        var text = this._$search.val();
+    _onGroupSearchChanged() {
+        const text = this._$search.val();
 
         if (text !== this._searchText) {
             this._searchText = text;
-
-            _.each(this._groupViews, function(groupView) {
-                groupView.filterBy(this._searchText);
-            }, this);
+            this._groupViews.forEach(view => view.filterBy(this._searchText));
         }
     }
 });
 
 
-})();
+}
