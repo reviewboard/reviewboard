@@ -39,10 +39,6 @@ def check_dependencies(settings):
         dependency_error('The Python Imaging Library (Pillow or PIL) '
                          'is required.')
 
-    # ReCaptcha
-    if not has_module('recaptcha'):
-        dependency_error('The recaptcha python module is required.')
-
     # The following checks are non-fatal warnings, since these dependencies are
     # merely recommended, not required.
     def dependency_warning(string):
