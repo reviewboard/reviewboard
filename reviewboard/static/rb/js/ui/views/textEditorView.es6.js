@@ -1,22 +1,33 @@
-(function() {
+{
 
 
-var CodeMirrorWrapper,
-    TextAreaWrapper;
-
-
-/*
+/**
  * Wraps CodeMirror, providing a standard interface for TextEditorView's usage.
  */
-CodeMirrorWrapper = Backbone.View.extend({
-    /*
-     * Initializes CodeMirrorWrapper.
+const CodeMirrorWrapper = Backbone.View.extend({
+    /**
+     * Initialize CodeMirrorWrapper.
      *
      * This will set up CodeMirror based on the objects, add it to the parent,
      * and begin listening to events.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the wrapper.
+     *
+     * Option Args:
+     *     autoSize (boolean):
+     *         Whether the editor should automatically resize itself to fit its
+     *         container.
+     *
+     *     parentEl (Element):
+     *        The parent element for the editor.
+     *
+     *    minHeight (number):
+     *        The minimum vertical size of the editor.
      */
-    initialize: function(options) {
-        var codeMirrorOptions = {
+    initialize(options) {
+        const codeMirrorOptions = {
             mode: {
                 name: 'gfm',
                 /*
@@ -55,19 +66,23 @@ CodeMirrorWrapper = Backbone.View.extend({
             this.$el.css('min-height', this.options.minHeight);
         }
 
-        this._codeMirror.on('viewportChange', _.bind(function() {
-            this.$el.triggerHandler('resize');
-        }, this));
-
-        this._codeMirror.on('change', _.bind(function() {
-            this.trigger('change');
-        }, this));
+        this._codeMirror.on('viewportChange',
+                            () => this.$el.triggerHandler('resize'));
+        this._codeMirror.on('change', () => this.trigger('change'));
     },
 
-    /*
-     * Returns whether or not the editor's contents have changed.
+    /**
+     * Return whether or not the editor's contents have changed.
+     *
+     * Args:
+     *     initialValue (string):
+     *         The initial value of the editor.
+     *
+     * Returns:
+     *     boolean:
+     *     Whether or not the editor is dirty.
      */
-    isDirty: function(initialValue) {
+    isDirty(initialValue) {
         /*
          * We cannot trust codeMirror's isClean() method.
          *
@@ -77,57 +92,91 @@ CodeMirrorWrapper = Backbone.View.extend({
         return (initialValue || '') !== this.getText();
     },
 
-    /*
-     * Sets the text in the editor.
+    /**
+     * Set the text in the editor.
+     *
+     * Args:
+     *     text (string):
+     *         The new text for the editor.
      */
-    setText: function(text) {
+    setText(text) {
         this._codeMirror.setValue(text);
     },
 
-    /*
-     * Returns the text in the editor.
+    /**
+     * Return the text in the editor.
+     *
+     * Returns:
+     *     string:
+     *     The current contents of the editor.
      */
-    getText: function() {
+    getText() {
         return this._codeMirror.getValue();
     },
 
-    /*
-     * Returns the full client height of the content.
+    /**
+     * Return the full client height of the content.
+     *
+     * Returns:
+     *     number:
+     *     The client height of the editor.
      */
-    getClientHeight: function() {
+    getClientHeight() {
         return this._codeMirror.getScrollInfo().clientHeight;
     },
 
-    /*
-     * Sets the size of the editor.
+    /**
+     * Set the size of the editor.
+     *
+     * Args:
+     *     width (number):
+     *         The new width of the editor.
+     *
+     *     height (number):
+     *         The new height of the editor.
      */
-    setSize: function(width, height) {
+    setSize(width, height) {
         this._codeMirror.setSize(width, height);
         this._codeMirror.refresh();
     },
 
-    /*
-     * Focuses the editor.
+    /**
+     * Focus the editor.
      */
-    focus: function() {
+    focus() {
         this._codeMirror.focus();
     }
 });
 
 
-/*
+/**
  * Wraps <textarea>, providing a standard interface for TextEditorView's usage.
  */
-TextAreaWrapper = Backbone.View.extend({
+const TextAreaWrapper = Backbone.View.extend({
     tagName: 'textarea',
 
     /*
-     * Initializes TextAreaWrapper.
+     * Initialize TextAreaWrapper.
      *
      * This will set up the element based on the provided options, begin
      * listening for events, and add the element to the parent.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the wrapper.
+     *
+     * Option Args:
+     *     autoSize (boolean):
+     *         Whether the editor should automatically resize itself to fit its
+     *         container.
+     *
+     *     parentEl (Element):
+     *        The parent element for the editor.
+     *
+     *    minHeight (number):
+     *        The minimum vertical size of the editor.
      */
-    initialize: function(options) {
+    initialize(options) {
         this.options = options;
 
         if (options.autoSize) {
@@ -137,9 +186,7 @@ TextAreaWrapper = Backbone.View.extend({
         this.$el
             .css('width', '100%')
             .appendTo(options.parentEl)
-            .on('change keydown keyup keypress', _.bind(function() {
-                this.trigger('change');
-            }, this));
+            .on('change keydown keyup keypress', () => this.trigger('change'));
 
         if (options.minHeight !== undefined) {
             if (options.autoSize) {
@@ -151,20 +198,32 @@ TextAreaWrapper = Backbone.View.extend({
         }
     },
 
-    /*
-     * Returns whether or not the editor's contents have changed.
+    /**
+     * Return whether or not the editor's contents have changed.
+     *
+     * Args:
+     *     initialValue (string):
+     *         The initial value of the editor.
+     *
+     * Returns:
+     *     boolean:
+     *     Whether or not the editor is dirty.
      */
-    isDirty: function(initialValue) {
-        var value = this.el.value || '';
+    isDirty(initialValue) {
+        const value = this.el.value || '';
 
         return value.length !== initialValue.length ||
                value !== initialValue;
     },
 
-    /*
-     * Sets the text in the editor.
+    /**
+     * Set the text in the editor.
+     *
+     * Args:
+     *     text (string):
+     *         The new text for the editor.
      */
-    setText: function(text) {
+    setText(text) {
         this.el.value = text;
 
         if (this.options.autoSize) {
@@ -172,24 +231,39 @@ TextAreaWrapper = Backbone.View.extend({
         }
     },
 
-    /*
-     * Returns the text in the editor.
+    /**
+     * Return the text in the editor.
+     *
+     * Returns:
+     *     string:
+     *     The current contents of the editor.
      */
-    getText: function() {
+    getText() {
         return this.el.value;
     },
 
-    /*
-     * Returns the full client height of the content.
+    /**
+     * Return the full client height of the content.
+     *
+     * Returns:
+     *     number:
+     *     The client height of the editor.
      */
-    getClientHeight: function() {
+    getClientHeight() {
         return this.el.clientHeight;
     },
 
-    /*
-     * Sets the size of the editor.
+    /**
+     * Set the size of the editor.
+     *
+     * Args:
+     *     width (number):
+     *         The new width of the editor.
+     *
+     *     height (number):
+     *         The new height of the editor.
      */
-    setSize: function(width, height) {
+    setSize(width, height) {
         if (width !== null) {
             this.$el.innerWidth(width);
         }
@@ -203,16 +277,16 @@ TextAreaWrapper = Backbone.View.extend({
         }
     },
 
-    /*
-     * Focuses the editor.
+    /**
+     * Focus the editor.
      */
-    focus: function() {
+    focus() {
         this.$el.focus();
     }
 });
 
 
-/*
+/**
  * Provides an editor for editing plain or Markdown text.
  *
  * The editor allows for switching between plain or Markdown text on-the-fly.
@@ -235,14 +309,29 @@ RB.TextEditorView = Backbone.View.extend({
         'focus': 'focus'
     },
 
-    /*
-     * Initializes the view with any provided options.
+    /**
+     * Initialize the view with any provided options.
+     *
+     * Args:
+     *     options (object):
+     *         Options for view construction.
+     *
+     * Option Args:
+     *     richText (boolean):
+     *         Whether the editor is using rich text (Markdown).
+     *
+     *     text (string):
+     *         The initial text.
+     *
+     *     bindRichText (object):
+     *         An object with ``model`` and ``attrName`` keys, for when the
+     *         rich text should be bound to an attribute on another model.
      */
-    initialize: function(options) {
+    initialize(options={}) {
         this._editor = null;
         this._prevClientHeight = null;
 
-        this.options = _.defaults(options || {}, this.defaultOptions);
+        this.options = _.defaults(options, this.defaultOptions);
         this.richText = !!this.options.richText;
         this._value = this.options.text || '';
         this._richTextDirty = false;
@@ -269,26 +358,34 @@ RB.TextEditorView = Backbone.View.extend({
         }
     },
 
-    /*
-     * Renders the text editor.
+    /**
+     * Render the text editor.
      *
      * This will set the class name on the element, ensuring we have a
      * standard set of styles, even if this editor is bound to an existing
      * element.
+     *
+     * Returns:
+     *     RB.TextEditorView:
+     *     This object, for chaining.
      */
-    render: function() {
+    render() {
         this.$el.addClass(this.className);
 
         return this;
     },
 
-    /*
-     * Sets whether or not rich text (Markdown) is to be usd.
+    /**
+     * Set whether or not rich text (Markdown) is to be used.
      *
      * This can dynamically change the text editor to work in plain text
      * or Markdown.
+     *
+     * Args:
+     *     richText (boolean):
+     *         Whether the editor should use rich text.
      */
-    setRichText: function(richText) {
+    setRichText(richText) {
         if (richText === this.richText) {
             return;
         }
@@ -309,66 +406,87 @@ RB.TextEditorView = Backbone.View.extend({
         this.trigger('change');
     },
 
-    /*
-     * Binds a richText attribute on a model to the mode on this editor.
+    /**
+     * Bind a richText attribute on a model to the mode on this editor.
      *
      * This editor's richText setting will stay in sync with the attribute
      * on the given mode.
+     *
+     * Args:
+     *     model (Backbone.Model):
+     *         A model to bind to.
+     *
+     *     attrName (string):
+     *         The name of the attribute to bind.
      */
-    bindRichTextAttr: function(model, attrName) {
+    bindRichTextAttr(model, attrName) {
         this.setRichText(model.get(attrName));
 
-        this.listenTo(model, 'change:' + attrName, function(model, value) {
-            this.setRichText(value);
-        });
+        this.listenTo(model, `change:${attrName}`,
+                      (model, value) => this.setRichText(value));
     },
 
-    /*
-     * Binds an Enable Markdown checkbox to this text editor.
+    /**
+     * Bind an Enable Markdown checkbox to this text editor.
      *
      * The checkbox will initially be set to the value of the editor's
      * richText property. Toggling the checkbox will then manipulate that
      * property.
+     *
+     * Args:
+     *     $checkbox (jQuery):
+     *         The checkbox to bind.
      */
-    bindRichTextCheckbox: function($checkbox) {
+    bindRichTextCheckbox($checkbox) {
         $checkbox
             .prop('checked', this.richText)
-            .on('change', _.bind(function() {
-                this.setRichText($checkbox.prop('checked'));
-            }, this));
+            .on('change', () => this.setRichText($checkbox.prop('checked')));
 
-        this.on('change:richText', function() {
-            $checkbox.prop('checked', this.richText);
-        }, this);
+        this.on('change:richText',
+                () => $checkbox.prop('checked', this.richText));
     },
 
-    /*
-     * Binds the visibility of an element to the richText property.
+    /**
+     * Bind the visibility of an element to the richText property.
      *
      * If richText ist true, the element will be shown. Otherwise, it
      * will be hidden.
+     *
+     * Args:
+     *     $el (jQuery):
+     *         The element to show when richText is true.
      */
-    bindRichTextVisibility: function($el) {
+    bindRichTextVisibility($el) {
         $el.setVisible(this.richText);
 
-        this.on('change:richText', function() {
-            $el.setVisible(this.richText);
-        }, this);
+        this.on('change:richText', () => $el.setVisible(this.richText));
     },
 
-    /*
-     * Returns whether or not the editor's contents have changed.
+    /**
+     * Return whether or not the editor's contents have changed.
+     *
+     * Args:
+     *     initialValue (string):
+     *         The initial value of the editor.
+     *
+     * Returns:
+     *     boolean:
+     *     Whether or not the editor is dirty.
      */
-    isDirty: function(initialValue) {
+    isDirty(initialValue) {
         return this._editor !== null &&
                (this._richTextDirty ||
                 this._editor.isDirty(initialValue || ''));
     },
 
-    /*
-     * Sets the text in the editor.
+    /**
+     * Set the text in the editor.
+     *
+     * Args:
+     *     text (string):
+     *         The new text for the editor.
      */
-    setText: function(text) {
+    setText(text) {
         if (text !== this.getText()) {
             if (this._editor) {
                 this._editor.setText(text);
@@ -378,61 +496,66 @@ RB.TextEditorView = Backbone.View.extend({
         }
     },
 
-    /*
-     * Returns the text in the editor.
+    /**
+     * Return the text in the editor.
+     *
+     * Returns:
+     *     string:
+     *     The current contents of the editor.
      */
-    getText: function() {
+    getText() {
         return this._editor ? this._editor.getText() : this._value;
     },
 
-    /*
-     * Sets the size of the editor.
+    /**
+     * Set the size of the editor.
+     *
+     * Args:
+     *     width (number):
+     *         The new width of the editor.
+     *
+     *     height (number):
+     *         The new height of the editor.
      */
-    setSize: function(width, height) {
+    setSize(width, height) {
         if (this._editor) {
             this._editor.setSize(width, height);
         }
     },
 
-    /*
-     * Shows the editor.
+    /**
+     * Show the editor.
      */
-    show: function() {
+    show() {
         this.$el.show();
         this._showEditor();
     },
 
-    /*
-     * Hides the editor.
+    /**
+     * Hide the editor.
      */
-    hide: function() {
+    hide() {
         this._hideEditor();
         this.$el.hide();
     },
 
-    /*
-     * Focuses the editor.
+    /**
+     * Focus the editor.
      */
-    focus: function() {
+    focus() {
         if (this._editor) {
             this._editor.focus();
         }
     },
 
-    /*
-     * Shows the actual editor wrapper.
+    /**
+     * Show the actual editor wrapper.
      *
      * Any stored text will be transferred to the editor, and the editor
      * will take control over all operations.
      */
-    _showEditor: function() {
-        var EditorCls;
-
-        if (this.richText) {
-            EditorCls = CodeMirrorWrapper;
-        } else {
-            EditorCls = TextAreaWrapper;
-        }
+    _showEditor() {
+        const EditorCls = this.richText ? CodeMirrorWrapper : TextAreaWrapper;
 
         this._editor = new EditorCls({
             parentEl: this.el,
@@ -445,13 +568,11 @@ RB.TextEditorView = Backbone.View.extend({
         this._richTextDirty = false;
         this._prevClientHeight = null;
 
-        this._editor.$el.on('resize', _.throttle(_.bind(function() {
-            this.$el.triggerHandler('resize');
-        }, this), 250));
+        this._editor.$el.on(
+            'resize',
+            _.throttle(() => this.$el.triggerHandler('resize'), 250));
 
-        this.listenTo(this._editor, 'change', _.throttle(_.bind(function() {
-            var clientHeight;
-
+        this.listenTo(this._editor, 'change', _.throttle(() => {
             /*
              * Make sure that the editor wasn't closed before the throttled
              * handler was reached.
@@ -460,7 +581,7 @@ RB.TextEditorView = Backbone.View.extend({
                 return;
             }
 
-            clientHeight = this._editor.getClientHeight();
+            const clientHeight = this._editor.getClientHeight();
 
             if (clientHeight !== this._prevClientHeight) {
                 this._prevClientHeight = clientHeight;
@@ -468,17 +589,17 @@ RB.TextEditorView = Backbone.View.extend({
             }
 
             this.trigger('change');
-        }, this), 500));
+        }, 500));
 
         this.focus();
     },
 
-    /*
-     * Hides the actual editor wrapper.
+    /**
+     * Hide the actual editor wrapper.
      *
      * The last value from the editor will be stored for later retrieval.
      */
-    _hideEditor: function() {
+    _hideEditor() {
         if (this._editor) {
             this._value = this._editor.getText();
             this._richTextDirty = false;
@@ -489,40 +610,38 @@ RB.TextEditorView = Backbone.View.extend({
         }
     }
 }, {
-    /*
-     * Returns options used to display a TextEditorView in an inlineEditor.
+    /**
+     * Return options used to display a TextEditorView in an inlineEditor.
      *
-     * This will return an options dictionary that can be used with an
-     * inlineEditor. The inlineEditor will make use of the TextEditorView
-     * instead of a textarea.
+     * Args:
+     *     options (object):
+     *         Options to be passed on to the TextEditorView.
      *
-     * This can take options for the TextEditorView to change the default
-     * behavior.
+     * Returns:
+     *     object:
+     *     An options object to be used with an inlineEditor. The resulting
+     *     inlineEditor will make use of the TextEditorView instead of its
+     *     default textarea.
      */
-    getInlineEditorOptions: function(options) {
-        var textEditor;
+    getInlineEditorOptions(options) {
+        let textEditor;
 
         return {
             matchHeight: false,
             multiline: true,
 
-            createMultilineField: function(editor) {
-                var $editor = editor.element,
-                    origRichText;
+            createMultilineField(editor) {
+                const $editor = editor.element;
+                let origRichText;
 
                 textEditor = new RB.TextEditorView(options);
                 textEditor.render();
 
                 $editor.one('beginEdit', function() {
-                    var $buttons = $editor.inlineEditor('buttons'),
-                        $markdownRef,
-                        $checkbox,
-                        $span;
+                    const $buttons = $editor.inlineEditor('buttons');
+                    const $span = $('<span class="enable-markdown" />');
 
-                    $span = $('<span/>')
-                        .addClass('enable-markdown');
-
-                    $checkbox = $('<input/>')
+                    const $checkbox = $('<input/>')
                         .attr({
                             id: _.uniqueId('markdown_check'),
                             type: 'checkbox'
@@ -536,7 +655,7 @@ RB.TextEditorView = Backbone.View.extend({
 
                     $buttons.append($span);
 
-                    $markdownRef = $('<a/>')
+                    const $markdownRef = $('<a/>')
                         .addClass('markdown-info')
                         .attr({
                             href: MANUAL_URL + 'users/markdown/',
@@ -567,27 +686,31 @@ RB.TextEditorView = Backbone.View.extend({
                 return textEditor.$el;
             },
 
-            setFieldValue: function(editor, value) {
+            setFieldValue(editor, value) {
                 textEditor.setText(value || '');
             },
 
-            getFieldValue: function() {
+            getFieldValue() {
                 return textEditor.getText();
             },
 
-            isFieldDirty: function(editor, initialValue) {
+            isFieldDirty(editor, initialValue) {
                 return textEditor.isDirty(initialValue);
             }
         };
     },
 
-    /*
-     * Returns the TextEditorView for an inlineEditor element.
+    /**
+     * Return the TextEditorView for an inlineEditor element.
+     *
+     * Returns:
+     *     TextEditorView:
+     *     The view corresponding to the editor.
      */
-    getFromInlineEditor: function($editor) {
+    getFromInlineEditor($editor) {
         return $editor.inlineEditor('field').data('text-editor');
     }
 });
 
 
-})();
+}
