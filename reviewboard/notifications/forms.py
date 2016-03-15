@@ -19,6 +19,14 @@ class WebHookTargetForm(forms.ModelForm):
         """
         return self.cleaned_data['extra_data'] or None
 
+    def clean_events(self):
+        events = self.cleaned_data['events']
+
+        if '*' in events:
+            events = ['*']
+
+        return events
+
     def clean(self):
         """Validate the state of the entire form.
 

@@ -9,7 +9,7 @@ RB.WebhookFormView = Backbone.View.extend({
         'change #id_apply_to': '_onApplyToChanged',
         'change #id_encoding': '_onEncodingChanged',
         'change #id_use_custom_content': '_onUseCustomContentToggled',
-        'change #id_handlers_0': '_onAllEventsToggled'
+        'change #id_events_0': '_onAllEventsToggled'
     },
 
     /*
@@ -17,7 +17,7 @@ RB.WebhookFormView = Backbone.View.extend({
      */
     render: function() {
         this._$encoding = $('#id_encoding');
-        this._$eventCheckboxes = $('#id_handlers input');
+        this._$eventCheckboxes = $('#id_events').find('input');
         this._$allEventsCheckbox = this._$eventCheckboxes.filter('[value="*"]');
         this._$applyTo = $('#id_apply_to');
         this._$applyToSelected = this._$applyTo.find('[value="S"]');
