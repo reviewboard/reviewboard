@@ -79,7 +79,7 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
         APPLY_TO_CUSTOM_REPOS,
     )
 
-    REPOSITORIES_SPLIT_RE = re.compile(r',\s*')
+    COMMA_SPLIT_RE = re.compile(r'\s*,\s*')
 
     fields = {
         'apply_to': {
@@ -308,30 +308,37 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
         """Parse the comma-separated repository IDs.
 
         Args:
-            values (unicode):
+            value (unicode):
                 Comma-separated integers representing repository IDs.
+
+            request (django.http.HttpRequest):
+                The HTTP request.
+
+            **kwargs (dict):
+                Additional keyword arguments.
 
         Returns:
             list: A list of repository IDs as strings.
         """
-        return self.REPOSITORIES_SPLIT_RE.split(value)
+        return self._parse_comma_list(value)
 
     def parse_events_field(self, value, request, **kwargs):
         """Parse the comma-separated event names.
 
         Args:
-            values (unicode):
+            value (unicode):
                 Comma-separated event names.
+
+            request (django.http.HttpRequest):
+                The HTTP request.
+
+            **kwargs (dict):
+                Additional keyword arguments.
 
         Returns:
             list: A list of event names as strings.
         """
-        value = value.strip()
-
-        if not value:
-            return []
-
-        return re.split(r'\s*,\s*', value)
+        return self._parse_comma_list(value)
 
     @webapi_login_required
     @augment_method_from(WebAPIResource)
@@ -542,6 +549,26 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
             return INVALID_FORM_DATA, {
                 'fields': self._get_form_errors(form),
             }
+
+    def _parse_comma_list(self, value):
+        """Split a comma-separated string.
+
+        Args:
+            value (unicode):
+                The comma-separated list of values.
+
+        Returns:
+            list:
+            A list of :py:class:`unicode` objects. If the given value is empty,
+            then the empty list is returned instead of a list containing the
+            empty string.
+        """
+        value = value.strip()
+
+        if not value:
+            return []
+
+        return self.COMMA_SPLIT_RE.split(value)
 
 
 webhook_resource = WebHookResource()
