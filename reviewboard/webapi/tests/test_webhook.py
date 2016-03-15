@@ -286,6 +286,29 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
 
         self.assertListEqual(webhook.events, ['*'])
 
+    @add_fixtures(['test_scmtools'])
+    def test_post_empty_repositories(self):
+        """Testing adding a webhook that has an empty repositories field"""
+        self.user.is_superuser = True
+        self.user.save()
+
+        rsp = self.api_post(
+            get_webhook_list_url(),
+            {
+                'enabled': 0,
+                'events': 'review_request_closed,*,review_request_published',
+                'url': 'http://example.com',
+                'encoding': 'application/json',
+                'custom_content': '',
+                'apply_to': 'custom',
+                'repositories': '',
+            },
+            expected_mimetype=webhook_item_mimetype)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('webhook', rsp)
+        self.compare_item(rsp['webhook'], WebHookTarget.objects.get())
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
