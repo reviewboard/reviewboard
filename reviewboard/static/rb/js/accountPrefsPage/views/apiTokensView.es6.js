@@ -230,8 +230,6 @@ const APITokenItemCollection = Backbone.Collection.extend({
      *         The URL prefix for the current local site, if any.
      */
     initialize(models, options) {
-        Backbone.Collection.initialize.apply(this, models, options);
-
         this.localSitePrefix = options.localSitePrefix;
     }
 });
