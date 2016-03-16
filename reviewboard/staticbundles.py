@@ -175,7 +175,7 @@ PIPELINE_JAVASCRIPT = dict({
     'config-forms': {
         'source_filenames': (
             'rb/js/configForms/base.js',
-            'rb/js/configForms/models/resourceListItemModel.js',
+            'rb/js/configForms/models/resourceListItemModel.es6.js',
         ),
         'output_filename': 'rb/js/config-forms.min.js',
     },
