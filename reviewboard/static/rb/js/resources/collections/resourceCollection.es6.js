@@ -1,4 +1,4 @@
-/*
+/**
  * Base collection for resource models.
  *
  * ResourceCollection handles the fetching of models from resource lists
@@ -14,7 +14,25 @@
  * all within the collection.
  */
 RB.ResourceCollection = RB.BaseCollection.extend({
-    initialize: function(models, options) {
+    /**
+     * Initialize the collection.
+     *
+     * Args:
+     *     models (Array of object):
+     *         Initial set of models for the collection.
+     *
+     *     options (object):
+     *         Options for the collection.
+     *
+     * Option Args:
+     *     parentResource (RB.BaseResource):
+     *         The parent API resource.
+     *
+     *     extraQueryData (object):
+     *         Additional attributes to include in the API request query
+     *         string.
+     */
+    initialize(models, options) {
         this.parentResource = options.parentResource;
         this.extraQueryData = options.extraQueryData;
         this.maxResults = options.maxResults;
@@ -33,27 +51,27 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         this._links = null;
     },
 
-    /*
-     * Computes the URL for fetching models.
+    /**
+     * Return the URL for fetching models.
      *
      * This will make use of a URL provided by fetchNext/fetchPrev/fetchAll,
      * if provided.
      *
      * Otherwise, this will try to get the URL from the parent resource.
+     *
+     * Returns:
+     *     string:
+     *     The URL to fetch.
      */
-    url: function() {
-        var links,
-            listKey,
-            link;
-
+    url() {
         if (this._fetchURL) {
             return this._fetchURL;
         }
 
         if (this.parentResource) {
-            links = this.parentResource.get('links');
-            listKey = _.result(this.model.prototype, 'listKey');
-            link = links[listKey];
+            const links = this.parentResource.get('links');
+            const listKey = _.result(this.model.prototype, 'listKey');
+            const link = links[listKey];
 
             return link ? link.href : null;
         }
@@ -61,13 +79,25 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         return null;
     },
 
-    /*
-     * Parses the results from the list payload.
+    /**
+     * Parse the results from the list payload.
+     *
+     * Args:
+     *     rsp (object):
+     *         The response from the server.
+     *
+     *     options (object):
+     *         The options that were used for the fetch operation.
+     *
+     * Option Args:
+     *     fetchingAll (boolean):
+     *         Whether we're in the process of fetching all the items.
+     *
+     *     page (number):
+     *         The page of results that were fetched.
      */
-    parse: function(rsp, options) {
-        var listKey = _.result(this.model.prototype, 'listKey');
-
-        options = options || {};
+    parse(rsp, options={}) {
+        const listKey = _.result(this.model.prototype, 'listKey');
 
         this._links = rsp.links || null;
         this.totalResults = rsp.total_results;
@@ -88,8 +118,8 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         return rsp[listKey];
     },
 
-    /*
-     * Fetches models from the list.
+    /**
+     * Fetch models from the list.
      *
      * By default, this will replace the list of models in this collection.
      * That can be changed by providing `reset: false` in options.
@@ -97,13 +127,43 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      * The first page of resources will be fetched unless options.start is
      * set. The value is the start position for the number of objects, not
      * pages.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the fetch operation.
+     *
+     *     context (object):
+     *         Context to bind when calling callbacks.
+     *
+     * Option Args:
+     *     start (string):
+     *         The start position to use when fetching paginated results.
+     *
+     *     maxResults (number):
+     *         The number of results to return.
+     *
+     *     reset (boolean):
+     *         Whether the collection should be reset with the newly-fetched
+     *         items, or those items should be appended to the collection.
+     *
+     *     data (object):
+     *         Data to pass to the API request.
+     *
+     *     success (function):
+     *         Callback to be called when the fetch is successful.
+     *
+     *     error (function):
+     *         Callback to be called when the fetch fails.
+     *
+     *     complete (function):
+     *         Callback to be called after either success or error.
+     *
+     * Returns:
+     *     boolean:
+     *     Whether the fetch was successfully initiated.
      */
-    fetch: function(options, context) {
-        var expandedFields = this.model.prototype.expandedFields,
-            data;
-
-        options = options || {};
-        data = _.extend({}, options.data);
+    fetch(options={}, context=undefined) {
+        const data = _.extend({}, options.data);
 
         if (options.start !== undefined) {
             data.start = options.start;
@@ -138,24 +198,23 @@ RB.ResourceCollection = RB.BaseCollection.extend({
          */
         options.remove = options.reset;
 
+        const expandedFields = this.model.prototype.expandedFields;
         if (expandedFields.length > 0) {
             data.expand = expandedFields.join(',');
         }
 
         if (this.extraQueryData) {
-            data = _.defaults(data, this.extraQueryData);
+            _.defaults(data, this.extraQueryData);
         }
 
         options.data = data;
 
         if (this.parentResource) {
             this.parentResource.ready({
-                ready: function() {
-                    RB.BaseCollection.prototype.fetch.call(this, options,
-                                                           context);
-                },
+                ready: () => RB.BaseCollection.prototype.fetch.call(
+                    this, options, context),
                 error: _.isFunction(options.error)
-                       ? _.bind(options.error, context)
+                       ? options.error.bind(context)
                        : undefined
             }, this);
 
@@ -166,8 +225,8 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         }
     },
 
-    /*
-     * Fetches the previous batch of models from the resource list.
+    /**
+     * Fetch the previous batch of models from the resource list.
      *
      * This requires hasPrev to be true, from a prior fetch.
      *
@@ -175,10 +234,15 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      * after the fetch succeeds. Each time fetchPrev is called, the collection
      * will consist only of that page's batch of models. This can be overridden
      * by providing `reset: false` in options.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the fetch operation.
+     *
+     *     context (object):
+     *         Context to bind when calling callbacks.
      */
-    fetchPrev: function(options, context) {
-        options = options || {};
-
+    fetchPrev(options={}, context=undefined) {
         if (!this.hasPrev) {
             return false;
         }
@@ -192,8 +256,8 @@ RB.ResourceCollection = RB.BaseCollection.extend({
             context);
     },
 
-    /*
-     * Fetches the next batch of models from the resource list.
+    /**
+     * Fetch the next batch of models from the resource list.
      *
      * This requires hasNext to be true, from a prior fetch.
      *
@@ -201,10 +265,15 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      * after the fetch succeeds. Each time fetchNext is called, the collection
      * will consist only of that page's batch of models. This can be overridden
      * by providing `reset: false` in options.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the fetch operation.
+     *
+     *     context (object):
+     *         Context to bind when calling callbacks.
      */
-    fetchNext: function(options, context) {
-        options = options || {};
-
+    fetchNext(options={}, context=undefined) {
         if (!this.hasNext && options.enforceHasNext !== false) {
             return false;
         }
@@ -218,8 +287,8 @@ RB.ResourceCollection = RB.BaseCollection.extend({
             context);
     },
 
-    /*
-     * Fetches all models from the resource list.
+    /**
+     * Fetch all models from the resource list.
      *
      * This will fetch all the models from a resource list on a server,
      * paginating automatically until all models are fetched. The result is
@@ -229,18 +298,23 @@ RB.ResourceCollection = RB.BaseCollection.extend({
      * collection each time a page of resources are loaded.
      *
      * This can end up slowing down the server. Use it carefully.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the fetch operation.
+     *
+     *     context (object):
+     *         Context to bind when calling callbacks.
      */
-    fetchAll: function(options, context) {
-        var fetchOptions;
+    fetchAll(options={}, context=undefined) {
+        options = _.bindCallbacks(options, context);
 
-        options = _.bindCallbacks(options || {}, context);
-
-        fetchOptions = _.defaults({
+        const fetchOptions = _.defaults({
             reset: false,
             fetchingAll: true,
             enforceHasNext: false,
             maxResults: 50,
-            success: function() {
+            success: () => {
                 if (this._links.next) {
                     this._fetchURL = this._links.next.href;
                     this.fetchNext(fetchOptions, this);
@@ -257,15 +331,19 @@ RB.ResourceCollection = RB.BaseCollection.extend({
         return this.fetch(fetchOptions, this);
     },
 
-    /*
-     * Prepares the model for the collection.
+    /**
+     * Prepare the model for the collection.
      *
-     * This overrides Collection's _prepareModel to ensure that the
-     * resource has the proper parentObject set.
+     * This overrides Collection's _prepareModel to ensure that the resource
+     * has the proper parentObject set.
+     *
+     * Returns:
+     *     Backbone.Model:
+     *     The new model.
      */
-    _prepareModel: function(attrs, options) {
-        var model = RB.BaseCollection.prototype._prepareModel.call(this, attrs,
-                                                                   options);
+    _prepareModel() {
+        const model = RB.BaseCollection.prototype._prepareModel.apply(this, arguments);
+
         model.set('parentObject', this.parentResource);
 
         return model;

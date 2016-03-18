@@ -153,9 +153,9 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/resources/models/screenshotCommentModel.js',
             'rb/js/resources/models/screenshotCommentReplyModel.js',
             'rb/js/resources/models/validateDiffModel.js',
-            'rb/js/resources/collections/resourceCollection.js',
-            'rb/js/resources/collections/repositoryBranchesCollection.js',
-            'rb/js/resources/collections/repositoryCommitsCollection.js',
+            'rb/js/resources/collections/resourceCollection.es6.js',
+            'rb/js/resources/collections/repositoryBranchesCollection.es6.js',
+            'rb/js/resources/collections/repositoryCommitsCollection.es6.js',
             'rb/js/ui/views/dialogView.es6.js',
             'rb/js/ui/views/textEditorView.es6.js',
             'rb/js/ui/views/splitButtonView.es6.js',
@@ -175,7 +175,7 @@ PIPELINE_JAVASCRIPT = dict({
     'config-forms': {
         'source_filenames': (
             'rb/js/configForms/base.js',
-            'rb/js/configForms/models/resourceListItemModel.js',
+            'rb/js/configForms/models/resourceListItemModel.es6.js',
         ),
         'output_filename': 'rb/js/config-forms.min.js',
     },
