@@ -1,37 +1,41 @@
-/*
+/**
  * The base class for a reply to a type of comment.
  *
  * This handles all the serialization/deserialization for comment replies.
  * Subclasses are expected to provide the rspNamespace, but don't need to
  * provide any additional functionality.
+ *
+ * Model Attributes:
+ *     forceTextType (string):
+ *         The text format type to request for text in all responses.
+ *
+ *     includeTextTypes (string):
+ *         A comma-separated list of text types to include in the payload when
+ *         syncing the model.
+ *
+ *     rawTextFields (object):
+ *         The contents of the raw text fields, if forceTextType is used and
+ *         the caller fetches or posts with includeTextTypes=raw. The keys in this
+ *         object are the field names, and the values are the raw versions of
+ *         those attributes.
+ *
+ *     replyToID (number):
+ *         The ID of the comment that this reply is replying to.
+ *
+ *     richText (boolean):
+ *         Whether the reply text is saved in rich text (Markdown) format.
+ *
+ *     text (string):
+ *         The text of the reply.
  */
 RB.BaseCommentReply = RB.BaseResource.extend({
-    defaults: function() {
+    defaults() {
         return _.defaults({
-            /*
-             * The text format type to request for text in all responses.
-             */
             forceTextType: null,
-
-            /*
-             * A string containing a comma-separated list of text types to include
-             * in the payload.
-             */
             includeTextTypes: null,
-
-            /*
-             * Raw text fields, if the caller fetches or posts with
-             * include-text-types=raw.
-             */
             rawTextFields: {},
-
-            /* The ID of the comment being replied to. */
             replyToID: null,
-
-            /* Whether the reply text is saved in rich-text (Markdown) format. */
             richText: false,
-
-            /* The text entered for the comment. */
             text: ''
         }, RB.BaseResource.prototype.defaults());
     },
@@ -62,27 +66,36 @@ RB.BaseCommentReply = RB.BaseResource.extend({
         richText: RB.JSONSerializers.textType
     },
 
-    /*
-     * Destroys the comment reply if and only if the text is empty.
+    /**
+     * Destroy the comment reply if and only if the text is empty.
      *
      * This works just like destroy(), and will in fact call destroy()
      * with all provided arguments, but only if there's some actual
      * text in the reply.
      */
-    destroyIfEmpty: function(options, context) {
+    destroyIfEmpty() {
         if (!this.get('text')) {
-            this.destroy(options, context);
+            this.destroy.apply(this, arguments);
         }
     },
 
-    /*
-     * Deserializes comment reply data from an API payload.
+    /**
+     * Deserialize comment reply data from an API payload.
      *
      * This must be overloaded by subclasses, and the parent version called.
+     *
+     * Args:
+     *     rsp (object):
+     *         The response from the server.
+     *
+     * Returns:
+     *     object:
+     *     Attribute values to set on the model.
      */
-    parseResourceData: function(rsp) {
-        var rawTextFields = rsp.raw_text_fields || rsp,
-            data = RB.BaseResource.prototype.parseResourceData.call(this, rsp);
+    parseResourceData(rsp) {
+        const rawTextFields = rsp.raw_text_fields || rsp;
+        const data = RB.BaseResource.prototype.parseResourceData.call(
+            this, rsp);
 
         data.rawTextFields = rsp.raw_text_fields || {};
         data.richText = (rawTextFields.text_type === 'markdown');
@@ -90,14 +103,22 @@ RB.BaseCommentReply = RB.BaseResource.extend({
         return data;
     },
 
-    /*
-     * Performs validation on the attributes of the model.
+    /**
+     * Validate the attributes of the model.
      *
      * By default, this validates that there's a parentObject set. It
      * can be overridden to provide additional validation, but the parent
      * function must be called.
+     *
+     * Args:
+     *     attrs (object):
+     *         Model attributes to validate.
+     *
+     * Returns:
+     *     string:
+     *     An error string, if appropriate.
      */
-    validate: function(attrs) {
+    validate(attrs) {
         if (_.has(attrs, 'parentObject') && !attrs.parentObject) {
             return RB.BaseResource.strings.UNSET_PARENT_OBJECT;
         }

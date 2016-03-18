@@ -1,4 +1,4 @@
-/*
+/**
  * A registered default reviewer.
  *
  * Default reviewers auto-populate the list of reviewers for a review request
@@ -9,7 +9,14 @@
  * provided.
  */
 RB.DefaultReviewer = RB.BaseResource.extend({
-    defaults: function() {
+    /**
+     * Return defaults for the model attributes.
+     *
+     * Returns:
+     *     object:
+     *     The default values for new model instances.
+     */
+    defaults() {
         return _.defaults({
             name: null,
             fileRegex: null
@@ -25,17 +32,17 @@ RB.DefaultReviewer = RB.BaseResource.extend({
     serializedAttrs: ['fileRegex', 'name'],
     deserializedAttrs: ['fileRegex', 'name'],
 
-    /*
-     * Returns the URL to the resource.
+    /**
+     * Return the URL for syncing the model.
+     *
+     * Returns:
+     *     string:
+     *     The URL to use when making HTTP requests.
      */
-    url: function() {
-        var url = SITE_ROOT + (this.get('localSitePrefix') || '') +
-                  'api/default-reviewers/';
+    url() {
+        const url = SITE_ROOT + (this.get('localSitePrefix') || '') +
+                    'api/default-reviewers/';
 
-        if (!this.isNew()) {
-            url += this.id + '/';
-        }
-
-        return url;
+        return this.isNew() ? url : `${url}${this.id}/`;
     }
 });

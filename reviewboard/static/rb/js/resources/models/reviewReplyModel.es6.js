@@ -1,28 +1,48 @@
-/*
- * Review replies.
+/**
+ * A review reply.
  *
  * Encapsulates replies to a top-level review.
+ *
+ * Model Attributes:
+ *     forceTextType (string):
+ *         The text type to request for text in all responses.
+ *
+ *     includeTextTypes (string):
+ *         A comma-separated list of text types to include in responses.
+ *
+ *     rawTextFields (object):
+ *         The contents of the raw text fields, if forceTextType is used and
+ *         the caller fetches or posts with includeTextTypes=raw. The keys in
+ *         this object are the field names, and the values are the raw versions
+ *         of those attributes.
+ *
+ *     review (RB.Review):
+ *         The review that this reply is replying to.
+ *
+ *     public (boolean):
+ *         Whether this reply has been published.
+ *
+ *     bodyTop (string):
+ *         The reply to the original review's ``bodyTop``.
+ *
+ *     bodyTopRichText (boolean):
+ *         Whether the ``bodyTop`` field should be rendered as Markdown.
+ *
+ *     bodyBottom (string):
+ *         The reply to the original review's ``bodyBottom``.
+ *
+ *     bodyBottomRichText (boolean):
+ *         Whether the ``bodyBottom`` field should be rendered as Markdown.
+ *
+ *     timestamp (string):
+ *         The timestamp of this reply.
  */
 RB.ReviewReply = RB.BaseResource.extend({
-    defaults: function() {
+    defaults() {
         return _.defaults({
-            /*
-             * The text format type to request for text in all responses.
-             */
             forceTextType: null,
-
-            /*
-             * Whether responses from the server should return raw text
-             * fields when forceTextType is used.
-             */
             includeTextTypes: null,
-
-            /*
-             * Raw text fields, if the caller fetches or posts with
-             * include-text-types=raw.
-             */
             rawTextFields: {},
-
             review: null,
             'public': false,
             bodyTop: null,
@@ -72,10 +92,7 @@ RB.ReviewReply = RB.BaseResource.extend({
         includeTextTypes: RB.JSONSerializers.onlyIfValue,
         bodyTopRichText: RB.JSONSerializers.textType,
         bodyBottomRichText: RB.JSONSerializers.textType,
-
-        'public': function(value) {
-            return value ? true : undefined;
-        }
+        'public': value => value ? true : undefined
     },
 
     COMMENT_LINK_NAMES: [
@@ -85,9 +102,21 @@ RB.ReviewReply = RB.BaseResource.extend({
         'screenshot_comments'
     ],
 
-    parseResourceData: function(rsp) {
-        var rawTextFields = rsp.raw_text_fields || rsp,
-            data = RB.BaseResource.prototype.parseResourceData.call(this, rsp);
+    /**
+     * Parse the response from the server.
+     *
+     * Args:
+     *     rsp (object):
+     *         The response from the server.
+     *
+     * Returns:
+     *     object:
+     *     The attribute values to set on the model.
+     */
+    parseResourceData(rsp) {
+        const rawTextFields = rsp.raw_text_fields || rsp;
+        const data = RB.BaseResource.prototype.parseResourceData.call(
+            this, rsp);
 
         data.bodyTopRichText =
             (rawTextFields.body_top_text_type === 'markdown');
@@ -98,63 +127,77 @@ RB.ReviewReply = RB.BaseResource.extend({
         return data;
     },
 
-    /*
-     * Publishes the reply.
+    /**
+     * Publish the reply.
      *
      * Before publishing, the "publishing" event will be triggered.
      * After successfully publishing, "published" will be triggered.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the save operation.
+     *
+     *     context (object):
+     *         Context to bind when calling callbacks.
      */
-    publish: function(options, context) {
-        options = options || {};
-
+    publish(options={}, context=undefined) {
         this.trigger('publishing');
 
         this.ready({
-            ready: function() {
+            ready: () => {
                 this.set('public', true);
                 this.save({
                     data: {
                         'public': 1,
                         trivial: options.trivial ? 1 : 0
                     },
-                    success: function() {
+                    success: () => {
                         this.trigger('published');
 
                         if (_.isFunction(options.success)) {
                             options.success.call(context);
                         }
                     },
-                    error: function(model, xhr) {
+                    error: (model, xhr) => {
                         model.trigger('publishError', xhr.errorText);
 
                         if (_.isFunction(options.error)) {
                             options.error.call(context, model, xhr);
                         }
                     }
-                }, this);
+                });
             }
-        }, this);
+        });
     },
 
-    /*
-     * Discards the reply if it's empty.
+    /**
+     * Discard the reply if it's empty.
      *
      * If the reply doesn't have any remaining comments on the server, then
      * this will discard the reply.
      *
      * When we've finished checking, options.success will be called. It
      * will be passed true if discarded, or false otherwise.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the save operation.
+     *
+     *     context (object):
+     *         Context to bind when calling callbacks.
      */
-    discardIfEmpty: function(options, context) {
-        options = _.bindCallbacks(options || {}, context);
-        options.success = options.success || function() {};
+    discardIfEmpty(options={}, context=undefined) {
+        options = _.bindCallbacks(options, context);
 
         this.ready({
-            ready: function() {
+            ready: () => {
                 if (this.isNew() ||
                     this.get('bodyTop') ||
                     this.get('bodyBottom')) {
-                    options.success(false);
+                    if (_.isFunction(options.success)) {
+                        options.success(false);
+                    }
+
                     return;
                 }
 
@@ -162,11 +205,11 @@ RB.ReviewReply = RB.BaseResource.extend({
             },
 
             error: options.error
-        }, this);
+        });
     },
 
-    /*
-     * Checks if there are comments, given the comment type.
+    /**
+     * Check if there are comments, given the comment type.
      *
      * This is part of the discardIfEmpty logic.
      *
@@ -174,28 +217,39 @@ RB.ReviewReply = RB.BaseResource.extend({
      *
      * If there are no comments, we'll move on to the next comment type. If
      * we're done, the reply is discarded, and options.success(true) is called.
+     *
+     * Args:
+     *     linkNamesIndex (number):
+     *         An index into the ``COMMENT_LINK_NAMES`` Array.
+     *
+     *     options (object):
+     *         Options for the save operation.
+     *
+     *     context (object):
+     *         Context to bind when calling callbacks.
      */
-    _checkCommentsLink: function(linkNameIndex, options, context) {
-        var self = this,
-            linkName = this.COMMENT_LINK_NAMES[linkNameIndex],
-            url = this.get('links')[linkName].href;
+    _checkCommentsLink(linkNameIndex, options, context) {
+        const linkName = this.COMMENT_LINK_NAMES[linkNameIndex];
+        const url = this.get('links')[linkName].href;
 
         RB.apiCall({
             type: 'GET',
             url: url,
-            success: function(rsp) {
+            success: rsp => {
                 if (rsp[linkName].length > 0) {
-                    if (options.success) {
+                    if (_.isFunction(options.success)) {
                         options.success(false);
                     }
-                } else if (linkNameIndex < self.COMMENT_LINK_NAMES.length - 1) {
-                    self._checkCommentsLink(linkNameIndex + 1, options,
+                } else if (linkNameIndex < this.COMMENT_LINK_NAMES.length - 1) {
+                    this._checkCommentsLink(linkNameIndex + 1, options,
                                             context);
                 } else {
-                    self.destroy(
+                    this.destroy(
                     _.defaults({
-                        success: function() {
-                            options.success(true);
+                        success: () => {
+                            if (_.isFunction(options.success)) {
+                                options.success(true);
+                            }
                         }
                     }, options),
                     context);

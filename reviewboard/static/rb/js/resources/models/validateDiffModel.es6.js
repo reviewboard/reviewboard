@@ -1,10 +1,4 @@
-(function() {
-
-
-var parentProto = RB.Diff.prototype;
-
-
-/*
+/**
  * A resource for checking whether a diff will work.
  *
  * This is meant to be used as a sort of throwaway object, since a POST to the
@@ -21,26 +15,31 @@ var parentProto = RB.Diff.prototype;
  * be used to act upon this information.
  */
 RB.ValidateDiffModel = RB.Diff.extend({
-    defaults: function() {
-        return _.defaults({
-            repository: null,
-            localSitePrefix: ''
-        }, RB.Diff.prototype.defaults());
-    },
+    defaults: _.defaults({
+        repository: null,
+        localSitePrefix: ''
+    }, _.result(RB.Diff.prototype, 'defaults')),
 
     serializedAttrs: [
         'repository'
-    ].concat(parentProto.serializedAttrs),
+    ].concat(RB.Diff.prototype.serializedAttrs),
 
-    url: function() {
+    /**
+     * Return the URL to use when syncing this model.
+     *
+     * Returns:
+     *     string:
+     *     The URL to use for syncing.
+     */
+    url() {
         return SITE_ROOT + this.get('localSitePrefix') +
                'api/validation/diffs/';
     },
 
-    parse: function(/* response */) {
+    /**
+     * Parse the result from the server.
+     */
+    parse() {
         // Do nothing
     }
 });
-
-
-})();

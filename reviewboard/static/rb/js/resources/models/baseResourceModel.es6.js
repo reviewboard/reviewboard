@@ -1,4 +1,4 @@
-/*
+/**
  * The base model for all API-backed resource models.
  *
  * This provides a common set of attributes and functionality for working
@@ -9,8 +9,15 @@
  * Other resource models are expected to extend this. In particular, they
  * should generally be extending toJSON() and parse().
  */
-RB.BaseResource = Backbone.Model.extend(_.defaults({
-    defaults: function() {
+RB.BaseResource = Backbone.Model.extend({
+    /**
+     * Return default values for the model attributes.
+     *
+     * Returns:
+     *     object:
+     *     The attribute defaults.
+     */
+    defaults() {
         return {
             extraData: {},
             links: null,
@@ -19,20 +26,20 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
         };
     },
 
-    /* The key for the namespace for the object's payload in a response. */
+    /** The key for the namespace for the object's payload in a response. */
     rspNamespace: '',
 
-    /* The attribute used for the ID in the URL. */
+    /** The attribute used for the ID in the URL. */
     urlIDAttr: 'id',
 
-    listKey: function() {
+    listKey() {
         return this.rspNamespace + 's';
     },
 
-    /* The list of fields to expand in resource payloads. */
+    /** The list of fields to expand in resource payloads. */
     expandedFields: [],
 
-    /*
+    /**
      * Extra query arguments for GET requests.
      *
      * This may also be a function that returns the extra query arguments.
@@ -42,10 +49,10 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
      */
     extraQueryArgs: {},
 
-    /* Whether or not extra data can be associated on the resource. */
+    /** Whether or not extra data can be associated on the resource. */
     supportsExtraData: false,
 
-    /*
+    /**
      * A map of attribute names to resulting JSON field names.
      *
      * This is used to auto-generate a JSON payload from attribute names
@@ -56,61 +63,61 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
      */
     attrToJsonMap: {},
 
-    /* A list of attributes to serialize in toJSON(). */
+    /** A list of attributes to serialize in toJSON(). */
     serializedAttrs: [],
 
-    /* A list of attributes to deserialize in parseResourceData(). */
+    /** A list of attributes to deserialize in parseResourceData(). */
     deserializedAttrs: [],
 
-    /* Special serializer functions called in toJSON(). */
+    /** Special serializer functions called in toJSON(). */
     serializers: {},
 
-    /* Special deserializer functions called in parseResourceData(). */
+    /** Special deserializer functions called in parseResourceData(). */
     deserializers: {},
 
-    initialize: function() {
+    /**
+     * Initialize the model.
+     */
+    initialize() {
         if (this.supportsExtraData) {
             this._setupExtraData();
         }
     },
 
-    /*
-     * Returns the URL for this resource's instance.
+    /**
+     * Return the URL for this resource's instance.
      *
      * If this resource is loaded and has a URL to itself, that URL will
-     * be returned.
+     * be returned. If not yet loaded, it'll try to get it from its parent
+     * object, if any.
      *
-     * If not yet loaded, it'll try to get it from its parent object, if
-     * any.
-     *
-     * This will return null if we can't auto-determine the URL.
+     * Returns:
+     *     string:
+     *     The URL to use when fetching the resource. If the URL cannot be
+     *     determined, this will return null.
      */
-    url: function() {
-        var links = this.get('links'),
-            baseURL,
-            key,
-            link,
-            parentObject;
+    url() {
+        let links = this.get('links');
 
         if (links) {
             return links.self.href;
-        } else {
-            parentObject = this.get('parentObject');
+        }
 
-            if (parentObject) {
-                links = parentObject.get('links');
+        const parentObject = this.get('parentObject');
 
-                if (links) {
-                    key = _.result(this, 'listKey');
-                    link = links[key];
+        if (parentObject) {
+            links = parentObject.get('links');
 
-                    if (link) {
-                        baseURL = link.href;
+            if (links) {
+                const key = _.result(this, 'listKey');
+                const link = links[key];
 
-                        return this.isNew()
-                               ? baseURL
-                               : (baseURL + this.get(this.urlIDAttr) + '/');
-                    }
+                if (link) {
+                    const baseURL = link.href;
+
+                    return this.isNew()
+                           ? baseURL
+                           : (baseURL + this.get(this.urlIDAttr) + '/');
                 }
             }
         }
@@ -118,8 +125,8 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
         return null;
     },
 
-    /*
-     * Calls a function when the object is ready to use.
+    /**
+     * Call a function when the object is ready to use.
      *
      * An object is ready it has an ID and is loaded, or is a new resource.
      *
@@ -127,23 +134,35 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
      * be called immediately, or after one or more round trips to the server.
      *
      * If we fail to load the resource, objects.error() will be called instead.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the fetch operation.
+     *
+     *     context (object):
+     *         Context to bind when executing callbacks.
+     *
+     * Option Args:
+     *     ready (function):
+     *         Callback function for when the object is ready to use.
+     *
+     *     error (function):
+     *         Callback function for when an error occurs.
      */
-    ready: function(options, context) {
-        var parentObject = this.get('parentObject'),
-            success,
-            error;
+    ready(options={}, context=undefined) {
+        const success = _.isFunction(options.ready)
+                        ? _.bind(options.ready, context)
+                        : undefined;
+        const error = _.isFunction(options.error)
+                      ? _.bind(options.error, context)
+                      : undefined;
 
-        options = options || {};
-
-        success = _.isFunction(options.ready) ? _.bind(options.ready, context)
-                                              : undefined;
-        error = _.isFunction(options.error) ? _.bind(options.error, context)
-                                            : undefined;
+        const parentObject = this.get('parentObject');
 
         if (this.get('loaded')) {
             // We already have data--just call the callbacks
-            if (options.ready) {
-                options.ready.call(context);
+            if (success) {
+                success();
             }
         } else if (!this.isNew()) {
             // Fetch data from the server
@@ -162,14 +181,14 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
                 ready: success,
                 error: error
             });
-        } else if (options.ready) {
-            // Fallback for dummy objects
-            options.ready.call(context);
+        } else if (success) {
+            // Fallback for dummy objects.
+            success();
         }
     },
 
-    /*
-     * Calls a function when we know an object exists server-side.
+    /**
+     * Call a function when we know an object exists server-side.
      *
      * This works like ready() in that it's used to delay operating on the
      * resource until we have a server-side representation. Unlike ready(),
@@ -180,12 +199,17 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
      *
      * If we fail to create the object, options.error() will be called
      * instead.
+     *
+     * Args:
+     *     options (object):
+     *         Object with success and error callbacks.
+     *
+     *     context (object):
+     *         Context to bind when executing callbacks.
      */
-    ensureCreated: function(options, context) {
-        options = options || {};
-
+    ensureCreated(options={}, context=undefined) {
         this.ready({
-            ready: function() {
+            ready: () => {
                 if (!this.get('loaded')) {
                     this.save({
                         success: _.isFunction(options.success)
@@ -199,11 +223,11 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
                     options.success.call(context);
                 }
             }
-        }, this);
+        });
     },
 
-    /*
-     * Fetches the object's data from the server.
+    /**
+     * Fetch the object's data from the server.
      *
      * An object must have an ID before it can be fetched. Otherwise,
      * options.error() will be called.
@@ -219,12 +243,16 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
      * called.
      *
      * If we fail to fetch the resource, options.error() will be called.
+     *
+     * Args:
+     *     options (object):
+     *         Object with success and error callbacks.
+     *
+     *     context (object):
+     *         Context to bind when executing callbacks.
      */
-    fetch: function(options, context) {
-        var parentObject,
-            fetchObject;
-
-        options = options || {};
+    fetch(options={}, context=undefined) {
+        options = _.bindCallbacks(options, context);
 
         if (this.isNew()) {
             if (_.isFunction(options.error)) {
@@ -235,22 +263,20 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
             return;
         }
 
-        parentObject = this.get('parentObject');
-        fetchObject = _.bind(Backbone.Model.prototype.fetch, this,
-                             _.bindCallbacks(options, context));
+        const parentObject = this.get('parentObject');
 
         if (parentObject) {
             parentObject.ready({
-                ready: fetchObject,
+                ready: () => Backbone.Model.prototype.fetch.call(this, options),
                 error: options.error
             }, this);
         } else {
-            fetchObject();
+            Backbone.Model.prototype.fetch.call(this, options);
         }
     },
 
-    /*
-     * Saves the object's data to the server.
+    /**
+     * Save the object's data to the server.
      *
      * If the object has an ID already, it will be saved to its known
      * URL using HTTP PUT. If it doesn't have an ID, it will be saved
@@ -269,20 +295,24 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
      * called, and the "saved" event will be triggered.
      *
      * If we fail to save the resource, options.error() will be called.
+     *
+     * Args:
+     *     options (object):
+     *         Object with success and error callbacks.
+     *
+     *     context (object):
+     *         Context to bind when executing callbacks.
      */
-    save: function(options, context) {
-        options = options || {};
-
+    save(options={}, context=undefined) {
         this.trigger('saving', options);
 
         this.ready({
-            ready: function() {
-                var parentObject = this.get('parentObject');
+            ready: () => {
+                const parentObject = this.get('parentObject');
 
                 if (parentObject) {
                     parentObject.ensureCreated({
-                        success: _.bind(this._saveObject, this, options,
-                                        context),
+                        success: this._saveObject.bind(this, options, context),
                         error: options.error
                     }, this);
                 } else {
@@ -295,18 +325,21 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
         }, this);
     },
 
-    /*
-     * Handles the actual saving of the object's state.
+    /**
+     * Handle the actual saving of the object's state.
      *
      * This is called internally by save() once we've handled all the
      * readiness and creation checks of this object and its parent.
+     *
+     * Args:
+     *     options (object):
+     *         Object with success and error callbacks.
+     *
+     *     context (object):
+     *         Context to bind when executing callbacks.
      */
-    _saveObject: function(options, context) {
-        var url = _.result(this, 'url'),
-            files = [],
-            readers = [],
-            saveOptions;
-
+    _saveObject(options, context) {
+        const url = _.result(this, 'url');
         if (!url) {
             if (_.isFunction(options.error)) {
                 options.error.call(context,
@@ -317,31 +350,34 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
             return;
         }
 
-        saveOptions = _.defaults({
-            success: _.bind(function() {
+        const saveOptions = _.defaults({
+            success: () => {
                 if (_.isFunction(options.success)) {
                     options.success.apply(context, arguments);
                 }
 
                 this.trigger('saved', options);
-            }, this),
-
-            error: _.bind(function() {
+            },
+            error: () => {
                 if (_.isFunction(options.error)) {
                     options.error.apply(context, arguments);
                 }
 
                 this.trigger('saveFailed', options);
-            }, this)
+            }
         }, options);
 
         saveOptions.attrs = options.attrs || this.toJSON(options);
 
+        const files = [];
+        const readers = [];
+
         if (!options.form) {
             if (this.payloadFileKeys && window.File) {
                 /* See if there are files in the attributes we're using. */
-                _.each(this.payloadFileKeys, function(key) {
-                    var file = saveOptions.attrs[key];
+                this.payloadFileKeys.forEach(key => {
+                    const file = saveOptions.attrs[key];
+
                     if (file) {
                         files.push(file);
                     }
@@ -350,45 +386,56 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
         }
 
         if (files.length > 0) {
-            _.each(files, function(file) {
-                var reader = new FileReader(),
-                    testDone = function(reader) {
-                        return reader.readyState === FileReader.DONE;
-                    };
+            files.forEach(file => {
+                const reader = new FileReader();
 
                 readers.push(reader);
-                reader.onloadend = _.bind(function() {
-                    if (_.every(readers, testDone)) {
+                reader.onloadend = () => {
+                    if (readers.every(r => r.readyState === FileReader.DONE)) {
                         this._saveWithFiles(files, readers, saveOptions);
                     }
-                }, this);
+                };
                 reader.readAsArrayBuffer(file);
-            }, this);
+            });
         } else {
             Backbone.Model.prototype.save.call(this, {}, saveOptions);
         }
     },
 
-    /*
-     * Saves the model with a file upload.
+    /**
+     * Save the model with a file upload.
      *
      * When doing file uploads, we need to hand-structure a form-data payload
      * to the server. It will contain the file contents and the attributes
      * we're saving. We can then call the standard save function with this
      * payload as our data.
+     *
+     * Args:
+     *     files (Array of object):
+     *         A list of files, with ``name`` and ``type`` keys.
+     *
+     *     fileReaders (Array of FileReader):
+     *         Readers corresponding to each item in ``files``.
+     *
+     *     options (object):
+     *         Options for the save operation.
+     *
+     * Option Args:
+     *     boundary (string):
+     *         Optional MIME multipart boundary.
+     *
+     *     attrs (object):
+     *         Additional key/value pairs to include in the payload data.
      */
-    _saveWithFiles: function(files, fileReaders, options) {
-        var boundary = options.boundary ||
-                       ('-----multipartformboundary' + new Date().getTime()),
-            blob = [];
+    _saveWithFiles(files, fileReaders, options) {
+        const boundary = options.boundary ||
+                         ('-----multipartformboundary' + new Date().getTime());
+        const blob = [];
 
-        _.each(_.zip(this.payloadFileKeys, files, fileReaders), function(data) {
-            var key = data[0],
-                file = data[1],
-                reader = data[2];
-
+        for (let [key, file, reader] of
+             _.zip(this.payloadFileKeys, files, fileReaders)) {
             if (!file || !reader) {
-                return;
+                continue;
             }
 
             blob.push('--' + boundary + '\r\n');
@@ -400,19 +447,19 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
             blob.push(reader.result);
 
             blob.push('\r\n');
-        });
+        }
 
-        _.each(options.attrs, function(value, key) {
-            if (   !_.contains(this.payloadFileKeys, key)
-                && value !== undefined
-                && value !== null) {
+        for (let [key, value] of Object.entries(options.attrs)) {
+            if (!this.payloadFileKeys.includes(key) &&
+                value !== undefined &&
+                value !== null) {
                 blob.push('--' + boundary + '\r\n');
                 blob.push('Content-Disposition: form-data; name="' + key +
                           '"\r\n');
                 blob.push('\r\n');
                 blob.push(value + '\r\n');
             }
-        }, this);
+        }
 
         blob.push('--' + boundary + '--\r\n\r\n');
 
@@ -423,23 +470,25 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
         }, options));
     },
 
-    /*
-     * Deletes the object's resource on the server.
+    /**
+     * Delete the object's resource on the server.
      *
      * An object must either be loaded or have a parent resource linking to
      * this object's list resource URL for an object to be deleted.
      *
-     * If we successfully delete the resource, options.success() will be
-     * called.
+     * Args:
+     *     options (object):
+     *         Object with success and error callbacks.
      *
-     * If we fail to delete the resource, options.error() will be called.
+     *     context (object):
+     *         Context to bind when executing callbacks.
      */
-    destroy: function(options, context) {
-        var parentObject = this.get('parentObject'),
-            destroyObject = _.bind(this._destroyObject,
-                                   this, options, context);
+    destroy(options={}, context=undefined) {
+        options = _.bindCallbacks(options, context);
 
         this.trigger('destroying', options);
+
+        const parentObject = this.get('parentObject');
 
         if (!this.isNew() && parentObject) {
             /*
@@ -448,26 +497,31 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
              *     entirely onto BaseResource.
              */
             parentObject.ready(_.defaults({
-                ready: destroyObject
-            }, _.bindCallbacks(options, context)));
+                ready: () => this._destroyObject(options, context)
+            }, options));
         } else {
-            destroyObject();
+            this._destroyObject(options, context);
         }
     },
 
-    /*
-     * Sets up the deletion of the object.
+    /**
+     * Set up the deletion of the object.
      *
      * This is called internally by destroy() once we've handled all the
      * readiness and creation checks of this object and its parent.
      *
      * Once we've done some work to ensure the URL is valid and the object
      * is ready, we'll finish destruction by calling _finishDestroy.
+     *
+     * Args:
+     *     options (object):
+     *         Object with success and error callbacks.
+     *
+     *     context (object):
+     *         Context to bind when executing callbacks.
      */
-    _destroyObject: function(options, context) {
-        var url = _.result(this, 'url');
-
-        options = options || {};
+    _destroyObject(options={}, context=null) {
+        const url = _.result(this, 'url');
 
         if (!url) {
             if (this.isNew()) {
@@ -488,27 +542,32 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
         }
 
         this.ready({
-            ready: function() {
-                this._finishDestroy(options, context);
-            },
+            ready: () => this._finishDestroy(options, context),
             error: _.isFunction(options.error)
                    ? _.bind(options.error, context)
                    : undefined
         }, this);
     },
 
-    /*
-     * Finishes destruction of the object.
+    /**
+     * Finish destruction of the object.
      *
      * This will call the parent destroy method, then reset the state
      * of the object on success.
+     *
+     * Args:
+     *     options (object):
+     *         Object with success and error callbacks.
+     *
+     *     context (object):
+     *         Context to bind when executing callbacks.
      */
-    _finishDestroy: function(options, context) {
-        var parentObject = this.get('parentObject');
+    _finishDestroy(options, context) {
+        const parentObject = this.get('parentObject');
 
         Backbone.Model.prototype.destroy.call(this, _.defaults({
             wait: true,
-            success: _.bind(function() {
+            success: () => {
                 /*
                  * Reset the object so it's new again, but with the same
                  * parentObject.
@@ -525,19 +584,27 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
                 if (_.isFunction(options.success)) {
                     options.success.apply(context, arguments);
                 }
-            }, this)
+            }
         }, _.bindCallbacks(options, context)));
     },
 
-    /*
-     * Parses and returns the payload from an API response.
+    /**
+     * Parse and returns the payload from an API response.
      *
      * This will by default only return the object's ID and list of links.
      * Subclasses should override this to return any additional data that's
      * needed, but they must include the results of
      * BaseResource.protoype.parse as well.
+     *
+     * Args:
+     *     rsp (object):
+     *         The payload received from the server.
+     *
+     * Returns:
+     *     object:
+     *     Attributes to set on the model.
      */
-    parse: function(rsp) {
+    parse(rsp) {
         console.assert(this.rspNamespace,
                        'rspNamespace must be defined on the resource model');
 
@@ -559,26 +626,28 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
     },
 
     /*
-     * Parses the resource data from a payload.
+     * Parse the resource data from a payload.
      *
      * By default, this will make use of attrToJsonMap and any
      * jsonDeserializers to construct a resulting set of attributes.
      *
      * This can be overridden by subclasses.
+     *
+     * Args:
+     *     rsp (object):
+     *         The payload received from the server.
+     *
+     * Returns:
+     *     object:
+     *     Attributes to set on the model.
      */
-    parseResourceData: function(rsp) {
-        var len = this.deserializedAttrs.length,
-            attrs = {},
-            attrName,
-            jsonField,
-            value,
-            i;
+    parseResourceData(rsp) {
+        const attrs = {};
 
-        for (i = 0; i < len; i++) {
-            attrName = this.deserializedAttrs[i];
-            deserializer = this.deserializers[attrName];
-            jsonField = this.attrToJsonMap[attrName] || attrName;
-            value = rsp[jsonField];
+        for (let attrName of this.deserializedAttrs) {
+            const deserializer = this.deserializers[attrName];
+            const jsonField = this.attrToJsonMap[attrName] || attrName;
+            let value = rsp[jsonField];
 
             if (deserializer) {
                 value = deserializer.call(this, value);
@@ -592,8 +661,8 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
         return attrs;
     },
 
-    /*
-     * Serializes and returns object data for the purpose of saving.
+    /**
+     * Serialize and return object data for the purpose of saving.
      *
      * When saving to the server, the only data that will be sent in the
      * API PUT/POST call will be the data returned from toJSON().
@@ -602,29 +671,27 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
      * and attrToJsonMap properties.
      *
      * Subclasses can override this to create custom serialization behavior.
+     *
+     * Returns:
+     *     object:
+     *     The serialized data.
      */
-    toJSON: function() {
-        var serializerState = {
-                isNew: this.isNew(),
-                loaded: this.get('loaded')
-            },
-            len = this.serializedAttrs.length,
-            data = {},
-            attrName,
-            jsonField,
-            value,
-            i;
+    toJSON() {
+        const serializerState = {
+            isNew: this.isNew(),
+            loaded: this.get('loaded')
+        };
+        const data = {};
 
-        for (i = 0; i < len; i++) {
-            attrName = this.serializedAttrs[i];
-            serializer = this.serializers[attrName];
-            value = this.get(attrName);
+        for (let attrName of this.serializedAttrs) {
+            const serializer = this.serializers[attrName];
+            let value = this.get(attrName);
 
             if (serializer) {
                 value = serializer.call(this, value, serializerState);
             }
 
-            jsonField = this.attrToJsonMap[attrName] || attrName;
+            const jsonField = this.attrToJsonMap[attrName] || attrName;
             data[jsonField] = value;
         }
 
@@ -635,8 +702,8 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
         return data;
     },
 
-    /*
-     * Handles all AJAX communication for the model and its subclasses.
+    /**
+     * Handle all AJAX communication for the model and its subclasses.
      *
      * Backbone.js will internally call the model's sync function to
      * communicate with the server, which usually uses Backbone.sync.
@@ -646,19 +713,36 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
      *
      * We also parse the error response from Review Board so we can provide
      * a more meaningful error callback.
+     *
+     * Args:
+     *     method (string):
+     *         The HTTP method to use.
+     *
+     *     model (Backbone.Model):
+     *         The model to sync.
+     *
+     *     options (object):
+     *         Options for the operation.
+     *
+     * Option Args:
+     *     data (object):
+     *         Optional payload data to include.
+     *
+     *     form (jQuery):
+     *         Optional form to be submitted.
+     *
+     *     attrs (Array or object):
+     *         Either a list of the model attributes to sync, or a set of
+     *         key/value pairs to use instead of the model attributes.
      */
-    sync: function(method, model, options) {
-        var data,
-            contentType,
-            extraQueryArgs,
-            syncOptions;
-
-        options = options || {};
+    sync(method, model, options={}) {
+        let data;
+        let contentType;
 
         if (method === 'read') {
             data = options.data || {};
 
-            extraQueryArgs = _.result(this, 'extraQueryArgs', {});
+            const extraQueryArgs = _.result(this, 'extraQueryArgs', {});
 
             if (!_.isEmpty(extraQueryArgs)) {
                 data = _.extend({}, extraQueryArgs, data);
@@ -672,16 +756,17 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
                 data = model.toJSON(options);
 
                 if (options.attrs) {
-                    data = _.pick(data, _.map(options.attrs, function(attr) {
-                        return this.attrToJsonMap[attr] || attr;
-                    }, this));
+                    data = _.pick(
+                        data,
+                        options.attrs.map(attr => this.attrToJsonMap[attr]
+                                                  || attr));
                 }
             }
 
             contentType = 'application/x-www-form-urlencoded';
         }
 
-        syncOptions = _.defaults({}, options, {
+        const syncOptions = _.defaults({}, options, {
             /* Use form data instead of a JSON payload. */
             contentType: contentType,
             data: data,
@@ -692,12 +777,10 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
             syncOptions.data.expand = this.expandedFields.join(',');
         }
 
-        syncOptions.error = _.bind(function(xhr) {
-            var rsp;
-
+        syncOptions.error = xhr => {
             RB.storeAPIError(xhr);
 
-            rsp = xhr.errorPayload;
+            const rsp = xhr.errorPayload;
 
             if (rsp && _.has(rsp, this.rspNamespace)) {
                 /*
@@ -711,42 +794,44 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
             if (_.isFunction(options.error)) {
                 options.error(xhr);
             }
-        }, this);
+        };
 
         return Backbone.sync.call(this, method, model, syncOptions);
     },
 
-    /*
-     * Performs validation on the attributes of the resource.
+    /**
+     * Perform validation on the attributes of the resource.
      *
      * By default, this validates the extraData field, if provided.
+     *
+     * Args:
+     *     attrs (object):
+     *         The attributes to validate.
+     *
+     * Returns:
+     *     string:
+     *     An error string or ``undefined``.
      */
-    validate: function(attrs) {
-        var strings = RB.BaseResource.strings,
-            value,
-            key;
-
+    validate(attrs) {
         if (this.supportsExtraData && attrs.extraData !== undefined) {
+            const strings = RB.BaseResource.strings;
+
             if (!_.isObject(attrs.extraData)) {
                 return strings.INVALID_EXTRADATA_TYPE;
             }
 
-            for (key in attrs.extraData) {
-                if (attrs.extraData.hasOwnProperty(key)) {
-                    value = attrs.extraData[key];
-
-                    if (!_.isNull(value) &&
-                        (!_.isNumber(value) || _.isNaN(value)) &&
-                        !_.isBoolean(value) &&
-                        !_.isString(value)) {
-                        return strings.INVALID_EXTRADATA_VALUE_TYPE
-                            .replace('{key}', key);
-                    }
+            for (let [key, value] of Object.entries(attrs.extraData)) {
+                if (!_.isNull(value) &&
+                    (!_.isNumber(value) || _.isNaN(value)) &&
+                    !_.isBoolean(value) &&
+                    !_.isString(value)) {
+                    return strings.INVALID_EXTRADATA_VALUE_TYPE
+                        .replace('{key}', key);
                 }
             }
         }
     }
-}, RB.ExtraDataMixin), {
+}, {
     strings: {
         UNSET_PARENT_OBJECT: 'parentObject must be set',
         INVALID_EXTRADATA_TYPE:
@@ -755,3 +840,6 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
             'extraData.{key} must be null, a number, boolean, or string'
     }
 });
+
+
+_.extend(RB.BaseResource.prototype, RB.ExtraDataMixin);

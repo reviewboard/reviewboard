@@ -1,57 +1,59 @@
-/*
+/**
  * The base model for a comment.
  *
  * This provides all the common properties, serialization, deserialization,
  * validation, and other functionality of comments. It's meant to be
  * subclassed by more specific implementations.
+ *
+ * Model Attributes:
+ *     forceTextType (string):
+ *         The text format type to request for text in all responses.
+ *
+ *     includeTextTypes (string):
+ *         A comma-separated list of text types to include in the payload when
+ *         syncing the model.
+ *
+ *     issueOpened (boolean):
+ *         Whether or not an issue is opened.
+ *
+ *     issueStatus (string):
+ *         The current state of the issue. This must be one of
+ *         ``STATE_DROPPED``, ``STATE_OPEN``, or ``STATE_RESOLVED``.
+ *
+ *     markdownTextFields (object):
+ *         The source contents of any Markdown text fields, if forceTextType is
+ *         used and the caller fetches or posts with includeTextTypes=markdown.
+ *         The keys in this object are the field names, and the values are the
+ *         Markdown source of those fields.
+ *
+ *     rawTextFields (object):
+ *         The contents of the raw text fields, if forceTextType is used and
+ *         the caller fetches or posts with includeTextTypes=raw. The keys in this
+ *         object are the field names, and the values are the raw versions of
+ *         those attributes.
+ *
+ *     richText (boolean):
+ *         Whether the comment is saved in rich-text (Markdown) format.
+ *
+ *     text (string):
+ *         The text for the comment.
  */
 RB.BaseComment = RB.BaseResource.extend({
-    defaults: function() {
+    defaults() {
         return _.defaults({
-            /*
-             * The text format type to request for text in all responses.
-             */
             forceTextType: null,
-
-            /*
-             * A string containing a comma-separated list of text types to
-             * include in the payload.
-             */
             includeTextTypes: null,
-
-            /* Whether or not an issue is opened. */
             issueOpened: null,
-
-            /*
-             * The current state of the issue.
-             *
-             * This must be one of STATE_DROPPED, STATE_OPEN, or
-             * STATE_RESOLVED.
-             */
             issueStatus: null,
-
-            /*
-             * Markdown-formatted text fields, if the caller fetches or posts
-             * with include-text-types=markdown.
-             */
             markdownTextFields: {},
-
-            /*
-             * Raw text fields, if the caller fetches or posts with
-             * include-text-types=raw.
-             */
             rawTextFields: {},
-
-            /* Whether the comment is saved in rich-text (Markdown) format. */
             richText: null,
-
-            /* The text entered for the comment. */
             text: ''
         }, RB.BaseResource.prototype.defaults());
     },
 
-    extraQueryArgs: function() {
-        var textTypes = 'raw';
+    extraQueryArgs() {
+        let textTypes = 'raw';
 
         if (RB.UserSession.instance.get('defaultUseRichText')) {
             textTypes += ',markdown';
@@ -93,12 +95,9 @@ RB.BaseComment = RB.BaseResource.extend({
         forceTextType: RB.JSONSerializers.onlyIfValue,
         includeTextTypes: RB.JSONSerializers.onlyIfValue,
         richText: RB.JSONSerializers.textType,
-
         issueStatus: function(value) {
-            var parentObject;
-
             if (this.get('loaded')) {
-                parentObject = this.get('parentObject');
+                const parentObject = this.get('parentObject');
 
                 if (parentObject.get('public')) {
                     return value;
@@ -109,27 +108,36 @@ RB.BaseComment = RB.BaseResource.extend({
         }
     },
 
-    /*
-     * Destroys the comment if and only if the text is empty.
+    /**
+     * Destroy the comment if and only if the text is empty.
      *
      * This works just like destroy(), and will in fact call destroy()
      * with all provided arguments, but only if there's some actual
      * text in the comment.
      */
-    destroyIfEmpty: function(options, context) {
+    destroyIfEmpty() {
         if (!this.get('text')) {
-            this.destroy(options, context);
+            this.destroy.apply(this, arguments);
         }
     },
 
-    /*
-     * Deserializes comment data from an API payload.
+    /**
+     * Deserialize comment data from an API payload.
      *
      * This must be overloaded by subclasses, and the parent version called.
+     *
+     * Args:
+     *     rsp (object):
+     *         The response from the server.
+     *
+     * Returns:
+     *     object:
+     *     Attribute values to set on the model.
      */
-    parseResourceData: function(rsp) {
-        var rawTextFields = rsp.raw_text_fields || rsp,
-            data = RB.BaseResource.prototype.parseResourceData.call(this, rsp);
+    parseResourceData(rsp) {
+        const rawTextFields = rsp.raw_text_fields || rsp;
+        const data = RB.BaseResource.prototype.parseResourceData.call(
+            this, rsp);
 
         data.richText = (rawTextFields.text_type === 'markdown');
 
@@ -152,14 +160,22 @@ RB.BaseComment = RB.BaseResource.extend({
         return data;
     },
 
-    /*
-     * Performs validation on the attributes of the model.
+    /**
+     * Perform validation on the attributes of the model.
      *
      * By default, this validates the issueStatus field. It can be
      * overridden to provide additional validation, but the parent
      * function must be called.
+     *
+     * Args:
+     *     attrs (object):
+     *         Attribute values to validate.
+     *
+     * Returns:
+     *     string:
+     *     An error string, if appropriate.
      */
-    validate: function(attrs) {
+    validate(attrs) {
         if (_.has(attrs, 'parentObject') && !attrs.parentObject) {
             return RB.BaseResource.strings.UNSET_PARENT_OBJECT;
         }

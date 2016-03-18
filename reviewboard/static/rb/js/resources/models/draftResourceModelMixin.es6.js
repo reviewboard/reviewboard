@@ -1,4 +1,4 @@
-/*
+/**
  * Mixin for resources that have special "draft" URLs.
  *
  * Some resources contain a "draft/" singleton URL that will either redirect to
@@ -9,18 +9,22 @@
  * craft the proper URL. They can use this mixin to do that work for them.
  */
 RB.DraftResourceModelMixin = {
-    /*
-     * Calls a function when the object is ready to use.
+    /**
+     * Call a function when the object is ready to use.
      *
      * If the object is unloaded, we'll likely need to grab the draft
      * resource, particularly if we haven't already retrieved a draft.
      *
      * Otherwise, we delegate to the parent's ready().
+     *
+     * Args:
+     *     options (object):
+     *         Options for the operation, including callbacks.
+     *
+     *     context (object):
+     *         Context to bind when calling callbacks.
      */
-    ready: function(options, context) {
-        var self = this,
-            sup = _super(this);
-
+    ready(options, context) {
         if (!this.get('loaded') && this.isNew() &&
             this._needDraft === undefined) {
             this._needDraft = true;
@@ -32,35 +36,40 @@ RB.DraftResourceModelMixin = {
              * object is "new", this will make sure that the parentObject is
              * ready.
              */
-            sup.ready.call(
+            _super(this).ready.call(
                 this,
                 _.defaults({
-                    ready: function() {
-                        self._retrieveDraft(options, context);
-                    }
+                    ready: () => this._retrieveDraft(options, context),
                 }, options),
                 context);
         } else {
-            sup.ready.call(this, options, context);
+            _super(this).ready.call(this, options, context);
         }
     },
 
-    /*
-     * Destroys the object.
+    /**
+     * Destroy the object.
      *
      * If destruction is successful, we'll reset the needDraft state so we'll
      * look up the draft the next time an operation is performed.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the operation, including callbacks.
+     *
+     *     context (object):
+     *         Context to bind when calling callbacks.
      */
-    destroy: function(options, context) {
+    destroy(options, context) {
         options = _.bindCallbacks(options || {});
 
         this.ready(
             _.defaults({
-                ready: function() {
+                ready: () => {
                     _super(this).destroy.call(
                         this,
                         _.defaults({
-                            success: function() {
+                            success: () => {
                                 /* We need to fetch the draft resource again. */
                                 this._needDraft = true;
 
@@ -75,20 +84,22 @@ RB.DraftResourceModelMixin = {
             this);
     },
 
-    /*
+    /**
+     * Return the URL to use when syncing the model.
+     *
      * Custom URL implementation which will return the special draft resource
      * if we have yet to redirect and otherwise delegate to the prototype
      * implementation.
+     *
+     * Returns:
+     *     string:
+     *     The URL to use for the resource.
      */
-    url: function() {
-        var parentObject,
-            links,
-            linkName;
-
+    url() {
         if (this._needDraft) {
-            parentObject = this.get('parentObject');
-            linkName = _.result(this, 'listKey');
-            links = parentObject.get('links');
+            const parentObject = this.get('parentObject');
+            const linkName = _.result(this, 'listKey');
+            const links = parentObject.get('links');
 
             /*
              * Chrome hyper-aggressively caches things it shouldn't, and
@@ -115,16 +126,20 @@ RB.DraftResourceModelMixin = {
         }
     },
 
-    /*
-     * Try to retrieve an existing draft from the server. This uses the
-     * special draft/ resource within the resource list, which will redirect to
-     * an existing draft if one exists.
+    /**
+     * Try to retrieve an existing draft from the server.
+     *
+     * This uses the special draft/ resource within the resource list, which
+     * will redirect to an existing draft if one exists.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the operation, including callbacks.
+     *
+     *     context (object):
+     *         Context to bind when calling callbacks.
      */
-    _retrieveDraft: function(options, context) {
-        var self = this,
-            extraQueryArgs,
-            data;
-
+    _retrieveDraft(options={}, context=undefined) {
         if (!RB.UserSession.instance.get('authenticated')) {
             if (options.error) {
                 options.error.call(context, {
@@ -135,10 +150,8 @@ RB.DraftResourceModelMixin = {
             return;
         }
 
-        options = options || {};
-        data = options.data || {};
-
-        extraQueryArgs = _.result(this, 'extraQueryArgs', {});
+        let data = options.data || {};
+        const extraQueryArgs = _.result(this, 'extraQueryArgs', {});
 
         if (!_.isEmpty(extraQueryArgs)) {
             data = _.extend({}, extraQueryArgs, data);
@@ -147,24 +160,24 @@ RB.DraftResourceModelMixin = {
         Backbone.Model.prototype.fetch.call(this, {
             data: data,
             processData: true,
-            success: function() {
+            success: () => {
                 /*
                  * There was an existing draft, and we were redirected to it
                  * and pulled data from it. We're done.
                  */
-                self._needDraft = false;
+                this._needDraft = false;
 
                 if (options && _.isFunction(options.ready)) {
                     options.ready.call(context);
                 }
             },
-            error: function(model, xhr) {
+            error: (model, xhr) => {
                 if (xhr.status === 404) {
                     /*
                      * We now know we don't have an existing draft to work with,
                      * and will eventually need to POST to create a new one.
                      */
-                    self._needDraft = false;
+                    this._needDraft = false;
                     options.ready.call(context);
                 } else if (options && _.isFunction(options.error)) {
                     options.error.call(context, xhr, xhr.status);

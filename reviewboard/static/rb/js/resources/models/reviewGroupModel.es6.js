@@ -1,30 +1,32 @@
-(function() {
+{
 
 
-/*
+/**
  * A member of a review group.
  *
  * This is used to handle adding a user to a group or removing from a group.
  */
-var GroupMember = RB.BaseResource.extend({
-    defaults: function() {
-        return _.defaults({
-            username: null,
-            added: false,
-            loaded: true
-        }, RB.BaseResource.prototype.defaults());
-    },
+const GroupMember = RB.BaseResource.extend({
+    defaults: _.defaults({
+        username: null,
+        added: false,
+        loaded: true
+    }, RB.BaseResource.prototype.defaults()),
 
     serializedAttrs: ['username'],
 
-    /*
-     * Returns a URL for this resource.
+    /**
+     * Return a URL for this resource.
      *
      * If this represents an added user, the URL will point to
      * <groupname>/<username>/. Otherwise, it just points to <groupname>/.
+     *
+     * Returns:
+     *     string:
+     *     The URL to use when syncing the model.
      */
-    url: function() {
-        var url = this.get('baseURL');
+    url() {
+        let url = this.get('baseURL');
 
         if (this.get('added')) {
             url += this.get('username') + '/';
@@ -33,28 +35,32 @@ var GroupMember = RB.BaseResource.extend({
         return url;
     },
 
-    /*
-     * Returns whether the group membership is "new".
+    /**
+     * Return whether the group membership is "new".
      *
      * A non-added user is new, meaning the save operation will trigger
      * a POST to add the user.
+     *
+     * Returns:
+     *     boolean:
+     *     Whether this member is newly-added to the group.
      */
-    isNew: function() {
+    isNew() {
         return !this.get('added');
     },
 
-    /*
-     * Parses the result payload.
+    /**
+     * Parse the result payload.
      *
      * We don't really care about the result, so we don't bother doing any
      * work to parse.
      */
-    parse: function() {}
+    parse() {}
 });
 
 
-/*
- * A registered review group.
+/**
+ * A review group.
  *
  * This provides some utility functions for working with an existing
  * review group.
@@ -69,14 +75,18 @@ RB.ReviewGroup = RB.BaseResource.extend({
 
     rspNamespace: 'group',
 
-    /*
-     * Returns the URL to the review group.
+    /**
+     * Return the URL to the review group.
      *
      * If this is a new group, the URL will point to the base groups/ URL.
      * Otherwise, it points to the URL for the group itself.
+     *
+     * Returns:
+     *     string:
+     *     The URL to use when syncing the model.
      */
-    url: function() {
-        var url = SITE_ROOT + (this.get('localSitePrefix') || '') +
+    url() {
+        let url = SITE_ROOT + (this.get('localSitePrefix') || '') +
                   'api/groups/';
 
         if (!this.isNew()) {
@@ -86,11 +96,21 @@ RB.ReviewGroup = RB.BaseResource.extend({
         return url;
     },
 
-    /*
-     * Marks a review group as starred or unstarred.
+    /**
+     * Mark a review group as starred or unstarred.
+     *
+     * Args:
+     *     starred (boolean):
+     *         Whether or not the group is starred.
+     *
+     *     options (object):
+     *         Additional options for the save operation, including callbacks.
+     *
+     *     context (object):
+     *         Context to bind when calling callbacks.
      */
-    setStarred: function(starred, options, context) {
-        var watched = RB.UserSession.instance.watchedGroups;
+    setStarred(starred, options, context) {
+        const watched = RB.UserSession.instance.watchedGroups;
 
         if (starred) {
             watched.addImmediately(this, options, context);
@@ -99,18 +119,27 @@ RB.ReviewGroup = RB.BaseResource.extend({
         }
     },
 
-    /*
-     * Adds a user to this group.
+    /**
+     * Add a user to this group.
      *
      * Sends the request to the server to add the user, and notifies on
      * succes or failure.
+     *
+     * Args:
+     *     username (string):
+     *         The username of the new user.
+     *
+     *     options (object):
+     *         Additional options for the save operation, including callbacks.
+     *
+     *     context (object):
+     *         Context to bind when calling callbacks.
      */
-    addUser: function(username, options, context) {
-        var url = this.url() + 'users/',
-            member;
+    addUser(username, options, context) {
+        const url = this.url() + 'users/';
 
         if (url && !this.isNew()) {
-            member = new GroupMember({
+            const member = new GroupMember({
                 username: username,
                 baseURL: url
             });
@@ -124,17 +153,26 @@ RB.ReviewGroup = RB.BaseResource.extend({
     },
 
     /*
-     * Removes a user from this group.
+     * Remove a user from this group.
      *
      * Sends the request to the server to remove the user, and notifies on
      * succes or failure.
+     *
+     * Args:
+     *     username (string):
+     *         The username of the new user.
+     *
+     *     options (object):
+     *         Additional options for the save operation, including callbacks.
+     *
+     *     context (object):
+     *         Context to bind when calling callbacks.
      */
-    removeUser: function(username, options, context) {
-        var url = this.url() + 'users/',
-            member;
+    removeUser(username, options, context) {
+        const url = this.url() + 'users/';
 
         if (url && !this.isNew()) {
-            member = new GroupMember({
+            const member = new GroupMember({
                 username: username,
                 baseURL: url,
                 added: true
@@ -150,4 +188,4 @@ RB.ReviewGroup = RB.BaseResource.extend({
 });
 
 
-})();
+}

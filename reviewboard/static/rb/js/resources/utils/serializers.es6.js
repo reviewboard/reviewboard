@@ -1,21 +1,21 @@
 RB.JSONSerializers = {
-    onlyIfUnloaded: function(value, state) {
+    onlyIfUnloaded(value, state) {
         return state.loaded ? undefined : value;
     },
 
-    onlyIfUnloadedAndValue: function(value, state) {
+    onlyIfUnloadedAndValue(value, state) {
         return !state.loaded && value ? value : undefined;
     },
 
-    onlyIfValue: function(value) {
+    onlyIfValue(value) {
         return value || undefined;
     },
 
-    onlyIfNew: function(value, state) {
+    onlyIfNew(value, state) {
         return state.isNew ? value : undefined;
     },
 
-    textType: function(value) {
+    textType(value) {
         return value ? 'markdown' : 'plain';
     }
 };
