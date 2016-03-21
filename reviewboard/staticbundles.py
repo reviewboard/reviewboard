@@ -252,13 +252,13 @@ PIPELINE_JS = dict({
     'admin': {
         'source_filenames': (
             'lib/js/jquery.masonry.js',
-            'rb/js/admin.js',
+            'rb/js/admin/admin.js',
         ),
         'output_filename': 'rb/js/admin.min.js',
     },
     'repositoryform': {
         'source_filenames': (
-            'rb/js/repositoryform.js',
+            'rb/js/admin/repositoryform.js',
         ),
         'output_filename': 'rb/js/repositoryform.min.js',
     },
