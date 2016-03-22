@@ -1,42 +1,58 @@
-/*
+/**
  * The base class used for Review Board collections.
  *
  * This is a thin subclass over Backbone.Collection that just provides
  * some useful additional abilities.
  */
 RB.BaseCollection = Backbone.Collection.extend({
-    /*
-     * Fetches models from the server.
+    /**
+     * Fetch models from the server.
      *
      * This behaves just like Backbone.Collection.fetch, except it
      * takes a context parameter for callbacks.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the fetch operation.
+     *
+     *     context (object):
+     *         Context to be used when calling success/error/complete
+     *         callbacks.
      */
-    fetch: function(options, context) {
-        options = _.bindCallbacks(options || {}, context);
+    fetch(options={}, context=undefined) {
+        options = _.bindCallbacks(options, context);
 
         return Backbone.Collection.prototype.fetch.call(this, options);
     },
 
-    /*
-     * Handles all AJAX communication for the collection.
+    /**
+     * Handle all AJAX communication for the collection.
      *
      * Backbone.js will internally call the model's sync function to
      * communicate with the server, which usually uses Backbone.sync.
      *
      * This will parse error response from Review Board so we can provide
      * a more meaningful error callback.
+     *
+     * Args:
+     *     method (string):
+     *         The HTTP method to use for the AJAX request.
+     *
+     *     model (object):
+     *         The model to sync.
+     *
+     *     options (object):
+     *         Options for the sync operation.
      */
-    sync: function(method, model, options) {
-        options = options || {};
-
+    sync(method, model, options={}) {
         return Backbone.sync.call(this, method, model, _.defaults({
-            error: _.bind(function(xhr) {
+            error: xhr => {
                 RB.storeAPIError(xhr);
 
                 if (_.isFunction(options.error)) {
                     options.error(xhr);
                 }
-            }, this)
+            }
         }, options));
     }
 });

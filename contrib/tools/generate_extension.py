@@ -7,14 +7,14 @@ import re
 from optparse import OptionParser
 
 from django.utils.six.moves import input
-from jinja2 import Environment, PackageLoader
+from jinja2 import Environment, FileSystemLoader
 
 from reviewboard import get_version_string
 
 
 env = Environment(
-    loader=PackageLoader(
-        'reviewboard', '../contrib/tools/templates/extensions'))
+    loader=FileSystemLoader(os.path.join(
+        os.path.dirname(__file__), 'templates', 'extensions')))
 
 options = None
 

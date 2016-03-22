@@ -113,8 +113,8 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/utils/linkifyUtils.es6.js',
             'rb/js/utils/mathUtils.es6.js',
             'rb/js/utils/keyBindingUtils.es6.js',
-            'rb/js/collections/baseCollection.js',
-            'rb/js/collections/filteredCollection.js',
+            'rb/js/collections/baseCollection.es6.js',
+            'rb/js/collections/filteredCollection.es6.js',
             'rb/js/extensions/models/aliases.js',
             'rb/js/extensions/models/commentDialogHookModel.js',
             'rb/js/extensions/models/reviewDialogCommentHookModel.js',
@@ -153,9 +153,9 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/resources/models/screenshotCommentModel.js',
             'rb/js/resources/models/screenshotCommentReplyModel.js',
             'rb/js/resources/models/validateDiffModel.js',
-            'rb/js/resources/collections/resourceCollection.js',
-            'rb/js/resources/collections/repositoryBranchesCollection.js',
-            'rb/js/resources/collections/repositoryCommitsCollection.js',
+            'rb/js/resources/collections/resourceCollection.es6.js',
+            'rb/js/resources/collections/repositoryBranchesCollection.es6.js',
+            'rb/js/resources/collections/repositoryCommitsCollection.es6.js',
             'rb/js/ui/views/dialogView.es6.js',
             'rb/js/ui/views/textEditorView.es6.js',
             'rb/js/ui/views/splitButtonView.es6.js',
@@ -167,16 +167,15 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'account-page': {
         'source_filenames': (
-            'rb/js/accountPrefsPage/views/accountPrefsPageView.js',
-            'rb/js/accountPrefsPage/views/apiTokensView.js',
-            'rb/js/accountPrefsPage/views/joinedGroupsView.js',
+            'rb/js/accountPrefsPage/views/apiTokensView.es6.js',
+            'rb/js/accountPrefsPage/views/joinedGroupsView.es6.js',
         ),
         'output_filename': 'rb/js/account-page.min.js',
     },
     'config-forms': {
         'source_filenames': (
             'rb/js/configForms/base.js',
-            'rb/js/configForms/models/resourceListItemModel.js',
+            'rb/js/configForms/models/resourceListItemModel.es6.js',
         ),
         'output_filename': 'rb/js/config-forms.min.js',
     },
@@ -293,19 +292,19 @@ PIPELINE_JAVASCRIPT = dict({
     'admin': {
         'source_filenames': (
             'lib/js/jquery.masonry.js',
-            'rb/js/admin.js',
+            'rb/js/admin/admin.js',
         ),
         'output_filename': 'rb/js/admin.min.js',
     },
     'repositoryform': {
         'source_filenames': (
-            'rb/js/repositoryform.js',
+            'rb/js/admin/repositoryform.js',
         ),
         'output_filename': 'rb/js/repositoryform.min.js',
     },
     'webhooks-form': {
         'source_filenames': (
-            'rb/js/webhooksAdmin/views/webhookFormView.js',
+            'rb/js/admin/views/webhookFormView.js',
         ),
         'output_filename': 'rb/js/webhooks-form.min.js',
     },

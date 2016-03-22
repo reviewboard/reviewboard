@@ -71,7 +71,7 @@ suite('rb/configForms/models/ResourceListItem', function() {
         it('destroy', function() {
             resource.trigger('destroy');
             expect(listItem.trigger).toHaveBeenCalledWith(
-                'destroy', listItem, undefined, undefined);
+                'destroy', listItem, undefined, {});
         });
 
         it('request', function() {
