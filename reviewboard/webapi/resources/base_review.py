@@ -31,7 +31,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'type': six.text_type,
             'description': "The absolute URL to the review request's page on "
                            "the site.",
-            'added_in': '2.6',
+            'added_in': '3.0',
         },
         'body_bottom': {
             'type': six.text_type,
@@ -153,7 +153,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'type': bool,
             'description': 'If true, the review will only send an e-mail '
                            'to the review request submitter.',
-            'added_in': '2.6',
+            'added_in': '3.0',
         },
     }
 
