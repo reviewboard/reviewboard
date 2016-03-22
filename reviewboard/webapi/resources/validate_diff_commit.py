@@ -31,7 +31,7 @@ from reviewboard.webapi.resources.diff_commit import DiffCommitResource
 class ValidateDiffCommitResource(DiffCommitResource):
     """Verifies if a commit will work."""
 
-    added_in = '3.0'
+    added_in = '4.0'
 
     singleton = True
     name = 'diff_commit_validation'

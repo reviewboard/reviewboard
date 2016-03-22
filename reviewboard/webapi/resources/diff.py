@@ -207,7 +207,7 @@ class DiffResource(WebAPIResource):
                 'description': 'Determines if the DiffSet should support '
                                'commit history. The ``with_history`` and '
                                '``path`` fields are mutually exclusive.',
-                'added_in': '3.0',
+                'added_in': '4.0',
             },
             'basedir': {
                 'type': six.text_type,

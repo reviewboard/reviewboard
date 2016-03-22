@@ -30,7 +30,7 @@ class DraftDiffCommitResource(DiffCommitResource):
     POSTing to this resource will update a review request draft with the
     provided diff.
     """
-    added_in = '3.0'
+    added_in = '4.0'
 
     name = 'draft_diff_commit'
 

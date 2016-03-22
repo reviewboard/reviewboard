@@ -26,7 +26,7 @@ class DiffCommitResource(WebAPIResource):
     resources as well as metadata to reproduce the actual commits in a version
     control system.
     """
-    added_in = '3.0'
+    added_in = '4.0'
 
     model = DiffCommit
 

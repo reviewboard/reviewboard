@@ -57,12 +57,12 @@ class DiffContextResource(WebAPIResource):
             'base-commit-id': {
                 'type': six.text_type,
                 'description': 'The base commit ID.',
-                'added_in': '3.0',
+                'added_in': '4.0',
             },
             'tip-commit-id': {
                 'type': six.text_type,
                 'description': 'The tip commit ID.',
-                'added_in': '3.0',
+                'added_in': '4.0',
             },
         },
     )
