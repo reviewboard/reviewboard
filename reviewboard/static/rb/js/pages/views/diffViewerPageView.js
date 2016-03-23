@@ -82,7 +82,6 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         });
 
         /*
-        /*
          * Begin managing the URL history for the page, so that we can
          * switch revisions and handle pagination while keeping the history
          * clean and the URLs representative of the current state.
@@ -268,51 +267,64 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                 interdiffRevision = file.get('forceInterdiffRevision');
             }
 
-            this.queueLoadDiff(filediff.id,
-                               filediff.revision,
-                               interfilediff ? interfilediff.id : null,
-                               interdiffRevision,
-                               file.get('index'),
-                               file.get('commentCounts'));
+            this.queueLoadDiff(new RB.DiffReviewable({
+                reviewRequest: this.reviewRequest,
+                fileIndex: file.get('index'),
+                fileDiffID: filediff.id,
+                interFileDiffID: interfilediff ? interfilediff.id : null,
+                revision: filediff.revision,
+                interdiffRevision: interdiffRevision,
+                serializedCommentBlocks: file.get('commentCounts')
+            }));
         }, this);
 
         $.funcQueue('diff_files').start();
     },
 
-    /*
-     * Queues loading of a diff.
+    /**
+     * Queue the loading of the corresponding diff.
      *
      * When the diff is loaded, it will be placed into the appropriate location
      * in the diff viewer. The anchors on the page will be rebuilt. This will
      * then trigger the loading of the next file.
+     *
+     * Args:
+     *     diffReviewable (RB.DiffReviewable):
+     *         The diff reviewable for loading and reviewing the diff.
+     *
+     *     options (object):
+     *         The option arguments that control the behavior of this function.
+     *
+     * Option Args:
+     *     showDeleted (boolean):
+     *         Determines whether or not we want to requeue the corresponding
+     *         diff in order to show its deleted content.
      */
-    queueLoadDiff: function(fileDiffID, fileDiffRevision,
-                            interFileDiffID, interdiffRevision,
-                            fileIndex, serializedCommentBlocks) {
-        var diffReviewable = new RB.DiffReviewable({
-            reviewRequest: this.reviewRequest,
-            fileIndex: fileIndex,
-            fileDiffID: fileDiffID,
-            interFileDiffID: interFileDiffID,
-            revision: fileDiffRevision,
-            interdiffRevision: interdiffRevision,
-            serializedCommentBlocks: serializedCommentBlocks
-        });
+    queueLoadDiff: function(diffReviewable, options) {
+        var fileDiffID = diffReviewable.get('fileDiffID'),
+            prefix;
+
+        options = options || {};
 
         $.funcQueue('diff_files').add(function() {
-            if ($('#file' + fileDiffID).length === 1) {
+            if (!options.showDeleted && $('#file' + fileDiffID).length === 1) {
                 /*
-                 * We already have this one. This is probably a pre-loaded file.
+                 * We already have this diff (probably pre-loaded), and we
+                 * don't want to requeue it to show its deleted content.
                  */
                 this._renderFileDiff(diffReviewable);
             } else {
+                /*
+                 * We either want to queue this diff for the first time, or we
+                 * want to requeue it to show its deleted content.
+                 */
+                prefix = (options.showDeleted ? '#file' : '#file_container_');
                 diffReviewable.getRenderedDiff({
                     complete: function(xhr) {
-                        $('#file_container_' + fileDiffID)
-                            .replaceWith(xhr.responseText);
+                        $(prefix + fileDiffID).replaceWith(xhr.responseText);
                         this._renderFileDiff(diffReviewable);
                     }
-                }, this);
+                }, this, options);
             }
         }, this);
     },
@@ -335,7 +347,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         if ($el.length === 0) {
             /*
-             * The user changed revsions before the file finished loading, and
+             * The user changed revisions before the file finished loading, and
              * the target element no longer exists. Just return.
              */
             $.funcQueue('diff_files').next();
@@ -402,6 +414,11 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                 this._startAtAnchorName = null;
             }
         }
+
+        this.listenTo(diffReviewableView, 'showDeletedClicked', function() {
+            this.queueLoadDiff(diffReviewable, {showDeleted: true});
+            $.funcQueue('diff_files').start();
+        });
 
         $.funcQueue('diff_files').next();
     },
