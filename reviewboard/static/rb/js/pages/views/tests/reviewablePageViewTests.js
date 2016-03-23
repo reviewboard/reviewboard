@@ -175,20 +175,23 @@ suite('rb/pages/views/ReviewablePageView', function() {
             });
 
             it('Update Page calls notify if shouldNotify', function() {
-                RB.NotificationManager.instance._canNotify = true;
-                spyOn(RB.NotificationManager.instance, 'notify');
-                spyOn(RB.NotificationManager.instance, '_haveNotificationPermissions').andReturn(true);
-                spyOn(pageView, '_showUpdatesBubble');
-
                 var info = {
                     user: {
                         fullname: 'Hello'
                     }
                 };
 
+                RB.NotificationManager.instance._canNotify = true;
+                spyOn(RB.NotificationManager.instance, 'notify');
+                spyOn(RB.NotificationManager.instance,
+                      '_haveNotificationPermissions').and.returnValue(true);
+                spyOn(pageView, '_showUpdatesBubble');
+
                 pageView._onReviewRequestUpdated(info);
 
-                expect(RB.NotificationManager.instance.notify).toHaveBeenCalled();
+                expect(RB.NotificationManager.instance.notify)
+                    .toHaveBeenCalled();
+                expect(pageView._showUpdatesBubble).toHaveBeenCalled();
             });
         });
     });

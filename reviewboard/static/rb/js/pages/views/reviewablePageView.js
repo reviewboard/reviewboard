@@ -206,7 +206,7 @@ RB.ReviewablePageView = Backbone.View.extend({
         _super(this).remove.call(this);
     },
 
-    /*
+    /**
      * Register for update notifications to the review request from the
      * server.
      *
@@ -224,7 +224,7 @@ RB.ReviewablePageView = Backbone.View.extend({
             this.options.lastActivityTimestamp);
     },
 
-    /*
+    /**
      * Catch the review updated event and send the user a visual update.
      *
      * This function will handle the review updated event and decide whether
@@ -273,7 +273,7 @@ RB.ReviewablePageView = Backbone.View.extend({
         this._updatesBubble.open();
     },
 
-    /*
+    /**
      * Show the user a desktop notification for the last update.
      *
      * This function will create a notification if the user has not
@@ -303,8 +303,8 @@ RB.ReviewablePageView = Backbone.View.extend({
         RB.NotificationManager.instance.notify(notificationData);
      },
 
-    /*
-     * Updates the favicon for the page.
+    /**
+     * Update the favicon for the page.
      *
      * This is used to change the favicon shown on the page based on whether
      * there's a server-side update notification for the review request.
