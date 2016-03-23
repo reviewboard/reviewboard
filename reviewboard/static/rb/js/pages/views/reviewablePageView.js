@@ -165,6 +165,9 @@ RB.ReviewablePageView = Backbone.View.extend({
         this._updatesBubble = null;
         this._favIconURL = null;
         this._favIconNotifyURL = null;
+        this._logoNotificationsURL = null;
+
+        RB.NotificationManager.instance.setup();
     },
 
     /*
@@ -175,6 +178,7 @@ RB.ReviewablePageView = Backbone.View.extend({
 
         this._favIconURL = $favicon.attr('href');
         this._favIconNotifyURL = STATIC_URLS['rb/images/favicon_notify.ico'];
+        this._logoNotificationsURL = STATIC_URLS['rb/images/logo.png'];
 
         this.draftReviewBanner = RB.DraftReviewBannerView.create({
             el: $('#review-banner'),
@@ -202,46 +206,105 @@ RB.ReviewablePageView = Backbone.View.extend({
         _super(this).remove.call(this);
     },
 
-    /*
-     * Registers for update notifications to the review request from the
+    /**
+     * Register for update notifications to the review request from the
      * server.
      *
      * The server will be periodically checked for new updates. When a new
-     * update arrives, an update bubble will be displayed in the bottom-right
-     * of the page with the information.
+     * update arrives, an update bubble will be displayed in the
+     * bottom-right of the page, and if the user has allowed desktop
+     * notifications in their account settings, a desktop notification
+     * will be shown with the update information.
      */
     _registerForUpdates: function() {
-        this.listenTo(this.reviewRequest, 'updated', function(info) {
-            this._updateFavIcon(this._favIconNotifyURL);
-
-            if (this._updatesBubble) {
-                this._updatesBubble.remove();
-            }
-
-            this._updatesBubble = new UpdatesBubbleView({
-                updateInfo: info,
-                reviewRequest: this.reviewRequest
-            });
-
-            this.listenTo(this._updatesBubble, 'closed', function() {
-                this._updateFavIcon(this._favIconURL);
-            });
-
-            this.listenTo(this._updatesBubble, 'updatePage', function() {
-                window.location = this.reviewRequest.get('reviewURL');
-            });
-
-            this._updatesBubble.render().$el.appendTo(this.$el);
-            this._updatesBubble.open();
-        });
+        this.listenTo(this.reviewRequest, 'updated', this._onReviewRequestUpdated);
 
         this.reviewRequest.beginCheckForUpdates(
             this.options.checkUpdatesType,
             this.options.lastActivityTimestamp);
     },
 
+    /**
+     * Catch the review updated event and send the user a visual update.
+     *
+     * This function will handle the review updated event and decide whether
+     * to send a notification depending on browser and user settings.
+     *
+     * Args:
+     *     info (Object):
+     *         The last update information for the request.
+     */
+    _onReviewRequestUpdated: function(info) {
+        if (RB.NotificationManager.instance.shouldNotify()) {
+            this._showDesktopNotification(info);
+        }
+
+        this._showUpdatesBubble(info);
+    },
+
     /*
-     * Updates the favicon for the page.
+     * Create the updates bubble showing information about the last update.
+     *
+     * Args:
+     *     info (Object):
+     *         The last update information for the request.
+     */
+    _showUpdatesBubble: function(info) {
+        this._updateFavIcon(this._favIconNotifyURL);
+
+        if (this._updatesBubble) {
+            this._updatesBubble.remove();
+        }
+
+        this._updatesBubble = new UpdatesBubbleView({
+            updateInfo: info,
+            reviewRequest: this.reviewRequest
+        });
+
+        this.listenTo(this._updatesBubble, 'closed', function() {
+            this._updateFavIcon(this._favIconURL);
+        });
+
+        this.listenTo(this._updatesBubble, 'updatePage', function() {
+            window.location = this.reviewRequest.get('reviewURL');
+        });
+
+        this._updatesBubble.render().$el.appendTo(this.$el);
+        this._updatesBubble.open();
+    },
+
+    /**
+     * Show the user a desktop notification for the last update.
+     *
+     * This function will create a notification if the user has not
+     * disabled desktop notifications and the browser supports HTML5
+     * notifications.
+     *
+     *  Args:
+     *     info (Object):
+     *         The last update information for the request.
+     */
+     _showDesktopNotification: function(info) {
+        var username = info.user.fullname || info.user.username,
+            notificationText = gettext('Review request submitted by %s'),
+            onclick = _.bind(function() {
+                window.location = this.reviewRequest.get('reviewURL');
+            }, this);
+
+        this._updateFavIcon(this._favIconNotifyURL);
+
+        notificationData = {
+            'title': interpolate(notificationText, [username]),
+            'body': null,
+            'iconURL': this._logoNotificationsURL,
+            'onclick': onclick
+        };
+
+        RB.NotificationManager.instance.notify(notificationData);
+     },
+
+    /**
+     * Update the favicon for the page.
      *
      * This is used to change the favicon shown on the page based on whether
      * there's a server-side update notification for the review request.

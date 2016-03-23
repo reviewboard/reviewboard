@@ -296,6 +296,8 @@ class DiffFragmentView(View):
                 The following keys are required: ``collapse_all`` and
                 ``highlighting``.
 
+                The following key is optional: ``show_deleted``.
+
             filediff_id (int):
                 The ID of the
                 :py:class:`~reviewboard.diffviewer.models.FileDiff` being
@@ -320,6 +322,11 @@ class DiffFragmentView(View):
             filediff_id,
             interfilediff_id,
             settings.TEMPLATE_SERIAL)
+
+        show_deleted = renderer_settings.get('show_deleted')
+
+        if show_deleted:
+            etag += ':%s' % show_deleted
 
         return encode_etag(etag)
 
@@ -450,11 +457,14 @@ class DiffFragmentView(View):
         else:
             collapse_all = get_collapse_diff(self.request)
 
+        show_deleted = (self.request.GET.get('show-deleted') == '1')
+
         return {
             'chunk_index': chunk_index,
             'collapse_all': collapse_all,
             'highlighting': highlighting,
             'lines_of_context': lines_of_context,
+            'show_deleted': show_deleted,
         }
 
     def _get_requested_diff_file(self, diffset, filediff, interdiffset):

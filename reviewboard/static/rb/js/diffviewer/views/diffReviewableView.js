@@ -32,6 +32,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         'click .moved-to, .moved-from': '_onMovedLineClicked',
         'click .diff-collapse-btn': '_onCollapseChunkClicked',
         'click .diff-expand-btn': '_onExpandChunkClicked',
+        'click .show-deleted-content-action': '_onShowDeletedClicked',
         'mouseup': '_onMouseUp'
     },
 
@@ -634,6 +635,22 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         e.preventDefault();
         this._expandOrCollapse($target, false);
+    },
+
+    /**
+     * Handler for when show content is clicked.
+     *
+     * This requeues the corresponding diff to show its deleted content.
+     *
+     * Args:
+     *     e (Event):
+     *         The event that is triggered when show content is clicked.
+     */
+    _onShowDeletedClicked: function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        this.trigger('showDeletedClicked');
     }
 });
 

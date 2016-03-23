@@ -14,7 +14,8 @@
         MANUAL_URL = '{{RB_MANUAL_URL}}',
         STATIC_URLS = {
             'rb/images/favicon_notify.ico': '{% static "rb/images/favicon_notify.ico" %}',
-            'rb/images/resize-grip.png': '{% static "rb/images/resize-grip.png" %}'
+            'rb/images/resize-grip.png': '{% static "rb/images/resize-grip.png" %}',
+            'rb/images/logo.png': '{% static "rb/images/logo.png" %}'
         };
 {% block jsconsts %}{% endblock %}
   </script>
@@ -111,8 +112,9 @@
         authenticated: true,
 {%  if user_profile %}
         commentsOpenAnIssue: {{user_profile.open_an_issue|yesno:"true,false"}},
-{%  endif %}
+        enableDesktopNotifications: {{user_profile.should_enable_desktop_notifications|yesno:"true,false"}},
         defaultUseRichText: {{user_profile.should_use_rich_text|yesno:"true,false"}},
+{%  endif %}
         fullName: "{{request.user|user_displayname|escapejs}}",
 {% if siteconfig_settings.avatars_enabled %}
         avatarURLs: {

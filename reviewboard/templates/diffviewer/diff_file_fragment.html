@@ -188,14 +188,15 @@
    <td colspan="4">{% trans "This is an empty file." %}</td>
   </tr>
  </tbody>
-{% elif file.deleted %}
+{% elif file.deleted and not show_deleted %}
  <tbody class="deleted">
   <tr>
    <td colspan="4">
 {%  if file.num_changes == 0 %}
 {%   trans "This empty file was deleted. The content cannot be displayed." %}
 {%  else %}
-{%   trans "This file was deleted. The content cannot be displayed." %}
+{%   trans "This file was deleted." %}
+    <a class="show-deleted-content-action" href="#">{% trans "Show content." %}</a>
 {%  endif %}
    </td>
   </tr>
