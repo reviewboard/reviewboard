@@ -1,20 +1,41 @@
-{% load avatars %}
+{% load avatars i18n %}
 
-<div class="infobox-content" class="vcard">
-{% if siteconfig_settings.avatars_enabled %}
- <div class="infobox-pic" class="logo">
-  {% avatar requested_user 85 %}
- </div>
+<div class="infobox-content {{extra_content|yesno:'has-extra-content,'}}">
+ <div class="infobox-details">
+{% spaceless %}
+{%  if siteconfig_settings.avatars_enabled %}
+  <div class="infobox-pic" class="logo">{% avatar infobox_user 128 %}</div>
+{%  endif %}
+  <div class="infobox-text">
+{% endspaceless %}
+{% if show_profile and full_name %}
+   <h2><a href="{% url 'user' infobox_user %}">{{full_name}}</a> <span class="username">({{infobox_user.username}})</span></h2>
+{% else %}
+   <h2><a href="{% url 'user' infobox_user %}">{{infobox_user.username}}</a></h2>
 {% endif %}
- <div class="infobox-text">
-  <h2 class="nickname"><a href="{% url 'user' requested_user %}">{{requested_user}}</a></h2>
+
 {% if show_profile %}
-  <p class="fn">{{requested_user.first_name}} {{requested_user.last_name}}</p>
-{% if request.user.is_authenticated %}
-  <p class="email"><a href="mailto:{{requested_user.email}}">{{requested_user.email}}</a></p>
+{%  if request.user.is_authenticated %}
+   <p class="email"><span class="fa fa-envelope-o"> </span> <a href="mailto:{{infobox_user.email}}">{{infobox_user.email}}</a></p>
+{%  endif %}
+   <div class="localtime">
+    <span class="fa fa-clock-o"></span> <time data-timezone="{{timezone}}"></time>
+    <p class="small-detail">
+{%  blocktrans with infobox_user.last_login|date:"c" as last_login %}
+     Last logged in <time class="timesince" datetime="{{last_login}}"></time>
+{%  endblocktrans %}
+     <br>
+{%  blocktrans with infobox_user.date_joined|date:"F jS, Y" as date_joined %}
+     Joined {{date_joined}}
+{%  endblocktrans %}
+    </p>
+   </div>
 {% endif %}
-  <p class="logged-in">Last logged in {{requested_user.last_login|date:"F jS, Y"}}</p>
-  <p class="joined">Joined {{requested_user.date_joined|date:"F jS, Y"}}</p>
-{% endif %}
+
+   <p class="small-detail links">
+    <a href="{{review_requests_url}}">{% trans "Review Requests" %}</a>
+    <a href="{{reviews_url}}">{% trans "Reviews" %}</a>
+   </p>
+  </div>
  </div>
 </div>

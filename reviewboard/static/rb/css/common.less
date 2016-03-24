@@ -448,18 +448,83 @@
  * User page hover
  ****************************************************************************/
 
-#user_infobox {
+.user_infobox {
+  font-size: 12px;
+  min-height: @user-infobox-avatar-size;
+
   .infobox-pic {
-    float: left;
-    width: 85px;
-    margin-right: 1em;
+    display: inline-block;
+    height: @user-infobox-avatar-size;
+    width: @user-infobox-avatar-size;
+    vertical-align: top;
+
+    img {
+      border-radius: 2px 0 0 2px;
+    }
+  }
+
+  /*
+   * If there's extra content provided by extensions, the avatar image should
+   * have a flat bottom. If not, round the bottom-left as well as the top-left.
+   */
+  .has-extra-content .infobox-pic img {
+    border-radius: 2px 0 0 0;
   }
 
   .infobox-text {
+    box-sizing: border-box;
     color: black;
-    float: left;
-    max-width: 200px;
+    display: inline-block;
+    min-height: @user-infobox-avatar-size;
+    max-width: 40em;
+    padding: 0.75em;
+    position: relative;
     word-wrap: break-word;
+    vertical-align: top;
+
+    .localtime {
+      position: absolute;
+      z-index: @z-index-dialog + 1;
+
+      & > time {
+        cursor: pointer;
+        border-bottom: 1px dotted #666;
+      }
+
+      .small-detail {
+        display: none;
+
+        /*
+         * 14px left margin aligns the text with the time above it. The rest
+         * are chosen to look nice.
+         */
+        margin: 14px 20px 4px 14px;
+      }
+
+      &:hover {
+        border: 1px solid #666;
+        background-color: white;
+        padding: 3px;
+        margin: -4px;
+
+        .small-detail {
+          display: block;
+        }
+      }
+    }
+
+    .links {
+      position: absolute;
+      bottom: 0.75em;
+
+      a {
+        margin-right: 2em;
+      }
+    }
+
+    .small-detail {
+      font-size: 10px;
+    }
   }
 
   a {
@@ -471,22 +536,18 @@
   }
 
   h2 {
+    margin-top: 0;
+    padding-top: 0;
+
     a {
       color: inherit;
     }
-  }
 
-  .logged-in {
-    margin-top: 2em;
-  }
-
-  .logged-in, .joined {
-    font-size: 0.8em;
-  }
-
-  #infobox-text h2 {
-    margin-top: 0;
-    padding-top: 0;
+    .username {
+      color: #888888;
+      font-size: 12px;
+      font-weight: normal;
+    }
   }
 }
 
@@ -499,8 +560,9 @@
  * Bug hover
  ****************************************************************************/
 
-#bug_infobox {
+.bug_infobox {
   max-width: 50em;
+  min-height: 10em;
   max-height: 25em;
   overflow: hidden;
 
@@ -516,14 +578,12 @@
   }
 }
 
-#user_infobox, #bug_infobox {
+.user_infobox, .bug_infobox {
   background: #F9F9F9;
-  border: 1px black solid;
-  border-radius: 10px;
-  box-shadow: 0px 0px 4px #000;
+  border: 1px #666666 solid;
+  border-radius: 3px;
+  box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.5);
   display: block;
-  min-height: 12em;
-  padding: 1em;
   position: absolute;
   min-width: 40em;
   z-index: @z-index-dialog;
@@ -535,7 +595,6 @@
   }
 
   p {
-    font-size: 1.2em;
     margin: 0.5em 0;
     padding: 0;
   }

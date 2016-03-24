@@ -1640,7 +1640,14 @@ def user_infobox(request, username,
     a standalone page.
     """
     user = get_object_or_404(User, username=username)
-    show_profile = user.is_profile_visible(request.user)
+
+    try:
+        profile = user.get_profile()
+        show_profile = not profile.is_private
+        timezone = profile.timezone
+    except Profile.DoesNotExist:
+        show_profile = True
+        timezone = 'UTC'
 
     etag = encode_etag(':'.join([
         user.first_name,
@@ -1648,15 +1655,30 @@ def user_infobox(request, username,
         user.email,
         six.text_type(user.last_login),
         six.text_type(settings.TEMPLATE_SERIAL),
-        six.text_type(show_profile)
+        six.text_type(show_profile),
+        timezone,
     ]))
 
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()
 
+    # TODO: once the UserInfoBoxHook is integrated, populate this with the
+    # rendered content from those.
+    extra_content = ''
+
+    review_requests_url = local_site_reverse('user', local_site=local_site,
+                                             args=[username])
+    reviews_url = local_site_reverse('user-grid', local_site=local_site,
+                                     args=[username, 'reviews'])
+
     response = render_to_response(template_name, RequestContext(request, {
+        'extra_content': extra_content,
+        'full_name': user.get_full_name(),
+        'infobox_user': user,
+        'review_requests_url': review_requests_url,
+        'reviews_url': reviews_url,
         'show_profile': show_profile,
-        'requested_user': user,
+        'timezone': timezone,
     }))
     set_etag(response, etag)
 
