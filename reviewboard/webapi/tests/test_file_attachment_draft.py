@@ -194,9 +194,7 @@ class ResourceItemTests(BaseWebAPITestCase):
                                                    file_attachment.pk,
                                                    local_site_name),
                 draft_file_attachment_item_mimetype,
-                {
-                    'caption': 'My new caption',
-                },
+                {'caption': 'My new caption'},
                 file_attachment,
                 [])
 

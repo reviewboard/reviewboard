@@ -179,9 +179,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
 
         return (get_screenshot_item_url(screenshot, local_site_name),
                 screenshot_item_mimetype,
-                {
-                    'caption': 'My new caption',
-                },
+                {'caption': 'My new caption'},
                 screenshot,
                 [review_request])
 

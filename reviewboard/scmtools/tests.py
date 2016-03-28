@@ -2844,6 +2844,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertFalse(self.remote_repository.get_file_exists('PATH',
                                                                 'd7e96b3'))
 
+
 class PolicyTests(TestCase):
     fixtures = ['test_scmtools']
 

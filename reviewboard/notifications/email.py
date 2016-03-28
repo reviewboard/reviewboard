@@ -216,8 +216,8 @@ def get_email_addresses_for_group(group, review_request_id=None):
         if ',' not in group.mailing_list:
             # The mailing list field has only one e-mail address in it,
             # so we can just use that and the group's display name.
-            addresses =  [build_email_address(group.display_name,
-                                              group.mailing_list)]
+            addresses = [build_email_address(group.display_name,
+                                             group.mailing_list)]
         else:
             # The mailing list field has multiple e-mail addresses in it.
             # We don't know which one should have the group's display name
@@ -724,7 +724,7 @@ def mail_review(review, user, to_submitter_only):
     Args:
         review (reviewboard.reviews.models.Review):
             The review to send an e-mail about.
-            
+
         to_submitter_only (bool):
             Determines if the review is to the submitter only or not.
     """
@@ -763,7 +763,7 @@ def mail_review(review, user, to_submitter_only):
 
     reviewer = review.user
 
-    limit_to=None
+    limit_to = None
 
     if to_submitter_only:
         limit_to = set([review_request.submitter, review.user])

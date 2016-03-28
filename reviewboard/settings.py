@@ -9,9 +9,12 @@ import sys
 import djblets
 from django.core.urlresolvers import reverse
 
+from reviewboard.staticbundles import PIPELINE_STYLESHEETS, PIPELINE_JAVASCRIPT
+
 
 # Can't import django.utils.translation yet
-_ = lambda s: s
+def _(s):
+    return s
 
 
 DEBUG = True
@@ -375,8 +378,6 @@ LOGIN_REDIRECT_URL = SITE_ROOT + 'dashboard/'
 
 
 # Static media setup
-from reviewboard.staticbundles import PIPELINE_STYLESHEETS, PIPELINE_JAVASCRIPT
-
 if RUNNING_TEST:
     PIPELINE_COMPILERS = []
 else:

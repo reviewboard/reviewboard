@@ -36,7 +36,6 @@ from reviewboard.accounts.decorators import (check_login_required,
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
-from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.diffutils import (convert_to_unicode,
                                               get_file_chunks_in_range,
                                               get_last_header_before_line,
@@ -480,12 +479,12 @@ def review_detail(request,
     blocks = review_request.get_blocks()
 
     etag = encode_etag(
-       '%s:%s:%s:%s:%s:%s:%s:%s:%s:%s'
-        % (request.user, last_activity_time, draft_timestamp,
-           review_timestamp, review_request.last_review_activity_timestamp,
-           is_rich_text_default_for_user(request.user),
-           [r.pk for r in blocks],
-           starred, visibility, settings.AJAX_SERIAL))
+       '%s:%s:%s:%s:%s:%s:%s:%s:%s:%s' %
+       (request.user, last_activity_time, draft_timestamp,
+        review_timestamp, review_request.last_review_activity_timestamp,
+        is_rich_text_default_for_user(request.user),
+        [r.pk for r in blocks],
+        starred, visibility, settings.AJAX_SERIAL))
 
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()
@@ -1079,9 +1078,9 @@ def comment_diff_fragments(
             lines_of_context = [int(i) for i in lines_of_context.split(',')]
 
             # Ensure that we have 2 values for lines_of_context. If only one is
-            # given, assume it is both the before and after context. If more than
-            # two are given, only consider the first two. If somehow we get no
-            # lines of context value, we will default to [0, 0].
+            # given, assume it is both the before and after context. If more
+            # than two are given, only consider the first two. If somehow we
+            # get no lines of context value, we will default to [0, 0].
 
             if len(lines_of_context) == 1:
                 lines_of_context.append(lines_of_context[0])

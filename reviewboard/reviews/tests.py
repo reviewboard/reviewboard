@@ -1607,8 +1607,8 @@ class ViewTests(TestCase):
         self.create_diffset(review_request=review_request, name="test, comma")
 
         response = self.client.get('/r/%d/diff/raw/' % review_request.pk)
-        filename = response['Content-Disposition']\
-                           [len('attachment; filename='):]
+        content_disposition = response['Content-Disposition']
+        filename = content_disposition[len('attachment; filename='):]
         self.assertFalse(',' in filename)
 
     # Bug #4080
@@ -2496,7 +2496,6 @@ class DefaultReviewerTests(TestCase):
         review_request.add_default_reviewers()
         self.assertIn(user1, review_request.target_people.all())
         self.assertNotIn(user2, review_request.target_people.all())
-
 
     def test_form_with_localsite(self):
         """Testing DefaultReviewerForm with a LocalSite."""
