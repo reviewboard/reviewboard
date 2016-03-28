@@ -105,7 +105,6 @@ def review_request_closed_cb(sender, user, review_request, type, **kwargs):
         mail_review_request(review_request, user, close_type=type)
 
 
-
 def review_request_published_cb(sender, user, review_request, trivial,
                                 changedesc, **kwargs):
     """Send e-mail when a review request is published.

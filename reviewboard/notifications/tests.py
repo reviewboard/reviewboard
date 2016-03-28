@@ -85,7 +85,7 @@ class UserEmailTests(EmailTestHelper, TestCase):
 
         # Registration request have to be sent twice since djblets need to
         # validate cookies on the second request.
-        self.client.get('/account/register/', new_user_info)
+        self.client.get('/account/register/')
         self.client.post('/account/register/', new_user_info)
 
         siteconfig = SiteConfiguration.objects.get_current()
