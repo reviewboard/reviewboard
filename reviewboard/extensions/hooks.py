@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 import inspect
 import warnings
 
+from django.template.context import RequestContext
+from django.template.loader import render_to_string
 from django.utils import six
 from djblets.extensions.hooks import (DataGridColumnsHook, ExtensionHook,
                                       ExtensionHookPoint, SignalHook,
@@ -562,6 +564,105 @@ class HeaderDropdownActionHook(ActionHook):
 
 
 @six.add_metaclass(ExtensionHookPoint)
+class UserInfoboxHook(ExtensionHook):
+    """A hook for adding information to the user infobox.
+
+    Extensions can use this hook to add additional pieces of data to the box
+    which pops up when hovering the mouse over a user.
+    """
+
+    def __init__(self, extension, template_name=None):
+        """Initialize the hook.
+
+        Args:
+            extension (reviewboard.extensions.base.Extension):
+                The extension instance.
+
+            template_name (six.text_type):
+                The template to render with the default :py:func:`render`
+                method.
+        """
+        super(UserInfoboxHook, self).__init__(extension)
+
+        self.template_name = template_name
+
+    def get_extra_context(self, user, request, local_site):
+        """Return extra context to use when rendering the template.
+
+        This may be overridden in order to make use of the default
+        :py:func:`render` method.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user whose infobox is being shown.
+
+            request (django.http.HttpRequest):
+                The request for the infobox view.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The local site, if any.
+
+        Returns:
+            dict:
+            Additional context to include when rendering the template.
+        """
+        return {}
+
+    def get_etag_data(self, user, request, local_site):
+        """Return data to be included in the user infobox ETag.
+
+        The infobox view uses an ETag to enable browser caching of the content.
+        If the extension returns data which can change, this method should
+        return a string which is unique to that data.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user whose infobox is being shown.
+
+            request (django.http.HttpRequest):
+                The request for the infobox view.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The local site, if any.
+
+        Returns:
+            six.text_type:
+            A string to be included in the ETag for the view.
+        """
+        return ''
+
+    def render(self, user, request, local_site):
+        """Return content to include in the user infobox.
+
+        This may be overridden in the case where providing a custom template
+        and overriding :py:func:`get_extra_context` is insufficient.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user whose infobox is being shown.
+
+            request (django.http.HttpRequest):
+                The request for the infobox view.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The local site, if any.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            Text to include in the infobox HTML.
+        """
+        context = {
+            'user': user,
+        }
+        context.update(self.get_extra_context(user, request, local_site))
+
+        assert self.template_name is not None
+
+        return render_to_string(self.template_name,
+                                RequestContext(request, context))
+
+
+@six.add_metaclass(ExtensionHookPoint)
 class UserPageSidebarItemsHook(DataGridSidebarItemsHook):
     """A hook for adding items to the sidebar of the user page.
 
@@ -945,6 +1046,7 @@ __all__ = [
     'SignalHook',
     'TemplateHook',
     'URLHook',
+    'UserInfoboxHook',
     'UserPageSidebarItemsHook',
     'WebAPICapabilitiesHook',
 ]

@@ -33,6 +33,7 @@ from reviewboard.extensions.hooks import (AdminWidgetHook,
                                           ReviewRequestFieldSetsHook,
                                           ReviewRequestPublishedEmailHook,
                                           ReviewReplyPublishedEmailHook,
+                                          UserInfoboxHook,
                                           WebAPICapabilitiesHook)
 from reviewboard.hostingsvcs.service import (get_hosting_service,
                                              HostingService)
@@ -44,6 +45,7 @@ from reviewboard.reviews.fields import (BaseReviewRequestField,
 from reviewboard.reviews.signals import (review_request_published,
                                          review_published, reply_published,
                                          review_request_closed)
+from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import root_item_mimetype
 from reviewboard.webapi.tests.urls import get_root_url
@@ -638,6 +640,14 @@ class SandboxBaseReviewRequestTestInitField(BaseReviewRequestField):
         raise Exception
 
 
+class SandboxUserInfoboxHook(UserInfoboxHook):
+    def get_etag_data(self, user, request, local_site):
+        raise Exception
+
+    def render(self, user, request, local_site):
+        raise Exception
+
+
 class TestIsEmptyField(BaseReviewRequestField):
     field_id = 'is_empty'
 
@@ -891,6 +901,15 @@ class SandboxTests(TestCase):
             "{% end_for_review_request_field %}")
 
         t.render(context).strip()
+
+    def test_user_infobox_hook(self):
+        """Testing sandboxing of the UserInfoboxHook"""
+        SandboxUserInfoboxHook(self.extension, 'template.html')
+
+        self.client.get(
+            local_site_reverse('user-infobox', kwargs={
+                'username': self.user.username,
+            }))
 
 
 class EmailHookTests(SpyAgency, TestCase):
