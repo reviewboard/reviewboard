@@ -115,8 +115,9 @@ class AssemblaTests(ServiceTests):
 
             self.assertTrue(scmtool.check_repository.called)
             self.assertIn('p4_host', scmtool.check_repository.last_call.kwargs)
-            self.assertEqual(scmtool.check_repository.last_call.kwargs['p4_host'],
-                             'myproject')
+            self.assertEqual(
+                scmtool.check_repository.last_call.kwargs['p4_host'],
+                'myproject')
         except ImportError:
             raise nose.SkipTest
 
@@ -141,6 +142,7 @@ class AssemblaTests(ServiceTests):
                                      local_site_name=None)
 
             self.assertTrue(scmtool.check_repository.called)
-            self.assertNotIn('p4_host', scmtool.check_repository.last_call.kwargs)
+            self.assertNotIn('p4_host',
+                             scmtool.check_repository.last_call.kwargs)
         except ImportError:
             raise nose.SkipTest

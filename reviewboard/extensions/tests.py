@@ -78,7 +78,6 @@ def set_siteconfig_settings(settings):
         load_site_config()
 
 
-
 class DummyExtension(Extension):
     registration = RegisteredExtension()
 

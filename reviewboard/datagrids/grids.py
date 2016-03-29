@@ -57,8 +57,7 @@ class ShowClosedReviewRequestsMixin(object):
         try:
             self.show_closed = (
                 int(self.request.GET.get('show-closed',
-                                         self.show_closed))
-                != 0)
+                                         self.show_closed)) != 0)
         except ValueError:
             # do nothing
             pass

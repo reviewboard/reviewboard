@@ -192,7 +192,6 @@ class Profile(models.Model):
         return (not self.settings or
                 self.settings.get('enable_desktop_notifications', True))
 
-
     def star_review_request(self, review_request):
         """Mark a review request as starred.
 

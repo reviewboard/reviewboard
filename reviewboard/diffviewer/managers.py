@@ -491,7 +491,6 @@ class DiffSetManager(models.Manager):
             orig_rev = None
             parent_content = b''
 
-
             if f.origFile in parent_files:
                 parent_file = parent_files[f.origFile]
                 parent_content = parent_file.data

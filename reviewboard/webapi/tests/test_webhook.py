@@ -310,6 +310,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.assertIn('webhook', rsp)
         self.compare_item(rsp['webhook'], WebHookTarget.objects.get())
 
+
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
     """Tests for the WebHookResource item resource."""

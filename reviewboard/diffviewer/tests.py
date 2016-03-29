@@ -1347,10 +1347,10 @@ class HighlightRegionTest(TestCase):
         self.assertEqual(highlightregion("abc", None), "abc")
 
         self.assertEqual(highlightregion("abc", [(0, 3)]),
-                          '<span class="hl">abc</span>')
+                         '<span class="hl">abc</span>')
 
         self.assertEqual(highlightregion("abc", [(0, 1)]),
-                          '<span class="hl">a</span>bc')
+                         '<span class="hl">a</span>bc')
 
         self.assertEqual(highlightregion(
             '<span class="xy">a</span>bc',

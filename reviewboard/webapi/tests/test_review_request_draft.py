@@ -164,9 +164,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
 
         return (get_review_request_draft_url(review_request, local_site_name),
                 review_request_draft_item_mimetype,
-                {
-                    'description': 'New description',
-                },
+                {'description': 'New description'},
                 [review_request])
 
     def check_post_result(self, user, rsp, review_request):
@@ -204,7 +202,6 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.assertEqual(review_request.extra_data['my-test'], 123)
         self.assertTrue(review_request.public)
 
-
     #
     # HTTP PUT tests
     #
@@ -219,9 +216,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
 
         return (get_review_request_draft_url(review_request, local_site_name),
                 review_request_draft_item_mimetype,
-                {
-                    'description': 'New description',
-                },
+                {'description': 'New description'},
                 draft,
                 [review_request])
 

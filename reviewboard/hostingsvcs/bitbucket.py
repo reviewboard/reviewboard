@@ -496,7 +496,6 @@ class Bitbucket(HostingService):
         return timestamp.replace(' ', 'T')
 
 
-
 @require_POST
 def post_receive_hook_close_submitted(request, local_site_name=None,
                                       repository_id=None,

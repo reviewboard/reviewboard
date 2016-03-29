@@ -78,7 +78,8 @@ class RBSearchView(SearchView):
                 if review_request.is_accessible_by(self.request.user,
                                                    local_site=self.local_site,
                                                    request=self.request):
-                    return HttpResponseRedirect(review_request.get_absolute_url())
+                    return HttpResponseRedirect(
+                        review_request.get_absolute_url())
             except ReviewRequest.DoesNotExist:
                 pass
 
