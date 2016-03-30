@@ -166,7 +166,7 @@ class Beanstalk(HostingService):
                         % (quote(path), quote(expected_revision)))
 
             if contents:
-                url_path += '&contents=1'
+                url_path += '&contents=true'
 
             raw_content = False
 
