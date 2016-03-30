@@ -29,12 +29,11 @@
 
 
 #admin-actions {
-  @border-width: 0.1em;
-  @admin-actions-width: @admin-sidebar-width + @page-container-padding - @border-width;
+  @admin-actions-width: @admin-sidebar-width + @page-container-padding;
 
   background: @admin-actions-bg;
-  border-right: @border-width @admin-actions-border-color solid;
-  border-bottom: @border-width @admin-actions-border-color solid;
+  border-right: 1px @admin-actions-border-color solid;
+  border-bottom: 1px @admin-actions-border-color solid;
   float: left;
   margin: 0;
   padding: 0;
@@ -539,6 +538,58 @@
 
 #all-modal-primary-widgets, #all-modal-secondary-widgets {
   display: none;
+}
+
+
+/***************************************************************************
+ * Support banner
+ ***************************************************************************/
+
+#support-banner {
+  @padding: 1em;
+
+  border-bottom: 1px solid @box-border-color;
+  .box-shadow(@box-shadow);
+
+  box-sizing: border-box;
+  margin: -1.5em -1.5em 1.5em -1.5em;
+  padding: @padding;
+
+  &.loading {
+    text-align: center;
+  }
+
+  &.error,
+  &.community-support {
+    background-color: #FFE4E1;
+  }
+
+  &.basic-support,
+  &.premium-support {
+    background-color: @trophy-banner-bg-color;
+    background-image: url('@{img_base}/gold_box_top_bg.png');
+  }
+
+  a {
+    color: #0000DD;
+  }
+
+  h1, h2, h3 {
+    font-size: 110%;
+    margin-top: 0;
+  }
+
+  p {
+    margin: (0.5 * @padding) 0;
+
+    &:first-child {
+      margin-top: 0;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
 }
 
 
