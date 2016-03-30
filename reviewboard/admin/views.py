@@ -19,7 +19,7 @@ from reviewboard.accounts.models import Profile
 from reviewboard.admin.cache_stats import get_cache_stats
 from reviewboard.admin.forms import SSHSettingsForm
 from reviewboard.admin.security_checks import SecurityCheckRunner
-from reviewboard.admin.support import get_support_url
+from reviewboard.admin.support import get_support_url, serialize_support_data
 from reviewboard.admin.widgets import (dynamic_activity_data,
                                        primary_widgets,
                                        secondary_widgets)
@@ -62,6 +62,7 @@ def dashboard(request, template_name="admin/dashboard.html"):
         'root_path': settings.SITE_ROOT + "admin/db/",
         'primary_widgets': sorted_primary_widgets,
         'secondary_widgets': sorted_secondary_widgets,
+        'support_data': serialize_support_data(request, True),
     }))
 
 

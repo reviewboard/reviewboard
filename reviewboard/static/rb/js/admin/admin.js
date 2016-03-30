@@ -70,7 +70,10 @@ function makeSidebarSortable() {
 }
 
 $(document).ready(function() {
-    var adminExtras = $("#admin-extras");
+    var adminExtras = $("#admin-extras"),
+        supportBanner = new RB.SupportBannerView({
+            el: $('#support-banner')
+        });
 
     function refreshWidgets() {
         var sideWidth = $("#admin-actions").outerWidth(),
@@ -133,4 +136,6 @@ $(document).ready(function() {
         .on('hover', function() {
             $(this).css('cursor', 'move');
         });
+    
+    supportBanner.render();
 });
