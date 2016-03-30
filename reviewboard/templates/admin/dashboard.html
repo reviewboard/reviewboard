@@ -5,6 +5,11 @@
 {% block bodyclass %}dashboard{% endblock %}
 {% block breadcrumbs %}{% endblock %}
 
+{% block jsconsts %}
+{{block.super}}
+    var SUPPORT_DATA = '{{support_data|escapejs}}';
+{% endblock %}
+
 {% block scripts-post %}
 <!--[if IE]><script src="{% static "lib/js/flot/excanvas.min.js" %}"></script><![endif]-->
 {% javascript 'admin' %}
@@ -13,6 +18,7 @@
 {% block content_title %}{% endblock %}
 
 {% block content %}
+<div id="support-banner"></div>
 <div id="admin-dashboard">
  <div id="dashboard-view">
   <div id="admin-widgets">

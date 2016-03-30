@@ -171,6 +171,9 @@ function createWidgetAdderModals() {
 
 $(document).ready(function() {
     var adminExtras = $("#admin-extras"),
+        supportBanner = new RB.SupportBannerView({
+            el: $('#support-banner')
+        }),
         primary_total,
         primary_unselected,
         primary_selected,
@@ -285,4 +288,6 @@ $(document).ready(function() {
     if (secondary_unselected > 0) {
         $("#no-small-msg").hide();
     }
+
+    supportBanner.render();
 });
