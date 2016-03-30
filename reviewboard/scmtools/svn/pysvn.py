@@ -38,7 +38,7 @@ class Client(base.Client):
             self.client.set_default_username(six.text_type(username))
 
         if password:
-            self.client.set_default_password(six.text_type(password))
+            self.client.set_default_password(password)
 
     def set_ssl_server_trust_prompt(self, cb):
         self.client.callback_ssl_server_trust_prompt = cb
