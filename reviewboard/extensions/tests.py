@@ -7,10 +7,12 @@ from django.core import mail
 from django.template import Context, Template
 from django.test.client import RequestFactory
 from django.utils import six
+from djblets.extensions.extension import ExtensionInfo
 from djblets.extensions.manager import ExtensionManager
 from djblets.extensions.models import RegisteredExtension
 from djblets.siteconfig.models import SiteConfiguration
 from kgb import SpyAgency
+from mock import Mock
 
 from reviewboard.admin.widgets import (primary_widgets,
                                        secondary_widgets,
@@ -18,6 +20,7 @@ from reviewboard.admin.widgets import (primary_widgets,
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.extensions.base import Extension
 from reviewboard.extensions.hooks import (AdminWidgetHook,
+                                          APIExtraDataAccessHook,
                                           CommentDetailDisplayHook,
                                           DiffViewerActionHook,
                                           EmailHook,
@@ -44,6 +47,7 @@ from reviewboard.reviews.fields import (BaseReviewRequestField,
 from reviewboard.reviews.signals import (review_request_published,
                                          review_published, reply_published,
                                          review_request_closed)
+from reviewboard.webapi.base import ExtraDataAccessLevel, WebAPIResource
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import root_item_mimetype
 from reviewboard.webapi.tests.urls import get_root_url
@@ -78,17 +82,24 @@ def set_siteconfig_settings(settings):
         load_site_config()
 
 
+class ExtensionManagerMixin(object):
+    """Mixin used to setup a default ExtensionManager for tests."""
+
+    def setUp(self):
+        super(ExtensionManagerMixin, self).setUp()
+        self.manager = ExtensionManager('')
+
+
 class DummyExtension(Extension):
     registration = RegisteredExtension()
 
 
-class HookTests(TestCase):
+class HookTests(ExtensionManagerMixin, TestCase):
     """Tests the extension hooks."""
     def setUp(self):
         super(HookTests, self).setUp()
 
-        manager = ExtensionManager('')
-        self.extension = DummyExtension(extension_manager=manager)
+        self.extension = DummyExtension(extension_manager=self.manager)
 
     def tearDown(self):
         super(HookTests, self).tearDown()
@@ -368,13 +379,12 @@ class TestService(HostingService):
     name = 'test-service'
 
 
-class HostingServiceHookTests(TestCase):
+class HostingServiceHookTests(ExtensionManagerMixin, TestCase):
     """Testing HostingServiceHook."""
     def setUp(self):
         super(HostingServiceHookTests, self).setUp()
 
-        manager = ExtensionManager('')
-        self.extension = DummyExtension(extension_manager=manager)
+        self.extension = DummyExtension(extension_manager=self.manager)
 
     def tearDown(self):
         super(HostingServiceHookTests, self).tearDown()
@@ -402,13 +412,12 @@ class TestWidget(Widget):
     title = 'Testing Widget'
 
 
-class AdminWidgetHookTests(TestCase):
+class AdminWidgetHookTests(ExtensionManagerMixin, TestCase):
     """Testing AdminWidgetHook."""
     def setUp(self):
         super(AdminWidgetHookTests, self).setUp()
 
-        manager = ExtensionManager('')
-        self.extension = DummyExtension(extension_manager=manager)
+        self.extension = DummyExtension(extension_manager=self.manager)
 
     def tearDown(self):
         super(AdminWidgetHookTests, self).tearDown()
@@ -448,14 +457,13 @@ class WebAPICapabilitiesExtension(Extension):
         super(WebAPICapabilitiesExtension, self).__init__(*args, **kwargs)
 
 
-class WebAPICapabilitiesHookTests(BaseWebAPITestCase):
+class WebAPICapabilitiesHookTests(ExtensionManagerMixin, BaseWebAPITestCase):
     """Testing WebAPICapabilitiesHook."""
     def setUp(self):
         super(WebAPICapabilitiesHookTests, self).setUp()
 
-        manager = ExtensionManager('')
         self.extension = WebAPICapabilitiesExtension(
-            extension_manager=manager)
+            extension_manager=self.manager)
         self.url = get_root_url()
 
     def tearDown(self):
@@ -569,6 +577,298 @@ class WebAPICapabilitiesHookTests(BaseWebAPITestCase):
         self.extension.shutdown()
 
 
+class GenericTestResource(WebAPIResource):
+    name = 'test'
+    uri_object_key = 'test_id'
+    extra_data = {}
+    item_mimetype = 'application/vnd.reviewboard.org.test+json'
+
+    fields = {
+        'extra_data': {
+            'type': dict,
+            'description': 'Extra data as part of the test resource. '
+                           'This can be set by the API or extensions.',
+        },
+    }
+
+    allowed_methods = ('GET', 'PUT')
+
+    def get(self, *args, **kwargs):
+        return 200, {
+            'test': {
+                'extra_data': self.serialize_extra_data_field(self)
+            }
+        }
+
+    def put(self, request, *args, **kwargs):
+        fields = request.POST.dict()
+        self.import_extra_data(self, self.extra_data, fields)
+
+        return 200, {
+            'test': self.extra_data
+        }
+
+    def has_access_permissions(self, request, obj, *args, **kwargs):
+        return True
+
+
+class APIExtraDataAccessHookTests(ExtensionManagerMixin, SpyAgency,
+                                  BaseWebAPITestCase):
+    """Testing APIExtraDataAccessHook."""
+
+    fixtures = ['test_users']
+
+    class EverythingPrivateHook(APIExtraDataAccessHook):
+        """Hook which overrides callable to return all fields as private."""
+
+        def get_extra_data_state(self, key_path):
+            self.called = True
+            return ExtraDataAccessLevel.ACCESS_STATE_PRIVATE
+
+    class InvalidCallableHook(APIExtraDataAccessHook):
+        """Hook which implements an invalid callable"""
+
+        get_extra_data_state = 'not a callable'
+
+    def setUp(self):
+        super(APIExtraDataAccessHookTests, self).setUp()
+
+        self.resource_class = GenericTestResource
+        self.resource = self.resource_class()
+
+        class DummyExtension(Extension):
+            resources = [self.resource]
+            registration = RegisteredExtension()
+
+        self.extension_class = DummyExtension
+
+        entry_point = Mock()
+        entry_point.load = lambda: self.extension_class
+        entry_point.dist = Mock()
+        entry_point.dist.project_name = 'TestProjectName'
+        entry_point.dist.get_metadata_lines = lambda *args: [
+            'Name: Resource Test Extension',
+        ]
+
+        self.manager._entrypoint_iterator = lambda: [entry_point]
+
+        self.manager.load()
+        self.extension = self.manager.enable_extension(self.extension_class.id)
+        self.registered = True
+
+        self.extension_class.info = ExtensionInfo(entry_point,
+                                                  self.extension_class)
+
+        self.url = self.resource.get_item_url(test_id=1)
+        self.resource.extra_data = {
+            'public': 'foo',
+            'private': 'secret',
+            'readonly': 'bar',
+        }
+
+    def tearDown(self):
+        super(APIExtraDataAccessHookTests, self).tearDown()
+
+        if self.registered is True:
+            self.manager.disable_extension(self.extension_class.id)
+
+    def test_register(self):
+        """Testing APIExtraDataAccessHook registration"""
+        APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('public',), ExtraDataAccessLevel.ACCESS_STATE_PUBLIC)
+            ])
+
+        self.assertNotEqual([], self.resource._extra_data_access_callbacks)
+
+    def test_register_overridden_hook(self):
+        """Testing overridden APIExtraDataAccessHook registration"""
+        self.EverythingPrivateHook(self.extension, self.resource, [])
+
+        self.assertNotEqual([], self.resource._extra_data_access_callbacks)
+
+    def test_overridden_hook_get(self):
+        """Testing overridden APIExtraDataAccessHook get"""
+        hook = self.EverythingPrivateHook(self.extension, self.resource, [])
+
+        rsp = self.api_get(self.url,
+                           expected_mimetype=self.resource.item_mimetype)
+
+        # Since the hook registers the callback function on initialization,
+        # which stores a pointer to the method, we can't use SpyAgency after
+        # the hook has already been initialized. Since SpyAgency's spy_on
+        # function requires an instance of a class, we also cannot spy on the
+        # hook function before initialization. Therefore, as a workaround,
+        # we're setting a variable in the function to ensure that it is in
+        # fact being called.
+        self.assertTrue(hook.called)
+        self.assertNotIn('public', rsp['test']['extra_data'])
+        self.assertNotIn('readonly', rsp['test']['extra_data'])
+        self.assertNotIn('private', rsp['test']['extra_data'])
+
+    def test_overridden_hook_put(self):
+        """Testing overridden APIExtraDataAccessHook put"""
+        hook = self.EverythingPrivateHook(self.extension, self.resource, [])
+
+        original_value = self.resource.extra_data['readonly']
+        modified_extra_fields = {
+            'extra_data.public': 'modified',
+        }
+
+        rsp = self.api_put(self.url, modified_extra_fields,
+                           expected_mimetype=self.resource.item_mimetype)
+
+        # Since the hook registers the callback function on initialization,
+        # which stores a pointer to the method, we can't use SpyAgency after
+        # the hook has already been initialized. Since SpyAgency's spy_on
+        # function requires an instance of a class, we also cannot spy on the
+        # hook function before initialization. Therefore, as a workaround,
+        # we're setting a variable in the function to ensure that it is in
+        # fact being called.
+        self.assertTrue(hook.called)
+        self.assertEqual(original_value, rsp['test']['readonly'])
+
+    def test_register_invalid_hook(self):
+        """Testing hook registration with invalid hook"""
+        self.registered = False
+
+        with self.assertRaises(TypeError):
+            self.InvalidCallableHook(self.extension, self.resource, [])
+
+        self.assertEqual([], self.resource._extra_data_access_callbacks)
+
+    def test_register_hook_already_registered(self):
+        """Testing hook registration with already registered callback"""
+        hook = APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('public',), ExtraDataAccessLevel.ACCESS_STATE_PUBLIC)
+            ])
+
+        with self.assertRaises(ValueError):
+            hook.resource.register_extra_data_access_callback(
+                hook.get_extra_data_state)
+
+        self.assertNotEqual([], self.resource._extra_data_access_callbacks)
+
+    def test_public_state_get(self):
+        """Testing APIExtraDataAccessHook public state get"""
+        APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('public',), ExtraDataAccessLevel.ACCESS_STATE_PUBLIC)
+            ])
+
+        rsp = self.api_get(self.url,
+                           expected_mimetype=self.resource.item_mimetype)
+
+        self.assertIn('public', rsp['test']['extra_data'])
+
+    def test_public_state_put(self):
+        """Testing APIExtraDataAccessHook public state put"""
+        APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('public',), ExtraDataAccessLevel.ACCESS_STATE_PUBLIC)
+            ])
+
+        modified_extra_fields = {
+            'extra_data.public': 'modified',
+        }
+
+        rsp = self.api_put(self.url, modified_extra_fields,
+                           expected_mimetype=self.resource.item_mimetype)
+
+        self.assertEqual(modified_extra_fields['extra_data.public'],
+                         rsp['test']['public'])
+
+    def test_readonly_state_get(self):
+        """Testing APIExtraDataAccessHook readonly state get"""
+        APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('readonly',),
+                 ExtraDataAccessLevel.ACCESS_STATE_PUBLIC_READONLY)
+            ])
+
+        rsp = self.api_get(self.url,
+                           expected_mimetype=self.resource.item_mimetype)
+
+        self.assertIn('readonly', rsp['test']['extra_data'])
+
+    def test_readonly_state_put(self):
+        """Testing APIExtraDataAccessHook readonly state put"""
+        APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('readonly',),
+                 ExtraDataAccessLevel.ACCESS_STATE_PUBLIC_READONLY)
+            ])
+
+        original_value = self.resource.extra_data['readonly']
+        modified_extra_fields = {
+            'extra_data.readonly': 'modified',
+        }
+
+        rsp = self.api_put(self.url, modified_extra_fields,
+                           expected_mimetype=self.resource.item_mimetype)
+
+        self.assertEqual(original_value, rsp['test']['readonly'])
+
+    def test_private_state_get(self):
+        """Testing APIExtraDataAccessHook private state get"""
+        APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('private',), ExtraDataAccessLevel.ACCESS_STATE_PRIVATE)
+            ])
+
+        rsp = self.api_get(self.url,
+                           expected_mimetype=self.resource.item_mimetype)
+
+        self.assertNotIn('private', rsp['test']['extra_data'])
+
+    def test_private_state_put(self):
+        """Testing APIExtraDataAccessHook private state put"""
+        APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('private',), ExtraDataAccessLevel.ACCESS_STATE_PRIVATE)
+            ])
+
+        original_value = self.resource.extra_data['private']
+        modified_extra_fields = {
+            'extra_data.private': 'modified',
+        }
+
+        rsp = self.api_put(self.url, modified_extra_fields,
+                           expected_mimetype=self.resource.item_mimetype)
+
+        self.assertEqual(original_value, rsp['test']['private'])
+
+    def test_unregister(self):
+        """Testing APIExtraDataAccessHook unregistration"""
+        hook = APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('public',), ExtraDataAccessLevel.ACCESS_STATE_PUBLIC)
+            ])
+
+        hook.shutdown()
+
+        self.assertEqual([], self.resource._extra_data_access_callbacks)
+
+
 class SandboxExtension(Extension):
     registration = RegisteredExtension()
     metadata = {
@@ -672,13 +972,12 @@ class BaseReviewRequestTestInitFieldset(BaseReviewRequestFieldSet):
         raise Exception
 
 
-class SandboxTests(TestCase):
+class SandboxTests(ExtensionManagerMixin, TestCase):
     """Testing extension sandboxing"""
     def setUp(self):
         super(SandboxTests, self).setUp()
 
-        manager = ExtensionManager('')
-        self.extension = SandboxExtension(extension_manager=manager)
+        self.extension = SandboxExtension(extension_manager=self.manager)
 
         self.factory = RequestFactory()
         self.user = User.objects.create_user(username='reviewboard', email='',
@@ -892,7 +1191,7 @@ class SandboxTests(TestCase):
         t.render(context).strip()
 
 
-class EmailHookTests(SpyAgency, TestCase):
+class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
     """Testing the e-mail recipient filtering capacity of EmailHooks."""
 
     fixtures = ['test_users']
@@ -900,8 +1199,7 @@ class EmailHookTests(SpyAgency, TestCase):
     def setUp(self):
         super(EmailHookTests, self).setUp()
 
-        manager = ExtensionManager('')
-        self.extension = DummyExtension(extension_manager=manager)
+        self.extension = DummyExtension(extension_manager=self.manager)
 
         mail.outbox = []
 

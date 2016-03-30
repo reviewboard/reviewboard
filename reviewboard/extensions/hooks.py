@@ -900,11 +900,96 @@ class ReviewRequestPublishedEmailHook(EmailHook):
         return cc_field
 
 
+@six.add_metaclass(ExtensionHookPoint)
+class APIExtraDataAccessHook(ExtensionHook):
+    """A hook for setting access states to extra data fields.
+
+    Extensions can use this hook to register ``extra_data`` fields with
+    certain access states on subclasses of
+    :py:data:`~reviewboard.webapi.base.WebAPIResource`.
+
+    This accepts a list of ``field_set``'s specified by the Extension and
+    registers them when the hook is created. Likewise, it unregisters the same
+    list of ``field_set``'s when the Extension is disabled.
+
+    Each element of ``field_set`` is a 2-:py:class:`tuple` where the first
+    element of the tuple is the field's path (as a :py:class:`tuple`) and the
+    second is the field's access state (as one of
+    :py:data:`~reviewboard.webapi.base.ExtraDataAccessLevel.ACCESS_STATE_PUBLIC`
+    or :py:data:`~reviewboard.webapi.base.ExtraDataAccessLevel.ACCESS_STATE_PRIVATE`).
+
+    Example:
+        .. code-block:: python
+
+            resource.extra_data = {
+                'foo': {
+                    'bar' : 'pivate_data',
+                    'baz' : 'public_data'
+                }
+            }
+
+            field_set = [(('foo', 'bar'), 'ACCESS_STATE_PRIVATE')]
+    """
+
+    def __init__(self, extension, resource, field_set):
+        """Initialize the APIExtraDataAccessHook.
+
+        Args:
+            extension (reviewboard.extensions.base.Extension):
+                The extension registering this hook.
+
+            resource (reviewboard.webapi.base.WebAPIResource):
+                The resource to modify access states for.
+
+            field_set (list):
+                Each element of ``field_set`` is a 2-:py:class:`tuple` where
+                the first element of the tuple is the field's path (as a
+                :py:class:`tuple`) and the second is the field's access state
+                (as one of
+                :py:data:`~reviewboard.webapi.base.ExtraDataAccessLevel.ACCESS_STATE_PUBLIC`
+                or :py:data:`~reviewboard.webapi.base.ExtraDataAccessLevel.ACCESS_STATE_PRIVATE`).
+        """
+        super(APIExtraDataAccessHook, self).__init__(extension)
+
+        self.resource = resource
+        self.field_set = field_set
+
+        resource.register_extra_data_access_callback(self.get_extra_data_state)
+
+    def get_extra_data_state(self, key_path):
+        """Return the state of an extra_data field.
+
+        Args:
+            key_path (tuple):
+                A tuple of strings representing the path of an extra_data
+                field.
+
+        Returns:
+            unicode: The access state of the provided field or ``None``.
+        """
+        for path, access_state in self.field_set:
+            if path == key_path:
+                return access_state
+
+        return None
+
+    def shutdown(self):
+        """Shutdown the hook and unregister the associated ``field_set``."""
+        super(APIExtraDataAccessHook, self).shutdown()
+
+        try:
+            self.resource.unregister_extra_data_access_callback(
+                self.get_extra_data_state)
+        except TypeError:
+            pass
+
+
 __all__ = [
     'AccountPageFormsHook',
     'AccountPagesHook',
     'ActionHook',
     'AdminWidgetHook',
+    'APIExtraDataAccessHook',
     'AuthBackendHook',
     'CommentDetailDisplayHook',
     'DashboardColumnsHook',
