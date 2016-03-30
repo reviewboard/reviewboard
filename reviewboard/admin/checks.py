@@ -98,11 +98,20 @@ def check_updates_required():
         # Check if the site has moved and the old media directory no longer
         # exists.
         if siteconfig and not os.path.exists(settings.STATIC_ROOT):
-            new_media_root = os.path.join(settings.HTDOCS_ROOT, "static")
+            new_static_root = os.path.join(settings.HTDOCS_ROOT, 'static')
+
+            if os.path.exists(new_static_root):
+                siteconfig.set('site_static_root', new_static_root)
+                settings.STATIC_ROOT = new_static_root
+
+        # Check if the site has moved and the old media directory no longer
+        # exists.
+        if siteconfig and not os.path.exists(settings.MEDIA_ROOT):
+            new_media_root = os.path.join(settings.HTDOCS_ROOT, 'media')
 
             if os.path.exists(new_media_root):
-                siteconfig.set("site_media_root", new_media_root)
-                settings.STATIC_ROOT = new_media_root
+                siteconfig.set('site_media_root', new_media_root)
+                settings.MEDIA_ROOT = new_media_root
 
         # Check if the user has any pending static media configuration
         # changes they need to make.
