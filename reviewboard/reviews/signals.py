@@ -60,8 +60,15 @@ review_request_closing = Signal(providing_args=['user', 'review_request',
 #:         Describes how the review request was closed. It is one of
 #:         :py:data:`~reviewboard.reviews.models.ReviewRequest.SUBMITTED` or
 #:         :py:data:`~reviewboard.reviews.models.ReviewRequest.DISCARDED`.
+#:
+#:     description (unicode):
+#:         The provided closing description.
+#:
+#:     rich_text (bool):
+#:         Whether or not the description is rich text (Markdown).
 review_request_closed = Signal(providing_args=['user', 'review_request',
-                                               'type'])
+                                               'type', 'description',
+                                               'rich_text'])
 
 #: Emitted when a review request is about to be reopened.
 #:
