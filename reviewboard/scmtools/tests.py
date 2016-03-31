@@ -441,7 +441,16 @@ class BZRTests(SCMTestCase):
 
     def test_sftp(self):
         """Testing a SFTP-backed bzr repository"""
-        self._test_ssh(self.bzr_sftp_path, 'README')
+        try:
+            self._test_ssh(self.bzr_sftp_path, 'README')
+        except SCMError as e:
+            if six.text_type(e) == ('prefetch() takes exactly 2 arguments '
+                                    '(1 given)'):
+                raise nose.SkipTest(
+                    'Installed bazaar and paramiko are incompatible. See '
+                    'https://bugs.launchpad.net/bzr/+bug/1524066')
+            else:
+                raise e
 
 
 class CVSTests(SCMTestCase):
