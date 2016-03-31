@@ -157,7 +157,7 @@ class BeanstalkTests(ServiceTests):
                 self.assertEqual(
                     url,
                     'https://mydomain.beanstalkapp.com/api/repositories/'
-                    'myrepo/node.json?path=/path&revision=%s&contents=1'
+                    'myrepo/node.json?path=/path&revision=%s&contents=true'
                     % expected_revision)
                 payload = b'{"contents": "My data"}'
 
