@@ -80,6 +80,7 @@ MIDDLEWARE_CLASSES = [
     'reviewboard.admin.middleware.LoadSettingsMiddleware',
 
     'djblets.extensions.middleware.ExtensionsMiddleware',
+    'djblets.integrations.middleware.IntegrationsMiddleware',
     'djblets.log.middleware.LoggingMiddleware',
     'reviewboard.accounts.middleware.TimezoneMiddleware',
     'reviewboard.admin.middleware.CheckUpdatesRequiredMiddleware',
@@ -159,6 +160,7 @@ RB_BUILTIN_APPS = [
     'djblets.feedview',
     'djblets.forms',
     'djblets.gravatars',
+    'djblets.integrations',
     'djblets.log',
     'djblets.pipeline',
     'djblets.recaptcha',
@@ -175,6 +177,7 @@ RB_BUILTIN_APPS = [
     'reviewboard.diffviewer',
     'reviewboard.extensions',
     'reviewboard.hostingsvcs',
+    'reviewboard.integrations',
     'reviewboard.notifications',
     'reviewboard.reviews',
     'reviewboard.scmtools',

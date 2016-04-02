@@ -119,6 +119,7 @@ urlpatterns += patterns(
       'url': NEWS_FEED}),
     (r'^feed/news/rss/$', RedirectView.as_view(url=NEWS_FEED)),
 
+    url(r'^integrations/', include('reviewboard.integrations.urls')),
     url(r'^settings/$', RedirectView.as_view(url='general/'),
         name="site-settings"),
 )
