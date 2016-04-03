@@ -220,7 +220,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/views/commentDialogView.js',
             'rb/js/views/commentIssueBarView.js',
             'rb/js/views/diffFragmentQueueView.js',
-            'rb/js/views/dndUploaderView.js',
+            'rb/js/views/dndUploaderView.es6.js',
             'rb/js/views/draftReviewBannerView.js',
             'rb/js/views/uploadAttachmentView.js',
             'rb/js/views/revisionSelectorView.js',
