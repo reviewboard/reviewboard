@@ -43,7 +43,7 @@ suite('rb/resources/models/DraftReviewRequest', function() {
     it('publish', function() {
         spyOn(RB, 'apiCall').and.callThrough();
         spyOn($, 'ajax').and.callFake(function(request) {
-            expect(request.data['public']).toBe(1);
+            expect(request.data.public).toBe(1);
 
             request.success({
                 stat: 'ok',
@@ -103,7 +103,7 @@ suite('rb/resources/models/DraftReviewRequest', function() {
         expect(data.changeDescriptionRichText).toBe(true);
         expect(data.description).toBe('description');
         expect(data.descriptionRichText).toBe(true);
-        expect(data['public']).toBe('public');
+        expect(data.public).toBe('public');
         expect(data.summary).toBe('summary');
         expect(data.targetGroups).toBe('targetGroups');
         expect(data.targetPeople).toBe('targetPeople');

@@ -72,7 +72,7 @@ suite('rb/resources/models/ReviewRequest', function() {
         expect(data.description).toBe('description');
         expect(data.descriptionRichText).toBe(true);
         expect(data.lastUpdated).toBe('lastUpdated');
-        expect(data['public']).toBe('public');
+        expect(data.public).toBe('public');
         expect(data.summary).toBe('summary');
         expect(data.targetGroups).toBe('targetGroups');
         expect(data.targetPeople).toBe('targetPeople');

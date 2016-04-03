@@ -128,7 +128,7 @@ RB.HeaderView = Backbone.View.extend({
                                 value: value[values[j]],
                                 result: value[values[j]]
                             });
-                        } else if (value['public']) {
+                        } else if (value.public) {
                             // Only show review requests that are public
                             value.url = SITE_ROOT + "r/" + value.id;
                             parsed.push({

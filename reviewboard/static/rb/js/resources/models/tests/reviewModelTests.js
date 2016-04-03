@@ -55,7 +55,7 @@ suite('rb/resources/models/Review', function() {
             expect(data.id).toBe(42);
             expect(data.bodyTop).toBe('foo');
             expect(data.bodyBottom).toBe('bar');
-            expect(data['public']).toBe(false);
+            expect(data.public).toBe(false);
             expect(data.bodyTopRichText).toBe(true);
             expect(data.bodyBottomRichText).toBe(false);
             expect(data.shipIt).toBe(false);
@@ -121,12 +121,12 @@ suite('rb/resources/models/Review', function() {
 
                 model.set('public', true);
                 data = model.toJSON();
-                expect(data['public']).toBe(1);
+                expect(data.public).toBe(1);
             });
 
             it('Without value', function() {
                 var data = model.toJSON();
-                expect(data['public']).toBe(undefined);
+                expect(data.public).toBe(undefined);
             });
         });
 
