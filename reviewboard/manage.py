@@ -39,10 +39,6 @@ def check_dependencies(settings):
         dependency_error('The Python Imaging Library (Pillow or PIL) '
                          'is required.')
 
-    # ReCaptcha
-    if not has_module('recaptcha'):
-        dependency_error('The recaptcha python module is required.')
-
     # The following checks are non-fatal warnings, since these dependencies are
     # merely recommended, not required.
     def dependency_warning(string):
@@ -149,7 +145,7 @@ def main(settings, in_subprocess):
     execute_from_command_line(sys.argv)
 
 
-if __name__ == "__main__":
+def run():
     # Add the parent directory of 'manage.py' to the python path, so
     # manage.py can be run from any directory.
     # From http://www.djangosnippets.org/snippets/281/
@@ -185,3 +181,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     main(settings, in_subprocess)
+
+
+if __name__ == "__main__":
+    run()

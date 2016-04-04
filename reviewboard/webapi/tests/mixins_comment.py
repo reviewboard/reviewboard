@@ -173,6 +173,20 @@ class BaseCommentItemMixin(object):
         comment = self.resource.model.objects.get(pk=comment_rsp['id'])
         self.compare_item(comment_rsp, comment)
 
+    @webapi_test_template
+    def test_put_with_multiple_include_text_types(self):
+        url, mimetype, data, reply_comment, objs = \
+            self.setup_basic_put_test(self.user, False, None, True)
+
+        data.update({
+            'include_text_types': 'raw,plain,markdown,html',
+            'text': 'Foo',
+        })
+
+        rsp = self.api_put(url, data, expected_mimetype=mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
     def _test_get_with_force_text_type(self, text, rich_text,
                                        force_text_type, expected_text):
         url, mimetype, comment = \

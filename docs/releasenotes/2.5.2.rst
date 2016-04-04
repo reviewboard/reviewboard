@@ -1,0 +1,153 @@
+================================
+Review Board 2.5.2 Release Notes
+================================
+
+**Release date:** December 4th, 2015
+
+
+Django Security Notice
+======================
+
+Django 1.6.x is no longer maintained by the Django project, and will no longer
+be receiving security fixes directly. Since we still depend on this version,
+and will have users depending on it for years to come, we're maintaining our
+own unofficial branch and handling all backports of security fixes to Django.
+
+We highly recommend installing Django 1.6.11.2 which contains all current
+Django security fixes, and will be continuing to release new versions as
+security vulnerabilities are discovered.
+
+We cannot automatically install this yet, due to restrictions in
+:command:`pip`, so you'll need to be sure to upgrade manually for now.
+
+We'll continue to provide this notice for all affected releases of Review
+Board until we are able to auto-install the appropriate version of Django.
+
+Please see our `security announcement`_ for instructions.
+
+.. _security announcement:
+   https://www.reviewboard.org/news/2015/11/24/
+   new-django-1-6-11-2-security-releases/
+
+
+New Features
+============
+
+* Added helpful instructions for setting up GitHub Enterprise and Microsoft
+  Team Foundation Server repositories.
+
+  We advertise GitHub Enterprise and Microsoft Team Foundation Server support
+  for Review Board, but since that support is part of `Power Pack`_, it's not
+  always obvious how to get that set up.
+
+  The repository configuration page now lists both GitHub Enterprise and
+  Team Foundation Server repositories as options. Once selected, the page
+  will explain how to set up Power Pack.
+
+
+.. _Power Pack: https://www.reviewboard.org/powerpack/
+
+
+Removed Features
+================
+
+* Removed the ability to double-click a line's content in a diff to create a
+  comment.
+
+  This ability was introduced in 2.5, but ended up causing some critical
+  interaction problems. We've decided to remove the feature. Clicking on the
+  line number still works fine.
+
+
+Bug Fixes
+=========
+
+E-Mail
+------
+
+* E-mails for reviews now properly show "Ship It!" or "Fix it, then Ship It!".
+  (:bug:`4019`)
+
+  This was a regression introduced in 2.5.
+
+  Patch by Griffin Myers.
+
+
+Image/PDF Review
+----------------
+
+These issues affect both image review and PDF document review (part of `Power
+Pack`_).
+
+* Fixed tooltips remaining on the screen when dragging a draft comment on
+  an image.
+
+* Fixed a performance problem where dragging a draft comment would result in
+  too many saves to the server.
+
+* Fixed dragged comment regions sometimes saving stale coordinates or sizes
+  after completing a drag.
+
+* Fixed clicking an existing draft or published comment block and showing the
+  comment dialog when reviewing PDFs.
+
+  This applies only to `Power Pack`_. Images were not affected.
+
+* Fixed a bad CSS class name when viewing images.
+
+  Patch by Chronicle Yu.
+
+
+GitLab
+------
+
+* Removed a hard-coded default for fetching a diff for a commit.
+
+  Posting existing commits for review now works once again with locally-hosted
+  GitLab installs.
+
+* Fixed posting existing commits with empty commit messages for review.
+
+
+Webhooks
+--------
+
+* Fixed incorrect comment data in the review reply webhook payload.
+
+
+Administration
+--------------
+
+* Fixed errors that could occur when trying to upgrade MySQL databases.
+
+  This release depends on a newer version of `Django Evolution`_, the module
+  we use to handle database migrations. It fixes an upgrade bug that could
+  result in some people experiencing failures prior to performing an upgrade
+  to the database, which would not break the database but would prevent an
+  upgrade.
+
+* Fixed crashes with the ``condensediffs`` management command.
+
+  The ``condensediffs`` management command could crash when processing batches
+  of diffs. While this didn't harm anything in the database, it did make the
+  command useless for many.
+
+* Fixed progress display errors with the ``condensediffs`` management command.
+
+  The ``condensediffs`` management command was showing progress as a
+  percentage with far too many levels of precision. We've fixed that to show
+  a more useful value.
+
+
+.. _Django Evolution: https://github.com/beanbaginc/django-evolution
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* Chronicle Yu
+* Craig Rodrigues
+* David Trowbridge
+* Griffin Myers

@@ -1,13 +1,15 @@
 from __future__ import unicode_literals
 
-from djblets.settings import (PIPELINE_JS as DJBLETS_PIPELINE_JS,
-                              PIPELINE_CSS as DJBLETS_PIPELINE_CSS)
+from djblets.staticbundles import (
+    PIPELINE_JAVASCRIPT as DJBLETS_PIPELINE_JAVASCRIPT,
+    PIPELINE_STYLESHEETS as DJBLETS_PIPELINE_STYLESHEETS)
 
 
 # Media compression
-PIPELINE_JS = dict({
+PIPELINE_JAVASCRIPT = dict({
     '3rdparty': {
         'source_filenames': (
+            'lib/js/babel-polyfill-6.5.0.js',
             'lib/js/flot/jquery.flot.min.js',
             'lib/js/flot/jquery.flot.pie.min.js',
             'lib/js/flot/jquery.flot.selection.min.js',
@@ -30,11 +32,17 @@ PIPELINE_JS = dict({
         ),
         'output_filename': 'lib/js/3rdparty-jsonlint.min.js',
     },
+    'js-test-libs': {
+        'source_filenames': (
+            'lib/js/jasmine-2.4.1.js',
+            'lib/js/jasmine-html-2.4.1.js',
+            'lib/js/jasmine-boot-2.4.1.js',
+            'lib/js/jasmine.suites-1.0.js',
+        ),
+        'output_filename': 'rb/js/js-test-libs.min.js',
+    },
     'js-tests': {
         'source_filenames': (
-            'lib/js/jasmine-1.3.1.js',
-            'lib/js/jasmine-html-1.3.1.js',
-            'lib/js/jasmine.suites-1.0.js',
             'rb/js/collections/tests/filteredCollectionTests.js',
             'rb/js/configForms/models/tests/resourceListItemModelTests.js',
             'rb/js/diffviewer/models/tests/diffFileModelTests.js',
@@ -65,6 +73,7 @@ PIPELINE_JS = dict({
             'rb/js/resources/models/tests/fileAttachmentModelTests.js',
             'rb/js/resources/models/tests/fileAttachmentCommentModelTests.js',
             'rb/js/resources/models/tests/fileDiffModelTests.js',
+            'rb/js/resources/models/tests/generalCommentModelTests.js',
             'rb/js/resources/models/tests/screenshotModelTests.js',
             'rb/js/resources/models/tests/screenshotCommentModelTests.js',
             'rb/js/resources/models/tests/repositoryBranchModelTests.js',
@@ -74,7 +83,9 @@ PIPELINE_JS = dict({
             'rb/js/resources/models/tests/reviewReplyModelTests.js',
             'rb/js/resources/models/tests/reviewRequestModelTests.js',
             'rb/js/resources/models/tests/validateDiffModelTests.js',
+            'rb/js/ui/managers/tests/notificationManagerModelTests.js',
             'rb/js/ui/views/tests/dialogViewTests.js',
+            'rb/js/ui/views/tests/notificationManagerTests.es6.js',
             'rb/js/ui/views/tests/textEditorViewTests.js',
             'rb/js/utils/tests/keyBindingUtilsTests.js',
             'rb/js/utils/tests/linkifyUtilsTests.js',
@@ -96,18 +107,16 @@ PIPELINE_JS = dict({
     },
     'common': {
         'source_filenames': (
-            'rb/js/utils/backboneUtils.js',
-            'rb/js/utils/compatUtils.js',
-            'rb/js/utils/consoleUtils.js',
-            'rb/js/utils/underscoreUtils.js',
-            'rb/js/common.js',
+            'rb/js/utils/consoleUtils.es6.js',
+            'rb/js/utils/underscoreUtils.es6.js',
+            'rb/js/common.es6.js',
             'rb/js/utils/apiErrors.js',
-            'rb/js/utils/apiUtils.js',
-            'rb/js/utils/linkifyUtils.js',
-            'rb/js/utils/mathUtils.js',
-            'rb/js/utils/keyBindingUtils.js',
-            'rb/js/collections/baseCollection.js',
-            'rb/js/collections/filteredCollection.js',
+            'rb/js/utils/apiUtils.es6.js',
+            'rb/js/utils/linkifyUtils.es6.js',
+            'rb/js/utils/mathUtils.es6.js',
+            'rb/js/utils/keyBindingUtils.es6.js',
+            'rb/js/collections/baseCollection.es6.js',
+            'rb/js/collections/filteredCollection.es6.js',
             'rb/js/extensions/models/aliases.js',
             'rb/js/extensions/models/commentDialogHookModel.js',
             'rb/js/extensions/models/reviewDialogCommentHookModel.js',
@@ -134,6 +143,8 @@ PIPELINE_JS = dict({
             'rb/js/resources/models/fileAttachmentModel.js',
             'rb/js/resources/models/fileAttachmentCommentModel.js',
             'rb/js/resources/models/fileAttachmentCommentReplyModel.js',
+            'rb/js/resources/models/generalCommentModel.js',
+            'rb/js/resources/models/generalCommentReplyModel.js',
             'rb/js/resources/models/fileDiffModel.js',
             'rb/js/resources/models/draftFileAttachmentModel.js',
             'rb/js/resources/models/repositoryModel.js',
@@ -144,29 +155,31 @@ PIPELINE_JS = dict({
             'rb/js/resources/models/screenshotCommentModel.js',
             'rb/js/resources/models/screenshotCommentReplyModel.js',
             'rb/js/resources/models/validateDiffModel.js',
-            'rb/js/resources/collections/resourceCollection.js',
-            'rb/js/resources/collections/repositoryBranchesCollection.js',
-            'rb/js/resources/collections/repositoryCommitsCollection.js',
-            'rb/js/ui/views/dialogView.js',
-            'rb/js/ui/views/textEditorView.js',
-            'rb/js/ui/views/splitButtonView.js',
+            'rb/js/resources/collections/resourceCollection.es6.js',
+            'rb/js/resources/collections/repositoryBranchesCollection.es6.js',
+            'rb/js/resources/collections/repositoryCommitsCollection.es6.js',
+            'rb/js/ui/managers/notificationManagerModel.js',
+            'rb/js/ui/views/dialogView.es6.js',
+            'rb/js/ui/views/notificationManager.es6.js',
+            'rb/js/ui/views/splitButtonView.es6.js',
+            'rb/js/ui/views/textEditorView.es6.js',
             'rb/js/models/userSessionModel.js',
-            'rb/js/views/headerView.js'
+            'rb/js/views/headerView.js',
+            'rb/js/views/collectionView.js'
         ),
         'output_filename': 'rb/js/base.min.js',
     },
     'account-page': {
         'source_filenames': (
-            'rb/js/accountPrefsPage/views/accountPrefsPageView.js',
-            'rb/js/accountPrefsPage/views/apiTokensView.js',
-            'rb/js/accountPrefsPage/views/joinedGroupsView.js',
+            'rb/js/accountPrefsPage/views/apiTokensView.es6.js',
+            'rb/js/accountPrefsPage/views/joinedGroupsView.es6.js',
         ),
         'output_filename': 'rb/js/account-page.min.js',
     },
     'config-forms': {
         'source_filenames': (
             'rb/js/configForms/base.js',
-            'rb/js/configForms/models/resourceListItemModel.js',
+            'rb/js/configForms/models/resourceListItemModel.es6.js',
         ),
         'output_filename': 'rb/js/config-forms.min.js',
     },
@@ -202,7 +215,7 @@ PIPELINE_JS = dict({
             'rb/js/pages/views/reviewablePageView.js',
             'rb/js/pages/views/reviewRequestPageView.js',
             'rb/js/pages/views/diffViewerPageView.js',
-            'rb/js/utils/textUtils.js',
+            'rb/js/utils/textUtils.es6.js',
             'rb/js/views/abstractCommentBlockView.js',
             'rb/js/views/abstractReviewableView.js',
             'rb/js/views/collapsableBoxView.js',
@@ -264,7 +277,6 @@ PIPELINE_JS = dict({
             'rb/js/models/uploadDiffModel.js',
             'rb/js/newReviewRequest/models/postCommitModel.js',
             'rb/js/newReviewRequest/models/newReviewRequestModel.js',
-            'rb/js/views/collectionView.js',
             'rb/js/views/uploadDiffView.js',
             'rb/js/newReviewRequest/views/branchView.js',
             'rb/js/newReviewRequest/views/branchesView.js',
@@ -281,26 +293,26 @@ PIPELINE_JS = dict({
     'admin': {
         'source_filenames': (
             'lib/js/jquery.masonry.js',
-            'rb/js/admin.js',
+            'rb/js/admin/admin.js',
         ),
         'output_filename': 'rb/js/admin.min.js',
     },
     'repositoryform': {
         'source_filenames': (
-            'rb/js/repositoryform.js',
+            'rb/js/admin/repositoryform.js',
         ),
         'output_filename': 'rb/js/repositoryform.min.js',
     },
     'webhooks-form': {
         'source_filenames': (
-            'rb/js/webhooksAdmin/views/webhookFormView.js',
+            'rb/js/admin/views/webhookFormView.js',
         ),
         'output_filename': 'rb/js/webhooks-form.min.js',
     },
-}, **DJBLETS_PIPELINE_JS)
+}, **DJBLETS_PIPELINE_JAVASCRIPT)
 
 
-PIPELINE_CSS = dict({
+PIPELINE_STYLESHEETS = dict({
     'common': {
         'source_filenames': (
             'lib/css/codemirror.css',
@@ -323,6 +335,7 @@ PIPELINE_CSS = dict({
     },
     'js-tests': {
         'source_filenames': (
+            'lib/css/jasmine-2.4.1.css',
             'rb/css/pages/js-tests.less',
         ),
         'output_filename': 'rb/css/js-tests.min.css',
@@ -361,4 +374,4 @@ PIPELINE_CSS = dict({
         'output_filename': 'rb/css/admin.min.css',
         'absolute_paths': False,
     },
-}, **DJBLETS_PIPELINE_CSS)
+}, **DJBLETS_PIPELINE_STYLESHEETS)

@@ -76,7 +76,7 @@ suite('rb/views/DraftReviewBannerView', function() {
             view.$('#review-banner-edit').click();
 
             expect(RB.ReviewDialogView.create).toHaveBeenCalled();
-            expect(RB.ReviewDialogView.create.calls[0].args[0].review)
+            expect(RB.ReviewDialogView.create.calls.argsFor(0)[0].review)
                 .toBe(model);
         });
 
@@ -104,7 +104,7 @@ suite('rb/views/DraftReviewBannerView', function() {
             var $buttons = $();
 
             spyOn(model, 'destroy');
-            spyOn($.fn, 'modalBox').andCallFake(function(options) {
+            spyOn($.fn, 'modalBox').and.callFake(function(options) {
                 _.each(options.buttons, function($btn) {
                     $buttons = $buttons.add($btn);
                 });

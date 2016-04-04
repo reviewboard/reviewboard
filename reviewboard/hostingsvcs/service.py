@@ -13,9 +13,12 @@ from django.utils.six.moves.urllib.request import (Request as BaseURLRequest,
                                                    HTTPBasicAuthHandler,
                                                    urlopen)
 from django.utils.translation import ugettext_lazy as _
-from pkg_resources import iter_entry_points
+from djblets.registries.errors import ItemLookupError
+from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
+                                         NOT_REGISTERED)
 
 import reviewboard.hostingsvcs.urls as hostingsvcs_urls
+from reviewboard.registries.registry import EntryPointRegistry
 from reviewboard.signals import initializing
 
 
@@ -429,101 +432,147 @@ _hostingsvcs_urlpatterns = {}
 _populated = False
 
 
-def _populate_hosting_services():
-    """Populates a list of known hosting services from Python entrypoints.
+class HostingServiceRegistry(EntryPointRegistry):
+    """A registry for managing hosting services."""
 
-    This is called any time we need to access or modify the list of hosting
-    services, to ensure that we have loaded the initial list once.
-    """
-    global _populated
+    entry_point = 'reviewboard.hosting_services'
+    lookup_attrs = ['id']
 
-    if not _populated:
-        _populated = True
+    errors = {
+        ALREADY_REGISTERED: _(
+            '"%(item)s" is already a registered hosting service.'
+        ),
+        LOAD_ENTRY_POINT: _(
+            'Unable to load repository hosting service %(entry_point)s: '
+            '%(error)s.'
+        ),
+        NOT_REGISTERED: _(
+            '"%(attr_value)s" is not a registered hosting service.'
+        ),
+    }
 
-        for entry in iter_entry_points('reviewboard.hosting_services'):
-            try:
-                register_hosting_service(entry.name, entry.load())
-            except Exception as e:
-                logging.error(
-                    'Unable to load repository hosting service %s: %s'
-                    % (entry, e))
+    def __init__(self):
+        super(HostingServiceRegistry, self).__init__()
+        self._url_patterns = {}
+
+    def unregister(self, service):
+        """Unregister a hosting service.
+
+        This will remove all registered URLs that the hosting service has
+        defined.
+
+        Args:
+            service (type):
+                The
+                :py:class:`~reviewboard.hostingsvcs.service.HostingService`
+                subclass.
+        """
+        super(HostingServiceRegistry, self).unregister(service)
+
+        if service.id in self._url_patterns:
+            cls_urlpatterns = self._url_patterns[service.id]
+            hostingsvcs_urls.dynamic_urls.remove_patterns(cls_urlpatterns)
+            del self._url_patterns[service.id]
+
+    def process_value_from_entry_point(self, entry_point):
+        """Load the class from the entry point.
+
+        The ``id`` attribute will be set on the class from the entry point's
+        name.
+
+        Args:
+            entry_point (pkg_resources.EntryPoint):
+                The entry point.
+
+        Returns:
+            type:
+            The :py:class:`HostingService` subclass.
+        """
+        cls = entry_point.load()
+        cls.id = entry_point.name
+        return cls
+
+    def register(self, service):
+        """Register a hosting service.
+
+        This also adds the URL patterns defined by the hosting service. If the
+        hosting service has a :py:attr:`HostingService.repository_url_patterns`
+        attribute that is non-``None``, they will be automatically added.
+
+        Args:
+            service (type):
+                The :py:class:`HostingService` subclass.
+        """
+        super(HostingServiceRegistry, self).register(service)
+
+        if service.repository_url_patterns:
+            cls_urlpatterns = patterns(
+                '',
+                url(r'^(?P<hosting_service_id>' + service.id + ')/',
+                    include(service.repository_url_patterns)))
+
+            self._url_patterns[service.id] = cls_urlpatterns
+            hostingsvcs_urls.dynamic_urls.add_patterns(cls_urlpatterns)
 
 
-def _add_hosting_service_url_pattern(name, cls):
-    """Adds the URL patterns defined by the registering hosting service.
-
-    Creates a base URL pattern for the hosting service based on the name
-    and adds the repository_url_patterns of the class to the base URL
-    pattern.
-
-    Throws a KeyError if the hosting URL pattern has already been added
-    before. Does not add the url_pattern of the hosting service if the
-    repository_url_patterns property is None.
-    """
-    if name in _hostingsvcs_urlpatterns:
-        raise KeyError('URL patterns for "%s" are already added.' % name)
-
-    if cls.repository_url_patterns:
-        cls_urlpatterns = patterns(
-            '',
-            url(r'^(?P<hosting_service_id>' + name + ')/',
-                include(cls.repository_url_patterns))
-        )
-        _hostingsvcs_urlpatterns[name] = cls_urlpatterns
-        hostingsvcs_urls.dynamic_urls.add_patterns(cls_urlpatterns)
+_hosting_service_registry = HostingServiceRegistry()
 
 
 def get_hosting_services():
-    """Gets the list of hosting services."""
-    _populate_hosting_services()
+    """Return the list of hosting services.
 
-    return _hosting_services.values()
+    Returns:
+        list:
+        The :py:class:`~reviewboard.hostingsvcs.service.HostingService`
+        subclasses.
+    """
+    return list(_hosting_service_registry)
 
 
 def get_hosting_service(name):
-    """Retrieves the hosting service with the given name.
+    """Return the hosting service with the given name.
 
     If the hosting service is not found, None will be returned.
     """
-    _populate_hosting_services()
-
-    return _hosting_services.get(name, None)
+    try:
+        return _hosting_service_registry.get('id', name)
+    except ItemLookupError:
+        return None
 
 
 def register_hosting_service(name, cls):
-    """Registers a custom hosting service class.
+    """Register a custom hosting service class.
 
     A name can only be registered once. A KeyError will be thrown if attempting
     to register a second time.
+
+    Args:
+        name (unicode):
+            The name of the hosting service.
+
+        cls (type):
+            The hosting service class. This should be a subclass of
+            :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
     """
-    _populate_hosting_services()
-
-    if name in _hosting_services:
-        raise KeyError('"%s" is already a registered hosting service' % name)
-
-    _hosting_services[name] = cls
     cls.id = name
-
-    _add_hosting_service_url_pattern(name, cls)
+    _hosting_service_registry.register(cls)
 
 
 def unregister_hosting_service(name):
-    """Unregisters a previously registered hosting service."""
-    _populate_hosting_services()
+    """Unregister a previously registered hosting service.
 
+    Args:
+        name (unicode):
+            The name of the hosting service.
+    """
     try:
-        del _hosting_services[name]
-    except KeyError:
-        logging.error('Failed to unregister unknown hosting service "%s"' %
-                      name)
-        raise KeyError('"%s" is not a registered hosting service' % name)
-
-    if name in _hostingsvcs_urlpatterns:
-        hostingsvc_urlpattern = _hostingsvcs_urlpatterns[name]
-        hostingsvcs_urls.dynamic_urls.remove_patterns(hostingsvc_urlpattern)
-        del _hostingsvcs_urlpatterns[name]
+        _hosting_service_registry.unregister_by_attr('id', name)
+    except ItemLookupError as e:
+        logging.error('Failed to unregister unknown hosting service "%s"'
+                      % name)
+        raise e
 
 
 @receiver(initializing, dispatch_uid='populate_hosting_services')
 def _on_initializing(**kwargs):
-    _populate_hosting_services()
+    _hosting_service_registry.populate()

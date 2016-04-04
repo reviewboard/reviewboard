@@ -18,7 +18,7 @@ from reviewboard.webapi.resources import resources
 class BaseArchivedObjectResource(WebAPIResource):
     """A base resource for objects archived or muted by a user."""
 
-    added_in = '3.0'
+    added_in = '2.5'
     name = None
     model_parent_key = 'user'
     uri_object_key = 'review_request_id'

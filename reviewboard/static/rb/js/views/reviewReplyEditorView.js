@@ -11,9 +11,13 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
         ' <dl>',
         '  <dt>',
         '   <label for="<%= id %>">',
-        '    <div class="gravatar-container">',
-        '     <img src="<%- gravatarURL %>" width="32" height="32" ',
-        '          alt="<%- fullName %>" class="gravatar" />',
+        '    <div class="avatar-container">',
+        '     <img src="<%- avatarURL %>" width="32" height="32" ',
+        '          alt="<%- fullName %>" class="avatar"',
+        '<% if (avatarURL2x) { %>',
+        '          data-at2x="<%- avatarURL2x %>"',
+        '<%} %>',
+        ' />',
         '    </div>',
         '    <div class="user-reply-info">',
         '     <a href="<%= userPageURL %>" class="user"><%- fullName %></a>',
@@ -170,6 +174,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
     _makeCommentElement: function(options) {
         var userSession = RB.UserSession.instance,
             reviewRequest = this.model.get('review').get('parentObject'),
+            urls = userSession.getAvatarURLs(32),
             now,
             $el;
 
@@ -182,7 +187,8 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
                 commentID: null,
                 userPageURL: userSession.get('userPageURL'),
                 fullName: userSession.get('fullName'),
-                gravatarURL: userSession.getGravatarURL(32),
+                avatarURL: urls['1x'],
+                avatarURL2x: urls['2x'],
                 isDraft: true,
                 timestampISO: now.format(),
 
@@ -199,8 +205,8 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
             .find('time.timesince')
                 .timesince()
             .end()
-            .find('.gravatar')
-                .retinaGravatar()
+            .find('.avatar')
+                .retinaAvatar()
             .end()
             .appendTo(this._$commentsList);
 

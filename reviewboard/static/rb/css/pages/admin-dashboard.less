@@ -40,7 +40,7 @@
   padding: 0;
   min-height: 100%;
   width: @admin-actions-width;
-  .box-sizing(border-box);
+  box-sizing: border-box;
   z-index: @z-index-page-overlay;
 
   a {
@@ -67,8 +67,8 @@
 
   .admin-widget {
     border: 0;
-    .border-radius(0);
-    .box-shadow(none);
+    border-radius: 0;
+    box-shadow: none;
     margin: 0;
 
     .widget-content {
@@ -89,10 +89,10 @@
 
     .widget-heading {
       background: @admin-actions-header-bg;
+      border-radius: 0;
       border-top: 1px @box-border-color solid;
       border-bottom: 1px @box-border-color solid;
       padding-left: @page-container-padding;
-      .border-radius(0);
     }
   }
 
@@ -149,8 +149,8 @@
 .admin-widget {
   border: 1px solid @widget-border-color;
   margin: 0 0 (2 * @widget-margin);
-  .border-radius(@box-border-radius);
-  .box-shadow(@box-shadow);
+  border-radius: @box-border-radius;
+  box-shadow: @box-shadow;
 
   &.widget-large {
     width: @widget-large-size;
@@ -166,11 +166,11 @@
 
   &.widget-hidden {
     .widget-heading {
-      .border-radius(@box-inner-border-radius);
+      border-radius: @box-inner-border-radius;
     }
 
     &.widget-has-actions .widget-heading {
-      .border-radius(@box-inner-border-radius @box-inner-border-radius 0 0);
+      border-radius: @box-inner-border-radius @box-inner-border-radius 0 0;
     }
 
     .widget-content {
@@ -192,7 +192,7 @@
     margin: 0;
     padding: 5px 10px 5px 5px;
     text-transform: uppercase;
-    .border-radius(@box-inner-border-radius @box-inner-border-radius 0 0);
+    border-radius: @box-inner-border-radius @box-inner-border-radius 0 0;
 
     h1 {
       margin: 0;
@@ -280,12 +280,12 @@
     border-bottom: 1px solid @widget-action-dark-border-color;
     border-right: 1px solid @widget-action-border-color;
     border-top: 1px solid @widget-action-dark-border-color;
+    border-radius: 0 0 @box-inner-border-radius @box-inner-border-radius;
     color: black;
     overflow: hidden;
     padding: 0;
     text-align: left;
     white-space: nowrap;
-    .border-radius(0 0 @box-inner-border-radius @box-inner-border-radius);
 
     a {
       border-right: 1px solid @widget-action-border-color;
@@ -311,11 +311,11 @@
   }
 
   .btn-s {
-    .opacity(40);
+    opacity: 0.4;
   }
 
   .btn-s-checked {
-    .opacity(100);
+    opacity: 1;
   }
 }
 
@@ -467,9 +467,9 @@
 
 .widget-adder {
   border: 1px solid @widget-border-color;
+  border-radius: @box-border-radius;
   margin: 0 0 (2 * @widget-margin);
-  .border-radius(@box-border-radius);
-  .box-shadow(@box-shadow);
+  box-shadow: @box-shadow;
   height: 30px;
   text-align: center;
   padding-top: 15px;
@@ -540,5 +540,6 @@
 #all-modal-primary-widgets, #all-modal-secondary-widgets {
   display: none;
 }
+
 
 // vim: set et ts=2 sw=2:

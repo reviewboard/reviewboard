@@ -1,4 +1,4 @@
-.. _gettingstarted:
+.. _getting-started:
 
 ===============
 Getting Started
@@ -36,7 +36,7 @@ test different configurations with different versions of packages or Python.
 
 First, install virtualenv::
 
-    $ sudo easy_install virtualenv
+    $ sudo pip install virtualenv
 
 You can then create your first Review Board environment. Choose a spot for it.
 In this guide, we'll assume this is in :file:`~/envs`. Then type::
@@ -45,7 +45,7 @@ In this guide, we'll assume this is in :file:`~/envs`. Then type::
 
 You can name the environment anything you want. One scheme is to have a name
 per-release. So, instead of ``reviewboard`` above, maybe ``rb-master`` or
-``rb-release-2.0.x``. This is up to you.
+``rb2.5``. This is up to you.
 
 From then on, before doing any Review Board development, you'll want to switch
 to this environment::
@@ -62,19 +62,18 @@ Dependencies
 ------------
 
 Before we begin setting up Review Board, it's best to walk through the
-installation instructions in the `Administration Guide`_. You'll want to
-install, at a minimum, the following packages:
+installation instructions in the `Administration Guide`_. The mandatory
+Python modules you'll need for development will be installed automatically
+later. For now, you'll need to install the following packages from your
+system's package manager:
 
-* Git
-* kgb
-* nose
-* patch
-* Python Setuptools
-* Sphinx
 * gettext
+* git
+* npm
+* patch
+* pysvn
 
-Also install any dependencies for search (if needed) and for repository types
-that you may want to use.
+Also install any tools for repository types that you may want to use.
 
 You will **not** need to install the Djblets and ReviewBoard packages, as
 we'll be doing that in a moment.
@@ -92,8 +91,8 @@ memcached can be handy, so install that if you want to, but by default we're
 going to use the built-in local memory cache. This is a temporary cache that
 will persist only as long as the development web server is running.
 
-Sphinx and gettext are handy if you're going to be building the documentation
-or packages. On OS X, gettext is available through homebrew or fink.
+gettext is needed if you're going to be building the documentation or
+packages. On OS X, gettext is available through homebrew or fink.
 
 .. _`Administration Guide`: https://www.reviewboard.org/docs/manual/latest/admin/
 
@@ -117,6 +116,7 @@ Now to prepare that copy for development use, type the following::
 
     $ cd djblets
     $ python setup.py develop
+    $ pip install -r dev-requirements.txt
 
 This will create a special installation of Djblets that will reference
 your bleeding-edge copy. Note that this version will take precedence on
@@ -157,7 +157,7 @@ Review Board.
 RBTools
 -------
 
-You will need a modern version of RBTools for development.
+You will need the latest version of RBTools for development.
 
 Like Djblets and Review Board, you can find RBTools on GitHub_, and you can
 `browse the RBTools repository <https://github.com/reviewboard/rbtools>`_.
@@ -391,63 +391,17 @@ your server by visiting ``http://localhost:8080``.
 If you need to use a different port, you can use the ``-p`` parameter.
 For example::
 
-    $ ./contrib/internal/devserver.py -p 8081
+    $ ./contrib/internal/devserver.py -p PORT_NUMBER
+
+Specify the port you want to use in ``PORT_NUMBER`` above.
 
 
 Running Unit Tests
 ------------------
 
-Djblets, Review Board and RBTools all have unit tests that can be run
-to make sure you don't break anything. It is important that you run
-these before posting code for review. We also request that new code
-include additions to the unit tests.
+.. note::
 
-To run our unit test suite for Djblets, type::
-
-    $ cd djblets
-    $ ./tests/runtests.py
-
-For Review Board, type::
-
-    $ cd reviewboard
-    $ ./reviewboard/manage.py test
-
-For RBTools, type::
-
-    $ cd rbtools
-    $ nosetests -v
-
-Running all Review Board unit tests may take a while. To speed up unit
-testing, there are options to run subsets of Review Board tests.
-
-To run only the tests in a specific module::
-
-    $ ./reviewboard/manage.py test -- reviewboard.scmtools.tests
-
-To run the tests in a specific class::
-
-    $ ./reviewboard/manage.py test -- reviewboard.scmtools.tests:GitTests
-
-To run only a specific test case::
-
-    $ ./reviewboard/manage.py test -- reviewboard.scmtools.tests:GitTests.testFilemodeWithFollowingDiff
-
-Some other flags which come in handy are -x, --pdb, and --pdb-failures.
-
-To stop the test runner after the first encountered failure::
-
-    $ ./reviewboard/manage.py test -- -x
-
-To drop into pdb (the python debugger shell) when an error occurs::
-
-    $ ./reviewboard/manage.py test -- --pdb
-
-To drop into pdb when a test case assertion fails::
-
-    $ ./reviewboard/manage.py test -- --pdb-failures
-
-If you're updating the unit tests, you may want to see the
-:ref:`Unit Test Fixtures` documentation.
+   This section has moved. See :ref:`running-unit-tests`.
 
 
 Posting Changes for Review
@@ -460,7 +414,7 @@ When you're ready to post the changes on a branch for review, you can
 just run :command:`rbt post`, which you should have if you installed
 RBTools above::
 
-    $ rbt post -g
+    $ rbt post
 
 This will use your commit message as the base for the review request's Summary
 and Description fields.
@@ -474,4 +428,4 @@ summary and description), then you will need to use ``-r <ID>`` instead::
 
     $ rbt post -r 42
 
-See our guidelines on :ref:`Contributing Patches` for more information.
+See our guidelines on :ref:`contributing-patches` for more information.

@@ -175,10 +175,27 @@ RB.UserSession = Backbone.Model.extend({
     },
 
     /*
-     * Return a gravatar for the user with the given size.
+     * Return avatar URLs for the user with the given size.
+     *
+     * Args:
+     *     size (Number):
+     *         The size of the avatar, in pixels. This is both the width and
+      *        height.
+     *
+     * Return:
+     *     Object:
+     *     An object containing avatar URLs, if the requested avatar size is
+     *     available. This object will contain the following keys:
+     *
+     *     * ``1x``: The url for the avatar.
+     *     * ``2x``: The high-DPI URL for the avatar.
+     *
+     *     If the requested avatar size is unavailable, this function returns
+     *     an empty object.
      */
-    getGravatarURL: function(size) {
-        return this.get('gravatarURL') + '&s=' + size;
+    getAvatarURLs: function(size) {
+        var urls = this.get('avatarURLs') || {};
+        return urls[size] || {};
     },
 
     /*

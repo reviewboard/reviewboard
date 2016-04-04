@@ -10,6 +10,7 @@ from haystack.query import SearchQuerySet, SQ
 from haystack.views import SearchView
 
 from reviewboard.accounts.decorators import check_login_required
+from reviewboard.avatars.registry import AvatarServiceRegistry
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.search.indexes import BaseSearchIndex
 from reviewboard.scmtools.models import Repository
@@ -42,13 +43,13 @@ class RBSearchView(SearchView):
     ]
 
     def __init__(self, *args, **kwargs):
-        siteconfig = SiteConfiguration.objects.get_current()
-        self.enabled = siteconfig.get('search_enable')
+        self.siteconfig = SiteConfiguration.objects.get_current()
+        self.enabled = self.siteconfig.get('search_enable')
 
         super(RBSearchView, self).__init__(
             load_all=False,
             searchqueryset=SearchQuerySet,
-            results_per_page=siteconfig.get('search_results_per_page'),
+            results_per_page=self.siteconfig.get('search_results_per_page'),
             *args, **kwargs)
 
     def __call__(self, request, local_site=None, local_site_name=None,
@@ -204,6 +205,33 @@ class RBSearchView(SearchView):
             'page_numbers': page_nums,
         }
         context.update(self.extra_context())
+
+        show_users = False
+
+        if self.siteconfig.get(AvatarServiceRegistry.AVATARS_ENABLED_KEY):
+            # We only need to fetch users if the search is for just users or
+            # both users and review requests (i.e., the '' ID).
+            for filter_type in context['filter_types']:
+                if (filter_type['active'] and
+                    filter_type['id'] in ('', 'users')):
+                    show_users = True
+                    break
+
+        if show_users:
+            user_pks = set()
+
+            for result in page:
+                if result.content_type() == 'auth.user':
+                    user_pks.add(int(result.pk))
+
+            users = {
+                user.pk: user
+                for user in User.objects.filter(pk__in=user_pks)
+            }
+
+            for result in page:
+                if result.content_type() == 'auth.user':
+                    result.user = users[int(result.pk)]
 
         return render_to_response(
             self.template, context,

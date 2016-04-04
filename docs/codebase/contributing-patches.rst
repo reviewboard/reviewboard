@@ -1,4 +1,4 @@
-.. _contributingpatches:
+.. _contributing-patches:
 
 ====================
 Contributing Patches

@@ -47,7 +47,7 @@ Here is an example extension setting :py:attr:`default_settings`:
        }
 
 
-If neither :py:attr:`settings` nor py:attr:`default_settings` contains the
+If neither :py:attr:`settings` nor :py:attr:`default_settings` contains the
 key, a :py:exc:`KeyError` exception will be thrown.
 
 

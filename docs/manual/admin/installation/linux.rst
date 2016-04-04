@@ -324,7 +324,7 @@ You can download this from the `Perforce downloads`_ page.
 
 You'll then need to install the Python bindings by typing the following::
 
-    $ easy_install P4PythonInstaller
+    $ pip install p4python
 
 This should fetch the appropriate versions of the ``p4api`` library and
 compile it. This will require that you have standard build tools
@@ -339,36 +339,13 @@ Subversion
 ----------
 
 To use Review Board with Subversion_, you'll need both subversion and
-either subvertpy_ installed. For backwards compatibility with older Review
-Board installations, PySVN_ may be installed in place of subvertpy.
+PySVN_ installed. In the event that PySVN cannot be installed, subvertpy_
+may be used as an alternative.
 
 
 .. _Subversion: http://subversion.tigris.org/
-.. _subvertpy: http://samba.org/~jelmer/subvertpy/
 .. _PySVN: http://pysvn.tigris.org/
-
-subvertpy
-~~~~~~~~~
-
-To install on Debian_ or Ubuntu_, type::
-
-    $ apt-get install python-subvertpy
-
-To install on Fedora_, type::
-
-    $ yum install python-subvertpy
-
-On `RedHat Enterprise`_ and CentOS_, you may have to install subvertpy from
-scratch if you do not wish to add the EPEL repository. To install PySVN from
-EPEL, add its repository, then type::
-
-    $ yum --enablerepo=epel install python-subvertpy
-
-If your distribution doesn't provide subvertpy, you can install it by
-installing the development packages for Python and subversion, and then
-the package itself via easy_install, by typing::
-
-    $ easy_install subvertpy
+.. _subvertpy: http://samba.org/~jelmer/subvertpy/
 
 PySVN
 ~~~~~
@@ -394,6 +371,29 @@ To install PySVN from EPEL, add its repository, then type::
 If your distribution doesn't provide PySVN, you can install it by
 `downloading <http://pysvn.tigris.org/project_downloads.html>`_ the latest
 release and following the instructions in the provided :file:`INSTALL.html`.
+
+subvertpy
+~~~~~~~~~
+
+To install on Debian_ or Ubuntu_, type::
+
+    $ apt-get install python-subvertpy
+
+To install on Fedora_, type::
+
+    $ yum install python-subvertpy
+
+On `RedHat Enterprise`_ and CentOS_, you may have to install subvertpy from
+scratch if you do not wish to add the EPEL repository. To install PySVN from
+EPEL, add its repository, then type::
+
+    $ yum --enablerepo=epel install python-subvertpy
+
+If your distribution doesn't provide subvertpy, you can install it by
+installing the development packages for Python and subversion, and then
+the package itself via easy_install, by typing::
+
+    $ easy_install subvertpy
 
 
 .. _linux-installing-amazon-s3-support:

@@ -118,9 +118,9 @@ body.datagrid-page {
         background: @datagrid-actions-bg;
         border: 1px @datagrid-border-color solid;
         border-right: 0;
-        .border-radius(@box-inner-border-radius 0 0 @box-inner-border-radius);
-        .box-shadow(@box-shadow);
-        .box-sizing(border-box);
+        border-radius: @box-inner-border-radius 0 0 @box-inner-border-radius;
+        box-shadow: @box-shadow;
+        box-sizing: border-box;
         color: #555;
         position: absolute;
         left: @datagrid-actions-offset-left;
@@ -160,7 +160,7 @@ body.datagrid-page {
         .datagrid-actions-content {
           padding: 8px;
           width: @page-sidebar-width - @datagrid-actions-offset-left;
-          .box-sizing(border-box);
+          box-sizing: border-box;
         }
       }
     }
@@ -173,7 +173,7 @@ body.datagrid-page {
     .datagrid-body .datagrid-headers {
       background: @datagrid-header-bg;
       border-bottom: 1px @datagrid-border-color solid;
-      .border-radius(@box-border-radius @box-border-radius 0 0);
+      border-radius: @box-border-radius @box-border-radius 0 0;
     }
 
     .datagrid-headers {
@@ -195,9 +195,9 @@ body.datagrid-page {
 
     .datagrid-main {
       border: 1px @datagrid-border-color solid;
-      .border-radius(@box-border-radius);
-      .box-shadow(@box-shadow);
-      .box-sizing(border-box);
+      border-radius: @box-border-radius;
+      box-shadow: @box-shadow;
+      box-sizing: border-box;
       overflow: hidden;
       z-index: @z-index-base;
     }
@@ -351,8 +351,8 @@ body.datagrid-page {
               .datagrid-filters-menu {
                 background: @datagrid-filter-menu-bg;
                 border-color: @datagrid-filter-menu-border-color;
-                .border-radius(@box-border-radius @box-border-radius 0 0);
-                .transition(0.1s border-color linear, 0.1s background linear;);
+                border-radius: @box-border-radius @box-border-radius 0 0;
+                transition: 0.1s border-color linear, 0.1s background linear;
                 z-index: (@z-index-menu + 1);
               }
             }
@@ -360,15 +360,15 @@ body.datagrid-page {
             .datagrid-filters {
               background: @datagrid-filter-menu-bg;
               border: 1px @datagrid-filter-menu-border-color solid;
-              .border-radius(@box-border-radius 0 @box-border-radius
-                             @box-border-radius);
+              border-radius: @box-border-radius 0 @box-border-radius
+                             @box-border-radius;
               opacity: 0;
               position: absolute;
               right: 0;
               top: @filter-menu-size;
+              transition: 0.1s opacity linear;
               visibility: hidden;
               z-index: @z-index-menu;
-              .transition(0.1s opacity linear);
 
               li {
                 white-space: nowrap;
@@ -390,8 +390,8 @@ body.datagrid-page {
 
       .paginator {
         background: @datagrid-paginator-bg;
+        border-radius: 0 0 @box-border-radius @box-border-radius;
         border-top: 1px @datagrid-paginator-border-color solid;
-        .border-radius(0 0 @box-border-radius @box-border-radius);
         padding: 0 0 0 1em;
 
         a:hover {
@@ -560,7 +560,7 @@ body.datagrid-page {
     font-weight: bold;
     padding: 0.05em 0.8em;
     white-space: nowrap;
-    .border-radius(10px);
+    border-radius: 10px;
   }
 
   .issue-count {
@@ -596,7 +596,7 @@ body.datagrid-page {
     padding-bottom: 0;
 
     img {
-      .border-radius(50%);
+      border-radius: 50%;
       vertical-align: middle;
     }
   }
@@ -611,7 +611,7 @@ body.datagrid-page {
     }
 
     label {
-      .border-radius(4px);
+      border-radius: 4px;
       display: inline;
       float: left;
       margin-right: 0.6em;

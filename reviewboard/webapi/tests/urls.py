@@ -272,6 +272,23 @@ def get_filediff_comment_item_url(filediff, comment_id, local_site_name=None):
 
 
 #
+# GeneralCommentResource
+#
+def get_general_comment_list_url(review_request, local_site_name=None):
+    return resources.base_review_general_comment.get_list_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id)
+
+
+def get_general_comment_item_url(review_request, comment_id,
+                                 local_site_name=None):
+    return resources.base_review_general_comment.get_item_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id,
+        comment_id=comment_id)
+
+
+#
 # HostingServiceResource
 #
 def get_hosting_service_list_url(local_site_name=None):
@@ -443,6 +460,25 @@ def get_review_file_attachment_comment_item_url(review, comment_id,
 
 
 #
+# ReviewGeneralCommentResource
+#
+def get_review_general_comment_list_url(review, local_site_name=None):
+    return resources.review_general_comment.get_list_url(
+        local_site_name=local_site_name,
+        review_request_id=review.review_request.display_id,
+        review_id=review.pk)
+
+
+def get_review_general_comment_item_url(review, comment_id,
+                                        local_site_name=None):
+    return resources.review_general_comment.get_item_url(
+        local_site_name=local_site_name,
+        review_request_id=review.review_request.display_id,
+        review_id=review.pk,
+        comment_id=comment_id)
+
+
+#
 # ReviewGroupResource
 #
 def get_review_group_list_url(local_site_name=None):
@@ -526,6 +562,27 @@ def get_review_reply_file_attachment_comment_list_url(reply,
 def get_review_reply_file_attachment_comment_item_url(reply, comment_id,
                                                       local_site_name=None):
     return resources.review_reply_file_attachment_comment.get_item_url(
+        local_site_name=local_site_name,
+        review_request_id=reply.review_request.display_id,
+        review_id=reply.base_reply_to_id,
+        reply_id=reply.pk,
+        comment_id=comment_id)
+
+
+#
+# ReviewReplyGeneralCommentResource
+#
+def get_review_reply_general_comment_list_url(reply, local_site_name=None):
+    return resources.review_reply_general_comment.get_list_url(
+        local_site_name=local_site_name,
+        review_request_id=reply.review_request.display_id,
+        review_id=reply.base_reply_to_id,
+        reply_id=reply.pk)
+
+
+def get_review_reply_general_comment_item_url(reply, comment_id,
+                                              local_site_name=None):
+    return resources.review_reply_general_comment.get_item_url(
         local_site_name=local_site_name,
         review_request_id=reply.review_request.display_id,
         review_id=reply.base_reply_to_id,

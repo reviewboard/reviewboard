@@ -7,8 +7,8 @@ Static Files
 Bundles
 =======
 
-Extensions can define the list of CSS and JavaScript files they as one or more
-bundles, listed in the extension class's :py:attr:`css_bundles` or
+Extensions can define the list of CSS and JavaScript files they require as one
+or more bundles, listed in the extension class's :py:attr:`css_bundles` or
 :py:attr:`js_bundles` attributes. A bundle is a collection of static files of
 the same type that are grouped together under a name.
 

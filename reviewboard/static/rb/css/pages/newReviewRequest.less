@@ -23,9 +23,9 @@
 
       .repository-search {
         border: 1px solid #999;
-        .border-radius(@box-border-radius);
-        .box-shadow(none);
-        .box-sizing(border-box);
+        border-radius: @box-border-radius;
+        box-shadow: none;
+        box-sizing: border-box;
         padding: 2px 4px 4px 20px;
         width: 100%;
         height: 100%;
@@ -43,13 +43,13 @@
   width: 100%;
 
   .main {
+    border-radius: @box-border-radius;
     height: @default-height;
-    .border-radius(@box-border-radius);
-    .box-sizing(border-box);
+    box-sizing: border-box;
     .scrollable-y();
 
     .hint {
-      .border-radius(@box-border-radius);
+      border-radius: @box-border-radius;
       position: relative;
       top: 50%;
       text-align: center;
@@ -61,9 +61,9 @@
   .new-review-request-container {
     background-color: @new-review-request-bg;
     border: 1px solid @box-border-color;
-    .border-radius(@box-border-radius);
-    .box-shadow(@box-shadow);
-    .box-sizing(border-box);
+    border-radius: @box-border-radius;
+    box-shadow: @box-shadow;
+    box-sizing: border-box;
     overflow: hidden;
   }
 

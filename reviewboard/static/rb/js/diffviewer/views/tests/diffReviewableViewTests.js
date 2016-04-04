@@ -612,7 +612,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
                     expect(model.getRenderedDiffFragment).toHaveBeenCalled();
 
-                    options = model.getRenderedDiffFragment.calls[0].args[0];
+                    options = model.getRenderedDiffFragment.calls.argsFor(0)[0];
                     expect(options.chunkIndex).toBe(1);
                     expect(options.linesOfContext).toBe(undefined);
                 });
@@ -624,7 +624,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
                     expect(model.getRenderedDiffFragment).toHaveBeenCalled();
 
-                    options = model.getRenderedDiffFragment.calls[0].args[0];
+                    options = model.getRenderedDiffFragment.calls.argsFor(0)[0];
                     expect(options.chunkIndex).toBe(1);
                     expect(options.linesOfContext).toBe('20,0');
                 });
@@ -636,7 +636,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
                     expect(model.getRenderedDiffFragment).toHaveBeenCalled();
 
-                    options = model.getRenderedDiffFragment.calls[0].args[0];
+                    options = model.getRenderedDiffFragment.calls.argsFor(0)[0];
                     expect(options.chunkIndex).toBe(1);
                     expect(options.linesOfContext).toBe('0,20');
                 });
@@ -648,7 +648,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
                     expect(model.getRenderedDiffFragment).toHaveBeenCalled();
 
-                    options = model.getRenderedDiffFragment.calls[0].args[0];
+                    options = model.getRenderedDiffFragment.calls.argsFor(0)[0];
                     expect(options.chunkIndex).toBe(1);
                     expect(options.linesOfContext).toBe('0,7');
                 });
@@ -659,7 +659,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                     var $tbodies;
 
                     spyOn(model, 'getRenderedDiffFragment')
-                        .andCallFake(function(options, callbacks, context) {
+                        .and.callFake(function(options, callbacks, context) {
                             callbacks.success.call(context, [
                                 '<tbody class="equal tests-new-chunk">',
                                 ' <tr line="6">',
@@ -677,7 +677,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                                 '</tbody>'
                             ].join(''));
                         });
-                    spyOn(view, 'trigger').andCallThrough();
+                    spyOn(view, 'trigger').and.callThrough();
 
                     view.$('.tests-expand-chunk').click();
 
@@ -700,7 +700,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                     var $tbodies;
 
                     spyOn(model, 'getRenderedDiffFragment')
-                        .andCallFake(function(options, callbacks, context) {
+                        .and.callFake(function(options, callbacks, context) {
                             callbacks.success.call(context, [
                                 '<tbody class="equal tests-new-chunk">',
                                 ' <tr line="6">',
@@ -718,7 +718,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                                 '</tbody>'
                             ].join(''));
                         });
-                    spyOn(view, 'trigger').andCallThrough();
+                    spyOn(view, 'trigger').and.callThrough();
 
                     /*
                      * Simulate having a couple nearby partially expanded
@@ -792,7 +792,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
                 expect(model.getRenderedDiffFragment).toHaveBeenCalled();
 
-                options = model.getRenderedDiffFragment.calls[0].args[0];
+                options = model.getRenderedDiffFragment.calls.argsFor(0)[0];
                 expect(options.chunkIndex).toBe(1);
                 expect(options.linesOfContext).toBe(0);
             });
@@ -802,7 +802,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                     var $tbodies;
 
                     spyOn(model, 'getRenderedDiffFragment')
-                        .andCallFake(function(options, callbacks, context) {
+                        .and.callFake(function(options, callbacks, context) {
                             callbacks.success.call(context, [
                                 '<tbody class="equal tests-new-chunk">',
                                 ' <tr line="6">',
@@ -814,7 +814,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                                 '</tbody>'
                             ].join(''));
                         });
-                    spyOn(view, 'trigger').andCallThrough();
+                    spyOn(view, 'trigger').and.callThrough();
 
                     $collapseButton.click();
 
@@ -837,7 +837,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                     var $tbodies;
 
                     spyOn(model, 'getRenderedDiffFragment')
-                        .andCallFake(function(options, callbacks, context) {
+                        .and.callFake(function(options, callbacks, context) {
                             callbacks.success.call(context, [
                                 '<tbody class="equal tests-new-chunk">',
                                 ' <tr line="6">',
@@ -849,7 +849,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                                 '</tbody>'
                             ].join(''));
                         });
-                    spyOn(view, 'trigger').andCallThrough();
+                    spyOn(view, 'trigger').and.callThrough();
 
                     /*
                      * Simulate having a couple nearby partially expanded
@@ -980,7 +980,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                 diffFragmentHTML = expandedDiffFragmentHTML;
 
                 spyOn(view.model, 'getRenderedDiffFragment')
-                    .andCallFake(function(options, callbacks, context) {
+                    .and.callFake(function(options, callbacks, context) {
                         callbacks.success.call(context, diffFragmentHTML);
                     });
 

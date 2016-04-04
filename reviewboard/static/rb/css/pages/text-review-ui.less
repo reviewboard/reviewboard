@@ -7,7 +7,7 @@
 .review-ui-box .text-review-ui {
   @header-padding: 8px;
 
-  .border-radius(@box-border-radius);
+  border-radius: @box-border-radius;
 
   &.text-review-ui-has-tabs {
     .sidebyside thead th {
@@ -41,7 +41,7 @@
           font-size: 110%;
           font-weight: normal;
           vertical-align: bottom;
-          .border-radius(@box-border-radius @box-border-radius 0 0);
+          border-radius: @box-border-radius @box-border-radius 0 0;
 
           &.active {
             background: lighten(@diff-file-color, 5%);
@@ -64,7 +64,7 @@
 
   .text-review-ui-text-table,
   .text-review-ui-rendered-table {
-    .border-radius(0 0 @box-inner-border-radius @box-inner-border-radius);
+    border-radius: 0 0 @box-inner-border-radius @box-inner-border-radius;
 
     .revision-row th {
       font-weight: bold;
@@ -72,11 +72,11 @@
 
     tbody:last-child tr:last-child {
       td:last-child {
-        .border-radius(0 0 @box-inner-border-radius 0);
+        border-radius: 0 0 @box-inner-border-radius 0;
       }
 
       th:first-child {
-        .border-radius(0 0 0 @box-inner-border-radius);
+        border-radius: 0 0 0 @box-inner-border-radius;
       }
     }
 
@@ -91,7 +91,7 @@
   }
 
   .sidebyside {
-    .border-radius(0 0 @box-border-radius @box-border-radius);
+    border-radius: 0 0 @box-border-radius @box-border-radius;
     margin-bottom: 0;
 
     thead th {

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load compressed i18n rbadmintags staticfiles %}
+{% load i18n pipeline rbadmintags staticfiles %}
 
 {% block title %}{{title}} | {% trans "Administration" %}{% endblock %}
 
@@ -12,7 +12,7 @@
 {% endblock %}
 
 {% block css %}
-{%  compressed_css "admin" %}
+{%  stylesheet 'admin' %}
 {%  block extrastyle %}{% endblock %}
 <!--[if lte IE 7]><link rel="stylesheet" type="text/css" href="{% block stylesheet_ie %}{% static "admin/css/ie.css" %}{% endblock %}" /><![endif]-->
 {%  if LANGUAGE_BIDI %}<link rel="stylesheet" type="text/css" href="{% block stylesheet_rtl %}{% static "admin/css/rtl.css" %}{% endblock %}" />{% endif %}

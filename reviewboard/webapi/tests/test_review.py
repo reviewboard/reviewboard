@@ -47,6 +47,9 @@ class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
         else:
             self.assertEqual(item_rsp['body_bottom_text_type'], 'plain')
 
+        self.assertEqual(item_rsp['absolute_url'],
+                         self.base_url + review.get_absolute_url())
+
     #
     # HTTP GET tests
     #

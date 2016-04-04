@@ -29,7 +29,7 @@
     bottom: 0;
     right: 0;
 
-    input {
+    input, .split-btn {
       margin-left: 10px;
     }
   }
@@ -54,10 +54,10 @@
 .text-editor {
   textarea {
     border: 1px @textarea-border-color solid;
+    box-sizing: border-box;
     margin: 0;
     outline: none;
     padding: 10px;
-    .box-sizing(border-box);
 
     /*
      * This prevents extra spacing below a text area in different browsers.
@@ -223,12 +223,12 @@
   input[type="password"],
   input[type="email"] {
     border: 1px #aaa solid;
+    border-radius: @box-border-radius;
+    box-sizing: border-box;
     font-size: inherit;
     margin: 0;
     padding: 0.5em;
     width: @auth-field-width;
-    .border-radius(@box-border-radius);
-    .box-sizing(border-box);
   }
 
   .auth-button-container {
@@ -239,7 +239,7 @@
       margin: 0;
       padding: 0.6em;
       width: 100%;
-      .box-sizing(border-box);
+      box-sizing: border-box;
     }
   }
 
@@ -257,7 +257,7 @@
         padding: 0.5em 1em 0.5em 0.5em;
         text-align: right;
         width: @auth-label-width;
-        .box-sizing(border-box);
+        box-sizing: border-box;
       }
 
       .errorlist {
@@ -363,14 +363,9 @@
   }
 }
 
-#auth_container #register_form {
-  .register-captcha-row {
-    padding-left: 0;
-
-    .register-captcha-container {
-      float: right;
-    }
-  }
+#auth_container .register-captcha-row {
+  float: right;
+  padding-left: 0;
 }
 
 
@@ -524,14 +519,14 @@
 #user_infobox, #bug_infobox {
   background: #F9F9F9;
   border: 1px black solid;
+  border-radius: 10px;
+  box-shadow: 0px 0px 4px #000;
   display: block;
   min-height: 12em;
   padding: 1em;
   position: absolute;
   min-width: 40em;
   z-index: @z-index-dialog;
-  .border-radius(10px);
-  .box-shadow(0px 0px 4px #000);
 
   h2 {
     font-size: 1.4em;

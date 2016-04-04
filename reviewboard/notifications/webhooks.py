@@ -9,7 +9,7 @@ from django.utils.six.moves.urllib.parse import urlencode
 from django.utils.six.moves.urllib.request import Request, urlopen
 from django.template import Context, Lexer, Parser
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.webapi.encoders import (BasicAPIEncoder, JSONEncoderAdapter,
+from djblets.webapi.encoders import (JSONEncoderAdapter, ResourceAPIEncoder,
                                      XMLEncoderAdapter)
 
 from reviewboard import get_package_version
@@ -93,7 +93,7 @@ def render_custom_content(body, context_data={}):
 
 def dispatch_webhook_event(request, webhook_targets, event, payload):
     """Dispatch the given event and payload to the given webhook targets."""
-    encoder = BasicAPIEncoder()
+    encoder = ResourceAPIEncoder()
     bodies = {}
 
     for webhook_target in webhook_targets:
@@ -161,6 +161,11 @@ def _serialize_review(review, request):
                 comment, request=request)
             for comment in review.screenshot_comments.all()
         ],
+        'general_comments': [
+            resources.general_comment.serialize_object(
+                comment, request=request)
+            for comment in review.general_comments.all()
+        ],
     }
 
 
@@ -182,6 +187,11 @@ def _serialize_reply(reply, request):
             resources.review_reply_screenshot_comment.serialize_object(
                 comment, request=request)
             for comment in reply.screenshot_comments.all()
+        ],
+        'general_comments': [
+            resources.review_reply_general_comment.serialize_object(
+                comment, request=request)
+            for comment in reply.general_comments.all()
         ],
     }
 

@@ -1,7 +1,14 @@
 {% extends "accounts/base.html" %}
-{% load djblets_deco djblets_extensions i18n %}
+{% load djblets_deco djblets_extensions djblets_recaptcha i18n %}
 
 {% block title %}{% trans "Register account" %}{% endblock %}
+
+{% block scripts %}
+{{block.super}}
+{%  if siteconfig_settings.auth_registration_show_captcha %}
+{% recaptcha_js %}
+{%  endif %}
+{% endblock scripts %}
 
 {% block auth_content %}
 {%  template_hook_point "before-register-form" %}
@@ -55,23 +62,7 @@
 
 {% if siteconfig_settings.auth_registration_show_captcha %}
  <div class="auth-form-row register-captcha-row clearfix">
-  <script>
-      var RecaptchaOptions = {
-          theme: 'white'
-      };
-  </script>
-  <div class="register-captcha-container">
-   <script type="text/javascript" src="{{form.recaptcha_url}}/challenge?k={{siteconfig_settings.recaptcha_public_key}}{{form.captcha_error_query_str}}"></script>
-
-   <noscript>
-    <iframe src="{{form.recaptcha_url}}/noscript?k={{siteconfig_settings.recaptcha_public_key}}{{form.captcha_error_query_str}}"
-            height="300" width="500" frameborder="0"></iframe>
-    <br />
-    <textarea name="recaptcha_challenge_field" rows="3" cols="40"></textarea>
-    <input type="hidden" name="recaptcha_response_field"
-           value="manual_challenge" />
-   </noscript>
-  </div>
+  {% recaptcha_form_field form %}
  </div>
 {% endif %}
 

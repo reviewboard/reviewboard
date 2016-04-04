@@ -9,8 +9,8 @@
  * sidebar mode.
  */
 .mobile-menu-animation() {
-  .transition-transform(@mobile-menu-animate-duration,
-                        @mobile-menu-animate-timing-func);
+  transition: @mobile-menu-animate-duration transition
+              @mobile-menu-animate-timing-func;
 }
 
 
@@ -35,7 +35,7 @@ body {
       #container,
       #mobile_menu_mask,
       #mobile_navbar_container {
-        .transform(translate(@mobile-navbar-width, 0));
+        transform: translate(@mobile-navbar-width, 0);
       }
     }
   });
@@ -146,7 +146,7 @@ textarea {
       padding: 0;
       position: absolute;
       right: 0;
-      .border-radius(0 0 @box-border-radius @box-border-radius);
+      border-radius: 0 0 @box-border-radius @box-border-radius;
 
       li {
         float: none;
@@ -155,7 +155,7 @@ textarea {
         text-align: right;
 
         &:last-child {
-          .border-radius(0 0 @box-border-radius @box-border-radius);
+          border-radius: 0 0 @box-border-radius @box-border-radius;
         }
 
         a {
@@ -318,6 +318,7 @@ textarea {
     font-size: 125%;
     margin: 0;
     padding: 0;
+    vertical-align: middle;
 
     .on-mobile-medium-screen-720({
       margin-left: 0.5em;
@@ -342,16 +343,16 @@ textarea {
     margin: 0 1em;
 
     .on-mobile-medium-screen-720({
+      box-sizing: border-box;
       float: none;
       margin: 0.5em 0.5em 0 0.5em;
-      .box-sizing(border-box);
     });
 
     input {
       border: 1px #CCC solid;
       margin: 0;
       padding: 2px;
-      .border-radius(6px);
+      border-radius: 6px;
       background-color: #EEEEEE;
       font-size: 1.2em;
 
@@ -361,10 +362,10 @@ textarea {
          * most mobile apps and sites, giving more breathing room.
          */
         background-color: white;
+        box-sizing: border-box;
         padding: 4px 8px;
         margin: 0;
         width: 100%;
-        .box-sizing(border-box);
       });
     }
   }
@@ -494,7 +495,7 @@ textarea {
     width: 50%;
 
     a {
-      .box-sizing(border-box);
+      box-sizing: border-box;
       display: inline-block;
       padding: 1em;
       width: 100%;
@@ -508,7 +509,7 @@ textarea {
  * content to fully show through.
  */
 #mobile_menu_mask {
-  .box-shadow(-1px 0 8px 4px rgba(0, 0, 0, 0.4));
+  box-shadow: -1px 0 8px 4px rgba(0, 0, 0, 0.4);
   display: none;
   overflow: hidden;
   position: absolute;
@@ -529,7 +530,7 @@ textarea {
  */
 #mobile_navbar_container {
   background-color: @mobile-menu-bg-color;
-  .box-sizing(border-box);
+  box-sizing: border-box;
   color: @mobile-menu-text-color;
   border: 0;
   border-right: 1px @mobile-menu-border-color solid;
@@ -576,10 +577,10 @@ textarea {
 
   /* Section headers */
   .section h3 {
-    .box-shadow(inset 0 0 8px 4px rbga(0, 0, 0, 0.8));
     background: @mobile-menu-header-bg-color;
     border-top: 1px @mobile-menu-header-border-color solid;
     border-bottom: 1px @mobile-menu-header-border-color solid;
+    box-shadow: inset 0 0 8px 4px rbga(0, 0, 0, 0.8);
     font-size: 120%;
     font-weight: normal;
     margin: 0;
@@ -599,8 +600,11 @@ textarea {
     }
 
     &.section {
-      margin-top: 1.5em;
       padding: 0;
+
+      &:not(:first-child) {
+        margin-top: 1.5em;
+      }
 
       h3.label {
         margin-left: 0;
@@ -617,10 +621,6 @@ textarea {
       padding-left: 8px;
       position: absolute;
       right: 1.5em;
-    }
-
-    .label {
-      margin-left: 20px;
     }
 
     .rb-icon {
@@ -718,6 +718,7 @@ textarea {
  * featuring largely blue-ish colors.
  */
 .page-colors(@topbar-bg: #DAEBFF,
+             @topbar-text-color: #000000,
              @topbar-faded-text-color: #5A646E);
 
 .admin {

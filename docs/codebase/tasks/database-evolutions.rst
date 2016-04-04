@@ -21,7 +21,7 @@ files unique to its own :file:`models.py` file.
 This guide will cover working with Django Evolution, writing evolution files,
 and working around common problems.
 
-.. _`Django Evolution`: http://code.google.com/p/django-evolution/
+.. _`Django Evolution`: https://github.com/beanbaginc/django-evolution
 
 
 Writing an Evolution

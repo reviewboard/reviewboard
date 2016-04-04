@@ -24,7 +24,8 @@ from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
                                                 normalize_text_for_edit)
 from reviewboard.reviews.models import (BaseComment, Group,
                                         ReviewRequest, ScreenshotComment,
-                                        FileAttachmentComment)
+                                        FileAttachmentComment,
+                                        GeneralComment)
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 
 
@@ -131,9 +132,9 @@ def reply_list(context, entry, comment, context_type, context_id):
     to display replies to a type of object. In each case, the replies will
     be rendered using the template :template:`reviews/review_reply.html`.
 
-    If ``context_type`` is ``"diff_comments"``, ``"screenshot_comments"``
-    or ``"file_attachment_comments"``, the generated list of replies are to
-    ``comment``.
+    If ``context_type`` is ``"diff_comments"``, ``"screenshot_comments"``,
+    ``"general_comments"`` or ``"file_attachment_comments"``, the generated
+    list of replies are to ``comment``.
 
     If ``context_type`` is ``"body_top"`` or ```"body_bottom"``,
     the generated list of replies are to ``review``. Depending on the
@@ -144,7 +145,7 @@ def reply_list(context, entry, comment, context_type, context_id):
     the JavaScript code for storing and categorizing the comments.
     """
     def generate_reply_html(reply, timestamp, text, rich_text,
-                            use_gravatars, comment_id=None):
+                            use_avatars, comment_id=None):
         context.push()
         context.update({
             'context_id': context_id,
@@ -156,7 +157,7 @@ def reply_list(context, entry, comment, context_type, context_id):
             'draft': not reply.public,
             'comment_id': comment_id,
             'rich_text': rich_text,
-            'use_gravatars': use_gravatars,
+            'use_avatars': use_avatars,
         })
 
         result = render_to_string('reviews/review_reply.html', context)
@@ -178,7 +179,7 @@ def reply_list(context, entry, comment, context_type, context_id):
         return s
 
     siteconfig = SiteConfiguration.objects.get_current()
-    use_gravatars = siteconfig.get('integration_gravatars')
+    use_avatars = siteconfig.get('avatars_enabled')
 
     review = entry['review']
 
@@ -189,13 +190,13 @@ def reply_list(context, entry, comment, context_type, context_id):
     s = ""
 
     if context_type in ('diff_comments', 'screenshot_comments',
-                        'file_attachment_comments'):
+                        'file_attachment_comments', 'general_comments'):
         for reply_comment in comment.public_replies(user):
             s += generate_reply_html(reply_comment.get_review(),
                                      reply_comment.timestamp,
                                      reply_comment.text,
                                      reply_comment.rich_text,
-                                     use_gravatars,
+                                     use_avatars,
                                      reply_comment.pk)
     elif context_type == "body_top" or context_type == "body_bottom":
         replies = getattr(review, "public_%s_replies" % context_type)()
@@ -206,7 +207,7 @@ def reply_list(context, entry, comment, context_type, context_id):
                 reply.timestamp,
                 getattr(reply, context_type),
                 getattr(reply, '%s_rich_text' % context_type),
-                use_gravatars)
+                use_avatars)
 
         return s
     else:
@@ -232,6 +233,8 @@ def reply_section(context, entry, comment, context_type, context_id,
             context_id += 's'
         elif type(comment) is FileAttachmentComment:
             context_id += 'f'
+        elif type(comment) is GeneralComment:
+            context_id += 'g'
 
         context_id += six.text_type(comment.id)
 
@@ -331,8 +334,9 @@ def for_review_request_field(context, nodelist, review_request_details,
         try:
             field = field_cls(review_request_details, request=request)
         except Exception as e:
-            logging.error('Error instantiating ReviewRequestFieldset %r: %s',
-                          field_cls, e, exc_info=1)
+            logging.exception('Error instantiating field %r: %s',
+                              field_cls, e)
+            continue
 
         try:
             if field.should_render(field.value):
@@ -341,9 +345,9 @@ def for_review_request_field(context, nodelist, review_request_details,
                 s.append(nodelist.render(context))
                 context.pop()
         except Exception as e:
-            logging.error('Error running should_render for '
-                          'ReviewRequestFieldset %r: %s', field_cls, e,
-                          exc_info=1)
+            logging.exception(
+                'Error running should_render for field %r: %s',
+                field_cls, e)
 
     return ''.join(s)
 

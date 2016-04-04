@@ -43,7 +43,7 @@
 {%   endif %}
 {%   with auth_form as form %}
 {%    for field in auth_form %}
-{%     include "siteconfig/settings_field.html" %}
+{%     include "djblets_forms/admin/form_field.html" %}
 {%    endfor %}
 {%   endwith %}
 </fieldset>

@@ -9,6 +9,7 @@ from djblets.webapi.resources.mixins.forms import (
 from reviewboard.reviews.markdown_utils import (markdown_set_field_escaped,
                                                 render_markdown)
 
+
 class MarkdownFieldsMixin(object):
     """Mixes in common logic for Markdown text fields.
 

@@ -31,6 +31,7 @@ djangojs.mo
 docs/manual/extending/coderef/python
 reviewboard/htdocs/media/djblets
 reviewboard/htdocs/media/uploaded
+reviewboard/htdocs/static
 docs/manual/data/htdocs/media/uploaded/
 _build
 build
@@ -42,3 +43,4 @@ temp
 bak
 reviewboard/scmtools/testdata/hg_repo/.hg/cache/branch2-served
 reviewboard/scmtools/testdata/hg_repo/.hg/cache/tags2-visible
+node_modules/

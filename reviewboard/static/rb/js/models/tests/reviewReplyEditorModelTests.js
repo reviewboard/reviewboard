@@ -15,16 +15,16 @@ suite('rb/models/ReviewReplyEditor', function() {
 
         reviewReply = review.createReply();
 
-        spyOn(review, 'ready').andCallFake(function(options, context) {
+        spyOn(review, 'ready').and.callFake(function(options, context) {
             options.ready.call(context);
         });
 
         spyOn(reviewReply, 'ensureCreated')
-            .andCallFake(function(options, context) {
+            .and.callFake(function(options, context) {
                 options.success.call(context);
             });
 
-        spyOn(reviewReply, 'ready').andCallFake(function(options, context) {
+        spyOn(reviewReply, 'ready').and.callFake(function(options, context) {
             options.ready.call(context);
         });
     });
@@ -46,9 +46,9 @@ suite('rb/models/ReviewReplyEditor', function() {
                 spyOn(reviewReply, 'on');
 
                 editor.set('reviewReply', reviewReply);
-                expect(reviewReply.on.calls.length).toBe(2);
-                expect(reviewReply.on.calls[0].args[0]).toBe('destroyed');
-                expect(reviewReply.on.calls[1].args[0]).toBe('published');
+                expect(reviewReply.on.calls.count()).toBe(2);
+                expect(reviewReply.on.calls.argsFor(0)[0]).toBe('destroyed');
+                expect(reviewReply.on.calls.argsFor(1)[0]).toBe('published');
             });
 
             it('Removes events from old reviewReply', function() {
@@ -74,7 +74,7 @@ suite('rb/models/ReviewReplyEditor', function() {
 
                 spyOn(editor, 'trigger');
                 spyOn(reviewReply, 'save')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         options.success.call(context);
                     });
 
@@ -107,11 +107,11 @@ suite('rb/models/ReviewReplyEditor', function() {
 
                 spyOn(editor, 'trigger');
                 spyOn(options.model.prototype, 'ready')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         options.ready.call(context);
                     });
                 spyOn(options.model.prototype, 'save')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         options.success.call(context);
                     });
 
@@ -145,11 +145,11 @@ suite('rb/models/ReviewReplyEditor', function() {
 
                 spyOn(editor, 'trigger');
                 spyOn(replyObject, 'ready')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         options.ready.call(context);
                     });
                 spyOn(replyObject, 'save')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         options.success.call(context);
                     });
 
@@ -178,7 +178,7 @@ suite('rb/models/ReviewReplyEditor', function() {
                 spyOn(editor, 'trigger');
                 spyOn(editor, 'resetStateIfEmpty');
                 spyOn(replyObject, 'ready')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         options.ready.call(context);
                     });
                 spyOn(replyObject, 'save');
@@ -273,6 +273,24 @@ suite('rb/models/ReviewReplyEditor', function() {
                 });
             });
 
+            describe('With general comments', function() {
+                function testSave(richText) {
+                    testCommentSave({
+                        contextType: 'general_comments',
+                        model: RB.GeneralCommentReply,
+                        richText: richText
+                    });
+                }
+
+                it('richText=true', function() {
+                    testSave(true);
+                });
+
+                it('richText=false', function() {
+                    testSave(false);
+                });
+            });
+
             describe('With screenshot comments', function() {
                 function testSave(richText) {
                     testCommentSave({
@@ -308,7 +326,7 @@ suite('rb/models/ReviewReplyEditor', function() {
 
                 spyOn(editor, 'trigger');
                 spyOn(replyObject, 'destroy')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         options.success.call(context);
                     });
             });

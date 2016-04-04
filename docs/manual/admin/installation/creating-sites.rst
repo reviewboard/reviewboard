@@ -197,8 +197,9 @@ Apache configuration file (usually :file:`/etc/httpd/httpd.conf` or
 
 .. note::
 
-   On Fedora, you can do
-   $ ln -s /path/to/apache-wsgi.conf /etc/httpd/conf.d/reviewboard-sitename.conf
+   On Fedora, you can do::
+
+      $ ln -s /path/to/apache-wsgi.conf /etc/httpd/conf.d/reviewboard-sitename.conf
 
 Of course, the configuration file can be placed anywhere so long as it's
 at some point included by your main Apache configuration file.
@@ -222,8 +223,14 @@ try going to your site.
 
    On Fedora and Red Hat-derived systems, the following commands
    should be run (as root) to avoid SELinux denials::
-   $ setsebool -P httpd_can_sendmail 1
-   $ setsebool -P httpd_can_network_memcache 1
+
+      $ setsebool -P httpd_can_sendmail 1
+      $ setsebool -P httpd_can_network_memcache 1
+      $ setsebool -P httpd_can_network_connect_db 1
+
+   These lighten the SELinux enforcement to allow the web server
+   process to be able to send email, access the caching server
+   and connect to a remote database server, respectively.
 
 lighttpd
 --------

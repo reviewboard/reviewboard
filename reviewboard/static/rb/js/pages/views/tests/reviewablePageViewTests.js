@@ -25,7 +25,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
             }
         });
 
-        spyOn(pageView.reviewRequest, 'ready').andCallFake(
+        spyOn(pageView.reviewRequest, 'ready').and.callFake(
             function(options, context) {
                 options.ready.call(context);
             });
@@ -85,16 +85,16 @@ suite('rb/pages/views/ReviewablePageView', function() {
 
         describe('Ship It', function() {
             it('Confirmed', function() {
-                spyOn(window, 'confirm').andReturn(true);
-                spyOn(pageView.pendingReview, 'ready').andCallFake(
+                spyOn(window, 'confirm').and.returnValue(true);
+                spyOn(pageView.pendingReview, 'ready').and.callFake(
                     function(options, context) {
                         options.ready.call(context);
                     });
-                spyOn(pageView.pendingReview, 'save').andCallFake(
+                spyOn(pageView.pendingReview, 'save').and.callFake(
                     function(options, context) {
                         options.success.call(context);
                     });
-                spyOn(pageView.pendingReview, 'publish').andCallThrough();
+                spyOn(pageView.pendingReview, 'publish').and.callThrough();
                 spyOn(pageView.draftReviewBanner, 'hideAndReload');
 
                 $shipIt.click();
@@ -110,7 +110,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
             });
 
             it('Canceled', function() {
-                spyOn(window, 'confirm').andReturn(false);
+                spyOn(window, 'confirm').and.returnValue(false);
                 spyOn(pageView.pendingReview, 'ready');
 
                 $shipIt.click();
@@ -155,9 +155,9 @@ suite('rb/pages/views/ReviewablePageView', function() {
 
         describe('Actions', function() {
             it('Ignore', function() {
-                spyOn(bubbleView, 'close').andCallThrough();
-                spyOn(bubbleView, 'trigger').andCallThrough();
-                spyOn(bubbleView, 'remove').andCallThrough();
+                spyOn(bubbleView, 'close').and.callThrough();
+                spyOn(bubbleView, 'trigger').and.callThrough();
+                spyOn(bubbleView, 'remove').and.callThrough();
 
                 $bubble.find('.ignore').click();
 
@@ -166,12 +166,32 @@ suite('rb/pages/views/ReviewablePageView', function() {
                 expect(bubbleView.trigger).toHaveBeenCalledWith('closed');
             });
 
-            it('Update Page', function() {
+            it('Update Page displays Updates Bubble', function() {
                 spyOn(bubbleView, 'trigger');
 
                 $bubble.find('.update-page').click();
 
                 expect(bubbleView.trigger).toHaveBeenCalledWith('updatePage');
+            });
+
+            it('Update Page calls notify if shouldNotify', function() {
+                var info = {
+                    user: {
+                        fullname: 'Hello'
+                    }
+                };
+
+                RB.NotificationManager.instance._canNotify = true;
+                spyOn(RB.NotificationManager.instance, 'notify');
+                spyOn(RB.NotificationManager.instance,
+                      '_haveNotificationPermissions').and.returnValue(true);
+                spyOn(pageView, '_showUpdatesBubble');
+
+                pageView._onReviewRequestUpdated(info);
+
+                expect(RB.NotificationManager.instance.notify)
+                    .toHaveBeenCalled();
+                expect(pageView._showUpdatesBubble).toHaveBeenCalled();
             });
         });
     });

@@ -154,6 +154,8 @@ class Profile(models.Model):
     timezone = models.CharField(choices=TIMEZONE_CHOICES, default='UTC',
                                 max_length=30)
 
+    settings = JSONField(null=True, default=dict)
+
     extra_data = JSONField(null=True, default=dict)
 
     objects = ProfileManager()
@@ -172,6 +174,24 @@ class Profile(models.Model):
             return siteconfig.get('default_use_rich_text')
         else:
             return self.default_use_rich_text
+
+    @property
+    def should_enable_desktop_notifications(self):
+        """Return whether desktop notifications should be used for this user.
+
+        If the user has chosen whether or not to use desktop notifications
+        explicitly, then that choice will be respected. Otherwise, we
+        enable desktop notifications by default.
+
+        Returns:
+            bool:
+                If the user has set whether they wish to recieve desktop
+                notifications, then use their preference. Otherwise, we return
+                ``True``.
+        """
+        return (not self.settings or
+                self.settings.get('enable_desktop_notifications', True))
+
 
     def star_review_request(self, review_request):
         """Mark a review request as starred.

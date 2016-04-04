@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load compressed i18n %}
+{% load i18n pipeline %}
 
 {% block extrahead %}
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
@@ -10,11 +10,11 @@
 {% endblock %}
 
 {% block css %}
-{% compressed_css "reviews" %}
+{% stylesheet 'reviews' %}
 {% endblock %}
 
 {% block scripts-post %}
-{%  compressed_js "reviews" %}
+{%  javascript 'reviews' %}
 {% endblock %}
 
 {% block page_class %}reviewable-page{% endblock %}

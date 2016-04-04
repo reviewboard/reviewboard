@@ -1,12 +1,12 @@
-{% load djblets_utils i18n gravatars reviewtags tz %}
+{% load avatars djblets_utils i18n reviewtags tz %}
 
    <li{% if draft %} class="draft"{% endif %}{% if comment_id %} data-comment-id="{{comment_id}}"{% endif %}>
     <dl>
      <dt>
       <label for="{% if draft %}draft{% endif %}comment_{{context_id}}-{{id}}">
-       <div class="gravatar-container">
-{% if use_gravatars %}
-        {% gravatar reply_user 32 %}
+       <div class="avatar-container">
+{% if use_avatars %}
+        {% avatar reply_user 32 %}
 {% endif %}
        </div>
        <div class="user-reply-info">

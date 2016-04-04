@@ -1,9 +1,9 @@
-{% load gravatars %}
+{% load avatars %}
 
 <div class="infobox-content" class="vcard">
-{% if siteconfig_settings.integration_gravatars %}
+{% if siteconfig_settings.avatars_enabled %}
  <div class="infobox-pic" class="logo">
-  {% gravatar requested_user 85 %}
+  {% avatar requested_user 85 %}
  </div>
 {% endif %}
  <div class="infobox-text">

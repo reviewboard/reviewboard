@@ -31,13 +31,13 @@ RB.BranchesView = RB.CollectionView.extend({
     },
 
     /*
-     * Override for CollectionView._add.
+     * Override for CollectionView._onAdded.
      *
      * If the newly-added branch is the default (for example, 'trunk' in SVN or
      * 'master' in git), start with it selected.
      */
-    _add: function(branch) {
-        _super(this)._add.apply(this, arguments);
+    _onAdded: function(branch) {
+        _super(this)._onAdded.apply(this, arguments);
 
         if (this._rendered && branch.get('isDefault')) {
             this.trigger('selected', branch);

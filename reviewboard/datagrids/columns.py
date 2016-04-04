@@ -9,10 +9,10 @@ from django.utils.html import (conditional_escape, escape, format_html,
 from django.utils.six.moves import reduce
 from django.utils.translation import ugettext_lazy as _, ugettext
 from djblets.datagrid.grids import CheckboxColumn, Column, DateTimeColumn
-from djblets.gravatars import get_gravatar_url
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.models import Profile, ReviewRequestVisit
+from reviewboard.avatars import avatar_services
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.reviews.templatetags.reviewtags import render_star
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -53,7 +53,7 @@ class BaseSubmitterColumn(Column):
     rendering logic between the two.
     """
 
-    GRAVATAR_SIZE = 24
+    AVATAR_SIZE = 24
 
     def __init__(self, *args, **kwargs):
         """Initialize the column."""
@@ -67,26 +67,23 @@ class BaseSubmitterColumn(Column):
             *args, **kwargs)
 
     def render_user(self, state, user):
-        """Render the user's name and gravatar as HTML."""
+        """Render the user's name and avatar as HTML."""
         siteconfig = SiteConfiguration.objects.get_current()
 
-        if siteconfig.get('integration_gravatars'):
-            gravatar_url = get_gravatar_url(state.datagrid.request, user,
-                                            self.GRAVATAR_SIZE)
-        else:
-            gravatar_url = None
+        avatar_html = ''
 
-        if gravatar_url:
-            gravatar_html = format_html(
-                '<img src="{0}" width="{1}" height="{1}" alt="{2}" '
-                'class="gravatar" /> ',
-                gravatar_url, self.GRAVATAR_SIZE, user.username)
-        else:
-            gravatar_html = ''
+        if siteconfig.get(avatar_services.AVATARS_ENABLED_KEY):
+            avatar_service = avatar_services.default_service
+
+            if avatar_service:
+                avatar_html = avatar_service.render(
+                    request=state.datagrid.request,
+                    user=user,
+                    size=self.AVATAR_SIZE)
 
         return format_html(
             '<a class="user" href="{0}">{1}{2}</a>',
-            user.get_absolute_url(), gravatar_html, user.username)
+            user.get_absolute_url(), avatar_html, user.username)
 
 
 class BugsColumn(Column):

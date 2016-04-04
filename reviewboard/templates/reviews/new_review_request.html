@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load compressed djblets_deco i18n %}
+{% load djblets_deco i18n pipeline %}
 
 {% block title %}{% trans "New Review Request" %}{% endblock %}
 
@@ -11,7 +11,7 @@
 
 {% block css %}
 {{block.super}}
-{%  compressed_css "newReviewRequest" %}
+{%  stylesheet 'newReviewRequest' %}
 {% endblock %}
 
 {% block sidebar %}
@@ -24,7 +24,7 @@
 
 {% block scripts-post %}
 {{block.super}}
-{%  compressed_js "newReviewRequest" %}
+{%  javascript 'newReviewRequest' %}
 <script>
 $(function() {
     var creator,

@@ -385,10 +385,7 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
         _.each(_.zip(this.payloadFileKeys, files, fileReaders), function(data) {
             var key = data[0],
                 file = data[1],
-                reader = data[2],
-                fileBlobLen,
-                fileBlob,
-                i;
+                reader = data[2];
 
             if (!file || !reader) {
                 return;
@@ -400,12 +397,7 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
             blob.push('Content-Type: ' + file.type + '\r\n');
             blob.push('\r\n');
 
-            fileBlob = new Uint8Array(reader.result);
-            fileBlobLen = fileBlob.length;
-
-            for (i = 0; i < fileBlobLen; i++) {
-                blob.push(String.fromCharCode(fileBlob[i]));
-            }
+            blob.push(reader.result);
 
             blob.push('\r\n');
         });
@@ -425,26 +417,10 @@ RB.BaseResource = Backbone.Model.extend(_.defaults({
         blob.push('--' + boundary + '--\r\n\r\n');
 
         Backbone.Model.prototype.save.call(this, {}, _.extend({
-            data: blob.join(''),
+            data: new Blob(blob),
             processData: false,
             contentType: 'multipart/form-data; boundary=' + boundary,
-            xhr: this._binaryXHR
         }, options));
-    },
-
-    /*
-     * Builds a binary-capable XHR.
-     *
-     * Since we must send files as blob data, and not all XHR implementations
-     * do this by default, we must override the XHR and change which send
-     * function it will use.
-     */
-    _binaryXHR: function() {
-        var xhr = $.ajaxSettings.xhr();
-
-        xhr.send = xhr.sendAsBinary;
-
-        return xhr;
     },
 
     /*

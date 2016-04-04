@@ -16,6 +16,7 @@ from reviewboard.reviews.models.base_comment import BaseComment
 from reviewboard.reviews.models.diff_comment import Comment
 from reviewboard.reviews.models.file_attachment_comment import \
     FileAttachmentComment
+from reviewboard.reviews.models.general_comment import GeneralComment
 from reviewboard.reviews.models.review_request import (ReviewRequest,
                                                        fetch_issue_counts)
 from reviewboard.reviews.models.screenshot_comment import ScreenshotComment
@@ -94,6 +95,11 @@ class Review(models.Model):
         FileAttachmentComment,
         verbose_name=_("file attachment comments"),
         related_name="review",
+        blank=True)
+    general_comments = models.ManyToManyField(
+        GeneralComment,
+        verbose_name=_('general comments'),
+        related_name='review',
         blank=True)
 
     extra_data = JSONField(null=True)
@@ -226,6 +232,7 @@ class Review(models.Model):
         self.comments.update(timestamp=self.timestamp)
         self.screenshot_comments.update(timestamp=self.timestamp)
         self.file_attachment_comments.update(timestamp=self.timestamp)
+        self.general_comments.update(timestamp=self.timestamp)
 
         # Update the last_updated timestamp and the last review activity
         # timestamp on the review request.
@@ -272,6 +279,7 @@ class Review(models.Model):
         self.comments.all().delete()
         self.screenshot_comments.all().delete()
         self.file_attachment_comments.all().delete()
+        self.general_comments.all().delete()
 
         super(Review, self).delete()
 
@@ -283,7 +291,8 @@ class Review(models.Model):
         """Return a list of all contained comments of all types."""
         return (list(self.comments.filter(**kwargs)) +
                 list(self.screenshot_comments.filter(**kwargs)) +
-                list(self.file_attachment_comments.filter(**kwargs)))
+                list(self.file_attachment_comments.filter(**kwargs)) +
+                list(self.general_comments.filter(**kwargs)))
 
     class Meta:
         app_label = 'reviews'

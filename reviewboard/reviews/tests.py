@@ -7,6 +7,7 @@ import os
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.urlresolvers import reverse
 from django.template import Context, Template
 from django.test.client import RequestFactory
 from django.utils import six
@@ -27,6 +28,7 @@ from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
                                                 normalize_text_for_edit)
 from reviewboard.reviews.models import (Comment,
                                         DefaultReviewer,
+                                        GeneralComment,
                                         Group,
                                         ReviewRequest,
                                         ReviewRequestDraft,
@@ -1163,6 +1165,56 @@ class ViewTests(TestCase):
         self.assertEqual(replies[0].text, comment_text_3)
         self.assertEqual(replies[1].text, comment_text_2)
 
+    def test_review_detail_general_comment_ordering(self):
+        """Testing review_detail and ordering of general comments on a
+        review
+        """
+        comment_text_1 = "Comment text 1"
+        comment_text_2 = "Comment text 2"
+        comment_text_3 = "Comment text 3"
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        # Create the users who will be commenting.
+        user1 = User.objects.get(username='doc')
+        user2 = User.objects.get(username='dopey')
+
+        # Create the master review.
+        main_review = self.create_review(review_request, user=user1)
+        main_comment = self.create_general_comment(main_review,
+                                                   text=comment_text_1)
+        main_review.publish()
+
+        # First reply
+        reply1 = self.create_reply(
+            main_review,
+            user=user1,
+            timestamp=(main_review.timestamp + timedelta(days=1)))
+        self.create_general_comment(reply1, text=comment_text_2,
+                                    reply_to=main_comment)
+
+        # Second reply
+        reply2 = self.create_reply(
+            main_review,
+            user=user2,
+            timestamp=(main_review.timestamp + timedelta(days=2)))
+        self.create_general_comment(reply2, text=comment_text_3,
+                                    reply_to=main_comment)
+
+        # Publish them out of order.
+        reply2.publish()
+        reply1.publish()
+
+        # Make sure they published in the order expected.
+        self.assertTrue(reply1.timestamp > reply2.timestamp)
+
+        # Make sure they're looked up in the order expected.
+        comments = list(GeneralComment.objects.filter(
+            review__review_request=review_request))
+        self.assertEqual(len(comments), 3)
+        self.assertEqual(comments[0].text, comment_text_1)
+        self.assertEqual(comments[1].text, comment_text_3)
+        self.assertEqual(comments[2].text, comment_text_2)
+
     def test_review_detail_file_attachment_visibility(self):
         """Testing visibility of file attachments on review requests."""
         caption_1 = 'File Attachment 1'
@@ -1602,6 +1654,556 @@ class ViewTests(TestCase):
                            [len('attachment; filename='):]
         self.assertFalse(',' in filename)
 
+    # Bug #4080
+    def test_bug_url_with_custom_scheme(self):
+        """Testing whether bug url with non-HTTP scheme loads correctly"""
+        # Create a repository with a bug tracker that uses a non-standard
+        # url scheme.
+        repository = self.create_repository(public=True,
+                                            bug_tracker='scheme://bugid=%s')
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        url = reverse('bug_url', args=(review_request.pk, '1'))
+        response = self.client.get(url)
+
+        # Test if we redirected to the correct url with correct bugID.
+        self.assertEqual(response['Location'], 'scheme://bugid=1')
+
+    def test_preview_review_request_email_access_with_debug(self):
+        """Testing preview_review_request_email access with DEBUG=True"""
+        review_request = self.create_review_request(publish=True)
+
+        with self.settings(DEBUG=True):
+            response = self.client.get(
+                local_site_reverse(
+                    'preview-review-request-email',
+                    kwargs={
+                        'review_request_id': review_request.pk,
+                        'format': 'text',
+                    }))
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_preview_review_request_email_access_without_debug(self):
+        """Testing preview_review_request_email access with DEBUG=False"""
+        review_request = self.create_review_request(publish=True)
+
+        with self.settings(DEBUG=False):
+            response = self.client.get(
+                local_site_reverse(
+                    'preview-review-request-email',
+                    kwargs={
+                        'review_request_id': review_request.pk,
+                        'format': 'text',
+                    }))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_preview_review_request_email_with_valid_change_id(self):
+        """Testing preview_review_request_email access with valid change ID"""
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+
+        self.create_diffset(review_request, draft=True)
+        review_request.publish(review_request.submitter)
+
+        with self.settings(DEBUG=True):
+            response = self.client.get(
+                local_site_reverse(
+                    'preview-review-request-email',
+                    kwargs={
+                        'review_request_id': review_request.pk,
+                        'format': 'text',
+                        'changedesc_id': review_request.changedescs.get().pk,
+                    }))
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_preview_review_request_email_with_invalid_change_id(self):
+        """Testing preview_review_request_email access with invalid change ID
+        """
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+
+        self.create_diffset(review_request, draft=True)
+        review_request.publish(review_request.submitter)
+
+        with self.settings(DEBUG=True):
+            response = self.client.get(
+                local_site_reverse(
+                    'preview-review-request-email',
+                    kwargs={
+                        'review_request_id': review_request.pk,
+                        'format': 'text',
+                        'changedesc_id': 100,
+                    }))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_preview_review_email_access_with_debug(self):
+        """Testing preview_review_email access with DEBUG=True"""
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, publish=True)
+
+        with self.settings(DEBUG=True):
+            response = self.client.get(
+                local_site_reverse(
+                    'preview-review-email',
+                    kwargs={
+                        'review_request_id': review_request.pk,
+                        'review_id': review.pk,
+                        'format': 'text',
+                    }))
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_preview_review_email_access_without_debug(self):
+        """Testing preview_review_email access with DEBUG=False"""
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, publish=True)
+
+        with self.settings(DEBUG=False):
+            response = self.client.get(
+                local_site_reverse(
+                    'preview-review-email',
+                    kwargs={
+                        'review_request_id': review_request.pk,
+                        'review_id': review.pk,
+                        'format': 'text',
+                    }))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_preview_review_reply_email_access_with_debug(self):
+        """Testing preview_review_reply_email access with DEBUG=True"""
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, publish=True)
+        reply = self.create_reply(review, publish=True)
+
+        with self.settings(DEBUG=True):
+            response = self.client.get(
+                local_site_reverse(
+                    'preview-review-reply-email',
+                    kwargs={
+                        'review_request_id': review_request.pk,
+                        'review_id': review.pk,
+                        'reply_id': reply.pk,
+                        'format': 'text',
+                    }))
+
+        self.assertEqual(response.status_code, 200)
+
+    def test_preview_review_reply_email_access_without_debug(self):
+        """Testing preview_review_reply_email access with DEBUG=False"""
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, publish=True)
+        reply = self.create_reply(review, publish=True)
+
+        with self.settings(DEBUG=False):
+            response = self.client.get(
+                local_site_reverse(
+                    'preview-review-reply-email',
+                    kwargs={
+                        'review_request_id': review_request.pk,
+                        'review_id': review.pk,
+                        'reply_id': reply.pk,
+                        'format': 'text',
+                    }))
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_view_screenshot_access_with_valid_id(self):
+        """Testing view_screenshot access with valid screenshot for review
+        request
+        """
+        review_request = self.create_review_request(publish=True)
+        screenshot = self.create_screenshot(review_request)
+
+        response = self.client.get(
+            local_site_reverse(
+                'screenshot',
+                kwargs={
+                    'review_request_id': review_request.pk,
+                    'screenshot_id': screenshot.pk,
+                }))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_screenshot_access_with_valid_id_and_draft(self):
+        """Testing view_screenshot access with valid screenshot for review
+        request draft
+        """
+        review_request = self.create_review_request(publish=True)
+        screenshot = self.create_screenshot(review_request, draft=True)
+
+        # Log in so that we can check against the draft.
+        username = review_request.submitter.username
+        self.client.login(username=username, password=username)
+
+        response = self.client.get(
+            local_site_reverse(
+                'screenshot',
+                kwargs={
+                    'review_request_id': review_request.pk,
+                    'screenshot_id': screenshot.pk,
+                }))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_screenshot_access_with_valid_inactive_id(self):
+        """Testing view_screenshot access with valid inactive screenshot for
+        review request
+        """
+        review_request = self.create_review_request(publish=True)
+        screenshot = self.create_screenshot(review_request, active=False)
+
+        response = self.client.get(
+            local_site_reverse(
+                'screenshot',
+                kwargs={
+                    'review_request_id': review_request.pk,
+                    'screenshot_id': screenshot.pk,
+                }))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_screenshot_access_with_valid_inactive_id_and_draft(self):
+        """Testing view_screenshot access with valid inactive screenshot for
+        review request draft
+        """
+        review_request = self.create_review_request(publish=True)
+        screenshot = self.create_screenshot(review_request, draft=True,
+                                            active=False)
+
+        # Log in so that we can check against the draft.
+        username = review_request.submitter.username
+        self.client.login(username=username, password=username)
+
+        response = self.client.get(
+            local_site_reverse(
+                'screenshot',
+                kwargs={
+                    'review_request_id': review_request.pk,
+                    'screenshot_id': screenshot.pk,
+                }))
+        self.assertEqual(response.status_code, 200)
+
+    def test_view_screenshot_access_with_invalid_id(self):
+        """Testing view_screenshot access with invalid screenshot for review
+        request
+        """
+        review_request = self.create_review_request(publish=True)
+        screenshot = self.create_screenshot(review_request)
+
+        review_request2 = self.create_review_request(publish=True)
+
+        response = self.client.get(
+            local_site_reverse(
+                'screenshot',
+                kwargs={
+                    'review_request_id': review_request2.pk,
+                    'screenshot_id': screenshot.pk,
+                }))
+        self.assertEqual(response.status_code, 404)
+
+    def test_view_screenshot_access_with_invalid_id_and_draft(self):
+        """Testing view_screenshot access with invalid screenshot for review
+        request draft
+        """
+        review_request = self.create_review_request(publish=True)
+        screenshot = self.create_screenshot(review_request, draft=True)
+
+        review_request2 = self.create_review_request(publish=True)
+
+        # Log in so that we can check against the draft.
+        username = review_request.submitter.username
+        self.client.login(username=username, password=username)
+
+        response = self.client.get(
+            local_site_reverse(
+                'screenshot',
+                kwargs={
+                    'review_request_id': review_request2.pk,
+                    'screenshot_id': screenshot.pk,
+                }))
+        self.assertEqual(response.status_code, 404)
+
+    def test_view_screenshot_access_with_invalid_inactive_id(self):
+        """Testing view_screenshot access with invalid inactive screenshot
+        for review request
+        """
+        review_request = self.create_review_request(publish=True)
+        screenshot = self.create_screenshot(review_request, active=False)
+
+        review_request2 = self.create_review_request(publish=True)
+
+        response = self.client.get(
+            local_site_reverse(
+                'screenshot',
+                kwargs={
+                    'review_request_id': review_request2.pk,
+                    'screenshot_id': screenshot.pk,
+                }))
+        self.assertEqual(response.status_code, 404)
+
+    def test_view_screenshot_access_with_invalid_inactive_id_and_draft(self):
+        """Testing view_screenshot access with invalid inactive screenshot
+        for review request draft
+        """
+        review_request = self.create_review_request(publish=True)
+        screenshot = self.create_screenshot(review_request, draft=True,
+                                            active=False)
+
+        review_request2 = self.create_review_request(publish=True)
+
+        # Log in so that we can check against the draft.
+        username = review_request.submitter.username
+        self.client.login(username=username, password=username)
+
+        response = self.client.get(
+            local_site_reverse(
+                'screenshot',
+                kwargs={
+                    'review_request_id': review_request2.pk,
+                    'screenshot_id': screenshot.pk,
+                }))
+        self.assertEqual(response.status_code, 404)
+
+    def test_review_file_attachment_access_with_valid_id(self):
+        """Testing review_file_attachment access with valid attachment for
+        review request
+        """
+        review_request = self.create_review_request(publish=True)
+        attachment = self.create_file_attachment(review_request)
+
+        response = self.client.get(
+            local_site_reverse(
+                'file-attachment',
+                kwargs={
+                    'review_request_id': review_request.pk,
+                    'file_attachment_id': attachment.pk,
+                }))
+        self.assertEqual(response.status_code, 200)
+
+    def test_review_file_attachment_access_with_valid_id_and_draft(self):
+        """Testing review_file_attachment access with valid attachment for
+        review request draft
+        """
+        review_request = self.create_review_request(publish=True)
+        attachment = self.create_file_attachment(review_request, draft=True)
+
+        # Log in so that we can check against the draft.
+        username = review_request.submitter.username
+        self.client.login(username=username, password=username)
+
+        response = self.client.get(
+            local_site_reverse(
+                'file-attachment',
+                kwargs={
+                    'review_request_id': review_request.pk,
+                    'file_attachment_id': attachment.pk,
+                }))
+        self.assertEqual(response.status_code, 200)
+
+    def test_review_file_attachment_access_with_invalid_id(self):
+        """Testing review_file_attachment access with invalid attachment for
+        review request
+        """
+        review_request = self.create_review_request(publish=True)
+        attachment = self.create_file_attachment(review_request)
+
+        review_request2 = self.create_review_request(publish=True)
+
+        response = self.client.get(
+            local_site_reverse(
+                'file-attachment',
+                kwargs={
+                    'review_request_id': review_request2.pk,
+                    'file_attachment_id': attachment.pk,
+                }))
+        self.assertEqual(response.status_code, 404)
+
+    def test_review_file_attachment_access_with_invalid_id_and_draft(self):
+        """Testing review_file_attachment access with invalid attachment for
+        review request draft
+        """
+        review_request = self.create_review_request(publish=True)
+        attachment = self.create_file_attachment(review_request, draft=True)
+
+        review_request2 = self.create_review_request(publish=True)
+
+        # Log in so that we can check against the draft.
+        username = review_request.submitter.username
+        self.client.login(username=username, password=username)
+
+        response = self.client.get(
+            local_site_reverse(
+                'file-attachment',
+                kwargs={
+                    'review_request_id': review_request2.pk,
+                    'file_attachment_id': attachment.pk,
+                }))
+        self.assertEqual(response.status_code, 404)
+
+    def test_review_file_attachment_access_with_valid_inactive_id(self):
+        """Testing review_file_attachment access with valid inactive
+        attachment for review request
+        """
+        review_request = self.create_review_request(publish=True)
+        attachment = self.create_file_attachment(review_request, active=False)
+
+        response = self.client.get(
+            local_site_reverse(
+                'file-attachment',
+                kwargs={
+                    'review_request_id': review_request.pk,
+                    'file_attachment_id': attachment.pk,
+                }))
+        self.assertEqual(response.status_code, 200)
+
+    def test_review_file_attachment_access_with_valid_inactive_id_draft(self):
+        """Testing review_file_attachment access with valid inactive
+        attachment for review request draft
+        """
+        review_request = self.create_review_request(publish=True)
+        attachment = self.create_file_attachment(review_request, draft=True,
+                                                 active=False)
+
+        # Log in so that we can check against the draft.
+        username = review_request.submitter.username
+        self.client.login(username=username, password=username)
+
+        response = self.client.get(
+            local_site_reverse(
+                'file-attachment',
+                kwargs={
+                    'review_request_id': review_request.pk,
+                    'file_attachment_id': attachment.pk,
+                }))
+        self.assertEqual(response.status_code, 200)
+
+    def test_review_file_attachment_access_with_invalid_inactive_id(self):
+        """Testing review_file_attachment access with invalid inactive
+        attachment for review request
+        """
+        review_request = self.create_review_request(publish=True)
+        attachment = self.create_file_attachment(review_request, active=False)
+
+        review_request2 = self.create_review_request(publish=True)
+
+        response = self.client.get(
+            local_site_reverse(
+                'file-attachment',
+                kwargs={
+                    'review_request_id': review_request2.pk,
+                    'file_attachment_id': attachment.pk,
+                }))
+        self.assertEqual(response.status_code, 404)
+
+    def test_review_file_attachment_access_invalid_inactive_id_draft(self):
+        """Testing review_file_attachment access with invalid inactive
+        attachment for review request draft
+        """
+        review_request = self.create_review_request(publish=True)
+        attachment = self.create_file_attachment(review_request, draft=True,
+                                                 active=False)
+
+        review_request2 = self.create_review_request(publish=True)
+
+        # Log in so that we can check against the draft.
+        username = review_request.submitter.username
+        self.client.login(username=username, password=username)
+
+        response = self.client.get(
+            local_site_reverse(
+                'file-attachment',
+                kwargs={
+                    'review_request_id': review_request2.pk,
+                    'file_attachment_id': attachment.pk,
+                }))
+        self.assertEqual(response.status_code, 404)
+
+    def test_review_file_attachment_access_with_valid_diff_against_id(self):
+        """Testing review_file_attachment access with valid diff-against
+        attachment for review request
+        """
+        review_request = self.create_review_request(publish=True)
+        attachment = self.create_file_attachment(review_request)
+        attachment2 = self.create_file_attachment(review_request)
+
+        response = self.client.get(
+            local_site_reverse(
+                'file-attachment',
+                kwargs={
+                    'review_request_id': review_request.pk,
+                    'file_attachment_id': attachment.pk,
+                    'file_attachment_diff_id': attachment2.pk,
+                }))
+        self.assertEqual(response.status_code, 200)
+
+    def test_review_file_attachment_access_valid_diff_against_id_draft(self):
+        """Testing review_file_attachment access with valid diff-against
+        attachment for review request draft
+        """
+        review_request = self.create_review_request(publish=True)
+        attachment = self.create_file_attachment(review_request)
+        attachment2 = self.create_file_attachment(review_request, draft=True)
+
+        # Log in so that we can check against the draft.
+        username = review_request.submitter.username
+        self.client.login(username=username, password=username)
+
+        response = self.client.get(
+            local_site_reverse(
+                'file-attachment',
+                kwargs={
+                    'review_request_id': review_request.pk,
+                    'file_attachment_id': attachment.pk,
+                    'file_attachment_diff_id': attachment2.pk,
+                }))
+        self.assertEqual(response.status_code, 200)
+
+    def test_review_file_attachment_access_with_invalid_diff_against_id(self):
+        """Testing review_file_attachment access with invalid diff-against
+        attachment for review request
+        """
+        review_request = self.create_review_request(publish=True)
+        attachment = self.create_file_attachment(review_request)
+
+        review_request2 = self.create_review_request(publish=True)
+        attachment2 = self.create_file_attachment(review_request2)
+
+        response = self.client.get(
+            local_site_reverse(
+                'file-attachment',
+                kwargs={
+                    'review_request_id': review_request.pk,
+                    'file_attachment_id': attachment.pk,
+                    'file_attachment_diff_id': attachment2.pk,
+                }))
+        self.assertEqual(response.status_code, 404)
+
+    def test_review_file_attachment_access_invalid_diff_against_id_draft(self):
+        """Testing review_file_attachment access with invalid diff-against
+        attachment for review request draft
+        """
+        review_request = self.create_review_request(publish=True)
+        attachment = self.create_file_attachment(review_request)
+
+        review_request2 = self.create_review_request(publish=True)
+        attachment2 = self.create_file_attachment(review_request2, draft=True)
+
+        # Log in so that we can check against the draft.
+        username = review_request.submitter.username
+        self.client.login(username=username, password=username)
+
+        response = self.client.get(
+            local_site_reverse(
+                'file-attachment',
+                kwargs={
+                    'review_request_id': review_request.pk,
+                    'file_attachment_id': attachment.pk,
+                    'file_attachment_diff_id': attachment2.pk,
+                }))
+        self.assertEqual(response.status_code, 404)
+
 
 class DraftTests(TestCase):
     fixtures = ['test_users', 'test_scmtools']
@@ -1910,6 +2512,35 @@ class DefaultReviewerTests(TestCase):
         self.assertEqual(len(default_reviewers), 1)
         self.assertIn(default_reviewer2, default_reviewers)
 
+    def test_review_request_add_default_reviewer_with_inactive_user(self):
+        """Testing adding default reviewer with inactive user to review request
+        """
+        tool = Tool.objects.get(name='CVS')
+
+        default_reviewer1 = DefaultReviewer(name="Test", file_regex=".*")
+        default_reviewer1.save()
+
+        repo1 = Repository(name='Test1', path='path1', tool=tool)
+        repo1.save()
+        default_reviewer1.repository.add(repo1)
+
+        user1 = User(username='User1')
+        user1.save()
+        default_reviewer1.people.add(user1)
+
+        user2 = User(username='User2', is_active=False)
+        user2.save()
+        default_reviewer1.people.add(user2)
+
+        review_request = self.create_review_request(repository=repo1,
+                                                    submitter=user1)
+        diffset = self.create_diffset(review_request)
+        self.create_filediff(diffset)
+        review_request.add_default_reviewers()
+        self.assertIn(user1, review_request.target_people.all())
+        self.assertNotIn(user2, review_request.target_people.all())
+
+
     def test_form_with_localsite(self):
         """Testing DefaultReviewerForm with a LocalSite."""
         test_site = LocalSite.objects.create(name='test')
@@ -1934,10 +2565,10 @@ class DefaultReviewerTests(TestCase):
         self.assertTrue(form.is_valid())
         default_reviewer = form.save()
 
-        self.assertEquals(default_reviewer.local_site, test_site)
-        self.assertEquals(default_reviewer.repository.get(), repo)
-        self.assertEquals(default_reviewer.people.get(), user)
-        self.assertEquals(default_reviewer.groups.get(), group)
+        self.assertEqual(default_reviewer.local_site, test_site)
+        self.assertEqual(default_reviewer.repository.get(), repo)
+        self.assertEqual(default_reviewer.people.get(), user)
+        self.assertEqual(default_reviewer.groups.get(), group)
 
     def test_form_with_localsite_and_bad_user(self):
         """Testing DefaultReviewerForm with a User not on the same LocalSite.
@@ -2021,8 +2652,8 @@ class GroupTests(TestCase):
         self.assertTrue(form.is_valid())
         group = form.save()
 
-        self.assertEquals(group.local_site, test_site)
-        self.assertEquals(group.users.get(), user)
+        self.assertEqual(group.local_site, test_site)
+        self.assertEqual(group.users.get(), user)
 
     def test_form_with_localsite_and_bad_user(self):
         """Tests GroupForm with a User not on the same LocalSite."""
@@ -2667,6 +3298,14 @@ class IssueCounterTests(TestCase):
             lambda review, issue_opened: self.create_file_attachment_comment(
                 review, file_attachment, issue_opened=issue_opened))
 
+    def test_init_with_general_comments(self):
+        """Testing ReviewRequest issue counter initialization
+        from general comments
+        """
+        self._test_issue_counts(
+            lambda review, issue_opened: self.create_general_comment(
+                review, issue_opened=issue_opened))
+
     def test_init_with_screenshot_comments(self):
         """Testing ReviewRequest issue counter initialization
         from screenshot comments
@@ -2711,6 +3350,11 @@ class IssueCounterTests(TestCase):
         self.create_screenshot_comment(review, screenshot, issue_opened=True)
         self.create_screenshot_comment(review, screenshot, issue_opened=True)
 
+        # Three open general comments
+        self.create_general_comment(review, issue_opened=True)
+        self.create_general_comment(review, issue_opened=True)
+        self.create_general_comment(review, issue_opened=True)
+
         # The issue counts should be end up being 0, since they'll initialize
         # during load.
         self._reload_object(clear_counters=True)
@@ -2718,23 +3362,25 @@ class IssueCounterTests(TestCase):
         self.assertEqual(self.review_request.issue_resolved_count, 0)
         self.assertEqual(self.review_request.issue_dropped_count, 0)
 
-        # Now publish. We should have 7 open issues, by way of incrementing
+        # Now publish. We should have 10 open issues, by way of incrementing
         # during publish.
         review.publish()
 
         self._reload_object()
-        self.assertEqual(self.review_request.issue_open_count, 7)
+        self.assertEqual(self.review_request.issue_open_count, 10)
         self.assertEqual(self.review_request.issue_dropped_count, 0)
         self.assertEqual(self.review_request.issue_resolved_count, 0)
 
         # Make sure we get the same number back when initializing counters.
         self._reload_object(clear_counters=True)
-        self.assertEqual(self.review_request.issue_open_count, 7)
+        self.assertEqual(self.review_request.issue_open_count, 10)
         self.assertEqual(self.review_request.issue_dropped_count, 0)
         self.assertEqual(self.review_request.issue_resolved_count, 0)
 
-    def test_init_with_replies(self):
-        """Testing ReviewRequest issue counter initialization and replies."""
+    def test_init_file_attachment_comment_with_replies(self):
+        """Testing ReviewRequest file attachment comment issue counter
+        initialization and replies.
+        """
         file_attachment = self.create_file_attachment(self.review_request)
 
         review = self.create_review(self.review_request)
@@ -2753,8 +3399,28 @@ class IssueCounterTests(TestCase):
         self.assertEqual(self.review_request.issue_resolved_count, 0)
         self.assertEqual(self.review_request.issue_dropped_count, 0)
 
-    def test_save_reply_comment(self):
-        """Testing ReviewRequest issue counter and saving reply comments."""
+    def test_init_general_comment_with_replies(self):
+        """Testing ReviewRequest general comment issue counter initialization
+        and replies.
+        """
+        review = self.create_review(self.review_request)
+        comment = self.create_general_comment(review, issue_opened=True)
+        review.publish()
+
+        reply = self.create_reply(review)
+        self.create_general_comment(reply, reply_to=comment,
+                                    issue_opened=True)
+        reply.publish()
+
+        self._reload_object(clear_counters=True)
+        self.assertEqual(self.review_request.issue_open_count, 1)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+
+    def test_save_reply_comment_to_file_attachment_comment(self):
+        """Testing ReviewRequest file attachment comment issue counter and
+        saving reply comments.
+        """
         file_attachment = self.create_file_attachment(self.review_request)
 
         review = self.create_review(self.review_request)
@@ -2772,6 +3438,35 @@ class IssueCounterTests(TestCase):
             reply, file_attachment,
             reply_to=comment,
             issue_opened=True)
+        reply.publish()
+
+        self._reload_object()
+        self.assertEqual(self.review_request.issue_open_count, 1)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+
+        reply_comment.save()
+        self._reload_object()
+        self.assertEqual(self.review_request.issue_open_count, 1)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+
+    def test_save_reply_comment_to_general_comment(self):
+        """Testing ReviewRequest general comment issue counter and saving
+        reply comments.
+        """
+        review = self.create_review(self.review_request)
+        comment = self.create_general_comment(review, issue_opened=True)
+        review.publish()
+
+        self._reload_object(clear_counters=True)
+        self.assertEqual(self.review_request.issue_open_count, 1)
+        self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_dropped_count, 0)
+
+        reply = self.create_reply(review)
+        reply_comment = self.create_general_comment(
+            reply, reply_to=comment, issue_opened=True)
         reply.publish()
 
         self._reload_object()

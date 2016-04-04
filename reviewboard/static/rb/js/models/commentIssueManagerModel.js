@@ -17,7 +17,8 @@ RB.CommentIssueManager = Backbone.Model.extend({
      * @param reviewID the id for the review that the comment belongs to
      * @param commentID the id of the comment with the issue
      * @param commentType the type of comment, either "diff_comments",
-     *                     "screenshot_comments", or "file_attachment_comments".
+     *                     "screenshot_comments", "file_attachment_comments",
+     *                     or "general_comments".
      * @param state the state to set the comment issue to - either
      *              "open", "resolved", or "dropped"
      */
@@ -48,6 +49,10 @@ RB.CommentIssueManager = Backbone.Model.extend({
                 comment = reviewRequest
                     .createReview(reviewID)
                     .createFileAttachmentComment(commentID);
+            } else if (commentType === "general_comments") {
+                comment = reviewRequest
+                    .createReview(reviewID)
+                    .createGeneralComment(commentID);
             } else {
                 console.log("getComment received unexpected context type '%s'",
                             commentType);
@@ -73,7 +78,8 @@ RB.CommentIssueManager = Backbone.Model.extend({
                     success: function(comment, rsp) {
                         var rspComment = (rsp.diff_comment ||
                                           rsp.file_attachment_comment ||
-                                          rsp.screenshot_comment);
+                                          rsp.screenshot_comment ||
+                                          rsp.general_comment);
                         self.trigger('issueStatusUpdated', comment,
                                      oldIssueStatus, rspComment.timestamp);
                     }

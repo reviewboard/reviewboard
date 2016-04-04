@@ -61,6 +61,9 @@ def fetch_issue_counts(review_request, extra_query=None):
         'file_attachment_comments__pk',
         'file_attachment_comments__issue_opened',
         'file_attachment_comments__issue_status',
+        'general_comments__pk',
+        'general_comments__issue_opened',
+        'general_comments__issue_status',
         'screenshot_comments__pk',
         'screenshot_comments__issue_opened',
         'screenshot_comments__issue_status')
@@ -69,6 +72,7 @@ def fetch_issue_counts(review_request, extra_query=None):
         comment_fields = {
             'comments': set(),
             'file_attachment_comments': set(),
+            'general_comments': set(),
             'screenshot_comments': set(),
         }
 

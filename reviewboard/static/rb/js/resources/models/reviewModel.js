@@ -146,6 +146,14 @@ RB.Review = RB.BaseResource.extend({
         });
     },
 
+    createGeneralComment: function(id, issueOpened) {
+        return new RB.GeneralComment({
+            parentObject: this,
+            id: id,
+            issueOpened: issueOpened
+        });
+    },
+
     createReply: function() {
         var draftReply = this.get('draftReply');
 

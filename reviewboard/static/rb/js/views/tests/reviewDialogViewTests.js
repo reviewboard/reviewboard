@@ -10,6 +10,9 @@ suite('rb/views/ReviewDialogView', function() {
         emptyFileAttachmentCommentsPayload = _.defaults({
             file_attachment_comments: []
         }, baseEmptyCommentListPayload),
+        emptyGeneralCommentsPayload = _.defaults({
+            general_comments: []
+        }, baseEmptyCommentListPayload),
         emptyScreenshotCommentsPayload = _.defaults({
             screenshot_comments: []
         }, baseEmptyCommentListPayload),
@@ -46,6 +49,7 @@ suite('rb/views/ReviewDialogView', function() {
                 icon_url: 'data:image/gif;base64,'
             }
         }, baseCommentPayload),
+        generalCommentPayload = baseCommentPayload,
         screenshotCommentPayload = _.defaults({
             x: 10,
             y: 20,
@@ -85,7 +89,7 @@ suite('rb/views/ReviewDialogView', function() {
             parentObject: reviewRequest
         });
 
-        spyOn(review, 'ready').andCallFake(function(options, context) {
+        spyOn(review, 'ready').and.callFake(function(options, context) {
             options.ready.call(context);
         });
 
@@ -94,7 +98,7 @@ suite('rb/views/ReviewDialogView', function() {
          * cause the box to flash on screen during tests. Override this to
          * disallow fixed.
          */
-        spyOn($.fn, 'move').andCallFake(function(x, y, pos) {
+        spyOn($.fn, 'move').and.callFake(function(x, y, pos) {
             if (pos === 'fixed') {
                 pos = 'absolute';
             }
@@ -209,6 +213,7 @@ suite('rb/views/ReviewDialogView', function() {
                     bodyBottomText = 'My body bottom',
                     shipIt = true,
                     fileAttachmentCommentsPayload,
+                    generalCommentsPayload,
                     diffCommentsPayload,
                     screenshotCommentsPayload,
                     commentView,
@@ -228,6 +233,9 @@ suite('rb/views/ReviewDialogView', function() {
                             file_attachment_comments: {
                                 href: '/file-attachment-comments/'
                             },
+                            general_comments: {
+                               href: '/general-comments/'
+                            },
                             screenshot_comments: {
                                 href: '/screenshot-comments/'
                             }
@@ -240,8 +248,10 @@ suite('rb/views/ReviewDialogView', function() {
                         _.clone(emptyScreenshotCommentsPayload);
                     fileAttachmentCommentsPayload =
                         _.clone(emptyFileAttachmentCommentsPayload);
+                    generalCommentsPayload =
+                        _.clone(emptyGeneralCommentsPayload);
 
-                    spyOn($, 'ajax').andCallFake(function(options) {
+                    spyOn($, 'ajax').and.callFake(function(options) {
                         if (options.type === 'DELETE') {
                             options.success({});
                         } else if (options.url ===
@@ -251,6 +261,8 @@ suite('rb/views/ReviewDialogView', function() {
                             options.success(diffCommentsPayload);
                         } else if (options.url === '/screenshot-comments/') {
                             options.success(screenshotCommentsPayload);
+                        } else if (options.url === '/general-comments/') {
+                            options.success(generalCommentsPayload);
                         }
                     });
                 });
@@ -279,7 +291,7 @@ suite('rb/views/ReviewDialogView', function() {
 
                         testLoadReview();
 
-                        expect(review.ready.calls[0].args[0].data).toEqual({
+                        expect(review.ready.calls.argsFor(0)[0].data).toEqual({
                             'force-text-type': 'html',
                             'include-text-types': 'raw,markdown'
                         });
@@ -291,11 +303,95 @@ suite('rb/views/ReviewDialogView', function() {
 
                         testLoadReview();
 
-                        expect(review.ready.calls[0].args[0].data)
+                        expect(review.ready.calls.argsFor(0)[0].data)
                             .toEqual({
                                 'force-text-type': 'html',
                                 'include-text-types': 'raw'
                             });
+                    });
+                });
+
+                describe('General comments', function() {
+                    function testLoadGeneralComments(){
+                        generalCommentsPayload.total_results = 1;
+                        generalCommentsPayload.general_comments = [
+                            generalCommentPayload
+                        ];
+
+                        dlg = RB.ReviewDialogView.create({
+                            review: review,
+                            container: $testsScratch,
+                            reviewRequestEditor: reviewRequestEditor
+                        });
+
+                        expect($.ajax).toHaveBeenCalled();
+                        expect($.ajax.calls.argsFor(0)[0].url).toBe(
+                            '/general-comments/');
+                        ajaxData = $.ajax.calls.argsFor(0)[0].data;
+
+                        expect(dlg._commentViews.length).toBe(1);
+
+                        commentView = dlg._commentViews[0];
+                        expect(commentView.$editor.text())
+                            .toBe(generalCommentPayload.text);
+                        expect(commentView.$issueOpened.prop('checked')).toBe(
+                        generalCommentPayload.issue_opened);
+
+                        expect(dlg._bodyBottomView.$el.is(':visible')).toBe(true);
+                        expect(dlg._$spinner).toBe(null);
+                    }
+
+                    it('With defaultUseRichText=true', function() {
+                        RB.UserSession.instance.set('defaultUseRichText', true);
+
+                        testLoadGeneralComments();
+
+                        expect(ajaxData).toEqual({
+                            'api_format': 'json',
+                            'max-results': 50,
+                            'force-text-type': 'html',
+                            'include-text-types': 'raw,markdown'
+                        });
+                    });
+
+                    it('With defaultUseRichText=false', function() {
+                        RB.UserSession.instance.set('defaultUseRichText',
+                                                    false);
+
+                        testLoadGeneralComments();
+
+                        expect(ajaxData).toEqual({
+                            'api_format': 'json',
+                            'max-results': 50,
+                            'force-text-type': 'html',
+                            'include-text-types': 'raw'
+                        });
+                    });
+
+                     it('Deleting comment', function() {
+                        spyOn(window, 'confirm').and.callFake(function() {
+                            return true;
+                        });
+
+                        testLoadGeneralComments();
+
+                        expect(dlg._generalCommentsCollection.length).toBe(1);
+
+                        dlg.$('.delete-comment').click();
+                        expect(dlg._generalCommentsCollection.length).toBe(0);
+                    });
+
+                    it('Deleting comment and cancelling', function() {
+                        spyOn(window, 'confirm').and.callFake(function() {
+                            return false;
+                        });
+
+                        testLoadGeneralComments();
+
+                        expect(dlg._generalCommentsCollection.length).toBe(1);
+
+                        dlg.$('.delete-comment').click();
+                        expect(dlg._generalCommentsCollection.length).toBe(1);
                     });
                 });
 
@@ -314,11 +410,11 @@ suite('rb/views/ReviewDialogView', function() {
                         });
 
                         expect($.ajax).toHaveBeenCalled();
-                        expect($.ajax.calls[2].args[0].url).toBe(
+                        expect($.ajax.calls.argsFor(3)[0].url).toBe(
                             '/diff-comments/');
-                        ajaxData = $.ajax.calls[2].args[0].data;
+                        ajaxData = $.ajax.calls.argsFor(3)[0].data;
 
-                        expect(diffQueueProto.queueLoad.calls.length).toBe(1);
+                        expect(diffQueueProto.queueLoad.calls.count()).toBe(1);
                         expect(diffQueueProto.loadFragments).toHaveBeenCalled();
                         expect(dlg._commentViews.length).toBe(1);
 
@@ -365,7 +461,7 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                     it('Deleting comment', function() {
-                        spyOn(window, 'confirm').andCallFake(function() {
+                        spyOn(window, 'confirm').and.callFake(function() {
                             return true;
                         });
 
@@ -377,7 +473,7 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                     it('Deleting comment and cancelling', function() {
-                        spyOn(window, 'confirm').andCallFake(function() {
+                        spyOn(window, 'confirm').and.callFake(function() {
                             return false;
                         });
 
@@ -402,9 +498,9 @@ suite('rb/views/ReviewDialogView', function() {
                         });
 
                         expect($.ajax).toHaveBeenCalled();
-                        expect($.ajax.calls[1].args[0].url).toBe(
+                        expect($.ajax.calls.argsFor(2)[0].url).toBe(
                             '/file-attachment-comments/');
-                        ajaxData = $.ajax.calls[1].args[0].data;
+                        ajaxData = $.ajax.calls.argsFor(2)[0].data;
 
                         expect(dlg._commentViews.length).toBe(1);
 
@@ -457,7 +553,7 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                     it('Deleting comment', function() {
-                        spyOn(window, 'confirm').andCallFake(function() {
+                        spyOn(window, 'confirm').and.callFake(function() {
                             return true;
                         });
 
@@ -471,7 +567,7 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                     it('Deleting comment and cancelling', function() {
-                        spyOn(window, 'confirm').andCallFake(function() {
+                        spyOn(window, 'confirm').and.callFake(function() {
                             return false;
                         });
 
@@ -499,9 +595,9 @@ suite('rb/views/ReviewDialogView', function() {
                         dlg = createReviewDialog();
 
                         expect($.ajax).toHaveBeenCalled();
-                        expect($.ajax.calls[0].args[0].url).toBe(
+                        expect($.ajax.calls.argsFor(1)[0].url).toBe(
                             '/screenshot-comments/');
-                        ajaxData = $.ajax.calls[0].args[0].data;
+                        ajaxData = $.ajax.calls.argsFor(1)[0].data;
 
                         expect(dlg._commentViews.length).toBe(1);
 
@@ -562,7 +658,7 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                     it('Deleting comment', function() {
-                        spyOn(window, 'confirm').andCallFake(function() {
+                        spyOn(window, 'confirm').and.callFake(function() {
                             return true;
                         });
 
@@ -577,7 +673,7 @@ suite('rb/views/ReviewDialogView', function() {
                     });
 
                     it('Deleting comment and cancelling', function() {
-                        spyOn(window, 'confirm').andCallFake(function() {
+                        spyOn(window, 'confirm').and.callFake(function() {
                             return false;
                         });
 
@@ -596,6 +692,7 @@ suite('rb/views/ReviewDialogView', function() {
 
         describe('Saving', function() {
             var fileAttachmentCommentsPayload,
+                generalCommentsPayload,
                 diffCommentsPayload,
                 screenshotCommentsPayload,
                 commentView,
@@ -636,6 +733,9 @@ suite('rb/views/ReviewDialogView', function() {
                         file_attachment_comments: {
                             href: '/file-attachment-comments/'
                         },
+                        general_comments: {
+                            href: '/general-comments/'
+                        },
                         screenshot_comments: {
                             href: '/screenshot-comments/'
                         }
@@ -648,21 +748,25 @@ suite('rb/views/ReviewDialogView', function() {
                     _.clone(emptyScreenshotCommentsPayload);
                 fileAttachmentCommentsPayload =
                     _.clone(emptyFileAttachmentCommentsPayload);
+                generalCommentsPayload =
+                    _.clone(emptyGeneralCommentsPayload);
 
-                spyOn(review, 'save').andCallFake(
+                spyOn(review, 'save').and.callFake(
                     function(options, context) {
                         if (options && options.success) {
                             options.success.call(context);
                         }
                     });
 
-                spyOn($, 'ajax').andCallFake(function(options) {
+                spyOn($, 'ajax').and.callFake(function(options) {
                     if (options.url === '/file-attachment-comments/') {
                         options.success(fileAttachmentCommentsPayload);
                     } else if (options.url === '/diff-comments/') {
                         options.success(diffCommentsPayload);
                     } else if (options.url === '/screenshot-comments/') {
                         options.success(screenshotCommentsPayload);
+                    } else if (options.url === '/general-comments/') {
+                        options.success(generalCommentsPayload);
                     }
                 });
             });
@@ -760,6 +864,23 @@ suite('rb/views/ReviewDialogView', function() {
                     fileAttachmentCommentsPayload.total_results = 1;
                     fileAttachmentCommentsPayload.file_attachment_comments = [
                         fileAttachmentCommentPayload
+                    ];
+                });
+
+                it('For Markdown', function() {
+                    testSaveComment(true);
+                });
+
+                it('For plain text', function() {
+                    testSaveComment(false);
+                });
+            });
+
+            describe('General comments', function() {
+                beforeEach(function() {
+                    generalCommentsPayload.total_results = 1;
+                    generalCommentsPayload.general_comments = [
+                        generalCommentPayload
                     ];
                 });
 

@@ -24,6 +24,14 @@ File Attachment: {% if comment.file_attachment.caption %}{{comment.file_attachme
 {{comment.text|markdown_email_text:comment.rich_text}}
 {% endcondense %}{% endfilter %}
 
+{% endfor %}{% for comment in review.general_comments.all %}
+
+{% filter indent %}{% condense 2 %}
+{%  comment_detail_display_hook comment "text-email" %}
+
+{{comment.text|markdown_email_text:comment.rich_text}}
+{% endcondense %}{% endfilter %}
+
 {% endfor %}{% for comment in review.screenshot_comments.all %}
 
 Screenshot: {{ comment.screenshot.caption }}
