@@ -78,7 +78,6 @@ def set_siteconfig_settings(settings):
         load_site_config()
 
 
-
 class DummyExtension(Extension):
     registration = RegisteredExtension()
 
@@ -393,7 +392,7 @@ class HostingServiceHookTests(TestCase):
         hook = HostingServiceHook(extension=self.extension,
                                   service_cls=TestService)
 
-        hook.shutdown()
+        hook.disable_hook()
 
         self.assertEqual(None, get_hosting_service(TestService.name))
 
@@ -433,7 +432,7 @@ class AdminWidgetHookTests(TestCase):
         """Testing AdminWidgetHook unitializing"""
         hook = AdminWidgetHook(extension=self.extension, widget_cls=TestWidget)
 
-        hook.shutdown()
+        hook.disable_hook()
 
         self.assertNotIn(TestWidget, secondary_widgets)
 
@@ -556,7 +555,7 @@ class WebAPICapabilitiesHookTests(BaseWebAPITestCase):
                 'thorough': True,
             })
 
-        hook.shutdown()
+        hook.disable_hook()
 
         rsp = self.api_get(path=self.url,
                            expected_mimetype=root_item_mimetype)
@@ -581,42 +580,43 @@ class SandboxExtension(Extension):
         super(SandboxExtension, self).__init__(*args, **kwargs)
 
 
-class ReviewRequestApprovalTestHook(ReviewRequestApprovalHook):
+class SandboxReviewRequestApprovalTestHook(ReviewRequestApprovalHook):
     def is_approved(self, review_request, prev_approved, prev_failure):
         raise Exception
 
 
-class NavigationBarTestHook(NavigationBarHook):
+class SandboxNavigationBarTestHook(NavigationBarHook):
     def get_entries(self, context):
         raise Exception
 
 
-class DiffViewerActionTestHook(DiffViewerActionHook):
+class SandboxDiffViewerActionTestHook(DiffViewerActionHook):
     def get_actions(self, context):
         raise Exception
 
 
-class HeaderActionTestHook(HeaderActionHook):
+class SandboxHeaderActionTestHook(HeaderActionHook):
     def get_actions(self, context):
         raise Exception
 
 
-class HeaderDropdownActionTestHook(HeaderDropdownActionHook):
+class SandboxHeaderDropdownActionTestHook(HeaderDropdownActionHook):
     def get_actions(self, context):
         raise Exception
 
 
-class ReviewRequestActionTestHook(ReviewRequestActionHook):
+class SandboxReviewRequestActionTestHook(ReviewRequestActionHook):
     def get_actions(self, context):
         raise Exception
 
 
-class ReviewRequestDropdownActionTestHook(ReviewRequestDropdownActionHook):
+class SandboxReviewRequestDropdownActionTestHook(
+        ReviewRequestDropdownActionHook):
     def get_actions(self, context):
         raise Exception
 
 
-class CommentDetailDisplayTestHook(CommentDetailDisplayHook):
+class SandboxCommentDetailDisplayTestHook(CommentDetailDisplayHook):
     def render_review_comment_detail(self, comment):
         raise Exception
 
@@ -624,14 +624,14 @@ class CommentDetailDisplayTestHook(CommentDetailDisplayHook):
         raise Exception
 
 
-class BaseReviewRequestTestShouldRenderField(BaseReviewRequestField):
+class SandboxBaseReviewRequestTestShouldRenderField(BaseReviewRequestField):
     field_id = 'should_render'
 
     def should_render(self, value):
         raise Exception
 
 
-class BaseReviewRequestTestInitField(BaseReviewRequestField):
+class SandboxBaseReviewRequestTestInitField(BaseReviewRequestField):
     field_id = 'init_field'
 
     def __init__(self, review_request_details):
@@ -648,12 +648,12 @@ class TestInitField(BaseReviewRequestField):
 
 class TestInitFieldset(BaseReviewRequestFieldSet):
     fieldset_id = 'test_init'
-    field_classes = [BaseReviewRequestTestInitField]
+    field_classes = [SandboxBaseReviewRequestTestInitField]
 
 
 class TestShouldRenderFieldset(BaseReviewRequestFieldSet):
     fieldset_id = 'test_should_render'
-    field_classes = [BaseReviewRequestTestShouldRenderField]
+    field_classes = [SandboxBaseReviewRequestTestShouldRenderField]
 
 
 class BaseReviewRequestTestIsEmptyFieldset(BaseReviewRequestFieldSet):
@@ -693,7 +693,7 @@ class SandboxTests(TestCase):
     def test_is_approved_sandbox(self):
         """Testing sandboxing ReviewRequestApprovalHook when
         is_approved function throws an error"""
-        ReviewRequestApprovalTestHook(extension=self.extension)
+        SandboxReviewRequestApprovalTestHook(extension=self.extension)
         review = ReviewRequest()
         review._calculate_approval()
 
@@ -705,7 +705,7 @@ class SandboxTests(TestCase):
             'url': '/dashboard/',
         }
 
-        NavigationBarTestHook(extension=self.extension, entries=[entry])
+        SandboxNavigationBarTestHook(extension=self.extension, entries=[entry])
 
         context = Context({})
 
@@ -718,7 +718,7 @@ class SandboxTests(TestCase):
     def test_render_review_comment_details(self):
         """Testing sandboxing CommentDetailDisplayHook when
         render_review_comment_detail throws an error"""
-        CommentDetailDisplayTestHook(extension=self.extension)
+        SandboxCommentDetailDisplayTestHook(extension=self.extension)
 
         context = Context({'comment': 'this is a comment'})
 
@@ -731,7 +731,7 @@ class SandboxTests(TestCase):
     def test_email_review_comment_details(self):
         """Testing sandboxing CommentDetailDisplayHook when
         render_email_comment_detail throws an error"""
-        CommentDetailDisplayTestHook(extension=self.extension)
+        SandboxCommentDetailDisplayTestHook(extension=self.extension)
 
         context = Context({'comment': 'this is a comment'})
 
@@ -744,7 +744,7 @@ class SandboxTests(TestCase):
     def test_action_hooks_diff_viewer_hook(self):
         """Testing sandboxing DiffViewerActionHook when
         action_hooks throws an error"""
-        DiffViewerActionTestHook(extension=self.extension)
+        SandboxDiffViewerActionTestHook(extension=self.extension)
 
         context = Context({'comment': 'this is a comment'})
 
@@ -757,7 +757,7 @@ class SandboxTests(TestCase):
     def test_action_hooks_header_hook(self):
         """Testing sandboxing HeaderActionHook when
         action_hooks throws an error"""
-        HeaderActionTestHook(extension=self.extension)
+        SandboxHeaderActionTestHook(extension=self.extension)
 
         context = Context({'comment': 'this is a comment'})
 
@@ -770,7 +770,7 @@ class SandboxTests(TestCase):
     def test_action_hooks_header_dropdown_hook(self):
         """Testing sandboxing HeaderDropdownActionHook when
         action_hooks throws an error"""
-        HeaderDropdownActionTestHook(extension=self.extension)
+        SandboxHeaderDropdownActionTestHook(extension=self.extension)
 
         context = Context({'comment': 'this is a comment'})
 
@@ -783,7 +783,7 @@ class SandboxTests(TestCase):
     def test_action_hooks_review_request_hook(self):
         """Testing sandboxing ReviewRequestActionHook when
         action_hooks throws an error"""
-        ReviewRequestActionTestHook(extension=self.extension)
+        SandboxReviewRequestActionTestHook(extension=self.extension)
 
         context = Context({'comment': 'this is a comment'})
 
@@ -796,7 +796,7 @@ class SandboxTests(TestCase):
     def test_action_hooks_review_request_dropdown_hook(self):
         """Testing sandboxing ReviewRequestDropdownActionHook when
         action_hooks throws an error"""
-        ReviewRequestDropdownActionTestHook(extension=self.extension)
+        SandboxReviewRequestDropdownActionTestHook(extension=self.extension)
 
         context = Context({'comment': 'this is a comment'})
 

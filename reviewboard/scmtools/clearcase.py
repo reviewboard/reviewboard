@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import logging
 import os
+import platform
 import re
 import subprocess
 import sys
@@ -23,14 +24,9 @@ else:
 # Note:
 #   - later versions of Windows may probably be impacted too
 #   - Python 2.7.x is the only one known to get this issue
-import platform
-
-if (sys.version_info[:2] == (2, 7) and
-    platform.system() == "Windows" and
-    platform.release() == "7"):
-    _popen_shell = True
-else:
-    _popen_shell = False
+_popen_shell = (sys.version_info[:2] == (2, 7) and
+                platform.system() == "Windows" and
+                platform.release() == "7")
 
 
 class ClearCaseTool(SCMTool):
@@ -270,8 +266,8 @@ class ClearCaseTool(SCMTool):
 
         if extended_path.endswith(os.path.join(os.sep, 'main', '0')):
             revision = PRE_CREATION
-        elif (extended_path.endswith('CHECKEDOUT')
-              or '@@' not in extended_path):
+        elif (extended_path.endswith('CHECKEDOUT') or
+              '@@' not in extended_path):
             revision = HEAD
         else:
             revision = extended_path.rsplit('@@', 1)[1]

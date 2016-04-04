@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django import forms
 from djblets.auth.forms import RegistrationForm as DjbletsRegistrationForm
 from djblets.recaptcha.mixins import RecaptchaFormMixin
+from djblets.siteconfig.models import SiteConfiguration
 
 
 class RegistrationForm(RecaptchaFormMixin, DjbletsRegistrationForm):
@@ -27,3 +28,9 @@ class RegistrationForm(RecaptchaFormMixin, DjbletsRegistrationForm):
             user.save()
 
         return user
+
+    @property
+    def verify_recaptcha(self):
+        siteconfig = SiteConfiguration.objects.get_current()
+
+        return siteconfig.get('auth_registration_show_captcha')

@@ -1303,9 +1303,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         return (get_review_request_item_url(review_request.display_id,
                                             local_site_name),
                 review_request_item_mimetype,
-                {
-                    'extra_data.dummy': '',
-                },
+                {'extra_data.dummy': ''},
                 review_request,
                 [])
 

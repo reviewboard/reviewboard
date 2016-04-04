@@ -76,7 +76,7 @@ class BasicTestsMetaclass(type):
 
                     if test_api_token_access:
                         mixins += (
-                          BasicGetItemTestsWithLocalSiteAndAPITokenMixin,
+                            BasicGetItemTestsWithLocalSiteAndAPITokenMixin,
                         )
                 else:
                     mixins = (BasicGetItemTestsMixin,)

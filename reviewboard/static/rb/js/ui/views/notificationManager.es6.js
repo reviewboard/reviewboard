@@ -101,6 +101,8 @@ RB.NotificationManager = Backbone.View.extend({
                 icon: options.iconURL
             });
 
+        const notification = this._notification;
+
         this._notification.onclick = function() {
             if (_.isFunction(data.onClick)) {
                 data.onclick();
@@ -109,7 +111,7 @@ RB.NotificationManager = Backbone.View.extend({
             notification.close();
         };
 
-        _.delay(_.bind(notification.close, notification),
+        _.delay(notification.close.bind(notification),
                 this.NOTIFICATION_LIFETIME_MSECS);
      }
 }, {
