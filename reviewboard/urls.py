@@ -62,7 +62,7 @@ urlpatterns += extension_manager.get_url_patterns()
 # Add static media if running in DEBUG mode on a non-production host.
 if settings.DEBUG and not settings.PRODUCTION:
     urlpatterns += static(settings.STATIC_DIRECTORY,
-                          document_root=settings.STATIC_ROOT,
+                          view='pipeline.views.serve_static',
                           show_indexes=True)
     urlpatterns += static(settings.MEDIA_DIRECTORY,
                           document_root=settings.MEDIA_ROOT,

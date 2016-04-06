@@ -274,7 +274,7 @@ RB.RegionCommentBlockView = RB.AbstractCommentBlockView.extend({
      * If not, which means the event was actually a 'click' event, call
      * super class's click handler.
      */
-    _onWindowMouseUp: function(e) {
+    _onWindowMouseUp: function() {
         if (this._moveState.hasMoved) {
             this.model.saveDraftCommentBounds();
         }

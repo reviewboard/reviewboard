@@ -7,6 +7,7 @@ from django.utils import six
 from djblets.extensions.hooks import (DataGridColumnsHook, ExtensionHook,
                                       ExtensionHookPoint, SignalHook,
                                       TemplateHook, URLHook)
+from djblets.integrations.hooks import BaseIntegrationHook
 
 from reviewboard.accounts.backends import (register_auth_backend,
                                            unregister_auth_backend)
@@ -21,6 +22,7 @@ from reviewboard.datagrids.grids import (DashboardDataGrid,
                                          UserPageReviewRequestDataGrid)
 from reviewboard.hostingsvcs.service import (register_hosting_service,
                                              unregister_hosting_service)
+from reviewboard.integrations.base import GetIntegrationManagerMixin
 from reviewboard.notifications.email import (register_email_hook,
                                              unregister_email_hook)
 from reviewboard.reviews.fields import (get_review_request_fieldset,
@@ -226,6 +228,16 @@ class HostingServiceHook(ExtensionHook):
         super(HostingServiceHook, self).shutdown()
 
         unregister_hosting_service(self.name)
+
+
+@six.add_metaclass(ExtensionHookPoint)
+class IntegrationHook(GetIntegrationManagerMixin, BaseIntegrationHook):
+    """A hook for registering new integration classes.
+
+    Integrations enable Review Board to connect with third-party services in
+    specialized ways. This class makes it easy to register new integrations on
+    an extension, binding their lifecycles to that of the extension.
+    """
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -918,6 +930,7 @@ __all__ = [
     'HeaderActionHook',
     'HeaderDropdownActionHook',
     'HostingServiceHook',
+    'IntegrationHook',
     'NavigationBarHook',
     'ReviewRequestActionHook',
     'ReviewRequestApprovalHook',

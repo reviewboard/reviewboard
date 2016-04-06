@@ -220,7 +220,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/views/commentDialogView.js',
             'rb/js/views/commentIssueBarView.js',
             'rb/js/views/diffFragmentQueueView.js',
-            'rb/js/views/dndUploaderView.js',
+            'rb/js/views/dndUploaderView.es6.js',
             'rb/js/views/draftReviewBannerView.js',
             'rb/js/views/uploadAttachmentView.js',
             'rb/js/views/revisionSelectorView.js',
@@ -370,6 +370,7 @@ PIPELINE_STYLESHEETS = dict({
         'source_filenames': (
             'rb/css/pages/admin.less',
             'rb/css/pages/admin-dashboard.less',
+            'rb/css/pages/admin-integrations.less',
         ),
         'output_filename': 'rb/css/admin.min.css',
         'absolute_paths': False,

@@ -107,6 +107,8 @@ class ReviewRequestManager(ConcurrencyManager):
         Creates a new review request, optionally filling in fields based off
         a commit ID.
         """
+        from reviewboard.reviews.models import ReviewRequestDraft
+
         if commit_id:
             # Try both the new commit_id and old changenum versions
             try:
@@ -117,8 +119,6 @@ class ReviewRequestManager(ConcurrencyManager):
                 pass
 
             try:
-                from reviewboard.reviews.models import ReviewRequestDraft
-
                 draft = ReviewRequestDraft.objects.get(
                     commit_id=commit_id,
                     review_request__repository=repository)
@@ -187,6 +187,10 @@ class ReviewRequestManager(ConcurrencyManager):
             transaction.commit()
 
             review_request = ReviewRequest.objects.get(pk=review_request.pk)
+
+        # Ensure that a draft exists, so that users will be prompted to publish
+        # the new review request.
+        ReviewRequestDraft.create(review_request)
 
         return review_request
 

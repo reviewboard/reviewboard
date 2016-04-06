@@ -207,7 +207,7 @@ BaseCommentView = Backbone.View.extend({
         this.renderText(this.model, text);
 
         this.listenTo(this.model, 'destroying', function() {
-            this.stopListening(this.model)
+            this.stopListening(this.model);
         });
 
         RB.ReviewDialogCommentHook.each(function(hook) {

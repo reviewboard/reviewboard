@@ -123,5 +123,5 @@ RB.SupportBannerView = Backbone.View.extend({
     }
 }, {
     instance: null,
-    supportURL: 'https://beanbaginc.com/support/reviewboard/_status/'
+    supportURL: 'https://www.beanbaginc.com/support/reviewboard/_status/'
 });

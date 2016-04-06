@@ -1,6 +1,5 @@
 suite('rb/resources/models/GeneralComment', function() {
-    var strings = RB.GeneralComment.strings,
-        model;
+    var model;
 
     beforeEach(function() {
         /* Set some sane defaults needed to pass validation. */
