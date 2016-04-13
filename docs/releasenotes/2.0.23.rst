@@ -17,6 +17,22 @@ or::
     easy_install ReviewBoard==2.0.23
 
 
+Security Updates
+================
+
+This release fixes a self-XSS vulnerability in the editor fields of the
+review request page.
+
+This vulnerability requires the user to specifically enter or paste
+specialized text designed to escape out of the current tag and to inject a
+script. That script would run within the context of the page, much like the
+browser's developer console would.
+
+External users have no capability to trigger the injection of this text on
+behalf of a user, and the vulnerability doesn't persist past the initial save
+of the field.
+
+
 New Features
 ============
 
