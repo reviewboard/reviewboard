@@ -1,0 +1,167 @@
+=================================
+Review Board 2.0.23 Release Notes
+=================================
+
+**Release date**: April 13, 2016
+
+
+Upgrade Instructions
+====================
+
+To upgrade to Review Board 2.0.23, run::
+
+    pip install ReviewBoard==2.0.23
+
+or::
+
+    easy_install ReviewBoard==2.0.23
+
+
+Security Updates
+================
+
+This release fixes a self-XSS vulnerability in the editor fields of the
+review request page.
+
+This vulnerability requires the user to specifically enter or paste
+specialized text designed to escape out of the current tag and to inject a
+script. That script would run within the context of the page, much like the
+browser's developer console would.
+
+External users have no capability to trigger the injection of this text on
+behalf of a user, and the vulnerability doesn't persist past the initial save
+of the field.
+
+
+New Features
+============
+
+* Added a field on the settings page for configuring the static media URL.
+
+  This is useful if offloading the static media to a CDN or another
+  dedicated server.
+
+* Added information on the support level and status of any active support
+  contracts in the administration dashboard.
+
+* Added logging of access attempts on the API when the requesting user
+  doesn't have access. (:bug:`3108`)
+
+  This helps with security audits.
+
+
+Extensions
+==========
+
+* Added compatibility with extensions packages as Python Wheels.
+
+* Added support for extension-provided JavaScript unit tests.
+
+  Extensions can now declare JavaScript unit test files in a ``"tests"``
+  bundle. These tests will run automatically when accessing
+  ``http://<server>/js-tests/extensions/`` on a development server.
+
+  JSExtension classes aren't initialized automatically on this page. Test
+  suites are responsible for initializing them if needed.
+
+* Static media bundles can now include other bundles.
+
+  This is specified by providing an ``include_bundles`` list in the bundle
+  information. Note that this does not handle nesting of included bundles.
+  Only the bundle being loaded can include other bundles.
+
+
+Bug Fixes
+=========
+
+Diff Viewer
+-----------
+
+* Fixed filenames on interdiffs when the filenames have been renamed multiple
+  times. (:bug:`4156`)
+
+  If a file has been renamed more than once between a set of revisions, the
+  filenames shown in the diff viewer would be incorrect. This has been changed
+  to better represent the correct names.
+
+  Patch by Adriano Arce.
+
+* Fixed the display of tooltips for the diff complexity icons.
+
+  Patch by Griffin Myers.
+
+
+Review Requests
+---------------
+
+* Users configured as default reviewers are no longer added to review requests
+  if they've been marked as inactive.
+
+  Patch by Griffin Myers.
+
+* Deleting file attachments that haven't been made public no longer keeps
+  the files around in storage. (:bug:`4054`)
+
+  Patch by Weijie Sun.
+
+
+Git
+---
+
+* Fixed stale caches for file lookups after changing the Raw File URL mask
+  for a repository. (:bug:`4051`)
+
+  Patch by Kevin Chiu.
+
+
+Perforce
+--------
+
+* Added compatibility with stunnel_ version 4 for Perforce.
+
+  stunnel is used for securely sending traffic to another Perforce server.
+  We've had support for stunnel version 3, which didn't work with version 4.
+
+  We've added support for working with both version 3 and version 4. This
+  shouldn't require any changes to existing setups.
+
+* Fixed infinite loops attempting to find an unused port when using stunnel
+  on MacOS X.
+
+
+.. _stunnel: https://www.stunnel.org/
+
+
+Subversion
+----------
+
+* Fixed Unicode errors with non-ASCII passwords on Subversion servers.
+  (:bug:`4369`)
+
+  Patch by Jim Hagan.
+
+* Fixed fetching contents from Subversion repositories configured on
+  Beanstalk_.
+
+
+.. _Beanstalk: http://beanstalkapp.com/
+
+
+Administration
+--------------
+
+* Fixed auto-updating the static media and uploaded media paths when changing
+  the location of a site directory.
+
+
+Contributors
+============
+
+* Adriano Arce
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Griffin Myers
+* Jim Hagan
+* Kevin Chiu
+* Weijie Sun
