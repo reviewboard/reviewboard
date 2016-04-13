@@ -67,6 +67,7 @@ def comment_counts(user, all_comments, filediff, interfilediff=None):
                 'issue_opened': comment.issue_opened,
                 'issue_status': BaseComment.issue_status_to_string(
                     comment.issue_status),
+                'reply_to_id': comment.reply_to_id,
             })
 
     comments_array = []

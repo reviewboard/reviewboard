@@ -740,7 +740,9 @@ class ReviewRequest(BaseReviewRequestDetails):
 
             review_request_closed.send(sender=self.__class__, user=user,
                                        review_request=self,
-                                       type=type)
+                                       type=type,
+                                       description=description,
+                                       rich_text=rich_text)
         else:
             # Update submission description.
             changedesc = self.changedescs.filter(public=True).latest()

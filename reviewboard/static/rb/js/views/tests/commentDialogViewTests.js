@@ -348,17 +348,30 @@ suite('rb/views/CommentDialogView', function() {
             });
 
             describe('Populated list', function() {
-                var comment;
+                var comment,
+                    commentReply,
+                    parentCommentReplyLink;
 
                 beforeEach(function() {
                     comment = new RB.DiffComment();
                     comment.user = {
-                        'name': 'Teset User'
+                        'name': 'Test User'
                     };
                     comment.url = 'http://example.com/';
                     comment.comment_id = 1;
                     comment.text = 'Sample comment.';
                     comment.issue_opened = false;
+                    parentCommentReplyLink = '/?reply_id=' + comment.comment_id;
+
+                    commentReply = new RB.DiffComment();
+                    commentReply.user = {
+                        'name': 'Test User'
+                    };
+                    commentReply.url = 'http://example.com/';
+                    commentReply.comment_id = 2;
+                    commentReply.text = 'Sample comment.';
+                    commentReply.issue_opened = false;
+                    commentReply.reply_to_id = 1;
                 });
 
                 describe('Visible pane', function() {
@@ -380,6 +393,24 @@ suite('rb/views/CommentDialogView', function() {
                     editor.set('publishedComments', [comment]);
                     expect($commentsList.children().length).toBe(1);
                 });
+
+                it('Parent comment reply link links to itself', function(){
+                    var $replyLink;
+                    editor.set('publishedComments', [comment]);
+                    dlg.open();
+                    $replyLink = $commentsList.find('.comment-list-reply-action');
+                    expect($replyLink[0].href).toContain(parentCommentReplyLink);
+                });
+
+                it('Both parent and reply comment reply links link to parent comment', function(){
+                    var $replyLinks;
+                    editor.set('publishedComments', [comment, commentReply]);
+                    dlg.open();
+                    $replyLinks = $commentsList.find('.comment-list-reply-action');
+                    expect($replyLinks.length).toEqual(2);
+                    expect($replyLinks[0].href).toContain(parentCommentReplyLink);
+                    expect($replyLinks[1].href).toContain(parentCommentReplyLink);
+                });
             });
 
             describe('Issue bar buttons', function() {
@@ -388,7 +419,7 @@ suite('rb/views/CommentDialogView', function() {
                 beforeEach(function() {
                     comment = new RB.DiffComment();
                     comment.user = {
-                        'name': 'Teset User'
+                        'name': 'Test User'
                     };
                     comment.url = 'http://example.com/';
                     comment.comment_id = 1;

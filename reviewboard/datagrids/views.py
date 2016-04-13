@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
@@ -18,6 +17,7 @@ from reviewboard.datagrids.grids import (DashboardDataGrid,
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.views import _render_permission_denied
 from reviewboard.site.decorators import check_local_site_access
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 @check_login_required
@@ -156,9 +156,11 @@ def submitter(request,
     datagrid = datagrid_cls(request, user, local_site=local_site)
     datagrid.tabs = [
         (UserPageReviewRequestDataGrid.tab_title,
-         reverse('user', args=[username])),
+         local_site_reverse('user', local_site=local_site,
+                            args=[username])),
         (UserPageReviewsDataGrid.tab_title,
-         reverse('user-grid', args=[username, 'reviews'])),
+         local_site_reverse('user-grid', local_site=local_site,
+                            args=[username, 'reviews']))
     ]
 
     return datagrid.render_to_response(template_name)
