@@ -842,14 +842,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             $el.inlineEditor('setupEvents');
         }
 
-        /* TODO: Support listening to extraData fields. */
-        if (fieldOptions.fieldName === 'closeDescription') {
-            listenObj = this.model.get('reviewRequest');
-        } else {
-            listenObj = this.draft;
-        }
-
-        this.listenTo(listenObj, 'change:' + fieldOptions.fieldName,
+        this.listenTo(this.model, 'fieldChanged:' + fieldOptions.fieldName,
                       _.bind(this._formatField, this, fieldOptions));
     },
 
