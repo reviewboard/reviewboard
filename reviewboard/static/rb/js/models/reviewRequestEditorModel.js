@@ -106,6 +106,11 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *
      * If we're in the process of publishing, this will check if we have saved
      * all fields before publishing the draft.
+     *
+     * Once the field has been saved, two events will be triggered:
+     *
+     *     * fieldChanged(fieldName, value)
+     *     * fieldChanged:<fieldName>(value)
      */
     setDraftField: function(fieldName, value, options, context) {
         var reviewRequest = this.get('reviewRequest'),
@@ -219,6 +224,9 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
                 if (_.isFunction(options.success)) {
                     options.success.call(context);
                 }
+
+                this.trigger('fieldChanged:' + fieldName, value);
+                this.trigger('fieldChanged', fieldName, value);
 
                 if (this.get('publishing')) {
                     this.decr('pendingSaveCount');
