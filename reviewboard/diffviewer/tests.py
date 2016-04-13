@@ -6,6 +6,7 @@ from django.test import RequestFactory
 from django.utils.six.moves import zip_longest
 from djblets.cache.backend import cache_memoize
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 import nose
 
