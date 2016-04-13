@@ -2,7 +2,7 @@
 Review Board 2.5.4 Release Notes
 ================================
 
-**Release date**: TBD
+**Release date**: April 13, 2016
 
 
 New Features
