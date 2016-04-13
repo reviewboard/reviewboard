@@ -2,7 +2,7 @@
 Review Board 2.0.23 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: April 13, 2016
 
 
 Upgrade Instructions
