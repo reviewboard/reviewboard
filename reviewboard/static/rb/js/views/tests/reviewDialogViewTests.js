@@ -539,6 +539,33 @@ suite('rb/views/ReviewDialogView', function() {
                 expect(comment.get('richText')).toBe(richText);
             }
 
+            function testSaveCommentPreventsXSS(richText) {
+                var newCommentText =
+                    '"><script>window.rbTestFoundXSS = true;</script>';
+
+                delete window.rbTestFoundXSS;
+
+                dlg = createReviewDialog();
+
+                expect(dlg._commentViews.length).toBe(1);
+
+                commentView = dlg._commentViews[0];
+                comment = commentView.model;
+
+                spyOn(comment, 'save');
+
+                /* Set some new state for the comment. */
+                commentView.$editor
+                    .inlineEditor('startEdit')
+                    .inlineEditor('setValue', newCommentText);
+                commentView.textEditor.setRichText(true);
+                commentView.save();
+
+                expect(comment.save).toHaveBeenCalled();
+                expect(comment.get('text')).toBe(newCommentText);
+                expect(window.rbTestFoundXSS).toBe(undefined);
+            }
+
             beforeEach(function() {
                 review.set({
                     loaded: true,
@@ -582,6 +609,24 @@ suite('rb/views/ReviewDialogView', function() {
             });
 
             describe('Review properties', function() {
+                function testSelfXSS(bodyView, attrName) {
+                    var text = '"><script>window.rbTestFoundXSS = true;' +
+                               '</script>',
+                        editor = bodyView.textEditor;
+
+                    delete window.rbTestFoundXSS;
+
+                    bodyView.openEditor();
+                    editor.setText(text);
+                    editor.setRichText(true);
+                    bodyView.save();
+
+                    expect(editor.getText()).toBe(text);
+                    expect(review.save).toHaveBeenCalled();
+                    expect(review.get(attrName)).toBe(text);
+                    expect(window.rbTestFoundXSS).toBe(undefined);
+                }
+
                 beforeEach(function() {
                     dlg = createReviewDialog();
                 });
@@ -609,6 +654,10 @@ suite('rb/views/ReviewDialogView', function() {
                     it('For plain text', function() {
                         runTest(false);
                     });
+
+                    it('Prevents Self-XSS', function() {
+                        testSelfXSS(dlg._bodyTopView, 'bodyTop');
+                    });
                 });
 
                 describe('Body Bottom', function() {
@@ -633,6 +682,10 @@ suite('rb/views/ReviewDialogView', function() {
 
                     it('For plain text', function() {
                         runTest(false);
+                    });
+
+                    it('Prevents Self-XSS', function() {
+                        testSelfXSS(dlg._bodyBottomView, 'bodyBottom');
                     });
                 });
 
@@ -667,6 +720,10 @@ suite('rb/views/ReviewDialogView', function() {
                 it('For plain text', function() {
                     testSaveComment(false);
                 });
+
+                it('Prevents Self-XSS', function() {
+                    testSaveCommentPreventsXSS();
+                });
             });
 
             describe('File attachment comments', function() {
@@ -684,6 +741,10 @@ suite('rb/views/ReviewDialogView', function() {
                 it('For plain text', function() {
                     testSaveComment(false);
                 });
+
+                it('Prevents Self-XSS', function() {
+                    testSaveCommentPreventsXSS();
+                });
             });
 
             describe('Screenshot comments', function() {
@@ -700,6 +761,10 @@ suite('rb/views/ReviewDialogView', function() {
 
                 it('For plain text', function() {
                     testSaveComment(false);
+                });
+
+                it('Prevents Self-XSS', function() {
+                    testSaveCommentPreventsXSS();
                 });
             });
         });
