@@ -5,6 +5,8 @@ import copy
 from django.utils import six
 from django.utils.encoding import force_unicode
 from django.utils.six.moves.urllib.parse import quote as urllib_quote
+from django.utils.translation import ugettext_lazy as _
+from djblets.registries.errors import RegistrationError
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (SPECIAL_PARAMS,
                                        webapi_login_required,
@@ -14,6 +16,7 @@ from djblets.webapi.resources.base import \
 from djblets.webapi.resources.mixins.api_tokens import ResourceAPITokenMixin
 from djblets.webapi.resources.mixins.queries import APIQueryUtilsMixin
 
+from reviewboard.registries.registry import Registry
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.decorators import (webapi_check_local_site,
@@ -29,18 +32,54 @@ PRIVATE_KEY_PREFIX = '__'
 class ExtraDataAccessLevel(object):
     """Various access levels for ``extra_data`` fields.
 
-    Constants describing various access levels for ``extra_data`` fields of
-    resource subclasses of :py:data:`reviewboard.webapi.base.WebAPIResource`.
+    This class consists of constants describing the various access levels for
+    ``extra_data`` keys on :py:class:`~reviewboard.webapi.base.WebAPIResource`
+    subclasses.
     """
 
-    """Everyone can access and modify through API."""
+    #: The associated extra_data key can be retrieved and updated via the API.
     ACCESS_STATE_PUBLIC = 1
 
-    """Anyone can access through API, but can't edit."""
+    #: The associated extra_data key can only be retrieved via the API.
     ACCESS_STATE_PUBLIC_READONLY = 2
 
-    """No one can access nor modify through the API."""
+    #: The associated extra_data key cannot be accessed via the API.
     ACCESS_STATE_PRIVATE = 3
+
+
+NOT_CALLABLE = 'not_callable'
+
+
+class CallbackRegistry(Registry):
+    item_name = 'callback'
+
+    errors = {
+        NOT_CALLABLE: _(
+            'Could not register %(item)s: it is not callable.'
+        ),
+    }
+
+    def register(self, item):
+        """Register a callback.
+
+        Args:
+            item (callable):
+                The item to register.
+
+        Raises:
+            djblets.registries.errors.RegistrationError:
+                Raised if the item is not a callable.
+
+            djblets.registries.errors.AlreadyRegisteredError:
+                Raised if the item is already registered.
+        """
+        self.populate()
+
+        if not callable(item):
+            raise RegistrationError(self.format_error(NOT_CALLABLE,
+                                                      item=item))
+
+        super(CallbackRegistry, self).register(item)
 
 
 class WebAPIResource(ResourceAPITokenMixin, APIQueryUtilsMixin,
@@ -54,7 +93,7 @@ class WebAPIResource(ResourceAPITokenMixin, APIQueryUtilsMixin,
     def __init__(self, *args, **kwargs):
         super(WebAPIResource, self).__init__(*args, **kwargs)
 
-        self._extra_data_access_callbacks = []
+        self.extra_data_access_callbacks = CallbackRegistry()
 
     def has_access_permissions(self, *args, **kwargs):
         # By default, raise an exception if this is called. Specific resources
@@ -231,7 +270,7 @@ class WebAPIResource(ResourceAPITokenMixin, APIQueryUtilsMixin,
         return (self.can_import_extra_data_field(obj, key) and
                 not key.startswith(PRIVATE_KEY_PREFIX) and
                 self.get_extra_data_field_state((key,)) ==
-                    ExtraDataAccessLevel.ACCESS_STATE_PUBLIC)
+                ExtraDataAccessLevel.ACCESS_STATE_PUBLIC)
 
     def _build_redirect_with_args(self, request, new_url):
         """Builds a redirect URL with existing query string arguments.
@@ -256,76 +295,34 @@ class WebAPIResource(ResourceAPITokenMixin, APIQueryUtilsMixin,
 
         return new_url
 
-    def register_extra_data_access_callback(self, get_extra_data_state):
-        """Register a function for determining access to an extra_data key.
-
-        This would be used for registering a callable function that would
-        then be used for determining the access state of an ``extra_data``
-        field.
-
-        Args:
-            get_extra_data_state (callable):
-                The callback function used for determining the access state
-                of an ``extra_data`` field.
-        """
-        if not callable(get_extra_data_state):
-            raise TypeError('%s is not a valid callable.' %
-                            get_extra_data_state)
-
-        if get_extra_data_state in self._extra_data_access_callbacks:
-            raise ValueError('The callable %s is already registered.' %
-                             get_extra_data_state)
-
-        self._extra_data_access_callbacks.append(get_extra_data_state)
-
-    def unregister_extra_data_access_callback(self, get_extra_data_state):
-        """Unregister a function for determining access to an extra_data key.
-
-        This would be used for unregistering a previously registered callbable
-        function used for determining the access state of an ``extra_data``
-        field.
-
-        Args:
-            get_extra_data_state (callable):
-                The callback function used for determining the access state
-                of an ``extra_data`` field.
-        """
-        if not callable(get_extra_data_state):
-            raise TypeError('%s is not a valid callable.' %
-                            get_extra_data_state)
-
-        if get_extra_data_state not in self._extra_data_access_callbacks:
-            raise ValueError('The callable %s is not in the list of '
-                             'registered callbacks.' % get_extra_data_state)
-
-        self._extra_data_access_callbacks.remove(get_extra_data_state)
-
     def get_extra_data_field_state(self, key_path):
         """Return the state of a registered ``extra_data`` key path.
 
         Example:
-            .. code-block:: python
+        .. code-block:: python
 
-                resource.extra_data = {
-                    'public': 'foo',
-                    'private': 'secret',
-                    'data': {
-                        'secret_key': 'secret_data',
-                    },
-                    'readonly': 'bar',
-                }
+           resource.extra_data = {
+               'public': 'foo',
+               'private': 'secret',
+               'data': {
+                   'secret_key': 'secret_data',
+               },
+               'readonly': 'bar',
+           }
 
-                key_path = ('data', 'secret_key',)
-                resource.get_extra_data_field_state(key_path)
+           key_path = ('data', 'secret_key',)
+           resource.get_extra_data_field_state(key_path)
 
         Args:
             key_path (tuple):
-                A tuple representing the path of an extra_data field.
+                The path of the ``extra_data`` key as a :py:class`tuple` of
+                :py:class:`unicode` strings.
 
         Returns:
-            int: The access state of the provided key.
+            int:
+            The access state of the provided key.
         """
-        for callback in self._extra_data_access_callbacks:
+        for callback in self.extra_data_access_callbacks:
             value = callback(key_path)
 
             if value is not None:
@@ -348,8 +345,8 @@ class WebAPIResource(ResourceAPITokenMixin, APIQueryUtilsMixin,
                 dictionary.
 
         Returns:
-            clone (dict):
-                A clone of the ``extra_data`` stripped of its private fields.
+            dict:
+            A clone of the ``extra_data`` stripped of its private fields.
         """
         clone = copy.copy(extra_data)
 
@@ -361,7 +358,7 @@ class WebAPIResource(ResourceAPITokenMixin, APIQueryUtilsMixin,
 
             if (field_name.startswith(PRIVATE_KEY_PREFIX) or
                 self.get_extra_data_field_state(path) ==
-                    ExtraDataAccessLevel.ACCESS_STATE_PRIVATE):
+                ExtraDataAccessLevel.ACCESS_STATE_PRIVATE):
                 del clone[field_name]
             elif isinstance(value, dict):
                 clone[field_name] = self._strip_private_data(value, path)

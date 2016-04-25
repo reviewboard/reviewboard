@@ -7,6 +7,7 @@ from django.utils import six
 from djblets.extensions.hooks import (DataGridColumnsHook, ExtensionHook,
                                       ExtensionHookPoint, SignalHook,
                                       TemplateHook, URLHook)
+from djblets.registries.errors import ItemLookupError
 
 from reviewboard.accounts.backends import (register_auth_backend,
                                            unregister_auth_backend)
@@ -908,9 +909,9 @@ class APIExtraDataAccessHook(ExtensionHook):
     certain access states on subclasses of
     :py:data:`~reviewboard.webapi.base.WebAPIResource`.
 
-    This accepts a list of ``field_set``'s specified by the Extension and
+    This accepts a list of ``field_set``s specified by the Extension and
     registers them when the hook is created. Likewise, it unregisters the same
-    list of ``field_set``'s when the Extension is disabled.
+    list of ``field_set``s when the Extension is disabled.
 
     Each element of ``field_set`` is a 2-:py:class:`tuple` where the first
     element of the tuple is the field's path (as a :py:class:`tuple`) and the
@@ -954,7 +955,8 @@ class APIExtraDataAccessHook(ExtensionHook):
         self.resource = resource
         self.field_set = field_set
 
-        resource.register_extra_data_access_callback(self.get_extra_data_state)
+        resource.extra_data_access_callbacks.register(
+            self.get_extra_data_state)
 
     def get_extra_data_state(self, key_path):
         """Return the state of an extra_data field.
@@ -965,7 +967,8 @@ class APIExtraDataAccessHook(ExtensionHook):
                 field.
 
         Returns:
-            unicode: The access state of the provided field or ``None``.
+            unicode:
+            The access state of the provided field or ``None``.
         """
         for path, access_state in self.field_set:
             if path == key_path:
@@ -978,9 +981,9 @@ class APIExtraDataAccessHook(ExtensionHook):
         super(APIExtraDataAccessHook, self).shutdown()
 
         try:
-            self.resource.unregister_extra_data_access_callback(
+            self.resource.extra_data_access_callbacks.unregister(
                 self.get_extra_data_state)
-        except TypeError:
+        except ItemLookupError:
             pass
 
 
