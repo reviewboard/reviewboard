@@ -1,4 +1,4 @@
-{% load avatars djblets_deco djblets_utils i18n reviewtags tz %}
+{% load changedescs avatars djblets_deco djblets_utils i18n reviewtags tz %}
 
 <div class="changedesc">
  <a name="changedesc{{entry.changedesc.id}}"></a>
@@ -6,7 +6,8 @@
   <div class="box-status">
    <div class="avatar-container">
 {% if siteconfig_settings.avatars_enabled %}
-    {% avatar review_request.submitter 48 %}
+    {% changedesc_user entry.changedesc review_request as changedesc_user %}
+    {% avatar changedesc_user 48 %}
 {% endif %}
    </div>
   </div>

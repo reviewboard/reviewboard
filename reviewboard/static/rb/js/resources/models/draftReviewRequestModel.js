@@ -135,6 +135,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
         var rawTextFields = rsp.raw_text_fields || rsp,
             data = RB.BaseResource.prototype.parseResourceData.call(this, rsp);
 
+        data.submitter = rsp.links.submitter;
         data.changeDescriptionRichText =
             (rawTextFields.changedescription_text_type === 'markdown');
         data.descriptionRichText =

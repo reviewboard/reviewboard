@@ -1158,7 +1158,7 @@ class EmailHookTests(SpyAgency, TestCase):
             review_request.close(ReviewRequest.DISCARDED)
             call_kwargs = {
                 'review_request': review_request,
-                'user': None,
+                'user': review_request.submitter,
                 'close_type': ReviewRequest.DISCARDED,
             }
 
@@ -1186,7 +1186,6 @@ class EmailHookTests(SpyAgency, TestCase):
                              call_kwargs)
 
             review_request.close(ReviewRequest.SUBMITTED)
-            call_kwargs['user'] = None
             call_kwargs['close_type'] = ReviewRequest.SUBMITTED
 
             self.assertEqual(len(mail.outbox), 5)

@@ -205,6 +205,10 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
                                      'Users %s do not exist.',
                                      fieldValue.length),
                             [message]);
+                    } else if (fieldName === 'submitter') {
+                        message = interpolate(
+                            gettext('User %s does not exist.'),
+                            [message]);
                     } else if (fieldName === "dependsOn") {
                         message = interpolate(
                             ngettext('Review Request %s does not exist.',
@@ -246,7 +250,9 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *
      * If there's an error during saving or validation, the "publishError"
      * event will be triggered with the error message. Otherwise, upon
-     * success, the "publish" event will be triggered.
+     * success, the "publish" event will be triggered. However, users will
+     * have the chance to cancel the publish in the event that the submitter
+     * has been changed.
      */
     publishDraft: function(options) {
         var reviewRequest = this.get('reviewRequest'),
@@ -258,6 +264,12 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
 
         reviewRequest.draft.ensureCreated({
             success: function() {
+                if (reviewRequest.attributes.links.submitter.title !==
+                    reviewRequest.draft.attributes.links.submitter.title) {
+                    if (!confirm(gettext('Are you sure you want to change the ownership of this review request? Doing so may prevent you from editing the review request afterwards.'))) {
+                        return;
+                    }
+                }
                 reviewRequest.draft.publish({
                     success: function() {
                         this.trigger('published');

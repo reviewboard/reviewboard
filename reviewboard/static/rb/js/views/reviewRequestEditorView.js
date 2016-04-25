@@ -419,6 +419,60 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             fieldID: 'summary'
         },
         {
+            fieldID: 'submitter',
+            fieldName: 'submitter',
+            useEditIconOnly: true,
+            autocomplete: {
+                fieldName: 'users',
+                nameKey: 'username',
+                descKey: 'fullname',
+                extraParams: {
+                    fullname: 1
+                },
+                cmp: function(term, a, b) {
+                    /*
+                     * Sort the results with username matches first (in
+                     * alphabetical order), followed by real name matches (in
+                     * alphabetical order)
+                     */
+                    var aUsername = a.data.username,
+                        bUsername = b.data.username,
+                        aFullname = a.data.fullname,
+                        bFullname = a.data.fullname;
+
+                    if (aUsername.indexOf(term) === 0) {
+                        if (bUsername.indexOf(term) === 0) {
+                            return aUsername.localeCompare(bUsername);
+                        }
+
+                        return -1;
+                    } else if (bUsername.indexOf(term) === 0) {
+                        return 1;
+                    } else {
+                        return aFullname.localeCompare(bFullname);
+                    }
+                }
+            },
+            formatter: function(view, data, $el) {
+                var $link = $(view.convertToLink(
+                    data,
+                    function(item) {
+                        var href = item.href,
+                            startIndex;
+
+                        startIndex = href.indexOf('/users');
+                        href = href.substr(startIndex);
+
+                        return href; },
+                    function(item) { return item.title; }
+                ));
+
+                $el.html($link
+                    .addClass("user")
+                    .user_infobox());
+            }
+        },
+        {
             fieldID: 'target_groups',
             fieldName: 'targetGroups',
             useEditIconOnly: true,
@@ -911,6 +965,24 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         } else {
             fields.inlineEditor("submit");
         }
+    },
+
+    /*
+     * Convert an item to hyperlink.
+     *
+     * By default, this will use the item as the URL and as the hyperlink text.
+     * By overriding urlFunc and textFunc, the URL and text can be customized.
+     */
+    convertToLink: function(item, urlFunc, textFunc) {
+        if (!item) {
+            return '';
+        }
+
+        var _linkTemplate = _.template('<a href="<%- url %>"><%- label %></a>');
+        return _linkTemplate({
+            url: urlFunc ? urlFunc(item) : item,
+            label: textFunc ? textFunc(item) : item
+        });
     },
 
     /*

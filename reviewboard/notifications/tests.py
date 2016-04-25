@@ -1022,6 +1022,50 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
         self.assertIn('X-ReviewBoard-ShipIt', message._headers)
         self.assertNotIn('X-ReviewBoard-ShipIt-Only', message._headers)
 
+    def test_change_ownership_email(self):
+        """Testing sending a review request e-mail when the owner is being
+        changed
+        """
+        admin_user = User.objects.get(username='admin')
+        admin_email = get_email_address_for_user(admin_user)
+        review_request = self.create_review_request(public=True)
+        submitter = review_request.submitter
+        submitter_email = get_email_address_for_user(submitter)
+
+        draft = ReviewRequestDraft.create(review_request)
+        draft.owner = admin_user
+        draft.save()
+        review_request.publish(submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertEqual(message.extra_headers['From'], submitter_email)
+        self.assertSetEqual(set(message.to),
+                            {admin_email, submitter_email})
+
+    def test_change_ownership_email_not_submitter(self):
+        """Testing sending a review request e-mail when the owner is being
+        changed by someone else
+        """
+        admin_user = User.objects.get(username='admin')
+        admin_email = get_email_address_for_user(admin_user)
+        review_request = self.create_review_request(public=True)
+        submitter = review_request.submitter
+        submitter_email = get_email_address_for_user(submitter)
+
+        draft = ReviewRequestDraft.create(review_request)
+        draft.owner = admin_user
+        draft.save()
+        review_request.publish(admin_user)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertEqual(message.extra_headers['From'], admin_email)
+        self.assertSetEqual(set(message.to),
+                            {admin_email, submitter_email})
+
     def _get_sender(self, user):
         return build_email_address(user.get_full_name(), self.sender)
 

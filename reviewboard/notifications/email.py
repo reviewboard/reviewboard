@@ -20,6 +20,7 @@ from djblets.auth.signals import user_registered
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.server import get_server_url
+from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.models import Group, ReviewRequest, Review
 from reviewboard.reviews.signals import (review_request_published,
                                          review_published, reply_published,
@@ -364,6 +365,25 @@ def build_recipients(user, review_request, extra_recipients=None,
     if user.should_send_email():
         recipients.add(user)
 
+    try:
+        changedesc = review_request.changedescs.latest()
+    except ChangeDescription.DoesNotExist:
+        pass
+    else:
+        # If the submitter has changed and the person sending this e-mail is
+        # not the original submitter, then we should include them in the list
+        # of recipients.
+        if changedesc.fields_changed:
+            submitter_info = changedesc.fields_changed.get('submitter')
+
+            if submitter_info:
+                prev_submitter_pk = submitter_info['old'][0][2]
+                prev_submitter = User.objects.get(pk=prev_submitter_pk)
+
+                if (prev_submitter.is_active and
+                    prev_submitter.should_send_email()):
+                    recipients.add(prev_submitter)
+
     if submitter.is_active and submitter.should_send_email():
         recipients.add(submitter)
 
@@ -604,7 +624,7 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     return message.message_id
 
 
-def mail_review_request(review_request, user, changedesc=None,
+def mail_review_request(review_request, from_user=None, changedesc=None,
                         close_type=None):
     """Send an e-mail representing the supplied review request.
 
@@ -612,7 +632,7 @@ def mail_review_request(review_request, user, changedesc=None,
         review_request (reviewboard.reviews.models.ReviewRequest):
             The review request to send an e-mail about.
 
-        user (django.contrib.auth.models.User):
+        from_user (django.contrib.auth.models.User):
             The user who triggered the e-mail (i.e., they published or closed
             the review request).
 
@@ -632,10 +652,13 @@ def mail_review_request(review_request, user, changedesc=None,
     """
     # If the review request is not yet public or has been discarded, don't send
     # any mail. Relax the "discarded" rule when e-mails are sent on closing
-    # review requests
+    # review requests.
     if (not review_request.public or
         (not close_type and review_request.status == 'D')):
         return
+
+    if not from_user:
+        from_user = review_request.submitter
 
     summary = _ensure_unicode(review_request.summary)
     subject = "Review Request %d: %s" % (review_request.display_id,
@@ -690,9 +713,7 @@ def mail_review_request(review_request, user, changedesc=None,
                 limit_recipients_to.update(Group.objects.filter(
                     pk__in=group_pks))
 
-    submitter = review_request.submitter
-
-    to_field, cc_field = build_recipients(submitter, review_request,
+    to_field, cc_field = build_recipients(from_user, review_request,
                                           extra_recipients,
                                           limit_recipients_to)
 
@@ -705,12 +726,12 @@ def mail_review_request(review_request, user, changedesc=None,
         signal = review_request_published
 
     to_field, cc_field = filter_email_recipients_from_hooks(
-        to_field, cc_field, signal, review_request=review_request, user=user,
-        **extra_filter_kwargs)
+        to_field, cc_field, signal, review_request=review_request,
+        user=from_user, **extra_filter_kwargs)
 
     review_request.time_emailed = timezone.now()
     review_request.email_message_id = \
-        send_review_mail(review_request.submitter, review_request, subject,
+        send_review_mail(from_user, review_request, subject,
                          reply_message_id, to_field, cc_field,
                          'notifications/review_request_email.txt',
                          'notifications/review_request_email.html',
