@@ -185,7 +185,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         The keys that may be saved in ``fields_changed`` in the
         ChangeDescription are:
 
-        *  'submitter'
+        *  ``submitter``
         *  ``summary``
         *  ``description``
         *  ``testing_done``
@@ -219,12 +219,14 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         if not review_request:
             review_request = self.review_request
 
-        if not user:
-            user = review_request.submitter
-
         if not self.changedesc and review_request.public:
             self.changedesc = ChangeDescription()
 
+        if not user:
+            if self.changedesc:
+                user = self.changedesc.get_user(self)
+            else:
+                user = review_request.submitter
 
         self.copy_fields_to_request(review_request)
 
