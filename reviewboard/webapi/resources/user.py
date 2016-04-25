@@ -39,7 +39,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         'avatar_urls': {
             'type': six.text_type,
             'description': 'The URLs for an avatar representing the user.',
-            'added_in': '2.6',
+            'added_in': '3.0',
         },
     }, **DjbletsUserResource.fields)
 
