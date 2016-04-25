@@ -3,11 +3,14 @@ from __future__ import unicode_literals
 import inspect
 import warnings
 
+from django.template.context import RequestContext
+from django.template.loader import render_to_string
 from django.utils import six
 from djblets.extensions.hooks import (DataGridColumnsHook, ExtensionHook,
                                       ExtensionHookPoint, SignalHook,
                                       TemplateHook, URLHook)
 from djblets.integrations.hooks import BaseIntegrationHook
+from djblets.registries.errors import ItemLookupError
 
 from reviewboard.accounts.backends import (register_auth_backend,
                                            unregister_auth_backend)
@@ -562,6 +565,105 @@ class HeaderDropdownActionHook(ActionHook):
 
 
 @six.add_metaclass(ExtensionHookPoint)
+class UserInfoboxHook(ExtensionHook):
+    """A hook for adding information to the user infobox.
+
+    Extensions can use this hook to add additional pieces of data to the box
+    which pops up when hovering the mouse over a user.
+    """
+
+    def __init__(self, extension, template_name=None):
+        """Initialize the hook.
+
+        Args:
+            extension (reviewboard.extensions.base.Extension):
+                The extension instance.
+
+            template_name (six.text_type):
+                The template to render with the default :py:func:`render`
+                method.
+        """
+        super(UserInfoboxHook, self).__init__(extension)
+
+        self.template_name = template_name
+
+    def get_extra_context(self, user, request, local_site):
+        """Return extra context to use when rendering the template.
+
+        This may be overridden in order to make use of the default
+        :py:func:`render` method.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user whose infobox is being shown.
+
+            request (django.http.HttpRequest):
+                The request for the infobox view.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The local site, if any.
+
+        Returns:
+            dict:
+            Additional context to include when rendering the template.
+        """
+        return {}
+
+    def get_etag_data(self, user, request, local_site):
+        """Return data to be included in the user infobox ETag.
+
+        The infobox view uses an ETag to enable browser caching of the content.
+        If the extension returns data which can change, this method should
+        return a string which is unique to that data.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user whose infobox is being shown.
+
+            request (django.http.HttpRequest):
+                The request for the infobox view.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The local site, if any.
+
+        Returns:
+            six.text_type:
+            A string to be included in the ETag for the view.
+        """
+        return ''
+
+    def render(self, user, request, local_site):
+        """Return content to include in the user infobox.
+
+        This may be overridden in the case where providing a custom template
+        and overriding :py:func:`get_extra_context` is insufficient.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user whose infobox is being shown.
+
+            request (django.http.HttpRequest):
+                The request for the infobox view.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The local site, if any.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            Text to include in the infobox HTML.
+        """
+        context = {
+            'user': user,
+        }
+        context.update(self.get_extra_context(user, request, local_site))
+
+        assert self.template_name is not None
+
+        return render_to_string(self.template_name,
+                                RequestContext(request, context))
+
+
+@six.add_metaclass(ExtensionHookPoint)
 class UserPageSidebarItemsHook(DataGridSidebarItemsHook):
     """A hook for adding items to the sidebar of the user page.
 
@@ -912,11 +1014,98 @@ class ReviewRequestPublishedEmailHook(EmailHook):
         return cc_field
 
 
+@six.add_metaclass(ExtensionHookPoint)
+class APIExtraDataAccessHook(ExtensionHook):
+    """A hook for setting access states to extra data fields.
+
+    Extensions can use this hook to register ``extra_data`` fields with
+    certain access states on subclasses of
+    :py:data:`~reviewboard.webapi.base.WebAPIResource`.
+
+    This accepts a list of ``field_set``s specified by the Extension and
+    registers them when the hook is created. Likewise, it unregisters the same
+    list of ``field_set``s when the Extension is disabled.
+
+    Each element of ``field_set`` is a 2-:py:class:`tuple` where the first
+    element of the tuple is the field's path (as a :py:class:`tuple`) and the
+    second is the field's access state (as one of
+    :py:data:`~reviewboard.webapi.base.ExtraDataAccessLevel.ACCESS_STATE_PUBLIC`
+    or :py:data:`~reviewboard.webapi.base.ExtraDataAccessLevel.ACCESS_STATE_PRIVATE`).
+
+    Example:
+        .. code-block:: python
+
+            resource.extra_data = {
+                'foo': {
+                    'bar' : 'pivate_data',
+                    'baz' : 'public_data'
+                }
+            }
+
+            field_set = [(('foo', 'bar'), 'ACCESS_STATE_PRIVATE')]
+    """
+
+    def __init__(self, extension, resource, field_set):
+        """Initialize the APIExtraDataAccessHook.
+
+        Args:
+            extension (reviewboard.extensions.base.Extension):
+                The extension registering this hook.
+
+            resource (reviewboard.webapi.base.WebAPIResource):
+                The resource to modify access states for.
+
+            field_set (list):
+                Each element of ``field_set`` is a 2-:py:class:`tuple` where
+                the first element of the tuple is the field's path (as a
+                :py:class:`tuple`) and the second is the field's access state
+                (as one of
+                :py:data:`~reviewboard.webapi.base.ExtraDataAccessLevel.ACCESS_STATE_PUBLIC`
+                or :py:data:`~reviewboard.webapi.base.ExtraDataAccessLevel.ACCESS_STATE_PRIVATE`).
+        """
+        super(APIExtraDataAccessHook, self).__init__(extension)
+
+        self.resource = resource
+        self.field_set = field_set
+
+        resource.extra_data_access_callbacks.register(
+            self.get_extra_data_state)
+
+    def get_extra_data_state(self, key_path):
+        """Return the state of an extra_data field.
+
+        Args:
+            key_path (tuple):
+                A tuple of strings representing the path of an extra_data
+                field.
+
+        Returns:
+            unicode:
+            The access state of the provided field or ``None``.
+        """
+        for path, access_state in self.field_set:
+            if path == key_path:
+                return access_state
+
+        return None
+
+    def shutdown(self):
+        """Shutdown the hook and unregister the associated ``field_set``."""
+        super(APIExtraDataAccessHook, self).shutdown()
+
+        try:
+            self.resource.extra_data_access_callbacks.unregister(
+                self.get_extra_data_state)
+        except ItemLookupError:
+            pass
+
+
 __all__ = [
     'AccountPageFormsHook',
     'AccountPagesHook',
     'ActionHook',
     'AdminWidgetHook',
+    'APIExtraDataAccessHook',
     'AuthBackendHook',
     'CommentDetailDisplayHook',
     'DashboardColumnsHook',
@@ -945,6 +1134,7 @@ __all__ = [
     'SignalHook',
     'TemplateHook',
     'URLHook',
+    'UserInfoboxHook',
     'UserPageSidebarItemsHook',
     'WebAPICapabilitiesHook',
 ]

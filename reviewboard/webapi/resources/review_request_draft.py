@@ -131,6 +131,10 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                            'it is first made public. At that point, the '
                            'draft is deleted.',
         },
+        'submitter': {
+            'type': six.text_type,
+            'description': 'The user who submitted the review request.',
+        },
         'summary': {
             'type': six.text_type,
             'description': 'The new review request summary.',
@@ -232,6 +236,11 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'Whether or not to make the review public. '
                            'If a review is public, it cannot be made '
                            'private again.',
+        },
+        'submitter': {
+            'type': six.text_type,
+            'description': 'The user who submitted the review request.',
+            'added_in': '2.6',
         },
         'summary': {
             'type': six.text_type,
@@ -599,6 +608,21 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                 draft.changedesc.text = data
 
                 modified_objects.append(draft.changedesc)
+        elif field_name == 'submitter':
+            submitter = data.rstrip(', ')
+            local_site = self._get_local_site(local_site_name)
+
+            try:
+                obj = self._find_user(username=submitter,
+                                      local_site=local_site,
+                                      request=request)
+
+                if obj is None:
+                    raise ObjectDoesNotExist
+            except:
+                invalid_entries.append(submitter)
+
+            draft.owner = obj
         else:
             if field_name == 'summary' and '\n' in data:
                 invalid_entries.append('Summary cannot contain newlines')

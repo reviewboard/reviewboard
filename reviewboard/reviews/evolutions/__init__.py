@@ -33,4 +33,5 @@ SEQUENCE = [
     'split_rich_text',
     'is_default_group',
     'general_comments',
+    'add_owner_to_draft',
 ]

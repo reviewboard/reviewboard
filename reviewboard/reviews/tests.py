@@ -992,6 +992,49 @@ class ReviewRequestTests(SpyAgency, TestCase):
 
         review_request.close(ReviewRequest.SUBMITTED)
 
+    def test_determine_user_for_review_request(self):
+        """Testing ChangeDescription.get_user for change descriptions for
+        review requests
+        """
+        review_request = self.create_review_request(publish=True)
+        doc = review_request.submitter
+        grumpy = User.objects.get(username='grumpy')
+
+        change1 = ChangeDescription()
+        change1.record_field_change('foo', ['bar'], ['baz'])
+        change1.save()
+        review_request.changedescs.add(change1)
+
+        change2 = ChangeDescription()
+        change2.record_field_change('submitter', doc, grumpy, 'username')
+        change2.save()
+        review_request.changedescs.add(change2)
+
+        change3 = ChangeDescription()
+        change3.record_field_change('foo', ['bar'], ['baz'])
+        change3.save()
+        review_request.changedescs.add(change3)
+
+        change4 = ChangeDescription()
+        change4.record_field_change('submitter', grumpy, doc, 'username')
+        change4.save()
+        review_request.changedescs.add(change4)
+
+        self.assertIsNone(change1.user)
+        self.assertIsNone(change2.user)
+        self.assertIsNone(change3.user)
+        self.assertIsNone(change4.user)
+
+        self.assertEqual(change1.get_user(review_request), doc)
+        self.assertEqual(change2.get_user(review_request), doc)
+        self.assertEqual(change3.get_user(review_request), grumpy)
+        self.assertEqual(change4.get_user(review_request), grumpy)
+
+        self.assertEqual(change1.user, doc)
+        self.assertEqual(change2.user, doc)
+        self.assertEqual(change3.user, grumpy)
+        self.assertEqual(change4.user, grumpy)
+
 
 class ViewTests(TestCase):
     """Tests for views in reviewboard.reviews.views"""

@@ -1639,24 +1639,64 @@ def user_infobox(request, username,
     This is meant to be embedded in other pages, rather than being
     a standalone page.
     """
-    user = get_object_or_404(User, username=username)
-    show_profile = user.is_profile_visible(request.user)
+    from reviewboard.extensions.hooks import UserInfoboxHook
 
-    etag = encode_etag(':'.join([
+    user = get_object_or_404(User, username=username)
+
+    try:
+        profile = user.get_profile()
+        show_profile = not profile.is_private
+        timezone = profile.timezone
+    except Profile.DoesNotExist:
+        show_profile = True
+        timezone = 'UTC'
+
+    etag_data = [
         user.first_name,
         user.last_name,
         user.email,
         six.text_type(user.last_login),
         six.text_type(settings.TEMPLATE_SERIAL),
-        six.text_type(show_profile)
-    ]))
+        six.text_type(show_profile),
+        timezone,
+    ]
+
+    for hook in UserInfoboxHook.hooks:
+        try:
+            etag_data.append(hook.get_etag_data(user, request, local_site))
+        except Exception as e:
+            logging.exception('Error when running UserInfoboxHook.'
+                              'get_etag_data method in extension "%s": %s',
+                              hook.extension.id, e)
+
+    etag = encode_etag(':'.join(etag_data))
 
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()
 
+    extra_content = []
+
+    for hook in UserInfoboxHook.hooks:
+        try:
+            extra_content.append(hook.render(user, request, local_site))
+        except Exception as e:
+            logging.exception('Error when running UserInfoboxHook.'
+                              'render method in extension "%s": %s',
+                              hook.extension.id, e)
+
+    review_requests_url = local_site_reverse('user', local_site=local_site,
+                                             args=[username])
+    reviews_url = local_site_reverse('user-grid', local_site=local_site,
+                                     args=[username, 'reviews'])
+
     response = render_to_response(template_name, RequestContext(request, {
+        'extra_content': mark_safe(''.join(extra_content)),
+        'full_name': user.get_full_name(),
+        'infobox_user': user,
+        'review_requests_url': review_requests_url,
+        'reviews_url': reviews_url,
         'show_profile': show_profile,
-        'requested_user': user,
+        'timezone': timezone,
     }))
     set_etag(response, etag)
 

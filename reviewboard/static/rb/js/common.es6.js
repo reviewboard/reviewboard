@@ -53,80 +53,18 @@ function registerToggleStar() {
 }
 
 
-const gInfoBoxCache = {};
-
-
 /*
  * Bug and user infoboxes. These are shown when hovering over links to users
  * and bugs.
- *
- * The infobox is displayed after a 1 second delay.
  */
 $.fn.infobox = function(id) {
-    const POPUP_DELAY_MS = 500,
-          HIDE_DELAY_MS = 300,
-          OFFSET_LEFT = -20,
-          OFFSET_TOP = 10;
-
-    let $infobox = $(`#${id}`);
-
-    if ($infobox.length === 0) {
-        $infobox = $('<div/>')
-            .attr('id', id)
-            .hide()
-            .appendTo(document.body);
-    }
-
-    function showInfobox(url, $target) {
-        $infobox
-            .empty()
-            .html(gInfoBoxCache[url])
-            .positionToSide($target, {
-                side: 'tb',
-                xOffset: OFFSET_LEFT,
-                yDistance: OFFSET_TOP,
-                fitOnScreen: true
-            })
-            .fadeIn();
-
-        $infobox.find('.avatar')
-            .retinaAvatar();
-    }
-
-    function fetchInfobox(url, $target) {
-        if (!gInfoBoxCache[url]) {
-            $.get(url, responseText => { gInfoBoxCache[url] = responseText; })
-                .done(() => showInfobox(url, $target));
-        } else {
-            showInfobox(url, $target);
-        }
-    }
-
-    return this.each(function() {
-        const $target = $(this),
-              url = `${$target.attr('href')}infobox/`;
-        let timeout = null;
-
-        $target.on('mouseover', function() {
-            timeout = setTimeout(() => fetchInfobox(url, $target),
-                                 POPUP_DELAY_MS);
+    this.each(function() {
+        const view = new RB.InfoboxView({
+            $target: $(this),
+            className: id
         });
 
-        $([$target[0], $infobox[0]]).on({
-            mouseover: function() {
-                if ($infobox.is(':visible')) {
-                    clearTimeout(timeout);
-                }
-            },
-            mouseout: function() {
-                clearTimeout(timeout);
-
-                if ($infobox.is(':visible')) {
-                    timeout = setTimeout(() => $infobox.fadeOut(),
-                                         HIDE_DELAY_MS);
-                }
-            }
-        });
+        view.render().$el.appendTo(document.body);
     });
 };
 

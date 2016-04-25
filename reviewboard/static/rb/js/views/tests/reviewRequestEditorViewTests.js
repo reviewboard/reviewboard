@@ -19,6 +19,9 @@ suite('rb/views/ReviewRequestEditorView', function() {
             '   <span id="field_branch"',
             '         data-field-id="branch"',
             '         class="field editable"></span>',
+            '   <span id="field_submitter"',
+            '         data-field-id="submitter"',
+            '         class="field editable"></span>',
             '   <span id="field_bugs_closed"',
             '         data-field-id="bugs_closed"',
             '         class="field editable comma-editable"></span>',
@@ -200,6 +203,15 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
 
             describe('Buttons actions', function() {
+                beforeEach(function() {
+                    reviewRequest.set({
+                        links: {
+                            submitter: {
+                                title: 'submitter'
+                            }
+                        }
+                    });
+                });
                 it('Discard Draft', function() {
                     view.model.set('hasDraft', true);
                     view.showBanner();
@@ -245,6 +257,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
                                 url: '/groups/foo'
                             }],
                             summary: 'foo',
+                            links: {
+                                submitter: {
+                                    title: 'submitter'
+                                }
+                            },
                             description: 'foo'
                         });
                     });
@@ -257,6 +274,27 @@ suite('rb/views/ReviewRequestEditorView', function() {
                         expect(editor.get('publishing')).toBe(true);
                         expect(editor.get('pendingSaveCount')).toBe(0);
                         expect(editor.publishDraft).toHaveBeenCalled();
+                        expect(reviewRequest.draft.publish).toHaveBeenCalled();
+                    });
+
+                    it('With submitter changed', function() {
+                        reviewRequest.draft.set({
+                            links: {
+                                submitter: {
+                                    title: 'submitter2'
+                                }
+                            }
+                        });
+                        view.showBanner();
+
+                        spyOn(window, 'confirm').andReturn(true);
+
+                        $('#btn-draft-publish').click();
+
+                        expect(editor.get('publishing')).toBe(true);
+                        expect(editor.get('pendingSaveCount')).toBe(0);
+                        expect(editor.publishDraft).toHaveBeenCalled();
+                        expect(window.confirm).toHaveBeenCalled();
                         expect(reviewRequest.draft.publish).toHaveBeenCalled();
                     });
 
@@ -892,6 +930,30 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 editCountTests();
                 securityTests();
             });
+        });
+
+        describe('Submitter', function() {
+            setupFieldTests({
+                jsonFieldName: 'submitter',
+                selector: '#field_submitter'
+            });
+
+            hasAutoCompleteTest();
+            hasEditorTest();
+            savingTest();
+
+            it('Formatting', function() {
+                reviewRequest.draft.set('submitter',
+                    {
+                        title: 'user1',
+                        href: 'api/users/user1/'
+                    }
+                );
+                expect($field.text()).toBe('user1');
+                expect(($field.children()).attr('href')).toBe('/users/user1/');
+            });
+
+            editCountTests();
         });
 
         describe('Custom fields', function() {
