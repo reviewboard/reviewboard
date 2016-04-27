@@ -41,7 +41,7 @@ function updateFormDisplay(id, tools_info) {
     prevTypes[id] = type;
 }
 
-function updatePlanEl($row, $plan, serviceType) {
+function updatePlanEl($row, $plan, serviceType, isFake) {
     var planTypes = HOSTING_SERVICES[serviceType].plans,
         selectedPlan = $plan.val(),
         planType,
@@ -50,7 +50,7 @@ function updatePlanEl($row, $plan, serviceType) {
 
     $plan.empty();
 
-    if (planTypes.length === 1) {
+    if (planTypes.length === 1 || isFake) {
         $row.hide();
     } else {
         for (i = 0; i < planTypes.length; i++) {
@@ -223,7 +223,7 @@ $(document).ready(function() {
                 $repoPathRow.hide();
                 $repoMirrorPathRow.hide();
 
-                updatePlanEl($repoPlanRow, $repoPlan, hostingType);
+                updatePlanEl($repoPlanRow, $repoPlan, hostingType, isFake);
             }
 
             $repoPlan.triggerHandler('change');
@@ -266,7 +266,6 @@ $(document).ready(function() {
             }
 
             $bugTrackerTypeRow.setVisible(!isFake);
-            $repoPlanRow.setVisible(!isFake);
             $hostingAccountRow.setVisible(!isFake);
             $hostingAccountUserRow.setVisible(!isFake);
             $hostingAccountPassRow.setVisible(!isFake);
@@ -412,7 +411,7 @@ $(document).ready(function() {
             } else {
                 $bugTrackerURLRow.hide();
                 updatePlanEl($bugTrackerPlanRow, $bugTrackerPlan,
-                             bugTrackerType);
+                             bugTrackerType, false);
 
                 $bugTrackerHostingURLRow.setVisible(
                     HOSTING_SERVICES[bugTrackerType].self_hosted);
