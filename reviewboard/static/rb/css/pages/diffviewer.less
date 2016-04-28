@@ -3,6 +3,8 @@
 
 @img_base: '../../images';
 
+@commentflag-width: 1.6em;
+
 
 /*
  * The .diff-changes-* rules are used only within JavaScript code to
@@ -188,7 +190,7 @@
   tbody {
     tr {
       &.selected {
-        * {
+        > * {
           background: @diff-selected-color;
         }
 
@@ -366,7 +368,7 @@
 
     &.delete {
       tr {
-        &.selected * { background: @diff-delete-selected-color; }
+        &.selected > * { background: @diff-delete-selected-color; }
         &.highlight-anchor * { background: @diff-highlight-color; }
 
         td {
@@ -383,7 +385,7 @@
 
     &.insert {
       tr {
-        &.selected * { background: @diff-insert-selected-color; }
+        &.selected > * { background: @diff-insert-selected-color; }
         &.highlight-anchor * { background: @diff-highlight-color; }
 
         td {
@@ -400,7 +402,7 @@
 
     &.replace {
       tr {
-        &.selected * { background: @diff-replace-selected-color; }
+        &.selected > * { background: @diff-replace-selected-color; }
         &.highlight-anchor * { background: @diff-highlight-color; }
 
         td {
@@ -508,7 +510,7 @@
   left: -0.7em;
   margin-top: -0.3em;
   position: absolute;
-  width: 1.6em;
+  width: @commentflag-width;
 
   .commentflag-shadow {
     border-radius: @comment-flag-border-radius;
@@ -520,7 +522,7 @@
     position: absolute;
     right: 0;
     top: 0.2em;
-    width: 100%;
+    width: @commentflag-width;
   }
 
   .commentflag-inner {
@@ -539,7 +541,7 @@
     text-align: center;
     top: 0;
     vertical-align: top;
-    width: 100%;
+    width: @commentflag-width / 0.9;
     z-index: @z-index-deco;
 
     span {
