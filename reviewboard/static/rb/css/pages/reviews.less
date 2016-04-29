@@ -466,6 +466,17 @@
         margin: @textarea-editor-margin;
         padding: @textarea-editor-padding;
         white-space: pre-wrap;
+
+        .codehilite {
+          /* Make the code blocks flush against the sides of the field. */
+          border-left: 0;
+          border-right: 0;
+          border-radius: 0;
+          margin-left: -(@code-block-border-size + @code-block-padding-horiz -
+                         @textarea-border-size);
+          margin-right: -(@code-block-border-size + @code-block-padding-horiz -
+                         @textarea-border-size);
+        }
       }
     }
   }
@@ -2849,4 +2860,15 @@
 }
 
 
-// vim: set et ts=2 sw=2:
+/****************************************************************************
+ * Markdown Additions
+ ****************************************************************************/
+
+#review-form,
+#reviews .review .body {
+  .rich-text {
+    margin-left: (@textarea-editor-padding + @textarea-border-size);
+    margin-top: (@textarea-editor-margin-top + @textarea-editor-padding +
+                 @textarea-border-size);
+  }
+}
