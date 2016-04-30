@@ -1,4 +1,4 @@
-.. _unittestfixtures:
+.. _unit-test-fixtures:
 
 ==================
 Unit Test Fixtures
@@ -27,7 +27,7 @@ as Review Requests, Reviews, Comments, Repositories, and others. These are not
 included in fixtures because of the variety of data that can be included, and
 loading fixtures incurs a noticible cost on the time to run the test suite.
 
-.. _Django: http://www.djangoproject.com/
+.. _Django: https://www.djangoproject.com/
 
 
 Updating Fixtures

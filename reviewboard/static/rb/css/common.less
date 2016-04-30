@@ -1,20 +1,6 @@
 @import (reference) "defs.less";
 
 
-span {
-  &.label-draft {
-    color: #008000;
-  }
-
-  &.label-submitted {
-    color: #b7a93e;
-  }
-
-  &.label-discarded {
-    color: #fe5757;
-  }
-}
-
 .loading img {
   margin-right: 4px;
   vertical-align: text-bottom;
@@ -22,134 +8,6 @@ span {
 
 .box .star {
   cursor: pointer;
-}
-
-.datagrid-wrapper {
-  .datagrid-titlebox {
-    padding-left: 0px;
-
-    .datagrid-title {
-      padding-left: 10px;
-    }
-
-    .datagrid-showclosed {
-      display: inline-block ;
-    }
-  }
-
-  .datagrid-title,
-  .datagrid-titlebox {
-    background: @box-title-bg;
-    .border-radius(@box-border-radius @box-border-radius 0 0);
-  }
-}
-
-#dashboard-main {
-  display: block;
-
-  .datagrid-title-tabs {
-    display: block;
-    height: 1.5em;
-    list-style: none;
-
-    .datagrid-tab {
-      float: left;
-
-      &.active {
-        &:hover {
-          .datagrid-title {
-            background: darken(@box-title-bg, 20%);
-          }
-        }
-
-        .datagrid-title {
-          background: darken(@box-title-bg, 10%);
-        }
-      }
-
-      .datagrid-title {
-        border-radius: 0;
-        border-right: 1px solid gray;
-
-        &:hover {
-          background: darken(@box-title-bg, 10%);
-        }
-
-        a {
-          text-decoration: none;
-          color: black;
-        }
-      }
-    }
-
-    .datagrid-showclosed {
-      padding: 2px 0px 0px 10px ;
-    }
-  }
-}
-
-.datagrid-main {
-  .border-radius(@box-border-radius);
-}
-
-.datagrid-header {
-  border-top: 0 !important;
-
-  &:last-child {
-    border-right: 0;
-  }
-}
-
-.datagrid-menu {
-  border: 1px #888A85 solid;
-}
-
-.datagrid {
-  tr:last-child {
-    td:first-child {
-      .border-radius(0 0 0 @box-border-radius);
-    }
-
-    td:last-child {
-      .border-radius(0 0 @box-border-radius 0);
-    }
-  }
-
-  td:last-child {
-    border-right: 0;
-  }
-
-  .issue-count,
-  .shipit-count {
-    display: inline-block;
-    font-weight: bold;
-    padding: 0.05em 0.8em;
-    white-space: nowrap;
-    .border-radius(10px);
-  }
-
-  .issue-count {
-    border: 1px darken(@issue-opened-bg, 50%) solid;
-    color: #205003;
-    #gradient > .vertical-three-colors(@issue-opened-bg, @issue-opened-bg, 25%,
-                                       darken(@issue-opened-bg, 30%));
-
-    .issue-icon {
-      color: darken(@issue-opened-bg, 60%);
-      display: inline-block;
-      padding: 0 3px 0 1px;
-      text-align: center;
-    }
-  }
-
-  .shipit-count {
-    background-image: url("../images/shipit_bg.png");
-    background-position: top left;
-    background-repeat: repeat-x;
-    background-color: #6bc810;
-    border: 1px #478a06 solid;
-    color: #205003;
-  }
 }
 
 
@@ -171,7 +29,7 @@ span {
     bottom: 0;
     right: 0;
 
-    input {
+    input, .split-btn {
       margin-left: 10px;
     }
   }
@@ -196,10 +54,10 @@ span {
 .text-editor {
   textarea {
     border: 1px @textarea-border-color solid;
+    box-sizing: border-box;
     margin: 0;
     outline: none;
     padding: 10px;
-    .box-sizing(border-box);
 
     /*
      * This prevents extra spacing below a text area in different browsers.
@@ -347,15 +205,6 @@ span {
   }
 }
 
-body.admin #navbar {
-  background: url("../images/admin/yellow_bg_small.png") repeat-x #F9F2C9;
-  margin: 0;
-
-  a {
-    color: black;
-  }
-}
-
 
 /****************************************************************************
  * Login/Register pages
@@ -374,12 +223,12 @@ body.admin #navbar {
   input[type="password"],
   input[type="email"] {
     border: 1px #aaa solid;
+    border-radius: @box-border-radius;
+    box-sizing: border-box;
     font-size: inherit;
     margin: 0;
     padding: 0.5em;
     width: @auth-field-width;
-    .border-radius(@box-border-radius);
-    .box-sizing(border-box);
   }
 
   .auth-button-container {
@@ -390,7 +239,7 @@ body.admin #navbar {
       margin: 0;
       padding: 0.6em;
       width: 100%;
-      .box-sizing(border-box);
+      box-sizing: border-box;
     }
   }
 
@@ -408,7 +257,7 @@ body.admin #navbar {
         padding: 0.5em 1em 0.5em 0.5em;
         text-align: right;
         width: @auth-label-width;
-        .box-sizing(border-box);
+        box-sizing: border-box;
       }
 
       .errorlist {
@@ -469,6 +318,33 @@ body.admin #navbar {
       margin: 0 0 1em 0;;
     }
   }
+
+  .on-mobile-medium-screen-720({
+    /* Waste less vertical space on mobile devices. */
+    margin-top: 3em;
+
+    .auth-form-row {
+      /* Change the labels to appear above the fields and not to the side. */
+      padding-left: 0;
+
+      &.auth-field-row {
+        label {
+          display: block;
+          float: none;
+          padding: 0.5em 0;
+          text-align: left;
+          width: auto;
+        }
+      }
+    }
+
+    .auth-section {
+      &.main-auth-section {
+        /* Reset the margin that was providing room for the side labels. */
+        margin-left: 0;
+      }
+    }
+  });
 }
 
 #auth_container #login_form {
@@ -487,14 +363,9 @@ body.admin #navbar {
   }
 }
 
-#auth_container #register_form {
-  .register-captcha-row {
-    padding-left: 0;
-
-    .register-captcha-container {
-      float: right;
-    }
-  }
+#auth_container .register-captcha-row {
+  float: right;
+  padding-left: 0;
 }
 
 
@@ -510,10 +381,30 @@ body.admin #navbar {
   width: 100%;
   z-index: @z-index-menu;
 
+  .on-mobile-medium-screen-720({
+    &.search-results {
+      /*
+       * On mobile, set the autoresults list to take up the entire size of
+       * the #page-container, overriding anything set by the widget.
+       */
+      left: 0 !important;
+      top: -@page-container-padding !important;
+      width: 100% !important;
+      height: 100%;
+      border: 0;
+      overflow-y: auto;
+    }
+  });
+
   ul {
+    list-style: none;
     margin: 0;
     padding: 0;
     width: 100%;
+
+    .on-mobile-medium-screen-720({
+      max-height: none !important;
+    });
 
     li {
       cursor: pointer;
@@ -521,6 +412,16 @@ body.admin #navbar {
       padding: 3px 6px;
       position: relative;
       white-space: nowrap;
+
+      .on-mobile-medium-screen-720({
+        /*
+         * Give each item a border and more padding to help define the click
+         * area (and to fit in with typical search results on mobile devices.
+         */
+        border-top: 1px #EEE solid;
+        margin: 0 1em;
+        padding: 1.5em;
+      });
 
       span {
         margin-left: 6px;
@@ -547,24 +448,90 @@ body.admin #navbar {
  * User page hover
  ****************************************************************************/
 
-#user_infobox {
-  &.loading {
-    background-image: url("../images/spinner.gif");
-    background-position: 1em 1em;
-    background-repeat: no-repeat;
-  }
+.user_infobox {
+  font-size: 12px;
+  min-height: @user-infobox-avatar-size;
 
   .infobox-pic {
-    float: left;
-    width: 85px;
-    margin-right: 1em;
+    display: inline-block;
+    height: @user-infobox-avatar-size;
+    width: @user-infobox-avatar-size;
+    vertical-align: top;
+
+    img {
+      border-radius: 2px 0 0 2px;
+    }
+  }
+
+  /*
+   * If there's extra content provided by extensions, the avatar image should
+   * have a flat bottom. If not, round the bottom-left as well as the top-left.
+   */
+  .has-extra-content .infobox-pic img {
+    border-radius: 2px 0 0 0;
+  }
+
+  .infobox-extra {
+    border-top: 1px solid #666;
+    box-sizing: border-box;
+    padding: 0.5em;
+    width: 100%;
   }
 
   .infobox-text {
+    box-sizing: border-box;
     color: black;
-    float: left;
-    max-width: 200px;
+    display: inline-block;
+    min-height: @user-infobox-avatar-size;
+    max-width: 40em;
+    padding: 0.75em;
+    position: relative;
     word-wrap: break-word;
+    vertical-align: top;
+
+    .localtime {
+      position: absolute;
+      z-index: @z-index-dialog + 1;
+
+      & > time {
+        cursor: pointer;
+        border-bottom: 1px dotted #666;
+      }
+
+      .small-detail {
+        display: none;
+
+        /*
+         * 14px left margin aligns the text with the time above it. The rest
+         * are chosen to look nice.
+         */
+        margin: 14px 20px 4px 14px;
+      }
+
+      &:hover {
+        border: 1px solid #666;
+        background-color: white;
+        padding: 3px;
+        margin: -4px;
+
+        .small-detail {
+          display: block;
+        }
+      }
+    }
+
+    .links {
+      position: absolute;
+      bottom: 0.75em;
+
+      a {
+        margin-right: 2em;
+      }
+    }
+
+    .small-detail {
+      font-size: 10px;
+    }
   }
 
   a {
@@ -576,22 +543,18 @@ body.admin #navbar {
   }
 
   h2 {
+    margin-top: 0;
+    padding-top: 0;
+
     a {
       color: inherit;
     }
-  }
 
-  .logged-in {
-    margin-top: 2em;
-  }
-
-  .logged-in, .joined {
-    font-size: 0.8em;
-  }
-
-  #infobox-text h2 {
-    margin-top: 0;
-    padding-top: 0;
+    .username {
+      color: #888888;
+      font-size: 12px;
+      font-weight: normal;
+    }
   }
 }
 
@@ -604,8 +567,9 @@ body.admin #navbar {
  * Bug hover
  ****************************************************************************/
 
-#bug_infobox {
+.bug_infobox {
   max-width: 50em;
+  min-height: 10em;
   max-height: 25em;
   overflow: hidden;
 
@@ -621,17 +585,15 @@ body.admin #navbar {
   }
 }
 
-#user_infobox, #bug_infobox {
+.user_infobox, .bug_infobox {
   background: #F9F9F9;
-  border: 1px black solid;
+  border: 1px #666666 solid;
+  border-radius: 3px;
+  box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.5);
   display: block;
-  min-height: 12em;
-  padding: 1em;
   position: absolute;
   min-width: 40em;
   z-index: @z-index-dialog;
-  .border-radius(10px);
-  .box-shadow(0px 0px 4px #000);
 
   h2 {
     font-size: 1.4em;
@@ -640,7 +602,6 @@ body.admin #navbar {
   }
 
   p {
-    font-size: 1.2em;
     margin: 0.5em 0;
     padding: 0;
   }

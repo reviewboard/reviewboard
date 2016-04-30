@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django.db.models import Q
 from django.utils import six
 from djblets.webapi.decorators import (webapi_login_required,
@@ -84,10 +86,18 @@ class ValidateDiffResource(DiffResource):
                 'type': file,
                 'description': 'The optional parent diff to upload.',
             },
+            'base_commit_id': {
+                'type': six.text_type,
+                'description': 'The ID/revision this change is built upon. '
+                               'If using a parent diff, then this is the base '
+                               'for that diff. This may not be provided for '
+                               'all diffs or repository types, depending on '
+                               'how the diff was uploaded.',
+            },
         }
     )
     def create(self, request, repository, basedir=None, local_site_name=None,
-               *args, **kwargs):
+               base_commit_id=None, *args, **kwargs):
         """Validate a diff.
 
         This API has a similar signature to the ReviewRequest resource POST
@@ -114,13 +124,21 @@ class ValidateDiffResource(DiffResource):
             return INVALID_REPOSITORY, {
                 'repository': repository
             }
+        except Repository.MultipleObjectsReturned:
+            msg = ('Too many repositories matched "%s". '
+                   'Try specifying the repository by name instead.'
+                   % repository)
+
+            return INVALID_REPOSITORY.with_message(msg), {
+                'repository': repository,
+            }
 
         if (not repository.get_scmtool().get_diffs_use_absolute_paths() and
             basedir is None):
 
             return INVALID_FORM_DATA, {
                 'fields': {
-                    'basedir': 'Given repository requires a base directory',
+                    'basedir': ['Given repository requires a base directory'],
                 },
             }
 
@@ -134,6 +152,7 @@ class ValidateDiffResource(DiffResource):
         try:
             DiffSet.objects.create_from_upload(
                 repository, path, parent_diff_path, None, basedir, request,
+                base_commit_id=base_commit_id,
                 save=False)
         except FileNotFoundError as e:
             return REPO_FILE_NOT_FOUND, {
@@ -159,9 +178,12 @@ class ValidateDiffResource(DiffResource):
                 'revision': six.text_type(e.revision),
             }
         except SCMError as e:
-            return DIFF_PARSE_ERROR, {
-                'reason': six.text_type(e),
-            }
+            return DIFF_PARSE_ERROR.with_message(six.text_type(e))
+        except Exception as e:
+            logging.exception('Unexpected error when validating diff.')
+
+            return DIFF_PARSE_ERROR.with_message(
+                'Unexpected error when validating the diff: %s' % e)
 
         return 200, {}
 

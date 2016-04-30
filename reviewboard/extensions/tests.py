@@ -1,49 +1,108 @@
 from __future__ import unicode_literals
 
+from contextlib import contextmanager
+
 from django.contrib.auth.models import User
+from django.core import mail
 from django.template import Context, Template
 from django.test.client import RequestFactory
+from django.utils import six
+from djblets.extensions.extension import ExtensionInfo
 from djblets.extensions.manager import ExtensionManager
 from djblets.extensions.models import RegisteredExtension
+from djblets.registries.errors import AlreadyRegisteredError, RegistrationError
+from djblets.siteconfig.models import SiteConfiguration
+from kgb import SpyAgency
+from mock import Mock
 
 from reviewboard.admin.widgets import (primary_widgets,
                                        secondary_widgets,
                                        Widget)
+from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.extensions.base import Extension
 from reviewboard.extensions.hooks import (AdminWidgetHook,
+                                          APIExtraDataAccessHook,
                                           CommentDetailDisplayHook,
                                           DiffViewerActionHook,
+                                          EmailHook,
                                           HeaderActionHook,
                                           HeaderDropdownActionHook,
                                           HostingServiceHook,
                                           NavigationBarHook,
+                                          ReviewPublishedEmailHook,
                                           ReviewRequestActionHook,
                                           ReviewRequestApprovalHook,
+                                          ReviewRequestClosedEmailHook,
                                           ReviewRequestDropdownActionHook,
                                           ReviewRequestFieldSetsHook,
+                                          ReviewRequestPublishedEmailHook,
+                                          ReviewReplyPublishedEmailHook,
+                                          UserInfoboxHook,
                                           WebAPICapabilitiesHook)
 from reviewboard.hostingsvcs.service import (get_hosting_service,
                                              HostingService)
+from reviewboard.notifications.email import get_email_address_for_user
 from reviewboard.testing.testcase import TestCase
 from reviewboard.reviews.models.review_request import ReviewRequest
 from reviewboard.reviews.fields import (BaseReviewRequestField,
                                         BaseReviewRequestFieldSet)
+from reviewboard.reviews.signals import (review_request_published,
+                                         review_published, reply_published,
+                                         review_request_closed)
+from reviewboard.site.urlresolvers import local_site_reverse
+from reviewboard.webapi.base import ExtraDataAccessLevel, WebAPIResource
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import root_item_mimetype
 from reviewboard.webapi.tests.urls import get_root_url
+
+
+@contextmanager
+def set_siteconfig_settings(settings):
+    """A context manager to toggle site configuration settings.
+
+    Args:
+        settings (dict):
+            The new site configuration settings.
+    """
+    siteconfig = SiteConfiguration.objects.get_current()
+
+    old_settings = {}
+
+    for setting, value in six.iteritems(settings):
+        old_settings[setting] = siteconfig.get(setting)
+        siteconfig.set(setting, value)
+
+    siteconfig.save()
+    load_site_config()
+
+    try:
+        yield
+    finally:
+        for setting, value in six.iteritems(old_settings):
+            siteconfig.set(setting, value)
+
+        siteconfig.save()
+        load_site_config()
+
+
+class ExtensionManagerMixin(object):
+    """Mixin used to setup a default ExtensionManager for tests."""
+
+    def setUp(self):
+        super(ExtensionManagerMixin, self).setUp()
+        self.manager = ExtensionManager('')
 
 
 class DummyExtension(Extension):
     registration = RegisteredExtension()
 
 
-class HookTests(TestCase):
+class HookTests(ExtensionManagerMixin, TestCase):
     """Tests the extension hooks."""
     def setUp(self):
         super(HookTests, self).setUp()
 
-        manager = ExtensionManager('')
-        self.extension = DummyExtension(extension_manager=manager)
+        self.extension = DummyExtension(extension_manager=self.manager)
 
     def tearDown(self):
         super(HookTests, self).tearDown()
@@ -157,14 +216,123 @@ class HookTests(TestCase):
 
         hook = NavigationBarHook(extension=self.extension, entries=[entry])
 
-        context = Context({})
+        request = self.client.request()
+        request.user = User(username='text')
+
+        context = Context({
+            'request': request,
+            'local_site_name': 'test-site',
+        })
         entries = hook.get_entries(context)
         self.assertEqual(len(entries), 1)
         self.assertEqual(entries[0], entry)
 
         t = Template(
-            "{% load rb_extensions %}"
-            "{% navigation_bar_hooks %}")
+            '{% load rb_extensions %}'
+            '{% navigation_bar_hooks %}')
+
+        self.assertEqual(t.render(context).strip(),
+                         '<li><a href="%(url)s">%(label)s</a></li>' % entry)
+
+    def test_navigation_bar_hooks_with_is_enabled_for_true(self):
+        """Testing NavigationBarHook.is_enabled_for and returns true"""
+        def is_enabled_for(**kwargs):
+            self.assertEqual(kwargs['user'], request.user)
+            self.assertEqual(kwargs['request'], request)
+            self.assertEqual(kwargs['local_site_name'], 'test-site')
+
+            return True
+
+        entry = {
+            'label': 'Test Nav Entry',
+            'url': 'foo-url',
+        }
+
+        hook = NavigationBarHook(extension=self.extension, entries=[entry],
+                                 is_enabled_for=is_enabled_for)
+
+        request = self.client.request()
+        request.user = User(username='text')
+
+        context = Context({
+            'request': request,
+            'local_site_name': 'test-site',
+        })
+        entries = hook.get_entries(context)
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0], entry)
+
+        t = Template(
+            '{% load rb_extensions %}'
+            '{% navigation_bar_hooks %}')
+
+        self.assertEqual(t.render(context).strip(),
+                         '<li><a href="%(url)s">%(label)s</a></li>' % entry)
+
+    def test_navigation_bar_hooks_with_is_enabled_for_false(self):
+        """Testing NavigationBarHook.is_enabled_for and returns false"""
+        def is_enabled_for(**kwargs):
+            self.assertEqual(kwargs['user'], request.user)
+            self.assertEqual(kwargs['request'], request)
+            self.assertEqual(kwargs['local_site_name'], 'test-site')
+
+            return False
+
+        entry = {
+            'label': 'Test Nav Entry',
+            'url': 'foo-url',
+        }
+
+        hook = NavigationBarHook(extension=self.extension, entries=[entry],
+                                 is_enabled_for=is_enabled_for)
+
+        request = self.client.request()
+        request.user = User(username='text')
+
+        context = Context({
+            'request': request,
+            'local_site_name': 'test-site',
+        })
+        entries = hook.get_entries(context)
+        self.assertEqual(len(entries), 0)
+
+        t = Template(
+            '{% load rb_extensions %}'
+            '{% navigation_bar_hooks %}')
+
+        self.assertEqual(t.render(context).strip(), '')
+
+    def test_navigation_bar_hooks_with_is_enabled_for_legacy(self):
+        """Testing NavigationBarHook.is_enabled_for and legacy argument
+        format
+        """
+        def is_enabled_for(user):
+            self.assertEqual(user, request.user)
+
+            return True
+
+        entry = {
+            'label': 'Test Nav Entry',
+            'url': 'foo-url',
+        }
+
+        hook = NavigationBarHook(extension=self.extension, entries=[entry],
+                                 is_enabled_for=is_enabled_for)
+
+        request = self.client.request()
+        request.user = User(username='text')
+
+        context = Context({
+            'request': request,
+            'local_site_name': 'test-site',
+        })
+        entries = hook.get_entries(context)
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0], entry)
+
+        t = Template(
+            '{% load rb_extensions %}'
+            '{% navigation_bar_hooks %}')
 
         self.assertEqual(t.render(context).strip(),
                          '<li><a href="%(url)s">%(label)s</a></li>' % entry)
@@ -178,14 +346,20 @@ class HookTests(TestCase):
 
         hook = NavigationBarHook(extension=self.extension, entries=[entry])
 
-        context = Context({})
+        request = self.client.request()
+        request.user = User(username='text')
+
+        context = Context({
+            'request': request,
+            'local_site_name': 'test-site',
+        })
         entries = hook.get_entries(context)
         self.assertEqual(len(entries), 1)
         self.assertEqual(entries[0], entry)
 
         t = Template(
-            "{% load rb_extensions %}"
-            "{% navigation_bar_hooks %}")
+            '{% load rb_extensions %}'
+            '{% navigation_bar_hooks %}')
 
         self.assertEqual(
             t.render(context).strip(),
@@ -208,13 +382,12 @@ class TestService(HostingService):
     name = 'test-service'
 
 
-class HostingServiceHookTests(TestCase):
+class HostingServiceHookTests(ExtensionManagerMixin, TestCase):
     """Testing HostingServiceHook."""
     def setUp(self):
         super(HostingServiceHookTests, self).setUp()
 
-        manager = ExtensionManager('')
-        self.extension = DummyExtension(extension_manager=manager)
+        self.extension = DummyExtension(extension_manager=self.manager)
 
     def tearDown(self):
         super(HostingServiceHookTests, self).tearDown()
@@ -232,7 +405,7 @@ class HostingServiceHookTests(TestCase):
         hook = HostingServiceHook(extension=self.extension,
                                   service_cls=TestService)
 
-        hook.shutdown()
+        hook.disable_hook()
 
         self.assertEqual(None, get_hosting_service(TestService.name))
 
@@ -242,13 +415,12 @@ class TestWidget(Widget):
     title = 'Testing Widget'
 
 
-class AdminWidgetHookTests(TestCase):
+class AdminWidgetHookTests(ExtensionManagerMixin, TestCase):
     """Testing AdminWidgetHook."""
     def setUp(self):
         super(AdminWidgetHookTests, self).setUp()
 
-        manager = ExtensionManager('')
-        self.extension = DummyExtension(extension_manager=manager)
+        self.extension = DummyExtension(extension_manager=self.manager)
 
     def tearDown(self):
         super(AdminWidgetHookTests, self).tearDown()
@@ -272,7 +444,7 @@ class AdminWidgetHookTests(TestCase):
         """Testing AdminWidgetHook unitializing"""
         hook = AdminWidgetHook(extension=self.extension, widget_cls=TestWidget)
 
-        hook.shutdown()
+        hook.disable_hook()
 
         self.assertNotIn(TestWidget, secondary_widgets)
 
@@ -288,14 +460,13 @@ class WebAPICapabilitiesExtension(Extension):
         super(WebAPICapabilitiesExtension, self).__init__(*args, **kwargs)
 
 
-class WebAPICapabilitiesHookTests(BaseWebAPITestCase):
+class WebAPICapabilitiesHookTests(ExtensionManagerMixin, BaseWebAPITestCase):
     """Testing WebAPICapabilitiesHook."""
     def setUp(self):
         super(WebAPICapabilitiesHookTests, self).setUp()
 
-        manager = ExtensionManager('')
         self.extension = WebAPICapabilitiesExtension(
-            extension_manager=manager)
+            extension_manager=self.manager)
         self.url = get_root_url()
 
     def tearDown(self):
@@ -395,7 +566,7 @@ class WebAPICapabilitiesHookTests(BaseWebAPITestCase):
                 'thorough': True,
             })
 
-        hook.shutdown()
+        hook.disable_hook()
 
         rsp = self.api_get(path=self.url,
                            expected_mimetype=root_item_mimetype)
@@ -409,6 +580,303 @@ class WebAPICapabilitiesHookTests(BaseWebAPITestCase):
         self.extension.shutdown()
 
 
+class GenericTestResource(WebAPIResource):
+    name = 'test'
+    uri_object_key = 'test_id'
+    extra_data = {}
+    item_mimetype = 'application/vnd.reviewboard.org.test+json'
+
+    fields = {
+        'extra_data': {
+            'type': dict,
+            'description': 'Extra data as part of the test resource. '
+                           'This can be set by the API or extensions.',
+        },
+    }
+
+    allowed_methods = ('GET', 'PUT')
+
+    def get(self, *args, **kwargs):
+        return 200, {
+            'test': {
+                'extra_data': self.serialize_extra_data_field(self)
+            }
+        }
+
+    def put(self, request, *args, **kwargs):
+        fields = request.POST.dict()
+        self.import_extra_data(self, self.extra_data, fields)
+
+        return 200, {
+            'test': self.extra_data
+        }
+
+    def has_access_permissions(self, request, obj, *args, **kwargs):
+        return True
+
+
+class APIExtraDataAccessHookTests(ExtensionManagerMixin, SpyAgency,
+                                  BaseWebAPITestCase):
+    """Testing APIExtraDataAccessHook."""
+
+    fixtures = ['test_users']
+
+    class EverythingPrivateHook(APIExtraDataAccessHook):
+        """Hook which overrides callable to return all fields as private."""
+
+        def get_extra_data_state(self, key_path):
+            self.called = True
+            return ExtraDataAccessLevel.ACCESS_STATE_PRIVATE
+
+    class InvalidCallableHook(APIExtraDataAccessHook):
+        """Hook which implements an invalid callable"""
+
+        get_extra_data_state = 'not a callable'
+
+    def setUp(self):
+        super(APIExtraDataAccessHookTests, self).setUp()
+
+        self.resource_class = GenericTestResource
+        self.resource = self.resource_class()
+
+        class DummyExtension(Extension):
+            resources = [self.resource]
+            registration = RegisteredExtension()
+
+        self.extension_class = DummyExtension
+
+        entry_point = Mock()
+        entry_point.load = lambda: self.extension_class
+        entry_point.dist = Mock()
+        entry_point.dist.project_name = 'TestProjectName'
+        entry_point.dist.get_metadata_lines = lambda *args: [
+            'Name: Resource Test Extension',
+        ]
+
+        self.manager._entrypoint_iterator = lambda: [entry_point]
+
+        self.manager.load()
+        self.extension = self.manager.enable_extension(self.extension_class.id)
+        self.registered = True
+
+        self.extension_class.info = ExtensionInfo(entry_point,
+                                                  self.extension_class)
+
+        self.url = self.resource.get_item_url(test_id=1)
+        self.resource.extra_data = {
+            'public': 'foo',
+            'private': 'secret',
+            'readonly': 'bar',
+        }
+
+    def tearDown(self):
+        super(APIExtraDataAccessHookTests, self).tearDown()
+
+        if self.registered is True:
+            self.manager.disable_extension(self.extension_class.id)
+
+    def test_register(self):
+        """Testing APIExtraDataAccessHook registration"""
+        APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('public',), ExtraDataAccessLevel.ACCESS_STATE_PUBLIC)
+            ])
+
+        self.assertNotEqual(set(),
+                            set(self.resource.extra_data_access_callbacks))
+
+    def test_register_overridden_hook(self):
+        """Testing overridden APIExtraDataAccessHook registration"""
+        self.EverythingPrivateHook(self.extension, self.resource, [])
+
+        self.assertNotEqual(set(),
+                            set(self.resource.extra_data_access_callbacks))
+
+    def test_overridden_hook_get(self):
+        """Testing overridden APIExtraDataAccessHook get"""
+        hook = self.EverythingPrivateHook(self.extension, self.resource, [])
+
+        rsp = self.api_get(self.url,
+                           expected_mimetype=self.resource.item_mimetype)
+
+        # Since the hook registers the callback function on initialization,
+        # which stores a pointer to the method, we can't use SpyAgency after
+        # the hook has already been initialized. Since SpyAgency's spy_on
+        # function requires an instance of a class, we also cannot spy on the
+        # hook function before initialization. Therefore, as a workaround,
+        # we're setting a variable in the function to ensure that it is in
+        # fact being called.
+        self.assertTrue(hook.called)
+        self.assertNotIn('public', rsp['test']['extra_data'])
+        self.assertNotIn('readonly', rsp['test']['extra_data'])
+        self.assertNotIn('private', rsp['test']['extra_data'])
+
+    def test_overridden_hook_put(self):
+        """Testing overridden APIExtraDataAccessHook put"""
+        hook = self.EverythingPrivateHook(self.extension, self.resource, [])
+
+        original_value = self.resource.extra_data['readonly']
+        modified_extra_fields = {
+            'extra_data.public': 'modified',
+        }
+
+        rsp = self.api_put(self.url, modified_extra_fields,
+                           expected_mimetype=self.resource.item_mimetype)
+
+        # Since the hook registers the callback function on initialization,
+        # which stores a pointer to the method, we can't use SpyAgency after
+        # the hook has already been initialized. Since SpyAgency's spy_on
+        # function requires an instance of a class, we also cannot spy on the
+        # hook function before initialization. Therefore, as a workaround,
+        # we're setting a variable in the function to ensure that it is in
+        # fact being called.
+        self.assertTrue(hook.called)
+        self.assertEqual(original_value, rsp['test']['readonly'])
+
+    def test_register_invalid_hook(self):
+        """Testing hook registration with invalid hook"""
+        self.registered = False
+
+        with self.assertRaises(RegistrationError):
+            self.InvalidCallableHook(self.extension, self.resource, [])
+
+        self.assertSetEqual(set(),
+                            set(self.resource.extra_data_access_callbacks))
+
+    def test_register_hook_already_registered(self):
+        """Testing hook registration with already registered callback"""
+        hook = APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('public',), ExtraDataAccessLevel.ACCESS_STATE_PUBLIC)
+            ])
+
+        with self.assertRaises(AlreadyRegisteredError):
+            hook.resource.extra_data_access_callbacks.register(
+                hook.get_extra_data_state)
+
+        self.assertNotEqual(set(),
+                            set(self.resource.extra_data_access_callbacks))
+
+    def test_public_state_get(self):
+        """Testing APIExtraDataAccessHook public state GET"""
+        APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('public',), ExtraDataAccessLevel.ACCESS_STATE_PUBLIC)
+            ])
+
+        rsp = self.api_get(self.url,
+                           expected_mimetype=self.resource.item_mimetype)
+
+        self.assertIn('public', rsp['test']['extra_data'])
+
+    def test_public_state_put(self):
+        """Testing APIExtraDataAccessHook public state PUT"""
+        APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('public',), ExtraDataAccessLevel.ACCESS_STATE_PUBLIC)
+            ])
+
+        modified_extra_fields = {
+            'extra_data.public': 'modified',
+        }
+
+        rsp = self.api_put(self.url, modified_extra_fields,
+                           expected_mimetype=self.resource.item_mimetype)
+
+        self.assertEqual(modified_extra_fields['extra_data.public'],
+                         rsp['test']['public'])
+
+    def test_readonly_state_get(self):
+        """Testing APIExtraDataAccessHook readonly state get"""
+        APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('readonly',),
+                 ExtraDataAccessLevel.ACCESS_STATE_PUBLIC_READONLY)
+            ])
+
+        rsp = self.api_get(self.url,
+                           expected_mimetype=self.resource.item_mimetype)
+
+        self.assertIn('readonly', rsp['test']['extra_data'])
+
+    def test_readonly_state_put(self):
+        """Testing APIExtraDataAccessHook readonly state put"""
+        APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('readonly',),
+                 ExtraDataAccessLevel.ACCESS_STATE_PUBLIC_READONLY)
+            ])
+
+        original_value = self.resource.extra_data['readonly']
+        modified_extra_fields = {
+            'extra_data.readonly': 'modified',
+        }
+
+        rsp = self.api_put(self.url, modified_extra_fields,
+                           expected_mimetype=self.resource.item_mimetype)
+
+        self.assertEqual(original_value, rsp['test']['readonly'])
+
+    def test_private_state_get(self):
+        """Testing APIExtraDataAccessHook private state get"""
+        APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('private',), ExtraDataAccessLevel.ACCESS_STATE_PRIVATE)
+            ])
+
+        rsp = self.api_get(self.url,
+                           expected_mimetype=self.resource.item_mimetype)
+
+        self.assertNotIn('private', rsp['test']['extra_data'])
+
+    def test_private_state_put(self):
+        """Testing APIExtraDataAccessHook private state put"""
+        APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('private',), ExtraDataAccessLevel.ACCESS_STATE_PRIVATE)
+            ])
+
+        original_value = self.resource.extra_data['private']
+        modified_extra_fields = {
+            'extra_data.private': 'modified',
+        }
+
+        rsp = self.api_put(self.url, modified_extra_fields,
+                           expected_mimetype=self.resource.item_mimetype)
+
+        self.assertEqual(original_value, rsp['test']['private'])
+
+    def test_unregister(self):
+        """Testing APIExtraDataAccessHook unregistration"""
+        hook = APIExtraDataAccessHook(
+            self.extension,
+            self.resource,
+            [
+                (('public',), ExtraDataAccessLevel.ACCESS_STATE_PUBLIC)
+            ])
+
+        hook.shutdown()
+
+        self.assertSetEqual(set(),
+                            set(self.resource.extra_data_access_callbacks))
+
+
 class SandboxExtension(Extension):
     registration = RegisteredExtension()
     metadata = {
@@ -420,42 +888,43 @@ class SandboxExtension(Extension):
         super(SandboxExtension, self).__init__(*args, **kwargs)
 
 
-class ReviewRequestApprovalTestHook(ReviewRequestApprovalHook):
+class SandboxReviewRequestApprovalTestHook(ReviewRequestApprovalHook):
     def is_approved(self, review_request, prev_approved, prev_failure):
         raise Exception
 
 
-class NavigationBarTestHook(NavigationBarHook):
+class SandboxNavigationBarTestHook(NavigationBarHook):
     def get_entries(self, context):
         raise Exception
 
 
-class DiffViewerActionTestHook(DiffViewerActionHook):
+class SandboxDiffViewerActionTestHook(DiffViewerActionHook):
     def get_actions(self, context):
         raise Exception
 
 
-class HeaderActionTestHook(HeaderActionHook):
+class SandboxHeaderActionTestHook(HeaderActionHook):
     def get_actions(self, context):
         raise Exception
 
 
-class HeaderDropdownActionTestHook(HeaderDropdownActionHook):
+class SandboxHeaderDropdownActionTestHook(HeaderDropdownActionHook):
     def get_actions(self, context):
         raise Exception
 
 
-class ReviewRequestActionTestHook(ReviewRequestActionHook):
+class SandboxReviewRequestActionTestHook(ReviewRequestActionHook):
     def get_actions(self, context):
         raise Exception
 
 
-class ReviewRequestDropdownActionTestHook(ReviewRequestDropdownActionHook):
+class SandboxReviewRequestDropdownActionTestHook(
+        ReviewRequestDropdownActionHook):
     def get_actions(self, context):
         raise Exception
 
 
-class CommentDetailDisplayTestHook(CommentDetailDisplayHook):
+class SandboxCommentDetailDisplayTestHook(CommentDetailDisplayHook):
     def render_review_comment_detail(self, comment):
         raise Exception
 
@@ -463,17 +932,25 @@ class CommentDetailDisplayTestHook(CommentDetailDisplayHook):
         raise Exception
 
 
-class BaseReviewRequestTestShouldRenderField(BaseReviewRequestField):
+class SandboxBaseReviewRequestTestShouldRenderField(BaseReviewRequestField):
     field_id = 'should_render'
 
     def should_render(self, value):
         raise Exception
 
 
-class BaseReviewRequestTestInitField(BaseReviewRequestField):
+class SandboxBaseReviewRequestTestInitField(BaseReviewRequestField):
     field_id = 'init_field'
 
     def __init__(self, review_request_details):
+        raise Exception
+
+
+class SandboxUserInfoboxHook(UserInfoboxHook):
+    def get_etag_data(self, user, request, local_site):
+        raise Exception
+
+    def render(self, user, request, local_site):
         raise Exception
 
 
@@ -487,12 +964,12 @@ class TestInitField(BaseReviewRequestField):
 
 class TestInitFieldset(BaseReviewRequestFieldSet):
     fieldset_id = 'test_init'
-    field_classes = [BaseReviewRequestTestInitField]
+    field_classes = [SandboxBaseReviewRequestTestInitField]
 
 
 class TestShouldRenderFieldset(BaseReviewRequestFieldSet):
     fieldset_id = 'test_should_render'
-    field_classes = [BaseReviewRequestTestShouldRenderField]
+    field_classes = [SandboxBaseReviewRequestTestShouldRenderField]
 
 
 class BaseReviewRequestTestIsEmptyFieldset(BaseReviewRequestFieldSet):
@@ -512,13 +989,12 @@ class BaseReviewRequestTestInitFieldset(BaseReviewRequestFieldSet):
         raise Exception
 
 
-class SandboxTests(TestCase):
+class SandboxTests(ExtensionManagerMixin, TestCase):
     """Testing extension sandboxing"""
     def setUp(self):
         super(SandboxTests, self).setUp()
 
-        manager = ExtensionManager('')
-        self.extension = SandboxExtension(extension_manager=manager)
+        self.extension = SandboxExtension(extension_manager=self.manager)
 
         self.factory = RequestFactory()
         self.user = User.objects.create_user(username='reviewboard', email='',
@@ -532,7 +1008,7 @@ class SandboxTests(TestCase):
     def test_is_approved_sandbox(self):
         """Testing sandboxing ReviewRequestApprovalHook when
         is_approved function throws an error"""
-        ReviewRequestApprovalTestHook(extension=self.extension)
+        SandboxReviewRequestApprovalTestHook(extension=self.extension)
         review = ReviewRequest()
         review._calculate_approval()
 
@@ -544,7 +1020,7 @@ class SandboxTests(TestCase):
             'url': '/dashboard/',
         }
 
-        NavigationBarTestHook(extension=self.extension, entries=[entry])
+        SandboxNavigationBarTestHook(extension=self.extension, entries=[entry])
 
         context = Context({})
 
@@ -557,7 +1033,7 @@ class SandboxTests(TestCase):
     def test_render_review_comment_details(self):
         """Testing sandboxing CommentDetailDisplayHook when
         render_review_comment_detail throws an error"""
-        CommentDetailDisplayTestHook(extension=self.extension)
+        SandboxCommentDetailDisplayTestHook(extension=self.extension)
 
         context = Context({'comment': 'this is a comment'})
 
@@ -570,7 +1046,7 @@ class SandboxTests(TestCase):
     def test_email_review_comment_details(self):
         """Testing sandboxing CommentDetailDisplayHook when
         render_email_comment_detail throws an error"""
-        CommentDetailDisplayTestHook(extension=self.extension)
+        SandboxCommentDetailDisplayTestHook(extension=self.extension)
 
         context = Context({'comment': 'this is a comment'})
 
@@ -583,7 +1059,7 @@ class SandboxTests(TestCase):
     def test_action_hooks_diff_viewer_hook(self):
         """Testing sandboxing DiffViewerActionHook when
         action_hooks throws an error"""
-        DiffViewerActionTestHook(extension=self.extension)
+        SandboxDiffViewerActionTestHook(extension=self.extension)
 
         context = Context({'comment': 'this is a comment'})
 
@@ -596,7 +1072,7 @@ class SandboxTests(TestCase):
     def test_action_hooks_header_hook(self):
         """Testing sandboxing HeaderActionHook when
         action_hooks throws an error"""
-        HeaderActionTestHook(extension=self.extension)
+        SandboxHeaderActionTestHook(extension=self.extension)
 
         context = Context({'comment': 'this is a comment'})
 
@@ -609,7 +1085,7 @@ class SandboxTests(TestCase):
     def test_action_hooks_header_dropdown_hook(self):
         """Testing sandboxing HeaderDropdownActionHook when
         action_hooks throws an error"""
-        HeaderDropdownActionTestHook(extension=self.extension)
+        SandboxHeaderDropdownActionTestHook(extension=self.extension)
 
         context = Context({'comment': 'this is a comment'})
 
@@ -622,7 +1098,7 @@ class SandboxTests(TestCase):
     def test_action_hooks_review_request_hook(self):
         """Testing sandboxing ReviewRequestActionHook when
         action_hooks throws an error"""
-        ReviewRequestActionTestHook(extension=self.extension)
+        SandboxReviewRequestActionTestHook(extension=self.extension)
 
         context = Context({'comment': 'this is a comment'})
 
@@ -635,7 +1111,7 @@ class SandboxTests(TestCase):
     def test_action_hooks_review_request_dropdown_hook(self):
         """Testing sandboxing ReviewRequestDropdownActionHook when
         action_hooks throws an error"""
-        ReviewRequestDropdownActionTestHook(extension=self.extension)
+        SandboxReviewRequestDropdownActionTestHook(extension=self.extension)
 
         context = Context({'comment': 'this is a comment'})
 
@@ -730,3 +1206,296 @@ class SandboxTests(TestCase):
             "{% end_for_review_request_field %}")
 
         t.render(context).strip()
+
+    def test_user_infobox_hook(self):
+        """Testing sandboxing of the UserInfoboxHook"""
+        SandboxUserInfoboxHook(self.extension, 'template.html')
+
+        self.client.get(
+            local_site_reverse('user-infobox', kwargs={
+                'username': self.user.username,
+            }))
+
+
+class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
+    """Testing the e-mail recipient filtering capacity of EmailHooks."""
+
+    fixtures = ['test_users']
+
+    def setUp(self):
+        super(EmailHookTests, self).setUp()
+
+        self.extension = DummyExtension(extension_manager=self.manager)
+
+        mail.outbox = []
+
+    def tearDown(self):
+        super(EmailHookTests, self).tearDown()
+
+        self.extension.shutdown()
+
+    def test_review_request_published_email_hook(self):
+        """Testing the ReviewRequestPublishedEmailHook"""
+        class DummyHook(ReviewRequestPublishedEmailHook):
+            def get_to_field(self, to_field, review_request, user):
+                return set([user])
+
+            def get_cc_field(self, cc_field, review_request, user):
+                return set([user])
+
+        hook = DummyHook(self.extension)
+
+        self.spy_on(hook.get_to_field)
+        self.spy_on(hook.get_cc_field)
+
+        review_request = self.create_review_request()
+        admin = User.objects.get(username='admin')
+
+        call_kwargs = {
+            'user': admin,
+            'review_request': review_request,
+        }
+
+        with set_siteconfig_settings({'mail_send_review_mail': True}):
+            review_request.publish(admin)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to,
+                         [get_email_address_for_user(admin)])
+        self.assertTrue(hook.get_to_field.spy.called)
+        self.assertEqual(hook.get_to_field.spy.calls[0].kwargs, call_kwargs)
+        self.assertTrue(hook.get_cc_field.spy.called)
+        self.assertEqual(hook.get_cc_field.spy.calls[0].kwargs, call_kwargs)
+
+    def test_review_published_email_hook(self):
+        """Testing the ReviewPublishedEmailHook"""
+        class DummyHook(ReviewPublishedEmailHook):
+            def get_to_field(self, to_field, review, user, review_request):
+                return set([user])
+
+            def get_cc_field(self, cc_field, review, user, review_request):
+                return set([user])
+
+        hook = DummyHook(self.extension)
+
+        self.spy_on(hook.get_to_field)
+        self.spy_on(hook.get_cc_field)
+
+        admin = User.objects.get(username='admin')
+        review_request = self.create_review_request(public=True)
+        review = self.create_review(review_request)
+
+        call_kwargs = {
+            'user': admin,
+            'review_request': review_request,
+            'review': review,
+        }
+
+        with set_siteconfig_settings({'mail_send_review_mail': True}):
+            review.publish(admin)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to,
+                         [get_email_address_for_user(admin)])
+        self.assertTrue(hook.get_to_field.spy.called)
+        self.assertEqual(hook.get_to_field.spy.calls[0].kwargs, call_kwargs)
+        self.assertTrue(hook.get_cc_field.spy.called)
+        self.assertEqual(hook.get_cc_field.spy.calls[0].kwargs, call_kwargs)
+
+    def test_review_reply_published_email_hook(self):
+        """Testing the ReviewReplyPublishedEmailHook"""
+        class DummyHook(ReviewReplyPublishedEmailHook):
+            def get_to_field(self, to_field, reply, user, review,
+                             review_request):
+                return set([user])
+
+            def get_cc_field(self, cc_field, reply, user, review,
+                             review_request):
+                return set([user])
+
+        hook = DummyHook(self.extension)
+
+        self.spy_on(hook.get_to_field)
+        self.spy_on(hook.get_cc_field)
+
+        admin = User.objects.get(username='admin')
+        review_request = self.create_review_request(public=True)
+        review = self.create_review(review_request)
+        reply = self.create_reply(review)
+
+        call_kwargs = {
+            'user': admin,
+            'review_request': review_request,
+            'review': review,
+            'reply': reply,
+        }
+
+        with set_siteconfig_settings({'mail_send_review_mail': True}):
+            reply.publish(admin)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertTrue(hook.get_to_field.spy.called)
+        self.assertEqual(hook.get_to_field.spy.calls[0].kwargs, call_kwargs)
+        self.assertTrue(hook.get_cc_field.spy.called)
+        self.assertEqual(hook.get_cc_field.spy.calls[0].kwargs, call_kwargs)
+
+    def test_review_request_closed_email_hook_submitted(self):
+        """Testing the ReviewRequestClosedEmailHook for a review request being
+        submitted
+        """
+        class DummyHook(ReviewRequestClosedEmailHook):
+            def get_to_field(self, to_field, review_request, user, close_type):
+                return set([user])
+
+            def get_cc_field(self, cc_field, review_request, user, close_type):
+                return set([user])
+
+        hook = DummyHook(self.extension)
+
+        self.spy_on(hook.get_to_field)
+        self.spy_on(hook.get_cc_field)
+
+        admin = User.objects.get(username='admin')
+        review_request = self.create_review_request(public=True)
+
+        call_kwargs = {
+            'user': admin,
+            'review_request': review_request,
+            'close_type': ReviewRequest.SUBMITTED,
+        }
+
+        with set_siteconfig_settings({'mail_send_review_close_mail': True}):
+            review_request.close(ReviewRequest.SUBMITTED, admin)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertTrue(hook.get_to_field.spy.called)
+        self.assertEqual(hook.get_to_field.spy.calls[0].kwargs, call_kwargs)
+        self.assertTrue(hook.get_cc_field.spy.called)
+        self.assertEqual(hook.get_cc_field.spy.calls[0].kwargs, call_kwargs)
+
+    def test_review_request_closed_email_hook_discarded(self):
+        """Testing the ReviewRequestClosedEmailHook for a review request being
+        discarded
+        """
+        class DummyHook(ReviewRequestClosedEmailHook):
+            def get_to_field(self, to_field, review_request, user, close_type):
+                return set([user])
+
+            def get_cc_field(self, cc_field, review_request, user, close_type):
+                return set([user])
+
+        hook = DummyHook(self.extension)
+
+        self.spy_on(hook.get_to_field)
+        self.spy_on(hook.get_cc_field)
+
+        admin = User.objects.get(username='admin')
+        review_request = self.create_review_request(public=True)
+
+        call_kwargs = {
+            'user': admin,
+            'review_request': review_request,
+            'close_type': ReviewRequest.DISCARDED,
+        }
+
+        with set_siteconfig_settings({'mail_send_review_close_mail': True}):
+            review_request.close(ReviewRequest.DISCARDED, admin)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertTrue(hook.get_to_field.spy.called)
+        self.assertEqual(hook.get_to_field.spy.calls[0].kwargs, call_kwargs)
+        self.assertTrue(hook.get_cc_field.spy.called)
+        self.assertEqual(hook.get_cc_field.spy.calls[0].kwargs, call_kwargs)
+
+    def test_generic_hook(self):
+        """Testing that a generic e-mail hook works for all e-mail signals"""
+        hook = EmailHook(self.extension,
+                         signals=[
+                             review_request_published,
+                             review_published,
+                             reply_published,
+                             review_request_closed,
+                         ])
+
+        self.spy_on(hook.get_to_field)
+        self.spy_on(hook.get_cc_field)
+
+        review_request = self.create_review_request(public=True)
+        review = self.create_review(review_request)
+        reply = self.create_reply(review)
+
+        siteconfig_settings = {
+            'mail_send_review_mail': True,
+            'mail_send_review_close_mail': True,
+        }
+
+        with set_siteconfig_settings(siteconfig_settings):
+            self.assertEqual(len(mail.outbox), 0)
+
+            review.publish()
+            call_kwargs = {
+                'user': review.user,
+                'review': review,
+                'review_request': review_request
+            }
+
+            self.assertEqual(len(mail.outbox), 1)
+            self.assertEqual(len(hook.get_to_field.spy.calls), 1)
+            self.assertEqual(len(hook.get_cc_field.spy.calls), 1)
+            self.assertEqual(hook.get_to_field.spy.calls[-1].kwargs,
+                             call_kwargs)
+            self.assertEqual(hook.get_cc_field.spy.calls[-1].kwargs,
+                             call_kwargs)
+
+            reply.publish(reply.user)
+            call_kwargs['reply'] = reply
+            call_kwargs['user'] = reply.user
+
+            self.assertEqual(len(mail.outbox), 2)
+            self.assertEqual(len(hook.get_to_field.spy.calls), 2)
+            self.assertEqual(len(hook.get_cc_field.spy.calls), 2)
+            self.assertEqual(hook.get_to_field.spy.calls[-1].kwargs,
+                             call_kwargs)
+            self.assertEqual(hook.get_cc_field.spy.calls[-1].kwargs,
+                             call_kwargs)
+
+            review_request.close(ReviewRequest.DISCARDED)
+            call_kwargs = {
+                'review_request': review_request,
+                'user': review_request.submitter,
+                'close_type': ReviewRequest.DISCARDED,
+            }
+
+            self.assertEqual(len(mail.outbox), 3)
+            self.assertEqual(len(hook.get_to_field.spy.calls), 3)
+            self.assertEqual(len(hook.get_cc_field.spy.calls), 3)
+            self.assertEqual(hook.get_to_field.spy.calls[-1].kwargs,
+                             call_kwargs)
+            self.assertEqual(hook.get_cc_field.spy.calls[-1].kwargs,
+                             call_kwargs)
+
+            review_request.reopen()
+            review_request.publish(review_request.submitter)
+            call_kwargs = {
+                'review_request': review_request,
+                'user': review_request.submitter,
+            }
+
+            self.assertEqual(len(mail.outbox), 4)
+            self.assertEqual(len(hook.get_to_field.spy.calls), 4)
+            self.assertEqual(len(hook.get_cc_field.spy.calls), 4)
+            self.assertEqual(hook.get_to_field.spy.calls[-1].kwargs,
+                             call_kwargs)
+            self.assertEqual(hook.get_cc_field.spy.calls[-1].kwargs,
+                             call_kwargs)
+
+            review_request.close(ReviewRequest.SUBMITTED)
+            call_kwargs['close_type'] = ReviewRequest.SUBMITTED
+
+            self.assertEqual(len(mail.outbox), 5)
+            self.assertEqual(len(hook.get_to_field.spy.calls), 5)
+            self.assertEqual(len(hook.get_cc_field.spy.calls), 5)
+            self.assertEqual(hook.get_to_field.spy.calls[-1].kwargs,
+                             call_kwargs)
+            self.assertEqual(hook.get_cc_field.spy.calls[-1].kwargs,
+                             call_kwargs)

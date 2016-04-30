@@ -9,8 +9,22 @@
 RB.DraftReviewBannerView = Backbone.View.extend({
     events: {
         'click #review-banner-edit': '_onEditReviewClicked',
-        'click #review-banner-publish': '_onPublishClicked',
         'click #review-banner-discard': '_onDiscardClicked'
+    },
+
+    /*
+     * Returns the height of the banner.
+     */
+    getHeight: function() {
+        return this._$banner.outerHeight();
+    },
+
+    remove: function() {
+        if (this._publishButton) {
+            this._publishButton.remove();
+        }
+
+        _super(this).remove.call(this);
     },
 
     render: function() {
@@ -30,6 +44,24 @@ RB.DraftReviewBannerView = Backbone.View.extend({
         model.on('publishError', function(errorText) {
             alert(errorText);
         });
+
+        this._publishButton = new RB.SplitButtonView({
+            el: $('#review-banner-publish-container'),
+            text: gettext('Publish Review'),
+            click: _.bind(this._onPublishClicked, this),
+            id: 'review-banner-publish',
+            zIndex: this.$('.banner').css('zIndex'),
+            alternatives: [
+                {
+                    text: gettext('... to Submitter Only'),
+                    click: _.bind(this._onPublishClicked, this),
+                    id: 'review-banner-publish-submitter-only'
+                }
+            ]
+
+        });
+
+        this._publishButton.render();
 
         return this;
     },
@@ -71,7 +103,17 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      */
     hideAndReload: function() {
         this.hide(function() {
-            window.location = this.model.get('parentObject').get('reviewURL');
+            /*
+             * hideAndReload might have been called from within a $.funcQueue.
+             * With Firefox, later async functions that are queued in the
+             * $.funcQueue will not run when we change window.location, which
+             * means that we might miss out on some teardown that was
+             * scheduled. We defer changing the location until the next tick
+             * of the event loop to let any teardown occur.
+             */
+            _.defer(_.bind(function() {
+                window.location = this.model.get('parentObject').get('reviewURL');
+            }, this));
         }, this);
     },
 
@@ -96,11 +138,8 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      */
     _onPublishClicked: function() {
         this.model.publish({
-            error: function(model, xhr) {
-                this.model.trigger('publishError', xhr.errorText);
-            }
-        }, this);
-
+            attrs: ['public']
+        });
         return false;
     },
 
@@ -118,8 +157,10 @@ RB.DraftReviewBannerView = Backbone.View.extend({
             .modalBox({
                 title: gettext('Are you sure you want to discard this review?'),
                 buttons: [
-                    $('<input type="button" value="' + gettext('Cancel') + '"/>'),
-                    $('<input type="button" value="' + gettext('Discard') + '"/>')
+                    $('<input type="button" />')
+                        .val(gettext('Cancel')),
+                    $('<input type="button" />')
+                        .val(gettext('Discard'))
                         .click(function() {
                             model.destroy();
                         })

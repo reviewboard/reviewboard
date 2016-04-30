@@ -31,6 +31,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
     def compare_item(self, item_rsp, attachment):
         self.assertEqual(item_rsp['id'], attachment.pk)
         self.assertEqual(item_rsp['filename'], attachment.filename)
+        self.assertEqual(item_rsp['revision'], attachment.attachment_revision)
 
     #
     # HTTP GET tests
@@ -89,9 +90,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
         return (get_file_attachment_list_url(review_request, local_site_name),
                 file_attachment_item_mimetype,
-                {
-                    'path': open(self._getTrophyFilename(), 'r'),
-                },
+                {'path': open(self._getTrophyFilename(), 'r')},
                 [review_request])
 
     def check_post_result(self, user, rsp, review_request):
@@ -220,6 +219,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
     def compare_item(self, item_rsp, attachment):
         self.assertEqual(item_rsp['id'], attachment.pk)
         self.assertEqual(item_rsp['filename'], attachment.filename)
+        self.assertEqual(item_rsp['revision'], attachment.attachment_revision)
         self.assertEqual(item_rsp['absolute_url'],
                          attachment.get_absolute_url())
 
@@ -280,9 +280,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
 
         return (get_file_attachment_item_url(file_attachment, local_site_name),
                 file_attachment_item_mimetype,
-                {
-                    'caption': 'My new caption',
-                },
+                {'caption': 'My new caption'},
                 file_attachment,
                 [review_request])
 

@@ -1,12 +1,22 @@
 {% extends "base.html" %}
-{% load compressed djblets_deco i18n %}
+{% load djblets_deco i18n pipeline %}
 
 {% block title %}{% trans "New Review Request" %}{% endblock %}
 
+{% block extrahead %}
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+{% endblock %}
+
+{% block page_class %}new-review-request-page full-page-content has-sidebar mobile-show-page-sidebar{% endblock %}
+
 {% block css %}
 {{block.super}}
-{%  compressed_css "newReviewRequest" %}
+{%  stylesheet 'newReviewRequest' %}
 {% endblock %}
+
+{% block sidebar %}
+<div id="page_sidebar" class="new-review-request-sidebar"></div>
+{% endblock sidebar %}
 
 {% block content %}
 <div id="new-review-request"></div>
@@ -14,8 +24,8 @@
 
 {% block scripts-post %}
 {{block.super}}
-{%  compressed_js "newReviewRequest" %}
-<script type="text/javascript">
+{%  javascript 'newReviewRequest' %}
+<script>
 $(function() {
     var creator,
         creatorView;

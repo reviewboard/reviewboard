@@ -1,0 +1,89 @@
+/*
+ * Defines the color scheme of the top part of the page.
+ *
+ * Each page's header is designed to fit in with the general color scheme
+ * of the page. Through this mixin, those colors can be set.
+ *
+ * The only required parameter is @topbar-bg. The other colors will be
+ * generated based off these. Some pages may wish to alter the others as
+ * well, if the generated colors aren't desired.
+ */
+.page-colors(@topbar-bg,
+             @topbar-text-color: #000000,
+             @topbar-faded-text-color: darken(@topbar-bg, 60%),
+             @topbar-link-color: #2222BB,
+             @topbar-border-color: greyscale(darken(@topbar-bg, 30%)),
+             @topbar-menu-bg: @topbar-bg,
+             @topbar-menu-selected-bg: lighten(@topbar-bg, 10%)) {
+  #accountnav {
+    li {
+      &:hover {
+        background: @topbar-menu-selected-bg;
+        border-color: lighten(@topbar-border-color, 5%);
+
+        ul {
+          border-color: @topbar-border-color;
+
+          li:hover {
+            background: @topbar-menu-selected-bg;
+          }
+
+          li.menu-info-box,
+          li.menu-info-box:hover {
+            /*
+             * These are currently only used in RBCommons, but may be useful
+             * for future accountnav features.
+             */
+            background: lighten(@topbar-menu-bg, 5%);
+            border-bottom: 1px darken(@topbar-menu-bg, 5%) solid;
+            padding: 1em;
+
+            &, * {
+              cursor: default;
+            }
+          }
+        }
+      }
+
+      ul {
+        background: @topbar-menu-bg;
+      }
+    }
+  }
+
+  #headerbar {
+    border-bottom-color: @topbar-border-color;
+
+    #nav_toggle {
+      color: fadeout(@topbar-text-color, 20%);
+    }
+
+    #search {
+      input {
+        border-color: @topbar-border-color;
+      }
+    }
+  }
+
+  #navbar-container {
+    background: @topbar-bg;
+    border-color: @topbar-border-color;
+  }
+
+  #navbar {
+    border-bottom-color: @topbar-border-color;
+
+    a {
+      color: @topbar-link-color;
+    }
+  }
+
+  #topbar {
+    background: @topbar-bg;
+    color: @topbar-text-color;
+
+    .version {
+      color: @topbar-faded-text-color;
+    }
+  }
+}

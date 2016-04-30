@@ -12,10 +12,13 @@ from django.utils.six.moves import input
 
 
 class Command(BaseCommand):
+    """Management command to load data into the database."""
+
     help = ('Loads data formatted by dumpdb, for migration across types '
             'of databases.')
 
     def handle(self, *args, **options):
+        """Handle the command."""
         if len(args) != 1:
             raise CommandError("You must specify a filename on the command "
                                "line.")

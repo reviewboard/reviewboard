@@ -1,0 +1,102 @@
+=================================
+Review Board 2.0.15 Release Notes
+=================================
+
+**Release date**: March 16, 2015
+
+
+Upgrade Notes
+=============
+
+* If your install has Search enabled, you'll need to perform a full
+  re-indexing of your database in order for search to function correctly
+  again. See below.
+
+
+New Features
+============
+
+* Massive improvements to Search.
+
+  Our support for search was pretty basic in past releases, but that's no
+  longer the case. We've made a number of improvements in this release.
+
+  Now, you can search not only for review requests, but for users. The
+  information on the users will show up in your results, and from there,
+  you can quickly get to any review requests they've filed.
+
+  Results can now be filtered to show only users, only review requests, or
+  to show everything. They're also ordered such that the most recently updated
+  review requests are shown first.
+
+  Private review requests and those on Local Sites are now indexed. They're
+  included in the search results if the user has access to them, and left
+  out for everybody else. (:bug:`3763`)
+
+  Along with all this, we've cleaned up the presentation of the search results
+  page.
+
+  More improvements to search will come in the 2.5 releases.
+
+
+Performance Improvements
+========================
+
+* Improved the load time for search results.
+
+
+Bug Fixes
+=========
+
+Search
+------
+
+* Search results are no longer sorted in a confusing order.
+
+* Typing the full name of a user in the Search field will no longer break
+  auto-completion.
+
+
+Diff Viewer
+-----------
+
+* Changing the :guilabel:`Enable Markdown` checkbox for a comment and then
+  re-editing the comment no longer resets the checkbox.
+
+
+File Attachments
+----------------
+
+* Fixed a few more cases where invalid mimetypes were causing crashes.
+  (:bug:`3792`)
+
+
+Dashboard
+---------
+
+* Fixed negative counters in the dashboard. (:bug:`3669`)
+
+  We've finally tracked down the cause of the negative counters in the
+  dashboard. Simply upgrading to this release will reset all counters in
+  your install and prevent them from getting out of sync again.
+
+
+Review Requests
+---------------
+
+* The internal status field showing "P", "S", or "D" is no longer shown along
+  with other review request changes.
+
+
+Administration
+--------------
+
+* The extensions page now loads some necessary JavaScript libraries from
+  the Review Board server instead of from the CloudFlare CDN. (:bug:`3501`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge

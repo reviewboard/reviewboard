@@ -20,7 +20,10 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
 from reviewboard.diffviewer.errors import (DiffTooBigError,
                                            DiffParserError,
                                            EmptyDiffError)
-from reviewboard.reviews.errors import PermissionError
+from reviewboard.reviews.errors import (CloseError,
+                                        PermissionError,
+                                        PublishError,
+                                        ReopenError)
 from reviewboard.reviews.fields import get_review_request_field
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.errors import (AuthenticationError,
@@ -35,6 +38,7 @@ from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.encoder import status_to_string, string_to_status
 from reviewboard.webapi.errors import (CHANGE_NUMBER_IN_USE,
+                                       CLOSE_ERROR,
                                        COMMIT_ID_ALREADY_EXISTS,
                                        DIFF_EMPTY,
                                        DIFF_TOO_BIG,
@@ -44,6 +48,8 @@ from reviewboard.webapi.errors import (CHANGE_NUMBER_IN_USE,
                                        INVALID_REPOSITORY,
                                        INVALID_USER,
                                        MISSING_REPOSITORY,
+                                       PUBLISH_ERROR,
+                                       REOPEN_ERROR,
                                        REPO_AUTHENTICATION_ERROR,
                                        REPO_INFO_ERROR)
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
@@ -272,7 +278,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     }
     uri_object_key = 'review_request_id'
     model_object_key = 'display_id'
-    last_modified_field = 'last_updated'
     item_child_resources = [
         resources.change,
         resources.diff,
@@ -406,15 +411,25 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
 
             status = string_to_status(request.GET.get('status', 'pending'))
 
+            can_submit_as = request.user.has_perm(
+                'reviews.can_submit_as_another_user', local_site)
+
+            request_unpublished = request.GET.get('show-all-unpublished', '0')
+            if request_unpublished in ('0', 'false', 'False'):
+                request_unpublished = False
+            else:
+                request_unpublished = True
+
+            show_all_unpublished = (request_unpublished and
+                                    (can_submit_as or
+                                     request.user.is_superuser))
+
             queryset = self.model.objects.public(
                 user=request.user,
                 status=status,
                 local_site=local_site,
                 extra_query=q,
-                show_all_unpublished=(
-                    'show-all-unpublished' in request.GET and
-                    request.user.is_superuser
-                ))
+                show_all_unpublished=show_all_unpublished)
         else:
             queryset = self.model.objects.filter(local_site=local_site)
 
@@ -607,7 +622,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         if submit_as and user.username != submit_as:
             if not user.has_perm('reviews.can_submit_as_another_user',
                                  local_site):
-                return self._no_access_error(request.user)
+                return self.get_no_access_error(request)
 
             user = self._find_user(submit_as, local_site, request)
 
@@ -626,13 +641,21 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                          Q(mirror_path=repository) |
                          Q(name=repository)) &
                         Q(local_site=local_site))
-            except Repository.DoesNotExist as e:
+            except Repository.DoesNotExist:
                 return INVALID_REPOSITORY, {
                     'repository': repository
                 }
+            except Repository.MultipleObjectsReturned:
+                msg = ('Too many repositories matched "%s". '
+                       'Try specifying the repository by name instead.'
+                       % repository)
+
+                return INVALID_REPOSITORY.with_message(msg), {
+                    'repository': repository,
+                }
 
             if not repository.is_accessible_by(request.user):
-                return self._no_access_error(request.user)
+                return self.get_no_access_error(request)
 
         try:
             review_request = ReviewRequest.objects.create(
@@ -805,7 +828,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
              not self.has_modify_permissions(request, review_request)) or
             (status is not None and
              not review_request.is_status_mutable_by(request.user))):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if (status is not None and
             (review_request.status != string_to_status(status) or
@@ -820,11 +843,14 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                         close_description_text_type ==
                         self.TEXT_TYPE_MARKDOWN)
 
-                    review_request.close(
-                        self._close_type_map[status],
-                        request.user,
-                        close_description,
-                        rich_text=close_description_rich_text)
+                    try:
+                        review_request.close(
+                            self._close_type_map[status],
+                            request.user,
+                            close_description,
+                            rich_text=close_description_rich_text)
+                    except CloseError as e:
+                        return CLOSE_ERROR.with_message(six.text_type(e))
 
                     # Set this so that we'll return this new value when
                     # serializing the object.
@@ -832,20 +858,33 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                     review_request._close_description_rich_text = \
                         close_description_rich_text
                 elif status == 'pending':
-                    review_request.reopen(request.user)
+                    try:
+                        review_request.reopen(request.user)
+                    except ReopenError as e:
+                        return REOPEN_ERROR.with_message(six.text_type(e))
                 else:
                     raise AssertionError("Code path for invalid status '%s' "
                                          "should never be reached." % status)
             except PermissionError:
-                return self._no_access_error(request.user)
+                return self.get_no_access_error(request)
+            except PublishError as e:
+                return PUBLISH_ERROR.with_message(six.text_type(e))
 
         # Preserve the old changenum behavior.
+        changed_fields = []
         if changenum is not None:
             if review_request.repository is None:
                 return INVALID_CHANGE_NUMBER
 
             if changenum != review_request.changenum:
-                review_request.commit = changenum
+                review_request.commit = six.text_type(changenum)
+                changed_fields.append('changenum')
+                changed_fields.append('commit_id')
+
+            try:
+                review_request.reopen(request.user)
+            except ReopenError as e:
+                return REOPEN_ERROR.with_message(six.text_type(e))
 
             try:
                 draft = ReviewRequestDraftResource.prepare_draft(
@@ -861,12 +900,14 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 return EMPTY_CHANGESET
 
             draft.save()
-            review_request.reopen()
 
         if extra_fields:
             self.import_extra_data(review_request, review_request.extra_data,
                                    extra_fields)
-            review_request.save(update_fields=['extra_data'])
+            changed_fields.append('extra_data')
+
+        if changed_fields:
+            review_request.save(update_fields=changed_fields)
 
         return 200, {
             self.item_result_key: review_request,
@@ -952,10 +993,11 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             },
             'show-all-unpublished': {
                 'type': bool,
-                'description': 'If set, and if the user is an admin, '
-                               'unpublished review requests will also '
-                               'be returned.',
-                'aded_in': '2.0.8',
+                'description': 'If set, and if the user is an admin or has '
+                               'the "reviews.can_submit_as_another_user" '
+                               'permission, unpublished review requests '
+                               'will also be returned.',
+                'added_in': '2.0.8',
             },
             'issue-dropped-count': {
                 'type': bool,

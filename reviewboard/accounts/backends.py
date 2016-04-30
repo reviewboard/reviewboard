@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 
+import hashlib
 import logging
-import pkg_resources
 import re
 import sre_constants
 import sys
@@ -15,25 +15,28 @@ from django.contrib.auth import hashers
 from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.query import get_object_or_none
+from djblets.registries.errors import ItemLookupError
 from djblets.siteconfig.models import SiteConfiguration
 try:
     from ldap.filter import filter_format
 except ImportError:
     pass
 
+from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
+                                         NOT_REGISTERED, UNREGISTER)
+
 from reviewboard.accounts.forms.auth import (ActiveDirectorySettingsForm,
                                              LDAPSettingsForm,
                                              NISSettingsForm,
                                              StandardAuthSettingsForm,
-                                             X509SettingsForm)
+                                             X509SettingsForm,
+                                             HTTPBasicSettingsForm)
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.site.models import LocalSite
+from reviewboard.registries.registry import EntryPointRegistry
 
-
-_registered_auth_backends = {}
 _enabled_auth_backends = []
 _auth_backend_setting = None
-_populated = False
 
 
 INVALID_USERNAME_CHAR_REGEX = re.compile(r'[^\w.@+-]')
@@ -41,6 +44,7 @@ INVALID_USERNAME_CHAR_REGEX = re.compile(r'[^\w.@+-]')
 
 class AuthBackend(object):
     """The base class for Review Board authentication backends."""
+
     backend_id = None
     name = None
     settings_form = None
@@ -53,16 +57,23 @@ class AuthBackend(object):
     login_instructions = None
 
     def authenticate(self, username, password):
+        """Authenticate the user.
+
+        This will authenticate the username and return the appropriate User
+        object, or None.
+        """
         raise NotImplementedError
 
     def get_or_create_user(self, username, request):
+        """Get an existing user, or create one if it does not exist."""
         raise NotImplementedError
 
     def get_user(self, user_id):
+        """Get an existing user, or None if it does not exist."""
         return get_object_or_none(User, pk=user_id)
 
     def update_password(self, user, password):
-        """Updates the user's password on the backend.
+        """Update the user's password on the backend.
 
         Authentication backends can override this to update the password
         on the backend. This will only be called if
@@ -73,7 +84,7 @@ class AuthBackend(object):
         raise NotImplementedError
 
     def update_name(self, user):
-        """Updates the user's name on the backend.
+        """Update the user's name on the backend.
 
         The first name and last name will already be stored in the provided
         ``user`` object.
@@ -87,7 +98,7 @@ class AuthBackend(object):
         pass
 
     def update_email(self, user):
-        """Updates the user's e-mail address on the backend.
+        """Update the user's e-mail address on the backend.
 
         The e-mail address will already be stored in the provided
         ``user`` object.
@@ -101,7 +112,7 @@ class AuthBackend(object):
         pass
 
     def query_users(self, query, request):
-        """Searches for users on the back end.
+        """Search for users on the back end.
 
         This call is executed when the User List web API resource is called,
         before the database is queried.
@@ -136,7 +147,7 @@ class AuthBackend(object):
 
 
 class StandardAuthBackend(AuthBackend, ModelBackend):
-    """Authenticates users against the local database.
+    """Authenticate users against the local database.
 
     This will authenticate a user against their entry in the database, if
     the user has a local password stored. This is the default form of
@@ -152,6 +163,7 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
     handle authentication against locally added users and handle
     LocalSite-based permissions for all configurations.
     """
+
     backend_id = 'builtin'
     name = _('Standard Registration')
     settings_form = StandardAuthSettingsForm
@@ -176,16 +188,23 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
     ]
 
     def authenticate(self, username, password):
+        """Authenticate the user.
+
+        This will authenticate the username and return the appropriate User
+        object, or None.
+        """
         return ModelBackend.authenticate(self, username, password)
 
     def get_or_create_user(self, username, request):
-        return ModelBackend.get_or_create_user(self, username, request)
+        """Get an existing user, or create one if it does not exist."""
+        return get_object_or_none(User, username=username)
 
     def update_password(self, user, password):
+        """Update the given user's password."""
         user.password = hashers.make_password(password)
 
     def get_all_permissions(self, user, obj=None):
-        """Returns a list of all permissions for a user.
+        """Get a list of all permissions for a user.
 
         If a LocalSite instance is passed as ``obj``, then the permissions
         returned will be those that the user has on that LocalSite. Otherwise,
@@ -244,7 +263,7 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
         return permissions
 
     def has_perm(self, user, perm, obj=None):
-        """Returns whether a user has the given permission.
+        """Get whether or not a user has the given permission.
 
         If a LocalSite instance is passed as ``obj``, then the permissions
         checked will be those that the user has on that LocalSite. Otherwise,
@@ -277,8 +296,65 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
         return super(StandardAuthBackend, self).has_perm(user, perm, obj)
 
 
+class HTTPDigestBackend(AuthBackend):
+    """Authenticate against a user in a digest password file."""
+
+    backend_id = 'digest'
+    name = _('HTTP Digest Authentication')
+    settings_form = HTTPBasicSettingsForm
+    login_instructions = \
+        _('Use your standard username and password.')
+
+    def authenticate(self, username, password):
+        """Authenticate the user.
+
+        This will authenticate the username and return the appropriate User
+        object, or None.
+        """
+        username = username.strip()
+
+        digest_text = '%s:%s:%s' % (username, settings.DIGEST_REALM, password)
+        digest_password = hashlib.md5(digest_text).hexdigest()
+
+        try:
+            with open(settings.DIGEST_FILE_LOCATION, 'r') as passwd_file:
+                for line_no, line in enumerate(passwd_file):
+                    try:
+                        user, realm, passwd = line.strip().split(':')
+
+                        if user == username and passwd == digest_password:
+                            return self.get_or_create_user(username, None)
+                        else:
+                            continue
+                    except ValueError as e:
+                        logging.error('Error parsing HTTP Digest password '
+                                      'file at line %d: %s',
+                                      line_no, e, exc_info=True)
+                        break
+
+        except IOError as e:
+            logging.error('Could not open the HTTP Digest password file: %s',
+                          e, exc_info=True)
+
+        return None
+
+    def get_or_create_user(self, username, request):
+        """Get an existing user, or create one if it does not exist."""
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            user = User(username=username, password='')
+            user.is_staff = False
+            user.is_superuser = False
+            user.set_unusable_password()
+            user.save()
+
+        return user
+
+
 class NISBackend(AuthBackend):
     """Authenticate against a user on an NIS server."""
+
     backend_id = 'nis'
     name = _('NIS')
     settings_form = NISSettingsForm
@@ -286,6 +362,11 @@ class NISBackend(AuthBackend):
         _('Use your standard NIS username and password.')
 
     def authenticate(self, username, password):
+        """Authenticate the user.
+
+        This will authenticate the username and return the appropriate User
+        object, or None.
+        """
         import crypt
         import nis
 
@@ -307,6 +388,7 @@ class NISBackend(AuthBackend):
         return None
 
     def get_or_create_user(self, username, request, passwd=None):
+        """Get an existing user, or create one if it does not exist."""
         import nis
 
         username = username.strip()
@@ -342,6 +424,7 @@ class NISBackend(AuthBackend):
 
 class LDAPBackend(AuthBackend):
     """Authenticate against a user on an LDAP server."""
+
     backend_id = 'ldap'
     name = _('LDAP')
     settings_form = LDAPSettingsForm
@@ -349,6 +432,11 @@ class LDAPBackend(AuthBackend):
         _('Use your standard LDAP username and password.')
 
     def authenticate(self, username, password):
+        """Authenticate the user.
+
+        This will authenticate the username and return the appropriate User
+        object, or None.
+        """
         username = username.strip()
 
         uidfilter = "(%(userattr)s=%(username)s)" % {
@@ -435,6 +523,7 @@ class LDAPBackend(AuthBackend):
         return None
 
     def get_or_create_user(self, username, request, ldapo, userdn):
+        """Get an existing user, or create one if it does not exist."""
         username = re.sub(INVALID_USERNAME_CHAR_REGEX, '', username).lower()
 
         try:
@@ -518,6 +607,7 @@ class LDAPBackend(AuthBackend):
 
 class ActiveDirectoryBackend(AuthBackend):
     """Authenticate a user against an Active Directory server."""
+
     backend_id = 'ad'
     name = _('Active Directory')
     settings_form = ActiveDirectorySettingsForm
@@ -525,9 +615,11 @@ class ActiveDirectoryBackend(AuthBackend):
         _('Use your standard Active Directory username and password.')
 
     def get_domain_name(self):
+        """Return the current AD domain name."""
         return six.text_type(settings.AD_DOMAIN_NAME)
 
     def get_ldap_search_root(self, userdomain=None):
+        """Return the search root(s) for users in the LDAP server."""
         if getattr(settings, "AD_SEARCH_ROOT", None):
             root = [settings.AD_SEARCH_ROOT]
         else:
@@ -542,6 +634,7 @@ class ActiveDirectoryBackend(AuthBackend):
         return ','.join(root)
 
     def search_ad(self, con, filterstr, userdomain=None):
+        """Run a search on the given LDAP server."""
         import ldap
         search_root = self.get_ldap_search_root(userdomain)
         logging.debug('Search root ' + search_root)
@@ -549,6 +642,7 @@ class ActiveDirectoryBackend(AuthBackend):
                             filterstr=filterstr)
 
     def find_domain_controllers_from_dns(self, userdomain=None):
+        """Find and return the active domain controllers using DNS."""
         import DNS
         DNS.Base.DiscoverNameServers()
         q = '_ldap._tcp.%s' % (userdomain or self.get_domain_name())
@@ -556,10 +650,16 @@ class ActiveDirectoryBackend(AuthBackend):
         return [x['data'][-2:] for x in req.answers]
 
     def can_recurse(self, depth):
+        """Return whether the given recursion depth is too big."""
         return (settings.AD_RECURSION_DEPTH == -1 or
                 depth <= settings.AD_RECURSION_DEPTH)
 
     def get_member_of(self, con, search_results, seen=None, depth=0):
+        """Get the LDAP groups for the given users.
+
+        This iterates over the users specified in ``search_results`` and
+        returns a set of groups of which those users are members.
+        """
         depth += 1
         if seen is None:
             seen = set()
@@ -567,8 +667,10 @@ class ActiveDirectoryBackend(AuthBackend):
         for name, data in search_results:
             if name is None:
                 continue
+
             member_of = data.get('memberOf', [])
-            new_groups = [x.split(',')[0].split('=')[1] for x in member_of]
+            new_groups = [x.split(b',')[0].split(b'=')[1] for x in member_of]
+
             old_seen = seen.copy()
             seen.update(new_groups)
 
@@ -595,6 +697,11 @@ class ActiveDirectoryBackend(AuthBackend):
         return seen
 
     def get_ldap_connections(self, userdomain=None):
+        """Get a set of connections to LDAP servers.
+
+        This returns an iterable of connections to the LDAP servers specified
+        in AD_DOMAIN_CONTROLLER.
+        """
         import ldap
         if settings.AD_FIND_DC_FROM_DNS:
             dcs = self.find_domain_controllers_from_dns(userdomain)
@@ -635,6 +742,11 @@ class ActiveDirectoryBackend(AuthBackend):
             yield con
 
     def authenticate(self, username, password):
+        """Authenticate the user.
+
+        This will authenticate the username and return the appropriate User
+        object, or None.
+        """
         import ldap
 
         username = username.strip()
@@ -652,7 +764,10 @@ class ActiveDirectoryBackend(AuthBackend):
             userdomain = "%s.%s" % (user_subdomain, userdomain)
 
         connections = self.get_ldap_connections(userdomain)
+
         required_group = settings.AD_GROUP_NAME
+        if isinstance(required_group, six.text_type):
+            required_group = required_group.encode('utf-8')
 
         if isinstance(username, six.text_type):
             username_bytes = username.encode('utf-8')
@@ -709,6 +824,7 @@ class ActiveDirectoryBackend(AuthBackend):
         return None
 
     def get_or_create_user(self, username, request, ad_user_data):
+        """Get an existing user, or create one if it does not exist."""
         username = re.sub(INVALID_USERNAME_CHAR_REGEX, '', username).lower()
 
         try:
@@ -739,21 +855,32 @@ class ActiveDirectoryBackend(AuthBackend):
 
 
 class X509Backend(AuthBackend):
+    """Authenticate a user from a X.509 client certificate.
+
+    The certificate is passed in by the browser. This backend relies on the
+    X509AuthMiddleware to extract a username field from the client certificate.
     """
-    Authenticate a user from a X.509 client certificate passed in by the
-    browser. This backend relies on the X509AuthMiddleware to extract a
-    username field from the client certificate.
-    """
+
     backend_id = 'x509'
     name = _('X.509 Public Key')
     settings_form = X509SettingsForm
     supports_change_password = True
 
     def authenticate(self, x509_field=""):
+        """Authenticate the user.
+
+        This will extract the username from the provided certificate and return
+        the appropriate User object.
+        """
         username = self.clean_username(x509_field)
         return self.get_or_create_user(username, None)
 
     def clean_username(self, username):
+        """Validate the 'username' field.
+
+        This checks to make sure that the contents of the username field are
+        valid for X509 authentication.
+        """
         username = username.strip()
 
         if settings.X509_USERNAME_REGEX:
@@ -771,6 +898,7 @@ class X509Backend(AuthBackend):
         return username
 
     def get_or_create_user(self, username, request):
+        """Get an existing user, or create one if it does not exist."""
         user = None
         username = username.strip()
 
@@ -790,105 +918,8 @@ class X509Backend(AuthBackend):
         return user
 
 
-def _populate_defaults():
-    """Populates the default list of authentication backends."""
-    global _populated
-
-    if not _populated:
-        _populated = True
-
-        # Always ensure that the standard built-in auth backend is included.
-        register_auth_backend(StandardAuthBackend)
-
-        entrypoints = \
-            pkg_resources.iter_entry_points('reviewboard.auth_backends')
-
-        for entry in entrypoints:
-            try:
-                cls = entry.load()
-
-                # All backends should include an ID, but we need to handle
-                # legacy modules.
-                if not cls.backend_id:
-                    logging.warning('The authentication backend %r did '
-                                    'not provide a backend_id attribute. '
-                                    'Setting it to the entrypoint name "%s".',
-                                    cls, entry.name)
-                    cls.backend_id = entry.name
-
-                register_auth_backend(cls)
-            except Exception as e:
-                logging.error('Error loading authentication backend %s: %s',
-                              entry.name, e, exc_info=1)
-
-
-def get_registered_auth_backends():
-    """Returns all registered Review Board authentication backends.
-
-    This will return all backends provided both by Review Board and by
-    third parties that have properly registered with the
-    "reviewboard.auth_backends" entry point.
-    """
-    _populate_defaults()
-
-    return six.itervalues(_registered_auth_backends)
-
-
-def get_registered_auth_backend(backend_id):
-    """Returns the authentication backends with the specified ID.
-
-    If the authentication backend could not be found, this will return None.
-    """
-    _populate_defaults()
-
-    try:
-        return _registered_auth_backends[backend_id]
-    except KeyError:
-        return None
-
-
-def register_auth_backend(backend_cls):
-    """Registers an authentication backend.
-
-    This backend will appear in the list of available backends.
-
-    The backend class must have a backend_id attribute set, and can only
-    be registerd once. A KeyError will be thrown if attempting to register
-    a second time.
-    """
-    _populate_defaults()
-
-    backend_id = backend_cls.backend_id
-
-    if not backend_id:
-        raise KeyError('The backend_id attribute must be set on %r'
-                       % backend_cls)
-
-    if backend_id in _registered_auth_backends:
-        raise KeyError('"%s" is already a registered auth backend'
-                       % backend_id)
-
-    _registered_auth_backends[backend_id] = backend_cls
-
-
-def unregister_auth_backend(backend_cls):
-    """Unregisters a previously registered authentication backend."""
-    _populate_defaults()
-
-    backend_id = backend_cls.backend_id
-
-    if backend_id not in _registered_auth_backends:
-        logging.error('Failed to unregister unknown authentication '
-                      'backend "%s".',
-                      backend_id)
-        raise KeyError('"%s" is not a registered authentication backend'
-                       % backend_id)
-
-    del _registered_auth_backends[backend_id]
-
-
 def get_enabled_auth_backends():
-    """Returns all authentication backends being used by Review Board.
+    """Get all authentication backends being used by Review Board.
 
     The returned list contains every authentication backend that Review Board
     will try, in order.
@@ -925,6 +956,141 @@ def get_enabled_auth_backends():
 
 
 def set_enabled_auth_backend(backend_id):
-    """Sets the authentication backend to be used."""
+    """Set the authentication backend to be used."""
     siteconfig = SiteConfiguration.objects.get_current()
     siteconfig.set('auth_backend', backend_id)
+
+
+class AuthBackendRegistry(EntryPointRegistry):
+    """A registry for managing authentication backends."""
+
+    entry_point = 'reviewboard.auth.backends'
+    lookup_attrs = ('backend_id',)
+
+    errors = {
+        ALREADY_REGISTERED: _(
+            '"%(item)r" is already a registered authentication backend.'
+        ),
+        LOAD_ENTRY_POINT: _(
+            'Error loading authentication backend %(entry_point)s: %(error)s'
+        ),
+        NOT_REGISTERED: _(
+            'No authentication backend registered with %(attr_name) = '
+            '%(attr_value)s.'
+        ),
+        UNREGISTER: _(
+            '"%(item)r is not a registered authentication backend.'
+        ),
+    }
+
+    def process_value_from_entry_point(self, entry_point):
+        """Load the class from the entry point.
+
+        If the class lacks a ``backend_id``, it will be set as the entry
+        point's name.
+
+        Args:
+           entry_point (pkg_resources.EntryPoint):
+                The entry point.
+
+        Returns:
+            type:
+            The :py:class:`AuthBackend` subclass.
+        """
+
+        cls = entry_point.load()
+
+        if not cls.backend_id:
+            logging.warning('The authentication backend %r did not provide '
+                            'a backend_id attribute. Setting it to the '
+                            'entry point name ("%s")',
+                            cls, entry_point.name)
+
+            cls.backend_id = entry_point.name
+
+        return cls
+
+    def get(self, attr_name, attr_value):
+        """Return the requested authentication backend.
+
+        Args:
+            attr_name (unicode):
+                The attribute name to find the authentication backend by.
+
+            attr_value (object):
+                The corresponding attribute value.
+
+        Returns:
+            type:
+            Either the requested :py:class:`AuthBackend` subclass, or ``None``
+            if it could not be found.
+        """
+        try:
+            return super(AuthBackendRegistry, self).get(attr_name, attr_value)
+        except ItemLookupError:
+            return None
+
+    def get_defaults(self):
+        """Yield the authentication backends.
+
+        This will make sure the StandardAuthBackend is always registered.
+
+        Yields:
+            type:
+            The :py:class:`~reviewboard.accounts.backends.AuthBackend`
+            subclasses.
+        """
+        yield StandardAuthBackend
+
+        for value in super(AuthBackendRegistry, self).get_defaults():
+            yield value
+
+
+auth_backends = AuthBackendRegistry()
+
+
+def get_registered_auth_backends():
+    """Yield all registered Review Board authentication backends.
+
+    This will return all backends provided both by Review Board and by
+    third parties that have properly registered with the
+    "reviewboard.auth_backends" entry point.
+
+    Yields:
+        type:
+        The :py:class:`~reviewboard.accounts.backends.AuthBackend`
+        subclasses.
+    """
+    for backend in auth_backends:
+        yield backend
+
+
+def get_registered_auth_backend(backend_id):
+    """Return the authentication backends with the specified ID.
+
+    If the authentication backend could not be found, this will return None.
+    """
+    return auth_backends.get('backend_id', backend_id)
+
+
+def register_auth_backend(backend_cls):
+    """Register an authentication backend.
+
+    This backend will appear in the list of available backends.
+
+    The backend class must have a backend_id attribute set, and can only
+    be registered once. A KeyError will be thrown if attempting to register
+    a second time.
+    """
+    auth_backends.register(backend_cls)
+
+
+def unregister_auth_backend(backend_cls):
+    """Unregister a previously registered authentication backend."""
+    try:
+        auth_backends.unregister_item(backend_cls)
+    except ItemLookupError as e:
+        logging.error('Failed to unregister unknown authentication '
+                      'backend "%s".',
+                      backend_cls.backend_id)
+        raise e

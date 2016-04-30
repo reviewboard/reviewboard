@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django.http import HttpRequest
 from djblets.db.query import get_object_or_none
 from djblets.siteconfig.models import SiteConfiguration
@@ -109,14 +111,30 @@ def webapi_check_local_site(view_func):
                 return DOES_NOT_EXIST
             elif not local_site.is_accessible_by(request.user):
                 if request.user.is_authenticated():
+                    logging.warning('%s %s: user %s does not have access to '
+                                    'local site "%s".',
+                                    request.method, request.path_info,
+                                    request.user.username, local_site_name)
                     return PERMISSION_DENIED
                 else:
                     return NOT_LOGGED_IN
             elif (restrict_to_local_site and
                   restrict_to_local_site != local_site.pk):
+                logging.warning('%s %s: API token for user %s does not have '
+                                'access to local site "%s".',
+                                request.method, request.path_info,
+                                request.user.username, local_site_name)
                 return PERMISSION_DENIED
+
+            kwargs['local_site'] = local_site
         elif restrict_to_local_site is not None:
+            logging.warning('%s %s: API token for user %s is limited to a '
+                            'local site but the request was for the root.',
+                            request.method, request.path_info,
+                            request.user.username)
             return PERMISSION_DENIED
+        else:
+            kwargs['local_site'] = None
 
         return view_func(*args, **kwargs)
 

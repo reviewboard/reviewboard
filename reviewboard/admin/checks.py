@@ -48,7 +48,7 @@ _install_fine = False
 
 
 def check_updates_required():
-    """Checks if there are manual updates required.
+    """Check if there are manual updates required.
 
     Sometimes, especially in developer installs, some things need to be tweaked
     by hand before Review Board can be used on this server.
@@ -98,11 +98,20 @@ def check_updates_required():
         # Check if the site has moved and the old media directory no longer
         # exists.
         if siteconfig and not os.path.exists(settings.STATIC_ROOT):
-            new_media_root = os.path.join(settings.HTDOCS_ROOT, "static")
+            new_static_root = os.path.join(settings.HTDOCS_ROOT, 'static')
+
+            if os.path.exists(new_static_root):
+                siteconfig.set('site_static_root', new_static_root)
+                settings.STATIC_ROOT = new_static_root
+
+        # Check if the site has moved and the old media directory no longer
+        # exists.
+        if siteconfig and not os.path.exists(settings.MEDIA_ROOT):
+            new_media_root = os.path.join(settings.HTDOCS_ROOT, 'media')
 
             if os.path.exists(new_media_root):
-                siteconfig.set("site_media_root", new_media_root)
-                settings.STATIC_ROOT = new_media_root
+                siteconfig.set('site_media_root', new_media_root)
+                settings.MEDIA_ROOT = new_media_root
 
         # Check if the user has any pending static media configuration
         # changes they need to make.
@@ -205,7 +214,7 @@ def check_updates_required():
 
 
 def reset_check_cache():
-    """Resets the cached data of all checks.
+    """Reset the cached data of all checks.
 
     This is mainly useful during unit tests.
     """
@@ -215,7 +224,7 @@ def reset_check_cache():
 
 
 def get_can_enable_ldap():
-    """Checks whether LDAP authentication can be enabled."""
+    """Check whether LDAP authentication can be enabled."""
     if has_module('ldap'):
         return (True, None)
     else:
@@ -226,7 +235,7 @@ def get_can_enable_ldap():
 
 
 def get_can_enable_dns():
-    """Checks whether we can query DNS to find the domain controller to use."""
+    """Check whether we can query DNS to find the domain controller to use."""
     if has_module('DNS'):
         return (True, None)
     else:
@@ -237,7 +246,7 @@ def get_can_enable_dns():
 
 
 def get_can_use_amazon_s3():
-    """Checks whether django-storages (Amazon S3 backend) is installed."""
+    """Check whether django-storages (Amazon S3 backend) is installed."""
     try:
         if has_module('storages.backends.s3boto', members=['S3BotoStorage']):
             return (True, None)
@@ -250,7 +259,7 @@ def get_can_use_amazon_s3():
 
 
 def get_can_use_openstack_swift():
-    """Checks whether django-storage-swift is installed."""
+    """Check whether django-storage-swift is installed."""
     try:
         if has_module('swift.storage', members=['SwiftStorage']):
             return (True, None)
@@ -264,7 +273,7 @@ def get_can_use_openstack_swift():
 
 
 def get_can_use_couchdb():
-    """Checks whether django-storages (CouchDB backend) is installed."""
+    """Check whether django-storages (CouchDB backend) is installed."""
     if has_module('storages.backends.couchdb', members=['CouchDBStorage']):
         return (True, None)
     else:

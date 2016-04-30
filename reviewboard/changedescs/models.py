@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.contrib.auth.models import User
 from django.db import models
 from django.utils import six, timezone
 from django.utils.encoding import python_2_unicode_compatible
@@ -9,9 +10,7 @@ from djblets.db.fields import JSONField
 
 @python_2_unicode_compatible
 class ChangeDescription(models.Model):
-    """
-    The recorded set of changes, containing optional description text
-    and fields that have changed.
+    """The recorded set of changes, with a description and the changed fields.
 
     This is a general model that can be used in applications for recording
     changes how they see fit. A helper function, 'record_field_changed',
@@ -34,16 +33,40 @@ class ChangeDescription(models.Model):
        * 'removed': The fields that were removed, if any.
        * 'added': The fields that were added, if any.
     """
+
+    user = models.ForeignKey(User, null=True, blank=True)
     timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
     public = models.BooleanField(_("public"), default=False)
     text = models.TextField(_("change text"), blank=True)
     rich_text = models.BooleanField(_("rich text"), default=False)
     fields_changed = JSONField(_("fields changed"))
 
+    def get_user(self, model):
+        """Return the user associated with the change description.
+
+        This function delegates to the model it is associated with to determine
+        the user if it has not been previously determined. Once the user has
+        been determined, it will be saved to the database.
+
+        Args:
+            model (django.db.models.Model):
+                The model instance this change description is associated with.
+
+        Returns:
+            django.contrib.auth.models.User:
+            The user associated with the change description, or
+            :py:data:`None` if it could not be determined.
+        """
+        if (self.user is None and
+            hasattr(model, 'determine_user_for_changedesc')):
+            self.user = model.determine_user_for_changedesc(self)
+            self.save(update_fields=('user',))
+
+        return self.user
+
     def record_field_change(self, field, old_value, new_value,
                             name_field=None):
-        """
-        Records a field change.
+        """Record a field change.
 
         This will encode field changes following the rules in the overlying
         'ChangeDescription' documentation.
@@ -58,14 +81,22 @@ class ChangeDescription(models.Model):
         value type will not. Specifying a 'name_field' for non-objects will
         cause an AttributeError.
         """
+        def serialize_changed_obj(item, name_field):
+            return (getattr(item, name_field),
+                    item.get_absolute_url(),
+                    item.id)
+
         def serialize_changed_obj_list(items, name_field):
             if name_field:
-                return [(getattr(item, name_field),
-                         item.get_absolute_url(),
-                         item.id)
-                        for item in list(items)]
+                return [
+                    serialize_changed_obj(item, name_field)
+                    for item in items
+                ]
             else:
-                return [(item,) for item in list(items)]
+                return [
+                    (item,)
+                    for item in items
+                ]
 
         if (type(old_value) != type(new_value) and
             not (isinstance(old_value, six.string_types) and
@@ -85,7 +116,12 @@ class ChangeDescription(models.Model):
                 'added': serialize_changed_obj_list(new_set - old_set,
                                                     name_field),
                 'removed': serialize_changed_obj_list(old_set - new_set,
-                                                      name_field),
+                                                      name_field)
+            }
+        elif field == 'submitter':
+            self.fields_changed[field] = {
+                'old': [serialize_changed_obj(old_value, name_field)],
+                'new': [serialize_changed_obj(new_value, name_field)],
             }
         else:
             self.fields_changed[field] = {
@@ -94,10 +130,11 @@ class ChangeDescription(models.Model):
             }
 
     def __str__(self):
+        """Return a string representation of the object."""
         return self.text
 
     def has_modified_fields(self):
-        """Determines if the 'fields_changed' variable is non-empty
+        """Determine if the 'fields_changed' variable is non-empty.
 
         Uses the 'fields_changed' variable to determine if there are any
         current modifications being tracked to this ChangedDescription object.

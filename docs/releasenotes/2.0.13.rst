@@ -1,0 +1,230 @@
+=================================
+Review Board 2.0.13 Release Notes
+=================================
+
+**Release date**: February 12, 2015
+
+
+Compatibility Chanages
+======================
+
+* Changed the behavior of :command:`rb-site install` when specifying a
+  relative path.
+
+  Relative paths are no longer considered to be relative to the current
+  working directory. Instead, they are relative to a new default site path,
+  which defaults to :file:`/var/www`. This directory can customized by
+  OS/distribution packages by modifying :file:`reviewboard/rb_platform.py`
+
+
+New Features
+============
+
+* Added an authentication backend for HTTP Digest.
+
+  This authentication backend makes use of standard HTTP Digest password
+  files to authenticate users. This backend is particularly useful when
+  working alongside other services making use of HTTP Digest authentication.
+
+  Patch by Terry Cain.
+
+* The New Review Request page now shows additional top-level directories
+  on Subversion repositories. (:bug:`3546`)
+
+  Directories other than "trunk" and "branches" are now shown in the
+  list of branches, allowing commits in these directories to be posted
+  for review.
+
+* Added searching and sorting of repositories in the administration UI.
+
+  It's now easier to sort the list of repositories and search them. The
+  search text will match repository names, paths, and repository types
+  ("Git", "Subversion", etc.).
+
+* The User administration UI now shows all profile settings and state.
+
+  It's now easier to fix up the state of a user's profile settings, if
+  things ever go wrong.
+
+
+Web API
+=======
+
+* All API resources now support HTTP caching via ETags.
+
+* :ref:`webapi2.0-change-resource` now shows all changes from all
+  extension-provided custom fields.
+
+* The review request's change number can now be changed in a PUT request.
+  (:bug:`3685`)
+
+  Patch by Vincent Le.
+
+* Fixed a crash when POSTing a new repository with a conflicting name.
+  (:bug:`3625`)
+
+  Now instead of a crash, a conflict error is returned.
+
+* Fixed modifying a review request's ``extra_data`` and publishing in the
+  same POST request.
+
+  Previously, this would result in an error indicating that the draft had
+  not changed.
+
+
+Bug Fixes
+=========
+
+E-mails
+-------
+
+* Fixed tabs appearing in the subject line of e-mails.
+  (:bug:`3613`, :bug:`3707`)
+
+  When using Python 2.7 with certain e-mail clients, the subject lines
+  would end up displaying tabs when the subject reached a certain length.
+  These tabs now properly show as spaces.
+
+  Patch by Justin Maillet.
+
+
+Markdown
+--------
+
+* Fixed a crash when starting lists at a number other than "1".
+  (:bug:`3715`)
+
+
+Search
+------
+
+* Bullet-proofed cases where certain search results could result in
+  crashes. (:bug:`3599`)
+
+
+Dashboard
+---------
+
+* The "Diff Size" column no longer wraps. (:bug:`3733`)
+
+  Patch by Stanley Yeo.
+
+
+Diff Viewer
+-----------
+
+* Fixed wrapping issues with long filenames and revisions in the diff viewer.
+
+  The diff viewer's minimum width is now much smaller, and doesn't chop off
+  lines when resizing.
+
+* Fixed selecting text in diffs on newer versions of Firefox. (:bug:`3728`)
+
+* Fixed problems causing files in the diff viewer to appear empty.
+  (:bug:`3601`)
+
+* The URL is now updated when navigating to anchors on the page.
+  (:bug:`3363`)
+
+  Patch by Jason Tseng.
+
+* Fixed a broken URL after navigating to a diff page with an anchor
+  in the URL.
+
+* The offset from the the top of the page when selecting anchors now takes
+  into consideration whether the review draft banner is shown.
+
+* Form feed characters in diffs are no longer interpreted as newlines.
+
+* Fixed some encoding assumptions when parsing diff files.
+
+* Fixed a problem when displaying the Upload Diff dialog with certain
+  localizations.
+
+  Patch by Teresa Fan.
+
+
+Review Requests
+---------------
+
+* Replying to a review and turning off Markdown no longer temporarily
+  displays the text as escaped HTML. (:bug:`3721`)
+
+* The edit icon no longer appears on file attachments that aren't editable
+  by the user. (:bug:`3606`)
+
+  Patch by Vincent Le.
+
+* Information entered in an unpublished review request that is then
+  discarded is now preserved. (:bug:`3465`)
+
+  Previously, the discarded review request would appear blank, and
+  the information lost.
+
+  Patch by Jessica Yuen.
+
+* Fixed a crash when rendering change descriptions for review requests with
+  missing diffs.
+
+
+ClearCase
+---------
+
+* Fixed a KeyError when posting diffs containing binary file changes.
+
+  Patch by Nicolas Dély.
+
+
+Git
+---
+
+* Fixed parsing Git diffs that both renamed/copied and changed modes on
+  files.
+
+* Fixed parsing Git diffs that used quotes around filenames.
+
+* Fixed other parsing errors involving spaces in filenames.
+
+* Fixed a date parsing issue with GitHub commits.
+
+  Patch by Chester Li.
+
+
+Subversion
+----------
+
+* Fixed encoding problems encountered in some files when posting a
+  commit in the New Review Request page. (:bug:`3716`)
+
+
+Administration
+--------------
+
+* Fixed a KeyError when saving the repository form for some hosting
+  services.
+
+  Patch by Chris Arnold.
+
+* Fixed misleading information in the RBTools Setup instructions in the
+  repository page. (:bug:`3595`)
+
+  Patch by Chester Li.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Chester Li
+* Chris Arnold
+* Christian Hammond
+* David Trowbridge
+* Jason Tseng
+* Jessica Yuen
+* Justin Maillet
+* Nicolas Dély
+* Stanley Yeo
+* Stephen Gallagher
+* Teresa Fan
+* Terry Cain
+* Vincent Le

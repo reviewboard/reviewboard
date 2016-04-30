@@ -17,6 +17,7 @@ from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 
 NEWLINE_CONVERSION_RE = re.compile(r'\r(\r?\n)?')
+NEWLINE_RE = re.compile(r'(?:\n|\r(?:\r?\n)?)')
 
 ALPHANUM_RE = re.compile(r'\w')
 WHITESPACE_RE = re.compile(r'\s')
@@ -90,6 +91,29 @@ def convert_line_endings(data):
         data = data[:-1]
 
     return NEWLINE_CONVERSION_RE.sub(b'\n', data)
+
+
+def split_line_endings(data):
+    """Splits a string into lines while preserving all non-CRLF characters.
+
+    Unlike the string's splitlines(), this will only split on the following
+    character sequences: \\n, \\r, \\r\\n, and \\r\\r\\n.
+
+    This is needed to prevent the sort of issues encountered with
+    Unicode strings when calling splitlines(), which is that form feed
+    characters would be split. patch and diff accept form feed characters
+    as valid characters in diffs, and doesn't treat them as newlines, but
+    splitlines() will treat it as a newline anyway.
+    """
+    lines = NEWLINE_RE.split(data)
+
+    # splitlines() would chop off the last entry, if the string ends with
+    # a newline. split() doesn't do this. We need to retain that same
+    # behavior by chopping it off ourselves.
+    if not lines[-1]:
+        lines = lines[:-1]
+
+    return lines
 
 
 def patch(diff, file, filename, request=None):
@@ -192,7 +216,9 @@ def get_original_file(filediff, request, encoding_list):
         data = data.encode(encoding)
 
     # If there's a parent diff set, apply it to the buffer.
-    if filediff.parent_diff:
+    if (filediff.parent_diff and
+        (not filediff.extra_data or
+         not filediff.extra_data.get('parent_moved', False))):
         data = patch(filediff.parent_diff, data, filediff.source_file,
                      request)
 
@@ -260,7 +286,8 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
     # Filediffs that were created with leading slashes stripped won't match
     # those created with them present, so we need to compare them without in
     # order for the filenames to match up properly.
-    parser = diffset.repository.get_scmtool().get_parser('')
+    tool = diffset.repository.get_scmtool()
+    parser = tool.get_parser('')
 
     def _normfile(filename):
         return parser.normalize_diff_filename(filename)
@@ -340,9 +367,15 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
             else:
                 dest_revision = _("New Change")
 
-        tool = filediff.diffset.repository.get_scmtool()
-        depot_filename = tool.normalize_path_for_display(filediff.source_file)
-        dest_filename = tool.normalize_path_for_display(filediff.dest_file)
+        if interfilediff:
+            raw_depot_filename = filediff.dest_file
+            raw_dest_filename = interfilediff.dest_file
+        else:
+            raw_depot_filename = filediff.source_file
+            raw_dest_filename = filediff.dest_file
+
+        depot_filename = tool.normalize_path_for_display(raw_depot_filename)
+        dest_filename = tool.normalize_path_for_display(raw_dest_filename)
 
         f = {
             'depot_filename': depot_filename,
@@ -371,7 +404,10 @@ def get_diff_files(diffset, filediff=None, interdiffset=None, request=None):
 
     log_timer.done()
 
-    return get_sorted_filediffs(files, key=lambda f: f['filediff'])
+    if len(files) == 1:
+        return files
+    else:
+        return get_sorted_filediffs(files, key=lambda f: f['filediff'])
 
 
 def populate_diff_chunks(files, enable_syntax_highlighting=True,
@@ -390,7 +426,7 @@ def populate_diff_chunks(files, enable_syntax_highlighting=True,
                                              diff_file['interfilediff'],
                                              diff_file['force_interdiff'],
                                              enable_syntax_highlighting)
-        chunks = generator.get_chunks()
+        chunks = list(generator.get_chunks())
 
         diff_file.update({
             'chunks': chunks,
@@ -415,52 +451,16 @@ def populate_diff_chunks(files, enable_syntax_highlighting=True,
         })
 
 
-def get_file_chunks_in_range(context, filediff, interfilediff,
-                             first_line, num_lines):
-    """
-    A generator that yields chunks within a range of lines in the specified
-    filediff/interfilediff.
+def get_file_from_filediff(context, filediff, interfilediff):
+    """Return the files that corresponds to the filediff/interfilediff.
 
     This is primarily intended for use with templates. It takes a
     RequestContext for looking up the user and for caching file lists,
     in order to improve performance and reduce lookup times for files that have
     already been fetched.
 
-    Each returned chunk is a dictionary with the following fields:
-
-      ============= ========================================================
-      Variable      Description
-      ============= ========================================================
-      ``change``    The change type ("equal", "replace", "insert", "delete")
-      ``numlines``  The number of lines in the chunk.
-      ``lines``     The list of lines in the chunk.
-      ``meta``      A dictionary containing metadata on the chunk
-      ============= ========================================================
-
-
-    Each line in the list of lines is an array with the following data:
-
-      ======== =============================================================
-      Index    Description
-      ======== =============================================================
-      0        Virtual line number (union of the original and patched files)
-      1        Real line number in the original file
-      2        HTML markup of the original file
-      3        Changed regions of the original line (for "replace" chunks)
-      4        Real line number in the patched file
-      5        HTML markup of the patched file
-      6        Changed regions of the patched line (for "replace" chunks)
-      7        True if line consists of only whitespace changes
-      ======== =============================================================
+    This function returns either exactly one file or ``None``.
     """
-    def find_header(headers):
-        for header in reversed(headers):
-            if header[0] < first_line:
-                return {
-                    'line': header[0],
-                    'text': header[1],
-                }
-
     interdiffset = None
 
     key = "_diff_files_%s_%s" % (filediff.diffset.id, filediff.id)
@@ -482,16 +482,188 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
         context[key] = files
 
     if not files:
-        raise StopIteration
+        return None
 
     assert len(files) == 1
-    last_header = [None, None]
+    return files[0]
 
-    for chunk in files[0]['chunks']:
-        if ('headers' in chunk['meta'] and
-                (chunk['meta']['headers'][0] or chunk['meta']['headers'][1])):
-            last_header = chunk['meta']['headers']
 
+def get_last_line_number_in_diff(context, filediff, interfilediff):
+    """Determine the last virtual line number in the filediff/interfilediff.
+
+    This returns the virtual line number to be used in expandable diff
+    fragments.
+    """
+    f = get_file_from_filediff(context, filediff, interfilediff)
+
+    last_chunk = f['chunks'][-1]
+    last_line = last_chunk['lines'][-1]
+
+    return last_line[0]
+
+
+def _get_last_header_in_chunks_before_line(chunks, target_line):
+    """Find the last header in the list of chunks before the target line."""
+    def find_last_line_numbers(lines):
+        """Return a tuple of the last line numbers in the given list of lines.
+
+        The last line numbers are not always contained in the last element of
+        the ``lines`` list. This is the case when dealing with interdiffs that
+        have filtered out opcodes.
+
+        See :py:func:`get_chunks_in_range` for a description of what is
+        contained in each element of ``lines``.
+        """
+        last_left = None
+        last_right = None
+
+        for line in reversed(lines):
+            if not last_right and line[4]:
+                last_right = line[4]
+
+            if not last_left and line[1]:
+                last_left = line[1]
+
+            if last_left and last_right:
+                break
+
+        return last_left, last_right
+
+    def find_header(headers, offset, last_line):
+        """Return the last header that occurs before a line.
+
+        The offset parameter is the difference between the virtual number and
+        and actual line number in the chunk. This is required because the
+        header line numbers are original or patched line numbers, not virtual
+        line numbers.
+        """
+        # In the case of interdiffs, it is possible that there will be headers
+        # in the chunk that don't belong to it, but were put there due to
+        # chunks being merged together. We must therefore ensure that the
+        # header we're looking at is actually in the chunk.
+        end_line = min(last_line, target_line)
+
+        for header in reversed(headers):
+            virtual_line = header[0] + offset
+
+            if virtual_line < end_line:
+                return {
+                    'line': virtual_line,
+                    'text': header[1]
+                }
+
+    # The most up-to-date header information
+    header = {
+        'left': None,
+        'right': None
+    }
+
+    for chunk in chunks:
+        lines = chunk['lines']
+        virtual_first_line = lines[0][0]
+
+        if virtual_first_line <= target_line:
+            if virtual_first_line == target_line:
+                # The given line number is the first line of a new chunk so
+                # there can't be any relevant header information here.
+                break
+
+            last_left, last_right = find_last_line_numbers(lines)
+
+            if 'left_headers' in chunk['meta'] and lines[0][1]:
+                offset = virtual_first_line - lines[0][1]
+
+                left_header = find_header(chunk['meta']['left_headers'],
+                                          offset, last_left + offset)
+
+                header['left'] = left_header or header['left']
+
+            if 'right_headers' in chunk['meta'] and lines[0][4]:
+                offset = virtual_first_line - lines[0][4]
+
+                right_header = find_header(chunk['meta']['right_headers'],
+                                           offset, last_right + offset)
+
+                header['right'] = right_header or header['right']
+        else:
+            # We've gone past the given line number.
+            break
+
+    return header
+
+
+def get_last_header_before_line(context, filediff, interfilediff, target_line):
+    """Get the last header that occurs before the given line.
+
+    This returns a dictionary of ``left`` header and ``right`` header. Each
+    header is either ``None`` or a dictionary with the following fields:
+
+    ======== ==============================================================
+    Field    Description
+    ======== ==============================================================
+    ``line`` Virtual line number (union of the original and patched files)
+    ``text`` The header text
+    ======== ==============================================================
+    """
+    f = get_file_from_filediff(context, filediff, interfilediff)
+
+    return _get_last_header_in_chunks_before_line(f['chunks'], target_line)
+
+
+def get_file_chunks_in_range(context, filediff, interfilediff,
+                             first_line, num_lines):
+    """Generate the chunks within a range of lines in the specified filediff.
+
+    This is primarily intended for use with templates. It takes a
+    RequestContext for looking up the user and for caching file lists,
+    in order to improve performance and reduce lookup times for files that have
+    already been fetched.
+
+    See :py:func:`get_chunks_in_range` for information on the returned state
+    of the chunks.
+    """
+    f = get_file_from_filediff(context, filediff, interfilediff)
+
+    if f:
+        return get_chunks_in_range(f['chunks'], first_line, num_lines)
+    else:
+        return []
+
+
+def get_chunks_in_range(chunks, first_line, num_lines):
+    """Generate the chunks within a range of lines of a larger list of chunks.
+
+    This takes a list of chunks, computes a subset of those chunks from the
+    line ranges provided, and generates a new set of those chunks.
+
+    Each returned chunk is a dictionary with the following fields:
+
+    ============= ========================================================
+    Variable      Description
+    ============= ========================================================
+    ``change``    The change type ("equal", "replace", "insert", "delete")
+    ``numlines``  The number of lines in the chunk.
+    ``lines``     The list of lines in the chunk.
+    ``meta``      A dictionary containing metadata on the chunk
+    ============= ========================================================
+
+
+    Each line in the list of lines is an array with the following data:
+
+    ======== =============================================================
+    Index    Description
+    ======== =============================================================
+    0        Virtual line number (union of the original and patched files)
+    1        Real line number in the original file
+    2        HTML markup of the original file
+    3        Changed regions of the original line (for "replace" chunks)
+    4        Real line number in the patched file
+    5        HTML markup of the patched file
+    6        Changed regions of the patched line (for "replace" chunks)
+    7        True if line consists of only whitespace changes
+    ======== =============================================================
+    """
+    for i, chunk in enumerate(chunks):
         lines = chunk['lines']
 
         if lines[-1][0] >= first_line >= lines[0][0]:
@@ -503,24 +675,12 @@ def get_file_chunks_in_range(context, filediff, interfilediff,
                 last_index = len(lines)
 
             new_chunk = {
+                'index': i,
                 'lines': chunk['lines'][start_index:last_index],
                 'numlines': last_index - start_index,
                 'change': chunk['change'],
                 'meta': chunk.get('meta', {}),
             }
-
-            if 'left_headers' in chunk['meta']:
-                left_header = find_header(chunk['meta']['left_headers'])
-                right_header = find_header(chunk['meta']['right_headers'])
-                del new_chunk['meta']['left_headers']
-                del new_chunk['meta']['right_headers']
-
-                if left_header or right_header:
-                    header = (left_header, right_header)
-                else:
-                    header = last_header
-
-                new_chunk['meta']['headers'] = header
 
             yield new_chunk
 

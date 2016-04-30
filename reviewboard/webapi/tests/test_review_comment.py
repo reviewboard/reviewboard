@@ -363,7 +363,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
 
         self._testHttpCaching(
             get_review_diff_comment_item_url(review, comment.id),
-            check_last_modified=True)
+            check_etags=True)
 
     #
     # HTTP PUT tests
@@ -384,9 +384,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         return (get_review_diff_comment_item_url(review, comment.pk,
                                                  local_site_name),
                 review_diff_comment_item_mimetype,
-                {
-                    'text': 'My new text',
-                },
+                {'text': 'My new text'},
                 comment,
                 [])
 

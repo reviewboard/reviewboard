@@ -6,12 +6,14 @@
  */
 RB.ReviewBoxView = RB.CollapsableBoxView.extend({
     initialize: function() {
-        this._$shipIt = null;
         this._reviewReply = null;
         this._replyEditors = [];
         this._replyEditorViews = [];
         this._draftBannerShown = false;
         this._$banners = null;
+        this._bannerView = null;
+        this._$boxStatus = null;
+        this._$fixItLabel = null;
         this._openIssueCount = 0;
 
         this._setupNewReply(this.options.reviewReply);
@@ -46,7 +48,8 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         }
 
         this._$banners = this.$('.banners');
-        this._$shipIt = this.$('.shipit');
+        this._$boxStatus = this.$('.box-status');
+        this._$fixItLabel = this._$boxStatus.find('.fix-it-label');
 
         _.each(this.$('.review-comments .issue-indicator'), function(el) {
             var $issueState = $('.issue-state', el),
@@ -141,14 +144,16 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
      */
     _showReplyDraftBanner: function() {
         if (!this._draftBannerShown) {
-            var banner = new RB.ReviewReplyDraftBannerView({
+            this._bannerView = new RB.ReviewReplyDraftBannerView({
                 model: this._reviewReply,
                 $floatContainer: this.$('.box'),
-                noFloatContainerClass: 'collapsed'
+                noFloatContainerClass: 'collapsed',
+                showSendEmail: this.options.editorData.showSendEmail
             });
 
-            banner.render().$el.appendTo(this._$banners);
+            this._bannerView.render().$el.appendTo(this._$banners);
             this._draftBannerShown = true;
+            this.$el.addClass('has-draft');
         }
     },
 
@@ -156,8 +161,12 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
      * Hides the reply draft banner.
      */
     _hideReplyDraftBanner: function() {
-        this._$banners.children().remove();
-        this._draftBannerShown = false;
+        if (this._draftBannerShown) {
+            this._bannerView.remove();
+            this._bannerView = null;
+            this._draftBannerShown = false;
+            this.$el.removeClass('has-draft');
+        }
     },
 
     /*
@@ -213,26 +222,35 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
             this._openIssueCount--;
         }
 
-        if (this._$shipIt.length > 0) {
-            this._updateShipItLabel();
-        }
+        this._updateLabels();
     },
 
     /*
-     * Updates the Ship It label based on the open issue counts.
+     * Updates the Ship It and Fix It labels based on the open issue counts.
      *
-     * If there are open issues, the label will say "Fix it, then Ship it!"
-     * If all open issues are closed, it will say "Ship it!"
+     * If there are open issues, there will be a "Fix it!" label.
+     *
+     * If there's a Ship It, there will be a "Ship it!" label.
+     *
+     * If there's both a Ship It and open issues, the "Fix it!" label will
+     * be shown overlaid on top of the "Ship it!" label, and will go away
+     * once the issues are resolved.
      */
-    _updateShipItLabel: function() {
+    _updateLabels: function() {
         if (this._openIssueCount === 0) {
-            this._$shipIt
-                .removeClass('with-issues')
-                .text(gettext('Ship it!'));
+            this._$fixItLabel.css({
+                opacity: 0,
+                left: '-100px'
+            });
+            this._$boxStatus.removeClass('has-issues');
         } else {
-            this._$shipIt
-                .addClass('with-issues')
-                .text(gettext('Fix it, then Ship it!'));
+            this._$boxStatus.addClass('has-issues');
+            this._$fixItLabel
+                .show()
+                .css({
+                    opacity: 1,
+                    left: 0
+                });
         }
     }
 });

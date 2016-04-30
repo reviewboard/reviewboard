@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 from os.path import abspath, dirname
+from wsgiref import simple_server
 
 from django.core.management import execute_from_command_line
 
@@ -37,10 +38,6 @@ def check_dependencies(settings):
     if not has_module('PIL') and not has_module('Image'):
         dependency_error('The Python Imaging Library (Pillow or PIL) '
                          'is required.')
-
-    # ReCaptcha
-    if not has_module('recaptcha'):
-        dependency_error('The recaptcha python module is required.')
 
     # The following checks are non-fatal warnings, since these dependencies are
     # merely recommended, not required.
@@ -128,6 +125,12 @@ def main(settings, in_subprocess):
             sys.stderr.write('Running dependency checks (set DEBUG=False '
                              'to turn this off)...\n')
             check_dependencies(settings)
+
+        if sys.argv[1] == 'runserver':
+            # Force using HTTP/1.1 for all responses, in order to work around
+            # some browsers (Chrome) failing to consistently handle some
+            # cache headers.
+            simple_server.ServerHandler.http_version = '1.1'
     else:
         # Some of our checks require access to django.conf.settings, so
         # tell Django about our settings.
@@ -142,15 +145,25 @@ def main(settings, in_subprocess):
     execute_from_command_line(sys.argv)
 
 
-if __name__ == "__main__":
+def run():
     # Add the parent directory of 'manage.py' to the python path, so
     # manage.py can be run from any directory.
     # From http://www.djangosnippets.org/snippets/281/
     sys.path.insert(0, dirname(dirname(abspath(__file__))))
 
-    if 'DJANGO_SETTINGS_MODULE' not in os.environ:
+    # Python may insert the directory that manage.py is in into the Python
+    # path, which can cause conflicts with other modules (such as Python's
+    # "site" module). We don't want this, so it's important that we remove
+    # this directory from the path.
+    try:
+        sys.path.remove(dirname(abspath(__file__)))
+    except ValueError:
+        pass
+
+    if b'DJANGO_SETTINGS_MODULE' not in os.environ:
         in_subprocess = False
-        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
+        os.environ.setdefault(b'DJANGO_SETTINGS_MODULE',
+                              b'reviewboard.settings')
     else:
         in_subprocess = True
 
@@ -168,3 +181,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     main(settings, in_subprocess)
+
+
+if __name__ == "__main__":
+    run()

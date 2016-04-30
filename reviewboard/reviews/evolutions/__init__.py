@@ -31,4 +31,7 @@ SEQUENCE = [
     'review_request_summary_index',
     'review_request_summary_index_manual',
     'split_rich_text',
+    'is_default_group',
+    'general_comments',
+    'add_owner_to_draft',
 ]

@@ -4,16 +4,16 @@ import logging
 
 from django.db.models import Q
 from django.utils import six
-from djblets.gravatars import get_gravatar_url
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_request_fields,
                                        webapi_response_errors)
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
-from djblets.webapi.resources import UserResource as DjbletsUserResource
+from djblets.webapi.resources.user import UserResource as DjbletsUserResource
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.accounts.errors import UserQueryError
+from reviewboard.avatars import avatar_services
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
@@ -30,29 +30,21 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     """
     item_child_resources = [
         resources.api_token,
+        resources.archived_review_request,
+        resources.muted_review_request,
         resources.user_file_attachment,
         resources.watched,
     ]
 
     fields = dict({
-        'avatar_url': {
+        'avatar_urls': {
             'type': six.text_type,
-            'description': 'The URL for an avatar representing the user.',
-            'added_in': '1.6.14',
+            'description': 'The URLs for an avatar representing the user.',
+            'added_in': '3.0',
         },
     }, **DjbletsUserResource.fields)
 
     hidden_fields = ('email', 'first_name', 'last_name', 'fullname')
-
-    def get_etag(self, request, obj, *args, **kwargs):
-        if obj.is_profile_visible(request.user):
-            return self.generate_etag(obj, six.iterkeys(self.fields), request)
-        else:
-            return self.generate_etag(obj, [
-                field
-                for field in six.iterkeys(self.fields)
-                if field not in self.hidden_fields
-            ], request)
 
     def get_queryset(self, request, local_site_name=None, *args, **kwargs):
         search_q = request.GET.get('q', None)
@@ -125,8 +117,13 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         return local_site_reverse('user', kwargs['request'],
                                   kwargs={'username': user.username})
 
-    def serialize_avatar_url_field(self, user, request=None, **kwargs):
-        return get_gravatar_url(request, user)
+    def serialize_avatar_urls_field(self, user, request=None, **kwargs):
+        service = avatar_services.default_service
+
+        if service:
+            return service.get_avatar_urls(request, user, 48)
+
+        return None
 
     def has_access_permissions(self, *args, **kwargs):
         return True

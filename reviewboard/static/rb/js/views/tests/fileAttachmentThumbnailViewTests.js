@@ -7,40 +7,28 @@ suite('rb/views/FileAttachmentThumbnail', function() {
         reviewRequest = new RB.ReviewRequest();
         model = new RB.FileAttachment({
             downloadURL: 'http://example.com/file.png',
-            iconURL: 'http://example.com/file-icon.png',
             filename: 'file.png'
         });
 
-        spyOn(model, 'trigger').andCallThrough();
+        spyOn(model, 'trigger').and.callThrough();
     });
 
     describe('Rendering', function() {
         function expectElements() {
-            expect(view.$('.delete').length).toBe(
-                model.get('loaded') ? 1 : 0);
             expect(view.$('a.edit').length).toBe(1);
             expect(view.$('.file-caption').length).toBe(1);
-            expect(view.$('.file-header').length).toBe(1);
-            expect(view.$('.actions').length).toBe(1);
+            expect(view.$('.file-actions').length).toBe(1);
+            expect(view.$('.file-delete').length).toBe(
+                view.options.canEdit && model.get('loaded') ? 1 : 0);
+            expect(view.$('.file-update').length).toBe(
+                view.options.canEdit && model.get('loaded') ? 1 : 0);
         }
 
         function expectAttributeMatches() {
-            expect(view.$('.download').attr('href')).toBe(
+            expect(view.$('.file-download').attr('href')).toBe(
                 model.get('downloadURL'));
-            expect(view.$('.icon').attr('src')).toBe(
-                model.get('iconURL'));
-            expect(view.$('.filename').text()).toBe(
-                model.get('filename'));
             expect(view.$('.file-caption .edit').text()).toBe(
                 model.get('caption'));
-        }
-
-        function expectVisibility(visible) {
-            expect(view.$('.file-header').children().is(':visible'))
-                .toBe(visible);
-            expect(view.$('.actions').is(':visible')).toBe(visible);
-            expect(view.$('.file-caption').css('visibility'))
-                .toBe(visible ? 'visible' : 'hidden');
         }
 
         it('Using existing elements', function() {
@@ -48,8 +36,8 @@ suite('rb/views/FileAttachmentThumbnail', function() {
                 .addClass(RB.FileAttachmentThumbnail.prototype.className)
                 .html(RB.FileAttachmentThumbnail.prototype.template(
                     _.defaults({
-                        deleteFileText: 'Delete File',
-                        noCaptionText: 'No caption'
+                        caption: 'No caption',
+                        captionClass: 'edit empty-caption'
                     }, model.attributes)));
 
             model.set('loaded', true);
@@ -65,10 +53,8 @@ suite('rb/views/FileAttachmentThumbnail', function() {
 
             expectElements();
 
-            expect(view.$('.file-header').children().is(':visible'))
-                .toBe(true);
-            expect(view.$('.actions').is(':visible')).toBe(true);
-            expect(view.$('.spinner').length).toBe(0);
+            expect(view.$('.file-actions').is(':visible')).toBe(true);
+            expect(view.$('.fa-spinner').length).toBe(0);
         });
 
         it('Rendered thumbnail with unloaded model', function() {
@@ -81,10 +67,9 @@ suite('rb/views/FileAttachmentThumbnail', function() {
             view.render();
 
             expectElements();
-            expectVisibility(false);
 
-            expect(view.$('.actions').children().length).toBe(0);
-            expect(view.$('.spinner').length).toBe(1);
+            expect(view.$('.file-actions').children().length).toBe(0);
+            expect(view.$('.fa-spinner').length).toBe(1);
         });
 
         describe('Rendered thumbnail with loaded model', function() {
@@ -108,10 +93,9 @@ suite('rb/views/FileAttachmentThumbnail', function() {
 
                 expectElements();
                 expectAttributeMatches();
-                expectVisibility(true);
 
-                expect(view.$('.actions').children().length).toBe(2);
-                expect(view.$('.spinner').length).toBe(0);
+                expect(view.$('.file-actions').children().length).toBe(2);
+                expect(view.$('.fa-spinner').length).toBe(0);
                 expect(view.$('.file-review').length).toBe(1);
                 expect(view.$('.file-add-comment').length).toBe(0);
             });
@@ -127,10 +111,9 @@ suite('rb/views/FileAttachmentThumbnail', function() {
 
                 expectElements();
                 expectAttributeMatches();
-                expectVisibility(true);
 
-                expect(view.$('.actions').children().length).toBe(2);
-                expect(view.$('.spinner').length).toBe(0);
+                expect(view.$('.file-actions').children().length).toBe(2);
+                expect(view.$('.fa-spinner').length).toBe(0);
                 expect(view.$('.file-review').length).toBe(0);
                 expect(view.$('.file-add-comment').length).toBe(1);
             });
@@ -144,6 +127,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
             model.url = '/api/file-attachments/123/';
 
             view = new RB.FileAttachmentThumbnail({
+                canEdit: true,
                 reviewRequest: reviewRequest,
                 renderThumbnail: true,
                 model: model
@@ -151,7 +135,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
             $testsScratch.append(view.$el);
             view.render();
 
-            spyOn(view, 'trigger').andCallThrough();
+            spyOn(view, 'trigger').and.callThrough();
         });
 
         it('Begin caption editing', function() {
@@ -184,21 +168,21 @@ suite('rb/views/FileAttachmentThumbnail', function() {
         });
 
         it('Delete', function() {
-            spyOn(model, 'destroy').andCallThrough();
-            spyOn($, 'ajax').andCallFake(function(options) {
+            spyOn(model, 'destroy').and.callThrough();
+            spyOn($, 'ajax').and.callFake(function(options) {
                 options.success();
             });
-            spyOn(view.$el, 'fadeOut').andCallFake(function(done) {
+            spyOn(view.$el, 'fadeOut').and.callFake(function(done) {
                 done();
             });
 
             spyOn(view, 'remove');
 
-            view.$('.delete').click();
+            view.$('.file-delete').click();
 
             expect($.ajax).toHaveBeenCalled();
             expect(model.destroy).toHaveBeenCalled();
-            expect(model.trigger.calls[2].args[0]).toBe('destroying');
+            expect(model.trigger.calls.argsFor(2)[0]).toBe('destroying');
             expect(view.$el.fadeOut).toHaveBeenCalled();
             expect(view.remove).toHaveBeenCalled();
         });

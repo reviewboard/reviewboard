@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.functional import cached_property
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import CounterField, JSONField
@@ -15,6 +16,7 @@ from reviewboard.reviews.models.base_comment import BaseComment
 from reviewboard.reviews.models.diff_comment import Comment
 from reviewboard.reviews.models.file_attachment_comment import \
     FileAttachmentComment
+from reviewboard.reviews.models.general_comment import GeneralComment
 from reviewboard.reviews.models.review_request import (ReviewRequest,
                                                        fetch_issue_counts)
 from reviewboard.reviews.models.screenshot_comment import ScreenshotComment
@@ -25,6 +27,9 @@ from reviewboard.reviews.signals import (reply_publishing, reply_published,
 @python_2_unicode_compatible
 class Review(models.Model):
     """A review of a review request."""
+
+    SHIP_IT_TEXT = 'Ship It!'
+
     review_request = models.ForeignKey(ReviewRequest,
                                        related_name="reviews",
                                        verbose_name=_("review request"))
@@ -91,6 +96,11 @@ class Review(models.Model):
         verbose_name=_("file attachment comments"),
         related_name="review",
         blank=True)
+    general_comments = models.ManyToManyField(
+        GeneralComment,
+        verbose_name=_('general comments'),
+        related_name='review',
+        blank=True)
 
     extra_data = JSONField(null=True)
 
@@ -107,6 +117,22 @@ class Review(models.Model):
     # Set this up with a ReviewManager to help prevent race conditions and
     # to fix duplicate reviews.
     objects = ReviewManager()
+
+    @cached_property
+    def ship_it_only(self):
+        """Return if the review only contains a "Ship It!".
+
+        Returns:
+            bool: ``True`` if the review is only a "Ship It!" and ``False``
+            otherwise.
+        """
+        return (self.ship_it and
+                (not self.body_top or
+                 self.body_top == Review.SHIP_IT_TEXT) and
+                not (self.body_bottom or
+                     self.comments.exists() or
+                     self.file_attachment_comments.exists() or
+                     self.screenshot_comments.exists()))
 
     def get_participants(self):
         """Returns a list of participants in a review's discussion."""
@@ -184,7 +210,7 @@ class Review(models.Model):
 
         super(Review, self).save()
 
-    def publish(self, user=None):
+    def publish(self, user=None, trivial=False, to_submitter_only=False):
         """Publishes this review.
 
         This will make the review public and update the timestamps of all
@@ -206,6 +232,7 @@ class Review(models.Model):
         self.comments.update(timestamp=self.timestamp)
         self.screenshot_comments.update(timestamp=self.timestamp)
         self.file_attachment_comments.update(timestamp=self.timestamp)
+        self.general_comments.update(timestamp=self.timestamp)
 
         # Update the last_updated timestamp and the last review activity
         # timestamp on the review request.
@@ -215,7 +242,7 @@ class Review(models.Model):
 
         if self.is_reply():
             reply_published.send(sender=self.__class__,
-                                 user=user, reply=self)
+                                 user=user, reply=self, trivial=trivial)
         else:
             issue_counts = fetch_issue_counts(self.review_request,
                                               Q(pk=self.pk))
@@ -241,7 +268,8 @@ class Review(models.Model):
                 })
 
             review_published.send(sender=self.__class__,
-                                  user=user, review=self)
+                                  user=user, review=self,
+                                  to_submitter_only=to_submitter_only)
 
     def delete(self):
         """Deletes this review.
@@ -251,6 +279,7 @@ class Review(models.Model):
         self.comments.all().delete()
         self.screenshot_comments.all().delete()
         self.file_attachment_comments.all().delete()
+        self.general_comments.all().delete()
 
         super(Review, self).delete()
 
@@ -262,7 +291,8 @@ class Review(models.Model):
         """Return a list of all contained comments of all types."""
         return (list(self.comments.filter(**kwargs)) +
                 list(self.screenshot_comments.filter(**kwargs)) +
-                list(self.file_attachment_comments.filter(**kwargs)))
+                list(self.file_attachment_comments.filter(**kwargs)) +
+                list(self.general_comments.filter(**kwargs)))
 
     class Meta:
         app_label = 'reviews'

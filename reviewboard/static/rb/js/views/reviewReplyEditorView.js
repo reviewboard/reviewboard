@@ -11,13 +11,23 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
         ' <dl>',
         '  <dt>',
         '   <label for="<%= id %>">',
-        '    <a href="<%= userPageURL %>" class="user"><%- fullName %></a>',
+        '    <div class="avatar-container">',
+        '     <img src="<%- avatarURL %>" width="32" height="32" ',
+        '          alt="<%- fullName %>" class="avatar"',
+        '<% if (avatarURL2x) { %>',
+        '          data-at2x="<%- avatarURL2x %>"',
+        '<%} %>',
+        ' />',
+        '    </div>',
+        '    <div class="user-reply-info">',
+        '     <a href="<%= userPageURL %>" class="user"><%- fullName %></a>',
         '<% if (timestamp) { %>',
-        '    <span class="timestamp">',
-        '     <time class="timesince" datetime="<%= timestampISO %>">',
-        '<%= timestamp %></time> (<%= timestamp %>)',
-        '    </span>',
+        '     <span class="timestamp">',
+        '      <time class="timesince" datetime="<%= timestampISO %>">',
+        '<%= timestamp %></time>',
+        '     </span>',
         '<% } %>',
+        '    </div>',
         '   </label>',
         '  </dt>',
         '  <dd><pre id="<%= id %>" class="reviewtext">',
@@ -68,7 +78,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
             this._createCommentEditor($draftComment);
         }
 
-        this.listenTo(this.model, 'change:text change:richText', function() {
+        this.listenTo(this.model, 'textUpdated', function() {
             var reviewRequest = this.model.get('review').get('parentObject');
 
             if (this._$editor) {
@@ -164,6 +174,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
     _makeCommentElement: function(options) {
         var userSession = RB.UserSession.instance,
             reviewRequest = this.model.get('review').get('parentObject'),
+            urls = userSession.getAvatarURLs(32),
             now,
             $el;
 
@@ -176,6 +187,8 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
                 commentID: null,
                 userPageURL: userSession.get('userPageURL'),
                 fullName: userSession.get('fullName'),
+                avatarURL: urls['1x'],
+                avatarURL2x: urls['2x'],
                 isDraft: true,
                 timestampISO: now.format(),
 
@@ -191,6 +204,9 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
             .end()
             .find('time.timesince')
                 .timesince()
+            .end()
+            .find('.avatar')
+                .retinaAvatar()
             .end()
             .appendTo(this._$commentsList);
 

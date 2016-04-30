@@ -21,10 +21,12 @@ The following hooks are available for use by extensions.
    account-page-forms-hook
    action-hooks
    admin-widget-hook
+   api-extra-data-access-hook
    comment-detail-display-hook
    dashboard-sidebar-items-hook
    dashboard-columns-hook
    datagrid-columns-hook
+   email-hook
    file-attachment-thumbnail-hook
    hosting-service-hook
    navigation-bar-hook

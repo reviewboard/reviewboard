@@ -12,4 +12,6 @@ SEQUENCE = [
     'profile_should_send_email',
     'profile_should_send_own_updates',
     'profile_default_use_rich_text',
+    'reviewrequestvisit_visibility',
+    'profile_settings',
 ]

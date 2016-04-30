@@ -160,7 +160,7 @@ class FileDiffManager(models.Manager):
                         raw_fdd.save()
                     except IntegrityError:
                         raw_fdd = RawFileDiffData.objects.get(
-                            binary_hash=binary_hash)
+                            binary_hash=raw_fdd.binary_hash)
 
             if filediff_hashes:
                 self._transition_hashes(cursor, 'diff_hash', filediff_hashes)
@@ -430,9 +430,7 @@ class DiffSetManager(models.Manager):
 
         tool = repository.get_scmtool()
 
-        encoding, diff_text = convert_to_unicode(
-            diff_file_contents, repository.get_encoding_list())
-        parser = tool.get_parser(diff_text)
+        parser = tool.get_parser(diff_file_contents)
 
         files = list(self._process_files(
             parser,
@@ -460,8 +458,7 @@ class DiffSetManager(models.Manager):
         if parent_diff_file_contents:
             diff_filenames = set([f.origFile for f in files])
 
-            parent_parser = tool.get_parser(
-                convert_to_unicode(parent_diff_file_contents, [encoding])[1])
+            parent_parser = tool.get_parser(parent_diff_file_contents)
 
             # If the user supplied a base diff, we need to parse it and
             # later apply each of the files that are in the main diff
@@ -469,14 +466,14 @@ class DiffSetManager(models.Manager):
                                          repository, base_commit_id, request,
                                          check_existence=True,
                                          limit_to=diff_filenames):
-                parent_files[f.origFile] = f
+                parent_files[f.newFile] = f
 
             # This will return a non-None value only for tools that use
             # commit IDs to identify file versions as opposed to file revision
             # IDs.
             parent_commit_id = parent_parser.get_orig_commit_id()
 
-        diffset = super(DiffSetManager, self).create(
+        diffset = self.model(
             name=diff_file_name, revision=0,
             basedir=basedir,
             history=diffset_history,
@@ -487,20 +484,29 @@ class DiffSetManager(models.Manager):
         if save:
             diffset.save()
 
+        encoding_list = repository.get_encoding_list()
+
         for f in files:
+            parent_file = None
+            orig_rev = None
+            parent_content = b''
+
             if f.origFile in parent_files:
                 parent_file = parent_files[f.origFile]
-                parent_content = parent_file.data.encode(encoding)
-                source_rev = parent_file.origInfo
-            else:
-                parent_content = b""
+                parent_content = parent_file.data
+                orig_rev = parent_file.origInfo
 
+            # If there is a parent file there is not necessarily an original
+            # revision for the parent file in the case of a renamed file in
+            # git.
+            if not orig_rev:
                 if parent_commit_id and f.origInfo != PRE_CREATION:
-                    source_rev = parent_commit_id
+                    orig_rev = parent_commit_id
                 else:
-                    source_rev = f.origInfo
+                    orig_rev = f.origInfo
 
-            dest_file = os.path.join(basedir, f.newFile).replace("\\", "/")
+            enc, orig_file = convert_to_unicode(f.origFile, encoding_list)
+            enc, dest_file = convert_to_unicode(f.newFile, encoding_list)
 
             if f.deleted:
                 status = FileDiff.DELETED
@@ -513,14 +519,21 @@ class DiffSetManager(models.Manager):
 
             filediff = FileDiff(
                 diffset=diffset,
-                source_file=parser.normalize_diff_filename(f.origFile),
+                source_file=parser.normalize_diff_filename(orig_file),
                 dest_file=parser.normalize_diff_filename(dest_file),
-                source_revision=smart_unicode(source_rev),
+                source_revision=smart_unicode(orig_rev),
                 dest_detail=f.newInfo,
-                diff=f.data.encode(encoding),
+                diff=f.data,
                 parent_diff=parent_content,
                 binary=f.binary,
                 status=status)
+
+            if (parent_file and
+                (parent_file.moved or parent_file.copied) and
+                parent_file.insert_count == 0 and
+                parent_file.delete_count == 0):
+                filediff.extra_data = {'parent_moved': True}
+
             filediff.set_line_counts(raw_insert_count=f.insert_count,
                                      raw_delete_count=f.delete_count)
 
@@ -529,40 +542,51 @@ class DiffSetManager(models.Manager):
 
         return diffset
 
+    def _normalize_filename(self, filename, basedir):
+        """Normalize a file name to be relative to the repository root."""
+        if filename.startswith('/'):
+            return filename
+
+        return os.path.join(basedir, filename).replace('\\', '/')
+
     def _process_files(self, parser, basedir, repository, base_commit_id,
                        request, check_existence=False, limit_to=None):
         tool = repository.get_scmtool()
 
         for f in parser.parse():
-            f2, revision = tool.parse_diff_revision(f.origFile, f.origInfo,
-                                                    moved=f.moved,
-                                                    copied=f.copied)
+            source_filename, source_revision = tool.parse_diff_revision(
+                f.origFile,
+                f.origInfo,
+                moved=f.moved,
+                copied=f.copied)
 
-            if f2.startswith("/"):
-                filename = f2
-            else:
-                filename = os.path.join(basedir, f2).replace("\\", "/")
+            dest_filename = self._normalize_filename(f.newFile, basedir)
+            source_filename = self._normalize_filename(source_filename,
+                                                       basedir)
 
-            if limit_to is not None and filename not in limit_to:
+            if limit_to is not None and dest_filename not in limit_to:
                 # This file isn't actually needed for the diff, so save
                 # ourselves a remote file existence check and some storage.
                 continue
 
             # FIXME: this would be a good place to find permissions errors
-            if (revision != PRE_CREATION and
-                revision != UNKNOWN and
+            if (source_revision != PRE_CREATION and
+                source_revision != UNKNOWN and
                 not f.binary and
                 not f.deleted and
                 not f.moved and
                 not f.copied and
                 (check_existence and
-                 not repository.get_file_exists(filename, revision,
+                 not repository.get_file_exists(source_filename,
+                                                source_revision,
                                                 base_commit_id=base_commit_id,
                                                 request=request))):
-                raise FileNotFoundError(filename, revision, base_commit_id)
+                raise FileNotFoundError(source_filename, source_revision,
+                                        base_commit_id)
 
-            f.origFile = filename
-            f.origInfo = revision
+            f.origFile = source_filename
+            f.origInfo = source_revision
+            f.newFile = dest_filename
 
             yield f
 

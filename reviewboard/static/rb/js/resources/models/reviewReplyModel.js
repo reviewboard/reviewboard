@@ -4,32 +4,34 @@
  * Encapsulates replies to a top-level review.
  */
 RB.ReviewReply = RB.BaseResource.extend({
-    defaults: _.defaults({
-        /*
-         * The text format type to request for text in all responses.
-         */
-        forceTextType: null,
+    defaults: function() {
+        return _.defaults({
+            /*
+             * The text format type to request for text in all responses.
+             */
+            forceTextType: null,
 
-        /*
-         * Whether responses from the server should return raw text
-         * fields when forceTextType is used.
-         */
-        includeTextTypes: null,
+            /*
+             * Whether responses from the server should return raw text
+             * fields when forceTextType is used.
+             */
+            includeTextTypes: null,
 
-        /*
-         * Raw text fields, if the caller fetches or posts with
-         * include-text-types=raw.
-         */
-        rawTextFields: {},
+            /*
+             * Raw text fields, if the caller fetches or posts with
+             * include-text-types=raw.
+             */
+            rawTextFields: {},
 
-        review: null,
-        'public': false,
-        bodyTop: null,
-        bodyTopRichText: false,
-        bodyBottom: null,
-        bodyBottomRichText: false,
-        timestamp: null
-    }, RB.BaseResource.prototype.defaults),
+            review: null,
+            'public': false,
+            bodyTop: null,
+            bodyTopRichText: false,
+            bodyBottom: null,
+            bodyBottomRichText: false,
+            timestamp: null
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     rspNamespace: 'reply',
     listKey: 'replies',
@@ -79,6 +81,7 @@ RB.ReviewReply = RB.BaseResource.extend({
     COMMENT_LINK_NAMES: [
         'diff_comments',
         'file_attachment_comments',
+        'general_comments',
         'screenshot_comments'
     ],
 
@@ -110,7 +113,10 @@ RB.ReviewReply = RB.BaseResource.extend({
             ready: function() {
                 this.set('public', true);
                 this.save({
-                    attrs: ['public'],
+                    data: {
+                        'public': 1,
+                        trivial: options.trivial ? 1 : 0
+                    },
                     success: function() {
                         this.trigger('published');
 
@@ -118,9 +124,13 @@ RB.ReviewReply = RB.BaseResource.extend({
                             options.success.call(context);
                         }
                     },
-                    error: _.isFunction(options.error)
-                           ? _.bind(options.error, context)
-                           : undefined
+                    error: function(model, xhr) {
+                        model.trigger('publishError', xhr.errorText);
+
+                        if (_.isFunction(options.error)) {
+                            options.error.call(context, model, xhr);
+                        }
+                    }
                 }, this);
             }
         }, this);

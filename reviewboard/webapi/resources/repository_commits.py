@@ -64,7 +64,7 @@ class RepositoryCommitsResource(WebAPIResource):
                 "description": "The ID of the branch to limit the commits "
                                "to, as provided by the 'id' field of the "
                                "repository branches API.",
-                'added_in': '2.1',
+                'added_in': '2.5',
             },
             'start': {
                 'type': six.text_type,

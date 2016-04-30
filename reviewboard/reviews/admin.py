@@ -5,11 +5,12 @@ from django.template.defaultfilters import truncatechars
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
-from reviewboard.reviews.models import (Comment, DefaultReviewer, Group,
-                                        Review, ReviewRequest,
+from reviewboard.reviews.models import (Comment, DefaultReviewer,
+                                        FileAttachmentComment,
+                                        GeneralComment,
+                                        Group, Review, ReviewRequest,
                                         ReviewRequestDraft, Screenshot,
-                                        ScreenshotComment,
-                                        FileAttachmentComment)
+                                        ScreenshotComment)
 
 
 class CommentAdmin(admin.ModelAdmin):
@@ -55,18 +56,18 @@ class GroupAdmin(admin.ModelAdmin):
     form = GroupForm
     list_display = ('name', 'display_name', 'mailing_list', 'invite_only',
                     'visible')
-    filter_horizontal = ('users',)
-    raw_id_fields = ('local_site',)
+    raw_id_fields = ('local_site', 'users',)
     fieldsets = (
         (_('General Information'), {
             'fields': ('name', 'display_name', 'mailing_list',
-                       'visible'),
+                       'email_list_only', 'visible'),
         }),
         (_('Access Control'), {
-            'fields': ('invite_only', 'users', 'local_site'),
+            'fields': ('invite_only', 'users', 'local_site',
+                       'is_default_group'),
         }),
         (_('State'), {
-            'fields': ('incoming_request_count',),
+            'fields': ('incoming_request_count', 'extra_data'),
             'classes': ('collapse',),
         }),
     )
@@ -80,7 +81,8 @@ class ReviewAdmin(admin.ModelAdmin):
     raw_id_fields = ('review_request', 'user', 'base_reply_to',
                      'body_top_reply_to', 'body_bottom_reply_to',
                      'comments', 'screenshot_comments',
-                     'file_attachment_comments', 'reviewed_diffset')
+                     'file_attachment_comments', 'general_comments',
+                     'reviewed_diffset')
     fieldsets = (
         (_('General Information'), {
             'fields': ('user', 'review_request', 'public', 'ship_it',
@@ -93,11 +95,12 @@ class ReviewAdmin(admin.ModelAdmin):
                        'body_bottom_reply_to',
                        'comments',
                        'screenshot_comments',
-                       'file_attachment_comments'),
+                       'file_attachment_comments',
+                       'general_comments'),
             'classes': ('collapse',)
         }),
         (_('State'), {
-            'fields': ('email_message_id', 'time_emailed'),
+            'fields': ('email_message_id', 'time_emailed', 'extra_data'),
             'classes': ('collapse',)
         })
     )
@@ -140,7 +143,7 @@ class ReviewRequestAdmin(admin.ModelAdmin):
                        'last_review_activity_timestamp',
                        'shipit_count', 'issue_open_count',
                        'issue_resolved_count', 'issue_dropped_count',
-                       'local_id'),
+                       'local_id', 'extra_data'),
             'classes': ['collapse'],
         }),
     )
@@ -217,6 +220,9 @@ class ReviewRequestDraftAdmin(admin.ModelAdmin):
                        'diffset'),
             'classes': ['collapse'],
         }),
+        (_('State'), {
+            'fields': ('extra_data',),
+        }),
     )
 
 
@@ -253,12 +259,24 @@ class FileAttachmentCommentAdmin(admin.ModelAdmin):
     review_request_id.short_description = _('Review request ID')
 
 
+class GeneralCommentAdmin(admin.ModelAdmin):
+    list_display = ('text', 'review_request_id', 'timestamp')
+    list_filter = ('timestamp',)
+    search_fields = ['text']
+    raw_id_fields = ('reply_to',)
+
+    def review_request_id(self, obj):
+        return obj.review.get().review_request.id
+    review_request_id.short_description = _('Review request ID')
+
+
 admin.site.register(Comment, CommentAdmin)
 admin.site.register(DefaultReviewer, DefaultReviewerAdmin)
+admin.site.register(FileAttachmentComment, FileAttachmentCommentAdmin)
+admin.site.register(GeneralComment, GeneralCommentAdmin)
 admin.site.register(Group, GroupAdmin)
 admin.site.register(Review, ReviewAdmin)
 admin.site.register(ReviewRequest, ReviewRequestAdmin)
 admin.site.register(ReviewRequestDraft, ReviewRequestDraftAdmin)
 admin.site.register(Screenshot, ScreenshotAdmin)
 admin.site.register(ScreenshotComment, ScreenshotCommentAdmin)
-admin.site.register(FileAttachmentComment, FileAttachmentCommentAdmin)

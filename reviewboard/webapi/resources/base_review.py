@@ -27,6 +27,12 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
     """
     model = Review
     fields = {
+        'absolute_url': {
+            'type': six.text_type,
+            'description': "The absolute URL to the review request's page on "
+                           "the site.",
+            'added_in': '3.0',
+        },
         'body_bottom': {
             'type': six.text_type,
             'description': 'The review content below the comments.',
@@ -88,7 +94,6 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'The user who wrote the review.',
         },
     }
-    last_modified_field = 'timestamp'
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
@@ -144,6 +149,12 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'added_in': '2.0',
             'deprecated_in': '2.0.12',
         },
+        'publish_to_submitter_only': {
+            'type': bool,
+            'description': 'If true, the review will only send an e-mail '
+                           'to the review request submitter.',
+            'added_in': '3.0',
+        },
     }
 
     def get_queryset(self, request, is_list=False, *args, **kwargs):
@@ -169,6 +180,9 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
 
     def has_delete_permissions(self, request, review, *args, **kwargs):
         return review.is_mutable_by(request.user)
+
+    def serialize_absolute_url_field(self, obj, request, **kwargs):
+        return request.build_absolute_uri(obj.get_absolute_url())
 
     def serialize_body_top_text_type_field(self, obj, **kwargs):
         # This will be overridden by MarkdownFieldsMixin.
@@ -281,13 +295,14 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         """
         pass
 
-    def _update_review(self, request, review, public=None, extra_fields={},
+    def _update_review(self, request, review, public=None,
+                       publish_to_submitter_only=False, extra_fields={},
                        *args, **kwargs):
         """Common function to update fields on a draft review."""
         if not self.has_modify_permissions(request, review):
             # Can't modify published reviews or those not belonging
             # to the user.
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if 'ship_it' in kwargs:
             review.ship_it = kwargs['ship_it']
@@ -301,9 +316,10 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
 
         if public:
             try:
-                review.publish(user=request.user)
+                review.publish(user=request.user,
+                               to_submitter_only=publish_to_submitter_only)
             except PublishError as e:
-                return PUBLISH_ERROR.with_message(e.msg)
+                return PUBLISH_ERROR.with_message(six.text_type(e))
 
         return 200, {
             self.item_result_key: review,

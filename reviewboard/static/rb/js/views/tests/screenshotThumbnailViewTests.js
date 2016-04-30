@@ -22,8 +22,8 @@ suite('rb/views/ScreenshotThumbnail', function() {
         });
         view.render();
 
-        spyOn(model, 'trigger').andCallThrough();
-        spyOn(view, 'trigger').andCallThrough();
+        spyOn(model, 'trigger').and.callThrough();
+        spyOn(view, 'trigger').and.callThrough();
     });
 
     describe('Actions', function() {
@@ -57,11 +57,11 @@ suite('rb/views/ScreenshotThumbnail', function() {
         });
 
         it('Delete', function() {
-            spyOn(model, 'destroy').andCallThrough();
-            spyOn($, 'ajax').andCallFake(function(options) {
+            spyOn(model, 'destroy').and.callThrough();
+            spyOn($, 'ajax').and.callFake(function(options) {
                 options.success();
             });
-            spyOn(view.$el, 'fadeOut').andCallFake(function(done) {
+            spyOn(view.$el, 'fadeOut').and.callFake(function(done) {
                 done();
             });
 
@@ -71,7 +71,7 @@ suite('rb/views/ScreenshotThumbnail', function() {
 
             expect($.ajax).toHaveBeenCalled();
             expect(model.destroy).toHaveBeenCalled();
-            expect(model.trigger.calls[0].args[0]).toBe('destroying');
+            expect(model.trigger.calls.argsFor(0)[0]).toBe('destroying');
             expect(view.$el.fadeOut).toHaveBeenCalled();
             expect(view.remove).toHaveBeenCalled();
         });

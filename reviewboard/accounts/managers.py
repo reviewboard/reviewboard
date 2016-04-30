@@ -4,12 +4,19 @@ import logging
 
 from django.db.models import Manager
 from django.utils import six
+from djblets.db.managers import ConcurrencyManager
 
 from reviewboard.accounts.trophies import get_registered_trophy_types
 
 
 class ProfileManager(Manager):
+    """Manager for user profiles."""
+
     def get_or_create(self, user, *args, **kwargs):
+        """Return the profile for the user.
+
+        This will create the profile if one does not exist.
+        """
         if hasattr(user, '_profile'):
             return user._profile, False
 
@@ -21,14 +28,33 @@ class ProfileManager(Manager):
         return profile, is_new
 
 
+class ReviewRequestVisitManager(ConcurrencyManager):
+    """Manager for review request visits.
+
+    Unarchives a specified review request for all users that have archived it.
+    """
+
+    def unarchive_all(self, review_request):
+        """ Unarchives review request for all users.
+
+        Unarchives the given review request for all users by changing all
+        review request visit database entries for this review request from
+        archived to visible.
+        """
+        queryset = self.filter(review_request=review_request,
+                               visibility=self.model.ARCHIVED)
+        queryset.update(visibility=self.model.VISIBLE)
+
+
 class TrophyManager(Manager):
     """Manager for trophies.
 
     Creates new trophies, updates the database and fetches trophies from the
     database.
     """
+
     def compute_trophies(self, review_request):
-        """Computes and returns trophies for a review request.
+        """Compute and return trophies for a review request.
 
         Computes trophies for a given review request by looping through all
         registered trophy types and seeing if any apply to the review request.

@@ -93,7 +93,7 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
             return DOES_NOT_EXIST
 
         if not self.has_list_access(request, user):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         pass
 
@@ -142,7 +142,7 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
 
         if ((local_site and not local_site.is_accessible_by(request.user)) or
            not self.has_list_access(request, user)):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         form = UploadUserFileForm(request.POST, request.FILES)
 
@@ -208,7 +208,7 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
 
         if not self.has_modify_permissions(request, file_attachment,
                                            *args, **kwargs):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if 'path' in request.FILES and file_attachment.file:
             return FILE_ALREADY_EXISTS
@@ -246,7 +246,7 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
 
         if not self.has_delete_permissions(request, file_attachment,
                                            *args, **kwargs):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if file_attachment.file:
             file_attachment.file.delete()

@@ -15,13 +15,14 @@ suite('rb/models/ReviewRequestEditor', function() {
     describe('Methods', function() {
         describe('createFileAttachment', function() {
             it('With new FileAttachment', function() {
-                var fileAttachment;
+                var fileAttachments = editor.get('fileAttachments'),
+                    fileAttachment;
 
-                expect(editor.fileAttachments.length).toBe(0);
+                expect(fileAttachments.length).toBe(0);
                 fileAttachment = editor.createFileAttachment();
-                expect(editor.fileAttachments.length).toBe(1);
+                expect(fileAttachments.length).toBe(1);
 
-                expect(editor.fileAttachments.at(0)).toBe(fileAttachment);
+                expect(fileAttachments.at(0)).toBe(fileAttachment);
             });
         });
 
@@ -39,7 +40,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 expect(function() { editor.decr('foo'); }).toThrow();
 
                 expect(console.assert).toHaveBeenCalled();
-                expect(console.assert.mostRecentCall.args[0]).toBe(false);
+                expect(console.assert.calls.mostRecent().args[0]).toBe(false);
                 expect(editor.get('foo')).toBe('abc');
             });
 
@@ -76,7 +77,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 expect(function() { editor.incr('foo'); }).toThrow();
 
                 expect(console.assert).toHaveBeenCalled();
-                expect(console.assert.mostRecentCall.args[0]).toBe(false);
+                expect(console.assert.calls.mostRecent().args[0]).toBe(false);
                 expect(editor.get('foo')).toBe('abc');
             });
         });
@@ -144,7 +145,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                 it('Successful saves', function() {
                     spyOn(draft, 'save')
-                        .andCallFake(function(options, context) {
+                        .and.callFake(function(options, context) {
                             options.success.call(context);
                         });
                     editor.setDraftField('summary', 'My Summary', callbacks);
@@ -157,7 +158,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                 it('Field set errors', function() {
                     spyOn(draft, 'save')
-                        .andCallFake(function(options, context) {
+                        .and.callFake(function(options, context) {
                             options.error.call(context, draft, {
                                 errorPayload: {
                                     fields: {
@@ -202,7 +203,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                                 .toHaveBeenCalled();
 
                             expect(
-                                reviewRequest.draft.save.calls[0].args[0].data
+                                reviewRequest.draft.save.calls.argsFor(0)[0].data
                             ).toEqual({
                                 changedescription_text_type: textType,
                                 changedescription: 'My description',
@@ -224,7 +225,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 describe('closeDescription', function() {
                     function testCloseDescription(closeType, richText) {
                         spyOn(reviewRequest, 'close')
-                            .andCallFake(function(options) {
+                            .and.callFake(function(options) {
                                 expect(options.type).toBe(closeType);
                                 expect(options.description)
                                     .toBe('My description');
@@ -278,7 +279,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 describe('targetGroups', function() {
                     it('Empty', function() {
                         spyOn(draft, 'save')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.success.call(context);
                             });
 
@@ -289,7 +290,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                     it('With values', function() {
                         spyOn(draft, 'save')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.success.call(context);
                             });
 
@@ -301,7 +302,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                     it('With invalid groups', function() {
                         spyOn(draft, 'save')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.error.call(context, draft, {
                                     errorPayload: {
                                         fields: {
@@ -326,7 +327,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 describe('targetPeople', function() {
                     it('Empty', function() {
                         spyOn(draft, 'save')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.success.call(context);
                             });
 
@@ -339,7 +340,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                     it('With values', function() {
                         spyOn(draft, 'save')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.success.call(context);
                             });
 
@@ -354,7 +355,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                     it('With invalid users', function() {
                         spyOn(draft, 'save')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.error.call(context, draft, {
                                     errorPayload: {
                                         fields: {
@@ -372,6 +373,59 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                         expect(callbacks.error).toHaveBeenCalledWith({
                             errorText: "Users 'user1' and 'user2' do not exist."
+                        });
+                    });
+                });
+
+                describe('submitter', function() {
+                    it('Empty', function() {
+                        spyOn(draft, 'save')
+                            .andCallFake(function(options, context) {
+                                options.success.call(context);
+                            });
+
+                        editor.setDraftField('submitter', '', _.defaults({
+                            jsonFieldName: 'submitter'
+                        }, callbacks));
+
+                        expect(callbacks.success).toHaveBeenCalled();
+                    });
+
+                    it('With value', function() {
+                        spyOn(draft, 'save')
+                            .andCallFake(function(options, context) {
+                                options.success.call(context);
+                            });
+
+                        editor.setDraftField(
+                            'submitter', 'user1',
+                            _.defaults({
+                                jsonFieldName: 'submitter'
+                            }, callbacks));
+
+                        expect(callbacks.success).toHaveBeenCalled();
+                    });
+
+                    it('With invalid user', function() {
+                        spyOn(draft, 'save')
+                            .andCallFake(function(options, context) {
+                                options.error.call(context, draft, {
+                                    errorPayload: {
+                                        fields: {
+                                            submitter: ['user1']
+                                        }
+                                    }
+                                });
+                            });
+
+                        editor.setDraftField(
+                            'submitter', 'user1',
+                            _.defaults({
+                                jsonFieldName: 'submitter'
+                            }, callbacks));
+
+                        expect(callbacks.error).toHaveBeenCalledWith({
+                            errorText: "User 'user1' does not exist."
                         });
                     });
                 });
@@ -398,7 +452,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                         expect(reviewRequest.draft.save)
                             .toHaveBeenCalled();
                         expect(
-                            reviewRequest.draft.save.calls[0].args[0].data
+                            reviewRequest.draft.save.calls.argsFor(0)[0].data
                         ).toEqual({
                             'extra_data.myfield_text_type': textType,
                             'extra_data.myfield': 'Test text.',
@@ -422,32 +476,34 @@ suite('rb/models/ReviewRequestEditor', function() {
     describe('Reviewed objects', function() {
         describe('File attachments', function() {
             it('Removed when destroyed', function() {
-                var fileAttachment = editor.createFileAttachment(),
+                var fileAttachments = editor.get('fileAttachments'),
+                    fileAttachment = editor.createFileAttachment(),
                     draft = editor.get('reviewRequest').draft;
 
                 spyOn(draft, 'ensureCreated')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         options.success.call(context);
                     });
 
-                expect(editor.fileAttachments.at(0)).toBe(fileAttachment);
+                expect(fileAttachments.at(0)).toBe(fileAttachment);
 
                 fileAttachment.destroy();
 
-                expect(editor.fileAttachments.length).toBe(0);
+                expect(fileAttachments.length).toBe(0);
             });
         });
 
         describe('Screenshots', function() {
             it('Removed when destroyed', function() {
-                var screenshot = reviewRequest.createScreenshot();
+                var screenshots = editor.get('screenshots'),
+                    screenshot = reviewRequest.createScreenshot();
 
-                editor.screenshots.add(screenshot);
-                expect(editor.screenshots.at(0)).toBe(screenshot);
+                screenshots.add(screenshot);
+                expect(screenshots.at(0)).toBe(screenshot);
 
                 screenshot.destroy();
 
-                expect(editor.screenshots.length).toBe(0);
+                expect(screenshots.length).toBe(0);
             });
         });
     });
@@ -468,7 +524,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                     draft = editor.get('reviewRequest').draft;
 
                 spyOn(draft, 'ensureCreated')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         options.success.call(context);
                     });
 

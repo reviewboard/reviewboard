@@ -1,0 +1,69 @@
+================================
+Review Board 2.5.1 Release Notes
+================================
+
+**Release date:** November 3, 2015
+
+This release contains all bug fixes and features found in Review Board version
+:doc:`2.0.20 <2.0.20>`.
+
+
+New Features
+============
+
+* The branch field of a review request is now populated when posting an
+  existing commit for review. (:bug:`3935`)
+
+  Patch by Anthony Hache.
+
+
+Usability Improvements
+======================
+
+* The line numbers shown in the diff viewer no longer distract from the code.
+  (:bug:`3981`)
+
+  The line numbers are now lighter and aren't shown as bold, helping to keep
+  focus on the code itself.
+
+  Patch by Edward Lau.
+
+Bug Fixes
+=========
+
+* Fixed the Summary column in the dashboard when using Python 2.6.
+  (:bug:`4005`)
+
+  The Summary column was being built using some logic that didn't work on
+  Python 2.6, resulting in broken summaries.
+
+* The review dialog's footer field is no longer hidden if it has content.
+
+  This could happen before if making some comments on a new review, adding a
+  footer, and then deleting the comments. The footer would be invisible and
+  thus uneditable.
+
+* Fixed the presentation of mode options when viewing image diffs.
+
+  The default image diff mode wasn't being highlighted when first viewing the
+  image diff. They would also sometimes wrap when selected.
+
+* Fixed serialization of review replies for webhook payloads. (:bug:`3999`)
+
+  The links in the payloads were previously incorrect for replies.
+
+* Fixed the standard authentication backend calling the wrong function when
+  trying to create a user under specific circumstances.
+
+  This wasn't likely to cause problems in real usage, but could be an issue
+  for anyone basing a new authentication backend off of the standard backend.
+
+
+Contributors
+============
+
+* Anthony Hache
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Edward Lau

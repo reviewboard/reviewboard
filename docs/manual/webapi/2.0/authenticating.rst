@@ -7,9 +7,9 @@ Authenticating
 Logging In
 ==========
 
-As of Review Board 2.1, there are two methods available for authenticating
+As of Review Board 2.5, there are two methods available for authenticating
 using the API: Token-based authentication, and password-based authentication.
-Prior to 2.1, password-based authentication was required.
+Prior to 2.5, password-based authentication was required.
 
 Token-based authentication is the preferred method, as it offers a safe,
 secure way of providing an application or third-party service with a way to
@@ -34,7 +34,7 @@ for one year.
 Token-based Authentication
 --------------------------
 
-.. versionadded:: 2.1
+.. versionadded:: 2.5
 
 Users will first need to create one or more tokens for their account. This is
 done through the My Account -> API Tokens page. Simply click :guilabel:`Create

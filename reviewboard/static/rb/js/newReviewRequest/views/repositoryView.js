@@ -2,10 +2,13 @@
  * A view representing a single repository.
  */
 RB.RepositoryView = Backbone.View.extend({
-    className: 'repository',
+    tagName: 'li',
+    className: 'has-url item repository',
 
     template: _.template([
-        '<div><%- name %></div>'
+        '<div class="page-sidebar-row">',
+        '<span class="label"><%- name %></span>',
+        '</div>'
     ].join('')),
 
     events: {

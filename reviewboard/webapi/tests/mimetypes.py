@@ -9,6 +9,9 @@ api_token_list_mimetype = _build_mimetype('api-tokens')
 api_token_item_mimetype = _build_mimetype('api-token')
 
 
+archived_item_mimetype = _build_mimetype('archived-review-request')
+
+
 change_list_mimetype = _build_mimetype('review-request-changes')
 change_item_mimetype = _build_mimetype('review-request-change')
 
@@ -48,6 +51,10 @@ filediff_item_mimetype = _build_mimetype('file')
 
 filediff_comment_list_mimetype = _build_mimetype('file-diff-comments')
 filediff_comment_item_mimetype = _build_mimetype('file-diff-comment')
+
+
+general_comment_list_mimetype = _build_mimetype('general-comments')
+general_comment_item_mimetype = _build_mimetype('general-comment')
 
 
 hosting_service_list_mimetype = _build_mimetype('hosting-services')
@@ -109,6 +116,12 @@ review_reply_file_attachment_comment_item_mimetype = \
     _build_mimetype('review-reply-file-attachment-comment')
 
 
+review_reply_general_comment_list_mimetype = \
+    _build_mimetype('review-reply-general-comments')
+review_reply_general_comment_item_mimetype = \
+    _build_mimetype('review-reply-general-comment')
+
+
 review_reply_screenshot_comment_list_mimetype = \
     _build_mimetype('review-reply-screenshot-comments')
 review_reply_screenshot_comment_item_mimetype = \
@@ -162,3 +175,6 @@ watched_review_request_item_mimetype = \
     _build_mimetype('watched-review-request')
 watched_review_request_list_mimetype = \
     _build_mimetype('watched-review-requests')
+
+webhook_list_mimetype = _build_mimetype('webhooks')
+webhook_item_mimetype = _build_mimetype('webhook')

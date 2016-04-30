@@ -1,17 +1,22 @@
 from __future__ import unicode_literals
 
-from django.contrib import auth
-from django.db.models import Q
+import copy
+
 from django.utils import six
 from django.utils.encoding import force_unicode
 from django.utils.six.moves.urllib.parse import quote as urllib_quote
+from django.utils.translation import ugettext_lazy as _
+from djblets.registries.errors import RegistrationError
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (SPECIAL_PARAMS,
                                        webapi_login_required,
                                        webapi_request_fields)
-from djblets.webapi.errors import NOT_LOGGED_IN, PERMISSION_DENIED
-from djblets.webapi.resources import WebAPIResource as DjbletsWebAPIResource
+from djblets.webapi.resources.base import \
+    WebAPIResource as DjbletsWebAPIResource
+from djblets.webapi.resources.mixins.api_tokens import ResourceAPITokenMixin
+from djblets.webapi.resources.mixins.queries import APIQueryUtilsMixin
 
+from reviewboard.registries.registry import Registry
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.decorators import (webapi_check_local_site,
@@ -21,44 +26,74 @@ from reviewboard.webapi.models import WebAPIToken
 
 CUSTOM_MIMETYPE_BASE = 'application/vnd.reviewboard.org'
 EXTRA_DATA_LEN = len('extra_data.')
+PRIVATE_KEY_PREFIX = '__'
 
 
-class WebAPIResource(DjbletsWebAPIResource):
+class ExtraDataAccessLevel(object):
+    """Various access levels for ``extra_data`` fields.
+
+    This class consists of constants describing the various access levels for
+    ``extra_data`` keys on :py:class:`~reviewboard.webapi.base.WebAPIResource`
+    subclasses.
+    """
+
+    #: The associated extra_data key can be retrieved and updated via the API.
+    ACCESS_STATE_PUBLIC = 1
+
+    #: The associated extra_data key can only be retrieved via the API.
+    ACCESS_STATE_PUBLIC_READONLY = 2
+
+    #: The associated extra_data key cannot be accessed via the API.
+    ACCESS_STATE_PRIVATE = 3
+
+
+NOT_CALLABLE = 'not_callable'
+
+
+class CallbackRegistry(Registry):
+    item_name = 'callback'
+
+    errors = {
+        NOT_CALLABLE: _(
+            'Could not register %(item)s: it is not callable.'
+        ),
+    }
+
+    def register(self, item):
+        """Register a callback.
+
+        Args:
+            item (callable):
+                The item to register.
+
+        Raises:
+            djblets.registries.errors.RegistrationError:
+                Raised if the item is not a callable.
+
+            djblets.registries.errors.AlreadyRegisteredError:
+                Raised if the item is already registered.
+        """
+        self.populate()
+
+        if not callable(item):
+            raise RegistrationError(self.format_error(NOT_CALLABLE,
+                                                      item=item))
+
+        super(CallbackRegistry, self).register(item)
+
+
+class WebAPIResource(ResourceAPITokenMixin, APIQueryUtilsMixin,
+                     DjbletsWebAPIResource):
     """A specialization of the Djblets WebAPIResource for Review Board."""
 
+    autogenerate_etags = True
     mimetype_vendor = 'reviewboard.org'
+    api_token_model = WebAPIToken
 
-    api_token_access_allowed = True
+    def __init__(self, *args, **kwargs):
+        super(WebAPIResource, self).__init__(*args, **kwargs)
 
-    @property
-    def policy_id(self):
-        """Returns the ID used for access policies.
-
-        This defaults to the name of the resource, but can be overridden
-        in case the name is not specific enough or there's a conflict.
-        """
-        return self.name
-
-    def call_method_view(self, request, method, view, *args, **kwargs):
-        # This will associate the token, if any, with the request.
-        webapi_token = self._get_api_token_for_request(request)
-
-        if webapi_token:
-            if not self.api_token_access_allowed:
-                return PERMISSION_DENIED
-
-            policy = webapi_token.policy
-            resources_policy = policy.get('resources')
-
-            if resources_policy:
-                resource_id = kwargs.get(self.uri_object_key)
-
-                if not self.is_resource_method_allowed(resources_policy,
-                                                       method, resource_id):
-                    # The token's policies disallow access to this resource.
-                    return PERMISSION_DENIED
-
-        return view(request, *args, **kwargs)
+        self.extra_data_access_callbacks = CallbackRegistry()
 
     def has_access_permissions(self, *args, **kwargs):
         # By default, raise an exception if this is called. Specific resources
@@ -66,6 +101,25 @@ class WebAPIResource(DjbletsWebAPIResource):
         raise NotImplementedError(
             '%s must provide a has_access_permissions method'
             % self.__class__.__name__)
+
+    def serialize_extra_data_field(self, obj, request=None):
+        """Serialize a resource's ``extra_data`` field.
+
+        Args:
+            obj (django.db.models.Model):
+                The model of a given resource.
+
+            request (HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            dict:
+                A serialized ``extra_data`` field or, ``None``.
+        """
+        if obj.extra_data is not None:
+            return self._strip_private_data(obj.extra_data)
+
+        return None
 
     @webapi_check_login_required
     @webapi_check_local_site
@@ -125,64 +179,6 @@ class WebAPIResource(DjbletsWebAPIResource):
         """
         return super(WebAPIResource, self).get_list(request, *args, **kwargs)
 
-    def get_href(self, obj, request, *args, **kwargs):
-        """Returns the URL for this object.
-
-        This is an override of get_href, which takes into account our
-        local_site_name namespacing in order to get the right prefix on URLs.
-        """
-        if not self.uri_object_key:
-            return None
-
-        href_kwargs = {
-            self.uri_object_key: getattr(obj, self.model_object_key),
-        }
-        href_kwargs.update(self.get_href_parent_ids(obj, **kwargs))
-
-        return request.build_absolute_uri(
-            self.get_item_url(request=request, **href_kwargs))
-
-    def get_list_url(self, **kwargs):
-        """Returns the URL to the list version of this resource.
-
-        This will generate a URL for the resource, given the provided
-        arguments for the URL pattern.
-        """
-        return self._get_resource_url(self.name_plural, **kwargs)
-
-    def get_item_url(self, **kwargs):
-        """Returns the URL to the item version of this resource.
-
-        This will generate a URL for the resource, given the provided
-        arguments for the URL pattern.
-        """
-        return self._get_resource_url(self.name, **kwargs)
-
-    def build_queries_for_int_field(self, request, field_name,
-                                    query_param_name=None):
-        """Builds queries based on request parameters for an int field.
-
-        get_queryset() implementations can use this to allow callers to
-        filter results through range matches. Callers can search for exact
-        matches, or can do <, <=, >, or >= matches.
-        """
-        if not query_param_name:
-            query_param_name = field_name.replace('_', '-')
-
-        q = Q()
-
-        if query_param_name in request.GET:
-            q = q & Q(**{field_name: request.GET[query_param_name]})
-
-        for op in ('gt', 'gte', 'lt', 'lte'):
-            param = '%s-%s' % (query_param_name, op)
-
-            if param in request.GET:
-                query_field = '%s__%s' % (field_name, op)
-                q = q & Q(**{query_field: request.GET[param]})
-
-        return q
-
     def can_import_extra_data_field(self, obj, field):
         """Returns whether a particular field in extra_data can be imported.
 
@@ -191,141 +187,36 @@ class WebAPIResource(DjbletsWebAPIResource):
         """
         return True
 
-    def is_resource_method_allowed(self, resources_policy, method,
-                                   resource_id):
-        """Returns whether a method can be performed on a resource.
+    def build_resource_url(self, name, local_site_name=None, request=None,
+                           **kwargs):
+        """Build the URL to a resource, factoring in Local Sites.
 
-        A method can be performed if a specific per-resource policy allows
-        it, and the global policy also allows it.
+        Args:
+            name (unicode):
+                The resource name.
 
-        The per-resource policy takes precedence over the global policy.
-        If, for instance, the global policy blocks and the resource policies
-        allows, the method will be allowed.
+            local_site_name (unicode):
+                The LocalSite name.
 
-        If no policies apply to this, then the default is to allow.
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            kwargs (dict):
+                The keyword arguments needed for URL resolution.
+
+        Returns:
+            unicode: The resulting absolute URL to the resource.
         """
-        # First check the resource policy. For this, we'll want to look in
-        # both the resource ID and the '*' wildcard.
-        resource_policy = resources_policy.get(self.policy_id)
-
-        if resource_policy:
-            permission = self._check_resource_policy(
-                resource_policy, method, [resource_id, '*'])
-
-            if permission is not None:
-                return permission
-
-        # Nothing was found there. Now check in the global policy. Note that
-        # there isn't a sub-key of 'resources.*', so we'll check based on
-        # resources_policy.
-        if '*' in resources_policy:
-            permission = self._check_resource_policy(
-                resources_policy, method, ['*'])
-
-            if permission is not None:
-                return permission
-
-        return True
-
-    def _check_resource_policy(self, policy, method, keys):
-        """Checks the policy for a specific resource and method.
-
-        This will grab the resource policy for the given policy ID,
-        and see if a given method can be performed on that resource,
-        without factoring in any global policy rules.
-
-        If the method is allowed and restrict_ids is True, this will then
-        check if the resource should be blocked based on the ID.
-
-        In case of a conflict, blocked policies always trump allowed
-        policies.
-        """
-        for key in keys:
-            sub_policy = policy.get(key)
-
-            if sub_policy:
-                # We first want to check the specific values, to see if they've
-                # been singled out. If not found, we'll check the wildcards.
-                #
-                # Blocked values always take precedence over allowed values.
-                allowed = sub_policy.get('allow', [])
-                blocked = sub_policy.get('block', [])
-
-                if method in blocked:
-                    return False
-                elif method in allowed:
-                    return True
-                elif '*' in blocked:
-                    return False
-                elif '*' in allowed:
-                    return True
-
-        return None
-
-    def _get_api_token_for_request(self, request):
-        webapi_token = getattr(request, '_webapi_token', None)
-
-        if not webapi_token:
-            webapi_token_id = request.session.get('webapi_token_id')
-
-            if webapi_token_id:
-                try:
-                    webapi_token = WebAPIToken.objects.get(pk=webapi_token_id,
-                                                           user=request.user)
-                except WebAPIToken.DoesNotExist:
-                    # This token is no longer valid. Log the user out.
-                    auth.logout(request)
-
-                request._webapi_token = webapi_token
-
-        return webapi_token
-
-    def _get_queryset(self, request, is_list=False, *args, **kwargs):
-        """Returns the queryset for the resource.
-
-        This is a specialization of the Djblets WebAPIResource._get_queryset(),
-        which imposes further restrictions on the queryset results if using
-        a WebAPIToken for authentication that defines a policy.
-
-        Any items in the queryset that are denied by the policy will be
-        excluded from the results.
-        """
-        queryset = super(WebAPIResource, self)._get_queryset(
-            request, is_list=is_list, *args, **kwargs)
-
-        if is_list:
-            # We'll need to filter the list of results down to exclude any
-            # that are blocked for GET access by the token policy.
-            webapi_token = self._get_api_token_for_request(request)
-
-            if webapi_token:
-                resources_policy = webapi_token.policy.get('resources', {})
-                resource_policy = resources_policy.get(self.policy_id)
-
-                if resource_policy:
-                    resource_ids = [
-                        resource_id
-                        for resource_id in six.iterkeys(resource_policy)
-                        if (resource_id != '*' and
-                            not self._check_resource_policy(
-                                resources_policy, self.policy_id, 'GET',
-                                resource_id, True))
-                    ]
-
-                    if resource_ids:
-                        queryset = queryset.exclude(**{
-                            self.model_object_key + '__in': resource_ids,
-                        })
-
-        return queryset
-
-    def _get_resource_url(self, name, local_site_name=None, request=None,
-                          **kwargs):
-        return local_site_reverse(
+        url = local_site_reverse(
             self._build_named_url(name),
             local_site_name=local_site_name,
             request=request,
             kwargs=kwargs)
+
+        if request:
+            return request.build_absolute_uri(url)
+
+        return url
 
     def _get_local_site(self, local_site_name):
         if local_site_name:
@@ -341,24 +232,12 @@ class WebAPIResource(DjbletsWebAPIResource):
 
         return fields
 
-    def _no_access_error(self, user):
-        """Returns a WebAPIError indicating the user has no access.
-
-        Which error this returns depends on whether or not the user is logged
-        in. If logged in, this will return _no_access_error(request.user).
-        Otherwise, it will return NOT_LOGGED_IN.
-        """
-        if user.is_authenticated():
-            return PERMISSION_DENIED
-        else:
-            return NOT_LOGGED_IN
-
     def import_extra_data(self, obj, extra_data, fields):
         for key, value in six.iteritems(fields):
             if key.startswith('extra_data.'):
                 key = key[EXTRA_DATA_LEN:]
 
-                if self.can_import_extra_data_field(obj, key):
+                if self._should_process_extra_data(key, obj):
                     if value != '':
                         if value in ('true', 'True', 'TRUE'):
                             value = True
@@ -373,6 +252,25 @@ class WebAPIResource(DjbletsWebAPIResource):
                         extra_data[key] = value
                     elif key in extra_data:
                         del extra_data[key]
+
+    def _should_process_extra_data(self, key, obj):
+        """Check if an ``extra_data`` field should be processed.
+
+        Args:
+            key (unicode):
+                A key for an extra_data field.
+
+            obj (django.db.models.Model):
+                The model of a given resource.
+
+        Returns:
+            bool:
+                Whether the extra_data field should be processed or not.
+        """
+        return (self.can_import_extra_data_field(obj, key) and
+                not key.startswith(PRIVATE_KEY_PREFIX) and
+                self.get_extra_data_field_state((key,)) ==
+                ExtraDataAccessLevel.ACCESS_STATE_PUBLIC)
 
     def _build_redirect_with_args(self, request, new_url):
         """Builds a redirect URL with existing query string arguments.
@@ -396,3 +294,73 @@ class WebAPIResource(DjbletsWebAPIResource):
             new_url += '?' + query_str
 
         return new_url
+
+    def get_extra_data_field_state(self, key_path):
+        """Return the state of a registered ``extra_data`` key path.
+
+        Example:
+        .. code-block:: python
+
+           resource.extra_data = {
+               'public': 'foo',
+               'private': 'secret',
+               'data': {
+                   'secret_key': 'secret_data',
+               },
+               'readonly': 'bar',
+           }
+
+           key_path = ('data', 'secret_key',)
+           resource.get_extra_data_field_state(key_path)
+
+        Args:
+            key_path (tuple):
+                The path of the ``extra_data`` key as a :py:class`tuple` of
+                :py:class:`unicode` strings.
+
+        Returns:
+            int:
+            The access state of the provided key.
+        """
+        for callback in self.extra_data_access_callbacks:
+            value = callback(key_path)
+
+            if value is not None:
+                return value
+
+        return ExtraDataAccessLevel.ACCESS_STATE_PUBLIC
+
+    def _strip_private_data(self, extra_data, parent_path=None):
+        """Strip private fields from an extra data object.
+
+        This function creates a clone of the provided object and traverses it
+        and any nested dictionaries to remove any private fields.
+
+        Args:
+            extra_data (dict):
+                The object from which to strip private fields.
+
+            parent_path (tuple):
+                Parent key path leading to provided ``extra_data``
+                dictionary.
+
+        Returns:
+            dict:
+            A clone of the ``extra_data`` stripped of its private fields.
+        """
+        clone = copy.copy(extra_data)
+
+        for field_name, value in six.iteritems(extra_data):
+            if parent_path:
+                path = parent_path + (field_name,)
+            else:
+                path = (field_name,)
+
+            if (field_name.startswith(PRIVATE_KEY_PREFIX) or
+                self.get_extra_data_field_state(path) ==
+                ExtraDataAccessLevel.ACCESS_STATE_PRIVATE):
+                del clone[field_name]
+            elif isinstance(value, dict):
+                clone[field_name] = self._strip_private_data(value, path)
+
+        return clone

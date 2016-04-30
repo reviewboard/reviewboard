@@ -4,14 +4,10 @@
 Creating Review Requests
 ========================
 
-A review request consists of, at a minimum, a summary, a description, and some
-reviewers. A review request usually has a diff, but it can be useful to have
-review requests that only have file attachments.
-
-There are two main ways of submitting a new review request: through the
-web UI and through :ref:`rbt post <rbtools:rbt-post>`. We recommend the latter
-when posting diffs for review, as it does a lot of work for you, and is
-actually required for some version control systems, such as Perforce.
+There are two main ways of creating a new review request: through the web UI
+and through :ref:`rbt post <rbtools:rbt-post>`. We recommend the latter, as it
+does a lot of work for you, and is actually required for some version control
+systems, such as Perforce.
 
 
 Using ``rbt post`` to Create Review Requests
@@ -53,8 +49,12 @@ Pre-commit Review Requests
 --------------------------
 
 When doing :term:`pre-commit review`, your review request will represent a
-pending change which is not committed to a repository. To upload the change to
-Review Board, you'll need to create a diff file.
+pending change which is not yet present in a central repository (for example, a
+working copy in Subversion or a local branch in Git that has not yet been
+pushed).
+
+If you're not using :program:`rbt post`, you'll need to create a diff file by
+hand to upload the change to Review Board.
 
 The diff you provide needs to be in :term:`unified diff` format, and must
 have revision information embedded in the file. CVS, Subversion, Git,
@@ -99,7 +99,12 @@ Post-commit Review Requests
 .. versionadded:: 2.0
 
 The web UI now allows you to create review requests for :term:`post-commit
-review`. This feature is not available for all types of repositories.
+review`.
+
+.. note:: This feature is not available for all types of repositories. If you
+          do not see the ":guilabel:`Create from an existing commit`" section
+          of the page, you must use :command:`rbt post` to post committed
+          changes.
 
 Once you select a supported repository, the bottom half of the "New Review
 Request" page will have a table labeled :guilabel:`New Review Request for

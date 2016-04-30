@@ -6,12 +6,11 @@
 
 .box, .modalbox {
   background-color: @box-bg;
-  background-image: url('@{img_base}/box_top_bg.png');
   background-position: top left;
   background-repeat: repeat-x;
   border: 1px @box-border-color solid;
-  .border-radius(@box-border-radius);
-  .box-shadow(@box-shadow);
+  border-radius: @box-border-radius;
+  box-shadow: @box-shadow;
 }
 
 .box {
@@ -43,7 +42,7 @@
   }
 
   &.yay {
-    background-color: #fdf2a0;
+    background-color: @trophy-banner-bg-color;
     background-image: url('@{img_base}/gold_box_top_bg.png');
     border: 1px #b7a93e solid;
     padding: 0 10px;
@@ -75,7 +74,7 @@
   border-bottom: 1px #728eac solid;
   margin: 0;
   padding: 0.4em 0.6em;
-  .border-radius(@box-border-radius @box-border-radius 0 0);
+  border-radius: @box-border-radius @box-border-radius 0 0;
 }
 
 .box-title,
@@ -102,7 +101,7 @@
   background-image: url('@{img_base}/box_bottom_bg.png');
   background-position: bottom left;
   background-repeat: repeat-x;
-  .border-radius(@box-border-radius);
+  border-radius: @box-border-radius;
 
   padding-bottom: 1px\9; /* IE wants this. The \9 targets IE 7,8,9. */
 }

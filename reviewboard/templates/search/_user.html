@@ -1,0 +1,30 @@
+{% load avatars djblets_utils i18n %}
+
+<div class="search-result">
+{% if siteconfig_settings.avatars_enabled %}
+ <div class="search-result-icon">
+ {% avatar result.user 48 %}
+ </div>
+{% endif %}
+ <div class="search-result-body">
+{% if result.show_profile %}
+  <h2><a href="{{result.url}}">{{result.full_name|default:result.username}}</a>{% if result.full_name %} ({{result.username}}){% endif %}</h2>
+  <div class="search-result-email">
+   <a href="mailto:{{result.email}}">{{result.email}}</a>
+  </div>
+{% else %}
+  <h2><a href="{{result.url}}">{{result.username}}</a></h2>
+{% endif %}
+  <div class="search-result-links">
+   <a href="{% url 'user' result.username %}">Review requests</a>
+  </div>
+{% if result.groups %}
+  <div class="search-result-user-groups">
+   {% trans "A member of:" %}
+{%  for group_name in result.groups|split:',' %}
+    <a href="{% url 'group' group_name %}">{{group_name}}</a>{% if not forloop.last %}, {% endif %}
+{%  endfor %}
+  </div>
+{% endif %}
+ </div>
+</div>

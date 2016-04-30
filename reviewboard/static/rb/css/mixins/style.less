@@ -1,29 +1,21 @@
 /*
- * Sets the border radius of an element.
+ * These are obsolete now that LESS compilation includes autoprefixer. They're
+ * left here for compatibility when building extensions, but should be
+ * considered deprecated in favor of just using the standard CSS rules.
  */
-.border-radius(...) {
-  -moz-border-radius: @arguments;
-  -webkit-border-radius: @arguments;
-  border-radius: @arguments;
+.border-radius(...) { border-radius: @arguments; }
+.box-shadow(...) { box-shadow: @arguments; }
+.box-sizing(...) { box-sizing: @arguments; }
+.grab-cursor() { cursor: grab; }
+.grabbing-cursor-important() { cursor: grabbing !important; }
+.opacity(@value) { opacity: @value / 100; }
+.pre-wrap() { white-space: pre-wrap; }
+.transform(...) { transform: @arguments; }
+.transition(...) { transition: @arguments; }
+.transition-transform(@duration, @rest...) {
+  transition: @duration transform @rest;
 }
 
-/*
- * Sets the box shadow of an element.
- */
-.box-shadow(...) {
-  -moz-box-shadow: @arguments;
-  -webkit-box-shadow: @arguments;
-  box-shadow: @arguments;
-}
-
-/*
- * Sets the box sizing mode of an element.
- */
-.box-sizing(...) {
-  -moz-box-sizing: @arguments;
-  -webkit-box-sizing: @arguments;
-  box-sizing: @arguments;
-}
 
 /*
  * Ellipsizes the text content in an element on supported browsers.
@@ -32,54 +24,6 @@
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-}
-
-/*
- * Sets the cursor to the CSS3 "grab" cursor in a cross-browser way.
- */
-.grab-cursor() {
-  cursor: grab;
-  cursor: -moz-grab;
-  cursor: -webkit-grab;
-}
-
-.grabbing-cursor-important() {
-  /*
-   * XXX: We should be able in instantiate mixins with !important but for some
-   * reason it's not working for me.
-   */
-  cursor: grabbing !important;
-  cursor: -moz-grabbing !important;
-  cursor: -webkit-grabbing !important;
-}
-
-/*
- * Sets the opacity of an element in a cross-browser way.
- */
-.opacity(@value) {
-  opacity: @value / 100;
-  filter:alpha(opacity=@value);
-  -moz-opacity: @value / 100;
-}
-
-/*
- * Sets the white-space mode for pre-like formatting, with wrapping.
- */
-.pre-wrap() {
-  white-space: pre-wrap;      /* CSS 3 */
-  white-space: -moz-pre-wrap; /* Mozilla, 1999+ */
-  white-space: -pre-wrap;     /* Opera 4-6 */
-  white-space: -o-pre-wrap;   /* Opera 7 */
-  word-wrap: break-word;      /* IE 5.5+ */
-}
-
-/*
- * Sets the CSS3 transition on an element.
- */
-.transition(...) {
-  -webkit-transition: @arguments;
-  -moz-transition: @arguments;
-  transition: @arguments;
 }
 
 /*
@@ -111,3 +55,57 @@
   }
 }
 
+/*
+ * Only apply the given styles if on a mobile display with a width
+ * <= 720px.
+ */
+.on-mobile-medium-screen-720(@rules) {
+  @media screen and (max-width: @mobile-medium-width-720),
+         screen and (max-device-width: @mobile-medium-width-720) and
+                     (orientation: landscape) {
+    @rules();
+  }
+}
+
+/*
+ * Display the element only in mobile mode.
+ */
+.mobile-only(@display-mode: block) {
+  display: none;
+
+  .on-mobile-medium-screen-720({
+    display: @display-mode;
+  });
+}
+
+/*
+ * Display the element only in desktop mode.
+ */
+.desktop-only() {
+  .on-mobile-medium-screen-720({
+    display: none;
+  });
+}
+
+/*
+ * Disable scrolling on the page.
+ *
+ * This will both turn off scrollbars and set the page to be fixed, so that
+ * mobile phones don't allow for any form of scrolling whatsoever.
+ */
+.no-page-scroll() {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+/*
+ * Makes an element vertically scrollable.
+ *
+ * On mobile devices, this will use momentum-based scrolling.
+ */
+.scrollable-y(@type: auto) {
+  overflow-y: @type;
+  -webkit-overflow-scrolling: touch;
+}

@@ -3,8 +3,7 @@ from __future__ import unicode_literals
 from django.conf.urls import include, patterns, url
 
 from reviewboard.reviews.views import (ReviewsDiffFragmentView,
-                                       ReviewsDiffViewerView,
-                                       ReviewRequestSearchView)
+                                       ReviewsDiffViewerView)
 
 
 download_diff_urls = patterns(
@@ -25,10 +24,8 @@ diffviewer_revision_urls = patterns(
         'raw_diff',
         name='raw-diff-revision'),
 
-    url(r'^fragment/(?P<filediff_id>[0-9]+)/$',
-        ReviewsDiffFragmentView.as_view()),
-
-    url(r'^fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunkindex>[0-9]+)/$',
+    url(r'^fragment/(?P<filediff_id>[0-9]+)/'
+        r'(chunk/(?P<chunk_index>[0-9]+)/)?$',
         ReviewsDiffFragmentView.as_view()),
 
     url(r'^download/(?P<filediff_id>[0-9]+)/', include(download_diff_urls)),
@@ -41,10 +38,8 @@ diffviewer_interdiff_urls = patterns(
         ReviewsDiffViewerView.as_view(),
         name="view-interdiff"),
 
-    url(r'^fragment/(?P<filediff_id>[0-9]+)/$',
-        ReviewsDiffFragmentView.as_view()),
-
-    url(r'^fragment/(?P<filediff_id>[0-9]+)/chunk/(?P<chunkindex>[0-9]+)/$',
+    url(r'^fragment/(?P<filediff_id>[0-9]+)(-(?P<interfilediff_id>[0-9]+))?/'
+        r'(chunk/(?P<chunk_index>[0-9]+)/)?$',
         ReviewsDiffFragmentView.as_view()),
 )
 
@@ -83,6 +78,10 @@ review_request_urls = patterns(
     url(r'^file/(?P<file_attachment_id>[0-9]+)/$',
         'review_file_attachment',
         name='file-attachment'),
+    url(r'^file/(?P<file_attachment_diff_id>[0-9]+)'
+        r'-(?P<file_attachment_id>[0-9]+)/$',
+        'review_file_attachment',
+        name='file-attachment'),
 
     # Screenshots
     url(r'^s/(?P<screenshot_id>[0-9]+)/$',
@@ -94,19 +93,23 @@ review_request_urls = patterns(
 
     # E-mail previews
     url(r'^preview-email/(?P<format>(text|html))/$',
-        'preview_review_request_email'),
+        'preview_review_request_email',
+        name='preview-review-request-email'),
 
     url(r'^changes/(?P<changedesc_id>[0-9]+)/preview-email/'
         r'(?P<format>(text|html))/$',
-        'preview_review_request_email'),
+        'preview_review_request_email',
+        name='preview-review-request-email'),
 
     url(r'^reviews/(?P<review_id>[0-9]+)/preview-email/'
         r'(?P<format>(text|html))/$',
-        'preview_review_email'),
+        'preview_review_email',
+        name='preview-review-email'),
 
     url(r'^reviews/(?P<review_id>[0-9]+)/replies/(?P<reply_id>[0-9]+)/'
         r'preview-email/(?P<format>(text|html))/$',
-        'preview_reply_email'),
+        'preview_reply_email',
+        name='preview-review-reply-email'),
 )
 
 urlpatterns = patterns(
@@ -114,5 +117,4 @@ urlpatterns = patterns(
 
     url(r'^new/$', 'new_review_request', name="new-review-request"),
     url(r'^(?P<review_request_id>[0-9]+)/', include(review_request_urls)),
-    url(r'^search/$', ReviewRequestSearchView(), name="search"),
 )

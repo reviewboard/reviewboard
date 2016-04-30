@@ -10,7 +10,6 @@ from djblets.db.fields import JSONField
 
 from reviewboard.attachments.models import FileAttachmentHistory
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.markdown_utils import markdown_escape
 from reviewboard.reviews.models.default_reviewer import DefaultReviewer
 from reviewboard.scmtools.errors import InvalidChangeNumberError
 
@@ -179,7 +178,8 @@ class BaseReviewRequestDetails(models.Model):
             for filediff in files:
                 if regex.match(filediff.source_file or filediff.dest_file):
                     for person in default.people.all():
-                        people.add(person)
+                        if person.is_active:
+                            people.add(person)
 
                     for group in default.groups.all():
                         groups.add(group)
@@ -242,17 +242,13 @@ class BaseReviewRequestDetails(models.Model):
         description = changeset.description
         testing_done = changeset.testing_done
 
-        if self.description_rich_text:
-            description = markdown_escape(description)
-
-        if self.testing_done_rich_text:
-            testing_done = markdown_escape(testing_done)
-
         self.summary = changeset.summary
         self.description = description
+        self.description_rich_text = False
 
         if testing_done:
             self.testing_done = testing_done
+            self.testing_done_rich_text = False
 
         if changeset.branch:
             self.branch = changeset.branch
@@ -273,10 +269,8 @@ class BaseReviewRequestDetails(models.Model):
         self.commit = commit_id
         self.summary = summary.strip()
 
-        if self.description_rich_text:
-            self.description = markdown_escape(message)
-        else:
-            self.description = message
+        self.description = message
+        self.description_rich_text = False
 
         DiffSet.objects.create_from_data(
             repository=self.repository,
@@ -286,7 +280,8 @@ class BaseReviewRequestDetails(models.Model):
             parent_diff_file_contents=None,
             diffset_history=self.get_review_request().diffset_history,
             basedir='/',
-            request=None)
+            request=None,
+            base_commit_id=commit.base_commit_id)
 
     def save(self, **kwargs):
         self.bugs_closed = self.bugs_closed.strip()

@@ -53,7 +53,6 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     policy_id = 'review_request_draft'
     singleton = True
     model_parent_key = 'review_request'
-    last_modified_field = 'last_updated'
     mimetype_item_resource_name = 'review-request-draft'
     fields = {
         'id': {
@@ -131,6 +130,10 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                            'This will always be false up until the time '
                            'it is first made public. At that point, the '
                            'draft is deleted.',
+        },
+        'submitter': {
+            'type': six.text_type,
+            'description': 'The user who submitted the review request.',
         },
         'summary': {
             'type': six.text_type,
@@ -234,6 +237,11 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                            'If a review is public, it cannot be made '
                            'private again.',
         },
+        'submitter': {
+            'type': six.text_type,
+            'description': 'The user who submitted the review request.',
+            'added_in': '3.0',
+        },
         'summary': {
             'type': six.text_type,
             'description': 'The new review request summary.',
@@ -270,6 +278,12 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                            'testing_done_text_type instead.',
             'added_in': '2.0',
             'deprecated_in': '2.0.12',
+        },
+        'trivial': {
+            'type': bool,
+            'description': 'Determines if the review request publish '
+                           'will not send an email.',
+            'added_in': '2.5',
         },
         'update_from_commit_id': {
             'type': bool,
@@ -374,7 +388,8 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         allow_unknown=True
     )
     def update(self, request, always_save=False, local_site_name=None,
-               update_from_commit_id=False, extra_fields={}, *args, **kwargs):
+               update_from_commit_id=False, trivial=None,
+               extra_fields={}, *args, **kwargs):
         """Updates a draft of a review request.
 
         This will update the draft with the newly provided data.
@@ -405,7 +420,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         try:
             draft = self.prepare_draft(request, review_request)
         except PermissionDenied:
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if (commit_id and commit_id != review_request.commit_id and
             commit_id != draft.commit_id):
@@ -484,11 +499,11 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
         if request.POST.get('public', False):
             try:
-                review_request.publish(user=request.user)
-            except PublishError as e:
-                return PUBLISH_ERROR.with_message(e.msg)
+                review_request.publish(user=request.user, trivial=trivial)
             except NotModifiedError:
                 return NOTHING_TO_PUBLISH
+            except PublishError as e:
+                return PUBLISH_ERROR.with_message(six.text_type(e))
 
         return 200, {
             self.item_result_key: draft,
@@ -516,7 +531,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_delete_permissions(request, draft, *args, **kwargs):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         draft.delete()
 
@@ -593,6 +608,21 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                 draft.changedesc.text = data
 
                 modified_objects.append(draft.changedesc)
+        elif field_name == 'submitter':
+            submitter = data.rstrip(', ')
+            local_site = self._get_local_site(local_site_name)
+
+            try:
+                obj = self._find_user(username=submitter,
+                                      local_site=local_site,
+                                      request=request)
+
+                if obj is None:
+                    raise ObjectDoesNotExist
+            except:
+                invalid_entries.append(submitter)
+
+            draft.owner = obj
         else:
             if field_name == 'summary' and '\n' in data:
                 invalid_entries.append('Summary cannot contain newlines')

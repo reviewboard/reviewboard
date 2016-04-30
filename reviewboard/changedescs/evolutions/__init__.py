@@ -10,4 +10,5 @@ if settings.DATABASES['default']['ENGINE'].endswith('mysql'):
 
 SEQUENCE.extend([
     'rich_text',
+    'changedesc_user',
 ])

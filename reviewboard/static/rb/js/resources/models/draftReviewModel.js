@@ -7,22 +7,35 @@
  * existing draft if one exists, and return 404 if not.
  */
 RB.DraftReview = RB.Review.extend(_.extend({
+    defaults: function() {
+        return _.defaults({
+            publishToSubmitterOnly: false
+        }, RB.Review.prototype.defaults());
+    },
+
+    attrToJsonMap: _.defaults({
+        publishToSubmitterOnly: 'publish_to_submitter_only'
+    }, RB.Review.prototype.attrToJsonMap),
+
+    serializedAttrs: [
+        'publishToSubmitterOnly'
+    ].concat(RB.Review.prototype.serializedAttrs),
+
+    serializers: _.defaults({
+        publishToSubmitterOnly: RB.JSONSerializers.onlyIfValue
+    }, RB.Review.prototype.serializers),
+
+
     /*
      * Publishes the review.
      *
      * Before publish, the "publishing" event will be triggered.
      *
-     * After the publish has succeeded, the "publishing" event will be
+     * After the publish has succeeded, the "published" event will be
      * triggered.
      */
     publish: function(options, context) {
-        var error;
-
         options = options || {};
-
-        error = _.isFunction(options.error)
-                ? _.bind(options.error, context)
-                : undefined;
 
         this.trigger('publishing');
 
@@ -30,6 +43,7 @@ RB.DraftReview = RB.Review.extend(_.extend({
             ready: function() {
                 this.set('public', true);
                 this.save({
+                    attrs: options.attrs,
                     success: function() {
                         this.trigger('published');
 
@@ -37,7 +51,13 @@ RB.DraftReview = RB.Review.extend(_.extend({
                             options.success.call(context);
                         }
                     },
-                    error: error
+                    error: function(model, xhr) {
+                        model.trigger('publishError', xhr.errorText);
+
+                        if (_.isFunction(options.error)) {
+                            options.error.call(context, model, xhr);
+                        }
+                    }
                 }, this);
             },
             error: error

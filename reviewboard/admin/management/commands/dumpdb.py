@@ -6,9 +6,12 @@ from django.db.models import get_apps, get_models
 
 
 class Command(NoArgsCommand):
+    """Management command to dump data from the database."""
+
     help = 'Dump a common serialized version of the database to stdout.'
 
     def handle_noargs(self, **options):
+        """Handle the command."""
         models = []
 
         for app in get_apps():

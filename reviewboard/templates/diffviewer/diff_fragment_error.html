@@ -65,11 +65,12 @@
 {% if trace %}
   <tr>
    <td colspan="2">
-    <a id="diff-error-link-{{file.filediff.id}}" href="#"
-       onclick="$('#diff-error-details-{{file.filediff.id}}').toggle(); return false;">{% trans "Details" %}</a>
+{%  definevar "link_suffix" %}{{file.filediff.pk}}{% if comment %}-{{comment.pk}}{% endif %}{% enddefinevar %}
+    <a id="diff-error-link-{{link_suffix}}" href="#"
+       onclick="$('#diff-error-details-{{link_suffix}}').toggle(); return false;">{% trans "Details" %}</a>
    </td>
   </tr>
-  <tr class="error-details" id="diff-error-details-{{file.filediff.id}}">
+  <tr class="error-details" id="diff-error-details-{{link_suffix}}">
    <td colspan="2">
     <pre>{{trace}}</pre>
    </td>

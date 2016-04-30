@@ -505,7 +505,7 @@ div.breadcrumbs {
  * Page Structure
  ****************************************************************************/
 
-#page-container #container {
+#page-container #content_container {
   margin-left: @admin-sidebar-width !important;
   position: relative;
 }
@@ -517,8 +517,8 @@ div.breadcrumbs {
 
 h1.title {
   border: 1px @box-border-color solid;
+  box-shadow: @box-shadow;
   text-transform: uppercase;
-  .box-shadow(@box-shadow);
 }
 
 #header {
@@ -567,7 +567,7 @@ h1.title {
 
 .flex {
   h1.title {
-    .border-radius(@box-border-radius @box-border-radius 0 0);
+    border-radius: @box-border-radius @box-border-radius 0 0;
   }
 }
 
@@ -664,18 +664,18 @@ td, th {
 .module {
   background: white;
   border: 1px solid @box-border-color;
+  border-radius: @box-border-radius;
+  box-shadow: @box-shadow;
   margin-top: 10px;
   overflow: hidden;
-  .border-radius(@box-border-radius);
-  .box-shadow(@box-shadow);
 
   &.filtered {
     border-top: 0;
     margin-top: 0;
-    .border-radius(0 0 @box-border-radius @box-border-radius);
+    border-radius: 0 0 @box-border-radius @box-border-radius;
 
     .paginator {
-      .border-radius(0 0 @box-border-radius @box-border-radius);
+      border-radius: 0 0 @box-border-radius @box-border-radius;
     }
   }
 
@@ -814,10 +814,10 @@ td, th {
   textarea {
     background: #FFFDC9;
     border: 0;
+    box-sizing: border-box;
     margin: 0;
     padding: 1em;
     width: 100%;
-    .box-sizing(border-box);
     resize: none;
   }
 }
@@ -825,9 +825,9 @@ td, th {
 .change-form, .dashboard {
   #content-main {
     border: 1px @box-border-color solid;
-    .border-radius(0 0 @box-border-radius @box-border-radius);
-    .box-shadow(@box-shadow);
-    .box-sizing(border-box);
+    border-radius: 0 0 @box-border-radius @box-border-radius;
+    box-shadow: @box-shadow;
+    box-sizing: border-box;
     float: left;
     width: 100%;
   }
@@ -835,8 +835,8 @@ td, th {
   fieldset {
     background: transparent;
     border: 0;
-    .border-radius(0);
-    .box-shadow(none);
+    border-radius: 0;
+    box-shadow: none;
     margin: 0 0 1em 0;
 
     &:first-child>h2 {
@@ -883,8 +883,8 @@ td, th {
 
   .submit-row {
     border: 0;
+    border-radius: 0 0 @box-border-radius @box-border-radius;
     border-top: 1px lighten(@box-border-color, 15%) solid;
-    .border-radius(0 0 @box-border-radius @box-border-radius);
     margin: 0;
 
     input, .deletelink-box {
@@ -909,8 +909,8 @@ td, th {
   }
 
   #changelist {
-    .border-radius(0 0 @box-border-radius @box-border-radius);
-    .box-sizing(border-box);
+    border-radius: 0 0 @box-border-radius @box-border-radius;
+    box-sizing: border-box;
     margin-top: 0;
 
     table {
@@ -949,7 +949,7 @@ td, th {
     }
 
     .paginator {
-      .border-radius(0 0 @box-border-radius @box-border-radius);
+      border-radius: 0 0 @box-border-radius @box-border-radius;
     }
   }
 }
@@ -1017,7 +1017,7 @@ td, th {
     color: black;
     margin: 0;
     padding: 0;
-    .pre-wrap;
+    white-space: pre-wrap;
   }
 
   .level-debug {
@@ -1053,20 +1053,21 @@ td, th {
 
 .extensions-list-page {
   #content-main {
+    .border-radius(0 0 @box-border-radius @box-border-radius);
+    .box-shadow(@box-shadow);
     float: left;
     width: 100%;
   }
 }
 
 .extensions {
-  .border-radius(0 0 @box-border-radius @box-border-radius);
-  .box-shadow(@box-shadow);
+  border-radius: 0 0 @box-border-radius @box-border-radius;
 
   .extension {
     padding: @box-padding;
 
     &:last-child {
-      .border-radius(0 0 @box-inner-border-radius @box-inner-border-radius);
+      border-radius: 0 0 @box-inner-border-radius @box-inner-border-radius;
     }
 
     .author {
@@ -1178,7 +1179,7 @@ table#change-history {
 
   pre {
     margin: 2em 1em;
-    .pre-wrap();
+    white-space: pre-wrap;
   }
 
   table.sample-fields {
@@ -1198,7 +1199,7 @@ table#change-history {
 .login #page-container {
   padding-left: 0;
 
-  #container {
+  #content_container {
     margin-left: 0 !important;
 
     h1.title {

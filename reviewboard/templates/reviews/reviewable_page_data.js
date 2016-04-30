@@ -1,4 +1,4 @@
-{% load djblets_js reviewtags %}
+{% load djblets_js djblets_utils reviewtags %}
         el: document.body,
         reviewRequestData: {
             bugTrackerURL: "{% if review_request.repository.bug_tracker %}{% url 'bug_url' review_request.display_id '--bug_id--' %}{% endif %}",
@@ -46,17 +46,52 @@
                 }{% if not forloop.last %},{% endif %}
 {% endfor %}{% endspaceless %}],
             testingDone: "{% normalize_text_for_edit review_request_details.testing_done review_request_details.testing_done_rich_text True %}",
-            testingDoneRichText: {{review_request_details.testing_done_rich_text|yesno:'true,false'}}
+            testingDoneRichText: {{review_request_details.testing_done_rich_text|yesno:'true,false'}},
+{% if review_request_visit.visibility == 'V' %}
+            visibility: RB.ReviewRequest.VISIBILITY_VISIBLE
+{% elif review_request_visit.visibility == 'A' %}
+            visibility: RB.ReviewRequest.VISIBILITY_ARCHIVED
+{% elif review_request_visit.visibility == 'M' %}
+            visibility: RB.ReviewRequest.VISIBILITY_MUTED
+{% endif %}
         },
         extraReviewRequestDraftData: {
 {% if draft.changedesc %}
+{%  if draft.diffset %}
+{%   url "view-interdiff" review_request.display_id draft.diffset.revision|add:"-1" draft.diffset.revision as interdiffLink %}
+            interdiffLink: '{{interdiffLink|escapejs}}',
+{%  endif %}
             changeDescription: "{% normalize_text_for_edit draft.changedesc.text draft.changedesc.rich_text True %}",
             changeDescriptionRichText: {{draft.changedesc.rich_text|yesno:'true,false'}}
 {% endif %}
         },
         editorData: {
+{% if draft.changedesc %}
+            changeDescriptionRenderedText: '{{draft.changedesc.text|render_markdown:draft.changedesc.rich_text|escapejs}}',
+{% endif %}
+            closeDescriptionRenderedText: '{{close_description|render_markdown:close_description_rich_text|escapejs}}',
+            hasDraft: {{draft|yesno:'true,false'}},
             mutableByUser: {{mutable_by_user|yesno:'true,false'}},
             statusMutableByUser: {{status_mutable_by_user|yesno:'true,false'}},
+            showSendEmail: {{send_email|yesno:'true,false'}},
+            fileAttachments: [
+{% for file in file_attachments %}
+{%  has_usable_review_ui request.user review_request file as use_review_ui %}
+{%  definevar "caption" %}{% if draft %}{{file.draft_caption}}{% else %}{{file.caption}}{% endif %}{% enddefinevar %}
+{%  definevar "file_attachment_url" %}{% if use_review_ui %}{% url "file-attachment" review_request.display_id file.pk %}{% endif %}{% enddefinevar %}
+                {
+                    id: {{file.pk}},
+                    loaded: true,
+                    attachmentHistoryID: {{file.attachment_history_id}},
+                    caption: _.unescape('{{caption|escapejs}}'),
+                    downloadURL: '{{file.get_absolute_url|escapejs}}',
+                    filename: '{{file.filename|escapejs}}',
+                    reviewURL: '{{file_attachment_url|escapejs}}',
+                    revision: {{file.attachment_revision}},
+                    thumbnailHTML: '{{file.thumbnail|escapejs}}'
+                }{% if not forloop.last %},{% endif %}
+{% endfor %}
+            ],
             fileAttachmentComments: {
 {% if all_file_attachments %}
 {%  for file_attachment in all_file_attachments %}
@@ -64,4 +99,7 @@
 {%  endfor %}
 {% endif %}
             }
+        },
+        replyEditorData: {
+            showSendEmail: {{send_email|yesno:'true,false'}}
         }

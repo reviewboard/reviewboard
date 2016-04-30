@@ -3,22 +3,118 @@ from __future__ import unicode_literals
 import logging
 
 from django.utils import six
-from django.utils.datastructures import SortedDict
 from django.utils.html import escape, strip_tags
 from django.utils.safestring import mark_safe
+from django.utils.translation import ugettext as _
+from djblets.markdown import iter_markdown_lines
+from djblets.registries.errors import ItemLookupError
+from djblets.registries.registry import ALREADY_REGISTERED, NOT_REGISTERED
 
 from reviewboard.diffviewer.diffutils import get_line_changed_regions
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
+from reviewboard.registries.registry import Registry, OrderedRegistry
 from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
-                                                iter_markdown_lines,
                                                 normalize_text_for_edit,
                                                 render_markdown)
 
 
-_all_fields = {}
-_fieldsets = SortedDict()
-_populated = False
+class FieldSetRegistry(OrderedRegistry):
+    """A registry for field sets.
+
+    This keeps the fieldsets in the registered order, so iterating through them
+    will do so in the same order.
+    """
+
+    lookup_attrs = ('fieldset_id',)
+
+    errors = {
+        ALREADY_REGISTERED: _(
+            '"%(item)s" is already a registered review request fieldset.'
+        ),
+        NOT_REGISTERED: _(
+            '%(attr_value)s is not a registered review request fieldset.'
+        ),
+    }
+
+    def __init__(self):
+        self._key_order = []
+        super(FieldSetRegistry, self).__init__()
+
+    def register(self, fieldset):
+        """Register the fieldset.
+
+        This will also register all field classes registered on the fieldset on
+        the field registry.
+
+        Args:
+            fieldset (type):
+                The fieldset to register, as a
+                :py:class:`BaseReviewRequestFieldSet` subclass.
+        """
+        super(FieldSetRegistry, self).register(fieldset)
+
+        # Set the field_classes to an empty list by default if it doesn't
+        # explicitly provide its own, so that entries don't go into
+        # BaseReviewRequestFieldSet's global list.
+        if fieldset.field_classes is None:
+            fieldset.field_classes = []
+
+        for field_cls in fieldset.field_classes:
+            field_registry.register(field_cls)
+
+    def unregister(self, fieldset):
+        """Unregister the fieldset.
+
+        This will unregister all field classes on the fieldset from the field
+        registry.
+
+        Args:
+            fieldset (type):
+                The field to remove, as a
+                :py:class:`BaseReviewRequestFieldSet` subclass.
+        """
+        super(FieldSetRegistry, self).unregister(fieldset)
+
+        for field_cls in fieldset.field_classes:
+            fieldset.remove_field(field_cls)
+
+    def get_defaults(self):
+        """Return the list of built-in fieldsets.
+
+        Returns:
+            list:
+            A list of the built-in
+            :py:class:`~reviewboard.reviews.fields.BaseReviewRequestFieldSet`
+            subclasses.
+        """
+        from reviewboard.reviews.builtin_fields import builtin_fieldsets
+
+        return builtin_fieldsets
+
+
+class FieldRegistry(Registry):
+    """A registry for review request fields."""
+
+    lookup_attrs = ['field_id']
+    errors = {
+        ALREADY_REGISTERED: _(
+            '"%(item)s" is already a registered review request field. Field '
+            'IDs must be unique across all fieldsets.'
+        ),
+        NOT_REGISTERED: _(
+            '"%(attr_value)s is not a registered review request fieldset.'
+        ),
+    }
+
+    def populate(self):
+        # Fields are only ever registered via the FieldSetRegistry, so we
+        # ensure that it has been populated as well.
+        fieldset_registry.populate()
+
+
+fieldset_registry = FieldSetRegistry()
+field_registry = FieldRegistry()
 
 
 class BaseReviewRequestFieldSet(object):
@@ -59,7 +155,7 @@ class BaseReviewRequestFieldSet(object):
         A given field class can only be in one fieldset. Its ``field_id``
         must be unique.
         """
-        _register_field(field_cls)
+        field_registry.register(field_cls)
         cls.field_classes.append(field_cls)
 
     @classmethod
@@ -68,17 +164,39 @@ class BaseReviewRequestFieldSet(object):
 
         The field class must have been previously added to this fieldset.
         """
-        field_id = field_cls.field_id
+        cls.field_classes.remove(field_cls)
 
         try:
-            cls.field_classes.remove(field_cls)
-            del _all_fields[field_id]
-        except KeyError:
+            field_registry.unregister(field_cls)
+        except ItemLookupError as e:
             logging.error('Failed to unregister unknown review request '
                           'field "%s"',
-                          field_id)
-            raise KeyError('"%s" is not a registered review request field'
-                           % field_id)
+                          field_cls.field_id)
+            raise e
+
+    def __str__(self):
+        """Represent the field set as a byte string.
+
+        Returns:
+            bytes:
+            The field set's ID as a byte string.
+        """
+        if isinstance(self.fieldset_id, six.binary_type):
+            return self.fieldset_id
+
+        return self.fieldset_id.encode('utf-8')
+
+    def __unicode__(self):
+        """Represent the field set as a unicode string.
+
+        Returns:
+            unicode:
+            The field set's ID as a unicode string.
+        """
+        if isinstance(self.fieldset_id, six.binary_type):
+            return self.fieldset_id.decode('utf-8')
+
+        return self.fieldset_id
 
 
 class BaseReviewRequestField(object):
@@ -113,6 +231,7 @@ class BaseReviewRequestField(object):
     is_required = False
     default_css_classes = set()
     change_entry_renders_inline = True
+    model = None
 
     can_record_change_entry = property(lambda self: self.is_editable)
 
@@ -147,6 +266,108 @@ class BaseReviewRequestField(object):
         This can be overridden to perform more specialized storage.
         """
         changedesc.record_field_change(self.field_id, old_value, new_value)
+
+    def serialize_change_entry(self, changedesc):
+        """Serialize a change entry for public consumption.
+
+        This will output a version of the change entry for use in the API.
+        It can be the same content stored in the
+        :py:class:`~reviewboard.changedescs.models.ChangeDescription`, but
+        does not need to be.
+
+        Args:
+            changedesc (reviewboard.changedescs.models.ChangeDescription):
+                The change description whose field is to be serialized.
+
+        Returns:
+            dict:
+            An appropriate serialization for the field.
+        """
+        field_info = changedesc.fields_changed[self.field_id]
+
+        if self.model:
+            return self.serialize_change_entry_for_model_list(field_info)
+        else:
+            return self.serialize_change_entry_for_singleton(field_info)
+
+    def serialize_change_entry_for_model_list(self, field_info):
+        """Return the change entry for a list of models.
+
+        Args:
+            field_info (dict):
+                A dictionary describing how the field has changed. This is
+                guaranteed to have ``new`` and ``old`` keys, but may also
+                contain ``added`` and ``removed`` keys as well.
+
+        Returns:
+            dict:
+            A mapping of each key present in ``field_info`` to its list of
+            model instances.
+        """
+        pks = [
+            value[2]
+            for key in ('new', 'old', 'added', 'removed')
+            if key in field_info
+            for value in field_info[key]
+        ]
+        pk_to_objects = dict([
+            (obj.pk, obj)
+            for obj in self.model.objects.filter(pk__in=pks)
+        ])
+
+        return dict([
+            (key, [
+                pk_to_objects[value[2]]
+                for value in field_info[key]
+            ])
+            for key in ('new', 'old', 'added', 'removed')
+            if key in field_info
+        ])
+
+    def serialize_change_entry_for_singleton(self, field_info):
+        """Return the change entry for a singleton.
+
+        Singleton fields (e.g., summaries) are stored in
+        :py:class:`~reviewboard.changedescs.models.ChangeDescription`\s as
+        a list with a single element.
+
+        Args:
+            field_info (dict):
+                A dictionary describing how the field has changed. This is
+                guaranteed to have ``new`` and ``old`` keys, but may also
+                contain ``added`` and ``removed`` keys as well.
+
+        Returns:
+            dict:
+            A mapping of each key in ``field_info`` to a single value.
+        """
+        return dict([
+            (key, field_info[key][0])
+            for key in ('new', 'old', 'added', 'removed')
+            if key in field_info
+        ])
+
+    def serialize_change_entry_for_list(self, field_info):
+        """Return the change entry for a list of plain data.
+
+        Args:
+            field_info (dict):
+                A dictionary describing how the field has changed. This is
+                guaranteed to have ``new`` and ``old`` keys, but may also
+                contain ``added`` and ``removed`` keys as well.
+
+        Returns:
+            dict:
+            A mapping of each key in ``field_info`` to a list of values.
+        """
+        return dict([
+            (key, [
+                value[0]
+                for value in field_info[key]
+            ])
+            for key in ('new', 'old', 'added', 'removed')
+            if key in field_info
+        ])
 
     def get_change_entry_sections_html(self, info):
         """Returns sections of change entries with titles and rendered HTML.
@@ -297,6 +518,30 @@ class BaseReviewRequestField(object):
         """
         return self.render_value(self.value)
 
+    def __str__(self):
+        """Represent the field as a byte string.
+
+        Returns:
+            bytes:
+            The field's ID as a byte string.
+        """
+        if isinstance(self.field_id, six.binary_type):
+            return self.field_id
+
+        return self.field_id.encode('utf-8')
+
+    def __unicode__(self):
+        """Represent the field as a unicode string.
+
+        Returns:
+            unicode:
+            The field's ID as a unicode string.
+        """
+        if isinstance(self.field_id, six.binary_type):
+            return self.field_id.decode('utf-8')
+
+        return self.field_id
+
 
 class BaseEditableField(BaseReviewRequestField):
     """Base class for an editable field.
@@ -334,6 +579,29 @@ class BaseCommaEditableField(BaseEditableField):
             return old_value != new_value
         else:
             return set(old_value or []) != set(new_value or [])
+
+    def serialize_change_entry(self, changedesc):
+        """Serialize a change entry for public consumption.
+
+        This will output a version of the change entry for use in the API.
+        It can be the same content stored in the
+        :py:class:`~reviewboard.changedescs.models.ChangeDescription`, but
+        does not need to be.
+
+        Args:
+            changedesc (reviewboard.changedescs.models.ChangeDescription):
+                The change description whose field is to be serialized.
+
+        Returns:
+            dict:
+            An appropriate serialization for the field.
+        """
+        field_info = changedesc.fields_changed[self.field_id]
+
+        if self.model:
+            return self.serialize_change_entry_for_model_list(field_info)
+        else:
+            return self.serialize_change_entry_for_list(field_info)
 
     def render_value(self, values):
         """Renders the list of items.
@@ -590,42 +858,15 @@ class BaseTextAreaField(BaseEditableField):
                 % line)
 
 
-def _populate_defaults():
-    """Populates the default list of fieldsets and their fields."""
-    global _populated
-
-    if not _populated:
-        from reviewboard.reviews.builtin_fields import builtin_fieldsets
-
-        _populated = True
-
-        for fieldset_cls in builtin_fieldsets:
-            register_review_request_fieldset(fieldset_cls)
-
-
-def _register_field(field_cls):
-    """Registers a field.
-
-    This will check if the field has already been registered before
-    adding it. It's called internally when first adding a fieldset, or
-    when adding a field to a fieldset.
-    """
-    field_id = field_cls.field_id
-
-    if field_id in _all_fields:
-        raise KeyError(
-            '"%s" is already a registered review request field. '
-            'Field IDs must be unique across all fieldsets.'
-            % field_id)
-
-    _all_fields[field_id] = field_cls
-
-
 def get_review_request_fields():
-    """Returns a list of all registered field classes."""
-    _populate_defaults()
+    """Yield all registered field classes.
 
-    return six.itervalues(_all_fields)
+    Yields:
+        type:
+        The field classes, as subclasses of :py:class:`BaseReviewRequestField`
+    """
+    for field in field_registry:
+        yield field
 
 
 def get_review_request_fieldsets(include_main=False,
@@ -634,11 +875,20 @@ def get_review_request_fieldsets(include_main=False,
 
     As an internal optimization, the "main" fieldset can be filtered out,
     to help with rendering the side of the review request page.
-    """
-    _populate_defaults()
 
+    Args:
+        include_main (boolean):
+            Whether or not the main fieldset should be included.
+
+        include_change_entries_only (bool):
+            Whether or not to include the change-entry only fieldset.
+
+    Returns:
+        list:
+        The requested :py:class:`fieldsets <BaseReviewRequestFieldSet>`.
+    """
     if include_main and include_change_entries_only:
-        return six.itervalues(_fieldsets)
+        return list(fieldset_registry)
     else:
         excluded_ids = []
 
@@ -650,79 +900,73 @@ def get_review_request_fieldsets(include_main=False,
 
         return [
             fieldset
-            for fieldset in six.itervalues(_fieldsets)
+            for fieldset in fieldset_registry
             if fieldset.fieldset_id not in excluded_ids
         ]
 
 
 def get_review_request_fieldset(fieldset_id):
-    """Returns the fieldset with the specified ID.
+    """Return the fieldset with the specified ID.
 
-    If the fieldset could not be found, this will return None.
+    Args:
+        fieldset_id (unicode):
+            The fieldset's ID.
+
+    Returns:
+        BaseReviewRequestFieldSet:
+        The requested fieldset, or ``None`` if it could not be found.
     """
-    _populate_defaults()
-
-    try:
-        return _fieldsets[fieldset_id]
-    except KeyError:
-        return None
+    return fieldset_registry.get('fieldset_id', fieldset_id)
 
 
 def get_review_request_field(field_id):
-    """Returns the field with the specified ID.
+    """Return the field with the specified ID.
 
-    If the field could not be found, this will return None.
+    Args:
+        field_id (unicode):
+            The field's ID.
+
+    Returns:
+        BaseReviewRequestField:
+        The requested field, or ``None`` if it could not be found.
     """
-    _populate_defaults()
-
-    try:
-        return _all_fields[field_id]
-    except KeyError:
-        return None
+    return field_registry.get('field_id', field_id)
 
 
 def register_review_request_fieldset(fieldset):
-    """Registers a custom review request fieldset.
+    """Register a custom review request fieldset.
 
-    A fieldset ID is considered unique and can only be registered once. A
-    KeyError will be thrown if attempting to register a second time.
+    The fieldset must have a :py:attr:`~BaseReviewRequestFieldSet.fieldset_id`
+    attribute. This ID **must** be unique across all registered fieldsets, or
+    an exception will be thrown.
+
+    Args:
+        fieldset (type):
+            The :py:class:`BaseReviewRequestFieldSet` subclass.
+
+    Raises:
+        djblets.registries.errors.ItemLookupError:
+            This will be thrown if a fieldset is already registered with the
+            same ID.
     """
-    _populate_defaults()
-
-    fieldset_id = fieldset.fieldset_id
-
-    if fieldset_id in _fieldsets:
-        raise KeyError('"%s" is already a registered review request fieldset'
-                       % fieldset_id)
-
-    _fieldsets[fieldset_id] = fieldset
-
-    # Set the field_classes to an empty list by default if it doesn't
-    # explicitly provide its own, so that entries don't go into
-    # BaseReviewRequestFieldSet's global list.
-    if fieldset.field_classes is None:
-        fieldset.field_classes = []
-
-    for field_cls in fieldset.field_classes:
-        _register_field(field_cls)
+    fieldset_registry.register(fieldset)
 
 
 def unregister_review_request_fieldset(fieldset):
-    """Unregisters a previously registered review request fieldset."""
-    _populate_defaults()
+    """Unregister a previously registered review request fieldset.
 
-    fieldset_id = fieldset.fieldset_id
+    Args:
+        fieldset (type):
+            The :py:class:`BaseReviewRequestFieldSet` subclass.
 
-    if fieldset_id not in _fieldsets:
+    Raises:
+        djblets.registries.errors.ItemLookupError:
+            This will be thrown if the fieldset is not already registered.
+    """
+    try:
+        fieldset_registry.unregister(fieldset)
+    except ItemLookupError as e:
         logging.error('Failed to unregister unknown review request fieldset '
                       '"%s"',
-                      fieldset_id)
-        raise KeyError('"%s" is not a registered review request fieldset'
-                       % fieldset_id)
-
-    fieldset = _fieldsets[fieldset_id]
-
-    for field_cls in fieldset.field_classes:
-        fieldset.remove_field(field_cls)
-
-    del _fieldsets[fieldset_id]
+                      fieldset.fieldset_id)
+        raise e

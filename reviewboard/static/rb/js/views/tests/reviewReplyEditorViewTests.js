@@ -10,7 +10,7 @@ suite('rb/views/ReviewReplyEditorView', function() {
 
         /* Some tests will invoke this, so just pretend it works. */
         spyOn(reviewReply, 'discardIfEmpty')
-            .andCallFake(function(options, context) {
+            .and.callFake(function(options, context) {
                 options.success.call(context);
             });
 
@@ -98,8 +98,8 @@ suite('rb/views/ReviewReplyEditorView', function() {
                 }),
                 $el;
 
-            spyOn($.fn, 'user_infobox').andCallThrough();
-            spyOn($.fn, 'timesince').andCallThrough();
+            spyOn($.fn, 'user_infobox').and.callThrough();
+            spyOn($.fn, 'timesince').and.callThrough();
 
             view.render();
             editor.set('text', 'Test **comment**');

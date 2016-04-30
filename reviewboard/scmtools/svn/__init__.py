@@ -10,6 +10,7 @@ from django.conf import settings
 from django.utils import six
 from django.utils.translation import ugettext as _
 
+from reviewboard.diffviewer.diffutils import convert_to_unicode
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate
 from reviewboard.scmtools.core import (Branch, Commit, SCMTool, HEAD,
@@ -65,9 +66,11 @@ class SVNTool(SCMTool):
         else:
             local_site_name = None
 
+        credentials = repository.get_credentials()
+
         self.config_dir, self.client = \
             self.build_client(self.repopath,
-                              repository.username, repository.password,
+                              credentials['username'], credentials['password'],
                               local_site_name)
 
         # If we assign a function to the pysvn Client that accesses anything
@@ -85,8 +88,8 @@ class SVNTool(SCMTool):
 
         # 'svn diff' produces patches which have the revision string localized
         # to their system locale. This is a little ridiculous, but we have to
-        # deal with it because not everyone uses post-review.
-        self.revision_re = re.compile("""
+        # deal with it because not everyone uses RBTools.
+        self.revision_re = re.compile('''
             ^(\(([^\)]+)\)\s)?      # creating diffs between two branches of a
                                     # remote repository will insert extra
                                     # "relocation information" into the diff.
@@ -97,21 +100,50 @@ class SVNTool(SCMTool):
                                     # to express that, but oh well.
 
             \ *\((?:
-                [Rr]ev(?:ision)?|   # English - svnlook uses 'rev 0' while svn
-                                    #           diff uses 'revision 0'
-                revisión:|          # Spanish
+                revisão|            # Brazilian Portuguese
+                [Rr]ev(?:ision)?|   # English, German
+                                    # - svnlook uses 'rev 0' while svn diff
+                                    #   uses 'revision 0'
                 révision|           # French
                 revisione|          # Italian
                 リビジョン|         # Japanese
                 리비전|             # Korean
                 revisjon|           # Norwegian
                 wersja|             # Polish
-                revisão|            # Brazilian Portuguese
-                版本                # Simplified Chinese
+                版本|               # Simplified Chinese
+                revisión:           # Spanish
             )\ (\d+)\)$
-            """, re.VERBOSE)
+            ''', re.VERBOSE)
 
-    def get_file(self, path, revision=HEAD):
+        # Starting with 1.9, Subversion returns (nonexistent) instead of
+        # (revision 0) for newly added files.
+        self.nonexistent_re = re.compile(r'''
+            ^\((?:
+                nonexistent|           # English
+                nicht\ existent|       # German
+                不存在的               # Simplified Chinese
+            )\)$
+            ''', re.VERBOSE)
+
+        # 'svn diff' also localises the (working copy) string to the system
+        # locale.
+        self.working_copy_re = re.compile(r'''
+            ^\((?:
+                cópia\ de\ trabalho|   # Brazilian Portuguese
+                working\ copy|         # English
+                copie\ de\ travail|    # French
+                Arbeitskopie|          # German
+                copia\ locale|         # Italian
+                作業コピー|            # Japanese
+                작업\ 사본|            # Korean
+                arbeidskopi|           # Norweigan
+                kopia\ robocza|        # Polish
+                工作副本|              # Simplified Chinese
+                copia\ de\ trabajo     # Spanish
+            )\)$
+        ''', re.VERBOSE)
+
+    def get_file(self, path, revision=HEAD, **kwargs):
         return self.client.get_file(path, revision)
 
     def get_keywords(self, path, revision=HEAD):
@@ -129,30 +161,31 @@ class SVNTool(SCMTool):
         except Exception as e:
             raise self.normalize_error(e)
 
+        default = True
         if 'trunk' in root_dirents:
             # Looks like the standard layout. Adds trunk and any branches.
             trunk = root_dirents['trunk']
             results.append(self._create_branch_from_dirent(
                 'trunk', trunk, default=True))
+            default = False
 
-            if 'branches' in root_dirents:
-                try:
-                    dirents = self.client.list_dir('branches')
+        if 'branches' in root_dirents:
+            try:
+                dirents = self.client.list_dir('branches')
 
-                    results += [
-                        self._create_branch_from_dirent(name, dirents[name])
-                        for name in sorted(six.iterkeys(dirents))
-                    ]
-                except Exception as e:
-                    raise self.normalize_error(e)
-        else:
-            # If the repository doesn't use the standard layout, just use a
-            # listing of the root directory as the "branches". This probably
-            # corresponds to a list of projects instead of branches, but it
-            # will at least give people a useful result.
-            default = True
+                results += [
+                    self._create_branch_from_dirent(name, dirents[name])
+                    for name in sorted(six.iterkeys(dirents))
+                ]
+            except Exception as e:
+                raise self.normalize_error(e)
 
-            for name in sorted(six.iterkeys(root_dirents)):
+        # Add anything else from the root of the repository. This is a
+        # catch-all for repositories which do not use the standard layout, and
+        # for those that do, will include any additional top-level directories
+        # that people may have.
+        for name in sorted(six.iterkeys(root_dirents)):
+            if name not in ('trunk', 'branches'):
                 results.append(self._create_branch_from_dirent(
                     name, root_dirents[name], default))
                 default = False
@@ -173,24 +206,14 @@ class SVNTool(SCMTool):
         for i in range(len(commits) - 1):
             commit = commits[i]
             parent = commits[i + 1]
-
-            results.append(Commit(
-                commit.get('author', ''),
-                commit['revision'],
-                commit['date'].isoformat(),
-                commit.get('message', ''),
-                parent['revision']))
+            results.append(self._build_commit(commit, parent['revision']))
 
         # If there were fewer than the requested number of commits fetched,
         # also include the last one in the list so we don't leave off the
         # initial revision.
         if len(commits) < self.COMMITS_PAGE_LIMIT:
             commit = commits[-1]
-            results.append(Commit(
-                commit.get('author', ''),
-                commit['revision'],
-                commit['date'].isoformat(),
-                commit.get('message', '')))
+            results.append(self._build_commit(commit))
 
         return results
 
@@ -214,7 +237,9 @@ class SVNTool(SCMTool):
             base_revision = 0
 
         try:
-            diff = self.client.diff(base_revision, revision)
+            enc, diff = convert_to_unicode(
+                self.client.diff(base_revision, revision),
+                self.repository.get_encoding_list())
         except Exception as e:
             raise self.normalize_error(e)
 
@@ -245,8 +270,11 @@ class SVNTool(SCMTool):
         # revisions
         revision_str = revision_str.strip()
 
-        if revision_str == "(working copy)":
+        if self.working_copy_re.match(revision_str):
             return file_str, HEAD
+
+        if self.nonexistent_re.match(revision_str):
+            return file_str, PRE_CREATION
 
         # "(revision )" is generated by a few weird tools (like IntelliJ). If
         # in the +++ line of the diff, it means HEAD, and in the --- line, it
@@ -297,14 +325,27 @@ class SVNTool(SCMTool):
             commit=dirent['created_rev'],
             default=default)
 
+    def _build_commit(self, data, parent=''):
+        date = data.get('date', '')
+
+        if date:
+            date = date.isoformat()
+
+        return Commit(
+            data.get('author', ''),
+            data['revision'],
+            date,
+            data.get('message', ''),
+            parent)
+
     @classmethod
     def normalize_error(cls, e):
         if 'callback_get_login required' in six.text_type(e):
-            raise AuthenticationError(
+            return AuthenticationError(
                 msg='Authentication failed when talking to the Subversion '
                     'repository')
         else:
-            raise SCMError(e)
+            return SCMError(e)
 
     @classmethod
     def _ssl_server_trust_prompt(cls, trust_dict, repository):
@@ -512,7 +553,7 @@ class SVNDiffParser(DiffParser):
         #    sanely, though.
         if (self.lines[linenum] == b'' and
             linenum + 2 < len(self.lines) and
-            self.lines[linenum + 1].startswith('Property changes on:')):
+            self.lines[linenum + 1].startswith(b'Property changes on:')):
             # Skip over the next 3 lines (blank, "Property changes on:", and
             # the "__________" divider.
             info['skip'] = True

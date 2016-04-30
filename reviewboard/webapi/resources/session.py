@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib.auth import logout
 from django.utils import six
 from djblets.webapi.decorators import webapi_login_required
-from djblets.webapi.resources import get_resource_for_object
+from djblets.webapi.resources.registry import get_resource_for_object
 
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_login_required,
@@ -62,6 +62,18 @@ class SessionResource(WebAPIResource):
             user_resource = get_resource_for_object(request.user)
             href = user_resource.get_href(request.user, request,
                                           *args, **kwargs)
+
+            # Since there's no object, DELETE won't be populated automatically.
+            clean_href = request.build_absolute_uri()
+            i = clean_href.find('?')
+
+            if i != -1:
+                clean_href = clean_href[:i]
+
+            links['delete'] = {
+                'method': 'DELETE',
+                'href': clean_href,
+            }
 
             links['user'] = {
                 'method': 'GET',

@@ -9,7 +9,7 @@ from django.utils.six.moves.urllib.parse import urlencode
 from django.utils.six.moves.urllib.request import Request, urlopen
 from django.template import Context, Lexer, Parser
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.webapi.encoders import (BasicAPIEncoder, JSONEncoderAdapter,
+from djblets.webapi.encoders import (JSONEncoderAdapter, ResourceAPIEncoder,
                                      XMLEncoderAdapter)
 
 from reviewboard import get_package_version
@@ -93,7 +93,7 @@ def render_custom_content(body, context_data={}):
 
 def dispatch_webhook_event(request, webhook_targets, event, payload):
     """Dispatch the given event and payload to the given webhook targets."""
-    encoder = BasicAPIEncoder()
+    encoder = ResourceAPIEncoder()
     bodies = {}
 
     for webhook_target in webhook_targets:
@@ -142,24 +142,56 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
         urlopen(Request(webhook_target.url, body, headers))
 
 
-def _serialize_review(review, request, review_key):
+def _serialize_review(review, request):
     return {
-        review_key: resources.review.serialize_object(
+        'review': resources.review.serialize_object(
             review, request=request),
         'diff_comments': [
             resources.filediff_comment.serialize_object(
                 comment, request=request)
             for comment in review.comments.all()
         ],
+        'file_attachment_comments': [
+            resources.file_attachment_comment.serialize_object(
+                comment, request=request)
+            for comment in review.file_attachment_comments.all()
+        ],
         'screenshot_comments': [
             resources.screenshot_comment.serialize_object(
                 comment, request=request)
             for comment in review.screenshot_comments.all()
         ],
-        'file_attachment_comments': [
-            resources.file_attachment_comment.serialize_object(
+        'general_comments': [
+            resources.general_comment.serialize_object(
                 comment, request=request)
-            for comment in review.file_attachment_comments.all()
+            for comment in review.general_comments.all()
+        ],
+    }
+
+
+def _serialize_reply(reply, request):
+    return {
+        'reply': resources.review_reply.serialize_object(
+            reply, request=request),
+        'diff_comments': [
+            resources.review_reply_diff_comment.serialize_object(
+                comment, request=request)
+            for comment in reply.comments.all()
+        ],
+        'file_attachment_comments': [
+            resources.review_reply_file_attachment_comment.serialize_object(
+                comment, request=request)
+            for comment in reply.file_attachment_comments.all()
+        ],
+        'screenshot_comments': [
+            resources.review_reply_screenshot_comment.serialize_object(
+                comment, request=request)
+            for comment in reply.screenshot_comments.all()
+        ],
+        'general_comments': [
+            resources.review_reply_general_comment.serialize_object(
+                comment, request=request)
+            for comment in reply.general_comments.all()
         ],
     }
 
@@ -247,7 +279,7 @@ def review_published_cb(sender, user, review, **kwargs):
 
     if webhook_targets:
         request = FakeHTTPRequest(user)
-        payload = _serialize_review(review, request, 'review')
+        payload = _serialize_review(review, request)
         payload['event'] = event
         dispatch_webhook_event(request, webhook_targets, event, payload)
 
@@ -260,7 +292,7 @@ def reply_published_cb(sender, user, reply, **kwargs):
 
     if webhook_targets:
         request = FakeHTTPRequest(user)
-        payload = _serialize_review(reply, request, 'reply')
+        payload = _serialize_reply(reply, request)
         payload['event'] = event
         dispatch_webhook_event(request, webhook_targets, event, payload)
 

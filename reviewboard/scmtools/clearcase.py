@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import logging
 import os
+import platform
 import re
 import subprocess
 import sys
@@ -23,14 +24,9 @@ else:
 # Note:
 #   - later versions of Windows may probably be impacted too
 #   - Python 2.7.x is the only one known to get this issue
-import platform
-
-if (sys.version_info[:2] == (2, 7) and
-    platform.system() == "Windows" and
-    platform.release() == "7"):
-    _popen_shell = True
-else:
-    _popen_shell = False
+_popen_shell = (sys.version_info[:2] == (2, 7) and
+                platform.system() == "Windows" and
+                platform.release() == "7")
 
 
 class ClearCaseTool(SCMTool):
@@ -230,7 +226,7 @@ class ClearCaseTool(SCMTool):
 
         return res.strip()
 
-    def get_file(self, extended_path, revision=HEAD):
+    def get_file(self, extended_path, revision=HEAD, **kwargs):
         """Return content of file or list content of directory"""
         if not extended_path:
             raise FileNotFoundError(extended_path, revision)
@@ -270,8 +266,8 @@ class ClearCaseTool(SCMTool):
 
         if extended_path.endswith(os.path.join(os.sep, 'main', '0')):
             revision = PRE_CREATION
-        elif (extended_path.endswith('CHECKEDOUT')
-              or '@@' not in extended_path):
+        elif (extended_path.endswith('CHECKEDOUT') or
+              '@@' not in extended_path):
             revision = HEAD
         else:
             revision = extended_path.rsplit('@@', 1)[1]
@@ -325,7 +321,9 @@ class ClearCaseDiffParser(DiffParser):
             # client side paths are enough to start reviewing.
             # So we can safely catch exception and restore client side paths
             # if not found.
-            currentFilename = info['origFile']
+            # Note: origFile and newFile attributes are not defined when
+            # managing binaries, so init to '' as fallback.
+            currentFilename = info.get('origFile', '')
             try:
                 info['origFile'] = self._oid2filename(m.group(1))
             except:
@@ -333,7 +331,7 @@ class ClearCaseDiffParser(DiffParser):
                               m.group(1))
                 info['origFile'] = self.client_relpath(currentFilename)
 
-            currentFilename = info['newFile']
+            currentFilename = info.get('newFile', '')
             try:
                 info['newFile'] = self._oid2filename(m.group(2))
             except:

@@ -4,30 +4,29 @@
 @dark-yellow: #A89C00;
 @light-grey: #EAEAEA;
 @grey: #D0D0D0;
-@light-blue: #C6DCF3;
+@dark-grey: #5C5C5C;
+@light-blue: #D0E6FF;
 @dark-blue: #3465A4;
 
 @link-color: #0000C0;
 
 @required-flag-color: darkred;
 
+@btn-border-bottom-color: #bbb;
+@btn-border-color: #ccc;
+@btn-border-radius: 4px;
+@btn-box-shadow: inset 0 1px 0 rgpa(255,255,255,.2), 0 1px 2px rgba(0,0,0,.05);
 @btn-primary-color1: #7E9BC6;
 @btn-primary-color2: darken(@btn-primary-color1, 20%);
 
-@page-container-padding: 1em;
+@page-container-padding: 1.5em;
 
-@headerbar-logo-padding-horiz: 6px;
+@headerbar-logo-padding-horiz: 8px;
 @headerbar-logo-width: 60px;
 @headerbar-padding-left: @headerbar-logo-width +
                          2 * @headerbar-logo-padding-horiz;
-@headerbar-bg: #333333;
-@headerbar-bg-active: #555555;
-@headerbar-padding: 0.5em;
+@headerbar-padding: 5px;
 @headerbar-menu-min-width: 9em;
-
-@navbar-bg: @light-blue;
-@navbar-border-color: @dark-blue;
-@navbar-text-color: #0000AA;
 
 @box-border-color: #888A85;
 @box-border-radius: 6px;
@@ -42,12 +41,13 @@
 @draft-bg-color: #CDFF9C;
 @draft-border-color: darken(@draft-bg-color, 50%);
 
-@review-request-actions-bg: @review-request-action-primary-bg;
-@review-request-actions-border-color:
-  darken(@review-request-action-primary-bg, 40%);
+@review-request-bg: #FEFADF;
+@review-request-bg-gradient-start: lighten(@review-request-bg, 4%);
+@review-request-bg-gradient-end: @review-request-bg;
+@review-request-border-color: #9E9A7F;
 
 @review-request-action-bg: #E5D7A8;
-@review-request-action-border-color: @review-request-actions-border-color;
+@review-request-action-border-color: darken(@review-request-action-bg, 35%);
 @review-request-action-active-bg: darken(@review-request-action-bg, 20%);
 @review-request-action-hover-bg: darken(@review-request-action-bg, 12%);
 
@@ -55,9 +55,13 @@
 @review-request-action-primary-active-bg: @review-request-action-active-bg;
 @review-request-action-primary-hover-bg: @review-request-action-hover-bg;
 
-@review-request-action-menu-border-color: @review-request-actions-border-color;
+@review-request-action-menu-border-color: @review-request-action-border-color;
 @review-request-action-menu-bg: @review-request-action-active-bg;
 @review-request-action-menu-item-hover-bg: @review-request-action-hover-bg;
+@review-request-action-padding-vert: 0.6em;
+@review-request-action-padding-horiz: 1.2em;
+
+@review-request-action-mobile-padding: 0.3em;
 
 @review-request-label-color: #575012;
 @review-request-link-color: #0000EE;
@@ -65,19 +69,39 @@
 @review-request-warning-bg: #F5A9A9;
 @review-request-warning-border-color: #FF0000;
 
+// Reviews
+@reviews-padding-horiz: 0.5em;
+@review-box-border-color: #999999;
+
+// Review UIs
+@review-ui-header-bg: @review-request-bg;
+
 @admin-sidebar-width: 22em;
 
 @admin-msg-banner-bg: #FFC;
 @admin-msg-banner-border-color: darken(@admin-msg-banner-bg, 50%);
 
-@issue-opened-bg: #fff49C;
+@issue-table-border-color: #999;
+@issue-table-cell-padding: 7px;
+@issue-table-header-bg: #E9E9E9;
+@issue-table-header-hover-bg: darken(@issue-table-header-bg, 5%);
+@issue-table-row-border-color: #CCC;
+@issue-table-tab-border-color: @issue-table-border-color;
+@issue-table-tab-bg: @issue-table-header-bg;
+@issue-table-tab-hover-bg: lighten(@issue-table-header-bg, 5%);
+@issue-table-tab-hover-border-color: lighten(@issue-table-tab-border-color, 5%);
+
+@issue-opened-bg: #fff4B0;
 @issue-opened-border-color: darken(@issue-opened-bg, 40%);
+@issue-opened-hover-bg: desaturate(darken(@issue-opened-bg, 10%), 20%);
 @issue-opened-link-color: darken(@issue-opened-bg, 60%);
 @issue-discarded-bg: #ECECEC;
 @issue-discarded-border-color: darken(@issue-discarded-bg, 20%);
+@issue-discarded-hover-bg: darken(@issue-discarded-bg, 5%);
 @issue-discarded-link-color: darken(@issue-discarded-bg, 60%);
 @issue-resolved-bg: #FAFAFA;
 @issue-resolved-border-color: darken(@issue-resolved-bg, 10%);
+@issue-resolved-hover-bg: darken(@issue-resolved-bg, 5%);
 @issue-resolved-link-color: darken(@issue-resolved-bg, 60%);
 
 /*
@@ -91,19 +115,24 @@
 @textarea-border-color: #b8b5a0;
 @textarea-border: 1px #b8b5a0 solid;
 @textarea-editor-background: white;
-@textarea-editor-margin: 5px 0 0 0;
+@textarea-editor-margin: 10px 0 0 0;
 @textarea-editor-padding: 10px;
 
 @z-index-base: 1;
 @z-index-deco: 20;
 @z-index-event-overlay: 30;
+@z-index-subevent-overlay: @z-index-event-overlay + 1;
 @z-index-filter-overlay: 40;
+@z-index-mobile-headerbar: 50;
+@z-index-logo: @z-index-mobile-headerbar;
 @z-index-banner: 90;
 @z-index-diff-collapse-btn: 100;
 @z-index-menu: 110;
 @z-index-dialog: 120;
 @z-index-page-overlay: 130;
 @z-index-spinner: 140;
+@z-index-nav-menu-mask: 199;
+@z-index-nav-menu: 200;
 
 // Icon dimensions
 @rb-icon-edit-width: 20px;
@@ -121,12 +150,19 @@
 @comment-flag-ghost-color: #eeeeec;
 @comment-flag-ghost-border-color: #888a85;
 
+// Comment dialog
+@comment-dlg-bg: #ACEB6F;
+@comment-dlg-border-color: darken(@comment-dlg-bg, 40%);
+@comment-dlg-padding: 6px;
+@comment-dlg-other-comments-bg: #A1C0E3;
 
 /* Diff styles */
 @diff-file-color: #F0F0F0;
 @diff-border-color: #A0A0A0;
 @diff-file-border-color: darken(@diff-file-color, 15%);
 @diff-line-border-color: #D0D0D0;
+@diff-error-color: #FFF6A6;
+@diff-error-border-color: darken(#FFF6A6, 35%);
 
 // Diff headers
 @diff-header-color: #e4d9cb;
@@ -136,7 +172,8 @@
 @diff-moved-to-bg-color: darken(@diff-moved-from-bg-color, 3%);
 
 // Equals lines
-@diff-linenum-color: #F0F0F0;
+@diff-linenum-color: #777777;
+@diff-linenum-background-color: #F0F0F0;
 @diff-selected-color: #E2E2E2;
 
 // Delete lines
@@ -188,24 +225,82 @@
 @inline-actions-bg: darken(@diff-file-color, 3%);
 @inline-actions-hover-bg: darken(@inline-actions-bg, 5%);
 
-// Dashboard
-@dashboard-sidebar-bg: #E9E9E9;
-@dashboard-sidebar-horiz-padding: 0.8em;
-@dashboard-sidebar-vert-padding: 0.4em;
-@dashboard-sidebar-item-vert-padding: 6px;
-@dashboard-sidebar-section-vert-padding: 8px;
-@dashboard-sidebar-active-bg: darken(@dashboard-sidebar-bg, 5%);
-@dashboard-sidebar-count-border-radius: 2 * @box-border-radius;
-@dashboard-sidebar-count-bg: lighten(@dashboard-sidebar-bg, 15%);
-@dashboard-sidebar-count-border-color: darken(@dashboard-sidebar-bg, 10%);
-@dashboard-sidebar-count-zero-bg: lighten(@dashboard-sidebar-bg, 3%);
-@dashboard-sidebar-count-zero-border-color: darken(@dashboard-sidebar-bg, 5%);
-@dashboard-sidebar-count-vert-padding: 0px;
-@dashboard-sidebar-count-horiz-padding: 8px;
+// Datagrids
+@datagrid-bg: @box-bg;
+@datagrid-border-color: @box-border-color;
+@datagrid-filter-menu-bg: #FFFFE0;
+@datagrid-filter-menu-border-color: darken(@datagrid-filter-menu-bg, 65%);
+@datagrid-paginator-bg: #EEE;
+@datagrid-paginator-border-color: #BBB;
+@datagrid-actions-bg: @datagrid-paginator-bg;
+@datagrid-actions-offset-left: 1em;
+@datagrid-header-bg: @box-title-bg;
+@datagrid-row-even-bg: #FBFBFB;
+@datagrid-row-odd-bg: #FFFFFF;
+@datagrid-row-border-color: #F0F0F0;
+
+// Page Sidebar
+@page-sidebar-bg: #E9E9E9;
+@page-sidebar-count-color: #A02222;
+@page-sidebar-count-zero-color: #BBBBBB;
+@page-sidebar-horiz-padding: 0.8em;
+@page-sidebar-vert-padding: 0.4em;
+@page-sidebar-item-vert-padding: 6px;
+@page-sidebar-section-vert-padding: 8px;
+@page-sidebar-active-bg: #FFFFFF;
+@page-sidebar-active-border-color: @datagrid-border-color;
+@page-sidebar-count-vert-padding: 0px;
+@page-sidebar-count-horiz-padding: 8px;
+@page-sidebar-hover-bg: lighten(@page-sidebar-active-bg, 30%);
+@page-sidebar-hover-border-color: lighten(@page-sidebar-active-border-color, 30%);
+@page-sidebar-width: 19em;
+
+// Review request labels in datagrids.
+@summary-label-draft-bg: #AAE29B;
+@summary-label-draft-border-color: darken(@summary-label-draft-bg, 28%);
+@summary-label-text-color: #005500;
+@summary-label-submitted-bg: #FFFFD0;
+@summary-label-submitted-border-color: darken(@summary-label-submitted-bg, 55%);
+@summary-label-submitted-text-color: #777700;
+@summary-label-discarded-bg: #DDDDDD;
+@summary-label-discarded-border-color: darken(@summary-label-discarded-bg, 25%);
+@summary-label-discarded-text-color: #555555;
+@summary-label-archived-bg: #FAFAFA;
+@summary-label-archived-border-color: darken(@summary-label-archived-bg, 25%);
+@summary-label-archived-text-color: #555555;
+@summary-label-muted-bg: #DDDDDD;
+@summary-label-muted-border-color: darken(@summary-label-muted-bg, 25%);
+@summary-label-muted-text-color: #555555;
+
+// New review request page
+@new-review-request-bg: #FFFFFF;
+@new-review-request-commit-icon-color: #888;
+@new-review-request-commit-info-color: #666;
+@new-review-request-jump-to-commit-color: #71A6E2;
+@new-review-request-summary-posted-color: #777;
+
+// Mobile
+@mobile-back-forward-link-color: #444;
+@mobile-menu-animate-duration: 0.3s;
+@mobile-menu-animate-timing-func: ease-out;
+@mobile-menu-bg-color: #383A46;
+@mobile-menu-text-color: #EEE;
+@mobile-menu-border-color: darken(@mobile-menu-bg-color, 20%);
+@mobile-menu-header-bg-color: darken(@mobile-menu-bg-color, 5%);
+@mobile-menu-header-border-color: darken(@mobile-menu-header-bg-color, 5%);
+@mobile-menu-footer-height: 40px;
+@mobile-menu-header-height: 32px;
+@mobile-navbar-width: 300px;
+@mobile-medium-width-720: 720px;
+
+// Trophy banner
+@trophy-banner-bg-color: #fdf2a0;
+
+
+// Infoboxes
+@user-infobox-avatar-size: 128px;
 
 
 @import (reference) "mixins/gradients.less";
 @import (reference) "mixins/style.less";
-
-
-// vim: set et ts=2 sw=2:
+@import (reference) "mixins/theme.less";

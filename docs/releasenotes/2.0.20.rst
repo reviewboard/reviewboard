@@ -1,0 +1,113 @@
+=================================
+Review Board 2.0.20 Release Notes
+=================================
+
+**Release date**: September 14, 2015
+
+
+Django Security Notice
+======================
+
+Django 1.6.x is no longer maintained by the Django project, and will no longer
+be receiving security fixes directly. Since we still depend on this version,
+and will have users depending on it for years to come, we're maintaining our
+own unofficial branch and handling all backports of security fixes to Django.
+
+We highly recommend installing Django 1.6.11.1 which contains all current
+Django security fixes, and will be continuing to release new versions as
+security vulnerabilities are discovered.
+
+We cannot automatically install this yet, due to restrictions in
+:command:`pip`, so you'll need to be sure to upgrade manually for now.
+
+We'll continue to provide this notice for all affected releases of Review
+Board until we are able to auto-install the appropriate version of Django.
+
+Please see our `security announcement`_ for instructions.
+
+.. _`security announcement`:
+   https://www.reviewboard.org/news/2015/08/24/new-django-1-6-11-1-security-releases/
+
+
+Extensions
+==========
+
+* The ``is_enabled_for`` callback for :ref:`navigation-hook` now takes
+  additional arguments.
+
+  This will be given ``user``, ``request`` and ``local_site_name`` arguments
+  for the current page, allowing the extension to be smarter about which pages
+  will display certain items.
+
+  The old callback took only a ``user`` argument. Extensions should update
+  their callbacks, though they'll continue to work until at least Review
+  Board 2.6.
+
+
+Bug Fixes
+=========
+
+Diff Viewer
+-----------
+
+* :file:`*.txt` files are no longer styled with red error boxes around each
+  word.
+
+  The wrong lexer was being loaded for the file due to an internal issue
+  in a library we depend on. This caused text files to be interpreted as
+  a special file type full of syntax errors.
+
+* Fixed syntax highlighting for certain language-specific keywords in
+  diffs. (:bug:`3809`)
+
+  Patch by Justin Wu.
+
+
+E-Mail
+------
+
+* Fixed Unicode issues with e-mail headers that could prevent some e-mails
+  from being sent, depending on content.
+
+
+Reviews
+-------
+
+* Fixed a crash when loading comments for image file attachments.
+  (:bug:`3747`)
+
+  For image file attachments, the review request page would break when loading
+  comments, due to an internal change made in 2.0.19. This problem should no
+  longer occur.
+
+* Fixed the display of text file attachment thumbnails.
+
+  The thumbnails had the possibility of overrunning the thumbnail and
+  escaping some of the containing HTML when pulling from cache.
+
+
+Administration
+--------------
+
+* Blocked most browsers from auto-filling username/password information
+  when configuring e-mail server or repository credentials.
+
+
+Subversion
+----------
+
+* Fixed a compatibility problem with Subversion 1.9's new diff format changes.
+
+  New files were being represented with different revision information than
+  Subversion's provide in the past. These led to issues posting new files
+  for review. We now support these changes.
+
+
+Contributors
+============
+
+* Alexey Neyman
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Justin Wu

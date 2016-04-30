@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
 
+import inspect
 import logging
 import uuid
+import warnings
 from time import time
 
 from django.contrib.auth.models import User
@@ -27,7 +29,6 @@ from reviewboard.scmtools.managers import RepositoryManager, ToolManager
 from reviewboard.scmtools.signals import (checked_file_exists,
                                           checking_file_exists,
                                           fetched_file, fetching_file)
-from reviewboard.scmtools.core import FileNotFoundError
 from reviewboard.site.models import LocalSite
 
 
@@ -493,15 +494,21 @@ class Repository(models.Model):
 
     def _make_file_cache_key(self, path, revision, base_commit_id):
         """Makes a cache key for fetched files."""
-        return "file:%s:%s:%s:%s" % (self.pk, urlquote(path),
-                                     urlquote(revision),
-                                     urlquote(base_commit_id or ''))
+        return 'file:%s:%s:%s:%s:%s' % (
+            self.pk,
+            urlquote(path),
+            urlquote(revision),
+            urlquote(base_commit_id or ''),
+            urlquote(self.raw_file_url or ''))
 
     def _make_file_exists_cache_key(self, path, revision, base_commit_id):
         """Makes a cache key for file existence checks."""
-        return "file-exists:%s:%s:%s:%s" % (self.pk, urlquote(path),
-                                            urlquote(revision),
-                                            urlquote(base_commit_id or ''))
+        return 'file-exists:%s:%s:%s:%s:%s' % (
+            self.pk,
+            urlquote(path),
+            urlquote(revision),
+            urlquote(base_commit_id or ''),
+            urlquote(self.raw_file_url or ''))
 
     def _get_file_uncached(self, path, revision, base_commit_id, request):
         """Internal function for fetching an uncached file.
@@ -532,16 +539,17 @@ class Repository(models.Model):
                 revision,
                 base_commit_id=base_commit_id)
         else:
-            try:
-                data = self.get_scmtool().get_file(path, revision)
-            except FileNotFoundError:
-                if base_commit_id:
-                    # Some funky workflows with mq (mercurial) can cause issues
-                    # with parent diffs. If we didn't find it with the parsed
-                    # revision, and there's a base commit ID, try that.
-                    data = self.get_scmtool().get_file(path, base_commit_id)
-                else:
-                    raise
+            tool = self.get_scmtool()
+            argspec = inspect.getargspec(tool.get_file)
+
+            if argspec.keywords is None:
+                warnings.warn('SCMTool.get_file() must take keyword '
+                              'arguments, signature for %s is deprecated.'
+                              % tool.name, DeprecationWarning)
+                data = tool.get_file(path, revision)
+            else:
+                data = tool.get_file(path, revision,
+                                     base_commit_id=base_commit_id)
 
         log_timer.done()
 
@@ -558,7 +566,7 @@ class Repository(models.Model):
                                   request):
         """Internal function for checking that a file exists.
 
-        This is called by get_file_eixsts if the file isn't already in the
+        This is called by get_file_exists if the file isn't already in the
         cache.
 
         This function is smart enough to check if the file exists in cache,
@@ -588,7 +596,17 @@ class Repository(models.Model):
                     revision,
                     base_commit_id=base_commit_id)
             else:
-                exists = self.get_scmtool().file_exists(path, revision)
+                tool = self.get_scmtool()
+                argspec = inspect.getargspec(tool.file_exists)
+
+                if argspec.keywords is None:
+                    warnings.warn('SCMTool.file_exists() must take keyword '
+                                  'arguments, signature for %s is deprecated.'
+                                  % tool.name, DeprecationWarning)
+                    exists = tool.file_exists(path, revision)
+                else:
+                    exists = tool.file_exists(path, revision,
+                                              base_commit_id=base_commit_id)
 
             checked_file_exists.send(sender=self,
                                      path=path,

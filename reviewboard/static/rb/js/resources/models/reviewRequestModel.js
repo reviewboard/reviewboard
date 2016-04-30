@@ -12,29 +12,33 @@
  * through reopen(), or even permanently destroyed by calling destroy().
  */
 RB.ReviewRequest = RB.BaseResource.extend({
-    defaults: _.defaults({
-        branch: null,
-        bugTrackerURL: null,
-        bugsClosed: null,
-        commitID: null,
-        closeDescription: null,
-        closeDescriptionRichText: false,
-        dependsOn: [],
-        description: null,
-        descriptionRichText: false,
-        draftReview: null,
-        lastUpdated: null,
-        localSitePrefix: null,
-        'public': null,
-        repository: null,
-        reviewURL: null,
-        state: null,
-        summary: null,
-        targetGroups: [],
-        targetPeople: [],
-        testingDone: null,
-        testingDoneRichText: false
-    }, RB.BaseResource.prototype.defaults),
+    defaults: function() {
+        return _.defaults({
+            approved: false,
+            approvalFailure: null,
+            branch: null,
+            bugTrackerURL: null,
+            bugsClosed: null,
+            commitID: null,
+            closeDescription: null,
+            closeDescriptionRichText: false,
+            dependsOn: [],
+            description: null,
+            descriptionRichText: false,
+            draftReview: null,
+            lastUpdated: null,
+            localSitePrefix: null,
+            'public': null,
+            repository: null,
+            reviewURL: null,
+            state: null,
+            summary: null,
+            targetGroups: [],
+            targetPeople: [],
+            testingDone: null,
+            testingDoneRichText: false
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     rspNamespace: 'review_request',
 
@@ -44,6 +48,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
     },
 
     attrToJsonMap: {
+        approvalFailure: 'approval_failure',
         bugsClosed: 'bugs_closed',
         closeDescription: 'close_description',
         closeDescriptionRichText: 'close_description_text_type',
@@ -58,6 +63,8 @@ RB.ReviewRequest = RB.BaseResource.extend({
     },
 
     deserializedAttrs: [
+        'approved',
+        'approvalFailure',
         'branch',
         'bugsClosed',
         'closeDescription',
@@ -412,5 +419,9 @@ RB.ReviewRequest = RB.BaseResource.extend({
 
     CLOSE_DISCARDED: 1,
     CLOSE_SUBMITTED: 2,
-    PENDING: 3
+    PENDING: 3,
+
+    VISIBILITY_VISIBLE: 1,
+    VISIBILITY_ARCHIVED: 2,
+    VISIBILITY_MUTED: 3
 });

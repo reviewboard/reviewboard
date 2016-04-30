@@ -4,6 +4,7 @@
 var BaseCommentView,
     DiffCommentView,
     FileAttachmentCommentView,
+    GeneralCommentView,
     ScreenshotCommentView,
     HeaderFooterCommentView;
 
@@ -21,7 +22,11 @@ function _getRawValueFieldsName() {
 BaseCommentView = Backbone.View.extend({
     tagName: 'li',
 
-    thumbnailTemplate: '',
+    thumbnailTemplate: null,
+
+    events: {
+        'click .delete-comment': '_deleteComment'
+    },
 
     editorTemplate: _.template([
         '<div class="edit-fields">',
@@ -30,13 +35,15 @@ BaseCommentView = Backbone.View.extend({
         '   <dl>',
         '    <dt>',
         '     <label for="<%= id %>">',
-        '      <a href="<%= userPageURL %>" class="user"><%- fullName %></a>',
-        '<% if (timestamp) { %>',
-        '      <span class="timestamp">',
-        '       <time class="timesince" datetime="<%= timestampISO %>">',
-        '<%= timestamp %></time> (<%= timestamp %>)',
-        '      </span>',
-        '<% } %>',
+        '      <%- commentText %>',
+
+        // The indentation is messy here to avoid having whitespace in the <a>.
+        '<a href="#" role="button" class="delete-comment"',
+        '   aria-label="<%- deleteCommentText %>"',
+        '   title="<%- deleteCommentText %>">',
+        '<span class="fa fa-trash-o" class="delete-comment"></span>',
+        '</a>',
+
         '     </label>',
         '    </dt>',
         '    <dd><pre id="<%= id %>" class="reviewtext rich-text" ',
@@ -51,6 +58,8 @@ BaseCommentView = Backbone.View.extend({
         ' </div>',
         '</div>'
     ].join('')),
+
+    _DELETE_COMMENT_TEXT: gettext('Are you sure you want to delete this comment?'),
 
     initialize: function() {
         this.$issueOpened = null;
@@ -68,7 +77,7 @@ BaseCommentView = Backbone.View.extend({
 
         this._hookViews = [];
 
-        _super(this).remove.call(this);
+        Backbone.View.prototype.remove.call(this);
     },
 
     /*
@@ -101,7 +110,9 @@ BaseCommentView = Backbone.View.extend({
 
             this.$editor.inlineEditor('submit');
         } else {
-            this.model.save(options);
+            this.model.save(_.extend({
+                attrs: ['forceTextType', 'includeTextTypes', 'extraData']
+            }, options));
         }
     },
 
@@ -110,22 +121,18 @@ BaseCommentView = Backbone.View.extend({
      */
     render: function() {
         var $editFields,
-            text = this.model.get('text'),
-            userSession = RB.UserSession.instance,
-            now = moment().zone(userSession.get('timezoneOffset'));
+            text = this.model.get('text');
 
         this.$el
             .addClass('draft')
             .append(this.renderThumbnail())
             .append($(this.editorTemplate({
-                fullName: userSession.get('fullName'),
+                deleteCommentText: gettext('Delete comment'),
+                commentText: gettext('Comment'),
                 id: _.uniqueId('draft_comment_'),
                 issueOpenedID: _.uniqueId('issue-opened'),
-                openAnIssueText: gettext('Open an issue'),
-                text: text,
-                timestamp: RB.FormatTimestamp(now),
-                timestampISO: now.format(),
-                userPageURL: userSession.get('userPageURL')
+                openAnIssueText: gettext('Open an Issue'),
+                text: text
             })))
             .find('time.timesince')
                 .timesince()
@@ -136,9 +143,19 @@ BaseCommentView = Backbone.View.extend({
             .change(_.bind(function() {
                 this.model.set('issueOpened',
                                this.$issueOpened.prop('checked'));
-                this.model.save({
-                    attrs: ['forceTextType', 'includeTextTypes', 'issueOpened']
-                });
+
+                if (!this.model.isNew()) {
+                    /*
+                     * We don't save the issueOpened attribute for unsaved
+                     * models because the comment won't exist yet. If we did,
+                     * clicking cancel when creating a new comment wouldn't
+                     * delete the comment.
+                     */
+                    this.model.save({
+                        attrs: ['forceTextType', 'includeTextTypes',
+                                'issueOpened']
+                    });
+                }
             }, this));
 
         $editFields = this.$('.edit-fields');
@@ -157,13 +174,25 @@ BaseCommentView = Backbone.View.extend({
             })))
             .on({
                 complete: _.bind(function(e, value) {
+                    var attrs = ['forceTextType', 'includeTextTypes',
+                                 'richText', 'text'];
+
+                    if (this.model.isNew()) {
+                        /*
+                         * If this is a new comment, we have to send whether or
+                         * not an issue was opened because toggling the
+                         * issue opened checkbox before it is completed won't
+                         * save the status to the server.
+                         */
+                        attrs.push('issueOpened');
+                    }
+
                     this.model.set({
                         text: value,
                         richText: this.textEditor.richText
                     });
                     this.model.save({
-                        attrs: ['forceTextType', 'includeTextTypes',
-                                'richText', 'text'],
+                        attrs: attrs
                     });
                 }, this)
             });
@@ -174,8 +203,12 @@ BaseCommentView = Backbone.View.extend({
                       this._updateRawValue);
         this._updateRawValue();
 
-        this.listenTo(this.model, 'change:text', this.renderText);
-        this.renderText(this.model, text);
+        this.listenTo(this.model, 'saved', this.renderText);
+        this.renderText();
+
+        this.listenTo(this.model, 'destroying', function() {
+            this.stopListening(this.model);
+        });
 
         RB.ReviewDialogCommentHook.each(function(hook) {
             var HookView = hook.get('viewType'),
@@ -198,23 +231,35 @@ BaseCommentView = Backbone.View.extend({
      * Renders the thumbnail for this comment.
      */
     renderThumbnail: function() {
+        if (this.thumbnailTemplate === null) {
+            return null;
+        }
+
         return $(this.thumbnailTemplate(this.model.attributes));
     },
 
     /*
      * Renders the text for this comment.
      */
-    renderText: function(model, text) {
-        var reviewRequest = this.model.get('parentObject').get('parentObject'),
-            normTextFields;
+    renderText: function() {
+        var reviewRequest = this.model.get('parentObject').get('parentObject');
 
         if (this.$editor) {
             RB.formatText(this.$editor, {
-                newText: text,
+                newText: this.model.get('text'),
                 richText: this.model.get('richText'),
                 isHTMLEncoded: true,
                 bugTrackerURL: reviewRequest.get('bugTrackerURL')
             });
+        }
+    },
+
+    /*
+     * Delete the comment associated with the model.
+     */
+    _deleteComment: function() {
+        if (confirm(this._DELETE_COMMENT_TEXT)) {
+            this.model.destroy();
         }
     },
 
@@ -301,9 +346,9 @@ FileAttachmentCommentView = BaseCommentView.extend({
     thumbnailTemplate: _.template([
         '<div class="file-attachment">',
         ' <span class="filename">',
-        '  <img src="<%- fileAttachment.iconURL %>" />',
         '  <a href="<%- reviewURL %>"><%- linkText %></a>',
         ' </span>',
+        ' <span class="diffrevision"><%- revisionsStr %></span>',
         ' <div class="thumbnail"><%= thumbnailHTML %></div>',
         '</div>'
     ].join('')),
@@ -312,10 +357,40 @@ FileAttachmentCommentView = BaseCommentView.extend({
      * Renders the thumbnail.
      */
     renderThumbnail: function() {
+        var fileAttachment = this.model.get('fileAttachment'),
+            diffAgainstFileAttachment =
+                this.model.get('diffAgainstFileAttachment'),
+            revision = fileAttachment.get('revision'),
+            revisionsStr;
+
+        if (!revision) {
+            /* This predates having a revision. Don't show anything. */
+            revisionsStr = '';
+        } else if (diffAgainstFileAttachment) {
+            revisionsStr = interpolate(
+                gettext('(Revisions %(revision1)s - %(revision2)s)'),
+                {
+                    revision1: diffAgainstFileAttachment.get('revision'),
+                    revision2: revision
+                },
+                true);
+        } else {
+            revisionsStr = interpolate(gettext('(Revision %s)'), [revision]);
+        }
+
         return $(this.thumbnailTemplate(_.defaults({
-            fileAttachment: this.model.get('fileAttachment').attributes
+            fileAttachment: this.model.get('fileAttachment').attributes,
+            revisionsStr: revisionsStr
         }, this.model.attributes)));
     }
+});
+
+
+/*
+ * Displays a view for general comments.
+ */
+GeneralCommentView = BaseCommentView.extend({
+    thumbnailTemplate: null
 });
 
 
@@ -358,15 +433,7 @@ HeaderFooterCommentView = Backbone.View.extend({
         '<div class="comment-text-field">',
         ' <dl>',
         '  <dt>',
-        '   <label for="<%= id %>">',
-        '    <a href="<%= userPageURL %>" class="user"><%- fullName %></a>',
-        '<% if (timestamp) { %>',
-        '    <span class="timestamp">',
-        '     <time class="timesince" datetime="<%= timestampISO %>">',
-        '<%= timestamp %></time> (<%= timestamp %>)',
-        '    </span>',
-        '<% } %>',
-        '   </label>',
+        '   <label for="<%= id %>"><%- commentText %></label>',
         '  </dt>',
         '  <dd><pre id="<%= id %>" class="reviewtext rich-text" ',
         '           data-rich-text="true"><%- text %></pre></dd>',
@@ -382,6 +449,7 @@ HeaderFooterCommentView = Backbone.View.extend({
         this.propertyName = options.propertyName;
         this.richTextPropertyName = options.richTextPropertyName;
         this.linkText = options.linkText;
+        this.commentText = options.commentText;
 
         this.$editor = null;
         this.textEditor = null;
@@ -395,20 +463,15 @@ HeaderFooterCommentView = Backbone.View.extend({
      * Renders the view.
      */
     render: function() {
-        var text = this.model.get(this.propertyName),
-            userSession = RB.UserSession.instance,
-            now = moment().zone(userSession.get('timezoneOffset'));
+        var text = this.model.get(this.propertyName);
 
         this.$el
             .addClass('draft')
             .append($(this.editorTemplate({
-                fullName: userSession.get('fullName'),
+                commentText: this.commentText,
                 id: this.propertyName,
                 linkText: this.linkText,
-                text: text || '',
-                timestamp: RB.FormatTimestamp(now),
-                timestampISO: now.format(),
-                userPageURL: userSession.get('userPageURL')
+                text: text || ''
             })))
             .find('time.timesince')
                 .timesince()
@@ -453,28 +516,18 @@ HeaderFooterCommentView = Backbone.View.extend({
                       this._updateRawValue);
         this._updateRawValue();
 
-        this.listenTo(this.model, 'change:' + this.propertyName,
-                      this.renderText);
-        this.renderText(this.model, text);
+        this.listenTo(this.model, 'saved', this.renderText);
+        this.renderText();
     },
 
     /*
      * Renders the text for this comment.
      */
-    renderText: function(model, text) {
+    renderText: function() {
         var reviewRequest = this.model.get('parentObject'),
-            normTextFields;
+            text = this.model.get(this.propertyName);
 
         if (this.$editor) {
-            normTextFields = RB.UserSession.instance.get('defaultUseRichText')
-                             ? this.model.get('markdownTextFields')
-                             : this.model.get('rawTextFields');
-
-            this.$editor.inlineEditor('option', {
-                hasRawValue: true,
-                rawValue: normTextFields[this.propertyName]
-            });
-
             if (text) {
                 this._$editorContainer.show();
                 this._$linkContainer.hide();
@@ -529,6 +582,10 @@ HeaderFooterCommentView = Backbone.View.extend({
         return false;
     },
 
+    _deleteComment: function() {
+        /* Headers and footers cannot be deleted. */
+    },
+
     _updateRawValue: function() {
         var rawValues;
 
@@ -562,9 +619,10 @@ RB.ReviewDialogView = Backbone.View.extend({
         ' <input id="id_shipit" type="checkbox" />',
         ' <label for="id_shipit"><%- shipItText %></label>',
         '</div>',
+        '<div class="review-dialog-hooks-container"></div>',
         '<div class="edit-field body-top"></div>',
         '<ul class="comments"></ul>',
-        '<div class="spinner"></div>',
+        '<div class="spinner"><span class="fa fa-spinner fa-pulse"></span></div>',
         '<div class="edit-field body-bottom"></div>'
     ].join('')),
 
@@ -581,6 +639,9 @@ RB.ReviewDialogView = Backbone.View.extend({
         this._$shipIt = null;
 
         this._commentViews = [];
+        this._hookViews = [];
+
+        _.bindAll(this, '_onAddCommentClicked');
 
         this._diffQueue = new RB.DiffFragmentQueueView({
             containerPrefix: 'review_draft_comment_container',
@@ -615,6 +676,19 @@ RB.ReviewDialogView = Backbone.View.extend({
             }));
         });
 
+        this._generalCommentsCollection = new RB.ResourceCollection([], {
+            model: RB.GeneralComment,
+            parentResource: this.model
+        });
+
+        this.listenTo(
+            this._generalCommentsCollection, 'add',
+            function(comment) {
+                this._renderComment(new GeneralCommentView({
+                    model: comment
+                }));
+            });
+
         this._screenshotCommentsCollection = new RB.ResourceCollection([], {
             model: RB.ScreenshotComment,
             parentResource: this.model
@@ -646,6 +720,27 @@ RB.ReviewDialogView = Backbone.View.extend({
     },
 
     /*
+     * Removes the dialog from the DOM.
+     *
+     * This will remove all the extension hook views from the dialog,
+     * and then remove the dialog itself.
+     */
+    remove: function() {
+        if (this._publishButton) {
+            this._publishButton.remove();
+            this._publishButton = null;
+        }
+
+        _.each(this._hookViews, function(hookView) {
+            hookView.remove();
+        });
+
+        this._hookViews = [];
+
+        _super(this).remove.call(this);
+    },
+
+    /*
      * Closes the review dialog.
      *
      * The dialog will be removed from the screen, and the "closed"
@@ -666,6 +761,8 @@ RB.ReviewDialogView = Backbone.View.extend({
      * the server will begin loading and rendering.
      */
     render: function() {
+        var $hooksContainer;
+
         this.$el.html(this.template({
             addHeaderText: gettext('Add header'),
             addFooterText: gettext('Add footer'),
@@ -678,12 +775,27 @@ RB.ReviewDialogView = Backbone.View.extend({
         this._$spinner = this.$('.spinner');
         this._$shipIt = this.$('#id_shipit');
 
+        $hooksContainer = this.$('.review-dialog-hooks-container');
+
+        RB.ReviewDialogHook.each(function(hook) {
+            var HookView = hook.get('viewType'),
+                hookView = new HookView({
+                    model: this.model
+                });
+
+            this._hookViews.push(hookView);
+
+            $hooksContainer.append(hookView.$el);
+            hookView.render();
+        }, this);
+
         this._bodyTopView = new HeaderFooterCommentView({
             model: this.model,
             el: this.$('.body-top'),
             propertyName: 'bodyTop',
             richTextPropertyName: 'bodyTopRichText',
-            linkText: gettext('Add header')
+            linkText: gettext('Add header'),
+            commentText: gettext('Header')
         });
 
         this._bodyBottomView = new HeaderFooterCommentView({
@@ -691,8 +803,15 @@ RB.ReviewDialogView = Backbone.View.extend({
             el: this.$('.body-bottom'),
             propertyName: 'bodyBottom',
             richTextPropertyName: 'bodyBottomRichText',
-            linkText: gettext('Add footer')
+            linkText: gettext('Add footer'),
+            commentText: gettext('Footer')
         });
+
+        /*
+         * Even if the model is already loaded, we may not have the right text
+         * type data. Force it to reload.
+         */
+        this.model.set('loaded', false);
 
         this.model.ready({
             data: this._queryData,
@@ -724,6 +843,9 @@ RB.ReviewDialogView = Backbone.View.extend({
 
                     this._loadComments();
                 }
+
+                this.listenTo(this.model, 'change:bodyBottom',
+                              this._handleEmptyReview);
             }
         }, this);
 
@@ -739,6 +861,7 @@ RB.ReviewDialogView = Backbone.View.extend({
      */
     _loadComments: function() {
         var collections = [
+            this._generalCommentsCollection,
             this._screenshotCommentsCollection,
             this._fileAttachmentCommentsCollection,
             this._diffCommentsCollection
@@ -756,12 +879,12 @@ RB.ReviewDialogView = Backbone.View.extend({
      * Properly set the view when the review is empty.
      */
     _handleEmptyReview: function() {
-        if (this._commentViews.length === 0) {
-            /*
-             * We only display the bottom textarea if we have
-             * comments. Otherwise, it's weird to have both
-             * textareas visible with nothing inbetween.
-             */
+        /*
+         * We only display the bottom textarea if we have comments or the user
+         * has previously set the bottom textarea -- we don't want the user to
+         * not be able to remove their text.
+         */
+        if (this._commentViews.length === 0 && !this.model.get('bodyBottom')) {
             this._bodyBottomView.$el.hide();
             this._bodyTopView.setLinkText(gettext('Add text'));
         }
@@ -804,6 +927,18 @@ RB.ReviewDialogView = Backbone.View.extend({
         this._setTextTypeAttributes(view.model);
 
         this._commentViews.push(view);
+
+        this.listenTo(view.model, 'destroyed', function() {
+            view.$el.fadeOut({
+                complete: _.bind(function() {
+                    view.remove();
+                    this._handleEmptyReview();
+                }, this)
+            });
+
+            this._commentViews = _.without(this._commentViews, view);
+        });
+
         view.$el.appendTo(this._$comments);
         view.render();
     },
@@ -828,11 +963,10 @@ RB.ReviewDialogView = Backbone.View.extend({
                 stretchY: true,
                 buttons: [
                     $('<input type="button"/>')
-                        .val(gettext('Publish Review'))
-                        .click(_.bind(function() {
-                            this._saveReview(true);
-                            return false;
-                        }, this)),
+                        .val(gettext('Add Comment'))
+                        .click(this._onAddCommentClicked),
+
+                    $('<div id="review-form-publish-split-btn-container" />'),
 
                     $('<input type="button"/>')
                         .val(gettext('Discard Review'))
@@ -851,9 +985,57 @@ RB.ReviewDialogView = Backbone.View.extend({
             .trigger('ready');
 
         /* Must be done after the dialog is rendered. */
+
+        this._publishButton = new RB.SplitButtonView({
+            el: $('#review-form-publish-split-btn-container'),
+            text: gettext('Publish Review'),
+            click: _.bind(function() {
+                this._saveReview(true);
+                return false;
+            }, this),
+            direction: 'up',
+            zIndex: $('#review-form-modalbox').css('zIndex'),
+            alternatives: [
+                {
+                    text: gettext('... to Submitter Only'),
+                    click: _.bind(function() {
+                        this._saveReview(true, {
+                            publishToSubmitterOnly: true
+                        });
+                        this.close();
+                        return false;
+                    }, this)
+                }
+            ]
+        });
+
+        this._publishButton.render();
+
         this._$buttons = this._$dlg.modalBox('buttons');
     },
 
+    /*
+     * Handler for the Add Comment button.
+     *
+     * Returns:
+     *     boolean:
+     *     This always returns false to indicate that the dialog should not
+     *     close.
+     */
+    _onAddCommentClicked: function() {
+        var comment = this.model.createGeneralComment(
+            undefined,
+            RB.UserSession.instance.get('commentsOpenAnIssue')
+        );
+
+        this._generalCommentsCollection.add(comment);
+        this._bodyBottomView.$el.show();
+        this._commentViews[this._commentViews.length - 1]
+            .$editor
+            .inlineEditor('startEdit');
+
+        return false;
+    },
 
     /*
      * Handler for the Discard Review button.
@@ -898,8 +1080,14 @@ RB.ReviewDialogView = Backbone.View.extend({
      * If requested, this will also publish the review (saving with
      * public=true).
      */
-    _saveReview: function(publish) {
+    _saveReview: function(publish, options) {
         var madeChanges = false;
+
+        options = options || {};
+
+        if (publish && options.publishToSubmitterOnly) {
+            this.model.set('publishToSubmitterOnly', true);
+        }
 
         this._$buttons.prop('disabled');
 
@@ -923,7 +1111,8 @@ RB.ReviewDialogView = Backbone.View.extend({
         _.each(this._commentViews, maybeSave);
 
         $.funcQueue('reviewForm').add(function() {
-            var shipIt = this._$shipIt.prop('checked');
+            var shipIt = this._$shipIt.prop('checked'),
+                saveFunc = publish ? this.model.publish : this.model.save;
 
             if (this.model.get('public') === publish &&
                 this.model.get('shipIt') === shipIt) {
@@ -931,13 +1120,12 @@ RB.ReviewDialogView = Backbone.View.extend({
             } else {
                 madeChanges = true;
                 this.model.set({
-                    'public': publish,
                     shipIt: shipIt
                 });
 
-                this.model.save({
+                saveFunc.call(this.model, {
                     attrs: ['public', 'shipIt', 'forceTextType',
-                            'includeTextTypes'],
+                            'includeTextTypes', 'publishToSubmitterOnly'],
                     success: function() {
                         $.funcQueue('reviewForm').next();
                     },

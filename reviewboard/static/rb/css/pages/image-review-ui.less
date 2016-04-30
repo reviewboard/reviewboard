@@ -21,9 +21,19 @@
 
 .image-review-ui {
   background: white;
-  padding: 2em;
+  border-radius: 0 0 @box-border-radius @box-border-radius;
   position: relative;
-  .border-radius(0 0 @box-border-radius @box-border-radius);
+
+  .review-ui-header {
+    table {
+      width: 100%;
+    }
+  }
+
+  .review-ui-error {
+    text-align: center;
+    padding: 2em;
+  }
 
   .review-ui-inline & {
     padding: 0;
@@ -156,6 +166,21 @@
 
       .selection-flag {
         background: #aceb6f;
+      }
+
+      &.can-update-bound {
+        .selection-flag {
+          cursor: move;
+        }
+        .resize-icon {
+          background-color: #aceb6f;
+          bottom: 0;
+          right: 0;
+          position: absolute;
+          height: 0.5em;
+          width: 0.5em;
+          cursor: se-resize;
+        }
       }
     }
   }

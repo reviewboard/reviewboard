@@ -1,5 +1,11 @@
 from __future__ import unicode_literals
 
+import os
+
+from reviewboard import VERSION
+
+
+ROOT_PATH = os.path.dirname(__file__)
 
 # Database backend.  Any supported django database engine should work.
 DATABASES = {

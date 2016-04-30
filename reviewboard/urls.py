@@ -9,6 +9,7 @@ from django.views.generic import TemplateView
 from reviewboard.datagrids.urls import urlpatterns as datagrid_urlpatterns
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.hostingsvcs.urls import urlpatterns as hostingsvcs_urlpatterns
+from reviewboard.search.urls import urlpatterns as search_urlpatterns
 from reviewboard.webapi.resources import resources
 
 
@@ -61,7 +62,7 @@ urlpatterns += extension_manager.get_url_patterns()
 # Add static media if running in DEBUG mode on a non-production host.
 if settings.DEBUG and not settings.PRODUCTION:
     urlpatterns += static(settings.STATIC_DIRECTORY,
-                          view='django.contrib.staticfiles.views.serve',
+                          view='pipeline.views.serve_static',
                           show_indexes=True)
     urlpatterns += static(settings.MEDIA_DIRECTORY,
                           document_root=settings.MEDIA_ROOT,
@@ -71,7 +72,12 @@ if settings.DEBUG and not settings.PRODUCTION:
         '',
 
         url(r'^js-tests/$',
-            TemplateView.as_view(template_name='js/tests.html')),
+            TemplateView.as_view(template_name='js/tests.html'),
+            name='js-tests'),
+
+        url(r'^js-tests/extensions/$',
+            TemplateView.as_view(template_name='js/extension_tests.html'),
+            name='js-extensions-tests'),
     )
 
 user_urlpatterns = patterns(
@@ -79,7 +85,7 @@ user_urlpatterns = patterns(
 
     # User info box
     url(r'^infobox/$',
-        'reviewboard.reviews.views.user_infobox', name="user-infobox"),
+        'reviewboard.reviews.views.user_infobox', name='user-infobox'),
 
     # User file attachments
     url(r'file-attachments/(?P<file_attachment_uuid>[a-zA-Z0-9\-]+)/$',
@@ -90,18 +96,21 @@ user_urlpatterns = patterns(
 localsite_urlpatterns = patterns(
     '',
 
-    url(r'^$', 'reviewboard.reviews.views.root', name="root"),
+    url(r'^$', 'reviewboard.reviews.views.root', name='root'),
 
     (r'^api/', include(resources.root.get_url_patterns())),
     (r'^r/', include('reviewboard.reviews.urls')),
 
     # Support
     url(r'^support/$',
-        'reviewboard.admin.views.support_redirect', name="support"),
+        'reviewboard.admin.views.support_redirect', name='support'),
 
     # Users
-    (r"^users/(?P<username>[A-Za-z0-9@_\-\.'\+]+)/",
+    (r'^users/(?P<username>[A-Za-z0-9@_\-\.\'\+]+)/',
      include(user_urlpatterns)),
+
+    # Search
+    url(r'^search/', include(search_urlpatterns)),
 )
 
 localsite_urlpatterns += datagrid_urlpatterns

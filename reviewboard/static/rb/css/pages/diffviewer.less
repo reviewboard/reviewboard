@@ -31,9 +31,14 @@
   width: 100%;
   overflow: hidden;
 
+  // This fixes an annoying 1px bright line between the bottom of the
+  // side-by-side diff view and the bottom border of the roundrect it's
+  // contained within.
+  margin-bottom: -1px;
+
   &.diff-error {
     td {
-      background: #fff6a6;
+      background: @diff-error-color;
       padding: 1em;
 
       a {
@@ -123,7 +128,7 @@
   }
 
   pre {
-    .pre-wrap;
+    white-space: pre-wrap;
     font-size: 8pt;
     line-height: 140%;
     margin: 0;
@@ -131,11 +136,11 @@
   }
 
   .indent {
-    color: #CCDDCC;
+    color: #A3CCA3;
   }
 
   .unindent {
-    color: #DDCCCC;
+    color: #CCA3A3;
   }
 
   .moved-row-start {
@@ -175,8 +180,8 @@
 
   .moved-to-start, .moved-from-start {
     .moved-flag {
+      border-radius: 0, 8px, 8px, 0;
       padding: 3px 1em 3px 0.5em;
-      .border-radius(0, 8px, 8px, 0);
     }
   }
 
@@ -211,6 +216,7 @@
       }
 
       td {
+        padding: 1px;
         vertical-align: top;
 
         .collapse-floater {
@@ -238,12 +244,15 @@
       }
 
       th {
-        background: @diff-linenum-color;
+        color: @diff-linenum-color;
+        font-weight: normal;
+        background: @diff-linenum-background-color;
+        cursor: pointer;
         padding-left: 1em;
         padding-right: @linenum-padding-right;
         text-align: right;
         vertical-align: top;
-        cursor: pointer;
+
         /*
          * The minimum width is calculated so that the th is always as wide as
          * the expand by 20 lines button, which is 28px wide.
@@ -268,6 +277,11 @@
     &.deleted td {
       background: @diff-delete-color;
       padding: 1em;
+
+      a {
+        color: #0000FF;
+        text-decoration: underline;
+      }
     }
 
     &.new-empty-file td {
@@ -295,7 +309,7 @@
 
       .inline-actions-right, .inline-actions-left {
         li {
-          .border-radius(0 0 0 0);
+          border-radius: 0;
 
           &:hover {
             background-color: @inline-actions-hover-bg;
@@ -457,6 +471,7 @@
     }
 
     .filename-row th {
+      overflow: hidden;
       padding: 8px;
 
       #gradient > .vertical-three-colors(#FFFFFF, @diff-file-color, 50%, @diff-file-color);
@@ -467,6 +482,10 @@
       font-size: 100%;
       font-weight: normal;
       padding: 8px 0;
+
+      &.revision-col {
+        overflow: hidden;
+      }
 
       .rb-icon {
         vertical-align: text-top;
@@ -484,7 +503,7 @@
 }
 
 .commentflag {
-  .border-radius(@comment-flag-border-radius);
+  border-radius: @comment-flag-border-radius;
   height: 20px;
   left: -0.7em;
   margin-top: -0.3em;
@@ -492,8 +511,8 @@
   width: 1.6em;
 
   .commentflag-shadow {
-    .border-radius(@comment-flag-border-radius);
-    .opacity(10);
+    border-radius: @comment-flag-border-radius;
+    opacity: 0.1;
     background-color: black;
     border: 1px solid black;
     bottom: 0;
@@ -505,8 +524,8 @@
   }
 
   .commentflag-inner {
-    .border-radius(@comment-flag-border-radius);
-    .opacity(95);
+    border-radius: @comment-flag-border-radius;
+    opacity: 0.95;
     background-color: @comment-flag-color;
     border: 1px solid @comment-flag-border-color;
     bottom: 0.2em;
@@ -585,25 +604,19 @@
   }
 
   .diff-box {
-    .border-radius(@box-border-radius);
     border: 1px @diff-border-color solid;
+    border-radius: @box-border-radius;
+    box-shadow: @box-shadow;
     overflow: hidden;
-    .box-shadow(@box-shadow);
   }
 
   .diff-highlight {
-    position: absolute;
-    left: 0;
-    top: 0;
-  }
-
-  .diff-highlight-border {
-    background-color: black;
+    background-color: rgba(0, 0, 255, 0.2);
     display: block;
     font-size: 0; /* Prevents the 13px minimum height in IE6 */
     position: absolute;
-    width: 2px;
-    height: 2px;
+    left: 0;
+    top: 0;
   }
 }
 
@@ -623,15 +636,6 @@
     tr {
       &:first-child td {
         border-top: 0;
-      }
-
-      &.loading .diff-file-icon {
-        background-image: url("@{img_base}/spinner.gif");
-        background-position: center center;
-        background-repeat: no-repeat;
-        min-width: @icon-size;
-        width: @icon-size;
-        height: (@icon-size + @icon-offset);
       }
     }
 
@@ -654,6 +658,11 @@
         .rb-icon {
           width: @icon-size;
           height: @icon-size;
+        }
+
+        .fa-spinner {
+          font-size: @icon-size - 4px;
+          margin: 2px;
         }
       }
 
@@ -690,11 +699,11 @@
         text-align: right;
 
         a {
+          border-radius: 50%;
           display: inline-block;
           margin: 3px 2px 0 2px;
           width: 8px;
           height: 8px;
-          .border-radius(50%);
 
           &.insert {
             background-color: @diff-insert-dot-color;
@@ -722,7 +731,8 @@
 
   &.loading {
     #diff_index {
-      background: white url("@{img_base}/spinner.gif") no-repeat @box-padding @box-padding;
+      background: white;
+      font-size: 16px;
       height: 16px;
       padding: @box-padding;
     }
@@ -747,7 +757,7 @@
 
 .revision-selector-grabbed,
 .revision-selector-grabbed * {
-  .grabbing-cursor-important;
+  cursor: grabbing !important;
 }
 
 .revision-selector {
@@ -780,7 +790,7 @@
     position: absolute;
     top: -9px;
     z-index: 2;
-    .grab-cursor;
+    cursor: grab;
   }
 
   .revision-selector-range {

@@ -47,6 +47,9 @@ class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
         else:
             self.assertEqual(item_rsp['body_bottom_text_type'], 'plain')
 
+        self.assertEqual(item_rsp['absolute_url'],
+                         self.base_url + review.get_absolute_url())
+
     #
     # HTTP GET tests
     #
@@ -218,7 +221,7 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
 
         self._testHttpCaching(
             get_review_item_url(review_request, review.pk),
-            check_last_modified=True)
+            check_etags=True)
 
     #
     # HTTP PUT tests
@@ -235,9 +238,7 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
         return (get_review_item_url(review_request, review.pk,
                                     local_site_name),
                 review_item_mimetype,
-                {
-                    'body_top': 'New body top',
-                },
+                {'body_top': 'New body top'},
                 review,
                 [])
 

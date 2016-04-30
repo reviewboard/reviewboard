@@ -2,11 +2,28 @@
  * A view for selecting a repository from a collection.
  */
 RB.RepositorySelectionView = RB.CollectionView.extend({
-    className: 'repository-selector',
+    tagName: 'ul',
+    className: 'repository-selector page-sidebar-items',
     itemViewType: RB.RepositoryView,
 
+    template: _.template([
+        '<li class="section">',
+        ' <div class="page-sidebar-row">',
+        '  <h3 class="label"><%- repositoriesLabel %></h3>',
+        ' </div>',
+        ' <ul>',
+        '  <li>',
+        '   <div class="search-icon-wrapper">',
+        '    <span class="fa fa-search"></span>',
+        '    <input class="repository-search" ',
+        '           placeholder="<%- filterLabel %>" />',
+        '   </div>',
+        '  </li>',
+        ' </ul>',
+        '</li>'
+    ].join('')),
+
     events: {
-        'click .repository-search-icon': '_onSearchClicked',
         'input .repository-search': '_onSearchChanged'
     },
 
@@ -28,26 +45,35 @@ RB.RepositorySelectionView = RB.CollectionView.extend({
     render: function() {
         _super(this).render.apply(this, arguments);
 
-        this._$header = $('<h3>')
-            .text(gettext('Repositories'))
-            .prependTo(this.$el);
+        this.$el.prepend(this.template({
+            repositoriesLabel: gettext('Repositories'),
+            filterLabel: gettext('Filter')
+        }));
 
-        this._$searchIconWrapper = $('<div/>')
-            .addClass('search-icon-wrapper')
-            .prependTo(this.$el);
+        this._$searchIconWrapper = this.$('.search-icon-wrapper');
+        this._$searchIcon = this._$searchIconWrapper.find(
+            '.repository-search-icon');
+        this._$searchBox = this.$('.repository-search');
 
-        this._$searchIcon = $('<div/>')
-            .addClass('rb-icon rb-icon-search repository-search-icon')
-            .prependTo(this._$searchIconWrapper);
-
-        this._$searchBox = $('<input/>')
-            .addClass('repository-search')
-            .prependTo(this.$el);
-
-        this._iconOffset = this.$el.innerWidth() - this._$searchIcon.outerWidth(true);
-        this._$searchIconWrapper.css('left', this._iconOffset);
+        this._iconOffset = this.$el.innerWidth() -
+                           this._$searchIcon.outerWidth(true);
 
         return this;
+    },
+
+    /*
+     * Unselect a repository.
+     */
+    unselect: function() {
+        _.each(this.views, function(view) {
+            if (view.model === this._selected) {
+                view.$el.removeClass('active');
+            }
+        }, this);
+
+        this._selected = null;
+
+        this.trigger('selected', null);
     },
 
     /*
@@ -61,62 +87,13 @@ RB.RepositorySelectionView = RB.CollectionView.extend({
 
         _.each(this.views, function(view) {
             if (view.model === item) {
-                view.$el.addClass('selected');
+                view.$el.addClass('active');
             } else {
-                view.$el.removeClass('selected');
+                view.$el.removeClass('active');
             }
         });
 
         this.trigger('selected', item);
-    },
-
-    /*
-     * Callback for when the search icon is clicked.
-     *
-     * Toggles on/off the search bar.
-     */
-    _onSearchClicked: function() {
-        var parentWidth = this.$el.innerWidth(),
-            $searchBox = this._$searchBox,
-            searchBoxRightEdge = ($searchBox.position().left + $searchBox.outerWidth()),
-            searchBoxRightMargin = parentWidth - searchBoxRightEdge,
-            animationSpeedMS = 200;
-
-        this._searchActive = !this._searchActive;
-
-        if (this._searchActive) {
-            this._$searchIconWrapper.animate({
-                left: '0px'
-            }, animationSpeedMS);
-            this._$searchBox
-                .css('visibility', 'visible')
-                .animate({
-                    width: this._iconOffset - (searchBoxRightMargin * 2)
-                }, {
-                    duration: animationSpeedMS,
-                    complete: function() {
-                        $searchBox.focus();
-                    }
-                });
-            this._$header.animate({
-                width: 0
-            }, animationSpeedMS);
-        } else {
-            this._$header.animate({
-                width: '100%'
-            }, animationSpeedMS);
-            this._$searchIconWrapper.animate({
-                left: this._iconOffset
-            }, animationSpeedMS);
-            this._$searchBox.animate({
-                width: 0
-            }, {
-                duration: animationSpeedMS,
-                complete: function() {
-                    $searchBox.css('visibility', 'hidden');
-                }
-            });
-        }
     },
 
     /*

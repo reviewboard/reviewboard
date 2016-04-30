@@ -29,7 +29,8 @@ RB.DiffFileIndexView = Backbone.View.extend({
      * Renders the view to the page.
      */
     render: function() {
-        this._$itemsTable = $('<table/>').appendTo(this.el);
+        this.$el.empty();
+        this._$itemsTable = $('<table/>').appendTo(this.$el);
         this._$items = this.$('tr');
 
         // Add the files from the collection
@@ -45,7 +46,9 @@ RB.DiffFileIndexView = Backbone.View.extend({
         ' if (deleted) { print(" deleted-file"); }',
         ' if (destFilename !== depotFilename) { print(" renamed-file"); }',
         ' %>">',
-        ' <td class="diff-file-icon"></td>',
+        ' <td class="diff-file-icon">',
+        '  <span class="fa fa-spinner fa-pulse"></span>',
+        ' </td>',
         ' <td class="diff-file-info">',
         '  <a href="#<%- index %>"><%- destFilename %></a>',
         '  <% if (destFilename !== depotFilename) { %>',
@@ -107,8 +110,12 @@ RB.DiffFileIndexView = Backbone.View.extend({
      * icon.
      */
     _renderDiffError: function($item) {
-        $('<div class="rb-icon rb-icon-warning"/>')
-            .appendTo($item.find('.diff-file-icon'));
+        var $fileIcon = $item.find('.diff-file-icon');
+
+        $fileIcon
+            .html('<div class="rb-icon rb-icon-warning" />')
+            .attr('title',
+                  gettext('There was an error loading this diff. See the details below.'));
     },
 
     /*
@@ -123,7 +130,10 @@ RB.DiffFileIndexView = Backbone.View.extend({
             numInserts = 0,
             numReplaces = 0,
             chunksList = [],
-            iconView;
+            iconView,
+            $fileIcon = $item.find('.diff-file-icon'),
+            tooltip = '',
+            tooltipParts = [];
 
         if (fileAdded) {
             numInserts = 1;
@@ -163,8 +173,39 @@ RB.DiffFileIndexView = Backbone.View.extend({
             numReplaces: numReplaces,
             totalLines: linesEqual + numDeletes + numInserts + numReplaces
         });
-        iconView.$el.appendTo($item.find('.diff-file-icon'));
+        $fileIcon
+            .empty()
+            .append(iconView.$el);
         iconView.render();
+
+        /* Add tooltip for icon */
+        if (fileAdded) {
+            tooltip = gettext('New file');
+        } else if (fileDeleted) {
+            tooltip = gettext('Deleted file');
+        } else {
+            if (numInserts > 0) {
+                tooltipParts.push(interpolate(
+                    ngettext('%s new line', '%s new lines', numInserts),
+                    [numInserts]));
+            }
+
+            if (numReplaces > 0) {
+                tooltipParts.push(interpolate(
+                    ngettext('%s line changed', '%s lines changed', numReplaces),
+                    [numReplaces]));
+            }
+
+            if (numDeletes > 0) {
+                tooltipParts.push(interpolate(
+                    ngettext('%s line removed', '%s lines removed', numDeletes),
+                    [numDeletes]));
+            }
+
+            tooltip = tooltipParts.join(', ');
+        }
+
+        $fileIcon.attr('title', tooltip);
 
         this.listenTo(diffReviewableView, 'chunkDimmed chunkUndimmed',
                       function(chunkID) {

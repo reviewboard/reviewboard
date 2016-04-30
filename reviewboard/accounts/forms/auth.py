@@ -16,6 +16,8 @@ from reviewboard.admin.checks import get_can_enable_dns, get_can_enable_ldap
 
 
 class ActiveDirectorySettingsForm(SiteSettingsForm):
+    """A form for configuring the Active Directory authentication backend."""
+
     auth_ad_domain_name = forms.CharField(
         label=_("Domain name"),
         help_text=_("Enter the domain name to use, (ie. example.com). This "
@@ -69,6 +71,7 @@ class ActiveDirectorySettingsForm(SiteSettingsForm):
         widget=forms.TextInput(attrs={'size': '40'}))
 
     def load(self):
+        """Load the data for the form."""
         can_enable_dns, reason = get_can_enable_dns()
 
         if not can_enable_dns:
@@ -94,6 +97,8 @@ class ActiveDirectorySettingsForm(SiteSettingsForm):
 
 
 class StandardAuthSettingsForm(SiteSettingsForm):
+    """A form for configuring the builtin authentication backend."""
+
     auth_enable_registration = forms.BooleanField(
         label=_("Enable registration"),
         help_text=_("Allow users to register new accounts."),
@@ -107,7 +112,7 @@ class StandardAuthSettingsForm(SiteSettingsForm):
               'will need to go <a href="%(register_url)s">here</A> to '
               'register an account and type in your new keys below.')
             % {
-                'recaptcha_url': 'http://www.recaptcha.net/',
+                'recaptcha_url': 'http://www.google.com/recaptcha',
                 'register_url': 'https://www.google.com/recaptcha/admin'
                                 '#createsite',
             }),
@@ -124,7 +129,7 @@ class StandardAuthSettingsForm(SiteSettingsForm):
         widget=forms.TextInput(attrs={'size': '60'}))
 
     def clean_recaptcha_public_key(self):
-        """Validates that the reCAPTCHA public key is specified if needed."""
+        """Validate that the reCAPTCHA public key is specified if needed."""
         key = self.cleaned_data['recaptcha_public_key'].strip()
 
         if self.cleaned_data['auth_registration_show_captcha'] and not key:
@@ -133,7 +138,7 @@ class StandardAuthSettingsForm(SiteSettingsForm):
         return key
 
     def clean_recaptcha_private_key(self):
-        """Validates that the reCAPTCHA private key is specified if needed."""
+        """Validate that the reCAPTCHA private key is specified if needed."""
         key = self.cleaned_data['recaptcha_private_key'].strip()
 
         if self.cleaned_data['auth_registration_show_captcha'] and not key:
@@ -145,7 +150,27 @@ class StandardAuthSettingsForm(SiteSettingsForm):
         title = _('Basic Authentication Settings')
 
 
+class HTTPBasicSettingsForm(SiteSettingsForm):
+    """A form for configuring the HTTP Digest authentication backend."""
+
+    auth_digest_file_location = forms.CharField(
+        label=_(".htpasswd File location"),
+        help_text=_("Location of the .htpasswd file which "
+                    "stores the usernames and passwords in digest format"),
+        widget=forms.TextInput(attrs={'size': '60'}))
+
+    auth_digest_realm = forms.CharField(
+        label=_("HTTP Digest Realm"),
+        help_text=_("Realm used for HTTP Digest authentication"),
+        widget=forms.TextInput(attrs={'size': '40'}))
+
+    class Meta:
+        title = _('HTTP Digest Authentication Settings')
+
+
 class LDAPSettingsForm(SiteSettingsForm):
+    """A form for configuring the LDAP authentication backend."""
+
     # TODO: Invent a URIField and use it.
     auth_ldap_uri = forms.CharField(
         label=_("LDAP Server"),
@@ -234,6 +259,7 @@ class LDAPSettingsForm(SiteSettingsForm):
         required=False)
 
     def load(self):
+        """Load the data for the form."""
         can_enable_ldap, reason = get_can_enable_ldap()
 
         if not can_enable_ldap:
@@ -259,6 +285,13 @@ class LDAPSettingsForm(SiteSettingsForm):
 
 
 class LegacyAuthModuleSettingsForm(SiteSettingsForm):
+    """A form for configuring old-style custom authentication backends.
+
+    Newer authentication backends are registered via the extensions framework,
+    but there used to be a method by which users just put in a list of python
+    module paths. This form allows that configuration to be edited.
+    """
+
     custom_backends = forms.CharField(
         label=_("Backends"),
         help_text=_('A comma-separated list of old-style custom auth '
@@ -266,12 +299,14 @@ class LegacyAuthModuleSettingsForm(SiteSettingsForm):
         widget=forms.TextInput(attrs={'size': '40'}))
 
     def load(self):
+        """Load the data for the form."""
         self.fields['custom_backends'].initial = \
             ', '.join(self.siteconfig.get('auth_custom_backends'))
 
         super(LegacyAuthModuleSettingsForm, self).load()
 
     def save(self):
+        """Save the form."""
         self.siteconfig.set(
             'auth_custom_backends',
             re.split(r',\s*', self.cleaned_data['custom_backends']))
@@ -284,6 +319,8 @@ class LegacyAuthModuleSettingsForm(SiteSettingsForm):
 
 
 class NISSettingsForm(SiteSettingsForm):
+    """A form for configuring the NIS authentication backend."""
+
     auth_nis_email_domain = forms.CharField(
         label=_("E-Mail Domain"),
         widget=forms.TextInput(attrs={'size': '40'}))
@@ -293,6 +330,8 @@ class NISSettingsForm(SiteSettingsForm):
 
 
 class X509SettingsForm(SiteSettingsForm):
+    """A form for configuring the X509 certificate authentication backend."""
+
     auth_x509_username_field = forms.ChoiceField(
         label=_("Username Field"),
         choices=(
@@ -325,7 +364,7 @@ class X509SettingsForm(SiteSettingsForm):
         required=False)
 
     def clean_auth_x509_username_regex(self):
-        """Validates that the specified regular expression is valid."""
+        """Validate that the specified regular expression is valid."""
         regex = self.cleaned_data['auth_x509_username_regex']
 
         try:
@@ -345,7 +384,18 @@ class AuthenticationForm(DjangoAuthenticationForm):
     This extends Django's built-in AuthenticationForm implementation to allow
     users to specify their e-mail address in place of their username.
     """
+
+    username = forms.CharField(
+        label=_("Username"),
+        widget=forms.TextInput(attrs={'autofocus': 'autofocus'}))
+
     def clean_username(self):
+        """Validate the 'username' field.
+
+        In case the given text is not a user found on the system, attempt a
+        look-up using it as an e-mail address and change the user-entered text
+        so that login can succeed.
+        """
         username = self.cleaned_data.get('username')
 
         if not User.objects.filter(username=username).exists():

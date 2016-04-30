@@ -9,12 +9,14 @@
  * Other resource models are expected to extend this. In particular, they
  * should generally be extending toJSON() and parse().
  */
-RB.BaseResource = Backbone.Model.extend({
-    defaults: {
-        extraData: {},
-        links: null,
-        loaded: false,
-        parentObject: null
+RB.BaseResource = Backbone.Model.extend(_.defaults({
+    defaults: function() {
+        return {
+            extraData: {},
+            links: null,
+            loaded: false,
+            parentObject: null
+        };
     },
 
     /* The key for the namespace for the object's payload in a response. */
@@ -30,7 +32,14 @@ RB.BaseResource = Backbone.Model.extend({
     /* The list of fields to expand in resource payloads. */
     expandedFields: [],
 
-    /* Extra query arguments for GET requests. */
+    /*
+     * Extra query arguments for GET requests.
+     *
+     * This may also be a function that returns the extra query arguments.
+     *
+     * These values can be overridden by the caller when making a request.
+     * They function as defaults for the queries.
+     */
     extraQueryArgs: {},
 
     /* Whether or not extra data can be associated on the resource. */
@@ -58,6 +67,12 @@ RB.BaseResource = Backbone.Model.extend({
 
     /* Special deserializer functions called in parseResourceData(). */
     deserializers: {},
+
+    initialize: function() {
+        if (this.supportsExtraData) {
+            this._setupExtraData();
+        }
+    },
 
     /*
      * Returns the URL for this resource's instance.
@@ -120,10 +135,10 @@ RB.BaseResource = Backbone.Model.extend({
 
         options = options || {};
 
-        success = options.ready ? _.bind(options.ready, context)
-                                : undefined;
-        error = options.error ? _.bind(options.error, context)
-                              : undefined;
+        success = _.isFunction(options.ready) ? _.bind(options.ready, context)
+                                              : undefined;
+        error = _.isFunction(options.error) ? _.bind(options.error, context)
+                                            : undefined;
 
         if (this.get('loaded')) {
             // We already have data--just call the callbacks
@@ -133,6 +148,7 @@ RB.BaseResource = Backbone.Model.extend({
         } else if (!this.isNew()) {
             // Fetch data from the server
             this.fetch({
+                data: options.data,
                 success: success,
                 error: error
             });
@@ -257,7 +273,7 @@ RB.BaseResource = Backbone.Model.extend({
     save: function(options, context) {
         options = options || {};
 
-        this.trigger('saving');
+        this.trigger('saving', options);
 
         this.ready({
             ready: function() {
@@ -307,7 +323,7 @@ RB.BaseResource = Backbone.Model.extend({
                     options.success.apply(context, arguments);
                 }
 
-                this.trigger('saved');
+                this.trigger('saved', options);
             }, this),
 
             error: _.bind(function() {
@@ -315,7 +331,7 @@ RB.BaseResource = Backbone.Model.extend({
                     options.error.apply(context, arguments);
                 }
 
-                this.trigger('saveFailed');
+                this.trigger('saveFailed', options);
             }, this)
         }, options);
 
@@ -369,10 +385,7 @@ RB.BaseResource = Backbone.Model.extend({
         _.each(_.zip(this.payloadFileKeys, files, fileReaders), function(data) {
             var key = data[0],
                 file = data[1],
-                reader = data[2],
-                fileBlobLen,
-                fileBlob,
-                i;
+                reader = data[2];
 
             if (!file || !reader) {
                 return;
@@ -384,12 +397,7 @@ RB.BaseResource = Backbone.Model.extend({
             blob.push('Content-Type: ' + file.type + '\r\n');
             blob.push('\r\n');
 
-            fileBlob = new Uint8Array(reader.result);
-            fileBlobLen = fileBlob.length;
-
-            for (i = 0; i < fileBlobLen; i++) {
-                blob.push(String.fromCharCode(fileBlob[i]));
-            }
+            blob.push(reader.result);
 
             blob.push('\r\n');
         });
@@ -409,26 +417,10 @@ RB.BaseResource = Backbone.Model.extend({
         blob.push('--' + boundary + '--\r\n\r\n');
 
         Backbone.Model.prototype.save.call(this, {}, _.extend({
-            data: blob.join(''),
+            data: new Blob(blob),
             processData: false,
             contentType: 'multipart/form-data; boundary=' + boundary,
-            xhr: this._binaryXHR
         }, options));
-    },
-
-    /*
-     * Builds a binary-capable XHR.
-     *
-     * Since we must send files as blob data, and not all XHR implementations
-     * do this by default, we must override the XHR and change which send
-     * function it will use.
-     */
-    _binaryXHR: function() {
-        var xhr = $.ajaxSettings.xhr();
-
-        xhr.send = xhr.sendAsBinary;
-
-        return xhr;
     },
 
     /*
@@ -447,7 +439,7 @@ RB.BaseResource = Backbone.Model.extend({
             destroyObject = _.bind(this._destroyObject,
                                    this, options, context);
 
-        this.trigger('destroying');
+        this.trigger('destroying', options);
 
         if (!this.isNew() && parentObject) {
             /*
@@ -512,28 +504,28 @@ RB.BaseResource = Backbone.Model.extend({
      * of the object on success.
      */
     _finishDestroy: function(options, context) {
-        var self = this,
-            parentObject = this.get('parentObject');
+        var parentObject = this.get('parentObject');
 
         Backbone.Model.prototype.destroy.call(this, _.defaults({
             wait: true,
-            success: function() {
+            success: _.bind(function() {
                 /*
                  * Reset the object so it's new again, but with the same
                  * parentObject.
                  */
-                self.set(_.result(self, 'defaults'));
-                self.set({
-                    id: null,
-                    parentObject: parentObject
-                });
+                this.set(_.defaults(
+                    {
+                        id: null,
+                        parentObject: parentObject
+                    },
+                    _.result(this, 'defaults')));
 
-                self.trigger('destroyed');
+                this.trigger('destroyed', options);
 
                 if (_.isFunction(options.success)) {
                     options.success.apply(context, arguments);
                 }
-            }
+            }, this)
         }, _.bindCallbacks(options, context)));
     },
 
@@ -637,9 +629,7 @@ RB.BaseResource = Backbone.Model.extend({
         }
 
         if (this.supportsExtraData) {
-            _.each(this.get('extraData'), function(value, key) {
-                data['extra_data.' + key] = value;
-            }, this);
+            _.extend(data, this.extraData.toJSON());
         }
 
         return data;
@@ -660,6 +650,7 @@ RB.BaseResource = Backbone.Model.extend({
     sync: function(method, model, options) {
         var data,
             contentType,
+            extraQueryArgs,
             syncOptions;
 
         options = options || {};
@@ -667,8 +658,10 @@ RB.BaseResource = Backbone.Model.extend({
         if (method === 'read') {
             data = options.data || {};
 
-            if (!_.isEmpty(this.extraQueryArgs)) {
-                data = _.extend({}, this.extraQueryArgs, data);
+            extraQueryArgs = _.result(this, 'extraQueryArgs', {});
+
+            if (!_.isEmpty(extraQueryArgs)) {
+                data = _.extend({}, extraQueryArgs, data);
             }
         } else {
             if (options.form) {
@@ -753,11 +746,11 @@ RB.BaseResource = Backbone.Model.extend({
             }
         }
     }
-}, {
+}, RB.ExtraDataMixin), {
     strings: {
         UNSET_PARENT_OBJECT: 'parentObject must be set',
         INVALID_EXTRADATA_TYPE:
-            'extraData must be an object, null, or undefined',
+            'extraData must be an object or undefined',
         INVALID_EXTRADATA_VALUE_TYPE:
             'extraData.{key} must be null, a number, boolean, or string'
     }

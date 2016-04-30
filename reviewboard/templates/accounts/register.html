@@ -1,88 +1,77 @@
-{% extends "base.html" %}
-{% load djblets_deco djblets_extensions i18n %}
+{% extends "accounts/base.html" %}
+{% load djblets_deco djblets_extensions djblets_recaptcha i18n %}
 
 {% block title %}{% trans "Register account" %}{% endblock %}
 
-{% block content %}
-<div id="auth_container">
+{% block scripts %}
+{{block.super}}
+{%  if siteconfig_settings.auth_registration_show_captcha %}
+{% recaptcha_js %}
+{%  endif %}
+{% endblock scripts %}
+
+{% block auth_content %}
 {%  template_hook_point "before-register-form" %}
 
- <div class="auth-header">
-  <h1>{% trans "Register an account" %}</h1>
+<div class="auth-header">
+ <h1>{% trans "Register an account" %}</h1>
 {%  if form.errors %}
 {%   errorbox %}{{form.non_field_errors}}{% enderrorbox %}
 {%  endif %}
+</div>
+
+<form method="post" action="." class="auth-section main-auth-section"
+      id="register_form">
+ {% csrf_token %}
+
+ <div class="auth-form-row auth-field-row">
+  {{form.username.label_tag}}
+  {{form.username}}
+  {{form.errors.username}}
  </div>
 
- <form method="post" action="." class="auth-section main-auth-section"
-       id="register_form">
-  {% csrf_token %}
+ <div class="auth-form-row auth-field-row">
+  {{form.password1.label_tag}}
+  {{form.password1}}
+  {{form.errors.password1}}
+ </div>
 
-  <div class="auth-form-row auth-field-row">
-   {{form.username.label_tag}}
-   {{form.username}}
-   {{form.errors.username}}
-  </div>
+ <div class="auth-form-row auth-field-row">
+  {{form.password2.label_tag}}
+  {{form.password2}}
+  {{form.errors.password2}}
+ </div>
 
-  <div class="auth-form-row auth-field-row">
-   {{form.password1.label_tag}}
-   {{form.password1}}
-   {{form.errors.password1}}
-  </div>
+ <div class="auth-form-row auth-field-row">
+  {{form.email.label_tag}}
+  {{form.email}}
+  {{form.errors.email}}
+ </div>
 
-  <div class="auth-form-row auth-field-row">
-   {{form.password2.label_tag}}
-   {{form.password2}}
-   {{form.errors.password2}}
-  </div>
+ <div class="auth-form-row auth-field-row">
+  {{form.first_name.label_tag}}
+  {{form.first_name}}
+  {{form.errors.first_name}}
+ </div>
 
-  <div class="auth-form-row auth-field-row">
-   {{form.email.label_tag}}
-   {{form.email}}
-   {{form.errors.email}}
-  </div>
-
-  <div class="auth-form-row auth-field-row">
-   {{form.first_name.label_tag}}
-   {{form.first_name}}
-   {{form.errors.first_name}}
-  </div>
-
-  <div class="auth-form-row auth-field-row">
-   {{form.last_name.label_tag}}
-   {{form.last_name}}
-   {{form.errors.last_name}}
-  </div>
+ <div class="auth-form-row auth-field-row">
+  {{form.last_name.label_tag}}
+  {{form.last_name}}
+  {{form.errors.last_name}}
+ </div>
 
 {% if siteconfig_settings.auth_registration_show_captcha %}
-  <div class="auth-form-row register-captcha-row clearfix">
-   <script>
-       var RecaptchaOptions = {
-           theme: 'white'
-       };
-   </script>
-   <div class="register-captcha-container">
-    <script type="text/javascript" src="{{form.recaptcha_url}}/challenge?k={{siteconfig_settings.recaptcha_public_key}}{{form.captcha_error_query_str}}"></script>
-
-    <noscript>
-     <iframe src="{{form.recaptcha_url}}/noscript?k={{siteconfig_settings.recaptcha_public_key}}{{form.captcha_error_query_str}}"
-             height="300" width="500" frameborder="0"></iframe>
-     <br />
-     <textarea name="recaptcha_challenge_field" rows="3" cols="40"></textarea>
-     <input type="hidden" name="recaptcha_response_field"
-            value="manual_challenge" />
-    </noscript>
-   </div>
-  </div>
+ <div class="auth-form-row register-captcha-row clearfix">
+  {% recaptcha_form_field form %}
+ </div>
 {% endif %}
 
-  <div class="auth-form-row">
-   <div class="auth-button-container">
-    <input type="submit" class="primary" value="{% trans "Register" %}" />
-   </div>
+ <div class="auth-form-row">
+  <div class="auth-button-container">
+   <input type="submit" class="primary" value="{% trans "Register" %}" />
   </div>
- </form>
+ </div>
+</form>
 
 {%  template_hook_point "after-register-form" %}
-</div>
-{% endblock %}
+{% endblock auth_content %}

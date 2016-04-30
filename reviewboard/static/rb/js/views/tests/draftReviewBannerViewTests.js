@@ -7,7 +7,7 @@ suite('rb/views/DraftReviewBannerView', function() {
             '  <h1>You have a pending review.</h1>',
             '  <input id="review-banner-edit" type="button" ',
             '         value="Edit Review" />',
-            '  <input id="review-banner-publish" type="button" ',
+            '  <input id="review-banner-publish-container" type="button" ',
             '         value="Publish" />',
             '  <input id="review-banner-discard" type="button" ',
             '         value="Discard" />',
@@ -25,6 +25,10 @@ suite('rb/views/DraftReviewBannerView', function() {
         });
 
         view.render();
+    });
+
+    afterEach(function() {
+        view.remove();
     });
 
     describe('Button states', function() {
@@ -72,7 +76,7 @@ suite('rb/views/DraftReviewBannerView', function() {
             view.$('#review-banner-edit').click();
 
             expect(RB.ReviewDialogView.create).toHaveBeenCalled();
-            expect(RB.ReviewDialogView.create.calls[0].args[0].review)
+            expect(RB.ReviewDialogView.create.calls.argsFor(0)[0].review)
                 .toBe(model);
         });
 
@@ -84,11 +88,23 @@ suite('rb/views/DraftReviewBannerView', function() {
             expect(model.publish).toHaveBeenCalled();
         });
 
+        it('Publish to Submitter Only', function() {
+            spyOn(model, 'publish');
+
+            /*
+             * The alternative buttons from the split button are added to the
+             * <body>.
+             */
+            $('#review-banner-publish-submitter-only').click();
+
+            expect(model.publish).toHaveBeenCalled();
+        });
+
         it('Discard', function() {
             var $buttons = $();
 
             spyOn(model, 'destroy');
-            spyOn($.fn, 'modalBox').andCallFake(function(options) {
+            spyOn($.fn, 'modalBox').and.callFake(function(options) {
                 _.each(options.buttons, function($btn) {
                     $buttons = $buttons.add($btn);
                 });

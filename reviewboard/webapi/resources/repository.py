@@ -29,6 +29,7 @@ from reviewboard.webapi.errors import (BAD_HOST_KEY,
                                        MISSING_USER_KEY,
                                        REPO_AUTHENTICATION_ERROR,
                                        REPO_INFO_ERROR,
+                                       REPOSITORY_ALREADY_EXISTS,
                                        SERVER_CONFIG_ERROR,
                                        UNVERIFIED_HOST_CERT,
                                        UNVERIFIED_HOST_KEY)
@@ -78,6 +79,13 @@ class RepositoryResource(WebAPIResource):
                            'communication class used to talk to the '
                            'repository. This is generally the type of the '
                            'repository.',
+        },
+        'bug_tracker': {
+            'type': six.text_type,
+            'description': 'The URL to a bug in the bug tracker for '
+                           'this repository, with ``%s`` in place of the '
+                           'bug ID.',
+            'added_in': '2.5',
         }
     }
     uri_object_key = 'repository_id'
@@ -87,7 +95,6 @@ class RepositoryResource(WebAPIResource):
         resources.repository_commits,
         resources.repository_info,
     ]
-    autogenerate_etags = True
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
@@ -223,8 +230,9 @@ class RepositoryResource(WebAPIResource):
     @webapi_login_required
     @webapi_response_errors(BAD_HOST_KEY, INVALID_FORM_DATA, NOT_LOGGED_IN,
                             PERMISSION_DENIED, REPO_AUTHENTICATION_ERROR,
+                            REPO_INFO_ERROR, REPOSITORY_ALREADY_EXISTS,
                             SERVER_CONFIG_ERROR, UNVERIFIED_HOST_CERT,
-                            UNVERIFIED_HOST_KEY, REPO_INFO_ERROR)
+                            UNVERIFIED_HOST_KEY)
     @webapi_request_fields(
         required={
             'name': {
@@ -331,7 +339,7 @@ class RepositoryResource(WebAPIResource):
         local_site = self._get_local_site(local_site_name)
 
         if not Repository.objects.can_create(request.user, local_site):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         try:
             scmtool = Tool.objects.get(name=tool)
@@ -374,11 +382,14 @@ class RepositoryResource(WebAPIResource):
         try:
             repository.full_clean()
         except ValidationError as e:
-            return INVALID_FORM_DATA, {
-                'fields': {
-                    e.params['field']: e.message,
-                },
-            }
+            if hasattr(e, 'params') and 'field' in e.params:
+                return INVALID_FORM_DATA, {
+                    'fields': {
+                        e.params['field']: e.message,
+                    },
+                }
+            else:
+                return REPOSITORY_ALREADY_EXISTS
 
         repository.save()
 
@@ -494,7 +505,7 @@ class RepositoryResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_modify_permissions(request, repository):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         for field in ('bug_tracker', 'encoding', 'mirror_path', 'name',
                       'password', 'path', 'public', 'raw_file_url',
@@ -563,7 +574,7 @@ class RepositoryResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not self.has_delete_permissions(request, repository):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if not repository.review_requests.exists():
             repository.delete()

@@ -1,21 +1,23 @@
 from __future__ import unicode_literals
 
 import bz2
-import os
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponse
+from django.test import RequestFactory
 from django.utils.six.moves import zip_longest
 from djblets.cache.backend import cache_memoize
 from djblets.db.fields import Base64DecodedValue
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 import nose
 
 import reviewboard.diffviewer.diffutils as diffutils
 import reviewboard.diffviewer.parser as diffparser
 from reviewboard.admin.import_utils import has_module
-from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
+from reviewboard.diffviewer.chunk_generator import (DiffChunkGenerator,
+                                                    RawDiffChunkGenerator)
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import (DiffSet, FileDiff,
@@ -27,6 +29,7 @@ from reviewboard.diffviewer.renderers import DiffRenderer
 from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
                                                post_process_filtered_equals)
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
+from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.testing import TestCase
 
@@ -56,54 +59,159 @@ class MyersDifferTest(TestCase):
 
     def _test_diff(self, a, b, expected):
         opcodes = list(MyersDiffer(a, b).get_opcodes())
-        self.assertEquals(opcodes, expected)
+        self.assertEqual(opcodes, expected)
 
 
 class InterestingLinesTest(TestCase):
-    PREFIX = os.path.join(os.path.dirname(__file__), 'testdata')
-
     def test_csharp(self):
         """Testing interesting lines scanner with a C# file"""
-        lines = self._get_lines("helloworld.cs")
+        a = (b'public class HelloWorld {\n'
+             b'    public static void Main() {\n'
+             b'        System.Console.WriteLine("Hello world!");\n'
+             b'    }\n'
+             b'}\n')
+
+        b = (b'/*\n'
+             b' * The Hello World class.\n'
+             b' */\n'
+             b'public class HelloWorld\n'
+             b'{\n'
+             b'    /*\n'
+             b'     * The main function in this class.\n'
+             b'     */\n'
+             b'    public static void Main()\n'
+             b'    {\n'
+             b'        /*\n'
+             b'         * Print "Hello world!" to the screen.\n'
+             b'         */\n'
+             b'        System.Console.WriteLine("Hello world!");\n'
+             b'    }\n'
+             b'}\n')
+
+        lines = self._get_lines(a, b, 'helloworld.cs')
 
         self.assertEqual(len(lines[0]), 2)
         self.assertEqual(lines[0][0], (0, 'public class HelloWorld {\n'))
-        self.assertEqual(lines[0][1], (1, '\tpublic static void Main() {\n'))
+        self.assertEqual(lines[0][1], (1, '    public static void Main() {\n'))
 
         self.assertEqual(lines[1][0], (3, 'public class HelloWorld\n'))
-        self.assertEqual(lines[1][1], (8, '\tpublic static void Main()\n'))
+        self.assertEqual(lines[1][1], (8, '    public static void Main()\n'))
 
     def test_java(self):
         """Testing interesting lines scanner with a Java file"""
-        lines = self._get_lines("helloworld.java")
+        a = (b'class HelloWorld {\n'
+             b'    public static void main(String[] args) {\n'
+             b'        System.out.println("Hello world!");\n'
+             b'    }\n'
+             b'}\n')
+
+        b = (b'/*\n'
+             b' * The Hello World class.\n'
+             b' */\n'
+             b'class HelloWorld\n'
+             b'{\n'
+             b'    /*\n'
+             b'     * The main function in this class.\n'
+             b'     */\n'
+             b'    public static void main(String[] args)\n'
+             b'    {\n'
+             b'        /*\n'
+             b'         * Print "Hello world!" to the screen.\n'
+             b'         */\n'
+             b'        System.out.println("Hello world!");\n'
+             b'    }\n'
+             b'}\n')
+
+        lines = self._get_lines(a, b, 'helloworld.java')
 
         self.assertEqual(len(lines[0]), 2)
         self.assertEqual(lines[0][0], (0, 'class HelloWorld {\n'))
         self.assertEqual(lines[0][1],
-                         (1, '\tpublic static void main(String[] args) {\n'))
+                         (1, '    public static void main(String[] args) {\n'))
 
         self.assertEqual(len(lines[1]), 2)
         self.assertEqual(lines[1][0], (3, 'class HelloWorld\n'))
         self.assertEqual(lines[1][1],
-                         (8, '\tpublic static void main(String[] args)\n'))
+                         (8, '    public static void main(String[] args)\n'))
 
     def test_javascript(self):
         """Testing interesting lines scanner with a JavaScript file"""
-        lines = self._get_lines("helloworld.js")
+        a = (b'function helloWorld() {\n'
+             b'    alert("Hello world!");\n'
+             b'}\n'
+             b'\n'
+             b'var data = {\n'
+             b'    helloWorld2: function() {\n'
+             b'        alert("Hello world!");\n'
+             b'    }\n'
+             b'}\n'
+             b'\n'
+             b'var helloWorld3 = function() {\n'
+             b'    alert("Hello world!");\n'
+             b'}\n')
+
+        b = (b'/*\n'
+             b' * Prints "Hello world!"\n'
+             b' */\n'
+             b'function helloWorld()\n'
+             b'{\n'
+             b'    alert("Hello world!");\n'
+             b'}\n'
+             b'\n'
+             b'var data = {\n'
+             b'    /*\n'
+             b'     * Prints "Hello world!"\n'
+             b'     */\n'
+             b'    helloWorld2: function()\n'
+             b'    {\n'
+             b'        alert("Hello world!");\n'
+             b'    }\n'
+             b'}\n'
+             b'\n'
+             b'var helloWorld3 = function()\n'
+             b'{\n'
+             b'    alert("Hello world!");\n'
+             b'}\n')
+
+        lines = self._get_lines(a, b, 'helloworld.js')
 
         self.assertEqual(len(lines[0]), 3)
         self.assertEqual(lines[0][0], (0, 'function helloWorld() {\n'))
-        self.assertEqual(lines[0][1], (5, '\thelloWorld2: function() {\n'))
+        self.assertEqual(lines[0][1], (5, '    helloWorld2: function() {\n'))
         self.assertEqual(lines[0][2], (10, 'var helloWorld3 = function() {\n'))
 
         self.assertEqual(len(lines[1]), 3)
         self.assertEqual(lines[1][0], (3, 'function helloWorld()\n'))
-        self.assertEqual(lines[1][1], (12, '\thelloWorld2: function()\n'))
+        self.assertEqual(lines[1][1], (12, '    helloWorld2: function()\n'))
         self.assertEqual(lines[1][2], (18, 'var helloWorld3 = function()\n'))
 
     def test_objective_c(self):
         """Testing interesting lines scanner with an Objective C file"""
-        lines = self._get_lines("helloworld.m")
+        a = (b'@interface MyClass : Object\n'
+             b'- (void) sayHello;\n'
+             b'@end\n'
+             b'\n'
+             b'@implementation MyClass\n'
+             b'- (void) sayHello {\n'
+             b'    printf("Hello world!");\n'
+             b'}\n'
+             b'@end\n')
+
+        b = (b'@interface MyClass : Object\n'
+             b'- (void) sayHello;\n'
+             b'@end\n'
+             b'\n'
+             b'@implementation MyClass\n'
+             b'/*\n'
+             b' * Prints Hello world!\n'
+             b' */\n'
+             b'- (void) sayHello\n'
+             b'{\n'
+             b'    printf("Hello world!");\n'
+             b'}\n'
+             b'@end\n')
+
+        lines = self._get_lines(a, b, 'helloworld.m')
 
         self.assertEqual(len(lines[0]), 3)
         self.assertEqual(lines[0][0], (0, '@interface MyClass : Object\n'))
@@ -117,7 +225,17 @@ class InterestingLinesTest(TestCase):
 
     def test_perl(self):
         """Testing interesting lines scanner with a Perl file"""
-        lines = self._get_lines("helloworld.pl")
+        a = (b'sub helloWorld {\n'
+             b'    print "Hello world!"\n'
+             b'}\n')
+
+        b = (b'# Prints Hello World\n'
+             b'sub helloWorld\n'
+             b'{\n'
+             b'    print "Hello world!"\n'
+             b'}\n')
+
+        lines = self._get_lines(a, b, 'helloworld.pl')
 
         self.assertEqual(len(lines[0]), 1)
         self.assertEqual(lines[0][0], (0, 'sub helloWorld {\n'))
@@ -127,20 +245,61 @@ class InterestingLinesTest(TestCase):
 
     def test_php(self):
         """Testing interesting lines scanner with a PHP file"""
-        lines = self._get_lines("helloworld.php")
+        a = (b'<?php\n'
+             b'class HelloWorld {\n'
+             b'    function helloWorld() {\n'
+             b'        print "Hello world!";\n'
+             b'    }\n'
+             b'}\n'
+             b'?>\n')
+
+        b = (b'<?php\n'
+             b'/*\n'
+             b' * Hello World class\n'
+             b' */\n'
+             b'class HelloWorld\n'
+             b'{\n'
+             b'    /*\n'
+             b'     * Prints Hello World\n'
+             b'     */\n'
+             b'    function helloWorld()\n'
+             b'    {\n'
+             b'        print "Hello world!";\n'
+             b'    }\n'
+             b'\n'
+             b'    public function foo() {\n'
+             b'        print "Hello world!";\n'
+             b'    }\n'
+             b'}\n'
+             b'?>\n')
+
+        lines = self._get_lines(a, b, 'helloworld.php')
 
         self.assertEqual(len(lines[0]), 2)
         self.assertEqual(lines[0][0], (1, 'class HelloWorld {\n'))
-        self.assertEqual(lines[0][1], (2, '\tfunction helloWorld() {\n'))
+        self.assertEqual(lines[0][1], (2, '    function helloWorld() {\n'))
 
         self.assertEqual(len(lines[1]), 3)
         self.assertEqual(lines[1][0], (4, 'class HelloWorld\n'))
-        self.assertEqual(lines[1][1], (9, '\tfunction helloWorld()\n'))
-        self.assertEqual(lines[1][2], (14, '\tpublic function foo() {\n'))
+        self.assertEqual(lines[1][1], (9, '    function helloWorld()\n'))
+        self.assertEqual(lines[1][2], (14, '    public function foo() {\n'))
 
     def test_python(self):
         """Testing interesting lines scanner with a Python file"""
-        lines = self._get_lines("helloworld.py")
+        a = (b'class HelloWorld:\n'
+             b'    def main(self):\n'
+             b'        print "Hello World"\n')
+
+        b = (b'class HelloWorld:\n'
+             b'    """The Hello World class"""\n'
+             b'\n'
+             b'    def main(self):\n'
+             b'        """The main function in this class."""\n'
+             b'\n'
+             b'        # Prints "Hello world!" to the screen.\n'
+             b'        print "Hello world!"\n')
+
+        lines = self._get_lines(a, b, 'helloworld.py')
 
         self.assertEqual(len(lines[0]), 2)
         self.assertEqual(lines[0][0], (0, 'class HelloWorld:\n'))
@@ -152,24 +311,32 @@ class InterestingLinesTest(TestCase):
 
     def test_ruby(self):
         """Testing interesting lines scanner with a Ruby file"""
-        lines = self._get_lines("helloworld.rb")
+        a = (b'class HelloWorld\n'
+             b'    def helloWorld\n'
+             b'        puts "Hello world!"\n'
+             b'    end\n'
+             b'end\n')
+
+        b = (b'# Hello World class\n'
+             b'class HelloWorld\n'
+             b'    # Prints Hello World\n'
+             b'    def helloWorld()\n'
+             b'        puts "Hello world!"\n'
+             b'    end\n'
+             b'end\n')
+
+        lines = self._get_lines(a, b, 'helloworld.rb')
 
         self.assertEqual(len(lines[0]), 2)
         self.assertEqual(lines[0][0], (0, 'class HelloWorld\n'))
-        self.assertEqual(lines[0][1], (1, '\tdef helloWorld\n'))
+        self.assertEqual(lines[0][1], (1, '    def helloWorld\n'))
 
         self.assertEqual(len(lines[1]), 2)
         self.assertEqual(lines[1][0], (1, 'class HelloWorld\n'))
-        self.assertEqual(lines[1][1], (3, '\tdef helloWorld()\n'))
+        self.assertEqual(lines[1][1], (3, '    def helloWorld()\n'))
 
-    def _get_lines(self, filename):
-        with open(os.path.join(self.PREFIX, "orig_src", filename), "r") as f:
-            a = f.readlines()
-
-        with open(os.path.join(self.PREFIX, "new_src", filename), "r") as f:
-            b = f.readlines()
-
-        differ = MyersDiffer(a, b)
+    def _get_lines(self, a, b, filename):
+        differ = MyersDiffer(a.splitlines(True), b.splitlines(True))
         differ.add_interesting_lines_for_headers(filename)
 
         # Begin the scan.
@@ -182,61 +349,71 @@ class InterestingLinesTest(TestCase):
 
 
 class DiffParserTest(TestCase):
-    PREFIX = os.path.join(os.path.dirname(__file__), 'testdata')
-
-    def diff(self, options=''):
-        f = os.popen('diff -rN -x .svn %s %s/orig_src %s/new_src' %
-                     (options, self.PREFIX, self.PREFIX))
-        data = f.read()
-        f.close()
-        return data
-
-    def _compare_diffs(self, files, testdir):
-        self.assertEqual(len(files), 14)
-
-        for file in files:
-            f = open("%s/diffs/%s/%s.diff" %
-                     (self.PREFIX, testdir, os.path.basename(file.newFile)))
-            data = f.read()
-            f.close()
-
-            self.assertTrue(file.origFile.startswith("%s/orig_src/" %
-                                                     self.PREFIX))
-            self.assertTrue(file.newFile.startswith("%s/new_src/" %
-                                                    self.PREFIX))
-            self.assertNotEquals(file.origInfo, "")
-            self.assertNotEquals(file.newInfo, "")
-
-            self.assertNotEquals(file.data, "")
-            self.assertNotEquals(data, "")
-
-            # Can't really compare the strings because of timestamps...
-
-    def test_unified_diff(self):
-        """Testing DiffParser.parse on a unified diff"""
-        data = self.diff('-u')
+    def test_form_feed(self):
+        """Testing DiffParser.parse with a form feed in the file"""
+        data = (
+            b'--- README  123\n'
+            b'+++ README  (new)\n'
+            b'@ -1,4 +1,6 @@\n'
+            b' Line 1\n'
+            b' Line 2\n'
+            b'+\x0c\n'
+            b'+Inserted line\n'
+            b' Line 3\n'
+            b' Line 4\n')
         files = diffparser.DiffParser(data).parse()
-        self._compare_diffs(files, "unified")
 
-    def test_context_diff(self):
-        """Testing DiffParser.parse on a context diff"""
-        data = self.diff('-c')
-        files = diffparser.DiffParser(data).parse()
-        self._compare_diffs(files, "context")
+        self.assertEqual(len(files), 1)
+        self.assertEqual(files[0].insert_count, 2)
+        self.assertEqual(files[0].delete_count, 0)
+        self.assertEqual(files[0].data, data)
 
     def test_patch(self):
         """Testing diffutils.patch"""
-        file = 'foo.c'
+        old = (b'int\n'
+               b'main()\n'
+               b'{\n'
+               b'\tprintf("foo\\n");\n'
+               b'}\n')
 
-        old = self._get_file('orig_src', file)
-        new = self._get_file('new_src', file)
-        diff = self._get_file('diffs', 'unified', 'foo.c.diff')
+        new = (b'#include <stdio.h>\n'
+               b'\n'
+               b'int\n'
+               b'main()\n'
+               b'{\n'
+               b'\tprintf("foo bar\\n");\n'
+               b'\treturn 0;\n'
+               b'}\n')
 
-        patched = diffutils.patch(diff, old, file)
+        diff = (b'--- foo.c\t2007-01-24 02:11:31.000000000 -0800\n'
+                b'+++ foo.c\t2007-01-24 02:14:42.000000000 -0800\n'
+                b'@@ -1,5 +1,8 @@\n'
+                b'+#include <stdio.h>\n'
+                b'+\n'
+                b' int\n'
+                b' main()\n'
+                b' {\n'
+                b'-\tprintf("foo\\n");\n'
+                b'+\tprintf("foo bar\\n");\n'
+                b'+\treturn 0;\n'
+                b' }\n')
+
+        patched = diffutils.patch(diff, old, 'foo.c')
         self.assertEqual(patched, new)
 
-        diff = self._get_file('diffs', 'unified', 'README.diff')
-        self.assertRaises(Exception, lambda: diffutils.patch(diff, old, file))
+        diff = (b'--- README\t2007-01-24 02:10:28.000000000 -0800\n'
+                b'+++ README\t2007-01-24 02:11:01.000000000 -0800\n'
+                b'@@ -1,9 +1,10 @@\n'
+                b' Test data for a README file.\n'
+                b' \n'
+                b' There\'s a line here.\n'
+                b'-\n'
+                b' A line there.\n'
+                b' \n'
+                b' And here.\n')
+
+        with self.assertRaises(Exception):
+            diffutils.patch(diff, old, 'foo.c')
 
     def test_empty_patch(self):
         """Testing diffutils.patch with an empty diff"""
@@ -247,25 +424,94 @@ class DiffParserTest(TestCase):
 
     def test_patch_crlf_file_crlf_diff(self):
         """Testing diffutils.patch with a CRLF file and a CRLF diff"""
-        old = self._get_file('orig_src', 'README.crlf')
-        new = self._get_file('new_src', 'README')
-        diff = self._get_file('diffs', 'unified', 'README.crlf.diff')
+        old = (b'Test data for a README file.\r\n'
+               b'\r\n'
+               b'There\'s a line here.\r\n'
+               b'\r\n'
+               b'A line there.\r\n'
+               b'\r\n'
+               b'And here.\r\n')
+
+        new = (b'Test data for a README file.\n'
+               b'\n'
+               b'There\'s a line here.\n'
+               b'A line there.\n'
+               b'\n'
+               b'And here.\n')
+
+        diff = (b'--- README\t2007-07-02 23:33:27.000000000 -0700\n'
+                b'+++ README\t2007-07-02 23:32:59.000000000 -0700\n'
+                b'@@ -1,7 +1,6 @@\n'
+                b' Test data for a README file.\r\n'
+                b' \r\n'
+                b' There\'s a line here.\r\n'
+                b'-\r\n'
+                b' A line there.\r\n'
+                b' \r\n'
+                b' And here.\r\n')
+
         patched = diffutils.patch(diff, old, new)
         self.assertEqual(patched, new)
 
     def test_patch_cr_file_crlf_diff(self):
         """Testing diffutils.patch with a CR file and a CRLF diff"""
-        old = self._get_file('orig_src', 'README')
-        new = self._get_file('new_src', 'README')
-        diff = self._get_file('diffs', 'unified', 'README.crlf.diff')
+        old = (b'Test data for a README file.\n'
+               b'\n'
+               b'There\'s a line here.\n'
+               b'\n'
+               b'A line there.\n'
+               b'\n'
+               b'And here.\n')
+
+        new = (b'Test data for a README file.\n'
+               b'\n'
+               b'There\'s a line here.\n'
+               b'A line there.\n'
+               b'\n'
+               b'And here.\n')
+
+        diff = (b'--- README\t2007-07-02 23:33:27.000000000 -0700\n'
+                b'+++ README\t2007-07-02 23:32:59.000000000 -0700\n'
+                b'@@ -1,7 +1,6 @@\n'
+                b' Test data for a README file.\r\n'
+                b' \r\n'
+                b' There\'s a line here.\r\n'
+                b'-\r\n'
+                b' A line there.\r\n'
+                b' \r\n'
+                b' And here.\r\n')
+
         patched = diffutils.patch(diff, old, new)
         self.assertEqual(patched, new)
 
     def test_patch_crlf_file_cr_diff(self):
         """Testing diffutils.patch with a CRLF file and a CR diff"""
-        old = self._get_file('orig_src', 'README.crlf')
-        new = self._get_file('new_src', 'README')
-        diff = self._get_file('diffs', 'unified', 'README.diff')
+        old = (b'Test data for a README file.\r\n'
+               b'\r\n'
+               b'There\'s a line here.\r\n'
+               b'\r\n'
+               b'A line there.\r\n'
+               b'\r\n'
+               b'And here.\r\n')
+
+        new = (b'Test data for a README file.\n'
+               b'\n'
+               b'There\'s a line here.\n'
+               b'A line there.\n'
+               b'\n'
+               b'And here.\n')
+
+        diff = (b'--- README\t2007-07-02 23:33:27.000000000 -0700\n'
+                b'+++ README\t2007-07-02 23:32:59.000000000 -0700\n'
+                b'@@ -1,7 +1,6 @@\n'
+                b' Test data for a README file.\n'
+                b' \n'
+                b' There\'s a line here.\n'
+                b'-\n'
+                b' A line there.\n'
+                b' \n'
+                b' And here.\n')
+
         patched = diffutils.patch(diff, old, new)
         self.assertEqual(patched, new)
 
@@ -273,40 +519,170 @@ class DiffParserTest(TestCase):
         """Testing diffutils.patch with a file indicating no newline
         with a trailing \\r
         """
-        old = self._get_file('orig_src', 'README.nonewline')
-        new = self._get_file('new_src', 'README.nonewline')
-        diff = self._get_file('diffs', 'unified', 'README.nonewline.diff')
+        old = (
+            b'Test data for a README file.\n'
+            b'\n'
+            b'There\'s a line here.\n'
+            b'\n'
+            b'A line there.\n'
+            b'\n'
+            b'And a new line here!\n'
+            b'\n'
+            b'We must have several lines to reproduce this problem.\n'
+            b'\n'
+            b'So that there\'s enough hidden context.\n'
+            b'\n'
+            b'And dividers so we can reproduce the bug.\n'
+            b'\n'
+            b'Which will a --- line at the end of one file due to the '
+            b'lack of newline,\n'
+            b'causing a parse error.\n'
+            b'\n'
+            b'And here.\n'
+            b'Yes, this is a good README file. Like most README files, '
+            b'this doesn\'t tell youanything you really didn\'t already '
+            b'know.\r')
+
+        new = (
+            b'Test data for a README file.\n'
+            b'\n'
+            b'There\'s a line here.\n'
+            b'Here\'s a change!\n'
+            b'\n'
+            b'A line there.\n'
+            b'\n'
+            b'And a new line here!\n'
+            b'\n'
+            b'We must have several lines to reproduce this problem.\n'
+            b'\n'
+            b'So that there\'s enough hidden context.\n'
+            b'\n'
+            b'And dividers so we can reproduce the bug.\n'
+            b'\n'
+            b'Which will a --- line at the end of one file due to the '
+            b'lack of newline,\n'
+            b'causing a parse error.\n'
+            b'\n'
+            b'And here.\n'
+            b'Yes, this is a good README file. Like most README files, '
+            b'this doesn\'t tell youanything you really didn\'t '
+            b'already know.\n')
+
+        diff = (
+            b'--- README\t2008-02-25 03:40:42.000000000 -0800\n'
+            b'+++ README\t2008-02-25 03:40:55.000000000 -0800\n'
+            b'@@ -1,6 +1,7 @@\n'
+            b' Test data for a README file.\n'
+            b' \n'
+            b' There\'s a line here.\n'
+            b'+Here\'s a change!\n'
+            b' \n'
+            b' A line there.\n'
+            b' \n'
+            b'@@ -16,4 +17,4 @@\n'
+            b' causing a parse error.\n'
+            b' \n'
+            b' And here.\n'
+            b'-Yes, this is a good README file. Like most README files, this '
+            b'doesn\'t tell youanything you really didn\'t already know.\n'
+            b'\\ No newline at end of file\n'
+            b'+Yes, this is a good README file. Like most README files, this '
+            b'doesn\'t tell youanything you really didn\'t already know.\n')
+
         files = diffparser.DiffParser(diff).parse()
-        patched = diffutils.patch(files[0].data, old, new)
+        patched = diffutils.patch(files[0].data, old, 'README')
         self.assertEqual(diff, files[0].data)
         self.assertEqual(patched, new)
 
     def test_move_detection(self):
         """Testing diff viewer move detection"""
-        # movetest1 has two blocks of code that would appear to be moves:
+        # This has two blocks of code that would appear to be moves:
         # a function, and an empty comment block. Only the function should
         # be seen as a move, whereas the empty comment block is less useful
-        # (since it's content-less) and shouldn't be seen as once.
-        old = self._get_file('orig_src', 'movetest1.c')
-        new = self._get_file('new_src', 'movetest1.c')
+        # (since it's content-less) and shouldn't be seen as one.
+        old = (
+            b'/*\n'
+            b' *\n'
+            b' */\n'
+            b'// ----\n'
+            b'\n'
+            b'\n'
+            b'/*\n'
+            b' * Says hello\n'
+            b' */\n'
+            b'void\n'
+            b'say_hello()\n'
+            b'{\n'
+            b'\tprintf("Hello world!\\n");\n'
+            b'}\n'
+            b'\n'
+            b'\n'
+            b'int\n'
+            b'dummy()\n'
+            b'{\n'
+            b'\tif (1) {\n'
+            b'\t\t// whatever\n'
+            b'\t}\n'
+            b'}\n'
+            b'\n'
+            b'\n'
+            b'void\n'
+            b'say_goodbye()\n'
+            b'{\n'
+            b'\tprintf("Goodbye!\\n");\n'
+            b'}\n')
+
+        new = (
+            b'// ----\n'
+            b'\n'
+            b'\n'
+            b'int\n'
+            b'dummy()\n'
+            b'{\n'
+            b'\tif (1) {\n'
+            b'\t\t// whatever\n'
+            b'\t}\n'
+            b'}\n'
+            b'\n'
+            b'\n'
+            b'/*\n'
+            b' * Says goodbye\n'
+            b' */\n'
+            b'void\n'
+            b'say_goodbye()\n'
+            b'{\n'
+            b'\tprintf("Goodbye!\\n");\n'
+            b'}\n'
+            b'\n'
+            b'\n'
+            b'void\n'
+            b'say_hello()\n'
+            b'{\n'
+            b'\tprintf("Hello world!\\n");\n'
+            b'}\n'
+            b'\n'
+            b'\n'
+            b'/*\n'
+            b' *\n'
+            b' */\n')
 
         self._test_move_detection(
             old.splitlines(),
             new.splitlines(),
             [
                 {
-                    28: 15,
-                    29: 16,
-                    30: 17,
-                    31: 18,
+                    23: 10,
+                    24: 11,
+                    25: 12,
+                    26: 13,
                 }
             ],
             [
                 {
-                    15: 28,
-                    16: 29,
-                    17: 30,
-                    18: 31,
+                    10: 23,
+                    11: 24,
+                    12: 25,
+                    13: 26,
                 }
             ])
 
@@ -571,11 +947,6 @@ class DiffParserTest(TestCase):
         self.assertEqual(len(files), 1)
         self.assertEqual(files[0].insert_count, 3)
         self.assertEqual(files[0].delete_count, 4)
-
-    def _get_file(self, *relative):
-        path = os.path.join(*tuple([self.PREFIX] + list(relative)))
-        with open(path, 'rb') as f:
-            return f.read()
 
     def _test_move_detection(self, a, b, expected_i_moves, expected_r_moves):
         differ = MyersDiffer(a, b)
@@ -971,56 +1342,56 @@ class HighlightRegionTest(TestCase):
 
     def test_highlight_region(self):
         """Testing highlightregion"""
-        self.assertEquals(highlightregion("", None), "")
+        self.assertEqual(highlightregion("", None), "")
 
-        self.assertEquals(highlightregion("abc", None), "abc")
+        self.assertEqual(highlightregion("abc", None), "abc")
 
-        self.assertEquals(highlightregion("abc", [(0, 3)]),
-                          '<span class="hl">abc</span>')
+        self.assertEqual(highlightregion("abc", [(0, 3)]),
+                         '<span class="hl">abc</span>')
 
-        self.assertEquals(highlightregion("abc", [(0, 1)]),
-                          '<span class="hl">a</span>bc')
+        self.assertEqual(highlightregion("abc", [(0, 1)]),
+                         '<span class="hl">a</span>bc')
 
-        self.assertEquals(highlightregion(
+        self.assertEqual(highlightregion(
             '<span class="xy">a</span>bc',
             [(0, 1)]),
             '<span class="xy"><span class="hl">a</span></span>bc')
 
-        self.assertEquals(highlightregion(
+        self.assertEqual(highlightregion(
             '<span class="xy">abc</span>123',
             [(1, 4)]),
             '<span class="xy">a<span class="hl">bc</span></span>' +
             '<span class="hl">1</span>23')
 
-        self.assertEquals(highlightregion(
+        self.assertEqual(highlightregion(
             '<span class="xy">abc</span><span class="z">12</span>3',
             [(1, 4)]),
             '<span class="xy">a<span class="hl">bc</span></span>' +
             '<span class="z"><span class="hl">1</span>2</span>3')
 
-        self.assertEquals(highlightregion(
+        self.assertEqual(highlightregion(
             'foo<span class="xy">abc</span><span class="z">12</span>3',
             [(0, 6), (7, 9)]),
             '<span class="hl">foo</span><span class="xy">' +
             '<span class="hl">abc</span></span><span class="z">1' +
             '<span class="hl">2</span></span><span class="hl">3</span>')
 
-        self.assertEquals(highlightregion(
+        self.assertEqual(highlightregion(
             'foo&quot;bar',
             [(0, 7)]),
             '<span class="hl">foo&quot;bar</span>')
 
-        self.assertEquals(highlightregion(
+        self.assertEqual(highlightregion(
             '&quot;foo&quot;',
             [(0, 1)]),
             '<span class="hl">&quot;</span>foo&quot;')
 
-        self.assertEquals(highlightregion(
+        self.assertEqual(highlightregion(
             '&quot;foo&quot;',
             [(2, 5)]),
             '&quot;f<span class="hl">oo&quot;</span>')
 
-        self.assertEquals(highlightregion(
+        self.assertEqual(highlightregion(
             'foo=<span class="ab">&quot;foo&quot;</span>)',
             [(4, 9)]),
             'foo=<span class="ab"><span class="hl">&quot;foo&quot;' +
@@ -1030,7 +1401,6 @@ class HighlightRegionTest(TestCase):
 class DbTests(TestCase):
     """Unit tests for database operations."""
     fixtures = ['test_scmtools']
-    PREFIX = os.path.join(os.path.dirname(__file__), 'testdata')
 
     def test_long_filenames(self):
         """Testing using long filenames (1024 characters) in FileDiff."""
@@ -1046,29 +1416,42 @@ class DbTests(TestCase):
         filediff.save()
 
         filediff = FileDiff.objects.get(pk=filediff.id)
-        self.assertEquals(filediff.source_file, long_filename)
+        self.assertEqual(filediff.source_file, long_filename)
 
     def test_diff_hashes(self):
-        """
-        Testing that uploading two of the same diff will result in only
-        one database entry.
+        """Testing that uploading two of the same diff will result in only
+        one database entry
         """
         repository = self.create_repository()
         diffset = DiffSet.objects.create(name='test',
                                          revision=1,
                                          repository=repository)
-        with open(os.path.join(self.PREFIX, "diffs", "context",
-                               "foo.c.diff")) as f:
-            data = f.read()
 
-        filediff1 = FileDiff(diff=data,
-                             diffset=diffset)
-        filediff1.save()
-        filediff2 = FileDiff(diff=data,
-                             diffset=diffset)
-        filediff2.save()
+        data = (
+            b'diff -rcN orig_src/foo.c new_src/foo.c\n'
+            b'*** orig_src/foo.c\t2007-01-24 02:11:31.000000000 -0800\n'
+            b'--- new_src/foo.c\t2007-01-24 02:14:42.000000000 -0800\n'
+            b'***************\n'
+            b'*** 1,5 ****\n'
+            b'  int\n'
+            b'  main()\n'
+            b'  {\n'
+            b'! \tprintf("foo\n");\n'
+            b'  }\n'
+            b'--- 1,8 ----\n'
+            b'+ #include <stdio.h>\n'
+            b'+ \n'
+            b'  int\n'
+            b'  main()\n'
+            b'  {\n'
+            b'! \tprintf("foo bar\n");\n'
+            b'! \treturn 0;\n'
+            b'  }\n')
 
-        self.assertEquals(filediff1.diff_hash, filediff2.diff_hash)
+        filediff1 = FileDiff.objects.create(diff=data, diffset=diffset)
+        filediff2 = FileDiff.objects.create(diff=data, diffset=diffset)
+
+        self.assertEqual(filediff1.diff_hash, filediff2.diff_hash)
 
 
 class DiffSetManagerTests(SpyAgency, TestCase):
@@ -1096,6 +1479,62 @@ class DiffSetManagerTests(SpyAgency, TestCase):
             repository, 'diff', diff, None, None, None, '/', None)
 
         self.assertEqual(diffset.files.count(), 1)
+
+    def test_creating_with_diff_data_with_basedir_no_slash(self):
+        """Test creating a DiffSet from diff file data with basedir without
+        leading slash
+        """
+        diff = (
+            b'diff --git a/README b/README\n'
+            b'index d6613f5..5b50866 100644\n'
+            b'--- README\n'
+            b'+++ README\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah..\n'
+            b'+blah blah\n'
+        )
+
+        repository = self.create_repository(tool_name='Test')
+
+        self.spy_on(repository.get_file_exists,
+                    call_fake=lambda *args, **kwargs: True)
+
+        diffset = DiffSet.objects.create_from_data(
+            repository, 'diff', diff, None, None, None, 'trunk/', None)
+
+        self.assertEqual(diffset.files.count(), 1)
+
+        filediff = diffset.files.all()[0]
+        self.assertEqual(filediff.source_file, 'trunk/README')
+        self.assertEqual(filediff.dest_file, 'trunk/README')
+
+    def test_creating_with_diff_data_with_basedir_slash(self):
+        """Test creating a DiffSet from diff file data with basedir with
+        leading slash
+        """
+        diff = (
+            b'diff --git a/README b/README\n'
+            b'index d6613f5..5b50866 100644\n'
+            b'--- README\n'
+            b'+++ README\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah..\n'
+            b'+blah blah\n'
+        )
+
+        repository = self.create_repository(tool_name='Test')
+
+        self.spy_on(repository.get_file_exists,
+                    call_fake=lambda *args, **kwargs: True)
+
+        diffset = DiffSet.objects.create_from_data(
+            repository, 'diff', diff, None, None, None, '/trunk/', None)
+
+        self.assertEqual(diffset.files.count(), 1)
+
+        filediff = diffset.files.all()[0]
+        self.assertEqual(filediff.source_file, 'trunk/README')
+        self.assertEqual(filediff.dest_file, 'trunk/README')
 
 
 class UploadDiffFormTests(SpyAgency, TestCase):
@@ -1261,6 +1700,142 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         self.assertEqual(filediff.source_revision,
                          '661e5dd3c4938ecbe8f77e2fdfa905d70485f94c')
 
+    def test_moved_parent_filediff(self):
+        """Test creating a Diffset from form data where the parent diff is only
+        a rename"""
+        revisions = [
+            b'93e6b3e8944c48737cb11a1e52b046fa30aea7a9',
+            b'4839fc480f47ca59cf05a9c39410ea744d1e17a2',
+        ]
+
+        parent_diff = SimpleUploadedFile(
+            'parent_diff',
+            (b'diff --git a/foo b/bar\n'
+             b'similarity index 100%%\n'
+             b'rename from foo\n'
+             b'rename to bar\n'),
+            content_type='text/x-patch')
+
+        diff = SimpleUploadedFile(
+            'diff',
+            (b'diff --git a/bar b/bar\n'
+             b'index %s..%s 100644\n'
+             b'--- a/bar\n'
+             b'+++ b/bar\n'
+             b'@@ -1,2 +1,3 @@\n'
+             b' Foo\n'
+             b'+Bar\n') % (revisions[0], revisions[1]),
+            content_type='text/x-patch')
+
+        repository = self.create_repository(tool_name='Test')
+        self.spy_on(repository.get_file_exists,
+                    call_fake=lambda *args, **kwargs: True)
+        # We will only be making one call to get_file and we can fake it out.
+        self.spy_on(repository.get_file,
+                    call_fake=lambda *args, **kwargs: b'Foo\n')
+        self.spy_on(diffutils.patch)
+
+        form = UploadDiffForm(repository=repository,
+                              data={
+                                  'basedir': '/',
+                              },
+                              files={
+                                  'path': diff,
+                                  'parent_diff_path': parent_diff,
+                              })
+
+        self.assertTrue(form.is_valid())
+
+        diffset = form.create(diff, parent_diff)
+
+        self.assertEqual(diffset.files.count(), 1)
+
+        f = diffset.files.get()
+
+        self.assertEqual(f.source_revision, revisions[0])
+        self.assertEqual(f.dest_detail, revisions[1])
+
+        # We shouldn't call out to patch because the parent diff is just a
+        # rename.
+        original_file = diffutils.get_original_file(f, None, ['ascii'])
+        self.assertEqual(original_file, b'Foo\n')
+        self.assertFalse(diffutils.patch.spy.called)
+
+        patched_file = diffutils.get_patched_file(original_file, f, None)
+        self.assertEqual(patched_file, b'Foo\nBar\n')
+        self.assertTrue(diffutils.patch.spy.called)
+
+    def test_moved_modified_parent_filediff(self):
+        """Test creating a Diffset from form data where the parent diff is a
+        rename and a modify"""
+        revisions = [
+            b'93e6b3e8944c48737cb11a1e52b046fa30aea7a9',
+            b'4839fc480f47ca59cf05a9c39410ea744d1e17a2',
+            b'04861c126cfebd7e7cb93045ab0bff4a7acc4cf2',
+        ]
+
+        parent_diff = SimpleUploadedFile(
+            'parent_diff',
+            (b'diff --git a/foo b/bar\n'
+             b'similarity index 55%%\n'
+             b'rename from foo\n'
+             b'rename to bar\n'
+             b'index %s..%s 100644\n'
+             b'--- a/foo\n'
+             b'+++ b/bar\n'
+             b'@@ -1,2 +1,3 @@\n'
+             b' Foo\n'
+             b'+Bar\n') % (revisions[0], revisions[1]),
+            content_type='text/x-patch')
+
+        diff = SimpleUploadedFile(
+            'diff',
+            (b'diff --git a/bar b/bar\n'
+             b'index %s..%s 100644\n'
+             b'--- a/bar\n'
+             b'+++ b/bar\n'
+             b'@@ -1,3 +1,4 @@\n'
+             b' Foo\n'
+             b' Bar\n'
+             b'+Baz\n') % (revisions[1], revisions[2]),
+            content_type='text/x-patch')
+
+        repository = self.create_repository(tool_name='Test')
+        self.spy_on(repository.get_file_exists,
+                    call_fake=lambda *args, **kwargs: True)
+        # We will only be making one call to get_file and we can fake it out.
+        self.spy_on(repository.get_file,
+                    call_fake=lambda *args, **kwargs: b'Foo\n')
+        self.spy_on(diffutils.patch)
+
+        form = UploadDiffForm(repository=repository,
+                              data={
+                                'basedir': '/',
+                              },
+                              files={
+                                'path': diff,
+                                'parent_diff_path': parent_diff,
+                              })
+
+        self.assertTrue(form.is_valid())
+
+        diffset = form.create(diff, parent_diff)
+
+        self.assertEqual(diffset.files.count(), 1)
+
+        f = diffset.files.get()
+
+        self.assertEqual(f.source_revision, revisions[0])
+        self.assertEqual(f.dest_detail, revisions[2])
+
+        original_file = diffutils.get_original_file(f, None, ['ascii'])
+        self.assertEqual(original_file, b'Foo\nBar\n')
+        self.assertTrue(diffutils.patch.spy.called)
+
+        patched_file = diffutils.get_patched_file(original_file, f, None)
+        self.assertEqual(patched_file, b'Foo\nBar\nBaz\n')
+        self.assertEqual(len(diffutils.patch.spy.calls), 2)
+
 
 class ProcessorsTests(TestCase):
     """Unit tests for diff processors."""
@@ -1279,8 +1854,8 @@ class ProcessorsTests(TestCase):
         self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
-        #       change in a chunk matter to the processor, so the rest can
-        #       be left out.
+        #       change in a chunk matter to the processor for this test,
+        #       so the rest can be left out.
         orig_diff = (
             '@@ -22,7 +22,7 @@\n'
             ' #\n #\n #\n-#\n'
@@ -1298,11 +1873,11 @@ class ProcessorsTests(TestCase):
         self.assertEqual(new_opcodes, [
             ('filtered-equal', 0, 0, 0, 1),
             ('filtered-equal', 0, 5, 1, 5),
-            ('delete', 5, 10, 5, 5),
+            ('filtered-equal', 5, 10, 5, 5),
             ('equal', 10, 25, 5, 20),
             ('replace', 25, 26, 20, 21),
-            ('equal', 26, 32, 21, 27),
-            ('filtered-equal', 32, 40, 27, 35),
+            ('equal', 26, 28, 21, 23),
+            ('filtered-equal', 28, 40, 23, 35),
             ('filtered-equal', 40, 40, 35, 45),
         ])
         self._sanity_check_opcodes(new_opcodes)
@@ -1319,8 +1894,8 @@ class ProcessorsTests(TestCase):
         self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
-        #       change in a chunk matter to the processor, so the rest can
-        #       be left out.
+        #       change in a chunk matter to the processor for this test,
+        #       so the rest can be left out.
         orig_diff = (
             '@@ -2,7 +2,7 @@\n'
             ' #\n #\n #\n-#\n'
@@ -1346,8 +1921,8 @@ class ProcessorsTests(TestCase):
         self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
-        #       change in a chunk matter to the processor, so the rest can
-        #       be left out.
+        #       change in a chunk matter to the processor for this test,
+        #       so the rest can be left out.
         orig_diff = (
             '@@ -0,0 +1 @@\n'
             '+#\n'
@@ -1373,8 +1948,8 @@ class ProcessorsTests(TestCase):
         self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
-        #       change in a chunk matter to the processor, so the rest can
-        #       be left out.
+        #       change in a chunk matter to the processor for this test,
+        #       so the rest can be left out.
         orig_diff = (
             '@@ -1,5 +1,5 @@\n'
             ' #\n#\n+#\n'
@@ -1410,8 +1985,8 @@ class ProcessorsTests(TestCase):
         self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
-        #       change in a chunk matter to the processor, so the rest can
-        #       be left out.
+        #       change in a chunk matter to the processor for this test,
+        #       so the rest can be left out.
         orig_diff = (
             '@@ -0,0 +1,232 @@\n'
             ' #\n #\n #\n+#\n'
@@ -1450,8 +2025,8 @@ class ProcessorsTests(TestCase):
         self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
-        #       change in a chunk matter to the processor, so the rest can
-        #       be left out.
+        #       change in a chunk matter to the processor for this test,
+        #       so the rest can be left out.
         orig_diff = '\n'.join([
             '@@ -413,6 +413,8 @@\n'
             ' #\n #\n #\n+#\n'
@@ -1488,8 +2063,8 @@ class ProcessorsTests(TestCase):
             ('filtered-equal', 0, 631, 0, 631),
             ('replace', 631, 632, 631, 632),
             ('insert', 632, 632, 632, 633),
-            ('equal', 632, 813, 633, 814),
-            ('filtered-equal', 813, 882, 814, 883),
+            ('equal', 632, 809, 633, 810),
+            ('filtered-equal', 809, 882, 810, 883),
         ])
         self._sanity_check_opcodes(new_opcodes)
 
@@ -1517,8 +2092,8 @@ class ProcessorsTests(TestCase):
         self._sanity_check_opcodes(opcodes)
 
         # NOTE: Only the "@@" lines and the lines leading up to the first
-        #       change in a chunk matter to the processor, so the rest can
-        #       be left out.
+        #       change in a chunk matter to the processor for this test,
+        #       so the rest can be left out.
         orig_diff = ''.join([
             '@@ -1,4 +1,5 @@\n',
             '-#\n',
@@ -1537,6 +2112,34 @@ class ProcessorsTests(TestCase):
             ('equal', 0, 2, 0, 2),
             ('replace', 2, 15, 2, 15),
             ('filtered-equal', 15, 100, 15, 100),
+        ])
+        self._sanity_check_opcodes(new_opcodes)
+
+    def test_filter_interdiff_opcodes_with_trailing_context(self):
+        """Testing filter_interdiff_opcodes with trailing context"""
+        opcodes = [
+            ('replace', 0, 13, 0, 13),
+            ('insert', 13, 13, 13, 14),
+            ('replace', 13, 20, 14, 21),
+        ]
+        self._sanity_check_opcodes(opcodes)
+
+        orig_diff = (
+            '@@ -10,5 +10,6 @@\n'
+            ' #\n #\n #\n+#\n #\n #\n'
+        )
+        new_diff = (
+            '@@ -10,6 +10,7 @@\n'
+            ' #\n #\n #\n #\n+##\n #\n #\n'
+        )
+
+        new_opcodes = list(filter_interdiff_opcodes(opcodes, orig_diff,
+                                                    new_diff))
+
+        self.assertEqual(new_opcodes, [
+            ('filtered-equal', 0, 13, 0, 13),
+            ('insert', 13, 13, 13, 14),
+            ('filtered-equal', 13, 20, 14, 21),
         ])
         self._sanity_check_opcodes(new_opcodes)
 
@@ -1645,26 +2248,56 @@ class ProcessorsTests(TestCase):
             prev_j2 = j2
 
 
-class DiffChunkGeneratorTests(TestCase):
-    """Unit tests for DiffChunkGenerator."""
-    def setUp(self):
-        filediff = FileDiff(source_file='foo', diffset=DiffSet())
-        self.generator = DiffChunkGenerator(None, filediff)
+class RawDiffChunkGeneratorTests(TestCase):
+    """Unit tests for RawDiffChunkGenerator."""
+
+    @property
+    def generator(self):
+        """Create a dummy generator for tests that need it.
+
+        This generator will be void of any content. It's intended for
+        use in tests that need to operate on its utility functions.
+        """
+        return RawDiffChunkGenerator('', '', '', '')
+
+    def test_get_chunks(self):
+        """Testing RawDiffChunkGenerator.get_chunks"""
+        old = (
+            b'This is line 1\n'
+            b'Another line\n'
+            b'Line 3.\n'
+            b'la de da.\n'
+        )
+
+        new = (
+            b'This is line 1\n'
+            b'Line 3.\n'
+            b'la de doo.\n'
+        )
+
+        generator = RawDiffChunkGenerator(old, new, 'file1', 'file2')
+        chunks = list(generator.get_chunks())
+
+        self.assertEqual(len(chunks), 4)
+        self.assertEqual(chunks[0]['change'], 'equal')
+        self.assertEqual(chunks[1]['change'], 'delete')
+        self.assertEqual(chunks[2]['change'], 'equal')
+        self.assertEqual(chunks[3]['change'], 'replace')
 
     def test_indent_spaces(self):
-        """Testing DiffChunkGenerator._serialize_indentation with spaces"""
+        """Testing RawDiffChunkGenerator._serialize_indentation with spaces"""
         self.assertEqual(
             self.generator._serialize_indentation('    ', 4),
             ('&gt;&gt;&gt;&gt;', ''))
 
     def test_indent_tabs(self):
-        """Testing DiffChunkGenerator._serialize_indentation with tabs"""
+        """Testing RawDiffChunkGenerator._serialize_indentation with tabs"""
         self.assertEqual(
             self.generator._serialize_indentation('\t', 8),
             ('&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;&gt;|', ''))
 
     def test_indent_spaces_and_tabs(self):
-        """Testing DiffChunkGenerator._serialize_indentation
+        """Testing RawDiffChunkGenerator._serialize_indentation
         with spaces and tabs
         """
         self.assertEqual(
@@ -1672,7 +2305,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('&gt;&gt;&gt;&mdash;&mdash;&mdash;&gt;|', ''))
 
     def test_indent_tabs_and_spaces(self):
-        """Testing DiffChunkGenerator._serialize_indentation
+        """Testing RawDiffChunkGenerator._serialize_indentation
         with tabs and spaces
         """
         self.assertEqual(
@@ -1681,7 +2314,7 @@ class DiffChunkGeneratorTests(TestCase):
              ''))
 
     def test_indent_9_spaces_and_tab(self):
-        """Testing DiffChunkGenerator._serialize_indentation
+        """Testing RawDiffChunkGenerator._serialize_indentation
         with 9 spaces and tab
         """
         self.assertEqual(
@@ -1689,7 +2322,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('&gt;&gt;&gt;&gt;&gt;&gt;&gt;|', ''))
 
     def test_indent_8_spaces_and_tab(self):
-        """Testing DiffChunkGenerator._serialize_indentation
+        """Testing RawDiffChunkGenerator._serialize_indentation
         with 8 spaces and tab
         """
         self.assertEqual(
@@ -1697,7 +2330,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('&gt;&gt;&gt;&gt;&gt;&gt;&gt;|', ''))
 
     def test_indent_7_spaces_and_tab(self):
-        """Testing DiffChunkGenerator._serialize_indentation
+        """Testing RawDiffChunkGenerator._serialize_indentation
         with 7 spaces and tab
         """
         self.assertEqual(
@@ -1705,19 +2338,20 @@ class DiffChunkGeneratorTests(TestCase):
             ('&gt;&gt;&gt;&gt;&gt;&mdash;&gt;|', ''))
 
     def test_unindent_spaces(self):
-        """Testing DiffChunkGenerator._serialize_unindentation with spaces"""
+        """Testing RawDiffChunkGenerator._serialize_unindentation with spaces
+        """
         self.assertEqual(
             self.generator._serialize_unindentation('    ', 4),
             ('&lt;&lt;&lt;&lt;', ''))
 
     def test_unindent_tabs(self):
-        """Testing DiffChunkGenerator._serialize_unindentation with tabs"""
+        """Testing RawDiffChunkGenerator._serialize_unindentation with tabs"""
         self.assertEqual(
             self.generator._serialize_unindentation('\t', 8),
             ('|&lt;&mdash;&mdash;&mdash;&mdash;&mdash;&mdash;', ''))
 
     def test_unindent_spaces_and_tabs(self):
-        """Testing DiffChunkGenerator._serialize_unindentation
+        """Testing RawDiffChunkGenerator._serialize_unindentation
         with spaces and tabs
         """
         self.assertEqual(
@@ -1725,7 +2359,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('&lt;&lt;&lt;|&lt;&mdash;&mdash;&mdash;', ''))
 
     def test_unindent_tabs_and_spaces(self):
-        """Testing DiffChunkGenerator._serialize_unindentation
+        """Testing RawDiffChunkGenerator._serialize_unindentation
         with tabs and spaces
         """
         self.assertEqual(
@@ -1734,7 +2368,7 @@ class DiffChunkGeneratorTests(TestCase):
              ''))
 
     def test_unindent_9_spaces_and_tab(self):
-        """Testing DiffChunkGenerator._serialize_unindentation
+        """Testing RawDiffChunkGenerator._serialize_unindentation
         with 9 spaces and tab
         """
         self.assertEqual(
@@ -1742,7 +2376,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('&lt;&lt;&lt;&lt;&lt;&lt;&lt;|', ''))
 
     def test_unindent_8_spaces_and_tab(self):
-        """Testing DiffChunkGenerator._serialize_unindentation
+        """Testing RawDiffChunkGenerator._serialize_unindentation
         with 8 spaces and tab
         """
         self.assertEqual(
@@ -1750,7 +2384,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('&lt;&lt;&lt;&lt;&lt;&lt;|&lt;', ''))
 
     def test_unindent_7_spaces_and_tab(self):
-        """Testing DiffChunkGenerator._serialize_unindentation
+        """Testing RawDiffChunkGenerator._serialize_unindentation
         with 7 spaces and tab
         """
         self.assertEqual(
@@ -1758,7 +2392,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('&lt;&lt;&lt;&lt;&lt;|&lt;&mdash;', ''))
 
     def test_highlight_indent(self):
-        """Testing DiffChunkGenerator._highlight_indentation
+        """Testing RawDiffChunkGenerator._highlight_indentation
         with indentation
         """
         self.assertEqual(
@@ -1769,7 +2403,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('', '<span class="indent">&gt;&gt;&gt;&gt;</span>    foo'))
 
     def test_highlight_indent_with_adjacent_tag(self):
-        """Testing DiffChunkGenerator._highlight_indentation
+        """Testing RawDiffChunkGenerator._highlight_indentation
         with indentation and adjacent tag wrapping whitespace
         """
         self.assertEqual(
@@ -1781,7 +2415,7 @@ class DiffChunkGeneratorTests(TestCase):
              '<span class="s"><span class="indent">&gt;</span></span>foo'))
 
     def test_highlight_indent_with_unexpected_chars(self):
-        """Testing DiffChunkGenerator._highlight_indentation
+        """Testing RawDiffChunkGenerator._highlight_indentation
         with indentation and unexpected markup chars
         """
         self.assertEqual(
@@ -1792,7 +2426,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('', ' <span>  </span> foo'))
 
     def test_highlight_unindent(self):
-        """Testing DiffChunkGenerator._highlight_indentation
+        """Testing RawDiffChunkGenerator._highlight_indentation
         with unindentation
         """
         self.assertEqual(
@@ -1803,7 +2437,7 @@ class DiffChunkGeneratorTests(TestCase):
             ('<span class="unindent">&lt;&lt;&lt;&lt;</span>    foo', ''))
 
     def test_highlight_unindent_with_adjacent_tag(self):
-        """Testing DiffChunkGenerator._highlight_indentation
+        """Testing RawDiffChunkGenerator._highlight_indentation
         with unindentation and adjacent tag wrapping whitespace
         """
         self.assertEqual(
@@ -1815,7 +2449,7 @@ class DiffChunkGeneratorTests(TestCase):
              ''))
 
     def test_highlight_unindent_with_unexpected_chars(self):
-        """Testing DiffChunkGenerator._highlight_indentation
+        """Testing RawDiffChunkGenerator._highlight_indentation
         with unindentation and unexpected markup chars
         """
         self.assertEqual(
@@ -1826,7 +2460,7 @@ class DiffChunkGeneratorTests(TestCase):
             (' <span>  </span> foo', ''))
 
     def test_highlight_unindent_with_replacing_last_tab_with_spaces(self):
-        """Testing DiffChunkGenerator._highlight_indentation
+        """Testing RawDiffChunkGenerator._highlight_indentation
         with unindentation and replacing last tab with spaces
         """
         self.assertEqual(
@@ -1840,7 +2474,7 @@ class DiffChunkGeneratorTests(TestCase):
              '</span>        </span> foo', ''))
 
     def test_highlight_unindent_with_replacing_3_tabs_with_tab_spaces(self):
-        """Testing DiffChunkGenerator._highlight_indentation
+        """Testing RawDiffChunkGenerator._highlight_indentation
         with unindentation and replacing 3 tabs with 1 tab and 8 spaces
         """
         self.assertEqual(
@@ -1989,29 +2623,118 @@ class DiffOpcodeGeneratorTests(TestCase):
             (False, 3, 8))
 
 
+class DiffChunkGeneratorTests(TestCase):
+    """Unit tests for DiffChunkGenerator."""
+
+    fixtures = ['test_scmtools']
+
+    def setUp(self):
+        self.repository = self.create_repository()
+        self.diffset = self.create_diffset(repository=self.repository)
+        self.filediff = self.create_filediff(diffset=self.diffset)
+        self.generator = DiffChunkGenerator(None, self.filediff)
+
+    def test_get_chunks_with_empty_added_file(self):
+        """Testing DiffChunkGenerator.get_chunks with empty added file"""
+        self.filediff.source_revision = PRE_CREATION
+        self.filediff.extra_data.update({
+            'raw_insert_count': 0,
+            'raw_delete_count': 0,
+        })
+
+        self.assertEqual(len(list(self.generator.get_chunks())), 0)
+
+    def test_get_chunks_with_replace_in_added_file_with_parent_diff(self):
+        """Testing DiffChunkGenerator.get_chunks with replace chunks in
+        added file with parent diff
+        """
+        self.filediff.diff = (
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -1,1 +1,1 @@\n'
+            b'-line\n'
+            b'+line.\n'
+        )
+        self.filediff.parent_diff = (
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -0,0 +1,1 @@\n'
+            b'+line\n'
+        )
+        self.filediff.source_revision = PRE_CREATION
+        self.filediff.extra_data.update({
+            'raw_insert_count': 1,
+            'raw_delete_count': 1,
+            'insert_count': 0,
+            'delete_count': 0,
+        })
+
+        self.assertEqual(len(list(self.generator.get_chunks())), 1)
+
+    def test_line_counts_unmodified_by_interdiff(self):
+        """Testing that line counts are not modified by interdiffs where the
+        changes are reverted
+        """
+        self.filediff.source_revision = PRE_CREATION
+        self.filediff.diff = (
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -0,0 +1,1 @@\n'
+            b'+line\n'
+        )
+
+        # We have to consume everything from the get_chunks generator in order
+        # for the line counts to be set on the FileDiff.
+        self.assertEqual(len(list(self.generator.get_chunks())), 1)
+
+        line_counts = self.filediff.get_line_counts()
+
+        # Simulate an interdiff where the changes are reverted.
+        interdiff_generator = DiffChunkGenerator(request=None,
+                                                 filediff=self.filediff,
+                                                 interfilediff=None,
+                                                 force_interdiff=True)
+
+        # Again, just consuming the generator.
+        self.assertEqual(len(list(interdiff_generator.get_chunks())), 1)
+
+        self.assertEqual(line_counts, self.filediff.get_line_counts())
+
+
 class DiffRendererTests(SpyAgency, TestCase):
     """Unit tests for DiffRenderer."""
+
     def test_construction_with_invalid_chunks(self):
         """Testing DiffRenderer construction with invalid chunks"""
         diff_file = {
-            'chunks': [{}]
+            'chunks': [{}],
+            'filediff': None,
+            'interfilediff': None,
+            'force_interdiff': False,
+            'chunks_loaded': True,
         }
 
-        self.assertRaises(
-            UserVisibleError,
-            lambda: DiffRenderer(diff_file, chunk_index=-1))
-        self.assertRaises(
-            UserVisibleError,
-            lambda: DiffRenderer(diff_file, chunk_index=1))
+        renderer = DiffRenderer(diff_file, chunk_index=-1)
+        self.assertRaises(UserVisibleError,
+                          lambda: renderer.render_to_string_uncached(None))
+
+        renderer = DiffRenderer(diff_file, chunk_index=1)
+        self.assertRaises(UserVisibleError,
+                          lambda: renderer.render_to_string_uncached(None))
 
     def test_construction_with_valid_chunks(self):
         """Testing DiffRenderer construction with valid chunks"""
         diff_file = {
-            'chunks': [{}]
+            'chunks': [{}],
+            'chunks_loaded': True,
         }
 
         # Should not assert.
         renderer = DiffRenderer(diff_file, chunk_index=0)
+        self.spy_on(renderer.render_to_string, call_original=False)
+        self.spy_on(renderer.make_context, call_original=False)
+
+        renderer.render_to_string_uncached(None)
         self.assertEqual(renderer.num_chunks, 1)
         self.assertEqual(renderer.chunk_index, 0)
 
@@ -2022,9 +2745,12 @@ class DiffRendererTests(SpyAgency, TestCase):
         }
 
         renderer = DiffRenderer(diff_file)
-        self.spy_on(renderer.render_to_string, call_fake=lambda self: 'Foo')
+        self.spy_on(renderer.render_to_string,
+                    call_fake=lambda self, request: 'Foo')
 
-        response = renderer.render_to_response()
+        request_factory = RequestFactory()
+        request = request_factory.get('/')
+        response = renderer.render_to_response(request)
 
         self.assertTrue(renderer.render_to_string.called)
         self.assertTrue(isinstance(response, HttpResponse))
@@ -2038,12 +2764,14 @@ class DiffRendererTests(SpyAgency, TestCase):
 
         renderer = DiffRenderer(diff_file)
         self.spy_on(renderer.render_to_string_uncached,
-                    call_fake=lambda self: 'Foo')
+                    call_fake=lambda self, request: 'Foo')
         self.spy_on(renderer.make_cache_key,
                     call_fake=lambda self: 'my-cache-key')
         self.spy_on(cache_memoize)
 
-        response = renderer.render_to_response()
+        request_factory = RequestFactory()
+        request = request_factory.get('/')
+        response = renderer.render_to_response(request)
 
         self.assertEqual(response.content, 'Foo')
         self.assertTrue(renderer.render_to_string_uncached.called)
@@ -2058,12 +2786,14 @@ class DiffRendererTests(SpyAgency, TestCase):
 
         renderer = DiffRenderer(diff_file, lines_of_context=[5, 5])
         self.spy_on(renderer.render_to_string_uncached,
-                    call_fake=lambda self: 'Foo')
+                    call_fake=lambda self, request: 'Foo')
         self.spy_on(renderer.make_cache_key,
                     call_fake=lambda self: 'my-cache-key')
         self.spy_on(cache_memoize)
 
-        response = renderer.render_to_response()
+        request_factory = RequestFactory()
+        request = request_factory.get('/')
+        response = renderer.render_to_response(request)
 
         self.assertEqual(response.content, 'Foo')
         self.assertTrue(renderer.render_to_string_uncached.called)
@@ -2110,6 +2840,62 @@ class DiffRendererTests(SpyAgency, TestCase):
 
 class DiffUtilsTests(TestCase):
     """Unit tests for diffutils."""
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_interdiff_when_renaming_twice(self):
+        """Testing interdiff when renaming twice"""
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        one_to_two = (b'diff --git a/foo.txt b/foo.txt\n'
+                      b'deleted file mode 100644\n'
+                      b'index 092beec..0000000\n'
+                      b'--- a/foo.txt\n'
+                      b'+++ /dev/null\n'
+                      b'@@ -1,2 +0,0 @@\n'
+                      b'-This is foo!\n'
+                      b'-=]\n'
+                      b'diff --git a/foo2.txt b/foo2.txt\n'
+                      b'new file mode 100644\n'
+                      b'index 0000000..092beec\n'
+                      b'--- /dev/null\n'
+                      b'+++ b/foo2.txt\n'
+                      b'@@ -0,0 +1,2 @@\n'
+                      b'+This is foo!\n'
+                      b'+=]\n')
+        one_to_three = (b'diff --git a/foo.txt b/foo.txt\n'
+                        b'deleted file mode 100644\n'
+                        b'index 092beec..0000000\n'
+                        b'--- a/foo.txt\n'
+                        b'+++ /dev/null\n'
+                        b'@@ -1,2 +0,0 @@\n'
+                        b'-This is foo!\n'
+                        b'-=]\n'
+                        b'diff --git a/foo3.txt b/foo3.txt\n'
+                        b'new file mode 100644\n'
+                        b'index 0000000..092beec\n'
+                        b'--- /dev/null\n'
+                        b'+++ b/foo3.txt\n'
+                        b'@@ -0,0 +1,2 @@\n'
+                        b'+This is foo!\n'
+                        b'+=]\n')
+
+        diffset = self.create_diffset(review_request=review_request)
+        self.create_filediff(diffset=diffset, source_file='foo.txt',
+                             dest_file='foo2.txt', status=FileDiff.MODIFIED,
+                             diff=one_to_two)
+
+        interdiffset = self.create_diffset(review_request=review_request)
+        self.create_filediff(diffset=interdiffset, source_file='foo.txt',
+                             dest_file='foo3.txt', status=FileDiff.MODIFIED,
+                             diff=one_to_three)
+
+        diff_files = diffutils.get_diff_files(diffset, None, interdiffset)
+        two_to_three = diff_files[0]
+
+        self.assertEqual(two_to_three['depot_filename'], 'foo2.txt')
+        self.assertEqual(two_to_three['dest_filename'], 'foo3.txt')
+
     def test_get_line_changed_regions(self):
         """Testing DiffChunkGenerator._get_line_changed_regions"""
         def deep_equal(A, B):
@@ -2140,3 +2926,231 @@ class DiffUtilsTests(TestCase):
         new = 'nopqrstuvwxyz'
         regions = diffutils.get_line_changed_regions(old, new)
         deep_equal(regions, (None, None))
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_headers_use_correct_line_insert(self):
+        """Testing header generation for chunks with insert chunks above"""
+        # We turn off highlighting to compare lines.
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('diffviewer_syntax_highlighting', False)
+        siteconfig.save()
+
+        line_number = 27  # This is a header line below the chunk of inserts
+
+        diff = (b"diff --git a/tests.py b/tests.py\n"
+                b"index a4fc53e..f2414cc 100644\n"
+                b"--- a/tests.py\n"
+                b"+++ b/tests.py\n"
+                b"@@ -20,6 +20,9 @@ from reviewboard.site.urlresolvers import "
+                b"local_site_reverse\n"
+                b" from reviewboard.site.models import LocalSite\n"
+                b" from reviewboard.webapi.errors import INVALID_REPOSITORY\n"
+                b"\n"
+                b"+class Foo(object):\n"
+                b"+    def bar(self):\n"
+                b"+        pass\n"
+                b"\n"
+                b" class BaseWebAPITestCase(TestCase, EmailTestHelper);\n"
+                b"     fixtures = ['test_users', 'test_reviewrequests', 'test_"
+                b"scmtools',\n")
+
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+
+        filediff = self.create_filediff(
+            diffset=diffset, source_file='tests.py', dest_file='tests.py',
+            source_revision='a4fc53e08863f5341effb5204b77504c120166ae',
+            diff=diff)
+
+        context = {'user': review_request.submitter}
+        header = diffutils.get_last_header_before_line(context, filediff, None,
+                                                       line_number)
+        chunks = diffutils.get_file_chunks_in_range(
+            context, filediff, None, 1,
+            diffutils.get_last_line_number_in_diff(context, filediff, None))
+
+        lines = []
+
+        for chunk in chunks:
+            lines.extend(chunk['lines'])
+
+        # The header we find should be before our line number (which has a
+        # header itself).
+        self.assertTrue(header['right']['line'] < line_number)
+
+        # The line numbers start at 1 and not 0.
+        self.assertEqual(header['right']['text'],
+                         lines[header['right']['line'] - 1][5])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_header_correct_line_delete(self):
+        """Testing header generation for chunks with delete chunks above"""
+        # We turn off highlighting to compare lines.
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('diffviewer_syntax_highlighting', False)
+        siteconfig.save()
+
+        line_number = 53  # This is a header line below the chunk of deletes
+
+        diff = (b"diff --git a/tests.py b/tests.py\n"
+                b"index a4fc53e..ba7d34b 100644\n"
+                b"--- a/tests.py\n"
+                b"+++ b/tests.py\n"
+                b"@@ -47,9 +47,6 @@ class BaseWebAPITestCase(TestCase, "
+                b"EmailTestHelper);\n"
+                b"\n"
+                b"         yourself.base_url = 'http;//testserver'\n"
+                b"\n"
+                b"-    def tearDown(yourself);\n"
+                b"-        yourself.client.logout()\n"
+                b"-\n"
+                b"     def api_func_wrapper(yourself, api_func, path, query, "
+                b"expected_status,\n"
+                b"                          follow_redirects, expected_"
+                b"redirects);\n"
+                b"         response = api_func(path, query, follow=follow_"
+                b"redirects)\n")
+
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+
+        filediff = self.create_filediff(
+            diffset=diffset, source_file='tests.py', dest_file='tests.py',
+            source_revision='a4fc53e08863f5341effb5204b77504c120166ae',
+            diff=diff)
+
+        context = {'user': review_request.submitter}
+        header = diffutils.get_last_header_before_line(context, filediff, None,
+                                                       line_number)
+
+        chunks = diffutils.get_file_chunks_in_range(
+            context, filediff, None, 1,
+            diffutils.get_last_line_number_in_diff(context, filediff, None))
+
+        lines = []
+
+        for chunk in chunks:
+            lines.extend(chunk['lines'])
+
+        # The header we find should be before our line number (which has a
+        # header itself).
+        self.assertTrue(header['left']['line'] < line_number)
+
+        # The line numbers start at 1 and not 0.
+        self.assertEqual(header['left']['text'],
+                         lines[header['left']['line'] - 1][2])
+
+
+class DiffExpansionHeaderTests(TestCase):
+    """Testing generation of diff expansion headers."""
+
+    def test_find_header_with_filtered_equal(self):
+        """Testing finding a header in a file that has filtered equals
+        chunks
+        """
+        # See diffviewer.diffutils.get_file_chunks_in_range for a description
+        # of chunks and its elements. We fake the elements of lines here
+        # because we only need elements 0, 1, and 4 (of what would be a list).
+        chunks = [
+            {
+                'change': 'equal',
+                'meta': {
+                    'left_headers': [(1, 'foo')],
+                    'right_headers': [],
+                },
+                'lines': [
+                    {
+                        0: 1,
+                        1: 1,
+                        4: '',
+                    },
+                    {
+                        0: 2,
+                        1: 2,
+                        4: 1,
+                    },
+                ]
+            },
+            {
+                'change': 'equal',
+                'meta': {
+                    'left_headers': [],
+                    'right_headers': [(2, 'bar')],
+                },
+                'lines': [
+                    {
+                        0: 3,
+                        1: '',
+                        4: 2,
+                    },
+                    {
+                        0: 4,
+                        1: 3,
+                        4: 3,
+                    },
+                ]
+            }
+        ]
+
+        left_header = {
+            'line': 1,
+            'text': 'foo',
+        }
+        right_header = {
+            'line': 3,
+            'text': 'bar',
+        }
+
+        self.assertEqual(
+            diffutils._get_last_header_in_chunks_before_line(chunks, 2),
+            {
+                'left': left_header,
+                'right': None,
+            })
+
+        self.assertEqual(
+            diffutils._get_last_header_in_chunks_before_line(chunks, 4),
+            {
+                'left': left_header,
+                'right': right_header,
+            })
+
+    def test_find_header_with_header_oustside_chunk(self):
+        """Testing finding a header in a file where the header in a chunk does
+        not belong to the chunk it is in
+        """
+        chunks = [
+            {
+                'change': 'equal',
+                'meta': {
+                    'left_headers': [
+                        (1, 'foo'),
+                        (100, 'bar'),
+                    ],
+                },
+                'lines': [
+                    {
+                        0: 1,
+                        1: 1,
+                        4: 1,
+                    },
+                    {
+                        0: 2,
+                        1: 2,
+                        4: 1,
+                    },
+                ]
+            }
+        ]
+
+        self.assertEqual(
+            diffutils._get_last_header_in_chunks_before_line(chunks, 2),
+            {
+                'left': {
+                    'line': 1,
+                    'text': 'foo',
+                },
+                'right': None,
+            })

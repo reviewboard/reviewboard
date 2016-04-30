@@ -6,6 +6,7 @@ from collections import defaultdict
 
 from django import forms
 from django.conf.urls import patterns, url
+from django.core.cache import cache
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.template import RequestContext
 from django.template.loader import render_to_string
@@ -25,6 +26,7 @@ from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_repository_for_hook,
                                                 get_review_request_id)
 from reviewboard.hostingsvcs.service import HostingService
+from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
@@ -68,6 +70,7 @@ class Bitbucket(HostingService):
     needs_authorization = True
     supports_repositories = True
     supports_bug_trackers = True
+    supports_post_commit = True
 
     has_repository_hook_instructions = True
 
@@ -252,6 +255,116 @@ class Bitbucket(HostingService):
                 'add_webhook_url': add_webhook_url,
             }))
 
+    def _get_default_branch_name(self, repository):
+        """Return the name of the repository's default branch.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository whose default branch is to be looked up.
+
+        Returns:
+            unicode: The name of the default branch.
+        """
+        url = self._build_repository_api_url(repository, 'main-branch/')
+
+        rsp = self._api_get(url)
+
+        return rsp['name']
+
+    def get_branches(self, repository):
+        default_branch_name = self._get_default_branch_name(repository)
+
+        url = self._build_repository_api_url(repository, 'branches/')
+
+        rsp = self._api_get(url)
+
+        branches = []
+
+        for branch_name, branch in six.iteritems(rsp):
+            branches.append(
+                Branch(id=branch_name,
+                       commit=branch['raw_node'],
+                       default=(branch_name == default_branch_name)))
+
+        return branches
+
+    def get_commits(self, repository, branch=None, start=None):
+        url = self._build_repository_api_url(repository,
+                                             'changesets/?limit=20')
+
+        start = start or branch
+
+        if start:
+            url += '&start=%s' % start
+
+        results = []
+
+        # The API returns them in order from oldest to newest.
+        for changeset in reversed(self._api_get(url)['changesets']):
+            commit = Commit(
+                author_name=changeset['author'],
+                id=changeset['raw_node'],
+                date=self._parse_timestamp(changeset['utctimestamp']),
+                message=changeset['message'],
+                base_commit_id=changeset['raw_node'])
+
+            if changeset['parents']:
+                commit.parent = changeset['parents'][0]
+
+            results.append(commit)
+
+        return results
+
+    def get_change(self, repository, revision):
+        # We try to pull the commit's metadata out of the cache. The diff API
+        # endpoint is just the raw content of the diff and contains no
+        # metadata.
+        commit = cache.get(repository.get_commit_cache_key(revision))
+
+        if not commit:
+            # However, if it is not in the cache, we have to hit the API to
+            # get the metadata.
+            commit = self.get_commits(repository, revision)[0]
+
+        url = self._build_repository_api_url(repository, 'diff/%s' % revision,
+                                             version='2.0')
+
+        diff = self._api_get(url, raw_content=True)
+
+        if not diff.endswith('\n'):
+            diff += '\n'
+
+        return Commit(author_name=commit.author_name,
+                      id=commit.id,
+                      date=commit.date,
+                      message=commit.message,
+                      diff=diff,
+                      base_commit_id=commit.base_commit_id)
+
+    def _build_repository_api_url(self, repository, url='', version='1.0'):
+        """Build an API URL for the given repository.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository.
+
+            url (unicode):
+                Extra url components to add to the end of the generated URL.
+
+            version (unicode):
+                The API version to use.
+
+        Returns:
+            unicode:
+                The API URL.
+        """
+        username = self._get_repository_owner(repository)
+        repo_name = self._get_repository_name(repository)
+
+        return self._build_api_url('repositories/%s/%s/%s'
+                                   % (username, repo_name, url),
+                                   version=version)
+
     def _api_get_repository(self, username, repo_name):
         url = self._build_api_url('repositories/%s/%s'
                                   % (username, repo_name))
@@ -283,7 +396,11 @@ class Bitbucket(HostingService):
                quote(revision),
                quote(path)))
 
-        return self._api_get(url, raw_content=True)
+        try:
+            return self._api_get(url, raw_content=True)
+        except FileNotFoundError:
+            raise FileNotFoundError(path, revision=revision,
+                                    base_commit_id=base_commit_id)
 
     def _build_api_url(self, url, version='1.0'):
         return 'https://bitbucket.org/api/%s/%s' % (version, url)
@@ -354,9 +471,29 @@ class Bitbucket(HostingService):
         if e.code == 401:
             raise AuthorizationError(
                 message or ugettext('Invalid Bitbucket username or password'))
+        elif e.code == 404:
+            # We don't have a path here, but it will be filled in inside
+            # _api_get_src.
+            raise FileNotFoundError('')
         else:
             raise HostingServiceError(
                 message or ugettext('Unknown error when talking to Bitbucket'))
+
+    def _parse_timestamp(self, timestamp):
+        """Parse a timestamp given by BitBucket's API into the correct format.
+
+        BitBucket gives timestamps in the form ``YYYY-MM-DD HH:MM:SS+ZZZZ``,
+        but JavaScript's ``Date`` cannot parse them in this format; it expects
+        the format ``YYYY-MM-DDTHH:MM:SS+ZZZZ`` (where T is a literal T).
+
+        Args:
+            timestamp (unicode):
+                A string representing a UTC timestamp.
+
+        Returns:
+            unicode: A string representing a UTC timestamp in ISO 8601 format.
+        """
+        return timestamp.replace(' ', 'T')
 
 
 @require_POST

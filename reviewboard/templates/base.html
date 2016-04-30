@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-{% load compressed djblets_deco djblets_extensions djblets_utils i18n %}
-{% load staticfiles %}
+{% load avatars djblets_deco djblets_extensions djblets_utils i18n pipeline staticfiles %}
 
 <html>
  <head>
@@ -10,18 +9,19 @@
 {% template_hook_point "base-extrahead" %}
   <script type="text/javascript">
     var AJAX_SERIAL = "{{AJAX_SERIAL}}",
+        TEMPLATE_SERIAL = "{{settings.TEMPLATE_SERIAL}}",
         SITE_ROOT = "{{SITE_ROOT}}",
         MANUAL_URL = '{{RB_MANUAL_URL}}',
         STATIC_URLS = {
             'rb/images/favicon_notify.ico': '{% static "rb/images/favicon_notify.ico" %}',
             'rb/images/resize-grip.png': '{% static "rb/images/resize-grip.png" %}',
-            'rb/images/spinner.gif': '{% static "rb/images/spinner.gif" %}'
+            'rb/images/logo.png': '{% static "rb/images/logo.png" %}'
         };
 {% block jsconsts %}{% endblock %}
   </script>
   <link rel="shortcut icon" type="image/x-icon" href="{% static "rb/images/favicon.ico" %}" />
   <link rel="apple-touch-icon-precomposed" type="image/png" href="{% static "rb/images/apple-home-icon.png" %}" />
-{% compressed_css "common" %}
+{% stylesheet 'common' %}
 {% block css %}{% endblock %}
 {% load_extensions_css "reviewboard.extensions" %}
 {% template_hook_point "base-css" %}
@@ -44,25 +44,32 @@
   <![endif]-->
 {% include "js/jquery.html" %}
 {% block scripts %}{% endblock %}
-{% include "js/pipeline.html" %}
 {% template_hook_point "base-scripts" %}
  </head>
 {% block bodytag %}
- <body>
+ <body class="{% block page_class %}default-page{% endblock %}">
 {% endblock %}
-  <div id="container">
+  <div id="mobile_navbar_container">
+{%  block mobile-navbar %}
+{%   definevar "mobile_nav_content" %}{% block mobile_nav %}{% endblock %}{% enddefinevar %}
+{%   include "base/_mobile_navbar.html" %}
+{%  endblock mobile-navbar %}
+  </div>
 
+  <div id="container">
+   <div id="topbar">
 {% block headerbar %}
 {%  include "base/headerbar.html" %}
 {%  template_hook_point "base-before-navbar" %}
-   <div id="navbar-container">
+    <div id="navbar-container">
 {%  block navbar %}
 {%   include "base/navbar.html" %}
 {%  endblock %}
 {%  template_hook_point "base-after-navbar" %}
 {%  block navbar_post %}{% endblock %}
-   </div>
+    </div>
 {% endblock %}
+   </div>
 
    <div id="page-container">
     <noscript>
@@ -77,7 +84,8 @@
 {%  endbox %}
     </noscript>
     <div id="error"></div>
-	<div id="container">
+    <div id="content_container">
+{% block sidebar %}{% endblock %}
      {% block contenttag %}<div id="content">{% endblock %}
 {% template_hook_point "base-before-content" %}
 {% block main_content %}
@@ -88,32 +96,51 @@
     </div>
    </div>
   </div>
+  <div id="activity-indicator">
+   <span class="fa fa-spinner fa-pulse"></span>
+   <span class="indicator-text">{% trans "Loading..." %}</span>
+  </div>
   <script src="{% url 'js-catalog' %}"></script>
   {% include "js/jquery-ui.html" %}
-  {% compressed_js "3rdparty" %}
-  {% compressed_js "djblets-gravy" %}
-  {% compressed_js "djblets-extensions" %}
-  {% compressed_js "common" %}
+  {% javascript '3rdparty' %}
+  {% javascript 'djblets-gravy' %}
+  {% javascript 'djblets-extensions' %}
+  {% javascript 'common' %}
   <script>
     RB.UserSession.create({
 {% if request.user.is_authenticated %}
         authenticated: true,
 {%  if user_profile %}
         commentsOpenAnIssue: {{user_profile.open_an_issue|yesno:"true,false"}},
-{%  endif %}
+        enableDesktopNotifications: {{user_profile.should_enable_desktop_notifications|yesno:"true,false"}},
         defaultUseRichText: {{user_profile.should_use_rich_text|yesno:"true,false"}},
+{%  endif %}
         fullName: "{{request.user|user_displayname|escapejs}}",
+{% if siteconfig_settings.avatars_enabled %}
+        avatarURLs: {
+            32: {
+               '1x': "{% filter escapejs %}{% avatar_url request.user 32 "1x" %}{% endfilter %}",
+               '2x': "{% filter escapejs %}{% avatar_url request.user 32 "2x" %}{% endfilter %}"
+            }
+        },
+{% else %}
+        avatarURLs: {},
+{% endif %}
         username: "{{request.user.username|escapejs}}",
         userPageURL: "{% url 'user' request.user %}",
         sessionURL: "{% url 'session-resource' %}",
         timezoneOffset: "{% now 'O' %}",
         watchedReviewGroupsURL: "{% url 'watched-review-groups-resource' request.user %}",
-        watchedReviewRequestsURL: "{% url 'watched-review-requests-resource' request.user %}"
+        watchedReviewRequestsURL: "{% url 'watched-review-requests-resource' request.user %}",
+        archivedReviewRequestsURL: "{% url 'archived-review-requests-resource' request.user %}",
+        mutedReviewRequestsURL: "{% url 'muted-review-requests-resource' request.user %}"
 {% else %}
         authenticated: false,
         loginURL: "{% url 'login' %}"
 {% endif %}
     });
+
+    new RB.HeaderView({ el: $('#headerbar') });
   </script>
 {% block scripts-post %}{% endblock %}
 {% block js_extensions %}

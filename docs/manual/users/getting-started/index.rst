@@ -8,4 +8,3 @@ Getting Started
    introduction
    what-is-code-review
    workflow
-   settings

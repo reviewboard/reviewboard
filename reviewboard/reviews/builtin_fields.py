@@ -1,5 +1,8 @@
 from __future__ import unicode_literals
 
+import uuid
+
+from django.contrib.auth.models import User
 from django.core.urlresolvers import NoReverseMatch
 from django.db import models
 from django.template.loader import Context, get_template
@@ -10,12 +13,16 @@ from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.diffutils import get_sorted_filediffs
+from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.fields import (BaseCommaEditableField,
                                         BaseEditableField,
                                         BaseReviewRequestField,
                                         BaseReviewRequestFieldSet,
                                         BaseTextAreaField)
-from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
+from reviewboard.reviews.models import (Group, ReviewRequest,
+                                        ReviewRequestDraft,
+                                        Screenshot)
+from reviewboard.scmtools.models import Repository
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
@@ -108,6 +115,7 @@ class BaseCaptionsField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
     for caption changes on file attachments or screenshots.
     """
     obj_map_attr = None
+    caption_object_field = None
 
     change_entry_renders_inline = False
 
@@ -132,6 +140,18 @@ class BaseCaptionsField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
         s.append('</table>')
 
         return ''.join(s)
+
+    def serialize_change_entry(self, changedesc):
+        data = changedesc.fields_changed[self.field_id]
+
+        return [
+            {
+                'old': data[six.text_type(obj.pk)]['old'][0],
+                'new': data[six.text_type(obj.pk)]['new'][0],
+                self.caption_object_field: obj,
+            }
+            for obj in self.model.objects.filter(pk__in=six.iterkeys(data))
+        ]
 
 
 class BaseModelListEditableField(BaseCommaEditableField):
@@ -161,6 +181,30 @@ class BaseModelListEditableField(BaseCommaEditableField):
 
     def save_value(self, value):
         setattr(self, self.field_id, value)
+
+
+class StatusField(BuiltinFieldMixin, BaseReviewRequestField):
+    """The Status field on a review request."""
+
+    field_id = 'status'
+    label = _('Status')
+    is_required = True
+
+    def should_render(self, status):
+        """Return whether this field should be rendered.
+
+        This field is "rendered" by displaying the publish and close banners,
+        and doesn't have a real field within the fieldsets.
+        """
+        return False
+
+    def get_change_entry_sections_html(self, info):
+        """Return sections of change entries with titles and rendered HTML.
+
+        Because the status field is specially handled, this just returns an
+        empty list.
+        """
+        return []
 
 
 class SummaryField(BuiltinFieldMixin, BaseEditableField):
@@ -195,10 +239,13 @@ class TestingDoneField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
         return self.review_request_details.testing_done_rich_text
 
 
-class SubmitterField(BuiltinFieldMixin, BaseReviewRequestField):
+class SubmitterField(BuiltinFieldMixin, BaseEditableField):
     """The Submitter field on a review request."""
     field_id = 'submitter'
     label = _('Submitter')
+    model = User
+    model_name_attr = 'username'
+    is_required = True
 
     def render_value(self, user):
         return format_html(
@@ -209,11 +256,32 @@ class SubmitterField(BuiltinFieldMixin, BaseReviewRequestField):
                 args=[user]),
             user.get_full_name() or user.username)
 
+    def record_change_entry(self, changedesc, old_value, new_value):
+        changedesc.record_field_change(self.field_id, old_value, new_value,
+                                       self.model_name_attr)
+
+    def render_change_entry_value_html(self, info, item):
+        label, url, pk = item
+
+        if url:
+            return '<a href="%s">%s</a>' % (escape(url), escape(label))
+        else:
+            return escape(label)
+
+    def serialize_change_entry(self, changedesc):
+        entry = super(SubmitterField, self).serialize_change_entry(changedesc)
+
+        return dict(
+            (key, value[0])
+            for key, value in six.iteritems(entry)
+        )
+
 
 class RepositoryField(BuiltinFieldMixin, BaseReviewRequestField):
     """The Repository field on a review request."""
     field_id = 'repository'
     label = _('Repository')
+    model = Repository
 
     def should_render(self, value):
         review_request = self.review_request_details.get_review_request()
@@ -278,6 +346,7 @@ class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
     """The Depends On field on a review request."""
     field_id = 'depends_on'
     label = _('Depends On')
+    model = ReviewRequest
     model_name_attr = 'summary'
 
     def render_change_entry_item_html(self, info, item):
@@ -289,7 +358,8 @@ class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
             id=item.pk,
             summary=item.summary)
 
-        if item.status == ReviewRequest.SUBMITTED:
+        if item.status in (ReviewRequest.SUBMITTED,
+                           ReviewRequest.DISCARDED):
             return '<s>%s</s>' % rendered_item
         else:
             return rendered_item
@@ -301,7 +371,8 @@ class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
             summary=item.summary,
             id=item.display_id)
 
-        if item.status == ReviewRequest.SUBMITTED:
+        if item.status in (ReviewRequest.SUBMITTED,
+                           ReviewRequest.DISCARDED):
             return '<s>%s</s>' % rendered_item
         else:
             return rendered_item
@@ -311,6 +382,7 @@ class BlocksField(BuiltinFieldMixin, BaseReviewRequestField):
     """The Blocks field on a review request."""
     field_id = 'blocks'
     label = _('Blocks')
+    model = ReviewRequest
 
     def load_value(self, review_request_details):
         return review_request_details.get_review_request().get_blocks()
@@ -423,8 +495,8 @@ class DiffField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
         # Fetch the total number of inserts/deletes. These will be shown
         # alongside the diff revision.
         counts = diffset.get_total_line_counts()
-        raw_insert_count = counts['raw_insert_count']
-        raw_delete_count = counts['raw_delete_count']
+        raw_insert_count = counts.get('raw_insert_count', 0)
+        raw_delete_count = counts.get('raw_delete_count', 0)
 
         line_counts = []
 
@@ -543,6 +615,13 @@ class DiffField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
             )]
         }
 
+    def serialize_change_entry(self, changedesc):
+        diffset_id = changedesc.fields_changed['diff']['added'][0][2]
+
+        return {
+            'added': DiffSet.objects.get(pk=diffset_id),
+        }
+
 
 class FileAttachmentCaptionsField(BaseCaptionsField):
     """Renders caption changes for file attachments.
@@ -556,6 +635,8 @@ class FileAttachmentCaptionsField(BaseCaptionsField):
     label = _('File Captions')
     obj_map_attr = 'file_attachment_id_map'
     locals_vars = [obj_map_attr]
+    model = FileAttachment
+    caption_object_field = 'file_attachment'
 
 
 class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
@@ -569,8 +650,9 @@ class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
     field_id = 'files'
     label = _('Files')
     locals_vars = ['file_attachment_id_map']
+    model = FileAttachment
 
-    thumbnail_template = 'reviews/parts/file_attachment_thumbnail.html'
+    thumbnail_template = 'reviews/changedesc_file_attachment.html'
 
     def get_change_entry_sections_html(self, info):
         sections = []
@@ -595,6 +677,7 @@ class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
         # Fetch the template ourselves only once and render it for each item,
         # instead of calling render_to_string() in the loop, so we don't
         # have to locate and parse/fetch from cache for every item.
+
         template = get_template(self.thumbnail_template)
         review_request = self.review_request_details.get_review_request()
 
@@ -617,6 +700,7 @@ class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
                 'file': attachment,
                 'review_request': review_request,
                 'local_site_name': local_site_name,
+                'uuid': uuid.uuid4(),
             })))
 
         return ''.join(items)
@@ -634,6 +718,8 @@ class ScreenshotCaptionsField(BaseCaptionsField):
     label = _('Screenshot Captions')
     obj_map_attr = 'screenshot_id_map'
     locals_vars = [obj_map_attr]
+    model = Screenshot
+    caption_object_field = 'screenshot'
 
 
 class ScreenshotsField(BaseCommaEditableField):
@@ -646,12 +732,14 @@ class ScreenshotsField(BaseCommaEditableField):
     """
     field_id = 'screenshots'
     label = _('Screenshots')
+    model = Screenshot
 
 
 class TargetGroupsField(BuiltinFieldMixin, BaseModelListEditableField):
     """The Target Groups field on a review request."""
     field_id = 'target_groups'
     label = _('Groups')
+    model = Group
     model_name_attr = 'name'
 
     def render_item(self, group):
@@ -663,6 +751,7 @@ class TargetPeopleField(BuiltinFieldMixin, BaseModelListEditableField):
     """The Target People field on a review request."""
     field_id = 'target_people'
     label = _('People')
+    model = User
     model_name_attr = 'username'
 
     def render_item(self, user):
@@ -723,6 +812,7 @@ class ChangeEntryOnlyFieldSet(BaseReviewRequestFieldSet):
         ScreenshotCaptionsField,
         FileAttachmentsField,
         ScreenshotsField,
+        StatusField,
     ]
 
 

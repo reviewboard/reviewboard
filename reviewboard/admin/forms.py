@@ -31,6 +31,7 @@ import os
 import re
 
 from django import forms
+from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.sites.models import Site
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -50,11 +51,13 @@ from reviewboard.admin.checks import (get_can_use_amazon_s3,
                                       get_can_use_couchdb)
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.admin.support import get_install_key
+from reviewboard.avatars import avatar_services
 from reviewboard.ssh.client import SSHClient
 
 
 class GeneralSettingsForm(SiteSettingsForm):
     """General settings for Review Board."""
+
     CACHE_TYPE_CHOICES = (
         ('memcached', _('Memcached')),
         ('file', _('File cache')),
@@ -98,6 +101,15 @@ class GeneralSettingsForm(SiteSettingsForm):
         required=False,
         widget=forms.TextInput(attrs={'size': '30'}))
 
+    site_static_url = forms.CharField(
+        label=_('Static URL'),
+        help_text=_('The URL to the static files, such as JavaScript files, '
+                    'CSS files, and images that are bundled with Review Board '
+                    'or third-party extensions. Leave blank to use the '
+                    'default static path on this server.'),
+        required=False,
+        widget=forms.TextInput(attrs={'size': '30'}))
+
     site_admin_name = forms.CharField(
         label=_("Administrator Name"),
         required=True,
@@ -116,12 +128,6 @@ class GeneralSettingsForm(SiteSettingsForm):
         label=_("Enable search"),
         help_text=_("Provides a search field for quickly searching through "
                     "review requests."),
-        required=False)
-
-    max_search_results = forms.IntegerField(
-        label=_("Max number of results"),
-        help_text=_("Maximum number of search results to display."),
-        min_value=1,
         required=False)
 
     search_results_per_page = forms.IntegerField(
@@ -157,12 +163,8 @@ class GeneralSettingsForm(SiteSettingsForm):
         required=True,
         widget=forms.TextInput(attrs={'size': '50'}))
 
-    integration_gravatars = forms.BooleanField(
-        label=_("Use Gravatar images"),
-        help_text=_("Use gravatar.com for user avatars"),
-        required=False)
-
     def load(self):
+        """Load the form."""
         domain_method = self.siteconfig.get("site_domain_method")
         site = Site.objects.get_current()
 
@@ -204,6 +206,7 @@ class GeneralSettingsForm(SiteSettingsForm):
                                                      site.domain)
 
     def save(self):
+        """Save the form."""
         server = self.cleaned_data['server']
 
         if "://" not in server:
@@ -253,6 +256,7 @@ class GeneralSettingsForm(SiteSettingsForm):
         load_site_config()
 
     def full_clean(self):
+        """Clean and validate all form fields."""
         cache_type = self['cache_type'].data or self['cache_type'].initial
 
         for iter_cache_type, field in six.iteritems(
@@ -262,6 +266,7 @@ class GeneralSettingsForm(SiteSettingsForm):
         return super(GeneralSettingsForm, self).full_clean()
 
     def clean_cache_host(self):
+        """Validate that the cache_host field is provided if required."""
         cache_host = self.cleaned_data['cache_host'].strip()
 
         if self.fields['cache_host'].required and not cache_host:
@@ -271,6 +276,7 @@ class GeneralSettingsForm(SiteSettingsForm):
         return cache_host
 
     def clean_cache_path(self):
+        """Validate that the cache_path field is provided if required."""
         cache_path = self.cleaned_data['cache_path'].strip()
 
         if self.fields['cache_path'].required and not cache_path:
@@ -280,7 +286,11 @@ class GeneralSettingsForm(SiteSettingsForm):
         return cache_path
 
     def clean_search_index_file(self):
-        """Validates that the specified index file is valid."""
+        """Validate that the specified index file is valid.
+
+        This checks to make sure that the provided file path is an absolute
+        path, and that the directory is writable by the web server.
+        """
         index_file = self.cleaned_data['search_index_file'].strip()
 
         if index_file:
@@ -306,8 +316,8 @@ class GeneralSettingsForm(SiteSettingsForm):
                 'classes': ('wide',),
                 'title': _("Site Settings"),
                 'fields': ('company', 'server', 'site_media_url',
-                           'site_admin_name', 'site_admin_email',
-                           'locale_timezone'),
+                           'site_static_url', 'site_admin_name',
+                           'site_admin_email', 'locale_timezone'),
             },
             {
                 'classes': ('wide',),
@@ -317,18 +327,15 @@ class GeneralSettingsForm(SiteSettingsForm):
             {
                 'classes': ('wide',),
                 'title': _("Search"),
-                'fields': ('search_enable', 'max_search_results',
-                           'search_results_per_page', 'search_index_file'),
-            },
-            {
-                'classes': ('wide',),
-                'title': _("Third-party Integrations"),
-                'fields': ('integration_gravatars',),
+                'fields': ('search_enable', 'search_results_per_page',
+                           'search_index_file'),
             },
         )
 
 
 class AuthenticationSettingsForm(SiteSettingsForm):
+    """Authentication settings for Review Board."""
+
     CUSTOM_AUTH_ID = 'custom'
     CUSTOM_AUTH_CHOICE = (CUSTOM_AUTH_ID, _('Legacy Authentication Module'))
 
@@ -346,6 +353,7 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         required=True)
 
     def __init__(self, siteconfig, *args, **kwargs):
+        """Initialize the form."""
         from reviewboard.accounts.backends import get_registered_auth_backends
 
         super(AuthenticationSettingsForm, self).__init__(siteconfig,
@@ -398,12 +406,14 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         self.fields['auth_backend'].choices = backend_choices
 
     def load(self):
+        """Load the form."""
         super(AuthenticationSettingsForm, self).load()
 
         self.fields['auth_anonymous_access'].initial = \
             not self.siteconfig.get("auth_require_sitewide_login")
 
     def save(self):
+        """Save the form."""
         self.siteconfig.set("auth_require_sitewide_login",
                             not self.cleaned_data['auth_anonymous_access'])
 
@@ -418,6 +428,7 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         load_site_config()
 
     def is_valid(self):
+        """Check whether the form is valid."""
         valid = super(AuthenticationSettingsForm, self).is_valid()
 
         if valid:
@@ -429,6 +440,7 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         return valid
 
     def full_clean(self):
+        """Clean and validate all form fields."""
         super(AuthenticationSettingsForm, self).full_clean()
 
         if self.data:
@@ -455,10 +467,113 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         )
 
 
+class AvatarServicesForm(SiteSettingsForm):
+    """A form for managing avatar services."""
+
+    avatars_enabled = forms.BooleanField(
+        label=_('Enable avatars'),
+        required=False)
+
+    enabled_services = forms.MultipleChoiceField(
+        label='Enabled avatar services',
+        help_text=_('The avatar services which are available to be used.'),
+        required=False,
+        widget=FilteredSelectMultiple(_('Avatar Services'), False))
+
+    default_service = forms.ChoiceField(
+        label=_('Default avatar service'),
+        help_text=_('The avatar service to be used by default for users who '
+                    'do not have an avatar service configured. This must be '
+                    'one of the enabled avatar services below.'),
+        required=False
+    )
+
+    def __init__(self, *args, **kwargs):
+        super(AvatarServicesForm, self).__init__(*args, **kwargs)
+        default_choices = [('none', 'None')]
+        enable_choices = []
+
+        for service in avatar_services:
+            default_choices.append((service.avatar_service_id, service.name))
+            enable_choices.append((service.avatar_service_id, service.name))
+
+        self.fields['default_service'].choices = default_choices
+        self.fields['enabled_services'].choices = enable_choices
+        self.fields['enabled_services'].initial = [
+            service.avatar_service_id
+            for service in avatar_services.enabled_services
+        ]
+
+        default_service = avatar_services.default_service
+
+        if avatar_services.default_service is not None:
+            self.fields['default_service'].initial = \
+                default_service.avatar_service_id
+
+    def clean_enabled_services(self):
+        """Clean the enabled_services field.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                Raised if an unknown service is attempted to be enabled.
+        """
+        for service_id in self.cleaned_data['enabled_services']:
+            if not avatar_services.has_service(service_id):
+                raise ValidationError('Unknown service "%s"' % service_id)
+
+        return self.cleaned_data['enabled_services']
+
+    def clean_default_service(self):
+        """Clean the default_service field.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                Raised if an unknown service or disabled service is set to be
+                the default.
+        """
+        enabled_services = set(self.cleaned_data['enabled_services'])
+        service_id = self.cleaned_data['default_service']
+
+        if service_id == 'none':
+            default_service = None
+        else:
+            if not avatar_services.has_service(service_id):
+                raise ValidationError('Unknown service "%s".' % service_id)
+            elif service_id not in enabled_services:
+                raise ValidationError('Cannot set disabled service "%s" to '
+                                      'default.'
+                                      % service_id)
+
+            default_service = avatar_services.get('avatar_service_id',
+                                                  service_id)
+
+        return default_service
+
+    def save(self):
+        """Save the enabled services and default service to the database."""
+        avatar_services.enabled_services = [
+            avatar_services.get('avatar_service_id', service_id)
+            for service_id in self.cleaned_data['enabled_services']
+        ]
+        avatar_services.set_default_service(
+            self.cleaned_data['default_service'],
+            save=False)
+        avatar_services.avatars_enabled = self.cleaned_data['avatars_enabled']
+        avatar_services.save()
+
+    class Meta:
+        title = _('Avatar Services')
+        fieldsets = (
+            {
+                'fields': ('avatars_enabled', 'default_service',
+                           'enabled_services'),
+            },
+        )
+
+
 class EMailSettingsForm(SiteSettingsForm):
-    """
-    E-mail settings for Review Board.
-    """
+    """E-mail settings for Review Board."""
+
     mail_send_review_mail = forms.BooleanField(
         label=_("Send e-mails for review requests and reviews"),
         required=False)
@@ -508,10 +623,12 @@ class EMailSettingsForm(SiteSettingsForm):
         required=False)
 
     def clean_mail_host(self):
+        """Clean the mail_host field."""
         # Strip whitespaces from the SMTP address.
         return self.cleaned_data['mail_host'].strip()
 
     def save(self):
+        """Save the form."""
         super(EMailSettingsForm, self).save()
 
         # Reload any important changes into the Django settings.
@@ -566,6 +683,7 @@ class EMailSettingsForm(SiteSettingsForm):
 
 class DiffSettingsForm(SiteSettingsForm):
     """Diff settings for Review Board."""
+
     diffviewer_syntax_highlighting = forms.BooleanField(
         label=_("Show syntax highlighting"),
         required=False)
@@ -620,11 +738,13 @@ class DiffSettingsForm(SiteSettingsForm):
         widget=forms.TextInput(attrs={'size': '15'}))
 
     def load(self):
+        """Load the form."""
         super(DiffSettingsForm, self).load()
         self.fields['include_space_patterns'].initial = \
             ', '.join(self.siteconfig.get('diffviewer_include_space_patterns'))
 
     def save(self):
+        """Save the form."""
         self.siteconfig.set(
             'diffviewer_include_space_patterns',
             re.split(r",\s*", self.cleaned_data['include_space_patterns']))
@@ -659,6 +779,8 @@ class DiffSettingsForm(SiteSettingsForm):
 
 
 class LoggingSettingsForm(SiteSettingsForm):
+    """Logging settings for Review Board."""
+
     LOG_LEVELS = (
         ('DEBUG', _('Debug')),
         ('INFO', _('Info')),
@@ -667,7 +789,6 @@ class LoggingSettingsForm(SiteSettingsForm):
         ('CRITICAL', _('Critical')),
     )
 
-    """Logging settings for Review Board."""
     logging_enabled = forms.BooleanField(
         label=_("Enable logging"),
         help_text=_("Enables logging of Review Board operations. This is in "
@@ -698,7 +819,11 @@ class LoggingSettingsForm(SiteSettingsForm):
         required=False)
 
     def clean_logging_directory(self):
-        """Validates that the logging_directory path is valid."""
+        """Validate that the logging_directory path is valid.
+
+        This checks that the directory path exists, and is writable by the web
+        server.
+        """
         logging_dir = self.cleaned_data['logging_directory']
 
         if not os.path.exists(logging_dir):
@@ -714,6 +839,7 @@ class LoggingSettingsForm(SiteSettingsForm):
         return logging_dir
 
     def save(self):
+        """Save the form."""
         super(LoggingSettingsForm, self).save()
 
         # Reload any important changes into the Django settings.
@@ -738,6 +864,7 @@ class LoggingSettingsForm(SiteSettingsForm):
 
 class SSHSettingsForm(forms.Form):
     """SSH key settings for Review Board."""
+
     generate_key = forms.BooleanField(required=False,
                                       initial=True,
                                       widget=forms.HiddenInput)
@@ -749,6 +876,7 @@ class SSHSettingsForm(forms.Form):
                                     widget=forms.HiddenInput)
 
     def create(self, files):
+        """Generate or import an SSH key."""
         if self.cleaned_data['generate_key']:
             try:
                 SSHClient().generate_user_key()
@@ -777,11 +905,11 @@ class SSHSettingsForm(forms.Form):
                 raise
 
     def did_request_delete(self):
-        """Return whether the user has requested to delete the user SSH key"""
+        """Return whether the user has requested to delete the user SSH key."""
         return 'delete_key' in self.cleaned_data
 
     def delete(self):
-        """Try to delete the user SSH key upon request"""
+        """Try to delete the user SSH key upon request."""
         if self.cleaned_data['delete_key']:
             try:
                 SSHClient().delete_user_key()
@@ -900,6 +1028,7 @@ class StorageSettingsForm(SiteSettingsForm):
     # 'couchdb_storage_options': 'COUCHDB_STORAGE_OPTIONS',
 
     def load(self):
+        """Load the form."""
         can_use_amazon_s3, reason = get_can_use_amazon_s3()
         if not can_use_amazon_s3:
             self.disabled_fields['aws_access_key_id'] = True
@@ -925,10 +1054,12 @@ class StorageSettingsForm(SiteSettingsForm):
         super(StorageSettingsForm, self).load()
 
     def save(self):
+        """Save the form."""
         super(StorageSettingsForm, self).save()
         load_site_config()
 
     def full_clean(self):
+        """Clean and validate all form fields."""
         def set_fieldset_required(fieldset_id, required):
             for fieldset in self.Meta.fieldsets:
                 if 'id' in fieldset and fieldset['id'] == fieldset_id:
@@ -990,6 +1121,7 @@ class StorageSettingsForm(SiteSettingsForm):
 
 class SupportSettingsForm(SiteSettingsForm):
     """Support settings for Review Board."""
+
     install_key = forms.CharField(
         label=_('Install key'),
         help_text=_('The installation key to provide when purchasing a '
@@ -997,7 +1129,7 @@ class SupportSettingsForm(SiteSettingsForm):
         required=False,
         widget=forms.TextInput(attrs={
             'size': '80',
-            'disabled': 'disabled'
+            'readonly': 'readonly'
         }))
 
     support_url = forms.CharField(
@@ -1017,6 +1149,7 @@ class SupportSettingsForm(SiteSettingsForm):
         required=False)
 
     def load(self):
+        """Load the form."""
         super(SupportSettingsForm, self).load()
         self.fields['install_key'].initial = get_install_key()
 

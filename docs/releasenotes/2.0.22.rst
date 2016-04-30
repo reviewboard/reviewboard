@@ -1,0 +1,123 @@
+=================================
+Review Board 2.0.22 Release Notes
+=================================
+
+**Release date**: February 22, 2016
+
+
+Upgrade Instructions
+====================
+
+To upgrade to Review Board 2.0.22, run::
+
+    pip install ReviewBoard==2.0.22
+
+or::
+
+    easy_install ReviewBoard==2.0.22
+
+
+Security Updates
+================
+
+This release fixes two security issues we discovered this week in Review
+Board, which may impact installations that make use of private review requests
+(through invite-only review groups, private repositories, Local Site
+functionality.)
+
+If a user had access to a review request, it could access the file
+attachments, legacy screenshots, and review request update metadata of another
+review request, even those that were private. This required either a
+brute-force attempt at looking up database IDs, or pre-existing knowledge of
+those IDs.
+
+CVEs are pending.
+
+
+Compatibility
+=============
+
+If you use django-storages_, make sure you're using a recent version (we
+recommend 1.1.8 or newer), as this release exposes a bug in earlier releases.
+
+.. _django-storages: https://django-storages.readthedocs.org/en/latest/
+
+
+New Features
+============
+
+* Added tooltips to the file summary graphs in the diff viewer file list.
+  (:bug:`3812`)
+
+  The small circular graphs which show a summary of the size and type of
+  changes to each file now have tooltips that list the exact number of added,
+  removed, or changed lines.
+
+  Patch by Evan Huntzinger.
+
+
+Extensions
+==========
+
+* Added the ability to set custom settings data for JavaScript extensions.
+
+  JavaScript extensions (those using
+  :py:class:`~djblets.extensions.extension.JSExtension`) used to output all of
+  an extension's stored settings into the page. Extensions that want to limit
+  that data, or provide a custom set of extension settings data, can override
+  this using :py:meth:`JSExtension.get_settings
+  <djblets.extensions.extension.JSExtension.get_settings>`.
+
+
+Web API
+=======
+
+* Diff validation now includes more detailed error messages.
+
+  If a diff fails to validate due to an error communicating with the
+  repository, the reported error would be that the diff could not be parsed.
+  The :ref:`webapi2.0-validate-diff-resource` now reports a much more detailed
+  error that actually explains what went wrong.
+
+
+Bug Fixes
+=========
+
+Dashboard
+---------
+
+* Fix errors caused by trailing commas in a column sorting definition.
+
+  Some search crawlers such as Bingbot can attempt to load a datagrid with a
+  sort column list that had a trailing comma, causing a crash. This now
+  filters out any invalid column names.
+
+
+Review Requests
+---------------
+
+* Fix incorrect "Are you sure you want to leave this page" pop-ups on Firefox.
+  (:bug:`3727`)
+
+  Editing fields in Firefox could cause an issue where the unsaved changes
+  confirmation box was shown even when there were no unsaved changes.
+
+  Patch by Mike Conley.
+
+
+Git
+---
+
+* Repositories using git URLs with inline authentication credentials can now be
+  successfully added.
+
+  Patch by Matt Comben.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Evan Huntzinger
+* Matt Comben
+* Mike Conley

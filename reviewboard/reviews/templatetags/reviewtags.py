@@ -9,9 +9,10 @@ from django.template import TemplateSyntaxError
 from django.template.defaultfilters import escapejs, stringfilter
 from django.template.loader import render_to_string
 from django.utils import six
-from django.utils.html import escape, format_html
+from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import basictag, blocktag
 from djblets.util.humanize import humanize_list
 
@@ -23,7 +24,9 @@ from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
                                                 normalize_text_for_edit)
 from reviewboard.reviews.models import (BaseComment, Group,
                                         ReviewRequest, ScreenshotComment,
-                                        FileAttachmentComment)
+                                        FileAttachmentComment,
+                                        GeneralComment)
+from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 
 
 register = template.Library()
@@ -102,32 +105,21 @@ def ifneatnumber(context, nodelist, rid):
 @basictag(takes_context=True)
 def file_attachment_comments(context, file_attachment):
     """Returns a JSON array of current comments for a file attachment."""
-    comments = []
-    user = context.get('user', None)
+    review_ui = file_attachment.review_ui
 
-    for comment in file_attachment.get_comments():
-        review = comment.get_review()
+    if not review_ui:
+        # For the purposes of serialization, we'll create a dummy ReviewUI.
+        review_ui = FileAttachmentReviewUI(file_attachment.review_request,
+                                           file_attachment)
 
-        if review and (review.public or review.user == user):
-            comments.append({
-                'comment_id': comment.id,
-                'text': normalize_text_for_edit(user, comment.text,
-                                                comment.rich_text),
-                'rich_text': comment.rich_text,
-                'user': {
-                    'username': escape(review.user.username),
-                    'name': escape(review.user.get_full_name() or
-                                   review.user.username),
-                },
-                'url': comment.get_review_url(),
-                'localdraft': review.user == user and not review.public,
-                'review_id': review.id,
-                'issue_opened': comment.issue_opened,
-                'issue_status': escape(
-                    BaseComment.issue_status_to_string(comment.issue_status)),
-            })
+    # NOTE: We're setting this here because file attachments serialization
+    #       requires this to be set, but we don't necessarily have it set
+    #       by this time. We should rethink parts of this down the road, but
+    #       it requires dealing with some compatibility issues for subclasses.
+    review_ui.request = context['request']
 
-    return json.dumps(comments)
+    return json.dumps(review_ui.serialize_comments(
+        file_attachment.get_comments()))
 
 
 @register.tag
@@ -140,9 +132,9 @@ def reply_list(context, entry, comment, context_type, context_id):
     to display replies to a type of object. In each case, the replies will
     be rendered using the template :template:`reviews/review_reply.html`.
 
-    If ``context_type`` is ``"diff_comments"``, ``"screenshot_comments"``
-    or ``"file_attachment_comments"``, the generated list of replies are to
-    ``comment``.
+    If ``context_type`` is ``"diff_comments"``, ``"screenshot_comments"``,
+    ``"general_comments"`` or ``"file_attachment_comments"``, the generated
+    list of replies are to ``comment``.
 
     If ``context_type`` is ``"body_top"`` or ```"body_bottom"``,
     the generated list of replies are to ``review``. Depending on the
@@ -153,7 +145,7 @@ def reply_list(context, entry, comment, context_type, context_id):
     the JavaScript code for storing and categorizing the comments.
     """
     def generate_reply_html(reply, timestamp, text, rich_text,
-                            comment_id=None):
+                            use_avatars, comment_id=None):
         context.push()
         context.update({
             'context_id': context_id,
@@ -165,6 +157,7 @@ def reply_list(context, entry, comment, context_type, context_id):
             'draft': not reply.public,
             'comment_id': comment_id,
             'rich_text': rich_text,
+            'use_avatars': use_avatars,
         })
 
         result = render_to_string('reviews/review_reply.html', context)
@@ -185,6 +178,9 @@ def reply_list(context, entry, comment, context_type, context_id):
 
         return s
 
+    siteconfig = SiteConfiguration.objects.get_current()
+    use_avatars = siteconfig.get('avatars_enabled')
+
     review = entry['review']
 
     user = context.get('user', None)
@@ -194,12 +190,13 @@ def reply_list(context, entry, comment, context_type, context_id):
     s = ""
 
     if context_type in ('diff_comments', 'screenshot_comments',
-                        'file_attachment_comments'):
+                        'file_attachment_comments', 'general_comments'):
         for reply_comment in comment.public_replies(user):
             s += generate_reply_html(reply_comment.get_review(),
                                      reply_comment.timestamp,
                                      reply_comment.text,
                                      reply_comment.rich_text,
+                                     use_avatars,
                                      reply_comment.pk)
     elif context_type == "body_top" or context_type == "body_bottom":
         replies = getattr(review, "public_%s_replies" % context_type)()
@@ -209,7 +206,8 @@ def reply_list(context, entry, comment, context_type, context_id):
                 reply,
                 reply.timestamp,
                 getattr(reply, context_type),
-                getattr(reply, '%s_rich_text' % context_type))
+                getattr(reply, '%s_rich_text' % context_type),
+                use_avatars)
 
         return s
     else:
@@ -220,7 +218,8 @@ def reply_list(context, entry, comment, context_type, context_id):
 
 @register.inclusion_tag('reviews/review_reply_section.html',
                         takes_context=True)
-def reply_section(context, entry, comment, context_type, context_id):
+def reply_section(context, entry, comment, context_type, context_id,
+                  reply_to_text=''):
     """
     Renders a template for displaying a reply.
 
@@ -234,6 +233,8 @@ def reply_section(context, entry, comment, context_type, context_id):
             context_id += 's'
         elif type(comment) is FileAttachmentComment:
             context_id += 'f'
+        elif type(comment) is GeneralComment:
+            context_id += 'g'
 
         context_id += six.text_type(comment.id)
 
@@ -244,6 +245,7 @@ def reply_section(context, entry, comment, context_type, context_id):
         'context_id': context_id,
         'user': context.get('user', None),
         'local_site_name': context.get('local_site_name'),
+        'reply_to_is_empty': reply_to_text == '',
         'request': context['request'],
     }
 
@@ -332,8 +334,9 @@ def for_review_request_field(context, nodelist, review_request_details,
         try:
             field = field_cls(review_request_details, request=request)
         except Exception as e:
-            logging.error('Error instantiating ReviewRequestFieldset %r: %s',
-                          field_cls, e, exc_info=1)
+            logging.exception('Error instantiating field %r: %s',
+                              field_cls, e)
+            continue
 
         try:
             if field.should_render(field.value):
@@ -342,9 +345,9 @@ def for_review_request_field(context, nodelist, review_request_details,
                 s.append(nodelist.render(context))
                 context.pop()
         except Exception as e:
-            logging.error('Error running should_render for '
-                          'ReviewRequestFieldset %r: %s', field_cls, e,
-                          exc_info=1)
+            logging.exception(
+                'Error running should_render for field %r: %s',
+                field_cls, e)
 
     return ''.join(s)
 
@@ -531,6 +534,28 @@ def pretty_print_issue_status(status):
     return BaseComment.issue_status_to_string(status)
 
 
+@register.filter
+@stringfilter
+def issue_status_icon(status):
+    """Return an icon name for the issue status.
+
+    Args:
+        status (unicode):
+            The stored issue status for the comment.
+
+    Returns:
+        unicode: The icon name for the issue status.
+    """
+    if status == BaseComment.OPEN:
+        return 'rb-icon-issue-open'
+    elif status == BaseComment.RESOLVED:
+        return 'rb-icon-issue-resolved'
+    elif status == BaseComment.DROPPED:
+        return 'rb-icon-issue-dropped'
+    else:
+        raise ValueError('Unknown comment issue status "%s"' % status)
+
+
 @register.filter('render_markdown')
 def _render_markdown(text, is_rich_text):
     if is_rich_text:
@@ -567,20 +592,20 @@ def expand_fragment_link(context, expanding, tooltip,
 
 @register.tag
 @basictag(takes_context=True)
-def expand_fragment_header_link(context, tooltip, line, text):
+def expand_fragment_header_link(context, header):
     """Render a diff comment fragment header expansion link.
 
-    This link expands the context to contain the given line number."""
-
+    This link expands the context to contain the given line number.
+    """
     lines_of_context = context['lines_of_context']
-    num_lines = context['first_line'] - line
-    expand_pos = (lines_of_context[0] + num_lines, lines_of_context[1])
+    offset = context['first_line'] - header['line']
 
     return render_to_string('reviews/expand_link.html', {
-        'tooltip': tooltip,
-        'text': format_html('<code>{0}</code>', text),
+        'tooltip': _('Expand to header'),
+        'text': format_html('<code>{0}</code>', header['text']),
         'comment_id': context['comment'].id,
-        'expand_pos': expand_pos,
+        'expand_pos': (lines_of_context[0] + offset,
+                       lines_of_context[1]),
         'image_class': 'rb-icon-diff-expand-header',
     })
 
@@ -604,3 +629,31 @@ def rich_text_classname(context, rich_text):
         return 'rich-text'
 
     return ''
+
+
+@register.tag
+@basictag(takes_context=True)
+def patched_file_line_numbers(context):
+    """Renders the line numbers of the patched file in a review comment entry.
+
+    Prints nothing if the only chunk is a 'delete' type.
+    """
+    chunks = context['entry']['chunks']
+    patched_start_line = context['entry']['comment'].last_line
+    patched_end_line = 1
+    rendering_text = False
+
+    for chunk in chunks:
+        if chunk['change'] != 'delete':
+            rendering_text = True
+            first_chunk_line = chunk['lines'][0]
+            last_chunk_line = chunk['lines'][-1]
+            patched_start_line = min(patched_start_line, first_chunk_line[4])
+            patched_end_line = max(patched_end_line, last_chunk_line[4])
+
+    if not rendering_text:
+        return ''
+    elif patched_start_line == patched_end_line:
+        return _('(line %d)') % patched_start_line
+    else:
+        return _('(lines %d - %d)') % (patched_start_line, patched_end_line)

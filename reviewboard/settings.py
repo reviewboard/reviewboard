@@ -9,15 +9,18 @@ import sys
 import djblets
 from django.core.urlresolvers import reverse
 
+from reviewboard.staticbundles import PIPELINE_STYLESHEETS, PIPELINE_JAVASCRIPT
+
 
 # Can't import django.utils.translation yet
-_ = lambda s: s
+def _(s):
+    return s
 
 
 DEBUG = True
 
 ADMINS = (
-    ('Example Joe', 'admin@example.com')
+    ('Example Admin', 'admin@example.com'),
 )
 
 MANAGERS = ADMINS
@@ -77,6 +80,7 @@ MIDDLEWARE_CLASSES = [
     'reviewboard.admin.middleware.LoadSettingsMiddleware',
 
     'djblets.extensions.middleware.ExtensionsMiddleware',
+    'djblets.integrations.middleware.IntegrationsMiddleware',
     'djblets.log.middleware.LoggingMiddleware',
     'reviewboard.accounts.middleware.TimezoneMiddleware',
     'reviewboard.admin.middleware.CheckUpdatesRequiredMiddleware',
@@ -136,6 +140,7 @@ STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     'djblets.extensions.staticfiles.ExtensionFinder',
+    'pipeline.finders.PipelineFinder',
 )
 
 STATICFILES_STORAGE = 'pipeline.storage.PipelineCachedStorage'
@@ -148,13 +153,17 @@ RB_BUILTIN_APPS = [
     'django.contrib.sessions',
     'django.contrib.staticfiles',
     'djblets',
+    'djblets.avatars',
     'djblets.configforms',
     'djblets.datagrid',
     'djblets.extensions',
     'djblets.feedview',
+    'djblets.forms',
     'djblets.gravatars',
+    'djblets.integrations',
     'djblets.log',
     'djblets.pipeline',
+    'djblets.recaptcha',
     'djblets.siteconfig',
     'djblets.util',
     'haystack',
@@ -163,10 +172,12 @@ RB_BUILTIN_APPS = [
     'reviewboard.accounts',
     'reviewboard.admin',
     'reviewboard.attachments',
+    'reviewboard.avatars',
     'reviewboard.changedescs',
     'reviewboard.diffviewer',
     'reviewboard.extensions',
     'reviewboard.hostingsvcs',
+    'reviewboard.integrations',
     'reviewboard.notifications',
     'reviewboard.reviews',
     'reviewboard.scmtools',
@@ -190,8 +201,8 @@ WEB_API_ENCODERS = (
 
 # The backends that are used to authenticate requests against the web API.
 WEB_API_AUTH_BACKENDS = (
-    'djblets.webapi.auth.WebAPIBasicAuthBackend',
-    'reviewboard.webapi.auth_backends.WebAPITokenAuthBackend',
+    'djblets.webapi.auth.backends.basic.WebAPIBasicAuthBackend',
+    'djblets.webapi.auth.backends.api_tokens.WebAPITokenAuthBackend',
 )
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
@@ -221,6 +232,8 @@ CACHE_EXPIRATION_TIME = 60 * 60 * 24 * 30  # 1 month
 # gives us a somewhat more comprehensive test execution than django's built-in
 # runner, as well as some special features like a code coverage report.
 TEST_RUNNER = 'reviewboard.test.RBTestRunner'
+
+RUNNING_TEST = (os.environ.get('RB_RUNNING_TESTS') == '1')
 
 # Dependency checker functionality.  Gives our users nice errors when they
 # start out, instead of encountering them later on.  Most of the magic for this
@@ -273,6 +286,9 @@ SVNTOOL_BACKENDS = [
     'reviewboard.scmtools.svn.pysvn',
     'reviewboard.scmtools.svn.subvertpy',
 ]
+
+# Gravatar configuration.
+GRAVATAR_DEFAULT = 'mm'
 
 
 # Load local settings.  This can override anything in here, but at the very
@@ -365,26 +381,43 @@ LOGIN_REDIRECT_URL = SITE_ROOT + 'dashboard/'
 
 
 # Static media setup
-from reviewboard.staticbundles import PIPELINE_CSS, PIPELINE_JS
-
-PIPELINE_CSS_COMPRESSOR = None
-PIPELINE_JS_COMPRESSOR = 'pipeline.compressors.uglifyjs.UglifyJSCompressor'
-
-# On production (site-installed) builds, we always want to use the pre-compiled
-# versions. We want this regardless of the DEBUG setting (since they may
-# turn DEBUG on in order to get better error output).
-#
-# On a build running out of a source tree, for testing purposes, we want to
-# use the raw .less and JavaScript files when DEBUG is set. When DEBUG is
-# turned off in a non-production build, though, we want to be able to play
-# with the built output, so treat it like a production install.
-
-if PRODUCTION or not DEBUG or os.getenv('FORCE_BUILD_MEDIA', ''):
-    PIPELINE_COMPILERS = ['pipeline.compilers.less.LessCompiler']
-    PIPELINE_ENABLED = True
-elif DEBUG:
+if RUNNING_TEST:
     PIPELINE_COMPILERS = []
-    PIPELINE_ENABLED = False
+else:
+    PIPELINE_COMPILERS = [
+        'djblets.pipeline.compilers.es6.ES6Compiler',
+        'djblets.pipeline.compilers.less.LessCompiler',
+    ]
+
+NODE_PATH = os.path.join(REVIEWBOARD_ROOT, '..', 'node_modules')
+os.environ['NODE_PATH'] = NODE_PATH
+
+PIPELINE = {
+    # On production (site-installed) builds, we always want to use the
+    # pre-compiled versions. We want this regardless of the DEBUG setting
+    # (since they may turn DEBUG on in order to get better error output).
+    'PIPELINE_ENABLED': (PRODUCTION or not DEBUG or
+                         os.getenv('FORCE_BUILD_MEDIA', '')),
+    'COMPILERS': PIPELINE_COMPILERS,
+    'JAVASCRIPT': PIPELINE_JAVASCRIPT,
+    'JS_COMPRESSOR': 'pipeline.compressors.uglifyjs.UglifyJSCompressor',
+    'CSS_COMPRESSOR': None,
+    'BABEL_BINARY': os.path.join(NODE_PATH, 'babel-cli', 'bin', 'babel.js'),
+    'BABEL_ARGUMENTS': '--presets es2015 -s true',
+    'LESS_BINARY': os.path.join(NODE_PATH, 'less', 'bin', 'lessc'),
+    'LESS_ARGUMENTS': [
+        '--include-path=%s' % STATIC_ROOT,
+        '--no-color',
+        '--source-map',
+        '--autoprefix=> 2%, ie >= 9',
+        # This is just here for backwards-compatibility with any stylesheets
+        # that still have this. It's no longer necessary because compilation
+        # happens on the back-end instead of in the browser.
+        '--global-var=STATIC_ROOT=""',
+    ],
+    'STYLESHEETS': PIPELINE_STYLESHEETS,
+}
+
 
 # Packages to unit test
 TEST_PACKAGES = ['reviewboard']

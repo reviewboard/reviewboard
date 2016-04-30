@@ -21,9 +21,7 @@ register = template.Library()
 
 @register.inclusion_tag('admin/subnav_item.html', takes_context=True)
 def admin_subnav(context, url_name, name, icon=""):
-    """
-    Returns a <li> containing a link to the desired setting tab.
-    """
+    """Return an <li> containing a link to the desired setting tab."""
     request = context.get('request')
     url = local_site_reverse(url_name, request=request)
 
@@ -39,7 +37,7 @@ def admin_subnav(context, url_name, name, icon=""):
 @register.tag
 @basictag(takes_context=True)
 def admin_widget(context, widget):
-    """Renders a widget with the given information.
+    """Render a widget with the given information.
 
     The widget will be created and returned as HTML. Any states in the
     database will be loaded into the rendered widget.
@@ -59,7 +57,10 @@ def admin_widget(context, widget):
 
 @register.inclusion_tag('admin/widgets/w-actions.html', takes_context=True)
 def admin_actions(context):
-    """Admin Sidebar with configuration links and setting indicators."""
+    """Render the admin sidebar.
+
+    This includes the configuration links and setting indicators.
+    """
     request = context.get('request')
 
     if '_popup' not in request.REQUEST or 'pop' not in request.REQUEST:
@@ -85,6 +86,11 @@ def admin_actions(context):
 
 @register.simple_tag
 def nav_active(request, pattern):
+    """Helper to render a class name for active navigation items.
+
+    This will check to see if the given pattern is part of the current page's
+    URL, and if so, return a class name to add to the navigation element.
+    """
     if pattern in request.path:
         return 'nav-active'
 

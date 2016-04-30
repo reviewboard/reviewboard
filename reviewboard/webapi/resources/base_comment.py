@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.utils import six
-from django.utils.formats import localize
 from djblets.webapi.errors import DOES_NOT_EXIST
 
 from reviewboard.reviews.models import BaseComment
@@ -67,7 +66,6 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             'added_in': '2.0',
         },
     }
-    last_modified_field = 'timestamp'
 
     # Common field definitions for create/update requests
     _COMMON_REQUIRED_CREATE_FIELDS = {
@@ -235,7 +233,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
 
         # Check permissions to change the issue status
         if not comment.can_change_issue_status(request.user):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         # We can only update the status of an issue if an issue has been
         # opened
@@ -251,7 +249,6 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         comment.save(update_fields=['issue_status'])
 
         last_activity_time, updated_object = review_request.get_last_activity()
-        comment.timestamp = localize(comment.timestamp)
 
         return 200, {
             comment_resource.item_result_key: comment,

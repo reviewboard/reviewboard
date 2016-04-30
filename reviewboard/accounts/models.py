@@ -7,16 +7,21 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
+from djblets.auth.signals import user_registered
 from djblets.db.fields import CounterField, JSONField
-from djblets.db.managers import ConcurrencyManager
 from djblets.forms.fields import TIMEZONE_CHOICES
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.accounts.managers import ProfileManager, TrophyManager
+from reviewboard.accounts.managers import (ProfileManager,
+                                           ReviewRequestVisitManager,
+                                           TrophyManager)
 from reviewboard.accounts.trophies import TrophyType
 from reviewboard.reviews.models import Group, ReviewRequest
-from reviewboard.reviews.signals import review_request_published
+from reviewboard.reviews.signals import (reply_published,
+                                         review_published,
+                                         review_request_published)
 from reviewboard.site.models import LocalSite
+from reviewboard.site.signals import local_site_user_added
 
 
 @python_2_unicode_compatible
@@ -29,23 +34,40 @@ class ReviewRequestVisit(models.Model):
     to review requests they've already seen, so that we can intelligently
     inform them that new discussions have taken place.
     """
-    user = models.ForeignKey(User, related_name="review_request_visits")
-    review_request = models.ForeignKey(ReviewRequest, related_name="visits")
-    timestamp = models.DateTimeField(_('last visited'), default=timezone.now)
 
-    # Set this up with a ConcurrencyManager to help prevent race conditions.
-    objects = ConcurrencyManager()
+    VISIBLE = 'V'
+    ARCHIVED = 'A'
+    MUTED = 'M'
+
+    VISIBILITY = (
+        (VISIBLE, 'Visible'),
+        (ARCHIVED, 'Archived'),
+        (MUTED, 'Muted'),
+    )
+
+    user = models.ForeignKey(User, related_name='review_request_visits')
+    review_request = models.ForeignKey(ReviewRequest, related_name='visits')
+    timestamp = models.DateTimeField(_('last visited'), default=timezone.now)
+    visibility = models.CharField(max_length=1, choices=VISIBILITY,
+                                  default=VISIBLE)
+
+    # Set this up with a ReviewRequestVisitManager, which inherits from
+    # ConcurrencyManager to help prevent race conditions.
+    objects = ReviewRequestVisitManager()
 
     def __str__(self):
-        return "Review request visit"
+        """Return a string used for the admin site listing."""
+        return 'Review request visit'
 
     class Meta:
-        unique_together = ("user", "review_request")
+        unique_together = ('user', 'review_request')
+        index_together = [('user', 'visibility')]
 
 
 @python_2_unicode_compatible
 class Profile(models.Model):
-    """User profile.  Contains some basic configurable settings"""
+    """User profile which contains some basic configurable settings."""
+
     user = models.ForeignKey(User, unique=True)
 
     # This will redirect new users to the account settings page the first time
@@ -132,13 +154,15 @@ class Profile(models.Model):
     timezone = models.CharField(choices=TIMEZONE_CHOICES, default='UTC',
                                 max_length=30)
 
-    extra_data = JSONField(null=True)
+    settings = JSONField(null=True, default=dict)
+
+    extra_data = JSONField(null=True, default=dict)
 
     objects = ProfileManager()
 
     @property
     def should_use_rich_text(self):
-        """Returns whether rich text should be used by default for this user.
+        """Get whether rich text should be used by default for this user.
 
         If the user has chosen whether or not to use rich text explicitly,
         then that choice will be respected. Otherwise, the system default is
@@ -151,8 +175,25 @@ class Profile(models.Model):
         else:
             return self.default_use_rich_text
 
+    @property
+    def should_enable_desktop_notifications(self):
+        """Return whether desktop notifications should be used for this user.
+
+        If the user has chosen whether or not to use desktop notifications
+        explicitly, then that choice will be respected. Otherwise, we
+        enable desktop notifications by default.
+
+        Returns:
+            bool:
+                If the user has set whether they wish to recieve desktop
+                notifications, then use their preference. Otherwise, we return
+                ``True``.
+        """
+        return (not self.settings or
+                self.settings.get('enable_desktop_notifications', True))
+
     def star_review_request(self, review_request):
-        """Marks a review request as starred.
+        """Mark a review request as starred.
 
         This will mark a review request as starred for this user and
         immediately save to the database.
@@ -175,7 +216,7 @@ class Profile(models.Model):
         self.save()
 
     def unstar_review_request(self, review_request):
-        """Marks a review request as unstarred.
+        """Mark a review request as unstarred.
 
         This will mark a review request as starred for this user and
         immediately save to the database.
@@ -201,7 +242,7 @@ class Profile(models.Model):
         self.save()
 
     def star_review_group(self, review_group):
-        """Marks a review group as starred.
+        """Mark a review group as starred.
 
         This will mark a review group as starred for this user and
         immediately save to the database.
@@ -210,7 +251,7 @@ class Profile(models.Model):
             self.starred_groups.add(review_group)
 
     def unstar_review_group(self, review_group):
-        """Marks a review group as unstarred.
+        """Mark a review group as unstarred.
 
         This will mark a review group as starred for this user and
         immediately save to the database.
@@ -219,12 +260,14 @@ class Profile(models.Model):
             self.starred_groups.remove(review_group)
 
     def __str__(self):
+        """Return a string used for the admin site listing."""
         return self.user.username
 
 
 @python_2_unicode_compatible
 class LocalSiteProfile(models.Model):
     """User profile information specific to a LocalSite."""
+
     user = models.ForeignKey(User, related_name='site_profiles')
     profile = models.ForeignKey(Profile, related_name='site_profiles')
     local_site = models.ForeignKey(LocalSite, null=True, blank=True,
@@ -239,32 +282,41 @@ class LocalSiteProfile(models.Model):
     # and starred (public).
     direct_incoming_request_count = CounterField(
         _('direct incoming review request count'),
-        initializer=lambda p: ReviewRequest.objects.to_user_directly(
-            p.user, local_site=p.local_site).count())
+        initializer=lambda p: (
+            ReviewRequest.objects.to_user_directly(
+                p.user, local_site=p.local_site).count()
+            if p.user_id else 0))
     total_incoming_request_count = CounterField(
         _('total incoming review request count'),
-        initializer=lambda p: ReviewRequest.objects.to_user(
-            p.user, local_site=p.local_site).count())
+        initializer=lambda p: (
+            ReviewRequest.objects.to_user(
+                p.user, local_site=p.local_site).count()
+            if p.user_id else 0))
     pending_outgoing_request_count = CounterField(
         _('pending outgoing review request count'),
-        initializer=lambda p: ReviewRequest.objects.from_user(
-            p.user, p.user, local_site=p.local_site).count())
+        initializer=lambda p: (
+            ReviewRequest.objects.from_user(
+                p.user, p.user, local_site=p.local_site).count()
+            if p.user_id else 0))
     total_outgoing_request_count = CounterField(
         _('total outgoing review request count'),
-        initializer=lambda p: ReviewRequest.objects.from_user(
-            p.user, p.user, None, local_site=p.local_site).count())
+        initializer=lambda p: (
+            ReviewRequest.objects.from_user(
+                p.user, p.user, None, local_site=p.local_site).count()
+            if p.user_id else 0))
     starred_public_request_count = CounterField(
         _('starred public review request count'),
-        initializer=lambda p: (p.pk and
-                               p.profile.starred_review_requests.public(
-                                   user=None,
-                                   local_site=p.local_site).count()) or 0)
+        initializer=lambda p: (
+            p.profile.starred_review_requests.public(
+                user=None, local_site=p.local_site).count()
+            if p.pk else 0))
 
     class Meta:
         unique_together = (('user', 'local_site'),
                            ('profile', 'local_site'))
 
     def __str__(self):
+        """Return a string used for the admin site listing."""
         return '%s (%s)' % (self.user.username, self.local_site)
 
 
@@ -274,6 +326,7 @@ class Trophy(models.Model):
     It is associated with a ReviewRequest and a User and can be associated
     with a LocalSite.
     """
+
     category = models.CharField(max_length=100)
     received_date = models.DateTimeField(default=timezone.now)
     review_request = models.ForeignKey(ReviewRequest, related_name="trophies")
@@ -298,7 +351,7 @@ class Trophy(models.Model):
 #
 
 def _is_user_profile_visible(self, user=None):
-    """Returns whether or not a User's profile is viewable by a given user.
+    """Get whether or not a User's profile is viewable by a given user.
 
     A profile is viewable if it's not marked as private, or the viewing
     user owns the profile, or the user is a staff member.
@@ -322,10 +375,11 @@ def _is_user_profile_visible(self, user=None):
 
 
 def _should_send_email(self):
-    """Returns whether a user wants to receive emails.
+    """Get whether a user wants to receive emails.
 
     This is patched into the user object to make it easier to deal with missing
-    Profile objects."""
+    Profile objects.
+    """
     try:
         return self.get_profile().should_send_email
     except Profile.DoesNotExist:
@@ -333,10 +387,11 @@ def _should_send_email(self):
 
 
 def _should_send_own_updates(self):
-    """Returns whether a user wants to receive emails about their activity.
+    """Get whether a user wants to receive emails about their activity.
 
     This is patched into the user object to make it easier to deal with missing
-    Profile objects."""
+    Profile objects.
+    """
     try:
         return self.get_profile().should_send_own_updates
     except Profile.DoesNotExist:
@@ -344,7 +399,7 @@ def _should_send_own_updates(self):
 
 
 def _get_profile(self):
-    """Returns the profile for the User.
+    """Get the profile for the User.
 
     The profile will be cached, preventing queries for future lookups.
     """
@@ -356,7 +411,7 @@ def _get_profile(self):
 
 
 def _get_site_profile(self, local_site):
-    """Returns the LocalSiteProfile for a given LocalSite for the User.
+    """Get the LocalSiteProfile for a given LocalSite for the User.
 
     The profile will be cached, preventing queries for future lookups.
     """
@@ -385,3 +440,38 @@ User._meta.ordering = ('username',)
 def _call_compute_trophies(sender, review_request, **kwargs):
     if review_request.changedescs.count() == 0 and review_request.public:
         Trophy.objects.compute_trophies(review_request)
+
+
+@receiver(review_request_published)
+def _call_unarchive_all_for_review_request(sender, review_request, **kwargs):
+    ReviewRequestVisit.objects.unarchive_all(review_request)
+
+
+@receiver(review_published)
+def _call_unarchive_all_for_review(sender, review, **kwargs):
+    ReviewRequestVisit.objects.unarchive_all(review.review_request_id)
+
+
+@receiver(reply_published)
+def _call_unarchive_all_for_reply(sender, reply, **kwargs):
+    ReviewRequestVisit.objects.unarchive_all(reply.review_request_id)
+
+
+@receiver(user_registered)
+@receiver(local_site_user_added)
+def _add_default_groups(sender, user, local_site=None, **kwargs):
+    """Add user to default groups.
+
+    When a user is registered, add the user to global default groups.
+
+    When a user is added to a LocalSite, add the user to default groups of the
+    LocalSite.
+    """
+    if local_site:
+        default_groups = local_site.groups.filter(is_default_group=True)
+    else:
+        default_groups = Group.objects.filter(is_default_group=True,
+                                              local_site=None)
+
+    for default_group in default_groups:
+        default_group.users.add(user)

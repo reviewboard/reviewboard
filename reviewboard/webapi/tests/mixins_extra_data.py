@@ -1,10 +1,10 @@
 from __future__ import unicode_literals
 
-from reviewboard.webapi.tests.mixins import test_template
+from djblets.webapi.testing.decorators import webapi_test_template
 
 
 class ExtraDataListMixin(object):
-    @test_template
+    @webapi_test_template
     def test_post_with_extra_fields(self):
         """Testing the POST <URL> API with extra fields"""
         self.load_fixtures(self.basic_post_fixtures)
@@ -36,9 +36,34 @@ class ExtraDataListMixin(object):
         self.assertEqual(obj.extra_data['foo'], extra_fields['extra_data.foo'])
         self.assertEqual(obj.extra_data['bar'], extra_fields['extra_data.bar'])
 
+    @webapi_test_template
+    def test_post_with_private_extra_fields(self):
+        """Testing the POST <URL> API with private extra fields"""
+        self.load_fixtures(self.basic_post_fixtures)
+
+        if self.basic_post_use_admin:
+            self._login_user(admin=True)
+
+        extra_fields = {
+            'extra_data.__private_key': 'private_data',
+        }
+
+        url, mimetype, data, objs = self.setup_basic_post_test(
+            self.user, False, None, True)
+        data.update(extra_fields)
+
+        rsp = self.api_post(url, data, expected_mimetype=mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        item_rsp = rsp[self.resource.item_result_key]
+
+        obj = self.resource.model.objects.get(pk=item_rsp['id'])
+
+        self.assertNotIn('__private_key', obj.extra_data)
+
 
 class ExtraDataItemMixin(object):
-    @test_template
+    @webapi_test_template
     def test_put_with_extra_fields(self):
         """Testing the PUT <URL> API with extra fields"""
         self.load_fixtures(getattr(self, 'basic_put_fixtures', []))
@@ -69,3 +94,62 @@ class ExtraDataItemMixin(object):
         self.assertNotIn('ignored', obj.extra_data)
         self.assertEqual(obj.extra_data['foo'], extra_fields['extra_data.foo'])
         self.assertEqual(obj.extra_data['bar'], extra_fields['extra_data.bar'])
+
+    @webapi_test_template
+    def test_put_with_private_extra_fields(self):
+        """Testing the PUT <URL> API with private extra fields"""
+        self.load_fixtures(getattr(self, 'basic_put_fixtures', []))
+
+        if self.basic_put_use_admin:
+            self._login_user(admin=True)
+
+        extra_fields = {
+            'extra_data.__private_key': 'private_data',
+        }
+
+        url, mimetype, data, obj, objs = \
+            self.setup_basic_put_test(self.user, False, None, True)
+        data.update(extra_fields)
+
+        rsp = self.api_put(url, data, expected_mimetype=mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        item_rsp = rsp[self.resource.item_result_key]
+
+        obj = self.resource.model.objects.get(pk=item_rsp['id'])
+
+        self.assertNotIn('__private_key', obj.extra_data)
+
+    @webapi_test_template
+    def test_get_with_private_extra_fields(self):
+        """Testing the GET <URL> API with extra fields"""
+        self.load_fixtures(getattr(self, 'basic_put_fixtures', []))
+
+        if self.basic_get_use_admin:
+            self._login_user(admin=True)
+
+        extra_fields = {
+            '__private_key': 'private_data',
+            'public_key': {
+                '__another_private_key': 'foo',
+                'another_public_key': 'bar',
+            },
+        }
+
+        url, mimetype, item = self.setup_basic_get_test(self.user, False, None)
+
+        obj = self.resource.model.objects.get(pk=item.id)
+        obj.extra_data = extra_fields
+        obj.save(update_fields=['extra_data'])
+
+        rsp = self.api_get(url,
+                           expected_mimetype=mimetype,
+                           expected_json=self.basic_get_returns_json)
+
+        item_rsp = rsp[self.resource.item_result_key]
+
+        self.assertNotIn('__private_key', item_rsp['extra_data'])
+        self.assertNotIn('__another_private_key',
+                         item_rsp['extra_data']['public_key'])
+        self.assertIn('another_public_key',
+                      item_rsp['extra_data']['public_key'])

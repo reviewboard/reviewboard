@@ -19,7 +19,7 @@ an entire loss of the fork if one of those copies was lost.
 
 If only one developer will ever be working with the codebase, and you have
 no need for a central fork in the organization, you can just use a single
-checkout as described in :ref:`gettingstarted`.
+checkout as described in :ref:`getting-started`.
 
 If you maintain a fork and have code that you think would be useful to
 the project as a whole, we would appreciate that you contribute the code
@@ -46,7 +46,7 @@ First, you'll need an account on GitHub, which your fork will be
 associated with.
 
 Then go to the page for the repository you want to fork. These can be
-found at http://github.com/djblets/ and http://github.com/reviewboard/.
+found at https://github.com/djblets/ and https://github.com/reviewboard/.
 The most common repositories are reviewboard_, rbtools_, and djblets_.
 
 Once you are on the desired repository page, click the :guilabel:`fork`
@@ -71,23 +71,21 @@ You would type::
     $ git fetch REMOTE_NAME
 
 
-.. _GitHub: http://github.com/
-.. _reviewboard: http://github.com/reviewboard/reviewboard/
-.. _rbtools: http://github.com/reviewboard/rbtools/
-.. _djblets: http://github.com/djblets/djblets/
+.. _GitHub: https://github.com/
+.. _reviewboard: https://github.com/reviewboard/reviewboard/
+.. _rbtools: https://github.com/reviewboard/rbtools/
+.. _djblets: https://github.com/djblets/djblets/
 
 
 Using a Custom Solution
 -----------------------
 
 There are many ways to host an internal Git repository. This guide won't
-go into too many details on this subject. One option you may want to look
-into is Gitosis (see `Hosting Git repositories, The Easy (and Secure) Way
-<http://scie.nti.st/2007/11/14/hosting-git-repositories-the-easy-and-secure-way>`_).
+go into too many details on this subject.
 
 To prepare your fork, you will need to first know the public clone URL from
 the repository you want to clone. These can be found at
-http://github.com/djblets/ and http://github.com/reviewboard/.  The most
+https://github.com/djblets/ and https://github.com/reviewboard/.  The most
 common repositories are reviewboard_, rbtools_, and djblets_.
 
 You will then want to clone this repository and host it on Gitosis or another

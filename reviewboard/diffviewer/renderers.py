@@ -9,6 +9,7 @@ from django.utils.translation import ugettext as _, get_language
 from djblets.cache.backend import cache_memoize
 
 from reviewboard.diffviewer.chunk_generator import compute_chunk_last_header
+from reviewboard.diffviewer.diffutils import populate_diff_chunks
 from reviewboard.diffviewer.errors import UserVisibleError
 
 
@@ -30,10 +31,12 @@ class DiffRenderer(object):
     DiffRenderer. It will alter the state of the renderer, possibly
     disrupting future render calls.
     """
+    default_template_name = 'diffviewer/diff_file_fragment.html'
+
     def __init__(self, diff_file, chunk_index=None, highlighting=False,
                  collapse_all=True, lines_of_context=None, extra_context=None,
-                 allow_caching=True,
-                 template_name='diffviewer/diff_file_fragment.html'):
+                 allow_caching=True, template_name=default_template_name,
+                 show_deleted=False):
         self.diff_file = diff_file
         self.chunk_index = chunk_index
         self.highlighting = highlighting
@@ -42,26 +45,19 @@ class DiffRenderer(object):
         self.extra_context = extra_context or {}
         self.allow_caching = allow_caching
         self.template_name = template_name
+        self.num_chunks = 0
+        self.show_deleted = show_deleted
 
         if self.lines_of_context and len(self.lines_of_context) == 1:
             # If we only have one value, then assume it represents before
             # and after the collapsed header area.
             self.lines_of_context.append(self.lines_of_context[0])
 
-        if self.chunk_index is not None:
-            assert not self.lines_of_context or self.collapse_all
-
-            self.num_chunks = len(self.diff_file['chunks'])
-
-            if self.chunk_index < 0 or self.chunk_index >= self.num_chunks:
-                raise UserVisibleError(
-                    _('Invalid chunk index %s specified.') % self.chunk_index)
-
-    def render_to_response(self):
+    def render_to_response(self, request):
         """Renders the diff to an HttpResponse."""
-        return HttpResponse(self.render_to_string())
+        return HttpResponse(self.render_to_string(request))
 
-    def render_to_string(self):
+    def render_to_string(self, request):
         """Returns the diff as a string.
 
         The resulting diff may optimistically be pulled from the cache, if
@@ -74,19 +70,34 @@ class DiffRenderer(object):
         cache = self.allow_caching and not self.lines_of_context
 
         if cache:
-            return cache_memoize(self.make_cache_key(),
-                                 self.render_to_string_uncached,
-                                 large_data=True)
+            return cache_memoize(
+                self.make_cache_key(),
+                lambda: self.render_to_string_uncached(request),
+                large_data=True)
         else:
-            return self.render_to_string_uncached()
+            return self.render_to_string_uncached(request)
 
-    def render_to_string_uncached(self):
+    def render_to_string_uncached(self, request):
         """Renders a diff to a string without caching.
 
         This is a potentially expensive operation, and so is meant to be called
         only as often as necessary. render_to_string will call this if it's
         not already in the cache.
         """
+        if not self.diff_file.get('chunks_loaded', False):
+            populate_diff_chunks([self.diff_file], self.highlighting,
+                                 request=request)
+
+        if self.chunk_index is not None:
+            assert not self.lines_of_context or self.collapse_all
+
+            self.num_chunks = len(self.diff_file['chunks'])
+
+            if self.chunk_index < 0 or self.chunk_index >= self.num_chunks:
+                raise UserVisibleError(
+                    _('Invalid chunk index %s specified.')
+                    % self.chunk_index)
+
         return render_to_string(self.template_name,
                                 Context(self.make_context()))
 
@@ -118,7 +129,10 @@ class DiffRenderer(object):
         if self.highlighting:
             key += '-highlighting'
 
-        key += '-%s-%s' % (get_language(), settings.AJAX_SERIAL)
+        if self.show_deleted:
+            key += '-show_deleted'
+
+        key += '-%s-%s' % (get_language(), settings.TEMPLATE_SERIAL)
 
         return key
 
@@ -228,6 +242,7 @@ class DiffRenderer(object):
             'lines_of_context': self.lines_of_context or (0, 0),
             'equal_lines': equal_lines,
             'standalone': self.chunk_index is not None,
+            'show_deleted': self.show_deleted,
         })
 
         return context

@@ -1,4 +1,4 @@
-.. _gettingstarted:
+.. _getting-started:
 
 ===============
 Getting Started
@@ -36,7 +36,7 @@ test different configurations with different versions of packages or Python.
 
 First, install virtualenv::
 
-    $ sudo easy_install virtualenv
+    $ sudo pip install virtualenv
 
 You can then create your first Review Board environment. Choose a spot for it.
 In this guide, we'll assume this is in :file:`~/envs`. Then type::
@@ -45,7 +45,7 @@ In this guide, we'll assume this is in :file:`~/envs`. Then type::
 
 You can name the environment anything you want. One scheme is to have a name
 per-release. So, instead of ``reviewboard`` above, maybe ``rb-master`` or
-``rb-release-1.6.x``. This is up to you.
+``rb2.5``. This is up to you.
 
 From then on, before doing any Review Board development, you'll want to switch
 to this environment::
@@ -55,26 +55,25 @@ to this environment::
 Note that once you're in your environment, you don't need to install packages
 as root. So, no need for :command:`sudo`.
 
-.. _virtualenv: http://pypi.python.org/pypi/virtualenv
+.. _virtualenv: https://pypi.python.org/pypi/virtualenv
 
 
 Dependencies
 ------------
 
 Before we begin setting up Review Board, it's best to walk through the
-installation instructions in the `Administration Guide`_. You'll want to
-install, at a minimum, the following packages:
+installation instructions in the `Administration Guide`_. The mandatory
+Python modules you'll need for development will be installed automatically
+later. For now, you'll need to install the following packages from your
+system's package manager:
 
-* Git
-* kgb
-* nose
-* patch
-* Python Setuptools
-* Sphinx
 * gettext
+* git
+* npm
+* patch
+* pysvn
 
-Also install any dependencies for search (if needed) and for repository types
-that you may want to use.
+Also install any tools for repository types that you may want to use.
 
 You will **not** need to install the Djblets and ReviewBoard packages, as
 we'll be doing that in a moment.
@@ -92,10 +91,10 @@ memcached can be handy, so install that if you want to, but by default we're
 going to use the built-in local memory cache. This is a temporary cache that
 will persist only as long as the development web server is running.
 
-Sphinx and gettext are handy if you're going to be building the documentation
-or packages. On OS X, gettext is available through homebrew or fink.
+gettext is needed if you're going to be building the documentation or
+packages. On OS X, gettext is available through homebrew or fink.
 
-.. _`Administration Guide`: http://www.reviewboard.org/docs/manual/dev/admin/
+.. _`Administration Guide`: https://www.reviewboard.org/docs/manual/latest/admin/
 
 
 Djblets
@@ -103,7 +102,7 @@ Djblets
 
 Review Board requires the bleeding-edge version of Djblets. This is
 hosted on GitHub_, and you can `browse the Djblets repository
-<http://github.com/djblets/djblets>`_ and see details there.
+<https://github.com/djblets/djblets>`_ and see details there.
 
 First, find a nice place where the :file:`djblets` source directory will live
 (such as :file:`~/src/`) and type the following::
@@ -117,14 +116,15 @@ Now to prepare that copy for development use, type the following::
 
     $ cd djblets
     $ python setup.py develop
+    $ pip install -r dev-requirements.txt
 
 This will create a special installation of Djblets that will reference
 your bleeding-edge copy. Note that this version will take precedence on
 the system.
 
 
-.. _GitHub: http://github.com/
-.. _browse-djblets: http://github.com/djblets/djblets
+.. _GitHub: https://github.com/
+.. _browse-djblets: https://github.com/djblets/djblets
 
 
 Review Board
@@ -132,7 +132,7 @@ Review Board
 
 Review Board installation is very similar to Djblets. It too is hosted
 on GitHub_, and you can `browse the Review Board repository
-<http://github.com/reviewboard/reviewboard>`_.
+<https://github.com/reviewboard/reviewboard>`_.
 
 Go back to your source directory and check out a copy of Review Board::
 
@@ -157,12 +157,10 @@ Review Board.
 RBTools
 -------
 
-You will need the latest version of RBTools both for development and
-for a version of :command:`post-review` compatible with
-http://reviews.reviewboard.org/.
+You will need the latest version of RBTools for development.
 
 Like Djblets and Review Board, you can find RBTools on GitHub_, and you can
-`browse the RBTools repository <http://github.com/reviewboard/rbtools>`_.
+`browse the RBTools repository <https://github.com/reviewboard/rbtools>`_.
 
 Go back to your source directory and check out a copy of RBTools::
 
@@ -235,9 +233,9 @@ development on here.
 
 If instead you want to base this on a different branch, put that branch's
 name in place of ``master`` above. For example, to base something on
-the upstream ``release-1.6.x`` branch, you might type::
+the upstream ``release-2.0.x`` branch, you might type::
 
-    $ git checkout -b new-branch release-1.6.x
+    $ git checkout -b new-branch release-2.0.x
 
 
 Switching Branches
@@ -329,6 +327,31 @@ If you're writing a change that needs to modify the database, you'll want
 to see :ref:`database-evolutions`.
 
 
+Testing Data
+------------
+
+A newly created instance of Review Board is pretty bare. Oftentimes, it is
+useful to have some review requests, reviews, and other users set up in your
+local instance to test against. Thankfully, there's a handy utility available
+to create those things for you.
+
+To create a new user and insert 5 review requests for them, run::
+
+    $ ./reviewboard/manage.py fill-database --users=1 --review-requests=5
+
+You can also make it so that there are diffs attached to each review request::
+
+    $ ./reviewboard/manage.py fill-database --users=1 --review-requests=5 --diffs=2
+
+You can also have automated reviews created for those review requests::
+
+    $ ./reviewboard/manage.py fill-database --users=1 --review-requests=5 --diffs=2 --reviews=2
+
+To see a full list of what fill-database can generate for you, run::
+
+    $ ./reviewboard/manage.py fill-database --help
+
+
 Additional Tips
 ---------------
 
@@ -341,7 +364,7 @@ with :command:`gitk`, which works decently (run with the ``--all`` parameter).
 MacOS X uses may want to try `GitX`_.
 
 
-.. _`GitHub Guides`: http://github.com/guides/home
+.. _`GitHub Guides`: https://github.com/guides/home
 .. _GitX: http://gitx.frim.nl/
 
 
@@ -365,10 +388,10 @@ To launch the web server, run::
 This will start the server on port 8080. You should then be able to access
 your server by visiting ``http://localhost:8080``.
 
-If you need to use a different port, you can always run Django's development
-server manually by typing::
+If you need to use a different port, you can use the ``-p`` parameter.
+For example::
 
-    $ ./reviewboard/manage.py runserver 0.0.0.0:PORT_NUMBER --adminmedia=reviewboard/htdocs/media/admin/
+    $ ./contrib/internal/devserver.py -p PORT_NUMBER
 
 Specify the port you want to use in ``PORT_NUMBER`` above.
 
@@ -376,28 +399,9 @@ Specify the port you want to use in ``PORT_NUMBER`` above.
 Running Unit Tests
 ------------------
 
-Djblets, Review Board and RBTools all have unit tests that can be run
-to make sure you don't break anything. It is important that you run
-these before posting code for review. We also request that new code
-include additions to the unit tests.
+.. note::
 
-To run our unit test suite for Djblets, type::
-
-    $ cd djblets
-    $ ./tests/runtests.py
-
-For Review Board, type::
-
-    $ cd reviewboard
-    $ ./reviewboard/manage.py test
-
-For RBTools, type::
-
-    $ cd rbtools
-    $ nosetests -v
-
-If you're updating the unit tests, you may want to see the
-:ref:`Unit Test Fixtures` documentation.
+   This section has moved. See :ref:`running-unit-tests`.
 
 
 Posting Changes for Review
@@ -410,7 +414,7 @@ When you're ready to post the changes on a branch for review, you can
 just run :command:`rbt post`, which you should have if you installed
 RBTools above::
 
-    $ rbt post -g
+    $ rbt post
 
 This will use your commit message as the base for the review request's Summary
 and Description fields.
@@ -424,4 +428,4 @@ summary and description), then you will need to use ``-r <ID>`` instead::
 
     $ rbt post -r 42
 
-See our guidelines on :ref:`Contributing Patches` for more information.
+See our guidelines on :ref:`contributing-patches` for more information.

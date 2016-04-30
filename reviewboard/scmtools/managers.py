@@ -69,6 +69,10 @@ class RepositoryManager(Manager):
 
         return qs.filter(local_site=local_site)
 
+    def accessible_ids(self, *args, **kwargs):
+        """Return IDs of repositories that are accessible by the given user."""
+        return self.accessible(*args, **kwargs).values_list('pk', flat=True)
+
     def can_create(self, user, local_site=None):
         return user.has_perm('scmtools.add_repository', local_site)
 

@@ -16,13 +16,16 @@ from reviewboard.testing.testcase import TestCase
 
 
 class UpdateTests(TestCase):
-    """Tests for update required pages"""
+    """Tests for update required pages."""
+
     def setUp(self):
+        """Set up this test case."""
         super(UpdateTests, self).setUp()
 
         self.old_media_root = settings.MEDIA_ROOT
 
     def tearDown(self):
+        """Tear down this test case."""
         super(UpdateTests, self).tearDown()
 
         # Make sure we don't break further tests by resetting this fully.
@@ -76,6 +79,8 @@ class UpdateTests(TestCase):
 
 
 class ValidatorTests(TestCase):
+    """Unit tests for admin site validation methods."""
+
     def test_validate_bug_tracker(self):
         """Testing bug tracker url form field validation"""
         # Invalid - invalid format specification types
@@ -98,22 +103,25 @@ class ValidatorTests(TestCase):
 
 
 class SSHSettingsFormTestCase(TestCase):
-    """Unit tests for SSHSettingsForm in /admin/forms.py"""
+    """Unit tests for SSHSettingsForm in /admin/forms.py."""
+
     fixtures = ['test_users']
 
     def setUp(self):
+        """Set up this test case."""
         super(SSHSettingsFormTestCase, self).setUp()
 
         # Setup temp directory to prevent the original ssh related
         # configurations been overwritten.
         self.old_home = os.getenv('HOME')
         self.tempdir = tempfile.mkdtemp(prefix='rb-tests-home-')
-        os.environ['RBSSH_ALLOW_AGENT'] = '0'
+        os.environ[b'RBSSH_ALLOW_AGENT'] = b'0'
         self._set_home(self.tempdir)
 
         self.ssh_client = SSHClient()
 
     def tearDown(self):
+        """Tear down this test case."""
         super(SSHSettingsFormTestCase, self).tearDown()
 
         self._set_home(self.old_home)
@@ -122,7 +130,8 @@ class SSHSettingsFormTestCase(TestCase):
             shutil.rmtree(self.tempdir)
 
     def _set_home(self, homedir):
-        os.environ['HOME'] = homedir
+        """Set the $HOME environment variable."""
+        os.environ[b'HOME'] = homedir.encode('utf-8')
 
     def test_generate_key(self):
         """Testing SSHSettingsForm POST with generate_key=1"""

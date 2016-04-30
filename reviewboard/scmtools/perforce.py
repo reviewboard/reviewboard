@@ -10,14 +10,12 @@ import socket
 import subprocess
 import tempfile
 import time
+from contextlib import contextmanager
 
 from django.utils import six
+from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
-try:
-    from P4 import P4Exception
-except ImportError:
-    pass
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate
@@ -43,29 +41,105 @@ class STunnelProxy(object):
         self.target = target
         self.pid = None
 
+    @cached_property
+    def stunnel_use_config(self):
+        """Whether stunnel uses a config-based model.
+
+        stunnel 4+ switched to a config-based model, instead of passing
+        arguments on the command line. This property returns whether that
+        mode should be used.
+        """
+        # Try to run with stunnel -version, which is available in stunnel 4+.
+        # If this succeeds, we're using a config-based version of stunnel.
+        try:
+            subprocess.check_call(['stunnel', '-version'],
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE)
+            return True
+        except subprocess.CalledProcessError:
+            return False
+
     def start_server(self, certfile):
-        self._start(['-p', certfile])
+        self._start(server=True, certfile=certfile)
 
     def start_client(self):
-        self._start(['-c'])
+        self._start(server=False)
 
-    def _start(self, additional_args):
+    def _start(self, server, certfile=None):
         self.port = self._find_port()
 
         tempdir = tempfile.mkdtemp()
-        filename = os.path.join(tempdir, 'stunnel.pid')
-        args = ['stunnel', '-P', filename,
+        pid_filename = os.path.join(tempdir, 'stunnel.pid')
+
+        # There are two major versions of stunnel we're supporting today:
+        # stunnel 3, and stunnel 4+.
+        #
+        # stunnel 3 used command line arguments instead of a config file, and
+        # stunnel 4 (released in 2002) completely changed to a config-based
+        # model.
+        #
+        # It's probably not worth continuing to support version 3 at this
+        # point, given that any modern install supporting Review Board's other
+        # dependencies will also have a newer version of stunnel. However,
+        # we'll continue to keep this code for those rare cases where an older
+        # version is still needed.
+        if self.stunnel_use_config:
+            conf_filename = os.path.join(tempdir, 'stunnel.conf')
+
+            with open(conf_filename, 'w') as fp:
+                fp.write('pid = %s\n' % pid_filename)
+
+                if server:
+                    fp.write('[p4d]\n')
+
+                    if certfile:
+                        fp.write('cert = %s\n' % certfile)
+
+                    fp.write('accept = %s\n' % self.port)
+                    fp.write('connect = %s\n' % self.target)
+                else:
+                    fp.write('[p4]\n')
+                    fp.write('client = yes\n')
+                    fp.write('accept = 127.0.0.1:%s\n' % self.port)
+                    fp.write('connect = %s\n' % self.target)
+
+            args = [conf_filename]
+        else:
+            args = [
+                '-P', pid_filename,
                 '-d', '127.0.0.1:%d' % self.port,
-                '-r', self.target] + additional_args
+                '-r', self.target,
+            ]
 
-        subprocess.check_call(args)
+            if server:
+                args += ['-p', certfile]
+            else:
+                args.append('-c')
 
-        # It can sometimes be racy to immediately open the file. We therefore
-        # have to wait a fraction of a second =/
-        time.sleep(0.1)
-        with open(filename) as f:
-            self.pid = int(f.read())
-            f.close()
+        try:
+            subprocess.check_call(['stunnel'] + args)
+        except subprocess.CalledProcessError:
+            if self.stunnel_use_config:
+                with open(conf_filename, 'r') as fp:
+                    logging.error('Unable to create an stunnel using '
+                                  'config:\n%s\n'
+                                  % fp.read())
+            else:
+                logging.error('Unable to create an stunnel with args: %s\n'
+                              % ' '.join(args))
+        else:
+            # It can sometimes be racy to immediately open the file. We
+            # therefore have to wait a fraction of a second =/
+            time.sleep(0.1)
+
+            try:
+                with open(pid_filename) as f:
+                    self.pid = int(f.read())
+                    f.close()
+            except IOError as e:
+                logging.exception('Unable to open stunnel PID file %s: %s\n'
+                                  % (pid_filename, e))
+
         shutil.rmtree(tempdir)
 
     def shutdown(self):
@@ -79,22 +153,26 @@ class STunnelProxy(object):
         while True:
             port = random.randint(30000, 60000)
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
             try:
                 s.bind(('127.0.0.1', port))
                 s.listen(1)
-                s.shutdown(socket.SHUT_RDWR)
                 return port
-            except:
-                pass
+            finally:
+                try:
+                    s.close()
+                except:
+                    pass
 
 
 class PerforceClient(object):
-    def __init__(self, p4port, username, password, encoding, use_stunnel=False,
-                 use_ticket_auth=False):
+    def __init__(self, p4port, username, password, encoding, p4host=None,
+                 use_stunnel=False, use_ticket_auth=False):
         self.p4port = p4port
         self.username = username
         self.password = password
         self.encoding = encoding
+        self.p4host = p4host
         self.use_stunnel = use_stunnel
         self.use_ticket_auth = use_ticket_auth
         self.proxy = None
@@ -106,6 +184,7 @@ class PerforceClient(object):
             raise AttributeError('stunnel proxy was requested, but stunnel '
                                  'binary is not in the exec path.')
 
+    @contextmanager
     def _connect(self):
         """
         Connect to the perforce server.
@@ -131,10 +210,17 @@ class PerforceClient(object):
 
         self.p4.port = p4_port.encode('utf-8')
 
+        if self.p4host:
+            self.p4.host = self.p4host.encode('utf-8')
+
         self.p4.connect()
 
         if self.use_ticket_auth:
             self.p4.run_login()
+
+        yield
+
+        self._disconnect()
 
     def _disconnect(self):
         """
@@ -177,22 +263,12 @@ class PerforceClient(object):
             raise SCMError(error)
 
     def _run_worker(self, worker):
-        result = None
-
-        # TODO: Move to using with: when we require a minimum of Python 2.5.
-        #       We should make it auto-disconnect.
+        from P4 import P4Exception
         try:
-            self._connect()
-            result = worker()
-            self._disconnect()
+            with self._connect():
+                return worker()
         except P4Exception as e:
-            self._disconnect()
             self._convert_p4exception_to_scmexception(e)
-        except:
-            self._disconnect()
-            raise
-
-        return result
 
     def _get_changeset(self, changesetid):
         changesetid = six.text_type(changesetid)
@@ -267,22 +343,25 @@ class PerforceTool(SCMTool):
         credentials = repository.get_credentials()
 
         self.client = self._create_client(
-            six.text_type(repository.mirror_path or repository.path),
-            six.text_type(credentials['username']),
-            six.text_type(credentials['password'] or ''),
-            six.text_type(repository.encoding),
-            repository.extra_data.get('use_ticket_auth', False))
+            path=six.text_type(repository.mirror_path or repository.path),
+            username=six.text_type(credentials['username']),
+            password=six.text_type(credentials['password'] or ''),
+            encoding=six.text_type(repository.encoding),
+            host=six.text_type(repository.extra_data.get('p4_host', '')),
+            use_ticket_auth=repository.extra_data.get('use_ticket_auth',
+                                                      False))
 
     @staticmethod
-    def _create_client(path, username, password, encoding='',
+    def _create_client(path, username, password, encoding='', host=None,
                        use_ticket_auth=False):
         if path.startswith('stunnel:'):
             path = path[8:]
             use_stunnel = True
         else:
             use_stunnel = False
-        return PerforceClient(path, username, password, encoding, use_stunnel,
-                              use_ticket_auth)
+
+        return PerforceClient(path, username, password, encoding, host,
+                              use_stunnel, use_ticket_auth)
 
     @staticmethod
     def _convert_p4exception_to_scmexception(e):
@@ -296,16 +375,45 @@ class PerforceTool(SCMTool):
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,
-                         local_site_name=None):
-        """
-        Performs checks on a repository to test its validity.
+                         p4_host=None, local_site_name=None):
+        """Perform checks on a repository to test its validity.
 
-        This should check if a repository exists and can be connected to.
+        This checks if a repository exists and can be connected to.
 
-        The result is returned as an exception. The exception may contain extra
-        information, such as a human-readable description of the problem. If
-        the repository is valid and can be connected to, no exception will be
-        thrown.
+        A failed result is returned as an exception. The exception may contain
+        extra information, such as a human-readable description of the problem.
+        If the repository is valid and can be connected to, no exception will
+        be thrown.
+
+        Args:
+            path (unicode):
+                The Perforce repository path (equivalent to :env:`P4PORT`).
+
+            username (unicode):
+                The username used to authenticate.
+
+            password (unicode):
+                The password used to authenticate.
+
+            p4_host (unicode):
+                The optional Perforce host name (equivalent to
+                :env:`P4HOST`).
+
+            local_site_name (unicode):
+                The optional Local Site name.
+
+        Raises:
+            reviewboard.scmtools.errors.AuthenticationError:
+                There was an error authenticating with Perforce.
+
+            reviewboard.scmtools.errors.RepositoryNotFoundError:
+                The repository at the given path could not be found.
+
+            reviewboard.scmtools.errors.SCMError:
+                There was a general error communicating with Perforce.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The Perforce SSL certificate could not be verified.
         """
         super(PerforceTool, cls).check_repository(path, username, password,
                                                   local_site_name)
@@ -315,7 +423,8 @@ class PerforceTool(SCMTool):
         # trouble of handling tickets here.
         client = cls._create_client(six.text_type(path),
                                     six.text_type(username),
-                                    six.text_type(password))
+                                    six.text_type(password),
+                                    host=six.text_type(p4_host or ''))
         client.get_info()
 
     def get_changeset(self, changesetid, allow_empty=False):
@@ -329,7 +438,7 @@ class PerforceTool(SCMTool):
     def get_diffs_use_absolute_paths(self):
         return True
 
-    def get_file(self, path, revision=HEAD):
+    def get_file(self, path, revision=HEAD, **kwargs):
         return self.client.get_file(path, revision)
 
     def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):

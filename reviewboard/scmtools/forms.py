@@ -6,6 +6,7 @@ import sys
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.core.exceptions import ValidationError
+from djblets.db.query import get_object_or_none
 from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
@@ -15,11 +16,13 @@ from reviewboard.admin.validation import validate_bug_tracker
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             SSHKeyAssociationError,
                                             TwoFactorAuthCodeRequiredError)
+from reviewboard.hostingsvcs.fake import FAKE_HOSTING_SERVICES
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import (get_hosting_services,
                                              get_hosting_service)
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          UnverifiedCertificateError)
+from reviewboard.scmtools.fake import FAKE_SCMTOOLS
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -101,11 +104,9 @@ class RepositoryForm(forms.ModelForm):
         widget=forms.TextInput(attrs={'size': 30, 'autocomplete': 'off'}))
 
     # Repository Information fields
-    tool = forms.ModelChoiceField(
+    tool = forms.ChoiceField(
         label=_("Repository type"),
-        required=True,
-        empty_label=None,
-        queryset=Tool.objects.all())
+        required=True)
 
     repository_plan = forms.ChoiceField(
         label=_('Repository plan'),
@@ -194,6 +195,12 @@ class RepositoryForm(forms.ModelForm):
         self.repository_forms = {}
         self.bug_tracker_forms = {}
         self.hosting_service_info = {}
+        self.tool_info = {
+            'none': {
+                'fields': ['raw_file_url', 'username', 'password',
+                           'use_ticket_auth'],
+            },
+        }
         self.validate_repository = True
         self.cert = None
 
@@ -220,6 +227,8 @@ class RepositoryForm(forms.ModelForm):
             local_site=self.local_site)
         self.fields['hosting_account'].queryset = hosting_accounts
 
+        hosting_accounts = list(hosting_accounts)
+
         # Standard forms don't support 'instance', so don't pass it through
         # to any created hosting service forms.
         if 'instance' in kwargs:
@@ -229,7 +238,13 @@ class RepositoryForm(forms.ModelForm):
         hosting_service_choices = []
         bug_tracker_choices = []
 
+        hosting_services = set()
+
         for hosting_service in get_hosting_services():
+            class_name = '%s.%s' % (hosting_service.__module__,
+                                    hosting_service.__name__)
+            hosting_services.add(class_name)
+
             if hosting_service.supports_repositories:
                 hosting_service_choices.append((hosting_service.id,
                                                 hosting_service.name))
@@ -240,29 +255,9 @@ class RepositoryForm(forms.ModelForm):
 
             self.bug_tracker_forms[hosting_service.id] = {}
             self.repository_forms[hosting_service.id] = {}
-            self.hosting_service_info[hosting_service.id] = {
-                'scmtools': hosting_service.supported_scmtools,
-                'plans': [],
-                'planInfo': {},
-                'self_hosted': hosting_service.self_hosted,
-                'needs_authorization': hosting_service.needs_authorization,
-                'supports_bug_trackers': hosting_service.supports_bug_trackers,
-                'supports_ssh_key_association':
-                    hosting_service.supports_ssh_key_association,
-                'supports_two_factor_auth':
-                    hosting_service.supports_two_factor_auth,
-                'needs_two_factor_auth_code': False,
-                'accounts': [
-                    {
-                        'pk': account.pk,
-                        'hosting_url': account.hosting_url,
-                        'username': account.username,
-                        'is_authorized': account.is_authorized,
-                    }
-                    for account in hosting_accounts
-                    if account.service_name == hosting_service.id
-                ],
-            }
+            self.hosting_service_info[hosting_service.id] = \
+                self._get_hosting_service_info(hosting_service,
+                                               hosting_accounts)
 
             try:
                 if hosting_service.plans:
@@ -288,6 +283,16 @@ class RepositoryForm(forms.ModelForm):
                               % (hosting_service.id, e),
                               exc_info=1)
 
+        for class_name, cls in six.iteritems(FAKE_HOSTING_SERVICES):
+            if class_name not in hosting_services:
+                service_info = self._get_hosting_service_info(cls, [])
+                service_info['fake'] = True
+                self.hosting_service_info[cls.hosting_service_id] = \
+                    service_info
+
+                hosting_service_choices.append((cls.hosting_service_id,
+                                                cls.name))
+
         # Build the list of hosting service choices, sorted, with
         # "None" being first.
         hosting_service_choices.sort(key=lambda x: x[1])
@@ -303,6 +308,47 @@ class RepositoryForm(forms.ModelForm):
         bug_tracker_choices.insert(1, (self.CUSTOM_BUG_TRACKER_ID,
                                        self.CUSTOM_BUG_TRACKER_NAME))
         self.fields['bug_tracker_type'].choices = bug_tracker_choices
+
+        # Load the list of SCM tools.
+        available_scmtools = set()
+        scmtool_choices = []
+
+        # Tools are referred to by their numeric ID. We keep track of the last
+        # used ID and will use it to generate further IDs if fake SCMTools are
+        # to be displayed.
+        last_tool_pk = 0
+
+        for tool in Tool.objects.order_by('pk'):
+            scmtool_choices.append((tool.pk, tool.name))
+            available_scmtools.add(tool.class_name)
+
+            tool_fields = ['username', 'password']
+
+            if tool.supports_raw_file_urls:
+                tool_fields.append('raw_file_url')
+
+            if tool.supports_ticket_auth:
+                tool_fields.append('use_ticket_auth')
+
+            self.tool_info[tool.id] = {
+                'fields': tool_fields,
+                'help_text': tool.field_help_text,
+            }
+
+            last_tool_pk = tool.pk
+
+        for pk, (class_name, name) in enumerate(six.iteritems(FAKE_SCMTOOLS),
+                                                start=last_tool_pk + 1):
+            if class_name not in available_scmtools:
+                scmtool_choices.append((pk, name))
+
+                self.tool_info[six.text_type(pk)] = {
+                    'fields': [],
+                    'help_text': {},
+                    'fake': True,
+                }
+
+        self.fields['tool'].choices = scmtool_choices
 
         # Get the current SSH public key that would be used for repositories,
         # if one has been created.
@@ -332,6 +378,46 @@ class RepositoryForm(forms.ModelForm):
             self._populate_repository_info_fields()
             self._populate_hosting_service_fields()
             self._populate_bug_tracker_fields()
+
+    def _get_hosting_service_info(self, hosting_service, hosting_accounts):
+        """Return the information for a hosting service.
+
+        Arguments:
+            hosting_service (type):
+                The hosting service class, which should be a subclass of
+                :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
+
+            hosting_accounts (list):
+                A list of the registered
+                `py:class:`~reviewboard.hostingsvcs.models.HostingServiceAccount`s
+
+        Returns:
+            dict:
+            Information about the hosting service.
+        """
+        return {
+            'scmtools': hosting_service.supported_scmtools,
+            'plans': [],
+            'planInfo': {},
+            'self_hosted': hosting_service.self_hosted,
+            'needs_authorization': hosting_service.needs_authorization,
+            'supports_bug_trackers': hosting_service.supports_bug_trackers,
+            'supports_ssh_key_association':
+                hosting_service.supports_ssh_key_association,
+            'supports_two_factor_auth':
+                hosting_service.supports_two_factor_auth,
+            'needs_two_factor_auth_code': False,
+            'accounts': [
+                {
+                    'pk': account.pk,
+                    'hosting_url': account.hosting_url,
+                    'username': account.username,
+                    'is_authorized': account.is_authorized,
+                }
+                for account in hosting_accounts
+                if account.service_name == hosting_service.id
+            ],
+        }
 
     def _load_hosting_service(self, hosting_service_id, hosting_service,
                               repo_type_id, repo_type_label, form_class,
@@ -603,8 +689,11 @@ class RepositoryForm(forms.ModelForm):
 
         try:
             self.cleaned_data.update(hosting_service_cls.get_repository_fields(
-                hosting_account.username, hosting_account.hosting_url, plan,
-                tool_name, field_vars))
+                username=hosting_account.username,
+                hosting_url=hosting_account.hosting_url,
+                plan=plan,
+                tool_name=tool_name,
+                field_vars=field_vars))
         except KeyError as e:
             raise ValidationError([six.text_type(e)])
 
@@ -953,10 +1042,11 @@ class RepositoryForm(forms.ModelForm):
             # were detected, set an appropriate variable that is_valid()
             # method will check.
             if bug_tracker_type in self.bug_tracker_forms:
-                field = self.bug_tracker_forms[bug_tracker_type]['default']
-                self.bug_tracker_host_error = (
-                    hasattr(field, 'errors') and
-                    len(field.errors) > 0)
+                field = self.bug_tracker_forms[bug_tracker_type].get('default')
+                if field:
+                    self.bug_tracker_host_error = (
+                        hasattr(field, 'errors') and
+                        len(field.errors) > 0)
 
         return self.cleaned_data['bug_tracker_hosting_url'].strip()
 
@@ -999,10 +1089,13 @@ class RepositoryForm(forms.ModelForm):
         If one or more dependencies aren't found, they will be presented
         as validation errors.
         """
-        tool = self.cleaned_data['tool']
-        scmtool_class = tool.get_scmtool_class()
-
         errors = []
+        tool = get_object_or_none(Tool, pk=self.cleaned_data['tool'])
+
+        if not tool:
+            raise ValidationError(['Invalid SCMTool.'])
+
+        scmtool_class = tool.get_scmtool_class()
 
         for dep in scmtool_class.dependencies.get('modules', []):
             if not has_module(dep):
@@ -1248,6 +1341,8 @@ class RepositoryForm(forms.ModelForm):
             'mirror_path': forms.TextInput(attrs={'size': '60'}),
             'raw_file_url': forms.TextInput(attrs={'size': '60'}),
             'bug_tracker': forms.TextInput(attrs={'size': '60'}),
+            'name': forms.TextInput(attrs={'size': '30',
+                                           'autocomplete': 'off'}),
             'username': forms.TextInput(attrs={'size': '30',
                                                'autocomplete': 'off'}),
             'users': FilteredSelectMultiple(_('users with access'), False),

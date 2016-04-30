@@ -33,7 +33,10 @@ class BaseFileAttachmentResource(WebAPIResource):
         },
         'icon_url': {
             'type': six.text_type,
-            'description': 'The URL to a 24x24 icon representing this file.',
+            'description': 'The URL to a 24x24 icon representing this file. '
+                           'The use of these icons is deprecated and this '
+                           'property will be removed in a future version.',
+            'deprecated_in': '2.5',
         },
         'mimetype': {
             'type': six.text_type,
@@ -45,15 +48,9 @@ class BaseFileAttachmentResource(WebAPIResource):
             'description': 'A thumbnail representing this file.',
             'added_in': '1.7',
         },
-        'attachment_history_id': {
-            'type': int,
-            'description': 'ID of the corresponding FileAttachmentHistory.',
-            'added_in': '2.1',
-        },
     }
 
     uri_object_key = 'file_attachment_id'
-    autogenerate_etags = True
 
     def serialize_absolute_url_field(self, obj, request, **kwargs):
         return request.build_absolute_uri(obj.get_absolute_url())

@@ -11,12 +11,14 @@ from django.http import HttpResponse
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import six
-from django.utils.html import escape
 from django.utils.safestring import mark_safe
 
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.context import make_review_request_context
+from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
+                                                normalize_text_for_edit)
 from reviewboard.reviews.models import FileAttachmentComment, Review
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -45,6 +47,7 @@ class ReviewUI(object):
         self.review_request = review_request
         self.obj = obj
         self.diff_against_obj = None
+        self.request = None
 
     def set_diff_against(self, obj):
         """Sets the object to generate a diff against.
@@ -67,7 +70,7 @@ class ReviewUI(object):
 
         When this is called, the arguments are always passed as keyword
         arguments. Subclasses don't need to accept all the arguments, as
-        long as they take a **kwargs.
+        long as they take a ``**kwargs``.
         """
         return True
 
@@ -193,12 +196,13 @@ class ReviewUI(object):
             })
 
     def get_comment_link_text(self, comment):
-        """Returns the text to link to a comment.
+        """Return the text to link to a comment.
 
-        This will normally just return the filename, but some may want to
-        specialize to list things like page numbers or sections.
+        This will normally just return the file attachment's display name, but
+        some may want to specialize to list things like page numbers or
+        sections.
         """
-        return self.obj.filename
+        return self.obj.display_name
 
     def get_extra_context(self, request):
         return {}
@@ -243,6 +247,7 @@ class ReviewUI(object):
         """
         user = self.request.user
 
+        result = []
         for comment in comments:
             try:
                 review = comment.get_review()
@@ -252,11 +257,13 @@ class ReviewUI(object):
 
             try:
                 if review and (review.public or review.user == user):
-                    yield self.serialize_comment(comment)
+                    result.append(self.serialize_comment(comment))
             except Exception as e:
                 logging.error('Error when calling serialize_comment for '
                               'FileAttachmentReviewUI %r: %s',
                               self, e, exc_info=1)
+
+        return result
 
     def serialize_comment(self, comment):
         """Serializes a comment.
@@ -272,7 +279,11 @@ class ReviewUI(object):
 
         return {
             'comment_id': comment.pk,
-            'text': escape(comment.text),
+            'text': normalize_text_for_edit(user, comment.text,
+                                            comment.rich_text),
+            'rich_text': comment.rich_text,
+            'html': markdown_render_conditional(comment.text,
+                                                comment.rich_text),
             'user': {
                 'username': review.user.username,
                 'name': review.user.get_full_name() or review.user.username,
@@ -299,9 +310,12 @@ class FileAttachmentReviewUI(ReviewUI):
 
     This also handles much of the work for diffing FileAttachments.
     """
+    name = 'Unknown file type'
     object_key = 'file'
     diff_object_key = 'diff_against_file'
     supported_mimetypes = []
+    js_model_class = 'RB.DummyReviewable'
+    js_view_class = 'RB.DummyReviewableView'
 
     def get_comments(self):
         """Returns a list of comments made on the FileAttachment.
@@ -336,10 +350,24 @@ class FileAttachmentReviewUI(ReviewUI):
         """
         data = {
             'fileAttachmentID': self.obj.pk,
+            'fileRevision': self.obj.attachment_revision,
         }
 
+        if self.obj.attachment_history is not None:
+            attachments = FileAttachment.objects.filter(
+                attachment_history=self.obj.attachment_history)
+            data['attachmentRevisionIDs'] = list(
+                attachments.order_by('attachment_revision')
+                .values_list('pk', flat=True))
+            data['numRevisions'] = attachments.count()
+
         if self.diff_against_obj:
+            data['diffCaption'] = self.diff_against_obj.display_name
             data['diffAgainstFileAttachmentID'] = self.diff_against_obj.pk
+            data['diffRevision'] = self.diff_against_obj.attachment_revision
+
+            if type(self) != type(self.diff_against_obj.review_ui):
+                data['diffTypeMismatch'] = True
 
         return data
 
@@ -367,7 +395,12 @@ class FileAttachmentReviewUI(ReviewUI):
     def for_type(cls, attachment):
         """Returns the handler that is the best fit for provided mimetype."""
         if attachment.mimetype:
-            mimetype = mimeparse.parse_mime_type(attachment.mimetype)
+            try:
+                mimetype = mimeparse.parse_mime_type(attachment.mimetype)
+            except:
+                logging.error('Unable to parse MIME type "%s" for %s',
+                              attachment.mimetype, attachment)
+                return None
 
             # Override the mimetype if mimeparse is known to misinterpret this
             # type of file as 'octet-stream'
@@ -383,11 +416,11 @@ class FileAttachmentReviewUI(ReviewUI):
                     return handler(attachment.get_review_request(), attachment)
                 except ObjectDoesNotExist as e:
                     logging.error('Unable to load review UI for %s: %s',
-                                  attachment, e, exc_info=1)
+                                  attachment, e)
                 except Exception as e:
                     logging.error('Error instantiating '
                                   'FileAttachmentReviewUI %r: %s',
-                                  handler, e, exc_info=1)
+                                  handler, e)
 
         return None
 

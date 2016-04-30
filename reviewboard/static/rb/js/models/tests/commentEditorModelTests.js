@@ -1,6 +1,7 @@
 suite('rb/models/CommentEditor', function() {
     var editor,
-        reviewRequest;
+        reviewRequest,
+        comment;
 
     function createComment() {
         return new RB.BaseComment({
@@ -88,6 +89,22 @@ suite('rb/models/CommentEditor', function() {
                 });
                 expect(editor.get('openIssue')).toBe(true);
             });
+
+            it('When reloading the page with explicitly set value', function() {
+                RB.UserSession.instance.set('commentsOpenAnIssue', true);
+
+                comment = createComment();
+                comment.set({
+                    loaded: false,
+                    issueOpened: false
+                });
+
+                editor = new RB.CommentEditor({
+                    comment: comment,
+                    reviewRequest: reviewRequest
+                });
+                expect(editor.get('openIssue')).toBe(false);
+            });
         });
 
         describe('richText', function() {
@@ -117,6 +134,90 @@ suite('rb/models/CommentEditor', function() {
                     reviewRequest: reviewRequest
                 });
                 expect(editor.get('richText')).toBe(true);
+            });
+        });
+    });
+
+    describe('Loading comment', function() {
+        describe('With comment richText=true', function() {
+            var comment;
+
+            beforeEach(function() {
+                comment = createComment();
+
+                comment.set({
+                    id: 123,
+                    loaded: true,
+                    richText: true,
+                    text: '<p>this _is_ a <em>test</em></p>',
+                    rawTextFields: {
+                        text: 'this \\_is\\_ a _test_'
+                    },
+                    markdownTextFields: {
+                        text: 'this \\_is\\_ a _test_'
+                    }
+                });
+            });
+
+            it('When defaultUseRichText=true', function() {
+                RB.UserSession.instance.set('defaultUseRichText', true);
+                editor.set('comment', comment);
+                editor.beginEdit();
+
+                expect(editor.get('dirty')).toBe(false);
+                expect(editor.get('richText')).toBe(true);
+                expect(editor.get('text')).toBe('this \\_is\\_ a _test_');
+            });
+
+            it('When defaultUseRichText=false', function() {
+                RB.UserSession.instance.set('defaultUseRichText', false);
+                editor.set('comment', comment);
+                editor.beginEdit();
+
+                expect(editor.get('dirty')).toBe(false);
+                expect(editor.get('richText')).toBe(true);
+                expect(editor.get('text')).toBe('this \\_is\\_ a _test_');
+            });
+        });
+
+        describe('With comment richText=false', function() {
+            var comment;
+
+            beforeEach(function() {
+                comment = createComment();
+
+                comment.set({
+                    id: 123,
+                    loaded: true,
+                    richText: false,
+                    text: '<p>this _is_ a test</p>',
+                    rawTextFields: {
+                        text: 'this _is_ a _test_'
+                    },
+                    markdownTextFields: {
+                        text: 'this \\_is\\_ a \\_test\\_'
+                    }
+                });
+            });
+
+            it('When defaultUseRichText=true', function() {
+                RB.UserSession.instance.set('defaultUseRichText', true);
+                editor.set('comment', comment);
+                editor.beginEdit();
+
+                expect(editor.get('dirty')).toBe(false);
+                expect(editor.get('richText')).toBe(true);
+                expect(editor.get('text')).toBe('this \\_is\\_ a \\_test\\_');
+            });
+
+            it('When defaultUseRichText=false', function() {
+                RB.UserSession.instance.set('defaultUseRichText', false);
+                editor.set('comment', comment);
+                editor.beginEdit();
+
+                expect(editor.get('dirty')).toBe(false);
+                expect(editor.get('richText')).toBe(false);
+                expect(editor.get('text')).toBe('this _is_ a _test_');
             });
         });
     });
@@ -232,7 +333,7 @@ suite('rb/models/CommentEditor', function() {
                 editor.set('text', 'abc');
                 expect(editor.get('dirty')).toBe(true);
 
-                spyOn(comment, 'save').andCallFake(
+                spyOn(comment, 'save').and.callFake(
                     function(callbacks, context) {
                         callbacks.success.call(context);
                     }
@@ -254,7 +355,7 @@ suite('rb/models/CommentEditor', function() {
                 editor.set('text', 'abc');
                 expect(editor.get('dirty')).toBe(true);
 
-                spyOn(comment, 'destroy').andCallFake(
+                spyOn(comment, 'destroy').and.callFake(
                     function(callbacks, context) {
                         if (callbacks && callbacks.success) {
                             callbacks.success.call(context);
@@ -294,7 +395,7 @@ suite('rb/models/CommentEditor', function() {
                 });
 
                 editor.beginEdit();
-                expect(console.assert.calls[0].args[0]).toBeTruthy();
+                expect(console.assert.calls.argsFor(0)[0]).toBeTruthy();
             });
 
             it('With canEdit=false', function() {
@@ -304,13 +405,13 @@ suite('rb/models/CommentEditor', function() {
                 });
 
                 expect(function() { editor.beginEdit(); }).toThrow();
-                expect(console.assert.calls[0].args[0]).toBeFalsy();
+                expect(console.assert.calls.argsFor(0)[0]).toBeFalsy();
             });
 
             it('With no comment', function() {
                 expect(function() { editor.beginEdit(); }).toThrow();
-                expect(console.assert.calls[0].args[0]).toBeTruthy();
-                expect(console.assert.calls[1].args[0]).toBeFalsy();
+                expect(console.assert.calls.argsFor(0)[0]).toBeTruthy();
+                expect(console.assert.calls.argsFor(1)[0]).toBeFalsy();
             });
         });
 
@@ -344,7 +445,7 @@ suite('rb/models/CommentEditor', function() {
             beforeEach(function() {
                 comment = createComment();
 
-                spyOn(comment, 'destroy').andCallFake(
+                spyOn(comment, 'destroy').and.callFake(
                     function(callbacks, context) {
                         if (callbacks && callbacks.success) {
                             callbacks.success.call(context);
@@ -362,7 +463,7 @@ suite('rb/models/CommentEditor', function() {
                 editor.set('canDelete', false);
 
                 expect(function() { editor.deleteComment(); }).toThrow();
-                expect(console.assert.calls[0].args[0]).toBeFalsy();
+                expect(console.assert.calls.argsFor(0)[0]).toBeFalsy();
                 expect(comment.destroy).not.toHaveBeenCalled();
                 expect(editor.trigger).not.toHaveBeenCalledWith('deleted');
                 expect(editor.close).not.toHaveBeenCalled();
@@ -374,7 +475,7 @@ suite('rb/models/CommentEditor', function() {
                 editor.set('canDelete', true);
 
                 editor.deleteComment();
-                expect(console.assert.calls[0].args[0]).toBeTruthy();
+                expect(console.assert.calls.argsFor(0)[0]).toBeTruthy();
                 expect(comment.destroy).toHaveBeenCalled();
                 expect(editor.trigger).toHaveBeenCalledWith('deleted');
                 expect(editor.close).toHaveBeenCalled();
@@ -386,7 +487,7 @@ suite('rb/models/CommentEditor', function() {
 
             beforeEach(function() {
                 comment = createComment();
-                spyOn(comment, 'save').andCallFake(function(options) {
+                spyOn(comment, 'save').and.callFake(function(options) {
                     if (options && options.success) {
                         options.success();
                     }
@@ -401,7 +502,7 @@ suite('rb/models/CommentEditor', function() {
                 editor.set('canSave', false);
 
                 expect(function() { editor.save(); }).toThrow();
-                expect(console.assert.calls[0].args[0]).toBeFalsy();
+                expect(console.assert.calls.argsFor(0)[0]).toBeFalsy();
                 expect(comment.save).not.toHaveBeenCalled();
                 expect(editor.trigger).not.toHaveBeenCalledWith('saved');
             });
@@ -422,12 +523,14 @@ suite('rb/models/CommentEditor', function() {
                 editor.setExtraData('mykey', 'myvalue');
 
                 editor.save();
-                expect(console.assert.calls[0].args[0]).toBeTruthy();
+                expect(console.assert.calls.argsFor(0)[0]).toBeTruthy();
                 expect(comment.save).toHaveBeenCalled();
                 expect(comment.get('text')).toBe(text);
                 expect(comment.get('issueOpened')).toBe(issue_opened);
                 expect(comment.get('richText')).toBe(true);
-                expect(comment.get('extraData')).toEqual({mykey: 'myvalue'});
+                expect(comment.get('extraData')).toEqual({
+                    mykey: 'myvalue'
+                });
                 expect(editor.get('dirty')).toBe(false);
                 expect(editor.trigger).toHaveBeenCalledWith('saved');
             });

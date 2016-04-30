@@ -1,0 +1,21 @@
+==================================
+Review Board 2.5.1.1 Release Notes
+==================================
+
+**Release date:** November 3, 2015
+
+
+Bug Fixes
+=========
+
+* Posting a review request through the API without specifying a branch has
+  been fixed. (:bug:`4009`)
+
+  This was a regression due to the new post-commit branch work mentioned in
+  :doc:`2.5.1 <2.5.1>`. We have reverted this change for now.
+
+
+Contributors
+============
+
+* Christian Hammond

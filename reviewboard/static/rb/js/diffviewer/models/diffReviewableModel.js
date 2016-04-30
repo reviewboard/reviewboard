@@ -30,16 +30,41 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
         });
     },
 
-    /*
-     * Returns the rendered diff for a file.
+    /**
+     * Return the rendered diff for a file.
      *
      * The rendered file will be fetched from the server and eventually
      * returned as the argument to the success callback.
+     *
+     * Args:
+     *     callbacks (object):
+     *         The functions used to fetch the corresponding diff fragments.
+     *
+     *     context (object):
+     *         The context passed to each callback function.
+     *
+     *     options (object):
+     *         The option arguments that control the behavior of this function.
+     *
+     * Option Args:
+     *     showDeleted (boolean):
+     *         Determines whether or not we want to requeue the corresponding
+     *         diff in order to show its deleted content.
      */
-    getRenderedDiff: function(callbacks, context) {
+    getRenderedDiff: function(callbacks, context, options) {
+        var url = this._buildRenderedDiffURL() + '?index=' +
+                  this.get('fileIndex');
+
+        options = options || {};
+
+        if (options.showDeleted) {
+            url += '&show-deleted=1';
+        }
+
+        url += '&' + TEMPLATE_SERIAL;
+
         this._fetchFragment({
-            url: this._buildRenderedDiffURL() +
-                 '?index=' + this.get('fileIndex') + '&' + AJAX_SERIAL,
+            url: url,
             noActivityIndicator: true
         }, callbacks, context);
     },
@@ -86,7 +111,8 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
      */
     _buildRenderedDiffURL: function() {
         var revisionStr,
-            interdiffRevision = this.get('interdiffRevision');
+            interdiffRevision = this.get('interdiffRevision'),
+            interFileDiffID = this.get('interFileDiffID');
 
         revisionStr = this.get('revision');
 
@@ -95,6 +121,8 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
         }
 
         return this.get('reviewRequest').get('reviewURL') + 'diff/' +
-               revisionStr + '/fragment/' + this.get('fileDiffID') + '/';
+               revisionStr + '/fragment/' + this.get('fileDiffID') +
+               (interFileDiffID ? '-' + interFileDiffID : '') +
+               '/';
     }
 });

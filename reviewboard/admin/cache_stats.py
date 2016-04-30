@@ -16,7 +16,7 @@ from djblets.cache.forwarding_backend import DEFAULT_FORWARD_CACHE_ALIAS
 
 
 def get_memcached_hosts():
-    """Returns the hosts currently configured for memcached."""
+    """Return the hosts currently configured for memcached."""
     if not memcache:
         return None
 
@@ -35,15 +35,13 @@ def get_memcached_hosts():
 
 
 def get_has_cache_stats():
-    """
-    Returns whether or not cache stats are supported.
-    """
+    """Return whether or not cache stats are supported."""
     return get_memcached_hosts() is not None
 
 
 def get_cache_stats():
-    """
-    Returns a dictionary containing information on the current cache stats.
+    """Return a dictionary containing information on the current cache stats.
+
     This only supports memcache.
     """
     hostnames = get_memcached_hosts()
@@ -56,13 +54,20 @@ def get_cache_stats():
     for hostname in hostnames:
         try:
             host, port = hostname.split(":")
+            if host == 'unix':
+                socket_af = socket.AF_UNIX
+                connect_param = port
+            else:
+                socket_af = socket.AF_INET
+                connect_param = (host, int(port))
+
         except ValueError:
             logging.error('Invalid cache hostname "%s"' % hostname)
             continue
 
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s = socket.socket(socket_af, socket.SOCK_STREAM)
         try:
-            s.connect((host, int(port)))
+            s.connect(connect_param)
         except socket.error:
             s.close()
             continue

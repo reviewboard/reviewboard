@@ -30,13 +30,9 @@ import stat
 import sys
 import tempfile
 
+import nose
 from django.core.management import execute_from_command_line
 from django.test.simple import DjangoTestSuiteRunner
-import nose
-try:
-    import cProfile as profile
-except ImportError:
-    import profile
 
 try:
     # Make sure to pre-load all the image handlers. If we do this later during
@@ -62,12 +58,12 @@ class RBTestRunner(DjangoTestSuiteRunner):
         settings.SITE_ROOT = "/"
 
         settings.AJAX_SERIAL = 123
+        settings.TEMPLATE_SERIAL = 123
         settings.STATIC_URL = settings.SITE_ROOT + 'static/'
         settings.MEDIA_URL = settings.SITE_ROOT + 'media/'
         settings.PASSWORD_HASHERS = (
             'django.contrib.auth.hashers.SHA1PasswordHasher',
         )
-        settings.RUNNING_TEST = True
 
         self._setup_media_dirs()
 
@@ -76,6 +72,11 @@ class RBTestRunner(DjangoTestSuiteRunner):
         super(RBTestRunner, self).teardown_test_environment(*args, **kwargs)
 
     def run_tests(self, test_labels, extra_tests=None, **kwargs):
+        if '--with-profiling' in sys.argv:
+            sys.stderr.write('--with-profiling is no longer supported. Use '
+                             '--with-profile instead.\n')
+            sys.exit(1)
+
         self.setup_test_environment()
         old_config = self.setup_databases()
 
@@ -83,6 +84,7 @@ class RBTestRunner(DjangoTestSuiteRunner):
             sys.argv[0],
             '-v',
             '--match=^test',
+            '--with-id',
             '--with-doctest',
             '--doctest-extension=.txt',
         ]
@@ -94,12 +96,6 @@ class RBTestRunner(DjangoTestSuiteRunner):
 
         for package in settings.TEST_PACKAGES:
             self.nose_argv.append('--where=%s' % package)
-
-        if '--with-profiling' in sys.argv:
-            sys.argv.remove('--with-profiling')
-            profiling = True
-        else:
-            profiling = False
 
         # If the test files are executable on the file system, nose will need
         # the --exe argument to run them
@@ -113,13 +109,7 @@ class RBTestRunner(DjangoTestSuiteRunner):
         if len(sys.argv) > 2 and '--' in sys.argv:
             self.nose_argv += sys.argv[(sys.argv.index("--") + 1):]
 
-        if profiling:
-            profile.runctx('run_nose()',
-                           {'run_nose': self.run_nose},
-                           {},
-                           os.path.join(os.getcwd(), 'tests.profile'))
-        else:
-            self.run_nose()
+        self.run_nose()
 
         self.teardown_databases(old_config)
         self.teardown_test_environment()
@@ -145,6 +135,7 @@ class RBTestRunner(DjangoTestSuiteRunner):
 
         settings.STATIC_ROOT = os.path.join(self.tempdir, 'static')
         settings.MEDIA_ROOT = os.path.join(self.tempdir, 'media')
+        settings.SITE_DATA_DIR = os.path.join(self.tempdir, 'data')
         images_dir = os.path.join(settings.MEDIA_ROOT, "uploaded", "images")
         legacy_extensions_media = os.path.join(settings.MEDIA_ROOT, 'ext')
         extensions_media = os.path.join(settings.STATIC_ROOT, 'ext')

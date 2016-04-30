@@ -1,0 +1,10 @@
+{% extends "admin/settings.html" %}
+{% load djblets_utils i18n staticfiles %}
+
+{% block scripts %}
+{{block.super}}
+ <script src="{% static "admin/js/core.js" %}"></script>
+{%  url "admin:jsi18n" as jsi18nurl %}
+
+<script src="{{jsi18nurl|default:"../../../jsi18n/"}}"></script>
+{% endblock %}

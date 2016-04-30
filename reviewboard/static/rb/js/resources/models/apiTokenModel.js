@@ -1,10 +1,12 @@
 RB.APIToken = RB.BaseResource.extend({
-    defaults: _.defaults({
-        tokenValue: null,
-        note: null,
-        policy: {},
-        userName: null
-    }, RB.BaseResource.prototype.defaults),
+    defaults: function() {
+        return _.defaults({
+            tokenValue: null,
+            note: null,
+            policy: {},
+            userName: null
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     rspNamespace: 'api_token',
 

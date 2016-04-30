@@ -33,6 +33,7 @@ Example
 
 .. code-block:: python
 
+    from django.db import models
     from reviewboard.accounts.forms.pages import AccountPageForm
     from reviewboard.accounts.pages import AccountPage
     from reviewboard.extensions.base import Extension
@@ -48,7 +49,7 @@ Example
 
     class SamplePage(AccountPage):
         page_id = 'myvendor_page'
-        form_title 'My Page'
+        page_title = 'My Page'
         form_classes = [SamplePageForm]
 
 

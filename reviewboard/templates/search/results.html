@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load datagrid djblets_utils i18n %}
+
+{% block title %}{% trans "Search Review Requests" %}{% endblock %}
+
+{% block content %}
+<div id="search_results">
+ <div class="search-results-filters">
+{%  for filter_type in filter_types %}
+  <a href="?q={{query}}{% if filter_type.id %}&filter={{filter_type.id}}{% endif %}"{% if filter_type.active %} class="active"{% endif %}>{{filter_type.name}}</a>
+{%  endfor %}
+ </div>
+
+{%  if hits_returned == 0 %}
+{%   trans "No review requests matching your query" %}: <b>{{query}}</b>
+{%  else %}
+ <div class="search-results-stats">
+{%   blocktrans count hits_returned=hits_returned %}
+ <b>{{hits_returned}}</b> result for <b>{{query}}</b>
+{%   plural %}
+ <b>{{hits_returned}}</b> results for <b>{{query}}</b>
+{%   endblocktrans %}
+ </div>
+{%  endif %}
+ <br /><br />
+ <form method="get" action=".">
+{%  for result in page.object_list %}
+{%   if result.content_type == "reviews.reviewrequest" %}
+{%    include "search/_review_request.html" %}
+{%   elif result.content_type == "auth.user" %}
+{%    include "search/_user.html" %}
+{%   endif %}
+{%  endfor %}
+
+{%  if is_paginated %}
+  <div class="paginator">
+{%   if show_first_page %}
+   <a href="?q={{query}}&amp;page=1">&laquo; {% trans "First Page" %}</a>
+{%   endif %}
+{%   if page.has_previous %}
+   <a href="?q={{query}}&amp;page={{page.previous_page_number}}">&lt; {% trans "Previous" %}</a>
+{%   endif %}
+
+{%   for pagenum in page_numbers %}
+{%    if page.number == pagenum %}
+   <b>{{pagenum}}</b>
+{%    else %}
+   <a href="?q={{query}}&amp;page={{pagenum}}">{{pagenum}}</a>
+{%    endif %}
+{%   endfor %}
+
+{%   if page.has_next %}
+   <a href="?q={{query}}&amp;page={{page.next_page_number}}">{% trans "Next" %} &gt;</a>
+{%   endif %}
+{%   if show_last_page %}
+   <a href="?q={{query}}&amp;page={{pages}}">{% trans "Last Page" %} &raquo;</a>
+{%   endif %}
+  </div>
+{%  endif %}
+ </form>
+</div>
+{% endblock %}

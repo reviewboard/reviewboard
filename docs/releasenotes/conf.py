@@ -22,6 +22,7 @@
 # absolute, like shown here.
 import os
 import sys
+from datetime import datetime
 sys.path.append(os.path.abspath('_ext'))
 
 
@@ -55,7 +56,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Release Notes'
-copyright = u'2009-2014 Beanbag, Inc.'
+copyright = u'2009-%s, Beanbag, Inc.' % datetime.now().year
 bugtracker_url = 'https://www.reviewboard.org/bugs/%s'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -106,7 +107,7 @@ pygments_style = 'sphinx'
 # Options for HTML output
 # -----------------------
 
-html_theme = 'default'
+html_theme = 'classic'
 
 # The style sheet to use for HTML and HTML Help pages. A file of that name
 # must exist either in Sphinx' static/ path, or in one of the custom paths
@@ -210,5 +211,11 @@ latex_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    'https://www.reviewboard.org/docs/manual/dev/': None,
+    'django': ('https://docs.djangoproject.com/en/%s/'
+               % reviewboard.django_major_version,
+               'https://docs.djangoproject.com/en/%s/_objects/'
+               % reviewboard.django_major_version),
+    'python': ('https://docs.python.org/2.7', None),
+    'rbtools': ('https://www.reviewboard.org/docs/rbtools/dev/', None),
+    'reviewboard': ('https://www.reviewboard.org/docs/manual/dev/', None),
 }

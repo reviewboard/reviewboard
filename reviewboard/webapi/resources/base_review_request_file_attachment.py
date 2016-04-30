@@ -37,6 +37,16 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
                            "future version.",
             'deprecated_in': '2.0',
         },
+        'revision': {
+            'type': int,
+            'description': 'The revision of the file attachment.',
+            'added_in': '2.5',
+        },
+        'attachment_history_id': {
+            'type': int,
+            'description': 'ID of the corresponding FileAttachmentHistory.',
+            'added_in': '2.5',
+        },
     }, **BaseFileAttachmentResource.fields)
 
     def get_queryset(self, request, is_list=False, *args, **kwargs):
@@ -84,6 +94,9 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
                 })
 
         return ''
+
+    def serialize_revision_field(self, obj, *args, **kwargs):
+        return obj.attachment_revision
 
     def has_access_permissions(self, request, obj, *args, **kwargs):
         return obj.get_review_request().is_accessible_by(request.user)
@@ -143,7 +156,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         form_data = request.POST.copy()
         form = UploadFileForm(review_request, form_data, request.FILES)
@@ -209,7 +222,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
                 resources.review_request_draft.prepare_draft(request,
                                                              review_request)
             except PermissionDenied:
-                return self._no_access_error(request.user)
+                return self.get_no_access_error(request)
 
             file.draft_caption = caption
             file.save()
@@ -245,25 +258,31 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
 
         if not self.has_delete_permissions(request, file_attachment, *args,
                                            **kwargs):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
-        try:
-            draft = resources.review_request_draft.prepare_draft(
-                request, review_request)
-        except PermissionDenied:
-            return self._no_access_error(request.user)
-
-        if file_attachment.attachment_history_id is None:
-            draft.inactive_file_attachments.add(file_attachment)
-            draft.file_attachments.remove(file_attachment)
+        # If this file attachment has never been made public,
+        # delete the model itself.
+        if (not file_attachment.review_request.exists() and
+            not file_attachment.inactive_review_request.exists()):
+            file_attachment.delete()
         else:
-            # "Delete" all revisions of the given file
-            all_revs = FileAttachment.objects.filter(
-                attachment_history=file_attachment.attachment_history_id)
-            for revision in all_revs:
-                draft.inactive_file_attachments.add(revision)
-                draft.file_attachments.remove(revision)
+            try:
+                draft = resources.review_request_draft.prepare_draft(
+                    request, review_request)
+            except PermissionDenied:
+                return self.get_no_access_error(request)
 
-        draft.save()
+            if file_attachment.attachment_history_id is None:
+                draft.inactive_file_attachments.add(file_attachment)
+                draft.file_attachments.remove(file_attachment)
+            else:
+                # "Delete" all revisions of the given file
+                all_revs = FileAttachment.objects.filter(
+                    attachment_history=file_attachment.attachment_history_id)
+                for revision in all_revs:
+                    draft.inactive_file_attachments.add(revision)
+                    draft.file_attachments.remove(revision)
+
+            draft.save()
 
         return 204, {}

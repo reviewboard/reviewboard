@@ -1,0 +1,158 @@
+=================================
+Review Board 2.0.14 Release Notes
+=================================
+
+**Release date**: March 9, 2015
+
+
+Compatibility
+=============
+
+* This release requires Django 1.6.10 or higher.
+
+  Django 1.6.10 provides a number of critical security updates that are
+  beneficial to all servers.
+
+
+New Features
+============
+
+* Plain text e-mails now show the line numbers commented on. (:bug:`3739`)
+
+  When viewing a plain text e-mail, we now show the line or line range
+  for every comment, making it easier to map a comment to a particular
+  part of the diff.
+
+  Patch by Wang Jun Sun.
+
+
+Usability Improvements
+======================
+
+* When clicking :guilabel:`View Diff`, the resulting URL now includes the
+  diff revision.
+
+  By including the revision number in the URL, it's easy to copy/paste the
+  URL and guarantee the contents won't change.
+
+  The previous default of ``/r/<id>/diff/`` still exists and can be used
+  to link to the latest URL.
+
+  Based on work by Jessica Qian.
+
+
+Web API
+=======
+
+* :ref:`webapi2.0-validate-diff-resource` now supports specifying a
+  ``base_commit_id`` field, needed for certain Git hosting services.
+
+* :ref:`webapi2.0-validate-diff-resource` no longer inadvertently stores
+  validated diff data in the database.
+
+* :ref:`webapi2.0-session-resource` now includes a "delete" link when
+  authenticated, for clearing the session.
+
+* :ref:`webapi2.0-change-resource` no longer fails displaying changes that
+  update the review request status.
+
+* Fixed numerous API caching issues.
+
+
+Bug Fixes
+=========
+
+Unicode
+-------
+
+* Fixed handling of Unicode characters in Active Directory group names.
+  (:bug:`3774`)
+
+* Fixed errors with e-mail subjects containing certain Unicode errors.
+  (:bug:`3784`)
+
+* Fixed a Unicode issue when reporting errors loading SCM support modules
+  in some locales.
+
+* Fixed the log viewer when the log contained umlauts.
+
+
+Windows
+-------
+
+* Fixed some problems creating or upgrading Review Board sites on Windows
+  servers. (:bug:`3787`, :bug:`3788`)
+
+  Patch by Stefan Seeger.
+
+* Fixed opening local Git repositories on Windows servers. (:bug:`3790`)
+
+  Patch by Stefan Seeger.
+
+
+Diff Viewer
+-----------
+
+* Fixed a 1 pixel visual glitch at the bottom of diffs.
+
+* Fixed a regression where the Open Issue checkbox was always checked by
+  default.
+
+  The user option to disable opening checkboxes by default was being ignored
+  in one case, due to some recent work on this code.
+
+* Fixed the Back button when loading the diff viewer.
+
+* Fixed navigating between multiple pages in the diff viewer.
+
+* Fixed crashes when specifying an invalid page number for pagination.
+
+
+File Attachments
+----------------
+
+* Added some more bullet-proofing when parsing bad mimetypes for file
+  attachments. (:bug:`3792`)
+
+
+Review Requests
+---------------
+
+* Unpublished draft review requests can no longer be marked as submitted.
+
+  Patch by Chenxi Ni.
+
+* Fixed displaying error messages when comment diff fragments failed to load.
+
+* Line numbers in comment diff fragments no longer appear to be clickable
+  when hovering over them.
+
+* Fixed errors when publishing drafts that indicated that no changes were
+  made, or that previously-invalid values were still invalid.
+
+
+Documentation Changes
+=====================
+
+* Added a note about fully-qualified domains in the
+  :ref:`active-directory-authentication-settings` documentation. (:bug:`3636`)
+
+  Patch by Sihang Chen.
+
+* Added Fedora/RHEL instructions for Apache configuration in the
+  :ref:`creating-sites` guide.
+
+  Patch by Stephen Gallagher.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Jessica Qian
+* Sihang Chen
+* Stephen Gallagher
+* Tran Nguyen
+* Wang Jun Sun

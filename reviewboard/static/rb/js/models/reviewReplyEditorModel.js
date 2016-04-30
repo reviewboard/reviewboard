@@ -20,7 +20,8 @@ RB.ReviewReplyEditor = Backbone.Model.extend({
     replyClasses: {
         diff_comments: RB.DiffCommentReply,
         screenshot_comments: RB.ScreenshotCommentReply,
-        file_attachment_comments: RB.FileAttachmentCommentReply
+        file_attachment_comments: RB.FileAttachmentCommentReply,
+        general_comments: RB.GeneralCommentReply
     },
 
     initialize: function() {
@@ -93,8 +94,9 @@ RB.ReviewReplyEditor = Backbone.Model.extend({
                             this.set({
                                 hasDraft: true,
                                 text: obj.get(valueAttr),
-                                richText: obj.get(richTextAttr)
+                                richText: true
                             });
+                            this.trigger('textUpdated');
                             this.trigger('saved');
                         }
                     }, this);

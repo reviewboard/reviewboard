@@ -48,7 +48,6 @@ class HostingServiceAccountResource(WebAPIResource):
         },
     }
     uri_object_key = 'account_id'
-    autogenerate_etags = True
 
     allowed_methods = ('GET', 'POST')
 
@@ -101,12 +100,12 @@ class HostingServiceAccountResource(WebAPIResource):
             'username': {
                 'type': six.text_type,
                 'description': 'Filter accounts by username.',
-                'added_in': '2.1',  # Unsure of which release this will be
+                'added_in': '2.5',
             },
             'service': {
                 'type': six.text_type,
                 'description': 'Filter accounts by the hosting service ID.',
-                'added_in': '2.1',  # Unsure of which release this will be
+                'added_in': '2.5',
             },
         }, **WebAPIResource.get_list.optional_fields),
         required=WebAPIResource.get_list.required_fields
@@ -176,7 +175,7 @@ class HostingServiceAccountResource(WebAPIResource):
 
         if not HostingServiceAccount.objects.can_create(request.user,
                                                         local_site):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         # Validate the service.
         service = get_hosting_service(service_id)

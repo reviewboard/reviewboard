@@ -12,5 +12,5 @@ include AUTHORS
 include COPYING
 include INSTALL
 include NEWS
-include README
+include README.md
 exclude settings_local.py

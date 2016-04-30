@@ -128,6 +128,7 @@ BaseImageView = Backbone.View.extend({
  * image and allows it to be commented on.
  */
 ImageAttachmentView = BaseImageView.extend({
+    mode: 'attachment',
     tagName: 'img',
 
     /*
@@ -541,6 +542,25 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         '<li><a href="#" data-mode="<%- mode %>"><%- name %></a></li>'
     ),
 
+    captionTableTemplate: _.template(
+        '<table><tr><%= items %></tr></table>'
+    ),
+
+    captionItemTemplate: _.template([
+        '<td>',
+        ' <h1 class="caption">',
+        '  <%- caption %>',
+        ' </h1>',
+        '</td>'
+    ].join('')),
+
+    errorTemplate: _.template([
+        '<div class="review-ui-error">',
+        ' <div class="rb-icon rb-icon-warning"></div>',
+        ' <%- errorStr %>',
+        '</div>'
+        ].join('')),
+
     ANIM_SPEED_MS: 200,
 
     /*
@@ -561,6 +581,15 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
          * created.
          */
         this.on('commentBlockViewAdded', function(commentBlockView) {
+            commentBlockView.setSelectionRegionSizeFunc(_.bind(function() {
+                var region = this._imageView.getSelectionRegion();
+
+                return {
+                    width: region.width,
+                    height: region.height
+                };
+            }, this));
+
             this._$selectionArea.append(commentBlockView.$el);
         }, this);
     },
@@ -574,7 +603,12 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
      * Any time the window resizes, the comment positions will be adjusted.
      */
     renderContent: function() {
-        var self = this;
+        var self = this,
+            hasDiff = !!this.model.get('diffAgainstFileAttachmentID'),
+            captionItems = [],
+            $header,
+            $revisionLabel,
+            $revisionSelector;
 
         this._$selectionArea = $('<div/>')
             .addClass('selection-container')
@@ -586,11 +620,6 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             .prependTo(this._$selectionArea)
             .proxyTouchEvents()
             .hide();
-
-        if (!this.renderedInline) {
-            this.$el.append(
-                $('<h1 class="caption"/>').text(this.model.get('caption')));
-        }
 
         this.$el
             /*
@@ -610,7 +639,11 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                 })
             .append(this._$selectionArea);
 
-        if (this.model.get('diffAgainstFileAttachmentID')) {
+        if (this.model.get('diffTypeMismatch')) {
+            this.$el.append(this.errorTemplate({
+                errorStr: gettext('These revisions cannot be compared because they are different file types.')
+            }));
+        } else if (hasDiff) {
             this._$modeBar = $('<ul class="image-diff-modes"/>')
                 .appendTo(this.$el);
 
@@ -641,7 +674,104 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             .resize(this._adjustPos)
             .load(this._adjustPos);
 
+        $header = $('<div />')
+            .addClass('review-ui-header')
+            .prependTo(this.$el);
+
+        if (this.model.get('numRevisions') > 1) {
+            $revisionLabel = $('<div id="revision_label" />')
+                .appendTo($header);
+            this._revisionLabelView = new RB.FileAttachmentRevisionLabelView({
+                el: $revisionLabel,
+                model: this.model
+            });
+            this._revisionLabelView.render();
+            this.listenTo(this._revisionLabelView, 'revisionSelected',
+                          this._onRevisionSelected);
+
+            $revisionSelector = $('<div id="attachment_revision_selector" />')
+                .appendTo($header);
+            this._revisionSelectorView = new RB.FileAttachmentRevisionSelectorView({
+                el: $revisionSelector,
+                model: this.model
+            });
+            this._revisionSelectorView.render();
+            this.listenTo(this._revisionSelectorView, 'revisionSelected',
+                          this._onRevisionSelected);
+
+            if (!this.renderedInline) {
+                captionItems.push(this.captionItemTemplate({
+                    caption: interpolate(
+                        gettext('%(caption)s (revision %(revision)s)'),
+                        {
+                            caption: this.model.get('caption'),
+                            revision: this.model.get('fileRevision')
+                        },
+                        true)
+                }));
+
+                if (hasDiff) {
+                    captionItems.push(this.captionItemTemplate({
+                        caption: interpolate(
+                            gettext('%(caption)s (revision %(revision)s)'),
+                            {
+                                caption: this.model.get('diffCaption'),
+                                revision: this.model.get('diffRevision')
+                            },
+                            true)
+                    }));
+                }
+
+                $header.append(this.captionTableTemplate({
+                    items: captionItems.join('')
+                }));
+            }
+        } else {
+            if (!this.renderedInline) {
+                $('<h1 />')
+                    .addClass('caption')
+                    .text(this.model.get('caption'))
+                    .appendTo($header);
+            }
+        }
+
         return this;
+    },
+
+    /*
+     * Callback for when a new file revision is selected.
+     *
+     * This supports single revisions and diffs. If 'base' is 0, a
+     * single revision is selected, If not, the diff between `base` and
+     * `tip` will be shown.
+     */
+    _onRevisionSelected: function(revisions) {
+        var revisionIDs = this.model.get('attachmentRevisionIDs'),
+            base = revisions[0],
+            tip = revisions[1],
+            revisionBase,
+            revisionTip,
+            redirectURL;
+
+        // Ignore clicks on No Diff Label
+        if (tip === 0) {
+            return;
+        }
+
+        revisionTip = revisionIDs[tip-1];
+
+        /* Eventually these hard redirects will use a router
+         * (see diffViewerPageView.js for example)
+         * this.router.navigate(base + '-' + tip + '/', {trigger: true});
+         */
+
+        if (base === 0) {
+            redirectURL = '../' + revisionTip + '/';
+        } else {
+            revisionBase = revisionIDs[base-1];
+            redirectURL = '../' + revisionBase + '-' + revisionTip + '/';
+        }
+        window.location.replace(redirectURL);
     },
 
     /*
@@ -676,7 +806,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         $selector
             .appendTo(this._$modeBar)
             .addClass('selected');
-        selectorWidth = $selector.width();
+        selectorWidth = $selector.outerWidth(true);
         $selector
             .removeClass('selected')
             .width(selectorWidth);
@@ -699,8 +829,6 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         if (this._imageView) {
             this._diffModeSelectors[this._imageView.mode]
                 .removeClass('selected');
-            this._diffModeSelectors[newView.mode]
-                .addClass('selected');
 
             newView.$el.show();
             height = newView.$el.height();
@@ -720,6 +848,9 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         } else {
             this._showDiffMode(newView);
         }
+
+        this._diffModeSelectors[newView.mode]
+            .addClass('selected');
     },
 
     /*
