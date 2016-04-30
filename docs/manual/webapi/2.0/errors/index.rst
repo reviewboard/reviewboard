@@ -43,4 +43,3 @@ Errors
    228-token-generation-failed
    230-close-error
    231-reopen-error
-   232-file-already-exists

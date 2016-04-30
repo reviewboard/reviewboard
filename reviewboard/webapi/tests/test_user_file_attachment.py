@@ -1,10 +1,10 @@
 from __future__ import unicode_literals
 
 from django.utils import six
+from djblets.webapi.errors import DUPLICATE_ITEM
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.site.models import LocalSite
-from reviewboard.webapi.errors import FILE_ALREADY_EXISTS
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (
@@ -196,7 +196,7 @@ class ResourceItemTests(BaseWebAPITestCase):
                     'caption': 'My new caption.',
                     'path': f,
                 },
-                expected_status=400)
+                expected_status=409)
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], FILE_ALREADY_EXISTS.code)
+        self.assertEqual(rsp['err']['code'], DUPLICATE_ITEM.code)

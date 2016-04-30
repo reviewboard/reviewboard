@@ -6,14 +6,14 @@ from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields,
                                        webapi_response_errors)
-from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
-                                   NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.errors import (DOES_NOT_EXIST, DUPLICATE_ITEM,
+                                   INVALID_FORM_DATA, NOT_LOGGED_IN,
+                                   PERMISSION_DENIED)
 
 from reviewboard.admin.server import build_server_url
 from reviewboard.attachments.forms import UploadUserFileForm
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.decorators import webapi_check_local_site
-from reviewboard.webapi.errors import FILE_ALREADY_EXISTS
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_file_attachment import \
     BaseFileAttachmentResource
@@ -159,9 +159,9 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @webapi_response_errors(DOES_NOT_EXIST, PERMISSION_DENIED,
-                            NOT_LOGGED_IN, INVALID_FORM_DATA,
-                            FILE_ALREADY_EXISTS)
+    @webapi_response_errors(DOES_NOT_EXIST, DUPLICATE_ITEM,
+                            INVALID_FORM_DATA, NOT_LOGGED_IN,
+                            PERMISSION_DENIED)
     @webapi_request_fields(
         optional={
             'caption': {
@@ -184,7 +184,7 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
 
         The file attachment's file cannot be updated once it has been uploaded.
         Attempting to update the file attachment's file if it has already been
-        uploaded will result in a :ref:`webapi2.0-error-229`.
+        uploaded will result in a :ref:`webapi2.0-error-111`.
 
         The file attachment can only be updated by its owner or by an
         administrator.
@@ -211,7 +211,7 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
             return self.get_no_access_error(request)
 
         if 'path' in request.FILES and file_attachment.file:
-            return FILE_ALREADY_EXISTS
+            return DUPLICATE_ITEM
 
         form = UploadUserFileForm(request.POST, request.FILES)
 

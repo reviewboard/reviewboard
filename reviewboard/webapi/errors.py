@@ -166,8 +166,3 @@ REOPEN_ERROR = WebAPIError(
     231,
     'An error occurred while reopening the review request.',
     http_status=500)  # 500 Internal Server Error
-
-FILE_ALREADY_EXISTS = WebAPIError(
-    232,
-    "There is already a file associated with this file attachment.",
-    http_status=400)  # 400 Bad Request
