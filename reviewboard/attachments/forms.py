@@ -4,13 +4,11 @@ from uuid import uuid4
 import os
 
 from django import forms
-from django.utils import timezone
 
 from reviewboard.attachments.mimetypes import get_uploaded_file_mimetype
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
-from reviewboard.reviews.models import (ReviewRequestDraft,
-                                        FileAttachmentComment)
+from reviewboard.reviews.models import ReviewRequestDraft
 
 
 class UploadFileForm(forms.Form):
@@ -167,29 +165,6 @@ class UploadUserFileForm(forms.Form):
         file_attachment.save()
 
         return file_attachment
-
-
-class CommentFileForm(forms.Form):
-    """A form that handles commenting on a file."""
-
-    review = forms.CharField(widget=forms.Textarea(attrs={
-        'rows': '8',
-        'cols': '70'
-    }))
-
-    def create(self, file_attachment, review_request):
-        """Create a FileAttachmentComment based on this form."""
-        comment = FileAttachmentComment(text=self.cleaned_data['review'],
-                                        file_attachment=file_attachment)
-
-        comment.timestamp = timezone.now()
-        comment.save(save=True)
-
-        draft = ReviewRequestDraft.create(review_request)
-        draft.file_attachment_comments.add(comment)
-        draft.save()
-
-        return comment
 
 
 def get_unique_filename(filename):

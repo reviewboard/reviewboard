@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.utils import six
 
-from reviewboard.attachments.forms import CommentFileForm
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.forms import UploadDiffForm
 from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
@@ -111,7 +110,6 @@ def make_review_request_context(request, review_request, extra_context={}):
             review_request.is_status_mutable_by(request.user),
         'review_request': review_request,
         'upload_diff_form': upload_diff_form,
-        'comment_file_form': CommentFileForm(),
         'scmtool': scmtool,
     }, **extra_context)
 
