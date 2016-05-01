@@ -34,6 +34,14 @@ def guess_mimetype(uploaded_file):
 
     This only works if `file` is in the path. If it's not, or guessing
     fails, we fall back to a mimetype of application/octet-stream.
+
+    Args:
+        uploaded_file (django.core.files.File):
+            The uploaded file object.
+
+    Returns:
+        six.text_type:
+        The guessed mimetype.
     """
     if not is_exe_in_path('file'):
         return DEFAULT_MIMETYPE
@@ -68,7 +76,7 @@ def guess_mimetype(uploaded_file):
 
 
 def get_uploaded_file_mimetype(uploaded_file):
-    """Returns the mimetype of a file that was uploaded.
+    """Return the mimetype of a file that was uploaded.
 
     There are several things that can go wrong with browser-provided
     mimetypes. In one case (bug 3427), Firefox on Linux Mint was
@@ -77,6 +85,14 @@ def get_uploaded_file_mimetype(uploaded_file):
     type to 'application/octet-stream', rather than just choosing not to
     provide a mimetype. In the case where what we get from the browser
     is obviously wrong, try to guess.
+
+    Args:
+        uploaded_file (django.core.files.File):
+            The uploaded file object.
+
+    Returns:
+        six.text_type:
+        The guessed mimetype.
     """
     if (uploaded_file.content_type and
         len(uploaded_file.content_type.split('/')) == 2 and

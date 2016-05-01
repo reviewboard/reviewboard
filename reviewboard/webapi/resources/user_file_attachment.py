@@ -22,18 +22,19 @@ from reviewboard.webapi.resources.base_file_attachment import \
 class UserFileAttachmentResource(BaseFileAttachmentResource):
     """A resource representing a file attachment owned by a user.
 
-    The file attachment is not tied to any particular review
-    request, and instead is owned by a user for usage in
-    Markdown-formatted text.
+    The file attachment is not tied to any particular review request, and
+    instead is owned by a user for usage in Markdown-formatted text.
 
-    The file contents are optional when first creating a file
-    attachment. This is to allow a caller to create the attachment
-    and get the resulting URL for embedding in a text field. The
-    file's contents can then be added separately (and only once)
-    in a PUT request.
+    The file contents are optional when first creating a file attachment. This
+    is to allow a caller to create the attachment and get the resulting URL for
+    embedding in a text field. The file's contents can then be added separately
+    (and only once) in a PUT request.
     """
+
     name = 'file_attachment'
     model_parent_key = 'user'
+
+    added_in = '3.0'
 
     mimetype_list_resource_name = 'user-file-attachments'
     mimetype_item_resource_name = 'user-file-attachment'

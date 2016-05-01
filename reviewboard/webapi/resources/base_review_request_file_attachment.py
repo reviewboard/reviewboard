@@ -22,6 +22,7 @@ from reviewboard.webapi.resources.base_file_attachment import \
 
 class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
     """A base resource representing file attachments."""
+
     fields = dict({
         'review_url': {
             'type': six.text_type,
@@ -128,7 +129,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
                 'type': int,
                 'description': 'ID of the corresponding '
                                'FileAttachmentHistory.',
-                'added_in': '2.1',
+                'added_in': '2.5',
             },
         },
     )
@@ -279,6 +280,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
                 # "Delete" all revisions of the given file
                 all_revs = FileAttachment.objects.filter(
                     attachment_history=file_attachment.attachment_history_id)
+
                 for revision in all_revs:
                     draft.inactive_file_attachments.add(revision)
                     draft.file_attachments.remove(revision)

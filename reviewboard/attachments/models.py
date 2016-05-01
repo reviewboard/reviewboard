@@ -62,24 +62,24 @@ class FileAttachment(models.Model):
     :py:class:`reviewboard.reviews.models.FileAttachmentComment`.
     """
 
-    caption = models.CharField(_("caption"), max_length=256, blank=True)
-    draft_caption = models.CharField(_("draft caption"),
+    caption = models.CharField(_('caption'), max_length=256, blank=True)
+    draft_caption = models.CharField(_('draft caption'),
                                      max_length=256, blank=True)
     orig_filename = models.CharField(_('original filename'),
                                      max_length=256, blank=True, null=True)
     user = models.ForeignKey(User,
                              blank=True,
                              null=True,
-                             related_name="file_attachments")
+                             related_name='file_attachments')
 
     local_site = models.ForeignKey(LocalSite,
                                    blank=True,
                                    null=True,
-                                   related_name="file_attachments")
+                                   related_name='file_attachments')
 
-    uuid = models.CharField(_("uuid"), max_length=255, blank=True)
+    uuid = models.CharField(_('uuid'), max_length=255, blank=True)
 
-    file = models.FileField(_("file"),
+    file = models.FileField(_('file'),
                             max_length=512,
                             blank=True,
                             null=True,

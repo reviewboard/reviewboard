@@ -12,25 +12,39 @@ from reviewboard.reviews.models import ReviewRequestDraft
 
 
 class UploadFileForm(forms.Form):
-    """A form that handles uploading of new files.
+    """A form that handles uploading of new files."""
 
-    A file takes a path argument and optionally a caption.
-    """
-
+    #: The caption for the file.
     caption = forms.CharField(required=False)
+
+    #: The file itself.
     path = forms.FileField(required=True)
+
+    #: An optional file attachment history, used when creating a new revision
+    #: for an existing file attachment. If this is not specified, a new history
+    #: will be created.
     attachment_history = forms.ModelChoiceField(
         queryset=FileAttachmentHistory.objects.all(),
         required=False)
 
     def __init__(self, review_request, *args, **kwargs):
-        """Initialize the form."""
+        """Initialize the form.
+
+        Args:
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request to attach the file to.
+        """
         super(UploadFileForm, self).__init__(*args, **kwargs)
 
         self.review_request = review_request
 
     def clean_attachment_history(self):
-        """Validate that the specified file attachment history exists."""
+        """Validate that the specified file attachment history exists.
+
+        Returns:
+            reviewboard.attachments.models.FileAttachmentHistory:
+            The history model.
+        """
         history = self.cleaned_data['attachment_history']
 
         if (history is not None and
@@ -43,7 +57,17 @@ class UploadFileForm(forms.Form):
         return history
 
     def create(self, filediff=None):
-        """Create a FileAttachment based on this form."""
+        """Create a FileAttachment based on this form.
+
+        Args:
+            filediff (reviewboard.diffviewer.models.FileDiff):
+                The optional diff to attach this file to (for use when this
+                file represents a binary file within the diff).
+
+        Returns:
+            reviewboard.attachments.models.FileAttachment:
+            The new file attachment model.
+        """
         file_obj = self.files['path']
         caption = self.cleaned_data['caption'] or file_obj.name
 
@@ -108,14 +132,28 @@ class UploadFileForm(forms.Form):
 
 
 class UploadUserFileForm(forms.Form):
-    """A form that handles uploading of user files.
+    """A form that handles uploading of user files."""
 
-    A file takes a path argument and optionally a caption.
-    """
+    #: The caption for the file.
     caption = forms.CharField(required=False)
+
+    #: The file itself.
     path = forms.FileField(required=False)
 
     def create(self, user, local_site=None):
+        """Create a FileAttachment based on this form.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user who owns this file attachment.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The optional local site.
+
+        Returns:
+            reviewboard.attachments.models.FileAttachment:
+            The new file attachment model.
+        """
         file_obj = self.files.get('path')
 
         if file_obj:
@@ -148,6 +186,16 @@ class UploadUserFileForm(forms.Form):
         return file_attachment
 
     def update(self, file_attachment):
+        """Update an existing file attachment.
+
+        Args:
+            file_attachment (reviewboard.attachments.models.FileAttachment):
+                The file attachment to update.
+
+        Returns:
+            reviewboard.attachments.models.FileAttachment:
+            The updated file attachment.
+        """
         caption = self.cleaned_data['caption']
         file_obj = self.files.get('path')
 
@@ -168,8 +216,16 @@ class UploadUserFileForm(forms.Form):
 
 
 def get_unique_filename(filename):
-    """Creates a unique filename.
+    """Return a unique filename.
 
-    Creates a unique filename by concatenating a UUID with the given filename.
+    Create a unique filename by concatenating a UUID with the given filename.
+
+    Args:
+        filename (six.text_type):
+            The original filename.
+
+    Returns:
+        six.text_type:
+        A new filename which is more unique.
     """
     return '%s__%s' % (uuid4(), filename)
