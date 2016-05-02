@@ -179,7 +179,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
             $el;
 
         options = options || {};
-        now = options.now || moment().zone(userSession.get('timezoneOffset'));
+        now = options.now || moment().utcOffset(userSession.get('timezoneOffset'));
 
         $el = $(this.commentTemplate(_.extend({
                 id: _.uniqueId('draft_comment_'),

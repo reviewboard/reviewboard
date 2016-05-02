@@ -2117,15 +2117,21 @@
 /****************************************************************************
  * List of Attached Files
  ****************************************************************************/
+#file-list-container.dnd-overlay-visible {
+  display: block !important;
+  margin: 0;
+
+  /*
+   * If there are no file attachments present when showing the drag and drop
+   * overlay, this will default to being very short. Force it to be a minimum
+   * height to give it enough heft to be a useful drop point.
+   */
+  min-height: 64px;
+}
+
 #file-list {
   margin: 0;
   padding: 0;
-
-  &.dragover {
-    border: 2px green dashed;
-    display: block;
-    margin: 0;
-  }
 
   /*
    * When hovering over a thumbnail, fade out all the other thumbnails, to both

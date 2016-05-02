@@ -7,6 +7,8 @@ suite('rb/pages/views/ReviewablePageView', function() {
         var $container = $('<div/>')
             .appendTo($testsScratch);
 
+        RB.DnDUploader.instance = null;
+
         $editReview = $('<a href="#" id="review-action">Edit Review</a>')
             .appendTo($container);
         $shipIt = $('<a href="#" id="ship-it-action">Ship It</a>')

@@ -796,9 +796,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             }, this);
 
             if (this.model.get('editable')) {
-                this.dndUploader = new RB.DnDUploader({
-                    reviewRequestEditor: this.model
-                });
+                RB.DnDUploader.instance.registerDropTarget(
+                    this._$attachmentsContainer,
+                    gettext('Drop to add a file attachment'),
+                    this._uploadFile.bind(this));
             }
 
             /*
@@ -883,8 +884,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      */
     setupFieldEditor: function(fieldID) {
         var fieldOptions = this._fieldEditors[fieldID],
-            $el = this.$(fieldOptions.selector),
-            listenObj;
+            $el = this.$(fieldOptions.selector);
 
         if ($el.length === 0) {
             return;
@@ -1048,6 +1048,21 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         RB.formatText($el, options);
 
         $el.find('img').load(this._checkResizeLayout);
+    },
+
+    /*
+     * Uploads a dropped file as a file attachment.
+     *
+     * A temporary file attachment placeholder will appear while the
+     * file attachment uploads. After the upload has finished, it will
+     * be replaced with the thumbnail depicting the file attachment.
+     */
+    _uploadFile: function(file) {
+        /* Create a temporary file listing. */
+        var fileAttachment = this.model.createFileAttachment();
+
+        fileAttachment.set('file', file);
+        fileAttachment.save();
     },
 
     /*
