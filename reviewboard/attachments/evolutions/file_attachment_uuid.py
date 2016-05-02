@@ -6,5 +6,5 @@ from django.db import models
 
 MUTATIONS = [
     AddField('FileAttachment', 'uuid', models.CharField, max_length=255,
-             initial=None, null=True),
+             initial=''),
 ]
