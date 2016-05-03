@@ -287,7 +287,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                         });
                         view.showBanner();
 
-                        spyOn(window, 'confirm').andReturn(true);
+                        spyOn(window, 'confirm').and.returnValue(true);
 
                         $('#btn-draft-publish').click();
 
@@ -946,9 +946,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 reviewRequest.draft.set('submitter',
                     {
                         title: 'user1',
-                        href: 'api/users/user1/'
+                        href: '/users/user1/'
                     }
                 );
+                editor.trigger('fieldChanged:submitter');
+
                 expect($field.text()).toBe('user1');
                 expect(($field.children()).attr('href')).toBe('/users/user1/');
             });
