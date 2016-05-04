@@ -380,7 +380,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 describe('submitter', function() {
                     it('Empty', function() {
                         spyOn(draft, 'save')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.success.call(context);
                             });
 
@@ -393,7 +393,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                     it('With value', function() {
                         spyOn(draft, 'save')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.success.call(context);
                             });
 
@@ -408,7 +408,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                     it('With invalid user', function() {
                         spyOn(draft, 'save')
-                            .andCallFake(function(options, context) {
+                            .and.callFake(function(options, context) {
                                 options.error.call(context, draft, {
                                     errorPayload: {
                                         fields: {

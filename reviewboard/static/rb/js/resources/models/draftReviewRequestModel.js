@@ -15,6 +15,7 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
             description: null,
             descriptionRichText: false,
             'public': null,
+            submitter: null,
             summary: null,
             targetGroups: [],
             targetPeople: [],

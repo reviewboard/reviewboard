@@ -3,6 +3,12 @@
         reviewRequestData: {
             bugTrackerURL: "{% if review_request.repository.bug_tracker %}{% url 'bug_url' review_request.display_id '--bug_id--' %}{% endif %}",
             id: {{review_request.display_id}},
+            submitter: {
+{% with submitter=draft.submitter %}
+                title: '{{submitter.username|escapejs}}',
+                url: '{{submitter.get_absolute_url|escapejs}}'
+{% endwith %}
+            },
             localSitePrefix: "{% if review_request.local_site %}s/{{review_request.local_site.name}}/{% endif %}",
             branch: "{{review_request_details.branch|escapejs}}",
             bugsClosed: {{review_request_details.get_bug_list|json_dumps}},
