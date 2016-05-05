@@ -4,9 +4,7 @@ from datetime import timedelta
 import logging
 import os
 
-from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
 from django.template import Context, Template
 from django.test.client import RequestFactory
@@ -20,7 +18,6 @@ from kgb import SpyAgency
 from reviewboard.accounts.models import (Profile,
                                          LocalSiteProfile,
                                          _add_default_groups)
-from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.errors import NotModifiedError, PublishError
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
@@ -32,8 +29,7 @@ from reviewboard.reviews.models import (Comment,
                                         Group,
                                         ReviewRequest,
                                         ReviewRequestDraft,
-                                        Review,
-                                        Screenshot)
+                                        Review)
 from reviewboard.scmtools.core import ChangeSet, Commit
 from reviewboard.scmtools.errors import ChangeNumberInUseError
 from reviewboard.scmtools.models import Repository, Tool
@@ -1224,31 +1220,17 @@ class ViewTests(TestCase):
         comment_text_2 = "Comment text 2"
 
         user1 = User.objects.get(username='doc')
-        review_request = ReviewRequest.objects.create(user1, None)
+        review_request = self.create_review_request()
 
         # Add two file attachments. One active, one inactive.
-        filename = os.path.join(settings.STATIC_ROOT,
-                                'rb', 'images', 'trophy.png')
-        f = open(filename, 'r')
-        file = SimpleUploadedFile(f.name, f.read(), content_type='image/png')
-        f.close()
-
-        file1 = FileAttachment.objects.create(caption=caption_1,
-                                              file=file,
-                                              mimetype='image/png')
-        file2 = FileAttachment.objects.create(caption=caption_2,
-                                              file=file,
-                                              mimetype='image/png')
-        review_request.file_attachments.add(file1)
-        review_request.inactive_file_attachments.add(file2)
+        file1 = self.create_file_attachment(review_request, caption=caption_1)
+        file2 = self.create_file_attachment(review_request, caption=caption_2,
+                                            active=False)
         review_request.publish(user1)
 
-        # Create one on a draft with a new file attachment.
-        draft = ReviewRequestDraft.create(review_request)
-        file3 = FileAttachment.objects.create(caption=caption_3,
-                                              file=file,
-                                              mimetype='image/png')
-        draft.file_attachments.add(file3)
+        # Create a third file attachment on a draft.
+        self.create_file_attachment(review_request, caption=caption_3,
+                                    draft=True)
 
         # Create the review with comments for each screenshot.
         review = Review.objects.create(review_request=review_request,
@@ -1297,22 +1279,16 @@ class ViewTests(TestCase):
         comment_text_2 = "Comment text 2"
 
         user1 = User.objects.get(username='doc')
-        review_request = ReviewRequest.objects.create(user1, None)
+        review_request = self.create_review_request()
 
         # Add two screenshots. One active, one inactive.
-        screenshot1 = Screenshot.objects.create(caption=caption_1,
-                                                image='')
-        screenshot2 = Screenshot.objects.create(caption=caption_2,
-                                                image='')
-        review_request.screenshots.add(screenshot1)
-        review_request.inactive_screenshots.add(screenshot2)
+        screenshot1 = self.create_screenshot(review_request, caption=caption_1)
+        screenshot2 = self.create_screenshot(review_request, caption=caption_2,
+                                             active=False)
         review_request.publish(user1)
 
-        # Create one on a draft with a new screenshot.
-        draft = ReviewRequestDraft.create(review_request)
-        screenshot3 = Screenshot.objects.create(caption=caption_3,
-                                                image='')
-        draft.screenshots.add(screenshot3)
+        # Add a third screenshot on a draft.
+        self.create_screenshot(review_request, caption=caption_3, draft=True)
 
         # Create the review with comments for each screenshot.
         user1 = User.objects.get(username='doc')

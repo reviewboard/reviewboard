@@ -463,7 +463,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                         startIndex = href.indexOf('/users');
                         href = href.substr(startIndex);
 
-                        return href; },
+                        return href;
+                    },
                     function(item) { return item.title; }
                 ));
 
