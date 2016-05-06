@@ -1,4 +1,4 @@
-/*
+/**
  * A file attachment that's part of a draft.
  */
 RB.DraftFileAttachment = RB.FileAttachment.extend(_.defaults({

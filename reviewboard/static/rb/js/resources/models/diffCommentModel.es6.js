@@ -1,40 +1,39 @@
-(function() {
-
-
-var parentProto = RB.BaseComment.prototype;
-
-
-/*
+/**
  * Provides commenting functionality for diffs.
  *
  * A DiffComment represents a comment on a range of lines on either a
  * FileDiff or an interdiff consisting of two FileDiffs.
+ *
+ * Model Attributes:
+ *     beginLineNum (number):
+ *         The first line number in the range (0-indexed).
+ *
+ *     endLineNum (number):
+ *         The last line number in the range (0-indexed).
+ *
+ *     fileDiff (RB.FileDiff):
+ *         The FileDiff that the comment applies to.
+ *
+ *     fileDiffID (number):
+ *         The ID of the FileDiff that the comment applies to.
+ *
+ *     interFileDiff (RB.FileDiff):
+ *         The FileDiff at the end of an interdiff range that the comment
+ *         applies to, if appropriate.
+ *
+ *     interFileDiffID (number):
+ *         The ID of the FileDiff at the end of an interdiff range that the
+ *         comment applies to.
  */
 RB.DiffComment = RB.BaseComment.extend({
-    defaults: function() {
-        return _.defaults({
-            /* The first line number in the range (0-indexed). */
-            beginLineNum: 0,
-
-            /* The last line number in the range (0-indexed). */
-            endLineNum: 0,
-
-            /* The FileDiff the comment applies to. */
-            fileDiff: null,
-
-            /* The ID of the FileDiff the comment is on. */
-            fileDiffID: null,
-
-            /* The optional FileDiff at the end of an interdiff range. */
-            interFileDiff: null,
-
-            /*
-             * The ID of the optional FileDiff specifying the end of an
-             * interdiff range.
-             */
-            interFileDiffID: null
-        }, parentProto.defaults());
-    },
+    defaults: _.defaults({
+        beginLineNum: 0,
+        endLineNum: 0,
+        fileDiff: null,
+        fileDiffID: null,
+        interFileDiff: null,
+        interFileDiffID: null
+    }, RB.BaseComment.prototype.defaults()),
 
     rspNamespace: 'diff_comment',
     expandedFields: ['filediff', 'interfilediff'],
@@ -44,41 +43,53 @@ RB.DiffComment = RB.BaseComment.extend({
         beginLineNum: 'first_line',
         interFileDiffID: 'interfilediff_id',
         numLines: 'num_lines'
-    }, parentProto.attrToJsonMap),
+    }, RB.BaseComment.prototype.attrToJsonMap),
 
     serializedAttrs: [
         'beginLineNum',
         'numLines',
         'fileDiffID',
         'interFileDiffID'
-    ].concat(parentProto.serializedAttrs),
+    ].concat(RB.BaseComment.prototype.serializedAttrs),
 
     deserializedAttrs: [
         'beginLineNum',
         'endLineNum'
-    ].concat(parentProto.deserializedAttrs),
+    ].concat(RB.BaseComment.prototype.deserializedAttrs),
 
     serializers: _.defaults({
         fileDiffID: RB.JSONSerializers.onlyIfUnloaded,
         interFileDiffID: RB.JSONSerializers.onlyIfUnloadedAndValue,
-
         numLines: function() {
             return this.getNumLines();
         }
-    }, parentProto.serializers),
+    }, RB.BaseComment.prototype.serializers),
 
-    /*
-     * Returns the total number of lines the comment spans.
+    /**
+     * Return the total number of lines the comment spans.
+     *
+     * Returns:
+     *     number:
+     *     The total number of lines for the comment.
      */
-    getNumLines: function() {
+    getNumLines() {
         return this.get('endLineNum') - this.get('beginLineNum') + 1;
     },
 
-    /*
-     * Deserializes comment data from an API payload.
+    /**
+     * Deserialize comment data from an API payload.
+     *
+     * Args:
+     *     rsp (object):
+     *         The data from the server.
+     *
+     * Returns:
+     *     object:
+     *     The model attributes to assign.
      */
-    parseResourceData: function(rsp) {
-        var result = parentProto.parseResourceData.call(this, rsp);
+    parseResourceData(rsp) {
+        const result = RB.BaseComment.prototype.parseResourceData.call(
+            this, rsp);
 
         result.endLineNum = rsp.num_lines + result.beginLineNum - 1;
 
@@ -95,17 +106,21 @@ RB.DiffComment = RB.BaseComment.extend({
         return result;
     },
 
-    /*
-     * Performs validation on the attributes of the model.
+    /**
+     * Perform validation on the attributes of the model.
      *
      * This will check the range of line numbers to make sure they're
      * a valid ordered range, along with the default comment validation.
+     *
+     * Args:
+     *     attrs (object):
+     *         The set of attributes to validate.
+     *
+     * Returns:
+     *     string:
+     *     An error string, if appropriate.
      */
-    validate: function(attrs, options) {
-        var strings = RB.DiffComment.strings,
-            hasBeginLineNum,
-            hasEndLineNum;
-
+    validate(attrs) {
         /*
          * XXX: Existing diff comments won't have the "fileDiffID" attribute
          * populated when we load the object from the API. Since we don't do
@@ -113,27 +128,27 @@ RB.DiffComment = RB.BaseComment.extend({
          * new diff comment, only check it if isNew().
          */
         if (this.isNew() && _.has(attrs, 'fileDiffID') && !attrs.fileDiffID) {
-            return strings.INVALID_FILEDIFF_ID;
+            return RB.DiffComment.strings.INVALID_FILEDIFF_ID;
         }
 
-        hasBeginLineNum = _.has(attrs, 'beginLineNum');
+        const hasBeginLineNum = _.has(attrs, 'beginLineNum');
 
         if (hasBeginLineNum && attrs.beginLineNum < 0) {
-            return strings.BEGINLINENUM_GTE_0;
+            return RB.DiffComment.strings.BEGINLINENUM_GTE_0;
         }
 
-        hasEndLineNum = _.has(attrs, 'endLineNum');
+        const hasEndLineNum = _.has(attrs, 'endLineNum');
 
         if (hasEndLineNum && attrs.endLineNum < 0) {
-            return strings.ENDLINENUM_GTE_0;
+            return RB.DiffComment.strings.ENDLINENUM_GTE_0;
         }
 
         if (hasBeginLineNum && hasEndLineNum &&
             attrs.beginLineNum > attrs.endLineNum) {
-            return strings.BEGINLINENUM_LTE_ENDLINENUM;
+            return RB.DiffComment.strings.BEGINLINENUM_LTE_ENDLINENUM;
         }
 
-        return parentProto.validate.call(this, attrs, options);
+        return RB.BaseComment.prototype.validate.apply(this, arguments);
     }
 }, {
     strings: {
@@ -143,6 +158,3 @@ RB.DiffComment = RB.BaseComment.extend({
         BEGINLINENUM_LTE_ENDLINENUM: 'beginLineNum must be <= endLineNum'
     }
 });
-
-
-})();

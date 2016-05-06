@@ -1,11 +1,11 @@
-/*
+/**
  * The draft of a review request.
  *
  * This provides editing capabilities for a review request draft, as well
  * as the ability to publish and discard (destroy) a draft.
  */
 RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
-    defaults: function() {
+    defaults() {
         return _.defaults({
             branch: null,
             bugsClosed: null,
@@ -60,31 +60,51 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
         'testingDone'
     ],
 
-    url: function() {
+    /**
+     * Return the URL to use when syncing the model.
+     *
+     * Returns:
+     *     string:
+     *     The URL to sync.
+     */
+    url() {
         return this.get('parentObject').get('links').draft.href;
     },
 
-    /*
-     * Creates a FileAttachment object for this draft.
+    /**
+     * Create a FileAttachment object for this draft.
+     *
+     * Args:
+     *     attributes (object):
+     *         Attributes for the file attachment model.
+     *
+     * Returns:
+     *     RB.DraftFileAttachment:
+     *     The new file attachment object.
      */
-    createFileAttachment: function(attributes) {
+    createFileAttachment(attributes) {
         return new RB.DraftFileAttachment(_.defaults({
             parentObject: this
         }, attributes));
     },
 
-    /*
-     * Publishes the draft.
+    /**
+     * Publish the draft.
      *
      * The contents of the draft will be validated before being sent to the
      * server in order to ensure that the appropriate fields are all there.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the operation, including callbacks.
+     *
+     *     context (object):
+     *         Context to bind when calling callbacks.
      */
-    publish: function(options, context) {
-        options = options || {};
-
+    publish(options={}, context=undefined) {
         this.ready({
-            ready: function() {
-                var validationError = this.validate(this.attributes, {
+            ready: () => {
+                const validationError = this.validate(this.attributes, {
                     publishing: true
                 });
 
@@ -111,30 +131,29 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
         }, this);
     },
 
-    validate: function(attrs, options) {
-        var strings = RB.DraftReviewRequest.strings;
-
+    validate(attrs, options) {
         if (options.publishing) {
             if (attrs.targetGroups.length === 0 &&
                 attrs.targetPeople.length === 0) {
-                return strings.REVIEWERS_REQUIRED;
+                return RB.DraftReviewRequest.strings.REVIEWERS_REQUIRED;
             }
 
             if ($.trim(attrs.summary) === '') {
-                return strings.SUMMARY_REQUIRED;
+                return RB.DraftReviewRequest.strings.SUMMARY_REQUIRED;
             }
 
             if ($.trim(attrs.description) === '') {
-                return strings.DESCRIPTION_REQUIRED;
+                return RB.DraftReviewRequest.strings.DESCRIPTION_REQUIRED;
             }
         }
 
         return _super(this).validate.call(this, attrs, options);
     },
 
-    parseResourceData: function(rsp) {
-        var rawTextFields = rsp.raw_text_fields || rsp,
-            data = RB.BaseResource.prototype.parseResourceData.call(this, rsp);
+    parseResourceData(rsp) {
+        const rawTextFields = rsp.raw_text_fields || rsp;
+        const data = RB.BaseResource.prototype.parseResourceData.call(
+            this, rsp);
 
         data.submitter = rsp.links.submitter;
         data.changeDescriptionRichText =
