@@ -13,11 +13,13 @@
  *         trunk, etc.).
  */
 RB.RepositoryBranch = RB.BaseResource.extend({
-    defaults: _.defaults({
-        name: null,
-        commit: null,
-        isDefault: false
-    }, RB.BaseResource.prototype.defaults()),
+    defaults() {
+        return _.defaults({
+            name: null,
+            commit: null,
+            isDefault: false
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     rspNamespace: 'branches',
 

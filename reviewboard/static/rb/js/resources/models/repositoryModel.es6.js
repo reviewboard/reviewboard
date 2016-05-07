@@ -28,15 +28,17 @@
  *         post-commit UI.
  */
 RB.Repository = RB.BaseResource.extend({
-    defaults: _.defaults({
-        filesOnly: false,
-        localSitePrefix: null,
-        name: null,
-        requiresBasedir: false,
-        requiresChangeNumber: false,
-        scmtoolName: null,
-        supportsPostCommit: false
-    }, RB.BaseResource.prototype.defaults()),
+    defaults() {
+        return _.defaults({
+            filesOnly: false,
+            localSitePrefix: null,
+            name: null,
+            requiresBasedir: false,
+            requiresChangeNumber: false,
+            scmtoolName: null,
+            supportsPostCommit: false
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     rspNamespace: 'repository',
 

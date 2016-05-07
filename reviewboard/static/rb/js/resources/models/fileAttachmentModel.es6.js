@@ -27,16 +27,18 @@
  *         The HTML for the thumbnail depicting this file attachment.
  */
 RB.FileAttachment = RB.BaseResource.extend({
-    defaults: _.defaults({
-        attachmentHistoryID: null,
-        caption: null,
-        downloadURL: null,
-        file: null,
-        filename: null,
-        reviewURL: null,
-        revision: null,
-        thumbnailHTML: null
-    }, RB.BaseResource.prototype.defaults()),
+    defaults() {
+        return _.defaults({
+            attachmentHistoryID: null,
+            caption: null,
+            downloadURL: null,
+            file: null,
+            filename: null,
+            reviewURL: null,
+            revision: null,
+            thumbnailHTML: null
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     rspNamespace: 'file_attachment',
     payloadFileKeys: ['path'],
