@@ -7,7 +7,6 @@ from hashlib import md5
 from socket import error as SocketError
 from tempfile import mkdtemp
 
-from django import forms
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
@@ -19,10 +18,8 @@ import nose
 
 from reviewboard.diffviewer.diffutils import patch
 from reviewboard.diffviewer.parser import DiffParserError
-from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.service import (HostingService,
-                                             register_hosting_service,
+from reviewboard.hostingsvcs.service import (register_hosting_service,
                                              unregister_hosting_service)
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools.core import (Branch, ChangeSet, Commit, Revision,
@@ -43,6 +40,8 @@ from reviewboard.site.models import LocalSite
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.tests import SSHTestCase
 from reviewboard.testing import online_only
+from reviewboard.testing.hosting_services import (SelfHostedTestService,
+                                                  TestService)
 from reviewboard.testing.testcase import TestCase
 
 
@@ -2970,56 +2969,6 @@ class PolicyTests(TestCase):
         self.assertFalse(form.is_valid())
 
 
-class TestServiceForm(HostingServiceForm):
-    test_repo_name = forms.CharField(
-        label='Repository name',
-        max_length=64,
-        required=True)
-
-
-class TestService(HostingService):
-    name = 'Test Service'
-    form = TestServiceForm
-    needs_authorization = True
-    supports_repositories = True
-    supports_bug_trackers = True
-    has_repository_hook_instructions = True
-    supported_scmtools = ['Git']
-    bug_tracker_field = ('http://example.com/%(hosting_account_username)s/'
-                         '%(test_repo_name)s/issue/%%s')
-    repository_fields = {
-        'Git': {
-            'path': 'http://example.com/%(test_repo_name)s/',
-        },
-    }
-
-    def authorize(self, username, password, hosting_url, local_site_name=None,
-                  *args, **kwargs):
-        self.authorize_args = {
-            'username': username,
-            'password': password,
-            'hosting_url': hosting_url,
-            'local_site_name': local_site_name,
-        }
-
-    def is_authorized(self):
-        return True
-
-    def check_repository(self, *args, **kwargs):
-        pass
-
-
-class SelfHostedTestService(TestService):
-    name = 'Self-Hosted Test'
-    self_hosted = True
-    bug_tracker_field = '%(hosting_url)s/%(test_repo_name)s/issue/%%s'
-    repository_fields = {
-        'Git': {
-            'path': '%(hosting_url)s/%(test_repo_name)s/',
-        },
-    }
-
-
 class RepositoryFormTests(TestCase):
     fixtures = ['test_scmtools']
 
@@ -3037,15 +2986,13 @@ class RepositoryFormTests(TestCase):
         unregister_hosting_service('self_hosted_test')
         unregister_hosting_service('test')
 
-    def test_with_hosting_service_new_account(self):
-        """Testing RepositoryForm with a hosting service and new account"""
+    def test_plain_repository(self):
+        """Testing RepositoryForm with a plain repository"""
         form = RepositoryForm({
             'name': 'test',
-            'hosting_type': 'test',
-            'hosting_account_username': 'testuser',
-            'hosting_account_password': 'testpass',
+            'hosting_type': 'custom',
             'tool': self.git_tool_id,
-            'test_repo_name': 'testrepo',
+            'path': '/path/to/test.git',
             'bug_tracker_type': 'none',
         })
 
@@ -3053,10 +3000,166 @@ class RepositoryFormTests(TestCase):
 
         repository = form.save()
         self.assertEqual(repository.name, 'test')
+        self.assertEqual(repository.hosting_account, None)
+        self.assertEqual(repository.extra_data, {})
+
+        # Make sure none of the other auth forms are unhappy. That would be
+        # an indicator that we're doing form processing and validation wrong.
+        for auth_form in six.itervalues(form.hosting_auth_forms):
+            self.assertEqual(auth_form.errors, {})
+
+    def test_plain_repository_with_missing_fields(self):
+        """Testing RepositoryForm with a plain repository with missing fields
+        """
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'custom',
+            'tool': self.git_tool_id,
+            'bug_tracker_type': 'none',
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('path', form.errors)
+
+        # Make sure none of the other auth forms are unhappy. That would be
+        # an indicator that we're doing form processing and validation wrong.
+        for auth_form in six.itervalues(form.hosting_auth_forms):
+            self.assertEqual(auth_form.errors, {})
+
+    def test_with_hosting_service_new_account(self):
+        """Testing RepositoryForm with a hosting service and new account"""
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'test',
+            'test-hosting_account_username': 'testuser',
+            'test-hosting_account_password': 'testpass',
+            'tool': self.git_tool_id,
+            'test_repo_name': 'testrepo',
+            'bug_tracker_type': 'none',
+        })
+
+        self.assertTrue(form.is_valid())
+        self.assertTrue(form.hosting_account_linked)
+
+        repository = form.save()
+        self.assertEqual(repository.name, 'test')
         self.assertEqual(repository.hosting_account.username, 'testuser')
         self.assertEqual(repository.hosting_account.service_name, 'test')
         self.assertEqual(repository.hosting_account.local_site, None)
         self.assertEqual(repository.extra_data['repository_plan'], '')
+        self.assertEqual(repository.path, 'http://example.com/testrepo/')
+        self.assertEqual(repository.mirror_path, '')
+
+        # Make sure none of the other auth forms are unhappy. That would be
+        # an indicator that we're doing form processing and validation wrong.
+        for auth_form in six.itervalues(form.hosting_auth_forms):
+            self.assertEqual(auth_form.errors, {})
+
+    def test_with_hosting_service_new_account_auth_error(self):
+        """Testing RepositoryForm with a hosting service and new account and
+        authorization error
+        """
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'test',
+            'test-hosting_account_username': 'baduser',
+            'test-hosting_account_password': 'testpass',
+            'tool': self.git_tool_id,
+            'test_repo_name': 'testrepo',
+            'bug_tracker_type': 'none',
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertFalse(form.hosting_account_linked)
+        self.assertIn('hosting_account', form.errors)
+        self.assertEqual(form.errors['hosting_account'],
+                         ['Unable to link the account: The username is '
+                          'very very bad.'])
+
+        # Make sure none of the other auth forms are unhappy. That would be
+        # an indicator that we're doing form processing and validation wrong.
+        for auth_form in six.itervalues(form.hosting_auth_forms):
+            self.assertEqual(auth_form.errors, {})
+
+    def test_with_hosting_service_new_account_2fa_code_required(self):
+        """Testing RepositoryForm with a hosting service and new account and
+        two-factor auth code required
+        """
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'test',
+            'test-hosting_account_username': '2fa-user',
+            'test-hosting_account_password': 'testpass',
+            'tool': self.git_tool_id,
+            'test_repo_name': 'testrepo',
+            'bug_tracker_type': 'none',
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertFalse(form.hosting_account_linked)
+        self.assertIn('hosting_account', form.errors)
+        self.assertEqual(form.errors['hosting_account'],
+                         ['Enter your 2FA code.'])
+        self.assertTrue(
+            form.hosting_service_info['test']['needs_two_factor_auth_code'])
+
+        # Make sure none of the other auth forms are unhappy. That would be
+        # an indicator that we're doing form processing and validation wrong.
+        for auth_form in six.itervalues(form.hosting_auth_forms):
+            self.assertEqual(auth_form.errors, {})
+
+    def test_with_hosting_service_new_account_2fa_code_provided(self):
+        """Testing RepositoryForm with a hosting service and new account and
+        two-factor auth code provided
+        """
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'test',
+            'test-hosting_account_username': '2fa-user',
+            'test-hosting_account_password': 'testpass',
+            'test-hosting_account_two_factor_auth_code': '123456',
+            'tool': self.git_tool_id,
+            'test_repo_name': 'testrepo',
+            'bug_tracker_type': 'none',
+        })
+
+        self.assertTrue(form.is_valid())
+        self.assertTrue(form.hosting_account_linked)
+        self.assertFalse(
+            form.hosting_service_info['test']['needs_two_factor_auth_code'])
+
+        # Make sure none of the other auth forms are unhappy. That would be
+        # an indicator that we're doing form processing and validation wrong.
+        for auth_form in six.itervalues(form.hosting_auth_forms):
+            self.assertEqual(auth_form.errors, {})
+
+    def test_with_hosting_service_new_account_missing_fields(self):
+        """Testing RepositoryForm with a hosting service and new account and
+        missing fields
+        """
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'test',
+            'tool': self.git_tool_id,
+            'test_repo_name': 'testrepo',
+            'bug_tracker_type': 'none',
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertFalse(form.hosting_account_linked)
+
+        self.assertIn('hosting_account_username', form.errors)
+        self.assertIn('hosting_account_password', form.errors)
+
+        # Make sure the auth form also contains the errors.
+        auth_form = form.hosting_auth_forms.pop('test')
+        self.assertIn('hosting_account_username', auth_form.errors)
+        self.assertIn('hosting_account_password', auth_form.errors)
+
+        # Make sure none of the other auth forms are unhappy. That would be
+        # an indicator that we're doing form processing and validation wrong.
+        for auth_form in six.itervalues(form.hosting_auth_forms):
+            self.assertEqual(auth_form.errors, {})
 
     def test_with_hosting_service_self_hosted_and_new_account(self):
         """Testing RepositoryForm with a self-hosted hosting service and new
@@ -3065,9 +3168,9 @@ class RepositoryFormTests(TestCase):
         form = RepositoryForm({
             'name': 'test',
             'hosting_type': 'self_hosted_test',
-            'hosting_url': 'https://example.com',
-            'hosting_account_username': 'testuser',
-            'hosting_account_password': 'testpass',
+            'self_hosted_test-hosting_url': 'https://myserver.com',
+            'self_hosted_test-hosting_account_username': 'testuser',
+            'self_hosted_test-hosting_account_password': 'testpass',
             'test_repo_name': 'myrepo',
             'tool': self.git_tool_id,
             'bug_tracker_type': 'none',
@@ -3075,18 +3178,26 @@ class RepositoryFormTests(TestCase):
         form.validate_repository = False
 
         self.assertTrue(form.is_valid())
+        self.assertTrue(form.hosting_account_linked)
 
         repository = form.save()
         self.assertEqual(repository.name, 'test')
         self.assertEqual(repository.hosting_account.hosting_url,
-                         'https://example.com')
+                         'https://myserver.com')
         self.assertEqual(repository.hosting_account.username, 'testuser')
         self.assertEqual(repository.hosting_account.service_name,
                          'self_hosted_test')
         self.assertEqual(repository.hosting_account.local_site, None)
         self.assertEqual(repository.extra_data['test_repo_name'], 'myrepo')
         self.assertEqual(repository.extra_data['hosting_url'],
-                         'https://example.com')
+                         'https://myserver.com')
+        self.assertEqual(repository.path, 'https://myserver.com/myrepo/')
+        self.assertEqual(repository.mirror_path, 'git@myserver.com:myrepo/')
+
+        # Make sure none of the other auth forms are unhappy. That would be
+        # an indicator that we're doing form processing and validation wrong.
+        for auth_form in six.itervalues(form.hosting_auth_forms):
+            self.assertEqual(auth_form.errors, {})
 
     def test_with_hosting_service_self_hosted_and_blank_url(self):
         """Testing RepositoryForm with a self-hosted hosting service and blank
@@ -3095,9 +3206,9 @@ class RepositoryFormTests(TestCase):
         form = RepositoryForm({
             'name': 'test',
             'hosting_type': 'self_hosted_test',
-            'hosting_url': '',
-            'hosting_account_username': 'testuser',
-            'hosting_account_password': 'testpass',
+            'self_hosted_test-hosting_url': '',
+            'self_hosted_test-hosting_account_username': 'testuser',
+            'self_hosted_test-hosting_account_password': 'testpass',
             'test_repo_name': 'myrepo',
             'tool': self.git_tool_id,
             'bug_tracker_type': 'none',
@@ -3105,6 +3216,7 @@ class RepositoryFormTests(TestCase):
         form.validate_repository = False
 
         self.assertFalse(form.is_valid())
+        self.assertFalse(form.hosting_account_linked)
 
     def test_with_hosting_service_new_account_localsite(self):
         """Testing RepositoryForm with a hosting service, new account and
@@ -3112,18 +3224,21 @@ class RepositoryFormTests(TestCase):
         """
         local_site = LocalSite.objects.create(name='testsite')
 
-        form = RepositoryForm({
-            'name': 'test',
-            'hosting_type': 'test',
-            'hosting_account_username': 'testuser',
-            'hosting_account_password': 'testpass',
-            'tool': self.git_tool_id,
-            'test_repo_name': 'testrepo',
-            'bug_tracker_type': 'none',
-            'local_site': local_site.pk,
-        })
+        form = RepositoryForm(
+            {
+                'name': 'test',
+                'hosting_type': 'test',
+                'test-hosting_account_username': 'testuser',
+                'test-hosting_account_password': 'testpass',
+                'tool': self.git_tool_id,
+                'test_repo_name': 'testrepo',
+                'bug_tracker_type': 'none',
+                'local_site': local_site.pk,
+            },
+            local_site_name=local_site.name)
 
         self.assertTrue(form.is_valid())
+        self.assertTrue(form.hosting_account_linked)
 
         repository = form.save()
         self.assertEqual(repository.name, 'test')
@@ -3139,6 +3254,8 @@ class RepositoryFormTests(TestCase):
         """
         account = HostingServiceAccount.objects.create(username='testuser',
                                                        service_name='test')
+        account.data['password'] = 'testpass'
+        account.save()
 
         form = RepositoryForm({
             'name': 'test',
@@ -3150,11 +3267,63 @@ class RepositoryFormTests(TestCase):
         })
 
         self.assertTrue(form.is_valid())
+        self.assertFalse(form.hosting_account_linked)
 
         repository = form.save()
         self.assertEqual(repository.name, 'test')
         self.assertEqual(repository.hosting_account, account)
         self.assertEqual(repository.extra_data['repository_plan'], '')
+
+    def test_with_hosting_service_existing_account_needs_reauth(self):
+        """Testing RepositoryForm with a hosting service and existing
+        account needing re-authorization
+        """
+        # We won't be setting the password, so that is_authorized() will
+        # fail.
+        account = HostingServiceAccount.objects.create(username='testuser',
+                                                       service_name='test')
+
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'test',
+            'hosting_account': account.pk,
+            'tool': self.git_tool_id,
+            'test_repo_name': 'testrepo',
+            'bug_tracker_type': 'none',
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertFalse(form.hosting_account_linked)
+        self.assertEqual(set(form.errors.keys()),
+                         set(['hosting_account_username',
+                              'hosting_account_password']))
+
+    def test_with_hosting_service_existing_account_reauthing(self):
+        """Testing RepositoryForm with a hosting service and existing
+        account with re-authorizating
+        """
+        # We won't be setting the password, so that is_authorized() will
+        # fail.
+        account = HostingServiceAccount.objects.create(username='testuser',
+                                                       service_name='test')
+
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'test',
+            'hosting_account': account.pk,
+            'test-hosting_account_username': 'testuser2',
+            'test-hosting_account_password': 'testpass2',
+            'tool': self.git_tool_id,
+            'test_repo_name': 'testrepo',
+            'bug_tracker_type': 'none',
+        })
+
+        self.assertTrue(form.is_valid())
+        self.assertTrue(form.hosting_account_linked)
+
+        account = HostingServiceAccount.objects.get(pk=account.pk)
+        self.assertEqual(account.username, 'testuser2')
+        self.assertEqual(account.data['password'], 'testpass2')
 
     def test_with_hosting_service_self_hosted_and_existing_account(self):
         """Testing RepositoryForm with a self-hosted hosting service and
@@ -3164,11 +3333,13 @@ class RepositoryFormTests(TestCase):
             username='testuser',
             service_name='self_hosted_test',
             hosting_url='https://example.com')
+        account.data['password'] = 'testpass'
+        account.save()
 
         form = RepositoryForm({
             'name': 'test',
             'hosting_type': 'self_hosted_test',
-            'hosting_url': 'https://example.com',
+            'self_hosted_test-hosting_url': 'https://example.com',
             'hosting_account': account.pk,
             'tool': self.git_tool_id,
             'test_repo_name': 'myrepo',
@@ -3177,6 +3348,7 @@ class RepositoryFormTests(TestCase):
         form.validate_repository = False
 
         self.assertTrue(form.is_valid())
+        self.assertFalse(form.hosting_account_linked)
 
         repository = form.save()
         self.assertEqual(repository.name, 'test')
@@ -3184,20 +3356,20 @@ class RepositoryFormTests(TestCase):
         self.assertEqual(repository.extra_data['hosting_url'],
                          'https://example.com')
 
-    def test_with_hosting_service_self_hosted_and_invalid_existing_account(
-            self):
+    def test_with_self_hosted_and_invalid_account_service(self):
         """Testing RepositoryForm with a self-hosted hosting service and
-        invalid existing account
+        invalid existing account due to mismatched service type
         """
         account = HostingServiceAccount.objects.create(
             username='testuser',
             service_name='self_hosted_test',
             hosting_url='https://example1.com')
+        account.data['password'] = 'testpass'
+        account.save()
 
         form = RepositoryForm({
             'name': 'test',
-            'hosting_type': 'self_hosted_test',
-            'hosting_url': 'https://example2.com',
+            'hosting_type': 'test',
             'hosting_account': account.pk,
             'tool': self.git_tool_id,
             'test_repo_name': 'myrepo',
@@ -3206,11 +3378,39 @@ class RepositoryFormTests(TestCase):
         form.validate_repository = False
 
         self.assertFalse(form.is_valid())
+        self.assertFalse(form.hosting_account_linked)
+
+    def test_with_self_hosted_and_invalid_account_local_site(self):
+        """Testing RepositoryForm with a self-hosted hosting service and
+        invalid existing account due to mismatched Local Site
+        """
+        account = HostingServiceAccount.objects.create(
+            username='testuser',
+            service_name='self_hosted_test',
+            hosting_url='https://example1.com',
+            local_site=LocalSite.objects.create(name='test-site'))
+        account.data['password'] = 'testpass'
+        account.save()
+
+        form = RepositoryForm({
+            'name': 'test',
+            'hosting_type': 'test',
+            'hosting_account': account.pk,
+            'tool': self.git_tool_id,
+            'test_repo_name': 'myrepo',
+            'bug_tracker_type': 'none',
+        })
+        form.validate_repository = False
+
+        self.assertFalse(form.is_valid())
+        self.assertFalse(form.hosting_account_linked)
 
     def test_with_hosting_service_custom_bug_tracker(self):
         """Testing RepositoryForm with a custom bug tracker"""
         account = HostingServiceAccount.objects.create(username='testuser',
                                                        service_name='test')
+        account.data['password'] = 'testpass'
+        account.save()
 
         form = RepositoryForm({
             'name': 'test',
@@ -3233,6 +3433,8 @@ class RepositoryFormTests(TestCase):
         """Testing RepositoryForm with a bug tracker service"""
         account = HostingServiceAccount.objects.create(username='testuser',
                                                        service_name='test')
+        account.data['password'] = 'testpass'
+        account.save()
 
         form = RepositoryForm({
             'name': 'test',
@@ -3266,6 +3468,8 @@ class RepositoryFormTests(TestCase):
             username='testuser',
             service_name='self_hosted_test',
             hosting_url='https://example.com')
+        account.data['password'] = 'testpass'
+        account.save()
 
         form = RepositoryForm({
             'name': 'test',
@@ -3299,6 +3503,8 @@ class RepositoryFormTests(TestCase):
         """Testing RepositoryForm with hosting service's bug tracker"""
         account = HostingServiceAccount.objects.create(username='testuser',
                                                        service_name='test')
+        account.data['password'] = 'testpass'
+        account.save()
 
         form = RepositoryForm({
             'name': 'test',
@@ -3332,6 +3538,8 @@ class RepositoryFormTests(TestCase):
             username='testuser',
             service_name='self_hosted_test',
             hosting_url='https://example.com')
+        account.data['password'] = 'testpass'
+        account.save()
 
         account.data['authorization'] = {
             'token': '1234',
@@ -3366,6 +3574,8 @@ class RepositoryFormTests(TestCase):
         """Testing RepositoryForm with no bug tracker"""
         account = HostingServiceAccount.objects.create(username='testuser',
                                                        service_name='test')
+        account.data['password'] = 'testpass'
+        account.save()
 
         form = RepositoryForm({
             'name': 'test',
