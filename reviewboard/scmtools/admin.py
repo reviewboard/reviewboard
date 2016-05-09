@@ -26,14 +26,10 @@ class RepositoryAdmin(admin.ModelAdmin):
             'fields': ('name', 'visible',),
             'classes': ('wide',),
         }),
-        (_('Repository Hosting'), {
+        (RepositoryForm.REPOSITORY_HOSTING_FIELDSET, {
             'fields': (
                 'hosting_type',
-                'hosting_url',
                 'hosting_account',
-                'hosting_account_username',
-                'hosting_account_password',
-                'hosting_account_two_factor_auth_code',
             ),
             'classes': ('wide',),
         }),
