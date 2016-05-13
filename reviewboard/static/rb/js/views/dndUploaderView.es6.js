@@ -178,7 +178,7 @@ RB.DnDUploader = Backbone.View.extend({
      */
     _onDragEnter(e) {
         if (!this._dropOverlay &&
-            e.originalEvent.dataTransfer.types.includes('Files')) {
+            Array.from(e.originalEvent.dataTransfer.types).includes('Files')) {
             this._dropOverlay = new DnDDropOverlayView();
             this._dropOverlay.render().$el.appendTo(document.body);
             this.listenTo(this._dropOverlay, 'closed',
@@ -189,7 +189,7 @@ RB.DnDUploader = Backbone.View.extend({
                 this._dropOverlay,
                 'filesDropped',
                 files => {
-                    for (let file of files) {
+                    for (let file of Array.from(files)) {
                         this._uploadFile(file);
                     }
                 });
