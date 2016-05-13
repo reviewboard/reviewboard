@@ -147,14 +147,19 @@ class CodebaseHQClient(HostingServiceClient):
 
         return result
 
-    def api_get_roles(self):
-        """Return information on all configured roles.
+    def api_get_public_keys(self, username):
+        """Return information on all public keys for a user.
+
+        Args:
+            username (unicode):
+                The user to fetch public keys for.
 
         Returns:
             dict:
-            Information on all the configured roles.
+            Information on each of the user's public keys.
         """
-        return self.api_get(self.build_api_url('roles'))
+        return self.api_get(self.build_api_url('users/%s/public_keys'
+                                               % username))
 
     def api_get_repository(self, project_name, repo_name):
         """Return information on a repository.
@@ -429,7 +434,7 @@ class CodebaseHQ(HostingService):
         #
         # This will raise a suitable error message if authorization fails.
         try:
-            self.client.api_get_roles()
+            self.client.api_get_public_keys(username)
         except AuthorizationError:
             raise AuthorizationError(
                 ugettext('One or more of the credentials provided were not '

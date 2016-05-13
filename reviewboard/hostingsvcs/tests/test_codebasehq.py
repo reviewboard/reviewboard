@@ -297,7 +297,7 @@ class CodebaseHQTests(ServiceTests):
 
     def _authorize(self, service):
         # Don't perform the call to test the API's credentials.
-        self.spy_on(service.client.api_get_roles, call_original=False)
+        self.spy_on(service.client.api_get_public_keys, call_original=False)
 
         service.authorize('myuser', 'mypass', {
             'domain': 'mydomain',

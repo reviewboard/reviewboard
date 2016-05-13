@@ -1743,6 +1743,11 @@ class MercurialTests(SCMTestCase):
     def _first_file_in_diff(self, diff):
         return self.tool.get_parser(diff).parse()[0]
 
+    def test_ssh_disallowed(self):
+        """Testing HgTool does not allow SSH URLs"""
+        with self.assertRaises(SCMError):
+            self.tool.check_repository('ssh://foo')
+
     def test_git_parser_selection_with_header(self):
         """Testing HgTool returns the git parser when a header is present"""
         diffContents = (b'# HG changeset patch\n'
