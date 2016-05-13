@@ -117,16 +117,58 @@ function updateRepositoryType() {
     $repoTypes.triggerHandler('change');
 }
 
+function updateAccountList() {
+    var hostingType = $('#id_hosting_type').val(),
+        $hostingAccount = $('#id_hosting_account'),
+        $authForm = $('#hosting-auth-form-' + hostingType),
+        hostingInfo = HOSTING_SERVICES[hostingType],
+        accounts = hostingInfo.accounts,
+        selectedAccount = parseInt($hostingAccount.val(), 10),
+        foundSelected = false,
+        $opt,
+        account,
+        text,
+        i;
+
+    /* Rebuild the list of accounts. */
+    $hostingAccount.find('option[value!=""]').remove();
+
+    if (hostingInfo.needs_two_factor_auth_code ||
+        $authForm.find('.errorlist').length > 0) {
+        /*
+         * The first one will be selected automatically, which
+         * we want. Don't select any below.
+         */
+        foundSelected = true;
+    }
+
+    for (i = 0; i < accounts.length; i++) {
+        account = accounts[i];
+        text = account.username;
+
+        if (account.hosting_url) {
+            text += ' (' + account.hosting_url + ')';
+        }
+
+        $opt = $('<option/>')
+            .val(account.pk)
+            .text(text)
+            .data('account', account)
+            .appendTo($hostingAccount);
+
+        if (account.pk === selectedAccount || !foundSelected) {
+            $opt.prop('selected', true);
+            foundSelected = true;
+            $hostingAccount.triggerHandler('change');
+        }
+    }
+}
+
 $(document).ready(function() {
     var $hostingType = $('#id_hosting_type'),
-        $hostingURLRow = $('#row-hosting_url'),
-        $hostingURL = $('#id_hosting_url'),
+        $hostingAuthForms = $('.hosting-auth-form'),
         $hostingAccount = $('#id_hosting_account'),
         $hostingAccountRow = $('#row-hosting_account'),
-        $hostingAccountUserRow = $('#row-hosting_account_username'),
-        $hostingAccountPassRow = $('#row-hosting_account_password'),
-        $hostingAccountTwoFactorAuthCodeRow =
-            $('#row-hosting_account_two_factor_auth_code'),
         $hostingAccountRelink = $('<p/>')
             .text(gettext('The authentication requirements for this account have changed. You will need to re-authenticate.'))
             .addClass('errornote')
@@ -256,9 +298,6 @@ $(document).ready(function() {
                 $associateSshKeyFieldset.show();
             }
 
-            $hostingURLRow.setVisible(
-                !isCustom && HOSTING_SERVICES[hostingType].self_hosted);
-
             if (isFake) {
                 $powerPackAdvert
                     .find('.power-pack-advert-hosting-type')
@@ -266,65 +305,18 @@ $(document).ready(function() {
             }
 
             $bugTrackerTypeRow.setVisible(!isFake);
+            $repoPlanRow.setVisible(!isFake);
             $hostingAccountRow.setVisible(!isFake);
-            $hostingAccountUserRow.setVisible(!isFake);
-            $hostingAccountPassRow.setVisible(!isFake);
             $toolRow.setVisible(!isFake);
 
             $powerPackAdvert.setVisible(isFake);
             $submitButtons.prop('disabled', isFake);
+
+            if (!isCustom) {
+                updateAccountList();
+            }
         })
         .triggerHandler('change');
-
-    $([$hostingType[0], $hostingURL[0]])
-        .change(function() {
-            var hostingType = $hostingType.val(),
-                hostingInfo,
-                accounts,
-                foundSelected,
-                selectedAccount,
-                selectedURL,
-                account,
-                opt,
-                i;
-
-            if (hostingType !== 'custom') {
-                hostingInfo = HOSTING_SERVICES[hostingType];
-                accounts = hostingInfo.accounts;
-                foundSelected = false;
-
-                /* Rebuild the list of accounts. */
-                selectedAccount = parseInt($hostingAccount.val(), 10);
-                selectedURL = $hostingURL.val() || null;
-                $hostingAccount.find('option[value!=""]').remove();
-
-                if (hostingInfo.needs_two_factor_auth_code) {
-                    /*
-                     * The first one will be selected automatically, which
-                     * we want. Don't select any below.
-                     */
-                    foundSelected = true;
-                }
-
-                for (i = 0; i < accounts.length; i++) {
-                    account = accounts[i];
-
-                    if (account.hosting_url === selectedURL) {
-                        opt = $('<option/>')
-                            .val(account.pk)
-                            .text(account.username)
-                            .data('account', account)
-                            .appendTo($hostingAccount);
-
-                        if (account.pk === selectedAccount || !foundSelected) {
-                            opt.prop('selected', true);
-                            foundSelected = true;
-                            $hostingAccount.triggerHandler('change');
-                        }
-                    }
-                }
-            }
-        });
 
     $([$hostingType[0], $hostingAccount[0]])
         .change(function() {
@@ -332,48 +324,44 @@ $(document).ready(function() {
                 hostingInfo,
                 selectedIndex,
                 account,
+                $authForm,
+                $twoFactorAuthRows,
                 $selectedOption;
 
+            $hostingAuthForms.hide();
             $hostingAccountRelink.hide();
-            $hostingAccountTwoFactorAuthCodeRow.hide();
 
             if (hostingType === 'custom') {
                 $hostingAccountRow.hide();
-                $hostingURLRow.hide();
-                $repoPlanRow.hide();
-                $hostingAccountUserRow.hide();
-                $hostingAccountPassRow.hide();
             } else {
                 hostingInfo = HOSTING_SERVICES[hostingType];
 
                 if (hostingInfo.fake !== true) {
                     $hostingAccountRow.show();
 
-                    if (hostingInfo.self_hosted) {
-                        $hostingURLRow.show();
-                    }
+                    $authForm = $('#hosting-auth-form-' + hostingType);
+
+                    /*
+                     * Hide any fields required for 2FA unless explicitly
+                     * needed.
+                     */
+                    $twoFactorAuthRows =
+                        $authForm.find('[data-required-for-2fa]')
+                        .closest('.form-row')
+                            .setVisible(hostingInfo.needs_two_factor_auth_code);
 
                     if ($hostingAccount.val() === '') {
-                        $hostingAccountUserRow.show();
-
-                        $hostingAccountPassRow.setVisible(
-                            hostingInfo.needs_authorization);
-
-                        if (hostingInfo.needs_two_factor_auth_code) {
-                            $hostingAccountTwoFactorAuthCodeRow.show();
-                        }
+                        /* Present fields for linking a new account. */
+                        $authForm.show();
                     } else {
+                        /* An existing linked account has been selected. */
                         selectedIndex = $hostingAccount[0].selectedIndex;
                         $selectedOption = $($hostingAccount[0]
                             .options[selectedIndex]);
                         account = $selectedOption.data('account');
 
-                        $hostingAccountUserRow.hide();
-
-                        if (account.is_authorized) {
-                            $hostingAccountPassRow.hide();
-                        } else {
-                            $hostingAccountPassRow.show();
+                        if (!account.is_authorized) {
+                            $authForm.show();
                             $hostingAccountRelink.show();
                         }
                     }
@@ -436,6 +424,4 @@ $(document).ready(function() {
         $publicKeyPopup.hide();
         return false;
     });
-
-
 });
