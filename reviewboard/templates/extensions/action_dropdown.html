@@ -1,9 +1,0 @@
-{% load djblets_utils i18n staticfiles %}
-<li class="has-menu">
- <a{% attr "id" %}{{actions.id}}{% endattr %} href="#">{{actions.label}} &#9662;</a>
- <ul class="menu" style="display: none;">
-{% for action in actions.items %}
-{%  include "extensions/action.html" %}
-{% endfor %}
- </ul>
-</li>

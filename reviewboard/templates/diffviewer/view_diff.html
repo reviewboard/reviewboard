@@ -1,5 +1,5 @@
 {% extends "reviews/reviewable_base.html" %}
-{% load difftags djblets_deco djblets_js djblets_utils i18n rb_extensions reviewtags %}
+{% load difftags djblets_deco djblets_js djblets_utils i18n reviewtags %}
 {% load staticfiles tz %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Diff Viewer" %}{% endblock %}
@@ -42,10 +42,7 @@
     <li class="has-menu">
      <a href="#" class="mobile-actions-menu-label"><span class="fa fa-ellipsis-h fa-lg"></span></a>
      <ul class="actions actions-right">
-{%    include "reviews/review_request_actions_secondary.html" %}
-{%    diffviewer_action_hooks %}
-      <li id="download-diff" {% if interdiffset %}style="display: none;"{% endif %}><a href="raw/">{% trans "Download Diff" %}</a></li>
-{%    include "reviews/review_request_actions_primary.html" %}
+{%    review_request_actions %}
      </ul>
     </li>
    </ul>

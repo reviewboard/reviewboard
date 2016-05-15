@@ -94,9 +94,9 @@ var UpdatesBubbleView = Backbone.View.extend({
  */
 RB.ReviewablePageView = Backbone.View.extend({
     events: {
-        'click #review-link': '_onEditReviewClicked',
-        'click #shipit-link': '_onShipItClicked',
-        'click #general-comment-link': '_onAddCommentClicked'
+        'click #review-action': '_onEditReviewClicked',
+        'click #ship-it-action': '_onShipItClicked',
+        'click #general-comment-action': '_onAddCommentClicked'
     },
 
     /*
@@ -195,7 +195,7 @@ RB.ReviewablePageView = Backbone.View.extend({
         this._registerForUpdates();
 
         // Assign handler for the 'Add File' button
-        this.$('#upload-file-link').click(
+        this.$('#upload-file-action').click(
             _.bind(this._onUploadFileClicked, this));
 
         return this;

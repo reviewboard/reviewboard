@@ -7,9 +7,9 @@ suite('rb/views/ReviewRequestEditorView', function() {
             ' <div id="review_request_banners"></div>',
             ' <div id="review-request-warning"></div>',
             ' <div class="actions">',
-            '  <a href="#" id="discard-review-request-link"></a>',
-            '  <a href="#" id="link-review-request-close-submitted"></a>',
-            '  <a href="#" id="delete-review-request-link"></a>',
+            '  <a href="#" id="discard-review-request-action"></a>',
+            '  <a href="#" id="submit-review-request-action"></a>',
+            '  <a href="#" id="delete-review-request-action"></a>',
             ' </div>',
             ' <div class="review-request">',
             '  <div id="review_request_main">',
@@ -134,7 +134,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     };
                 });
 
-                $('#delete-review-request-link').click();
+                $('#delete-review-request-action').click();
                 expect($.fn.modalBox).toHaveBeenCalled();
 
                 $buttons.filter('input[value="Delete"]').click();
@@ -148,7 +148,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 spyOn(window, 'confirm').and.returnValue(true);
 
-                $('#discard-review-request-link').click();
+                $('#discard-review-request-action').click();
 
                 expect(reviewRequest.close).toHaveBeenCalled();
             });
@@ -158,7 +158,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     expect(options.type).toBe(RB.ReviewRequest.CLOSE_SUBMITTED);
                 });
 
-                $('#link-review-request-close-submitted').click();
+                $('#submit-review-request-action').click();
 
                 expect(reviewRequest.close).toHaveBeenCalled();
             });
