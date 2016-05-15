@@ -2,6 +2,7 @@
 
 @img_base: '../../images';
 @admin_img_base: '../../../admin/img';
+@admin_font_size: 11px;
 @sort_icons: url('@{admin_img_base}/sorting-icons.gif');
 @colMS_margin_right: 25em;
 @colMS_right_width: 24em;
@@ -59,7 +60,7 @@ fieldset {
 blockquote {
   border-left: 5px solid #ddd;
   color: #777;
-  font-size: 11px;
+  font-size: @admin_font_size;
   margin-left: 2px;
   padding-left: 10px;
 }
@@ -67,7 +68,7 @@ blockquote {
 code, pre {
   background: inherit;
   color: #666;
-  font-size: 11px;
+  font-size: @admin_font_size;
 }
 
 pre.literal-block {
@@ -98,11 +99,11 @@ hr {
  ****************************************************************************/
 
 .small {
-  font-size: 11px;
+  font-size: @admin_font_size;
 }
 
 .tiny {
-  font-size: 10px;
+  font-size: (@admin_font_size - 1px);
 }
 
 p.tiny {
@@ -110,7 +111,7 @@ p.tiny {
 }
 
 .mini {
-  font-size: 9px;
+  font-size: (@admin_font_size - 2px);
 }
 
 p.mini {
@@ -119,7 +120,7 @@ p.mini {
 
 .help, p.help {
   color: #999;
-  font-size: 10px !important;
+  font-size: (@admin_font_size - 1px) !important;
 }
 
 img.help-tooltip {
@@ -178,14 +179,14 @@ table {
 
 td, th {
   border-bottom: 1px solid #eee;
-  font-size: 11px;
+  font-size: @admin_font_size;
   line-height: 13px;
   padding: 5px;
   vertical-align: top;
 }
 
 th {
-  font-size: 12px;
+  font-size: (@admin_font_size + 1px);
   font-weight: bold;
   text-align: left;
 }
@@ -196,7 +197,7 @@ tfoot td {
   border-bottom: 1px solid #ddd;
   border-left: 1px solid #ddd;
   color: #666;
-  font-size: 11px;
+  font-size: @admin_font_size;
   padding: 2px 5px;
 
   &:first-child {
@@ -220,7 +221,7 @@ fieldset table {
 tr.row-label td {
   border-bottom: none;
   color: #666;
-  font-size: 9px;
+  font-size: (@admin_font_size - 2px);
   margin-top: -1px;
   padding-bottom: 0;
   padding-top: 2px;
@@ -405,7 +406,7 @@ ul.messagelist {
     border: 1px solid @admin-msg-banner-border-color;
     color: #666;
     display: block;
-    font-size: 12px;
+    font-size: (@admin_font_size + 1px);
     margin: 0 0 3px 0;
     padding: 4px 5px 4px 25px;
 
@@ -424,7 +425,7 @@ ul.messagelist {
   border: 1px solid red;
   color: red;
   display: block;
-  font-size: 12px !important;
+  font-size: (@admin_font_size + 1px) !important;
   margin: 0 0 3px 0;
   padding: 4px 5px 4px 25px;
 }
@@ -438,7 +439,7 @@ ul.errorlist {
     border: 1px solid red;
     color: white;
     display: block;
-    font-size: 12px !important;
+    font-size: (@admin_font_size + 1px) !important;
     margin: 0 0 3px 0;
     padding: 4px 5px 4px 25px;
 
@@ -481,7 +482,7 @@ div.system-message {
 }
 
 .description {
-  font-size: 12px;
+  font-size: (@admin_font_size + 1px);
   padding: 5px 0 0 12px;
 }
 
@@ -495,7 +496,7 @@ div.breadcrumbs {
   border-bottom: 1px solid #ccc;
   border-top: 1px solid white;
   color: #999;
-  font-size: 11px;
+  font-size: @admin_font_size;
   padding: 2px 8px 3px 8px;
   text-align: left;
 }
@@ -532,13 +533,13 @@ h1.title {
   width: 18em;
 
   h3 {
-    font-size: 12px;
+    font-size: (@admin_font_size + 1px);
     color: #666;
     margin-bottom: 3px;
   }
 
   h4 {
-    font-size: 11px;
+    font-size: @admin_font_size;
   }
 
   .module {
@@ -795,7 +796,7 @@ td, th {
   background: url("@{img_base}/title_box_top_bg.png") repeat-x scroll left top #A2BEDC;
   border-bottom: 1px solid @box-border-color;
   color: black;
-  font-size: 11px;
+  font-size: @admin_font_size;
   font-weight: normal;
   margin: 0;
   padding: 0.5em 1em;
@@ -872,7 +873,7 @@ td, th {
   }
 
   form>p {
-    font-size: 12px;
+    font-size: (@admin_font_size + 1px);
     margin: 2em 12px; // Align with form fields.
   }
 
@@ -973,7 +974,7 @@ td, th {
   }
 
   li {
-    font-size: 12px;
+    font-size: (@admin_font_size + 1px);
     line-height: 16px;
   }
 
@@ -983,7 +984,7 @@ td, th {
     h3 {
       color: black;
       font-weight: bold;
-      font-size: 12px;
+      font-size: (@admin_font_size + 1px);
       margin-bottom: 1em;
     }
 
@@ -1101,7 +1102,7 @@ td, th {
 
 .object-tools {
   float: right;
-  font-size: 11px;
+  font-size: @admin_font_size;
   margin: -2.2em 0 -2em 0;
   padding: 0;
   position: relative;
@@ -1173,7 +1174,7 @@ table#change-history {
   }
 
   p, pre, th, td {
-    font-size: 12px;
+    font-size: (@admin_font_size + 1px);
   }
 
   pre {
@@ -1283,5 +1284,84 @@ table#change-history {
   .field-repositories,
   .field-custom_content {
     display: none;
+  }
+}
+
+/***************************************************************************
+ * Related object autocomplete
+ ***************************************************************************/
+
+.admin-related-object-options,
+.admin-related-object-selected {
+  font-size: @admin_font_size;
+
+  img {
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    vertical-align: top;
+  }
+
+  span {
+    line-height: 20px;
+    vertical-align: top;
+  }
+
+  .title {
+    display: inline-block;
+    min-width: 20em;
+    font-size: @admin_font_size;
+  }
+
+  .description {
+    display: inline-block;
+    font-size: (@admin_font_size * 0.9);
+    padding: 0;
+  }
+}
+
+.admin-related-object-select {
+  display: inline-block;
+  width: 35em;
+
+  .admin-related-object-selected {
+    border: 1px solid #b8b8b8;
+    border-radius: 3px;
+    box-shadow: inset 0 1px 0 rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.8);
+    list-style: none;
+    margin: 0.5em 0 0 0;
+    max-height: 20em;
+    min-height: 3em;
+    overflow-y: scroll;
+    padding: 0;
+
+    li {
+      cursor: default;
+      padding: 5px 8px; // To match the selectize style in the drop-down menu.
+      vertical-align: middle;
+
+      div {
+        display: inline-block;
+      }
+
+      .fa-close {
+        color: #ccc;
+        cursor: pointer;
+        float: right;
+
+        &:hover {
+          color: black;
+        }
+      }
+    }
+  }
+
+  .selectize-input {
+    font-size: @admin_font_size;
+    padding: 4px;
+
+    &::after {
+      right: 10px;
+    }
   }
 }

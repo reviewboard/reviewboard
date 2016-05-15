@@ -284,12 +284,19 @@ PIPELINE_JS = dict({
     },
     'admin': {
         'source_filenames': (
+            'rb/js/admin/views/relatedObjectSelectorView.js',
+            'rb/js/admin/views/relatedUserSelectorView.js',
+        ),
+        'output_filename': 'rb/js/admin.min.js',
+    },
+    'admin-dashboard': {
+        'source_filenames': (
             'lib/js/jquery.masonry.js',
             'rb/js/admin/admin.js',
             'rb/js/admin/models/supportContractModel.js',
             'rb/js/admin/views/supportBannerView.js',
         ),
-        'output_filename': 'rb/js/admin.min.js',
+        'output_filename': 'rb/js/admin-dashboard.min.js',
     },
     'repositoryform': {
         'source_filenames': (

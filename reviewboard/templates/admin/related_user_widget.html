@@ -1,0 +1,14 @@
+{% load djblets_js i18n %}
+
+<script type="text/javascript">
+$(function() {
+    var view = new RB.RelatedUserSelectorView({
+        $input: $('#{{input_id|escapejs}}'),
+        initialOptions: {{users|json_dumps}},
+{% if local_site_name %}
+        localSitePrefix: 's/{{local_site_name|escapejs}}/',
+{% endif %}
+        useGravatars: {{use_gravatars|yesno:'true,false'}}
+    }).render();
+});
+</script>

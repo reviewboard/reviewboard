@@ -5,6 +5,7 @@ import sys
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from djblets.db.query import get_object_or_none
 from django.utils import six
@@ -12,6 +13,7 @@ from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
+from reviewboard.admin.form_widgets import RelatedUserWidget
 from reviewboard.admin.import_utils import has_module
 from reviewboard.admin.validation import validate_bug_tracker
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -164,6 +166,13 @@ class RepositoryForm(forms.ModelForm):
         label=_("Use ticket-based authentication"),
         initial=False,
         required=False)
+
+    # Access control fields
+    users = forms.ModelMultipleChoiceField(
+        queryset=User.objects.filter(is_active=True),
+        label=_('Users with access'),
+        required=False,
+        widget=RelatedUserWidget())
 
     def __init__(self, *args, **kwargs):
         self.local_site_name = kwargs.pop('local_site_name', None)
@@ -1302,7 +1311,6 @@ class RepositoryForm(forms.ModelForm):
                                            'autocomplete': 'off'}),
             'username': forms.TextInput(attrs={'size': '30',
                                                'autocomplete': 'off'}),
-            'users': FilteredSelectMultiple(_('users with access'), False),
             'review_groups': FilteredSelectMultiple(
                 _('review groups with access'), False),
         }
