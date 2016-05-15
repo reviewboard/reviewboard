@@ -118,6 +118,13 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(item_rsp['last_name'], user.last_name)
         self.assertEqual(item_rsp['email'], user.email)
 
+        # There's no simple way to test the specific URLs that are returned,
+        # but we can at least make sure everything we expect to be present is
+        # present.
+        self.assertIn('avatar_url', item_rsp)
+        self.assertIn('1x', item_rsp['avatar_urls'])
+        self.assertIn('2x', item_rsp['avatar_urls'])
+
     #
     # HTTP GET tests
     #
