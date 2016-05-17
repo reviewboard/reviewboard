@@ -7,9 +7,9 @@ suite('rb/pages/views/ReviewablePageView', function() {
         var $container = $('<div/>')
             .appendTo($testsScratch);
 
-        $editReview = $('<a href="#" id="review-link">Edit Review</a>')
+        $editReview = $('<a href="#" id="review-action">Edit Review</a>')
             .appendTo($container);
-        $shipIt = $('<a href="#" id="shipit-link">Ship It</a>')
+        $shipIt = $('<a href="#" id="ship-it-action">Ship It</a>')
             .appendTo($container);
 
         pageView = new RB.ReviewablePageView({

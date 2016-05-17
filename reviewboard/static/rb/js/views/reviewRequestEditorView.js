@@ -1054,10 +1054,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * Sets up all review request actions and listens for events.
      */
     _setupActions: function() {
-        var $closeDiscarded = this.$('#discard-review-request-link'),
-            $closeSubmitted = this.$('#link-review-request-close-submitted'),
-            $deletePermanently = this.$('#delete-review-request-link'),
-            $updateDiff = this.$('#upload-diff-link');
+        var $closeDiscarded = this.$('#discard-review-request-action'),
+            $closeSubmitted = this.$('#submit-review-request-action'),
+            $deletePermanently = this.$('#delete-review-request-action'),
+            $updateDiff = this.$('#upload-diff-action'),
+            editorView = this;
 
         /*
          * We don't want the click event filtering from these down to the
@@ -1067,6 +1068,12 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         $closeSubmitted.click(this._onCloseSubmittedClicked);
         $deletePermanently.click(this._onDeleteReviewRequestClicked);
         $updateDiff.click(this._onUpdateDiffClicked);
+
+        RB.ReviewRequestActionHook.each(function(hook) {
+            $.each(hook.get('callbacks'), function(selector, handler) {
+                editorView.$(selector).click(handler);
+            })
+        }, this);
     },
 
     /*

@@ -3787,7 +3787,7 @@
         "hooks_uuid": null, 
         "raw_file_url": "", 
         "bug_tracker": "http://code.google.com/p/reviewboard/issues/detail?id=%s", 
-        "path": "http://reviewboard.googlecode.com/svn", 
+        "path": "https://svn.riouxsvn.com/reviewboard/",
         "extra_data": "{}", 
         "tool": 1, 
         "users": []

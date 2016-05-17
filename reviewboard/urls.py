@@ -33,8 +33,10 @@ reviewable_url_names = diffviewer_url_names + [
     'screenshot',
 ]
 
+main_review_request_url_name = 'review-request-detail'
+
 review_request_url_names = diffviewer_url_names + [
-    'review-request-detail',
+    main_review_request_url_name,
 ]
 
 

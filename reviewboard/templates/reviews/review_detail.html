@@ -1,5 +1,5 @@
 {% extends "reviews/reviewable_base.html" %}
-{% load i18n djblets_deco djblets_js rb_extensions reviewtags staticfiles tz %}
+{% load i18n djblets_deco djblets_js reviewtags staticfiles tz %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Review Request" %}{% endblock %}
 
@@ -40,13 +40,7 @@
     <li class="has-menu">
      <a href="#" class="mobile-actions-menu-label"><span class="fa fa-ellipsis-h fa-lg"></span></a>
      <ul class="actions actions-right">
-{%   review_request_action_hooks %}
-{%   review_request_dropdown_action_hooks %}
-{%   include "reviews/review_request_actions_secondary.html" %}
-{%   if has_diffs %}
-      <li><a href="diff/raw/">{% trans "Download Diff" %}</a></li>
-{%   endif %}
-{%   include "reviews/review_request_actions_primary.html" %}
+{%   review_request_actions %}
      </ul>
     </li>
    </ul>

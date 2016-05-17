@@ -62,14 +62,20 @@ class ServiceTests(SpyAgency, TestCase):
         return self._get_hosting_account().service
 
     def _get_repository_fields(self, tool_name, fields, plan=None,
-                               with_url=False):
+                               with_url=False, hosting_account=None):
         form = self._get_form(plan, fields)
-        account = self._get_hosting_account(with_url)
-        service = account.service
+
+        if not hosting_account:
+            hosting_account = self._get_hosting_account(with_url)
+
+        service = hosting_account.service
         self.assertNotEqual(service, None)
 
-        return service.get_repository_fields(username=account.username,
+        field_vars = form.clean().copy()
+        field_vars.update(hosting_account.data)
+
+        return service.get_repository_fields(username=hosting_account.username,
                                              hosting_url='https://example.com',
                                              plan=plan,
                                              tool_name=tool_name,
-                                             field_vars=form.clean())
+                                             field_vars=field_vars)

@@ -19,7 +19,7 @@ The following hooks are available for use by extensions.
    auth-backend-hook
    account-pages-hook
    account-page-forms-hook
-   action-hooks
+   action-hook
    admin-widget-hook
    api-extra-data-access-hook
    comment-detail-display-hook
