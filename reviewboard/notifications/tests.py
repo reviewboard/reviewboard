@@ -33,6 +33,7 @@ from reviewboard.reviews.models import (Group,
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
+from reviewboard.webapi.models import WebAPIToken
 
 
 _CONSOLE_EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
@@ -1026,6 +1027,99 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
 
     def _get_sender(self, user):
         return build_email_address(user.get_full_name(), self.sender)
+
+
+class WebAPITokenEmailTests(EmailTestHelper, TestCase):
+    """Unit tests for WebAPIToken creation e-mails."""
+
+    def setUp(self):
+        super(WebAPITokenEmailTests, self).setUp()
+
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('mail_send_new_user_mail', False)
+        siteconfig.save()
+        load_site_config()
+
+        self.user = User.objects.create(username='test-user',
+                                        first_name='Sample',
+                                        last_name='User',
+                                        email='test-user@example.com')
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_create_token(self):
+        """Testing sending e-mail when a new API Token is created"""
+        webapi_token = WebAPIToken.objects.generate_token(user=self.user,
+                                                          note='Test',
+                                                          policy={})
+
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        html_body = email.alternatives[0][0]
+        partial_token = '%s...' % webapi_token.token[:10]
+
+        self.assertEqual(email.subject, 'New Review Board API token created')
+        self.assertEqual(email.from_email, self.sender)
+        self.assertEqual(email.extra_headers['From'], settings.SERVER_EMAIL)
+        self.assertEqual(email.to[0],
+                         build_email_address(self.user.get_full_name(),
+                                             self.user.email))
+        self.assertNotIn(webapi_token.token, email.body)
+        self.assertNotIn(webapi_token.token, html_body)
+        self.assertIn(partial_token, email.body)
+        self.assertIn(partial_token, html_body)
+        self.assertIn('A new API token has been added', email.body)
+        self.assertIn('A new API token has been added', html_body)
+
+    def test_update_token(self):
+        """Testing sending e-mail when an existing API Token is updated"""
+        webapi_token = WebAPIToken.objects.generate_token(user=self.user,
+                                                          note='Test',
+                                                          policy={})
+        mail.outbox = []
+
+        webapi_token.save()
+
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        html_body = email.alternatives[0][0]
+        partial_token = '%s...' % webapi_token.token[:10]
+
+        self.assertEqual(email.subject, 'Review Board API token updated')
+        self.assertEqual(email.from_email, self.sender)
+        self.assertEqual(email.extra_headers['From'], settings.SERVER_EMAIL)
+        self.assertEqual(email.to[0],
+                         build_email_address(self.user.get_full_name(),
+                                             self.user.email))
+        self.assertNotIn(webapi_token.token, email.body)
+        self.assertNotIn(webapi_token.token, html_body)
+        self.assertIn(partial_token, email.body)
+        self.assertIn(partial_token, html_body)
+        self.assertIn('One of your API tokens has been updated', email.body)
+        self.assertIn('One of your API tokens has been updated', html_body)
+
+    def test_delete_token(self):
+        """Testing sending e-mail when an existing API Token is deleted"""
+        webapi_token = WebAPIToken.objects.generate_token(user=self.user,
+                                                          note='Test',
+                                                          policy={})
+        mail.outbox = []
+
+        webapi_token.delete()
+
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        html_body = email.alternatives[0][0]
+
+        self.assertEqual(email.subject, 'Review Board API token deleted')
+        self.assertEqual(email.from_email, self.sender)
+        self.assertEqual(email.extra_headers['From'], settings.SERVER_EMAIL)
+        self.assertEqual(email.to[0],
+                         build_email_address(self.user.get_full_name(),
+                                             self.user.email))
+        self.assertIn(webapi_token.token, email.body)
+        self.assertIn(webapi_token.token, html_body)
+        self.assertIn('One of your API tokens has been deleted', email.body)
+        self.assertIn('One of your API tokens has been deleted', html_body)
 
 
 class WebHookPayloadTests(SpyAgency, TestCase):

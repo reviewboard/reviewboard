@@ -11,6 +11,7 @@ from django.contrib.sites.models import Site
 from django.core.mail import EmailMultiAlternatives
 from django.core.urlresolvers import reverse
 from django.db.models import Q
+from django.db.models.signals import post_delete, post_save
 from django.template.loader import render_to_string
 from django.utils import six, timezone
 from django.utils.datastructures import MultiValueDict
@@ -25,6 +26,7 @@ from reviewboard.reviews.signals import (review_request_published,
                                          review_published, reply_published,
                                          review_request_closed)
 from reviewboard.reviews.views import build_diff_comment_fragments
+from reviewboard.webapi.models import WebAPIToken
 
 
 # A mapping of signals to EmailHooks.
@@ -160,6 +162,44 @@ def user_registered_cb(user, **kwargs):
         mail_new_user(user)
 
 
+def webapi_token_saved_cb(instance, created, **kwargs):
+    """Send e-mail when an API token is created or updated.
+
+    Args:
+        instance (reviewboard.webapi.models.WebAPIToken):
+            The token that has been created or updated.
+
+        created (bool):
+            Whether or not the token is created.
+
+        **kwargs (dict):
+            Unused keyword arguments provided by the signal.
+    """
+    # Unlike the other handlers, we always want to send e-mails for new
+    # tokens, as a security measure.
+    if created:
+        op = 'created'
+    else:
+        op = 'updated'
+
+    mail_webapi_token(instance, op)
+
+
+def webapi_token_deleted_cb(instance, **kwargs):
+    """Send e-mail when an API token is deleted.
+
+    Args:
+        instance (reviewboard.webapi.models.WebAPIToken):
+            The token that has been deleted.
+
+        **kwargs (dict):
+            Unused keyword arguments provided by the signal.
+    """
+    # Unlike the other handlers, we always want to send e-mails for new
+    # tokens, as a security measure.
+    mail_webapi_token(instance, 'deleted')
+
+
 def connect_signals():
     """Connect e-mail callbacks to signals."""
     review_request_published.connect(review_request_published_cb,
@@ -169,6 +209,8 @@ def connect_signals():
     review_request_closed.connect(review_request_closed_cb,
                                   sender=ReviewRequest)
     user_registered.connect(user_registered_cb)
+    post_save.connect(webapi_token_saved_cb, sender=WebAPIToken)
+    post_delete.connect(webapi_token_deleted_cb, sender=WebAPIToken)
 
 
 def build_email_address(fullname, email):
@@ -898,7 +940,7 @@ def mail_new_user(user):
             The user to send an e-mail about.
     """
     current_site = Site.objects.get_current()
-    siteconfig = current_site.config.get_current()
+    siteconfig = SiteConfiguration.objects.get_current()
     domain_method = siteconfig.get("site_domain_method")
     subject = "New Review Board user registration for %s" % user.username
     from_email = get_email_address_for_user(user)
@@ -926,6 +968,70 @@ def mail_new_user(user):
         logging.error("Error sending e-mail notification with subject '%s' on "
                       "behalf of '%s' to admin: %s",
                       subject.strip(), from_email, e, exc_info=1)
+
+
+def mail_webapi_token(webapi_token, op):
+    """Send an e-mail about an API token update.
+
+    This will inform the user about a newly-created, updated, or deleted
+    token.
+
+    Args:
+        webapi_token (reviewboard.webapi.models.WebAPIToken):
+            The API token the e-mail is about.
+
+        op (unicode):
+            The operation the email is about. This is one of
+            ``created``, ``updated``, or ``deleted``.
+
+    Raises:
+        ValueError:
+            The provided ``op`` argument was invalid.
+    """
+    if op == 'created':
+        subject = 'New Review Board API token created'
+        template_name = 'notifications/api_token_created'
+    elif op == 'updated':
+        subject = 'Review Board API token updated'
+        template_name = 'notifications/api_token_updated'
+    elif op == 'deleted':
+        subject = 'Review Board API token deleted'
+        template_name = 'notifications/api_token_deleted'
+    else:
+        raise ValueError('Unexpected op "%s" passed to mail_webapi_token.'
+                         % op)
+
+    current_site = Site.objects.get_current()
+    siteconfig = SiteConfiguration.objects.get_current()
+    domain_method = siteconfig.get('site_domain_method')
+    user = webapi_token.user
+    user_email = get_email_address_for_user(user)
+
+    context = {
+        'api_token': webapi_token,
+        'domain': current_site.domain,
+        'domain_method': domain_method,
+        'partial_token': '%s...' % webapi_token.token[:10],
+        'user': user,
+    }
+
+    text_message = render_to_string('%s.txt' % template_name, context)
+    html_message = render_to_string('%s.html' % template_name, context)
+
+    message = SpiffyEmailMessage(
+        subject,
+        text_message,
+        html_message,
+        settings.SERVER_EMAIL,
+        settings.SERVER_EMAIL,
+        [user_email])
+
+    try:
+        message.send()
+    except Exception as e:
+        logging.exception("Error sending API Token e-mail with subject '%s' "
+                          "from '%s' to '%s': %s",
+                          subject, settings.SERVER_EMAIL, user_email, e)
 
 
 def filter_email_recipients_from_hooks(to_field, cc_field, signal, **kwargs):

@@ -1,0 +1,27 @@
+{% load djblets_utils %}
+<html>
+ <body style="font-family: Verdana, Arial, Helvetica, Sans-Serif;">
+  <table bgcolor="#f9f3c9" width="100%" cellpadding="8" style="border: 1px #c9c399 solid;">
+   <tr>
+    <td>
+     This is an automatically generated e-mail.
+    </td>
+   </tr>
+  </table>
+
+  <p>Hi {{user|user_displayname}},</p>
+  <p>
+   A new API token has been added to your Review Board account on
+   <a href="{{domain_method}}://{{domain}}">{{domain_method}}://{{domain}}</a>.
+  </p>
+  <p>
+   The API token ID starts with <tt>{{partial_token}}</tt> and was added
+   {{api_token.time_added}}.
+  </p>
+  <p>
+   If you did not create this token, you should revoke it on your
+   <a href="{{domain_method}}://{{domain}}{% url 'user-preferences' %}#api-tokens">API Tokens</a>
+   page, change your password, and talk to your administrator.
+  </p>
+ </body>
+</html>
