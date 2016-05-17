@@ -3619,7 +3619,7 @@
         "visible": true, 
         "raw_file_url": "", 
         "bug_tracker": "http://code.google.com/p/reviewboard/issues/detail?id=%s", 
-        "path": "http://reviewboard.googlecode.com/svn", 
+        "path": "https://svn.riouxsvn.com/reviewboard/",
         "encrypted_password": "", 
         "tool": 1, 
         "users": []
