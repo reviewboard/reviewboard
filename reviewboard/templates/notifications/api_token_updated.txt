@@ -1,0 +1,17 @@
+{% autoescape off %}{% load djblets_email djblets_utils %}
+------------------------------------------
+This is an automatically generated e-mail.
+------------------------------------------
+
+Hi {{user|user_displayname}},
+
+One of your API tokens has been updated on your Review Board account on
+{{domain_method}}://{{domain}}.
+
+The API token ID starts with {{partial_token}} and was updated
+{{api_token.last_updated}}.
+
+If you did not update this token, you should revoke it at
+{{domain_method}}://{{domain}}{% url "user-preferences" %}#api-tokens, change
+your password, and talk to your administrator.
+{% endautoescape %}

@@ -1,0 +1,26 @@
+{% load djblets_utils %}
+<html>
+ <body style="font-family: Verdana, Arial, Helvetica, Sans-Serif;">
+  <table bgcolor="#f9f3c9" width="100%" cellpadding="8" style="border: 1px #c9c399 solid;">
+   <tr>
+    <td>
+     This is an automatically generated e-mail.
+    </td>
+   </tr>
+  </table>
+
+  <p>Hi {{user|user_displayname}},</p>
+  <p>
+   One of your API tokens has been deleted from your Review Board account on
+   <a href="{{domain_method}}://{{domain}}">{{domain_method}}://{{domain}}</a>.
+  </p>
+  <p>
+   The API token ID was <tt>{{api_token.token}}</tt>. Any clients that were
+   using this token will no longer be able to authenticate.
+  </p>
+  <p>
+   If you did not delete this token, you should change your password and talk
+   to your administrator.
+  </p>
+ </body>
+</html>
