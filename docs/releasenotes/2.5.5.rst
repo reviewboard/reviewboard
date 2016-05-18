@@ -1,0 +1,104 @@
+================================
+Review Board 2.5.5 Release Notes
+================================
+
+**Release date**: TBD
+
+
+New Features
+============
+
+* Added support for Mercurial and Subversion repositories on
+  Codebase_.
+
+  Codebase is a hosting service that supports Mercurial, Subversion, and
+  Git repositories. We previously supported Git repositories, but have
+  extended that support to Mercurial and Subversion.
+
+  If you already have an account linked on Codebase, you will need to
+  re-authenticate in order to add a new repository. You will automatically be
+  asked for new credentials.
+
+* Creating, updating, or deleting API tokens now causes e-mails to be sent
+  to the token's owner.
+
+  This helps to provide an audit trail for API token changes, and ensures
+  that an attacker is unable to create a token on another user's behalf
+  through any method without the user being informed.
+
+
+.. _Codebase: https://www.codebasehq.com/
+
+
+Usability Improvements
+======================
+
+* The review group configuration page once again shows lists of available
+  users and current members.
+
+  In an earlier 2.5.x release, the list of a group's users was changed to
+  a list of raw IDs, in an effort to prevent overloading servers with several
+  thousands of users. This change impacted usability of this page, removing
+  the ability to really see who was on a group, and making it difficult to
+  add new users.
+
+  In an upcoming release, we will be unveiling a new selector that improves
+  the usability further while also preventing the performance problems that
+  can result on large installations with the current selector.
+
+  If you were previously affected by these performance problems, and aren't
+  susceptible to the :ref:`PostgreSQL bug <postgresql-bug>` mentioned below,
+  then you may want to stay on 2.5.4 for now.
+
+
+Extensions
+==========
+
+* Custom hosting services can now collect custom authentication details.
+
+  Previously, all hosting services were expected to take a username and a
+  password. They can now provide a custom authentication form, taking in
+  any credentials needed for that service.
+
+
+Bug Fixes
+=========
+
+Administration
+--------------
+
+.. _postgresql-bug:
+
+* Condensing diffs no longer fails or causes data loss when using Postgres
+  databases.
+
+  A bad query could cause manual compression of the diffs in a database to
+  fail, possibly losing data. We've fixed the query and added sanity-checking
+  to ensure this can no longer happen.
+
+  We are not aware of any cases where this has happened in production today.
+
+* Fixed the display of the :guilabel:`Repository Plan` field when configuring
+  repositories.
+
+  This field was being shown even for repositories that didn't have a plan,
+  leading to confusion.
+
+
+Mercurial
+---------
+
+* SSH-backed Mercurial paths are no longer incorrectly accepted when adding
+  repositories.
+
+  Review Board cannot perform the types of requests needed with a SSH-backed
+  Mercurial repository, but we still allowed users to add them, not seeing
+  errors until they went to upload diffs. Those paths are now rejected.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
