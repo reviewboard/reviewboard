@@ -2,7 +2,7 @@
 Review Board 2.5.5 Release Notes
 ================================
 
-**Release date**: TBD
+**Release date**: May 17, 2016
 
 
 New Features
