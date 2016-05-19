@@ -17,6 +17,7 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             SSHKeyAssociationError,
                                             TwoFactorAuthCodeRequiredError)
 from reviewboard.hostingsvcs.fake import FAKE_HOSTING_SERVICES
+from reviewboard.hostingsvcs.forms import HostingServiceAuthForm
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.service import (get_hosting_services,
                                              get_hosting_service)
@@ -39,6 +40,8 @@ class RepositoryForm(forms.ModelForm):
     handling the association with hosting services, linking accounts,
     dealing with SSH keys and SSL certificates, and more.
     """
+
+    REPOSITORY_HOSTING_FIELDSET = _('Repository Hosting')
     REPOSITORY_INFO_FIELDSET = _('Repository Information')
     BUG_TRACKER_FIELDSET = _('Bug Tracker')
     SSH_KEY_FIELDSET = _('Review Board Server SSH Key')
@@ -72,11 +75,6 @@ class RepositoryForm(forms.ModelForm):
         required=True,
         initial=NO_HOSTING_SERVICE_ID)
 
-    hosting_url = forms.CharField(
-        label=_('Service URL'),
-        required=True,
-        widget=forms.TextInput(attrs={'size': 30}))
-
     hosting_account = forms.ModelChoiceField(
         label=_('Account'),
         required=True,
@@ -86,22 +84,6 @@ class RepositoryForm(forms.ModelForm):
                     "repository URL, depending on the hosting service and "
                     "plan."),
         queryset=HostingServiceAccount.objects.none())
-
-    hosting_account_username = forms.CharField(
-        label=_('Account username'),
-        required=True,
-        widget=forms.TextInput(attrs={'size': 30, 'autocomplete': 'off'}))
-
-    hosting_account_password = forms.CharField(
-        label=_('Account password'),
-        required=True,
-        widget=forms.PasswordInput(attrs={'size': 30, 'autocomplete': 'off'},
-                                   render_value=True))
-
-    hosting_account_two_factor_auth_code = forms.CharField(
-        label=_('Two-factor auth code'),
-        required=True,
-        widget=forms.TextInput(attrs={'size': 30, 'autocomplete': 'off'}))
 
     # Repository Information fields
     tool = forms.ChoiceField(
@@ -194,6 +176,7 @@ class RepositoryForm(forms.ModelForm):
         self.local_site = None
         self.repository_forms = {}
         self.bug_tracker_forms = {}
+        self.hosting_auth_forms = {}
         self.hosting_service_info = {}
         self.tool_info = {
             'none': {
@@ -245,6 +228,8 @@ class RepositoryForm(forms.ModelForm):
                                     hosting_service.__name__)
             hosting_services.add(class_name)
 
+            auth_form_cls = hosting_service.auth_form or HostingServiceAuthForm
+
             if hosting_service.supports_repositories:
                 hosting_service_choices.append((hosting_service.id,
                                                 hosting_service.name))
@@ -278,6 +263,22 @@ class RepositoryForm(forms.ModelForm):
                                                self.DEFAULT_PLAN_NAME,
                                                hosting_service.form,
                                                *args, **kwargs)
+
+                # Load the hosting service's custom authentication form.
+                #
+                # We start off constructing the form without any data. We
+                # don't want to prematurely trigger any validation for forms
+                # that we won't end up using (even if it matches the current
+                # hosting time, as we still don't know if we need to link or
+                # re-authorize an account). We'll replace this with a populated
+                # form further below.
+                #
+                # Note that we do still need the form instantiated here, for
+                # template rendering.
+                self.hosting_auth_forms[hosting_service.id] = \
+                    auth_form_cls(hosting_service_cls=hosting_service,
+                                  local_site=self.local_site,
+                                  prefix=hosting_service.id)
             except Exception as e:
                 logging.error('Error loading hosting service %s: %s'
                               % (hosting_service.id, e),
@@ -420,7 +421,7 @@ class RepositoryForm(forms.ModelForm):
         }
 
     def _load_hosting_service(self, hosting_service_id, hosting_service,
-                              repo_type_id, repo_type_label, form_class,
+                              plan_type_id, plan_type_label, form_class,
                               *args, **kwargs):
         """Loads a hosting service form.
 
@@ -431,26 +432,26 @@ class RepositoryForm(forms.ModelForm):
 
         if hosting_service.supports_repositories:
             form = form_class(self.data or None)
-            self.repository_forms[hosting_service_id][repo_type_id] = form
+            self.repository_forms[hosting_service_id][plan_type_id] = form
 
             if self.instance:
                 form.load(self.instance)
 
         if hosting_service.supports_bug_trackers:
             form = form_class(self.data or None, prefix='bug_tracker')
-            self.bug_tracker_forms[hosting_service_id][repo_type_id] = form
+            self.bug_tracker_forms[hosting_service_id][plan_type_id] = form
 
             plan_info['bug_tracker_requires_username'] = \
-                hosting_service.get_bug_tracker_requires_username(repo_type_id)
+                hosting_service.get_bug_tracker_requires_username(plan_type_id)
 
             if self.instance:
                 form.load(self.instance)
 
         hosting_info = self.hosting_service_info[hosting_service_id]
-        hosting_info['planInfo'][repo_type_id] = plan_info
+        hosting_info['planInfo'][plan_type_id] = plan_info
         hosting_info['plans'].append({
-            'type': repo_type_id,
-            'label': six.text_type(repo_type_label),
+            'type': plan_type_id,
+            'label': six.text_type(plan_type_label),
         })
 
     def _populate_repository_info_fields(self):
@@ -476,7 +477,6 @@ class RepositoryForm(forms.ModelForm):
             service = hosting_account.service
             self.fields['hosting_type'].initial = \
                 hosting_account.service_name
-            self.fields['hosting_url'].initial = hosting_account.hosting_url
 
             if service.plans:
                 self.fields['repository_plan'].choices = [
@@ -565,100 +565,57 @@ class RepositoryForm(forms.ModelForm):
             ])
             return
 
-        # Now make sure all the account info is correct.
-        hosting_account = self.cleaned_data['hosting_account']
-        username = self.cleaned_data['hosting_account_username']
-        password = self.cleaned_data['hosting_account_password']
-
-        if hosting_service_cls.self_hosted:
-            hosting_url = self.cleaned_data['hosting_url'] or None
-        else:
-            hosting_url = None
-
-        if hosting_service_cls.supports_two_factor_auth:
-            two_factor_auth_code = \
-                self.cleaned_data['hosting_account_two_factor_auth_code']
-        else:
-            two_factor_auth_code = None
-
-        if hosting_account and hosting_account.hosting_url != hosting_url:
-            self.errors['hosting_account'] = self.error_class([
-                _('This account is not compatible with this hosting service '
-                  'configuration'),
-            ])
-            return
-        elif hosting_account and not username:
-            username = hosting_account.username
-        elif not hosting_account and not username:
-            self.errors['hosting_account'] = self.error_class([
-                _('An account must be linked in order to use this hosting '
-                  'service'),
-            ])
-            return
-
-        if not hosting_account:
-            # See if this account with the supplied credentials already
-            # exists. If it does, we don't want to create a new entry.
-            try:
-                hosting_account = HostingServiceAccount.objects.get(
-                    service_name=hosting_type,
-                    username=username,
-                    hosting_url=hosting_url,
-                    local_site=self.local_site)
-            except HostingServiceAccount.DoesNotExist:
-                # That's fine. We're just going to create it later.
-                pass
-
+        # Get some more information about the hosting ser
         plan = self.cleaned_data['repository_plan'] or self.DEFAULT_PLAN_ID
 
-        # Set the main repository fields (Path, Mirror Path, etc.) based on
-        # the field definitions in the hosting service.
-        #
-        # This will take into account the hosting service's form data for
-        # the given repository plan, the main form data, and the hosting
-        # account information.
-        #
-        # It's expected that the required fields will have validated by now.
-        repository_form = self.repository_forms[hosting_type][plan]
-        field_vars = repository_form.cleaned_data.copy()
-        field_vars.update(self.cleaned_data)
+        # Verify that any hosting account passed in is allowed to work with
+        # this type of account.
+        hosting_account = self.cleaned_data['hosting_account']
 
-        # If the hosting account needs to authorize and link with an external
-        # service, attempt to do so and watch for any errors.
-        #
-        # If it doesn't need to link with it, we'll just create an entry
-        # with the username and save it.
-        if not hosting_account:
-            hosting_account = HostingServiceAccount(
-                service_name=hosting_type,
-                username=username,
-                hosting_url=hosting_url,
-                local_site=self.local_site)
+        if (hosting_account and
+            (hosting_account.service_name != hosting_type or
+             hosting_account.local_site != self.local_site)):
+            self.errors['hosting_account'] = self.error_class([
+                _('This account is not compatible with this hosting '
+                  'service configuration.')
+            ])
+            return
 
-        if (hosting_service_cls.needs_authorization and
-            not hosting_account.is_authorized):
-            # Attempt to authorize the account.
-            hosting_service = None
-            plan = None
+        # If we don't yet have an account, or we have one but it needs to
+        # be re-authorized, then we need to go through the entire account
+        # updating and authorization process.
+        if (self.data and
+            (not hosting_account or not hosting_account.is_authorized)):
+            # Rebuild the authentication form, but with data provided to
+            # this form, so that we can link or re-authorize an account.
+            auth_form = self.hosting_auth_forms[hosting_type]
 
-            if hosting_service_cls:
-                hosting_service = hosting_service_cls(hosting_account)
+            auth_form = auth_form.__class__(
+                data=self.data,
+                prefix=auth_form.prefix,
+                hosting_service_cls=auth_form.hosting_service_cls,
+                hosting_account=hosting_account,
+                local_site=auth_form.local_site)
+            self.hosting_auth_forms[hosting_type] = auth_form
 
-                if hosting_service:
-                    plan = (self.cleaned_data['repository_plan'] or
-                            self.DEFAULT_PLAN_ID)
+            if not auth_form.is_valid():
+                # Copy any errors to the main form, so it'll fail validation
+                # and inform the user.
+                self.errors.update(auth_form.errors)
+                return
 
             repository_extra_data = self._build_repository_extra_data(
-                hosting_service, hosting_type, plan)
+                hosting_service_cls, hosting_type, plan)
 
             try:
-                hosting_account.service.authorize(
-                    username, password,
-                    hosting_url=hosting_url,
-                    two_factor_auth_code=two_factor_auth_code,
-                    tool_name=tool_name,
-                    local_site_name=self.local_site_name,
-                    **repository_extra_data)
+                hosting_account = auth_form.save(
+                    extra_authorize_kwargs=repository_extra_data)
+            except ValueError as e:
+                # There was an error with a value provided to the form from
+                # The user. Bubble this up.
+                self.errors['hosting_account'] = \
+                    self.error_class([six.text_type(e)])
+                return
             except TwoFactorAuthCodeRequiredError as e:
                 self.errors['hosting_account'] = \
                     self.error_class([six.text_type(e)])
@@ -676,16 +633,28 @@ class RepositoryForm(forms.ModelForm):
                 ])
                 return
 
-        if hosting_account:
             # Flag that we've linked the account. If there are any
             # validation errors, and this flag is set, we tell the user
             # that we successfully linked and they don't have to do it
             # again.
             self.hosting_account_linked = True
-            hosting_account.save()
 
-        self.data['hosting_account'] = hosting_account
-        self.cleaned_data['hosting_account'] = hosting_account
+            # Set this back in the form, so the rest of the form has access.
+            self.data['hosting_account'] = hosting_account
+            self.cleaned_data['hosting_account'] = hosting_account
+
+        # Set the main repository fields (Path, Mirror Path, etc.) based on
+        # the field definitions in the hosting service.
+        #
+        # This will take into account the hosting service's form data for
+        # the given repository plan, the main form data, and the hosting
+        # account information.
+        #
+        # It's expected that the required fields will have validated by now.
+        repository_form = self.repository_forms[hosting_type][plan]
+        field_vars = repository_form.cleaned_data.copy()
+        field_vars.update(self.cleaned_data)
+        field_vars.update(hosting_account.data)
 
         try:
             self.cleaned_data.update(hosting_service_cls.get_repository_fields(
@@ -776,11 +745,13 @@ class RepositoryForm(forms.ModelForm):
         self.cleaned_data['bug_tracker'] = bug_tracker_url
         self.data['bug_tracker'] = bug_tracker_url
 
-    def full_clean(self):
+    def full_clean(self, *args, **kwargs):
         extra_cleaned_data = {}
         extra_errors = {}
         required_values = {}
 
+        # Save the required values for all native fields, so that we can
+        # restore them we've changed the values and processed forms.
         for field in six.itervalues(self.fields):
             required_values[field] = field.required
 
@@ -809,18 +780,6 @@ class RepositoryForm(forms.ModelForm):
             self.fields['bug_tracker_type'].required = \
                 not bug_tracker_use_hosting
 
-            account_pk = self._get_field_data('hosting_account')
-
-            new_hosting_account = (
-                hosting_type != self.NO_HOSTING_SERVICE_ID and not account_pk)
-
-            if account_pk:
-                account = HostingServiceAccount.objects.get(
-                    pk=account_pk,
-                    local_site=self.local_site)
-            else:
-                account = None
-
             self.fields['path'].required = \
                 (hosting_type == self.NO_HOSTING_SERVICE_ID)
 
@@ -844,26 +803,6 @@ class RepositoryForm(forms.ModelForm):
             # actually require, since we use a blank entry as
             # "Link new account."
             self.fields['hosting_account'].required = False
-
-            # Only require a username and password if not using an existing
-            # hosting account.
-            self.fields['hosting_account_username'].required = \
-                new_hosting_account
-            self.fields['hosting_account_password'].required = (
-                hosting_service and
-                hosting_service.needs_authorization and
-                (new_hosting_account or
-                 (account and not account.is_authorized)))
-            self.fields['hosting_account_two_factor_auth_code'].required = (
-                hosting_service and
-                hosting_service.supports_two_factor_auth and
-                self.hosting_service_info[hosting_type][
-                    'needs_two_factor_auth_code'])
-
-            # Only require a URL if the hosting service is self-hosted.
-            self.fields['hosting_url'].required = (
-                hosting_service and
-                hosting_service.self_hosted)
 
             # Only require the bug tracker username if the bug tracker field
             # requires the username.
@@ -911,7 +850,7 @@ class RepositoryForm(forms.ModelForm):
 
         self.subforms_valid = not extra_errors
 
-        super(RepositoryForm, self).full_clean()
+        super(RepositoryForm, self).full_clean(*args, **kwargs)
 
         if self.is_valid():
             self.cleaned_data.update(extra_cleaned_data)
@@ -1140,6 +1079,7 @@ class RepositoryForm(forms.ModelForm):
                 not self.userkeyerror and
                 not self.bug_tracker_host_error and
                 not self.cleaned_data['reedit_repository'] and
+                self.subforms_valid and
                 (hosting_type not in self.repository_forms or
                  self.repository_forms[hosting_type][plan].is_valid()))
 
@@ -1153,29 +1093,32 @@ class RepositoryForm(forms.ModelForm):
         repository = super(RepositoryForm, self).save(commit=False,
                                                       *args, **kwargs)
         repository.password = self.cleaned_data['password'] or None
+        repository.extra_data = {}
 
         bug_tracker_use_hosting = self.cleaned_data['bug_tracker_use_hosting']
-
-        repository.extra_data = {
-            'repository_plan': self.cleaned_data['repository_plan'],
-            'bug_tracker_use_hosting': bug_tracker_use_hosting,
-        }
 
         hosting_type = self.cleaned_data['hosting_type']
         service = get_hosting_service(hosting_type)
 
-        if service and service.self_hosted:
-            repository.extra_data['hosting_url'] = \
-                self.cleaned_data['hosting_url']
+        if service:
+            repository.extra_data.update({
+                'repository_plan': self.cleaned_data['repository_plan'],
+                'bug_tracker_use_hosting': bug_tracker_use_hosting,
+            })
+
+            if service.self_hosted:
+                repository.extra_data['hosting_url'] = \
+                    repository.hosting_account.hosting_url
 
         if self.cert:
             repository.extra_data['cert'] = self.cert
 
-        try:
-            repository.extra_data['use_ticket_auth'] = \
-                self.cleaned_data['use_ticket_auth']
-        except KeyError:
-            pass
+        if repository.tool.supports_ticket_auth:
+            try:
+                repository.extra_data['use_ticket_auth'] = \
+                    self.cleaned_data['use_ticket_auth']
+            except KeyError:
+                pass
 
         if hosting_type in self.repository_forms:
             plan = (self.cleaned_data['repository_plan'] or

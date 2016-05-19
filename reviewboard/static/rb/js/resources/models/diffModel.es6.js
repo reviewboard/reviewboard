@@ -6,11 +6,13 @@
  * It is expected that parentObject will be set to a ReviewRequest instance.
  */
 RB.Diff = RB.BaseResource.extend({
-    defaults: _.defaults({
-        diff: null,
-        parentDiff: null,
-        basedir: null
-    }, RB.BaseResource.prototype.defaults()),
+    defaults() {
+        return _.defaults({
+            diff: null,
+            parentDiff: null,
+            basedir: null
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     rspNamespace: 'diff',
 

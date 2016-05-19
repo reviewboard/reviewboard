@@ -7,11 +7,13 @@
  * This is used to handle adding a user to a group or removing from a group.
  */
 const GroupMember = RB.BaseResource.extend({
-    defaults: _.defaults({
-        username: null,
-        added: false,
-        loaded: true
-    }, RB.BaseResource.prototype.defaults()),
+    defaults() {
+        return _.defaults({
+            username: null,
+            added: false,
+            loaded: true
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     serializedAttrs: ['username'],
 
@@ -69,9 +71,11 @@ const GroupMember = RB.BaseResource.extend({
  * starred/unstarred.
  */
 RB.ReviewGroup = RB.BaseResource.extend({
-    defaults: _.defaults({
-        name: null
-    }, RB.BaseResource.prototype.defaults),
+    defaults() {
+        return _.defaults({
+            name: null
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     rspNamespace: 'group',
 

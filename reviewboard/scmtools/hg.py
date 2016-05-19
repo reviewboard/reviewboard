@@ -3,13 +3,14 @@ from __future__ import unicode_literals
 import logging
 
 from django.utils import six
-from django.utils.six.moves.urllib.parse import quote as urllib_quote
+from django.utils.six.moves.urllib.parse import quote as urllib_quote, urlparse
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
+from reviewboard.scmtools.core import (FileNotFoundError, SCMClient, SCMTool,
+                                       HEAD, PRE_CREATION, UNKNOWN)
+from reviewboard.scmtools.errors import SCMError
 from reviewboard.scmtools.git import GitDiffParser
-from reviewboard.scmtools.core import \
-    FileNotFoundError, SCMClient, SCMTool, HEAD, PRE_CREATION, UNKNOWN
 
 
 class HgTool(SCMTool):
@@ -72,11 +73,16 @@ class HgTool(SCMTool):
     def check_repository(cls, path, username=None, password=None,
                          local_site_name=None):
         """Performs checks on a repository to test its validity."""
+        result = urlparse(path)
+
+        if result.scheme == 'ssh':
+            raise SCMError('Mercurial over SSH is not supported.')
+
         super(HgTool, cls).check_repository(path, username, password,
                                             local_site_name)
 
         # Create a client. This will fail if the repository doesn't exist.
-        if path.startswith('http'):
+        if result.scheme in ('http', 'https'):
             HgWebClient(path, username, password)
         else:
             HgClient(path, local_site_name)

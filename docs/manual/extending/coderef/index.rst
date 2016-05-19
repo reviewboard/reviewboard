@@ -140,8 +140,10 @@ Review Requests and Reviews
 .. autosummary::
    :toctree: python
 
+   reviewboard.reviews.actions
    reviewboard.reviews.chunk_generators
    reviewboard.reviews.context
+   reviewboard.reviews.default_actions
    reviewboard.reviews.errors
    reviewboard.reviews.fields
    reviewboard.reviews.forms

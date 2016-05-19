@@ -183,6 +183,9 @@ class HostingService(object):
 
     client_class = HostingServiceClient
 
+    #: Optional form used to configure authentication settings for an account.
+    auth_form = None
+
     # These values are defaults that can be overridden in repository_plans
     # above.
     needs_authorization = False
@@ -238,8 +241,50 @@ class HostingService(object):
         """
         raise NotImplementedError
 
-    def authorize(self, username, password, hosting_url, local_site_name=None,
+    def authorize(self, username, password, hosting_url, credentials,
+                  two_factor_auth_code=None, local_site_name=None,
                   *args, **kwargs):
+        """Authorize an account for the hosting service.
+
+        Args:
+            username (unicode):
+                The username for the account.
+
+            password (unicode):
+                The password for the account.
+
+            hosting_url (unicode):
+                The hosting URL for the service, if self-hosted.
+
+            credentials (dict):
+                All credentials provided by the authentication form. This
+                will contain the username, password, and anything else
+                provided by that form.
+
+            two_factor_auth_code (unicode, optional):
+                The two-factor authentication code provided by the user.
+
+            local_site_name (unicode, optional):
+                The Local Site name, if any, that the account should be
+                bound to.
+
+            *args (tuple):
+                Extra unused positional arguments.
+
+            **kwargs (dict):
+                Extra keyword arguments containing values from the
+                repository's configuration.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.AuthorizationError:
+                The credentials provided were not valid.
+
+            reviewboard.hostingsvcs.errors.TwoFactorAuthCodeRequiredError:
+                A two-factor authentication code is required to authorize
+                this account. The request must be retried with the same
+                credentials and with the ``two_factor_auth_code`` parameter
+                provided.
+        """
         raise NotImplementedError
 
     def check_repository(self, path, username, password, scmtool_class,
@@ -554,6 +599,8 @@ def register_hosting_service(name, cls):
             The hosting service class. This should be a subclass of
             :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
     """
+    cls.hosting_service_id = name
+    _hosting_services[name] = cls
     cls.id = name
     _hosting_service_registry.register(cls)
 

@@ -15,11 +15,13 @@
  *         The revision of the file this diff applies to.
  */
 RB.FileDiff = RB.BaseResource.extend({
-    defaults: _.defaults({
-        destFilename: null,
-        sourceFilename: null,
-        sourceRevision: null
-    }, RB.BaseResource.prototype.defaults()),
+    defaults() {
+        return _.defaults({
+            destFilename: null,
+            sourceFilename: null,
+            sourceRevision: null
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     rspNamespace: 'filediff',
 

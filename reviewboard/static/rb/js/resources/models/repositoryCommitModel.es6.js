@@ -28,15 +28,17 @@
  *         exists.
  */
 RB.RepositoryCommit = RB.BaseResource.extend({
-    defaults: _.defaults({
-        accessible: true,
-        authorName: null,
-        date: null,
-        parent: null,
-        message: null,
-        summary: null,
-        reviewRequestURL: null
-    }, RB.BaseResource.prototype.defaults()),
+    defaults() {
+        return _.defaults({
+            accessible: true,
+            authorName: null,
+            date: null,
+            parent: null,
+            message: null,
+            summary: null,
+            reviewRequestURL: null
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     rspNamespace: 'commits',
 

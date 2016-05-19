@@ -7,6 +7,7 @@ from djblets.testing.decorators import add_fixtures
 
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.site.context_processors import AllPermsWrapper
+from reviewboard.site.middleware import LocalSiteMiddleware
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing.testcase import TestCase
@@ -63,6 +64,45 @@ class BasicTests(TestCase):
             local_site_reverse('user', kwargs={'username': 'sample-user'},
                                request=request),
             '/users/sample-user/')
+
+
+class LocalSiteMiddlewareTests(TestCase):
+    """Unit tests for reviewboard.site.middleware.LocalSiteMiddleware."""
+
+    def setUp(self):
+        super(LocalSiteMiddlewareTests, self).setUp()
+
+        self.middleware = LocalSiteMiddleware()
+
+    def test_request_local_site_empty(self):
+        """Testing LocalSiteMiddleware's request.local_site with no LocalSite
+        """
+        request = HttpRequest()
+        self.middleware.process_view(request=request, view_func=None,
+                                     view_args=None, view_kwargs={})
+
+        self.assertTrue(hasattr(request, '_local_site_name'))
+        self.assertTrue(hasattr(request, 'local_site'))
+        self.assertIsNone(request._local_site_name)
+        self.assertIsNone(request.local_site)
+
+    def test_request_local_site_not_empty(self):
+        """Testing LocalSiteMiddleware's request.local_site with a LocalSite"""
+        local_site = LocalSite.objects.create(name='test-site')
+
+        request = HttpRequest()
+        self.middleware.process_view(
+            request=request,
+            view_func=None,
+            view_args=None,
+            view_kwargs={
+                'local_site_name': local_site.name,
+            })
+
+        self.assertTrue(hasattr(request, '_local_site_name'))
+        self.assertTrue(hasattr(request, 'local_site'))
+        self.assertEqual(request._local_site_name, 'test-site')
+        self.assertEqual(request.local_site, local_site)
 
 
 class PermissionWrapperTests(TestCase):

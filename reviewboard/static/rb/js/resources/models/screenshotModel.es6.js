@@ -12,11 +12,13 @@
  *         The URL of the review UI for this screenshot.
  */
 RB.Screenshot = RB.BaseResource.extend({
-    defaults: _.defaults({
-        caption: null,
-        filename: null,
-        reviewURL: null
-    }, RB.BaseResource.prototype.defaults()),
+    defaults() {
+        return _.defaults({
+            caption: null,
+            filename: null,
+            reviewURL: null
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     rspNamespace: 'screenshot',
 

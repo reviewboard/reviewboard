@@ -716,7 +716,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     _loadRevision: function(base, tip, page) {
         var reviewRequestURL = _.result(this.reviewRequest, 'url'),
             contextURL = reviewRequestURL + 'diff-context/',
-            $downloadLink = $('#download-diff');
+            $downloadLink = $('#download-diff-action');
 
         if (base === 0) {
             contextURL += '?revision=' + tip;
