@@ -58,13 +58,22 @@ function registerToggleStar() {
  * and bugs.
  */
 $.fn.infobox = function(id) {
+    let $el = $(`.${id}`);
+
+    if ($el.length === 0) {
+        $el = $('<div/>')
+            .addClass(id)
+            .hide()
+            .appendTo(document.body);
+    }
+
     this.each(function() {
         const view = new RB.InfoboxView({
             $target: $(this),
-            className: id
+            el: $el
         });
 
-        view.render().$el.appendTo(document.body);
+        view.render();
     });
 };
 
