@@ -75,8 +75,8 @@ const DnDDropOverlayView = Backbone.View.extend({
          */
         _.defer(() => {
             const offset = $target.offset();
-            const width = $target.width() + 'px';
-            const height = $target.height() + 'px';
+            const width = $target.outerWidth() + 'px';
+            const height = $target.outerHeight() + 'px';
 
             this.$el
                 .css({
