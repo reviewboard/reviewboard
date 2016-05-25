@@ -145,7 +145,7 @@ class Client(base.Client):
                 'valid_until': certinfo[3],
                 'issuer_dname': certinfo[4],
             }
-            return self._trust_prompt_cb(trust_dict)[1:]
+            return self._ssl_trust_prompt_cb(trust_dict)[1:]
         else:
             return None
 

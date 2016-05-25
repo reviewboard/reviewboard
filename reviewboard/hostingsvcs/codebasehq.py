@@ -130,22 +130,7 @@ class CodebaseHQClient(HostingServiceClient):
 
             url += '%s/%s' % (revision, path)
 
-        result = self.api_get(self.build_api_url(url), raw_content=True)
-
-        # XXX As of May 2, 2016, Codebase's file fetching API has a bug where
-        #     the final trailing newline is missing from file contents. A
-        #     report has been filed, but until this is fixed, we need to work
-        #     around this by adding back a newline.
-        #
-        #     In order to do this without outright breaking files, we'll try to
-        #     determine the appropriate newline type. This is fragile, but
-        #     hopefully temporary.
-        if b'\r\n' in result:
-            result += b'\r\n'
-        else:
-            result += b'\n'
-
-        return result
+        return self.api_get(self.build_api_url(url), raw_content=True)
 
     def api_get_public_keys(self, username):
         """Return information on all public keys for a user.
