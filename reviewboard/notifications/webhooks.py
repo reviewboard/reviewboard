@@ -162,7 +162,7 @@ def _serialize_review(review, request):
             for comment in review.screenshot_comments.all()
         ],
         'general_comments': [
-            resources.general_comment.serialize_object(
+            resources.review_general_comment.serialize_object(
                 comment, request=request)
             for comment in review.general_comments.all()
         ],
