@@ -230,7 +230,7 @@ class CodebaseHQTests(ServiceTests):
                     'myfile')
 
             if file_exists:
-                return b'My data', {}
+                return b'My data\n', {}
             else:
                 raise HTTPError(url, 404, '', {}, StringIO())
 
@@ -249,10 +249,6 @@ class CodebaseHQTests(ServiceTests):
 
         if file_exists:
             result = service.get_file(repository, 'myfile', '123')
-
-            # In order to work around a bug in Codebase, we have to assume that
-            # we need to add a "\n" to the end of the content. It's a terrible
-            # assumption. We're waiting on a bug fix.
             self.assertEqual(result, 'My data\n')
         else:
             with self.assertRaises(FileNotFoundError):
