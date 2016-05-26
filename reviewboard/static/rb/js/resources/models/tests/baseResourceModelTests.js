@@ -445,6 +445,11 @@ suite('rb/resources/models/BaseResource', function() {
             });
 
             describe('With isNew=true and parentObject', function() {
+                var responseData = {
+                    foo: {},
+                    stat: 'ok'
+                };
+
                 beforeEach(function() {
                     spyOn(parentObject, 'ensureCreated')
                         .and.callFake(function(options) {
@@ -465,21 +470,25 @@ suite('rb/resources/models/BaseResource', function() {
                     spyOn($, 'ajax').and.callFake(function(request) {
                         expect(request.type).toBe('POST');
 
-                        request.success({
-                            foo: {},
-                            stat: 'ok'
-                        });
+                        request.success(responseData);
                     });
                 });
 
                 it('With callbacks', function() {
+                    var args;
+
                     model.save(callbacks);
 
                     expect(Backbone.Model.prototype.save).toHaveBeenCalled();
                     expect(parentObject.ensureCreated).toHaveBeenCalled();
                     expect(RB.apiCall).toHaveBeenCalled();
                     expect($.ajax).toHaveBeenCalled();
+
                     expect(callbacks.success).toHaveBeenCalled();
+                    args = callbacks.success.calls.argsFor(0);
+                    expect(args[0]).toBe(model);
+                    expect(args[1]).toBe(responseData);
+
                     expect(callbacks.error).not.toHaveBeenCalled();
                     expect(model.trigger).toHaveBeenCalledWith('saved', callbacks);
                 });
