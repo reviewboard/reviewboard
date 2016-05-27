@@ -722,16 +722,6 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             const captionItems = [];
 
             if (!this.renderedInline) {
-                captionItems.push(this.captionItemTemplate({
-                    caption: interpolate(
-                        gettext('%(caption)s (revision %(revision)s)'),
-                        {
-                            caption: this.model.get('caption'),
-                            revision: this.model.get('fileRevision')
-                        },
-                        true)
-                }));
-
                 if (hasDiff) {
                     captionItems.push(this.captionItemTemplate({
                         caption: interpolate(
@@ -739,6 +729,26 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                             {
                                 caption: this.model.get('diffCaption'),
                                 revision: this.model.get('diffRevision')
+                            },
+                            true)
+                    }));
+
+                    captionItems.push(this.captionItemTemplate({
+                        caption: interpolate(
+                            gettext('%(caption)s (revision %(revision)s)'),
+                            {
+                                caption: this.model.get('caption'),
+                                revision: this.model.get('fileRevision')
+                            },
+                            true)
+                    }));
+                } else {
+                    captionItems.push(this.captionItemTemplate({
+                        caption: interpolate(
+                            gettext('%(caption)s (revision %(revision)s)'),
+                            {
+                                caption: this.model.get('caption'),
+                                revision: this.model.get('fileRevision')
                             },
                             true)
                     }));
