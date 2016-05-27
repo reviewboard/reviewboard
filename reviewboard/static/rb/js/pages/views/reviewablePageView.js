@@ -168,6 +168,13 @@ RB.ReviewablePageView = Backbone.View.extend({
         this._logoNotificationsURL = null;
 
         RB.NotificationManager.instance.setup();
+
+        if (RB.UserSession.instance.get('authenticated')) {
+            this._starManager = new RB.StarManagerView({
+                model: new RB.StarManager(),
+                el: this.$('.star').parent()
+            });
+        }
     },
 
     /*
