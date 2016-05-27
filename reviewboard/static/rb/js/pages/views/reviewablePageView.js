@@ -164,6 +164,13 @@ RB.ReviewablePageView = Backbone.View.extend({
         this._updatesBubble = null;
         this._favIconURL = null;
         this._favIconNotifyURL = null;
+
+        if (RB.UserSession.instance.get('authenticated')) {
+            this._starManager = new RB.StarManagerView({
+                model: new RB.StarManager(),
+                el: this.$('.star').parent()
+            });
+        }
     },
 
     /*
