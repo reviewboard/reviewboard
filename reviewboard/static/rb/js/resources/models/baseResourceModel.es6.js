@@ -351,16 +351,16 @@ RB.BaseResource = Backbone.Model.extend({
         }
 
         const saveOptions = _.defaults({
-            success: () => {
+            success: (...args) => {
                 if (_.isFunction(options.success)) {
-                    options.success.apply(context, arguments);
+                    options.success.apply(context, args);
                 }
 
                 this.trigger('saved', options);
             },
-            error: () => {
+            error: (...args) => {
                 if (_.isFunction(options.error)) {
-                    options.error.apply(context, arguments);
+                    options.error.apply(context, args);
                 }
 
                 this.trigger('saveFailed', options);
@@ -567,7 +567,7 @@ RB.BaseResource = Backbone.Model.extend({
 
         Backbone.Model.prototype.destroy.call(this, _.defaults({
             wait: true,
-            success: () => {
+            success: (...args) => {
                 /*
                  * Reset the object so it's new again, but with the same
                  * parentObject.
@@ -582,7 +582,7 @@ RB.BaseResource = Backbone.Model.extend({
                 this.trigger('destroyed', options);
 
                 if (_.isFunction(options.success)) {
-                    options.success.apply(context, arguments);
+                    options.success.apply(context, args);
                 }
             }
         }, _.bindCallbacks(options, context)));
