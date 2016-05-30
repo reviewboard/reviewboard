@@ -44,8 +44,6 @@ $(document).ready(function() {
     $('time.timesince').timesince();
 
     $('.avatar').retinaAvatar();
-
-    registerToggleStar();
 });
 
 // vim: set et:sw=4:
