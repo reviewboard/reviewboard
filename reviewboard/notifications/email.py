@@ -995,7 +995,7 @@ def mail_webapi_token(webapi_token, op):
     text_message = render_to_string('%s.txt' % template_name, context)
     html_message = render_to_string('%s.html' % template_name, context)
 
-    message = SpiffyEmailMessage(
+    message = EmailMessage(
         subject,
         text_message,
         html_message,
