@@ -19,6 +19,7 @@ RB.RegionCommentBlockView = RB.AbstractCommentBlockView.extend({
      * Initialize RegionCommentBlockView.
      */
     initialize() {
+        this._scale = 1.0;
         this._moveState = {
             hasMoved: false,
             initialCursor: {},
@@ -138,16 +139,16 @@ RB.RegionCommentBlockView = RB.AbstractCommentBlockView.extend({
      */
     _moveTo(left, top) {
         const region = this.getSelectionRegionSize();
-        const maxLeft = region.width - this.model.get('width');
-        const maxTop = region.height - this.model.get('height');
+        const maxLeft = region.width - (this.model.get('width') * this._scale);
+        const maxTop = region.height - (this.model.get('height') * this._scale);
         const newLeft = (this._moveState.initialBounds.left +
                          left - this._moveState.initialCursor.left);
         const newTop = (this._moveState.initialBounds.top +
                         top - this._moveState.initialCursor.top);
 
         this.model.set({
-            x: RB.MathUtils.clip(newLeft, 0, maxLeft),
-            y: RB.MathUtils.clip(newTop, 0, maxTop)
+            x: RB.MathUtils.clip(newLeft, 0, maxLeft) / this._scale,
+            y: RB.MathUtils.clip(newTop, 0, maxTop) / this._scale
         });
     },
 
@@ -165,16 +166,16 @@ RB.RegionCommentBlockView = RB.AbstractCommentBlockView.extend({
      */
     _resizeTo(left, top) {
         const region = this.getSelectionRegionSize();
-        const maxWidth = region.width - this.model.get('x');
-        const maxHeight = region.height - this.model.get('y');
+        const maxWidth = region.width - (this.model.get('x') * this._scale);
+        const maxHeight = region.height - (this.model.get('y') * this._scale);
         const newWidth = (this._moveState.initialBounds.width +
                           left - this._moveState.initialCursor.left);
         const newHeight = (this._moveState.initialBounds.height +
                            top - this._moveState.initialCursor.top);
 
         this.model.set({
-            width: RB.MathUtils.clip(newWidth, 0, maxWidth),
-            height: RB.MathUtils.clip(newHeight, 0, maxHeight)
+            width: RB.MathUtils.clip(newWidth, 0, maxWidth) / this._scale,
+            height: RB.MathUtils.clip(newHeight, 0, maxHeight) / this._scale
         });
     },
 
@@ -293,9 +294,11 @@ RB.RegionCommentBlockView = RB.AbstractCommentBlockView.extend({
      */
     _updateBounds() {
         this.$el
-            .move(this.model.get('x'), this.model.get('y'), 'absolute')
-            .width(this.model.get('width'))
-            .height(this.model.get('height'));
+            .move(this.model.get('x') * this._scale,
+                  this.model.get('y') * this._scale,
+                  'absolute')
+            .width(this.model.get('width') * this._scale)
+            .height(this.model.get('height') * this._scale);
     },
 
     /**
@@ -317,5 +320,18 @@ RB.RegionCommentBlockView = RB.AbstractCommentBlockView.extend({
         if (!this._moveState.hasMoved) {
             this.trigger('clicked');
         }
+    },
+
+    /**
+     * Set the zoom scale.
+     *
+     * Args:
+     *     scale (number):
+     *         A scale multiplier. 1.0 is a 1:1 pixel ratio, 0.5 is displayed
+     *         at half size, etc.
+     */
+    setScale(scale) {
+        this._scale = scale;
+        this._updateBounds();
     }
 });

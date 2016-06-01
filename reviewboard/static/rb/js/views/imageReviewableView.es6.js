@@ -21,6 +21,7 @@ const BaseImageView = Backbone.View.extend({
      */
     initialize() {
         this.$commentRegion = null;
+        this._scale = 1.0;
     },
 
     /**
@@ -35,26 +36,6 @@ const BaseImageView = Backbone.View.extend({
     },
 
     /**
-     * Render the view.
-     *
-     * This will by default render the template into the element and begin
-     * loading images.
-     *
-     * Returns:
-     *     BaseImageView:
-     *     This object, for chaining.
-     */
-    render() {
-        if (this.template) {
-            this.$el.html(this.template(this.model.attributes));
-        }
-
-        this.loadImages(this.$('img'));
-
-        return this;
-    },
-
-    /**
      * Load a list of images.
      *
      * Once each image is loaded, the view's onImagesLoaded function will
@@ -62,29 +43,45 @@ const BaseImageView = Backbone.View.extend({
      * on image sizes and content.
      *
      * Args:
-     *     images (Array of Element):
+     *     $images (jQuery):
      *         The image elements to load.
      */
-    loadImages(images) {
-        let loadsRemaining = images.length;
+    loadImages($images) {
+        let loadsRemaining = $images.length;
 
-        const onload = image => {
-            loadsRemaining--;
-            console.assert(loadsRemaining >= 0);
+        this._$images = $images;
 
-            $(image)
-                .width(image.width)
-                .height(image.height);
+        $images.each((ix, image) => {
+            const $image = $(image);
 
-            if (loadsRemaining === 0) {
-                this.onImagesLoaded();
-                this.trigger('regionChanged');
+            if ($image.data('initial-width') === undefined) {
+                image.onload = () => {
+                    loadsRemaining--;
+                    console.assert(loadsRemaining >= 0);
+
+                    $image
+                        .data({
+                            'initial-width': image.width,
+                            'initial-height': image.height
+                        })
+                        .css({
+                            width: image.width * this._scale,
+                            height: image.height * this._scale
+                        });
+
+                    if (loadsRemaining === 0) {
+                        this.onImagesLoaded();
+                        this.trigger('regionChanged');
+                    }
+                };
+            } else {
+                loadsRemaining--;
+                if (loadsRemaining === 0) {
+                    this.onImagesLoaded();
+                    this.trigger('regionChanged');
+                }
             }
-        };
-
-        for (let image of Array.from(images)) {
-            image.onload = onload.bind(this, image);
-        }
+        });
     },
 
     /**
@@ -125,6 +122,28 @@ const BaseImageView = Backbone.View.extend({
      * to provide logic dependent on loaded images.
      */
     onImagesLoaded() {
+    },
+
+    /**
+     * Set the zoom level for the view.
+     *
+     * Subclasses can override this to provide specific zooming behavior.
+     *
+     * Args:
+     *     scale (number):
+     *         A zoom multiplier (where 1.0 is 100%, 0.5 is 50%, etc).
+     */
+    setScale(scale) {
+        this._scale = scale;
+
+        this._$images.each((ix, el) => {
+            const $image = $(el);
+
+            $image.css({
+                width: $image.data('initial-width') * scale,
+                height: $image.data('initial-height') * scale
+            });
+        });
     }
 });
 
@@ -153,6 +172,8 @@ const ImageAttachmentView = BaseImageView.extend({
         });
 
         this.$commentRegion = this.$el;
+
+        this.loadImages(this.$el);
 
         return this;
     }
@@ -204,6 +225,7 @@ const ImageDifferenceDiffView = BaseImageView.extend({
         this.$el.html(this.template(this.model.attributes));
 
         this.$commentRegion = this.$('canvas');
+        this._$canvas = this.$commentRegion;
 
         this._origImage = new Image();
         this._origImage.src = this.model.get('diffAgainstImageURL');
@@ -211,7 +233,7 @@ const ImageDifferenceDiffView = BaseImageView.extend({
         this._modifiedImage = new Image();
         this._modifiedImage.src = this.model.get('imageURL');
 
-        this.loadImages([this._origImage, this._modifiedImage]);
+        this.loadImages($([this._origImage, this._modifiedImage]));
 
         return this;
     },
@@ -222,29 +244,37 @@ const ImageDifferenceDiffView = BaseImageView.extend({
     onImagesLoaded() {
         const origImage = this._origImage;
         const modifiedImage = this._modifiedImage;
-        const maxWidth = Math.max(origImage.width, modifiedImage.width);
-        const maxHeight = Math.max(origImage.height, modifiedImage.height);
+        this._maxWidth = Math.max(origImage.width, modifiedImage.width);
+        this._maxHeight = Math.max(origImage.height, modifiedImage.height);
 
-        const $origCanvas = this.$('canvas');
-        $origCanvas[0].width = maxWidth;
-        $origCanvas[0].height = maxHeight;
+        this._$canvas
+            .attr({
+                width: this._maxWidth,
+                height: this._maxHeight
+            })
+            .css({
+                width: this._maxWidth * this._scale + 'px',
+                height: this._maxHeight * this._scale + 'px'
+            });
 
-        const $modifiedCanvas = $('<canvas/>');
-        $modifiedCanvas[0].width = maxWidth;
-        $modifiedCanvas[0].height = maxHeight;
+        const $modifiedCanvas = $('<canvas/>')
+            .attr({
+                width: this._maxWidth,
+                height: this._maxHeight
+            });
 
-        const origContext = $origCanvas[0].getContext('2d');
+        const origContext = this._$canvas[0].getContext('2d');
         origContext.drawImage(origImage, 0, 0);
 
         const modifiedContext = $modifiedCanvas[0].getContext('2d');
         modifiedContext.drawImage(modifiedImage, 0, 0);
 
         const origImageData = origContext.getImageData(
-            0, 0, maxWidth, maxHeight);
+            0, 0, this._maxWidth, this._maxHeight);
         const origPixels = origImageData.data;
 
         const modifiedPixels = modifiedContext.getImageData(
-            0, 0, maxWidth, maxHeight).data;
+            0, 0, this._maxWidth, this._maxHeight).data;
 
         for (let i = 0; i < origPixels.length; i += 4) {
             origPixels[i] += modifiedPixels[i] -
@@ -259,6 +289,21 @@ const ImageDifferenceDiffView = BaseImageView.extend({
         }
 
         origContext.putImageData(origImageData, 0, 0);
+    },
+
+    /**
+     * Set the zoom level for the view.
+     *
+     * Args:
+     *     scale (number):
+     *         A zoom multiplier (where 1.0 is 100%, 0.5 is 50%, etc).
+     */
+    setScale(scale) {
+        this._scale = scale;
+        this._$canvas.css({
+            width: this._maxWidth * this._scale + 'px',
+            height: this._maxHeight * this._scale + 'px'
+        });
     }
 });
 
@@ -310,7 +355,7 @@ const ImageOnionDiffView = BaseImageView.extend({
      *     This object, for chaining.
      */
     render() {
-        _super(this).render.call(this);
+        this.$el.html(this.template(this.model.attributes));
 
         this.$commentRegion = this.$('.image-containers');
         this._$origImage = this.$('.orig-image img');
@@ -324,6 +369,8 @@ const ImageOnionDiffView = BaseImageView.extend({
             });
 
         this.setOpacity(this.DEFAULT_OPACITY);
+
+        this.loadImages(this.$('img'));
 
         return this;
     },
@@ -346,22 +393,41 @@ const ImageOnionDiffView = BaseImageView.extend({
      * same width and height.
      */
     onImagesLoaded() {
-        const origWidth = this._$origImage.width();
-        const origHeight = this._$origImage.height();
-        const modifiedWidth = this._$modifiedImage.width();
-        const modifiedHeight = this._$modifiedImage.height();
+        this._resize();
+    },
+
+    /**
+     * Set the zoom level for the view.
+     *
+     * Args:
+     *     scale (number):
+     *         A zoom multiplier (where 1.0 is 100%, 0.5 is 50%, etc).
+     */
+    setScale(scale) {
+        _super(this).setScale.call(this, scale);
+        this._resize();
+    },
+
+    /**
+     * Resize the image containers.
+     */
+    _resize() {
+        const origW = this._$origImage.data('initial-width') * this._scale;
+        const origH = this._$origImage.data('initial-height') * this._scale;
+        const newW = this._$modifiedImage.data('initial-width') * this._scale;
+        const newH = this._$modifiedImage.data('initial-height') * this._scale;
 
         this._$origImage.parent()
-            .width(origWidth)
-            .height(origHeight);
+            .width(origW)
+            .height(origH);
 
         this._$modifiedImage.parent()
-            .width(modifiedWidth)
-            .height(modifiedHeight);
+            .width(newW)
+            .height(newH);
 
         this.$('.image-containers')
-            .width(Math.max(origWidth, modifiedWidth))
-            .height(Math.max(origHeight, modifiedHeight));
+            .width(Math.max(origW, newW))
+            .height(Math.max(origH, newH));
     }
 });
 
@@ -418,7 +484,7 @@ const ImageSplitDiffView = BaseImageView.extend({
      *     This object, for chaining.
      */
     render() {
-        _super(this).render.call(this);
+        this.$el.html(this.template(this.model.attributes));
 
         this.$commentRegion = this.$('.image-containers');
         this._$origImage = this.$('.orig-image img');
@@ -432,6 +498,8 @@ const ImageSplitDiffView = BaseImageView.extend({
                 value: this.DEFAULT_SPLIT_PCT * 100,
                 slide: (e, ui) => this.setSplitPercentage(ui.value / 100.0)
             });
+
+        this.loadImages(this.$('img'));
 
         return this;
     },
@@ -459,36 +527,54 @@ const ImageSplitDiffView = BaseImageView.extend({
      * position the slider's handle with the divider between images.
      */
     onImagesLoaded() {
-        const $origImageContainer = this._$origImage.parent();
-        const origWidth = this._$origImage.outerWidth();
-        const origHeight = this._$origImage.height();
-        const modifiedWidth = this._$modifiedImage.outerWidth();
-        const modifiedHeight = this._$modifiedImage.height();
-        const maxHeight = Math.max(origHeight, modifiedHeight);
-        const maxOuterHeight = maxHeight +
-                               $origImageContainer.getExtents('b', 'tb');
+        this._resize();
+    },
 
-        this._maxWidth = Math.max(origWidth, modifiedWidth);
+    /**
+     * Set the zoom level for the view.
+     *
+     * Args:
+     *     scale (number):
+     *         A zoom multiplier (where 1.0 is 100%, 0.5 is 50%, etc).
+     */
+    setScale(scale) {
+        _super(this).setScale.call(this, scale);
+        this._resize();
+    },
+
+    /**
+     * Resize the image containers.
+     */
+    _resize() {
+        const $origImageContainer = this._$origImage.parent();
+        const origW = this._$origImage.data('initial-width') * this._scale;
+        const origH = this._$origImage.data('initial-height') * this._scale;
+        const newW = this._$modifiedImage.data('initial-width') * this._scale;
+        const newH = this._$modifiedImage.data('initial-height') * this._scale;
+        const maxH = Math.max(origH, newH);
+        const maxOuterH = maxH + $origImageContainer.getExtents('b', 'tb');
+
+        this._maxWidth = Math.max(origW, newW);
 
         $origImageContainer
-            .outerWidth(origWidth)
-            .height(origHeight);
+            .outerWidth(origW)
+            .height(origH);
 
         this._$modifiedImage.parent()
-            .outerWidth(modifiedWidth)
-            .height(modifiedHeight);
+            .outerWidth(newW)
+            .height(newH);
 
         this._$origSplitContainer
             .outerWidth(this._maxWidth)
-            .height(maxOuterHeight);
+            .height(maxOuterH);
 
         this._$modifiedSplitContainer
             .outerWidth(this._maxWidth)
-            .height(maxOuterHeight);
+            .height(maxOuterH);
 
         this.$('.image-containers')
             .width(this._maxWidth)
-            .height(maxHeight);
+            .height(maxH);
 
         this._$slider.width(this._maxWidth);
 
@@ -529,9 +615,10 @@ const ImageTwoUpDiffView = BaseImageView.extend({
      *     This object, for chaining.
      */
     render() {
-        _super(this).render.call(this);
-
+        this.$el.html(this.template(this.model.attributes));
         this.$commentRegion = this.$('.modified-image img');
+
+        this.loadImages(this.$('img'));
 
         return this;
     }
@@ -558,14 +645,15 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
     commentBlockView: RB.RegionCommentBlockView,
 
     events: {
-        'click .image-diff-modes a': '_onImageModeClicked',
+        'click .image-diff-mode': '_onImageModeClicked',
+        'click .image-resolution-menu .menu-item': '_onImageZoomLevelClicked',
         'mousedown .selection-container': '_onMouseDown',
         'mouseup .selection-container': '_onMouseUp',
         'mousemove .selection-container': '_onMouseMove'
     },
 
     modeItemTemplate: _.template(
-        '<li><a href="#" data-mode="<%- mode %>"><%- name %></a></li>'
+        '<li class="image-diff-mode"><a href="#" data-mode="<%- mode %>"><%- name %></a></li>'
     ),
 
     captionTableTemplate: _.template(
@@ -587,6 +675,24 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         '</div>'
         ].join('')),
 
+    resolutionMenuTemplate: [
+        '<li class="image-resolution-menu has-menu">',
+        ' <a href="#" class="menu-header">',
+        '  <span class="fa fa-search-plus"></span>',
+        '  <span class="image-resolution-menu-current">100%</span>',
+        '  &#9662;',
+        ' </a>',
+        ' <ul class="menu">',
+        '  <li class="menu-item" data-image-scale="0.33"',
+        '      id="image-resolution-zoom-3x">33%</li>',
+        '  <li class="menu-item" data-image-scale="0.5"',
+        '      id="image-resolution-zoom-2x">50%</li>',
+        '  <li class="menu-item" data-image-scale="1.0">100%</li>',
+        '  <li class="menu-item" data-image-scale="2.0">200%</li>',
+        ' </ul>',
+        '</li>',
+    ].join(''),
+
     ANIM_SPEED_MS: 200,
 
     /**
@@ -598,9 +704,11 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
 
         _.bindAll(this, '_adjustPos');
 
+        this._scale = 1.0;
         this._activeSelection = {};
         this._diffModeSelectors = {};
         this._diffModeViews = {};
+        this._commentBlockViews = [];
 
         /*
          * Add any CommentBlockViews to the selection area when they're
@@ -610,8 +718,16 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             commentBlockView.setSelectionRegionSizeFunc(
                 () => _.pick(this._imageView.getSelectionRegion(),
                              'width', 'height'));
+            commentBlockView.setScale(this._scale);
 
             this._$selectionArea.append(commentBlockView.$el);
+
+            this._commentBlockViews.push(commentBlockView);
+            this.listenTo(
+                commentBlockView, 'removing', () => {
+                    this._commentBlockViews =
+                        _.without(this._commentBlockViews, commentBlockView);
+                });
         });
     },
 
@@ -719,52 +835,73 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             this.listenTo(this._revisionSelectorView, 'revisionSelected',
                           this._onRevisionSelected);
 
-            const captionItems = [];
-
             if (!this.renderedInline) {
                 if (hasDiff) {
-                    captionItems.push(this.captionItemTemplate({
-                        caption: interpolate(
-                            gettext('%(caption)s (revision %(revision)s)'),
-                            {
-                                caption: this.model.get('diffCaption'),
-                                revision: this.model.get('diffRevision')
-                            },
-                            true)
-                    }));
+                    const captionItems = [
+                        this.captionItemTemplate({
+                            caption: interpolate(
+                                gettext('%(caption)s (revision %(revision)s)'),
+                                {
+                                    caption: this.model.get('diffCaption'),
+                                    revision: this.model.get('diffRevision')
+                                },
+                                true)
+                        }),
+                        this.captionItemTemplate({
+                            caption: interpolate(
+                                gettext('%(caption)s (revision %(revision)s)'),
+                                {
+                                    caption: this.model.get('caption'),
+                                    revision: this.model.get('fileRevision')
+                                },
+                                true)
+                        })
+                    ];
 
-                    captionItems.push(this.captionItemTemplate({
-                        caption: interpolate(
-                            gettext('%(caption)s (revision %(revision)s)'),
-                            {
-                                caption: this.model.get('caption'),
-                                revision: this.model.get('fileRevision')
-                            },
-                            true)
+                    $header.append(this.captionTableTemplate({
+                        items: captionItems.join('')
                     }));
                 } else {
-                    captionItems.push(this.captionItemTemplate({
-                        caption: interpolate(
+                    const $captionBar = $('<div class="image-single-revision">')
+                        .appendTo($header);
+
+                    $('<h1 class="caption" />')
+                        .text(interpolate(
                             gettext('%(caption)s (revision %(revision)s)'),
                             {
                                 caption: this.model.get('caption'),
                                 revision: this.model.get('fileRevision')
                             },
-                            true)
-                    }));
+                            true))
+                        .appendTo($captionBar);
                 }
-
-                $header.append(this.captionTableTemplate({
-                    items: captionItems.join('')
-                }));
             }
         } else {
             if (!this.renderedInline) {
-                $('<h1 />')
-                    .addClass('caption')
+                $header.addClass('image-single-revision');
+
+                $('<h1 class="caption" />')
                     .text(this.model.get('caption'))
                     .appendTo($header);
             }
+        }
+
+        if (hasDiff) {
+            this._$modeBar.append(this.resolutionMenuTemplate);
+        } else {
+            this.$('.caption').after(this.resolutionMenuTemplate);
+        }
+
+        /*
+         * If the image is obviously a 2x or 3x pixel ratio, pre-select the
+         * right zoom level.
+         */
+        const filename = this.model.get('filename');
+
+        if (filename.includes('@2x.')) {
+            this.$('#image-resolution-zoom-2x').click();
+        } else if (filename.includes('@3x.')) {
+            this.$('#image-resolution-zoom-3x').click();
         }
 
         return this;
@@ -871,6 +1008,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             this._diffModeSelectors[this._imageView.mode]
                 .removeClass('selected');
 
+            newView.setScale(this._scale);
             newView.$el.show();
             const height = newView.$el.height();
             newView.$el.hide();
@@ -929,6 +1067,20 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
     },
 
     /**
+     * Set the zoom level for the view.
+     *
+     * Args:
+     *     scale (number):
+     *         A zoom multiplier (where 1.0 is 100%, 0.5 is 50%, etc).
+     */
+    _setScale(scale) {
+        this._scale = scale;
+        this._imageView.setScale(scale);
+        this._adjustPos();
+        this._commentBlockViews.forEach(view => view.setScale(scale));
+    },
+
+    /**
      * Handler for when a mode in the diff mode bar is clicked.
      *
      * Sets the diff view to the given mode.
@@ -942,6 +1094,25 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         e.stopPropagation();
 
         this._setDiffMode($(e.target).data('mode'));
+    },
+
+    /**
+     * Handler for when a zoom level is clicked.
+     *
+     * Args:
+     *     e (Event):
+     *         The event which triggered the callback.
+     */
+    _onImageZoomLevelClicked(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const $target = $(e.target);
+        const scale = $target.data('image-scale');
+        const text = $target.text();
+
+        this.$('.image-resolution-menu-current').text(text);
+        this._setScale(scale);
     },
 
     /**
@@ -966,11 +1137,16 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             this._activeSelection.beginY =
                 e.pageY - Math.floor(offset.top) - 1;
 
+            const updateData = {
+                left: this._activeSelection.beginX,
+                top: this._activeSelection.beginY,
+                width: 1,
+                height: 1
+            };
+
             this._$selectionRect
-                .move(this._activeSelection.beginX,
-                      this._activeSelection.beginY)
-                .width(1)
-                .height(1)
+                .css(updateData)
+                .data(updateData)
                 .show();
 
             if (this._$selectionRect.is(':hidden')) {
@@ -1002,17 +1178,14 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
              * don't do anything. This helps avoid making people mad
              * if they accidentally click on the image.
              */
-            const width = this._$selectionRect.width();
-            const height = this._$selectionRect.height();
+            const position = this._$selectionRect.data();
 
-            if (width > 5 && height > 5) {
-                const offset = this._$selectionRect.position();
-
+            if (position.width > 5 && position.height > 5) {
                 this.createAndEditCommentBlock({
-                    x: Math.floor(offset.left),
-                    y: Math.floor(offset.top),
-                    width: width,
-                    height: height
+                    x: Math.floor(position.left / this._scale),
+                    y: Math.floor(position.top / this._scale),
+                    width: Math.floor(position.width / this._scale),
+                    height: Math.floor(position.height / this._scale)
                 });
             }
         }
@@ -1033,26 +1206,27 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             const offset = this._$selectionArea.offset();
             const x = e.pageX - Math.floor(offset.left) - 1;
             const y = e.pageY - Math.floor(offset.top) - 1;
+            const updateData = {};
+
+            if (this._activeSelection.beginX <= x) {
+                updateData.left = this._activeSelection.beginX;
+                updateData.width = x - this._activeSelection.beginX;
+            } else {
+                updateData.left = x;
+                updateData.width = this._activeSelection.beginX - x;
+            }
+
+            if (this._activeSelection.beginY <= y) {
+                updateData.top = this._activeSelection.beginY;
+                updateData.height = y - this._activeSelection.beginY;
+            } else {
+                updateData.top = y;
+                updateData.height = this._activeSelection.beginY - y;
+            }
 
             this._$selectionRect
-                .css(this._activeSelection.beginX <= x
-                     ? {
-                           left:  this._activeSelection.beginX,
-                           width: x - this._activeSelection.beginX
-                       }
-                     : {
-                           left:  x,
-                           width: this._activeSelection.beginX - x
-                       })
-                .css(this._activeSelection.beginY <= y
-                     ? {
-                           top:    this._activeSelection.beginY,
-                           height: y - this._activeSelection.beginY
-                       }
-                     : {
-                           top:    y,
-                           height: this._activeSelection.beginY - y
-                       });
+                .css(updateData)
+                .data(updateData);
 
             return false;
         }
@@ -1071,6 +1245,10 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                 left: region.left,
                 top: region.top
             });
+
+        if (this._$imageDiffs) {
+            this._$imageDiffs.height(this._imageView.$el.height());
+        }
     }
 });
 
