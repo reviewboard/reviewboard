@@ -228,8 +228,10 @@ class ResourceDirective(Directive):
                         # application/json works fine.
                         accept_mimetype = 'application/json'
 
-                    curl_text = ('$ curl http://reviews.example.com%s -A %s'
-                                 % (url, accept_mimetype))
+                    curl_text = (
+                        '$ curl http://reviews.example.com%s -H "Accept: %s"'
+                        % (url, accept_mimetype)
+                    )
                     example_section += nodes.literal_block(
                         curl_text, curl_text, classes=['cmdline'])
 
