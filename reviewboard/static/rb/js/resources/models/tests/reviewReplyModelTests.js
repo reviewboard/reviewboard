@@ -414,7 +414,7 @@ suite('rb/resources/models/ReviewReply', function() {
             expect(data.id).toBe(42);
             expect(data.bodyTop).toBe('foo');
             expect(data.bodyBottom).toBe('bar');
-            expect(data['public']).toBe(false);
+            expect(data.public).toBe(false);
             expect(data.bodyTopRichText).toBe(true);
             expect(data.bodyBottomRichText).toBe(false);
         });
@@ -515,7 +515,7 @@ suite('rb/resources/models/ReviewReply', function() {
 
                 model.set('public', true);
                 data = model.toJSON();
-                expect(data['public']).toBe(true);
+                expect(data.public).toBe(true);
             });
         });
     });

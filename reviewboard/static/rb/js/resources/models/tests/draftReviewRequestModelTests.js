@@ -43,7 +43,7 @@ suite('rb/resources/models/DraftReviewRequest', function() {
     it('publish', function() {
         spyOn(RB, 'apiCall').and.callThrough();
         spyOn($, 'ajax').and.callFake(function(request) {
-            expect(request.data['public']).toBe(1);
+            expect(request.data.public).toBe(1);
 
             request.success({
                 stat: 'ok',
@@ -91,7 +91,10 @@ suite('rb/resources/models/DraftReviewRequest', function() {
                 target_groups: 'targetGroups',
                 target_people: 'targetPeople',
                 testing_done: 'testingDone',
-                testing_done_text_type: 'plain'
+                testing_done_text_type: 'plain',
+                links: {
+                    submitter: 'submitter'
+                }
             }
         });
 
@@ -103,8 +106,9 @@ suite('rb/resources/models/DraftReviewRequest', function() {
         expect(data.changeDescriptionRichText).toBe(true);
         expect(data.description).toBe('description');
         expect(data.descriptionRichText).toBe(true);
-        expect(data['public']).toBe('public');
+        expect(data.public).toBe('public');
         expect(data.summary).toBe('summary');
+        expect(data.submitter).toBe('submitter');
         expect(data.targetGroups).toBe('targetGroups');
         expect(data.targetPeople).toBe('targetPeople');
         expect(data.testingDone).toBe('testingDone');

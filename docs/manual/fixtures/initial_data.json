@@ -3395,6 +3395,30 @@
     }
 },
 {
+    "pk": 1,
+    "model": "reviews.generalcomment",
+    "fields": {
+        "extra_data": "{}",
+        "reply_to": null,
+        "issue_opened": false,
+        "issue_status": "",
+        "rich_text": false,
+        "text": "This is a general comment"
+    }
+},
+{
+    "pk": 2,
+    "model": "reviews.generalcomment",
+    "fields": {
+        "extra_data": "{}",
+        "reply_to": 1,
+        "issue_opened": false,
+        "issue_status": "",
+        "rich_text": false,
+        "text": "This is a reply to a general comment"
+    }
+},
+{
     "pk": 1, 
     "model": "reviews.review", 
     "fields": {
@@ -3601,6 +3625,9 @@
             5, 
             6
         ], 
+        "general_comments": [
+            1
+        ],
         "body_bottom_reply_to": null, 
         "rich_text": false, 
         "screenshot_comments": [
@@ -3634,6 +3661,9 @@
             9, 
             10
         ], 
+        "general_comments": [
+            2
+        ],
         "body_bottom_reply_to": null, 
         "rich_text": false, 
         "screenshot_comments": [
@@ -3787,7 +3817,7 @@
         "hooks_uuid": null, 
         "raw_file_url": "", 
         "bug_tracker": "http://code.google.com/p/reviewboard/issues/detail?id=%s", 
-        "path": "http://reviewboard.googlecode.com/svn", 
+        "path": "https://svn.riouxsvn.com/reviewboard/",
         "extra_data": "{}", 
         "tool": 1, 
         "users": []

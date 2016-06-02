@@ -203,11 +203,11 @@ BaseCommentView = Backbone.View.extend({
                       this._updateRawValue);
         this._updateRawValue();
 
-        this.listenTo(this.model, 'change:text', this.renderText);
-        this.renderText(this.model, text);
+        this.listenTo(this.model, 'saved', this.renderText);
+        this.renderText();
 
         this.listenTo(this.model, 'destroying', function() {
-            this.stopListening(this.model)
+            this.stopListening(this.model);
         });
 
         RB.ReviewDialogCommentHook.each(function(hook) {
@@ -241,12 +241,12 @@ BaseCommentView = Backbone.View.extend({
     /*
      * Renders the text for this comment.
      */
-    renderText: function(model, text) {
+    renderText: function() {
         var reviewRequest = this.model.get('parentObject').get('parentObject');
 
         if (this.$editor) {
             RB.formatText(this.$editor, {
-                newText: text,
+                newText: this.model.get('text'),
                 richText: this.model.get('richText'),
                 isHTMLEncoded: true,
                 bugTrackerURL: reviewRequest.get('bugTrackerURL')
@@ -516,16 +516,16 @@ HeaderFooterCommentView = Backbone.View.extend({
                       this._updateRawValue);
         this._updateRawValue();
 
-        this.listenTo(this.model, 'change:' + this.propertyName,
-                      this.renderText);
-        this.renderText(this.model, text);
+        this.listenTo(this.model, 'saved', this.renderText);
+        this.renderText();
     },
 
     /*
      * Renders the text for this comment.
      */
-    renderText: function(model, text) {
-        var reviewRequest = this.model.get('parentObject');
+    renderText: function() {
+        var reviewRequest = this.model.get('parentObject'),
+            text = this.model.get(this.propertyName);
 
         if (this.$editor) {
             if (text) {

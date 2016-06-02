@@ -376,6 +376,59 @@ suite('rb/models/ReviewRequestEditor', function() {
                         });
                     });
                 });
+
+                describe('submitter', function() {
+                    it('Empty', function() {
+                        spyOn(draft, 'save')
+                            .and.callFake(function(options, context) {
+                                options.success.call(context);
+                            });
+
+                        editor.setDraftField('submitter', '', _.defaults({
+                            jsonFieldName: 'submitter'
+                        }, callbacks));
+
+                        expect(callbacks.success).toHaveBeenCalled();
+                    });
+
+                    it('With value', function() {
+                        spyOn(draft, 'save')
+                            .and.callFake(function(options, context) {
+                                options.success.call(context);
+                            });
+
+                        editor.setDraftField(
+                            'submitter', 'user1',
+                            _.defaults({
+                                jsonFieldName: 'submitter'
+                            }, callbacks));
+
+                        expect(callbacks.success).toHaveBeenCalled();
+                    });
+
+                    it('With invalid user', function() {
+                        spyOn(draft, 'save')
+                            .and.callFake(function(options, context) {
+                                options.error.call(context, draft, {
+                                    errorPayload: {
+                                        fields: {
+                                            submitter: ['user1']
+                                        }
+                                    }
+                                });
+                            });
+
+                        editor.setDraftField(
+                            'submitter', 'user1',
+                            _.defaults({
+                                jsonFieldName: 'submitter'
+                            }, callbacks));
+
+                        expect(callbacks.error).toHaveBeenCalledWith({
+                            errorText: "User 'user1' does not exist."
+                        });
+                    });
+                });
             });
 
             describe('Custom fields', function() {

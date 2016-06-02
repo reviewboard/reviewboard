@@ -239,6 +239,7 @@ intersphinx_mapping = {
                % reviewboard.django_major_version,
                'https://docs.djangoproject.com/en/%s/_objects/'
                % reviewboard.django_major_version),
+    'djblets': ('https://www.reviewboard.org/docs/djblets/0.10/', None),
     'python': ('https://docs.python.org/2.7', None),
     'rbtools': ('https://www.reviewboard.org/docs/rbtools/dev/', None),
 }

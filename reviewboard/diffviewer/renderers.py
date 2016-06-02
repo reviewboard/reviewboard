@@ -36,7 +36,8 @@ class DiffRenderer(object):
     def __init__(self, diff_file, chunk_index=None, highlighting=False,
                  collapse_all=True, lines_of_context=None, extra_context=None,
                  allow_caching=True, cumulative_diff=False,
-                 base_commit_id=None, template_name=default_template_name):
+                 base_commit_id=None, template_name=default_template_name,
+                 show_deleted=False):
         self.diff_file = diff_file
         self.chunk_index = chunk_index
         self.highlighting = highlighting
@@ -48,6 +49,7 @@ class DiffRenderer(object):
         self.base_commit_id = base_commit_id
         self.template_name = template_name
         self.num_chunks = 0
+        self.show_deleted = show_deleted
 
         if (self.cumulative_diff and
             self.diff_file['filediff'].diff_commit_id is None):
@@ -144,6 +146,9 @@ class DiffRenderer(object):
 
         if self.highlighting:
             key += '-highlighting'
+
+        if self.show_deleted:
+            key += '-show_deleted'
 
         key += '-%s-%s' % (get_language(), settings.TEMPLATE_SERIAL)
 
@@ -255,6 +260,7 @@ class DiffRenderer(object):
             'lines_of_context': self.lines_of_context or (0, 0),
             'equal_lines': equal_lines,
             'standalone': self.chunk_index is not None,
+            'show_deleted': self.show_deleted,
         })
 
         return context

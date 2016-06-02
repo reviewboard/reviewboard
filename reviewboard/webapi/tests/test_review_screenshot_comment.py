@@ -250,9 +250,7 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         return (get_review_screenshot_comment_item_url(review, comment.pk,
                                                        local_site_name),
                 screenshot_comment_item_mimetype,
-                {
-                    'text': 'Test comment',
-                },
+                {'text': 'Test comment'},
                 comment,
                 [])
 

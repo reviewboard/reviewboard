@@ -986,6 +986,9 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
             ReviewRequest.objects.get(pk=rsp['review_request']['id'])
         self.assertEqual(review_request.commit, commit_id)
 
+        draft = review_request.get_draft()
+        self.assertIsNotNone(draft)
+
     def test_post_with_submit_as_and_permission(self):
         """Testing the POST review-requests/?submit_as= API
         with permission
@@ -1303,9 +1306,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         return (get_review_request_item_url(review_request.display_id,
                                             local_site_name),
                 review_request_item_mimetype,
-                {
-                    'extra_data.dummy': '',
-                },
+                {'extra_data.dummy': ''},
                 review_request,
                 [])
 

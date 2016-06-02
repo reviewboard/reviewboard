@@ -109,6 +109,20 @@ Hosting Service Integration
    reviewboard.hostingsvcs.service
 
 
+Integrations
+============
+
+.. autosummary::
+   :toctree: python
+
+   reviewboard.integrations
+   reviewboard.integrations.base
+   reviewboard.integrations.forms
+   reviewboard.integrations.models
+   reviewboard.integrations.urls
+   reviewboard.integrations.views
+
+
 E-mail and WebHooks
 ===================
 
@@ -126,8 +140,10 @@ Review Requests and Reviews
 .. autosummary::
    :toctree: python
 
+   reviewboard.reviews.actions
    reviewboard.reviews.chunk_generators
    reviewboard.reviews.context
+   reviewboard.reviews.default_actions
    reviewboard.reviews.errors
    reviewboard.reviews.fields
    reviewboard.reviews.forms

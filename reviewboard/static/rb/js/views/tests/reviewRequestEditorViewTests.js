@@ -7,9 +7,9 @@ suite('rb/views/ReviewRequestEditorView', function() {
             ' <div id="review_request_banners"></div>',
             ' <div id="review-request-warning"></div>',
             ' <div class="actions">',
-            '  <a href="#" id="discard-review-request-link"></a>',
-            '  <a href="#" id="link-review-request-close-submitted"></a>',
-            '  <a href="#" id="delete-review-request-link"></a>',
+            '  <a href="#" id="discard-review-request-action"></a>',
+            '  <a href="#" id="submit-review-request-action"></a>',
+            '  <a href="#" id="delete-review-request-action"></a>',
             ' </div>',
             ' <div class="review-request">',
             '  <div id="review_request_main">',
@@ -18,6 +18,9 @@ suite('rb/views/ReviewRequestEditorView', function() {
             '         class="field editable"></span>',
             '   <span id="field_branch"',
             '         data-field-id="branch"',
+            '         class="field editable"></span>',
+            '   <span id="field_submitter"',
+            '         data-field-id="submitter"',
             '         class="field editable"></span>',
             '   <span id="field_bugs_closed"',
             '         data-field-id="bugs_closed"',
@@ -131,7 +134,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     };
                 });
 
-                $('#delete-review-request-link').click();
+                $('#delete-review-request-action').click();
                 expect($.fn.modalBox).toHaveBeenCalled();
 
                 $buttons.filter('input[value="Delete"]').click();
@@ -145,7 +148,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 spyOn(window, 'confirm').and.returnValue(true);
 
-                $('#discard-review-request-link').click();
+                $('#discard-review-request-action').click();
 
                 expect(reviewRequest.close).toHaveBeenCalled();
             });
@@ -155,7 +158,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     expect(options.type).toBe(RB.ReviewRequest.CLOSE_SUBMITTED);
                 });
 
-                $('#link-review-request-close-submitted').click();
+                $('#submit-review-request-action').click();
 
                 expect(reviewRequest.close).toHaveBeenCalled();
             });
@@ -200,6 +203,15 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
 
             describe('Buttons actions', function() {
+                beforeEach(function() {
+                    reviewRequest.set({
+                        links: {
+                            submitter: {
+                                title: 'submitter'
+                            }
+                        }
+                    });
+                });
                 it('Discard Draft', function() {
                     view.model.set('hasDraft', true);
                     view.showBanner();
@@ -245,6 +257,11 @@ suite('rb/views/ReviewRequestEditorView', function() {
                                 url: '/groups/foo'
                             }],
                             summary: 'foo',
+                            links: {
+                                submitter: {
+                                    title: 'submitter'
+                                }
+                            },
                             description: 'foo'
                         });
                     });
@@ -257,6 +274,27 @@ suite('rb/views/ReviewRequestEditorView', function() {
                         expect(editor.get('publishing')).toBe(true);
                         expect(editor.get('pendingSaveCount')).toBe(0);
                         expect(editor.publishDraft).toHaveBeenCalled();
+                        expect(reviewRequest.draft.publish).toHaveBeenCalled();
+                    });
+
+                    it('With submitter changed', function() {
+                        reviewRequest.draft.set({
+                            links: {
+                                submitter: {
+                                    title: 'submitter2'
+                                }
+                            }
+                        });
+                        view.showBanner();
+
+                        spyOn(window, 'confirm').and.returnValue(true);
+
+                        $('#btn-draft-publish').click();
+
+                        expect(editor.get('publishing')).toBe(true);
+                        expect(editor.get('pendingSaveCount')).toBe(0);
+                        expect(editor.publishDraft).toHaveBeenCalled();
+                        expect(window.confirm).toHaveBeenCalled();
                         expect(reviewRequest.draft.publish).toHaveBeenCalled();
                     });
 
@@ -387,6 +425,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
     describe('Fields', function() {
         var saveSpyFunc,
+            fieldName,
             jsonFieldName,
             jsonTextTypeFieldName,
             supportsRichText,
@@ -409,6 +448,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
         function setupFieldTests(options) {
             beforeEach(function() {
+                fieldName = options.fieldName;
                 jsonFieldName = options.jsonFieldName;
                 jsonTextTypeFieldName = jsonFieldName + '_text_type';
                 supportsRichText = !!options.supportsRichText;
@@ -527,8 +567,37 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
         }
 
+        function securityTests(options) {
+            options = options || {};
+
+            if (options.supportsRichText) {
+                describe('Security measures', function() {
+                    it('No self-XSS when draft field changes', function() {
+                        var fieldOwner;
+
+                        delete window.rbTestFoundXSS;
+
+                        if (options.fieldOnReviewRequest) {
+                            fieldOwner = reviewRequest;
+                        } else {
+                            fieldOwner = reviewRequest.draft;
+                        }
+
+                        fieldOwner.set(
+                            fieldName,
+                            '"><script>window.rbTestFoundXSS = true;</script>');
+                        fieldOwner.trigger('change:' + fieldName);
+                        fieldOwner.trigger('fieldChange:' + fieldName);
+
+                        expect(window.rbTestFoundXSS).toBe(undefined);
+                    });
+                });
+            }
+        }
+
         describe('Branch', function() {
             setupFieldTests({
+                fieldName: 'branch',
                 jsonFieldName: 'branch',
                 selector: '#field_branch'
             });
@@ -536,10 +605,12 @@ suite('rb/views/ReviewRequestEditorView', function() {
             hasEditorTest();
             savingTest();
             editCountTests();
+            securityTests();
         });
 
         describe('Bugs Closed', function() {
             setupFieldTests({
+                fieldName: 'bugsClosed',
                 jsonFieldName: 'bugs_closed',
                 selector: '#field_bugs_closed'
             });
@@ -555,6 +626,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     reviewRequest.set('bugTrackerURL',
                                       'http://issues/?id=--bug_id--');
                     reviewRequest.draft.set('bugsClosed', [1, 2, 3]);
+                    editor.trigger('fieldChanged:bugsClosed');
 
                     expect($field.text()).toBe('1, 2, 3');
 
@@ -580,12 +652,14 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 it('Without bugTrackerURL', function() {
                     reviewRequest.set('bugTrackerURL', '');
                     reviewRequest.draft.set('bugsClosed', [1, 2, 3]);
+                    editor.trigger('fieldChanged:bugsClosed');
 
                     expect($field.html()).toBe('1, 2, 3');
                 });
             });
 
             editCountTests();
+            securityTests();
         });
 
         describe('Change Descriptions', function() {
@@ -599,6 +673,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
 
                 setupFieldTests({
+                    fieldName: 'closeDescription',
                     jsonFieldName: 'changedescription',
                     selector: options.bannerSel + ' #field_changedescription'
                 });
@@ -664,6 +739,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     it('Links', function() {
                         reviewRequest.set('closeDescription',
                                           'Testing /r/123');
+                        editor.trigger('fieldChanged:closeDescription');
 
                         expect($field.text()).toBe('Testing /r/123');
                         expect($field.find('a').attr('href')).toBe('/r/123/');
@@ -671,6 +747,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
 
                 editCountTests();
+                securityTests({
+                    fieldOnReviewRequest: true,
+                    supportsRichText: true
+                });
             }
 
             describe('Discarded review requests', function() {
@@ -691,6 +771,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 setupFieldTests({
                     supportsRichText: true,
+                    fieldName: 'closeDescription',
                     jsonFieldName: 'changedescription',
                     selector: '#draft-banner #field_changedescription'
                 });
@@ -699,6 +780,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 richTextSavingTest();
 
                 editCountTests();
+                securityTests({
+                    fieldOnReviewRequest: true,
+                    supportsRichText: true
+                });
             });
 
             describe('Submitted review requests', function() {
@@ -715,6 +800,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
         describe('Description', function() {
             setupFieldTests({
                 supportsRichText: true,
+                fieldName: 'description',
                 jsonFieldName: 'description',
                 selector: '#field_description'
             });
@@ -725,6 +811,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             describe('Formatting', function() {
                 it('Links', function() {
                     reviewRequest.draft.set('description', 'Testing /r/123');
+                    editor.trigger('fieldChanged:description');
 
                     expect($field.text()).toBe('Testing /r/123');
                     expect($field.find('a').attr('href')).toBe('/r/123/');
@@ -732,10 +819,14 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
 
             editCountTests();
+            securityTests({
+                supportsRichText: true
+            });
         });
 
         describe('Summary', function() {
             setupFieldTests({
+                fieldName: 'summary',
                 jsonFieldName: 'summary',
                 selector: '#field_summary'
             });
@@ -743,11 +834,13 @@ suite('rb/views/ReviewRequestEditorView', function() {
             hasEditorTest();
             savingTest();
             editCountTests();
+            securityTests();
         });
 
         describe('Testing Done', function() {
             setupFieldTests({
                 supportsRichText: true,
+                fieldName: 'testingDone',
                 jsonFieldName: 'testing_done',
                 selector: '#field_testing_done'
             });
@@ -758,6 +851,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             describe('Formatting', function() {
                 it('Links', function() {
                     reviewRequest.draft.set('testingDone', 'Testing /r/123');
+                    editor.trigger('fieldChanged:testingDone');
 
                     expect($field.text()).toBe('Testing /r/123');
                     expect($field.find('a').attr('href')).toBe('/r/123/');
@@ -765,11 +859,15 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
 
             editCountTests();
+            securityTests({
+                supportsRichText: true
+            });
         });
 
         describe('Reviewers', function() {
             describe('Groups', function() {
                 setupFieldTests({
+                    fieldName: 'targetGroups',
                     jsonFieldName: 'target_groups',
                     selector: '#field_target_groups'
                 });
@@ -789,6 +887,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                             url: '/groups/group2/'
                         }
                     ]);
+                    editor.trigger('fieldChanged:targetGroups');
 
                     expect($field.html()).toBe(
                         '<a href="/groups/group1/">group1</a>, ' +
@@ -796,10 +895,12 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
 
                 editCountTests();
+                securityTests();
             });
 
             describe('People', function() {
                 setupFieldTests({
+                    fieldName: 'targetPeople',
                     jsonFieldName: 'target_people',
                     selector: '#field_target_people'
                 });
@@ -819,6 +920,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                             url: '/users/user2/'
                         }
                     ]);
+                    editor.trigger('fieldChanged:targetPeople');
 
                     expect($field.text()).toBe('user1, user2');
                     expect($($field.children()[0]).attr('href')).toBe('/users/user1/');
@@ -826,7 +928,34 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
 
                 editCountTests();
+                securityTests();
             });
+        });
+
+        describe('Submitter', function() {
+            setupFieldTests({
+                jsonFieldName: 'submitter',
+                selector: '#field_submitter'
+            });
+
+            hasAutoCompleteTest();
+            hasEditorTest();
+            savingTest();
+
+            it('Formatting', function() {
+                reviewRequest.draft.set('submitter',
+                    {
+                        title: 'user1',
+                        href: '/users/user1/'
+                    }
+                );
+                editor.trigger('fieldChanged:submitter');
+
+                expect($field.text()).toBe('user1');
+                expect(($field.children()).attr('href')).toBe('/users/user1/');
+            });
+
+            editCountTests();
         });
 
         describe('Custom fields', function() {
@@ -848,6 +977,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             hasEditorTest();
             savingTest();
             editCountTests();
+            securityTests();
         });
     });
 

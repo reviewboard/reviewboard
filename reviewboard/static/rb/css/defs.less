@@ -113,12 +113,19 @@
  */
 @textarea-font-size: 13px;
 @textarea-font-family: monospace;
-@textarea-line-height: (@textarea-font-size + 2px);
 @textarea-border-color: #b8b5a0;
-@textarea-border: 1px #b8b5a0 solid;
+@textarea-border-size: 1px;
+@textarea-border: @textarea-border-size @textarea-border-color solid;
 @textarea-editor-background: white;
-@textarea-editor-margin: 10px 0 0 0;
+@textarea-editor-margin-top: 10px;
+@textarea-editor-margin: @textarea-editor-margin-top 0 0 0;
 @textarea-editor-padding: 10px;
+
+/*
+ * Add room (4px) for the inline code styling's borders. This also generally
+ * just gives extra breathing room for text.
+ */
+@textarea-line-height: (@textarea-font-size + 4px);
 
 @z-index-base: 1;
 @z-index-deco: 20;
@@ -151,6 +158,12 @@
 
 @comment-flag-ghost-color: #eeeeec;
 @comment-flag-ghost-border-color: #888a85;
+
+// Comment flag tooltip
+@comments-tooltip-padding: 5px;
+@comments-tooltip-border-color: #5170B3;
+@comments-tooltip-background: @comment-flag-color;
+@comments-tooltip-draft-background: @comment-flag-draft-color;
 
 // Comment dialog
 @comment-dlg-bg: #ACEB6F;
@@ -296,6 +309,13 @@
 @mobile-menu-header-height: 32px;
 @mobile-navbar-width: 300px;
 @mobile-medium-width-720: 720px;
+
+// Trophy banner
+@trophy-banner-bg-color: #fdf2a0;
+
+
+// Infoboxes
+@user-infobox-avatar-size: 128px;
 
 
 @import (reference) "mixins/gradients.less";

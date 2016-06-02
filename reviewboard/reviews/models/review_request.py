@@ -694,7 +694,20 @@ class ReviewRequest(BaseReviewRequestDetails):
     def close(self, type, user=None, description=None, rich_text=False):
         """Closes the review request.
 
-        The type must be one of SUBMITTED or DISCARDED.
+        Args:
+            type (unicode):
+                How the close occurs. This should be one of
+                :py:attr:`SUBMITTED` or :py:attr:`DISCARDED`.
+
+            user (django.contrib.auth.models.User):
+                The user who is closing the review request.
+
+            description (unicode):
+                An optional description that indicates why the review request
+                was closed.
+
+            rich_text (bool):
+                Indicates whether or not that the description is rich text.
         """
         if (user and not self.is_mutable_by(user) and
             not user.has_perm("reviews.can_change_status", self.local_site)):
@@ -721,7 +734,8 @@ class ReviewRequest(BaseReviewRequestDetails):
             # TODO: Use the user's default for rich_text.
             changedesc = ChangeDescription(public=True,
                                            text=description or "",
-                                           rich_text=rich_text or False)
+                                           rich_text=rich_text or False,
+                                           user=user or self.submitter)
 
             status_field = get_review_request_field('status')(self)
             status_field.record_change_entry(changedesc, self.status, type)
@@ -740,7 +754,9 @@ class ReviewRequest(BaseReviewRequestDetails):
 
             review_request_closed.send(sender=self.__class__, user=user,
                                        review_request=self,
-                                       type=type)
+                                       type=type,
+                                       description=description,
+                                       rich_text=rich_text)
         else:
             # Update submission description.
             changedesc = self.changedescs.filter(public=True).latest()
@@ -773,7 +789,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                                           user=user,
                                           review_request=self)
 
-            changedesc = ChangeDescription()
+            changedesc = ChangeDescription(user=user or self.submitter)
             status_field = get_review_request_field('status')(self)
             status_field.record_change_entry(changedesc, self.status,
                                              self.PENDING_REVIEW)
@@ -823,7 +839,8 @@ class ReviewRequest(BaseReviewRequestDetails):
         if draft is not None:
             # This will in turn save the review request, so we'll be done.
             try:
-                changes = draft.publish(self, send_notification=False)
+                changes = draft.publish(self, send_notification=False,
+                                        user=user)
             except Exception:
                 # The draft failed to publish, for one reason or another.
                 # Check if we need to re-increment those counters we
@@ -848,6 +865,39 @@ class ReviewRequest(BaseReviewRequestDetails):
         review_request_published.send(sender=self.__class__, user=user,
                                       review_request=self, trivial=trivial,
                                       changedesc=changes)
+
+    def determine_user_for_changedesc(self, changedesc):
+        """Determine the user associated with the change description.
+
+        Args:
+            changedesc (reviewboard.changedescs.models.ChangeDescription):
+                The change description.
+
+        Returns:
+            django.contrib.auth.models.User:
+            The user associated with the change description.
+        """
+        if 'submitter' in changedesc.fields_changed:
+            entry = changedesc.fields_changed['submitter']['old'][0]
+            return User.objects.get(pk=entry[2])
+
+        user_pk = None
+
+        changes = (
+            self.changedescs
+            .filter(pk__lt=changedesc.pk)
+            .order_by('-pk')
+        )
+
+        for changedesc in changes:
+            if 'submitter' in changedesc.fields_changed:
+                user_pk = changedesc.fields_changed['submitter']['new'][0][2]
+                break
+
+        if user_pk:
+            return User.objects.get(pk=user_pk)
+
+        return self.submitter
 
     def _update_counts(self):
         from reviewboard.accounts.models import Profile, LocalSiteProfile

@@ -419,6 +419,61 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             fieldID: 'summary'
         },
         {
+            fieldID: 'submitter',
+            fieldName: 'submitter',
+            useEditIconOnly: true,
+            autocomplete: {
+                fieldName: 'users',
+                nameKey: 'username',
+                descKey: 'fullname',
+                extraParams: {
+                    fullname: 1
+                },
+                cmp: function(term, a, b) {
+                    /*
+                     * Sort the results with username matches first (in
+                     * alphabetical order), followed by real name matches (in
+                     * alphabetical order)
+                     */
+                    var aUsername = a.data.username,
+                        bUsername = b.data.username,
+                        aFullname = a.data.fullname,
+                        bFullname = a.data.fullname;
+
+                    if (aUsername.indexOf(term) === 0) {
+                        if (bUsername.indexOf(term) === 0) {
+                            return aUsername.localeCompare(bUsername);
+                        }
+
+                        return -1;
+                    } else if (bUsername.indexOf(term) === 0) {
+                        return 1;
+                    } else {
+                        return aFullname.localeCompare(bFullname);
+                    }
+                }
+            },
+            formatter: function(view, data, $el) {
+                var $link = $(view.convertToLink(
+                    data,
+                    function(item) {
+                        var href = item.href,
+                            startIndex;
+
+                        startIndex = href.indexOf('/users');
+                        href = href.substr(startIndex);
+
+                        return href;
+                    },
+                    function(item) { return item.title; }
+                ));
+
+                $el.html($link
+                    .addClass("user")
+                    .user_infobox());
+            }
+        },
+        {
             fieldID: 'target_groups',
             fieldName: 'targetGroups',
             useEditIconOnly: true,
@@ -842,14 +897,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             $el.inlineEditor('setupEvents');
         }
 
-        /* TODO: Support listening to extraData fields. */
-        if (fieldOptions.fieldName === 'closeDescription') {
-            listenObj = this.model.get('reviewRequest');
-        } else {
-            listenObj = this.draft;
-        }
-
-        this.listenTo(listenObj, 'change:' + fieldOptions.fieldName,
+        this.listenTo(this.model, 'fieldChanged:' + fieldOptions.fieldName,
                       _.bind(this._formatField, this, fieldOptions));
     },
 
@@ -921,6 +969,24 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     },
 
     /*
+     * Convert an item to hyperlink.
+     *
+     * By default, this will use the item as the URL and as the hyperlink text.
+     * By overriding urlFunc and textFunc, the URL and text can be customized.
+     */
+    convertToLink: function(item, urlFunc, textFunc) {
+        if (!item) {
+            return '';
+        }
+
+        var _linkTemplate = _.template('<a href="<%- url %>"><%- label %></a>');
+        return _linkTemplate({
+            url: urlFunc ? urlFunc(item) : item,
+            label: textFunc ? textFunc(item) : item
+        });
+    },
+
+    /*
      * Converts an array of items to a list of hyperlinks.
      *
      * By default, this will use the item as the URL and as the hyperlink text.
@@ -988,10 +1054,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * Sets up all review request actions and listens for events.
      */
     _setupActions: function() {
-        var $closeDiscarded = this.$('#discard-review-request-link'),
-            $closeSubmitted = this.$('#link-review-request-close-submitted'),
-            $deletePermanently = this.$('#delete-review-request-link'),
-            $updateDiff = this.$('#upload-diff-link');
+        var $closeDiscarded = this.$('#discard-review-request-action'),
+            $closeSubmitted = this.$('#submit-review-request-action'),
+            $deletePermanently = this.$('#delete-review-request-action'),
+            $updateDiff = this.$('#upload-diff-action'),
+            editorView = this;
 
         /*
          * We don't want the click event filtering from these down to the
@@ -1001,6 +1068,12 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         $closeSubmitted.click(this._onCloseSubmittedClicked);
         $deletePermanently.click(this._onDeleteReviewRequestClicked);
         $updateDiff.click(this._onUpdateDiffClicked);
+
+        RB.ReviewRequestActionHook.each(function(hook) {
+            $.each(hook.get('callbacks'), function(selector, handler) {
+                editorView.$(selector).click(handler);
+            })
+        }, this);
     },
 
     /*

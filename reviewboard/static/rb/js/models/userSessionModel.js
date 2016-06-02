@@ -9,12 +9,14 @@ var Item,
  * the proper data and then immediately saved or deleted.
  */
 Item = RB.BaseResource.extend({
-    defaults: _.defaults({
-        objectID: null,
-        baseURL: null,
-        stored: false,
-        loaded: true
-    }, RB.BaseResource.prototype.defaults),
+    defaults: function() {
+        return _.defaults({
+            objectID: null,
+            baseURL: null,
+            stored: false,
+            loaded: true
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     url: function() {
         var url = this.get('baseURL');
@@ -49,11 +51,13 @@ Item = RB.BaseResource.extend({
  * of objects.
  */
 StoredItems = RB.BaseResource.extend({
-    defaults: _.defaults({
-        visibility: false,
-        addError: '',
-        removeError: ''
-    }, RB.BaseResource.prototype.defaults),
+    defaults: function() {
+        return _.defaults({
+            visibility: false,
+            addError: '',
+            removeError: ''
+        }, RB.BaseResource.prototype.defaults());
+    },
 
     url: function() {
         return this.get('url');

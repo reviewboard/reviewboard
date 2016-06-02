@@ -473,8 +473,15 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             else:
                 dest_revision = _("New Change")
 
-        depot_filename = tool.normalize_path_for_display(filediff.source_file)
-        dest_filename = tool.normalize_path_for_display(filediff.dest_file)
+        if interfilediff:
+            raw_depot_filename = filediff.dest_file
+            raw_dest_filename = interfilediff.dest_file
+        else:
+            raw_depot_filename = filediff.source_file
+            raw_dest_filename = filediff.dest_file
+
+        depot_filename = tool.normalize_path_for_display(raw_depot_filename)
+        dest_filename = tool.normalize_path_for_display(raw_dest_filename)
 
         f = {
             'depot_filename': depot_filename,

@@ -123,7 +123,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
 
     @add_fixtures(['test_scmtools'])
     def test_post_all_repositories_not_same_local_site(self):
-        """Testing adding a webhook with a local site adnd custom repositories
+        """Testing adding a webhook with a local site and custom repositories
         that are not all in the same local site
         """
         local_site_1 = LocalSite.objects.create(name='local-site-1')
@@ -309,6 +309,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn('webhook', rsp)
         self.compare_item(rsp['webhook'], WebHookTarget.objects.get())
+
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):

@@ -26,7 +26,13 @@ class HostingServiceAccount(models.Model):
     objects = HostingServiceAccountManager()
 
     def __str__(self):
-        return self.username
+        if self.hosting_url:
+            # Show the hosting URL, so that users can distinguish between
+            # the accounts across different self-hosted servers of a given
+            # type.
+            return '%s (%s)' % (self.username, self.hosting_url)
+        else:
+            return self.username
 
     @property
     def service(self):

@@ -64,8 +64,8 @@ class MilestoneTrophy(TrophyType):
     def qualifies(self, review_request):
         """Get whether or not the given review request deserves this trophy."""
         id_str = unicode(review_request.display_id)
-        return (review_request.display_id >= 1000
-                and re.match(r'^[1-9]0+$', id_str))
+        return (review_request.display_id >= 1000 and
+                re.match(r'^[1-9]0+$', id_str))
 
 
 class FishTrophy(TrophyType):
@@ -85,8 +85,8 @@ class FishTrophy(TrophyType):
     def qualifies(self, review_request):
         """Get whether or not the given review request deserves this trophy."""
         id_str = unicode(review_request.display_id)
-        return (review_request.display_id >= 1000
-                and id_str == ''.join(reversed(id_str)))
+        return (review_request.display_id >= 1000 and
+                id_str == ''.join(reversed(id_str)))
 
     def get_display_text(self, trophy):
         """Get the text to display in the trophy banner."""

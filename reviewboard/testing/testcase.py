@@ -139,7 +139,6 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             if message is not None:
                 self.assertEqual(message, six.text_type(w[-1].message))
 
-
     def create_diff_file_attachment(self, filediff, from_modified=True,
                                     review_request=None,
                                     orig_filename='filename.png',

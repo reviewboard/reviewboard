@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
 from django.db.models import Q
+from django.db.models.signals import post_delete, post_save
 from django.template.loader import render_to_string
 from django.utils import six, timezone
 from django.utils.datastructures import MultiValueDict
@@ -20,11 +21,13 @@ from djblets.auth.signals import user_registered
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.server import get_server_url
+from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.models import Group, ReviewRequest, Review
 from reviewboard.reviews.signals import (review_request_published,
                                          review_published, reply_published,
                                          review_request_closed)
 from reviewboard.reviews.views import build_diff_comment_fragments
+from reviewboard.webapi.models import WebAPIToken
 
 
 # A mapping of signals to EmailHooks.
@@ -105,7 +108,6 @@ def review_request_closed_cb(sender, user, review_request, type, **kwargs):
         mail_review_request(review_request, user, close_type=type)
 
 
-
 def review_request_published_cb(sender, user, review_request, trivial,
                                 changedesc, **kwargs):
     """Send e-mail when a review request is published.
@@ -160,6 +162,44 @@ def user_registered_cb(user, **kwargs):
         mail_new_user(user)
 
 
+def webapi_token_saved_cb(instance, created, **kwargs):
+    """Send e-mail when an API token is created or updated.
+
+    Args:
+        instance (reviewboard.webapi.models.WebAPIToken):
+            The token that has been created or updated.
+
+        created (bool):
+            Whether or not the token is created.
+
+        **kwargs (dict):
+            Unused keyword arguments provided by the signal.
+    """
+    # Unlike the other handlers, we always want to send e-mails for new
+    # tokens, as a security measure.
+    if created:
+        op = 'created'
+    else:
+        op = 'updated'
+
+    mail_webapi_token(instance, op)
+
+
+def webapi_token_deleted_cb(instance, **kwargs):
+    """Send e-mail when an API token is deleted.
+
+    Args:
+        instance (reviewboard.webapi.models.WebAPIToken):
+            The token that has been deleted.
+
+        **kwargs (dict):
+            Unused keyword arguments provided by the signal.
+    """
+    # Unlike the other handlers, we always want to send e-mails for new
+    # tokens, as a security measure.
+    mail_webapi_token(instance, 'deleted')
+
+
 def connect_signals():
     """Connect e-mail callbacks to signals."""
     review_request_published.connect(review_request_published_cb,
@@ -169,6 +209,8 @@ def connect_signals():
     review_request_closed.connect(review_request_closed_cb,
                                   sender=ReviewRequest)
     user_registered.connect(user_registered_cb)
+    post_save.connect(webapi_token_saved_cb, sender=WebAPIToken)
+    post_delete.connect(webapi_token_deleted_cb, sender=WebAPIToken)
 
 
 def build_email_address(fullname, email):
@@ -217,8 +259,8 @@ def get_email_addresses_for_group(group, review_request_id=None):
         if ',' not in group.mailing_list:
             # The mailing list field has only one e-mail address in it,
             # so we can just use that and the group's display name.
-            addresses =  [build_email_address(group.display_name,
-                                              group.mailing_list)]
+            addresses = [build_email_address(group.display_name,
+                                             group.mailing_list)]
         else:
             # The mailing list field has multiple e-mail addresses in it.
             # We don't know which one should have the group's display name
@@ -364,6 +406,25 @@ def build_recipients(user, review_request, extra_recipients=None,
 
     if user.should_send_email():
         recipients.add(user)
+
+    try:
+        changedesc = review_request.changedescs.latest()
+    except ChangeDescription.DoesNotExist:
+        pass
+    else:
+        # If the submitter has changed and the person sending this e-mail is
+        # not the original submitter, then we should include them in the list
+        # of recipients.
+        if changedesc.fields_changed:
+            submitter_info = changedesc.fields_changed.get('submitter')
+
+            if submitter_info:
+                prev_submitter_pk = submitter_info['old'][0][2]
+                prev_submitter = User.objects.get(pk=prev_submitter_pk)
+
+                if (prev_submitter.is_active and
+                    prev_submitter.should_send_email()):
+                    recipients.add(prev_submitter)
 
     if submitter.is_active and submitter.should_send_email():
         recipients.add(submitter)
@@ -605,7 +666,7 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     return message.message_id
 
 
-def mail_review_request(review_request, user, changedesc=None,
+def mail_review_request(review_request, from_user=None, changedesc=None,
                         close_type=None):
     """Send an e-mail representing the supplied review request.
 
@@ -613,7 +674,7 @@ def mail_review_request(review_request, user, changedesc=None,
         review_request (reviewboard.reviews.models.ReviewRequest):
             The review request to send an e-mail about.
 
-        user (django.contrib.auth.models.User):
+        from_user (django.contrib.auth.models.User):
             The user who triggered the e-mail (i.e., they published or closed
             the review request).
 
@@ -633,10 +694,13 @@ def mail_review_request(review_request, user, changedesc=None,
     """
     # If the review request is not yet public or has been discarded, don't send
     # any mail. Relax the "discarded" rule when e-mails are sent on closing
-    # review requests
+    # review requests.
     if (not review_request.public or
         (not close_type and review_request.status == 'D')):
         return
+
+    if not from_user:
+        from_user = review_request.submitter
 
     summary = _ensure_unicode(review_request.summary)
     subject = "Review Request %d: %s" % (review_request.display_id,
@@ -691,9 +755,7 @@ def mail_review_request(review_request, user, changedesc=None,
                 limit_recipients_to.update(Group.objects.filter(
                     pk__in=group_pks))
 
-    submitter = review_request.submitter
-
-    to_field, cc_field = build_recipients(submitter, review_request,
+    to_field, cc_field = build_recipients(from_user, review_request,
                                           extra_recipients,
                                           limit_recipients_to)
 
@@ -706,12 +768,12 @@ def mail_review_request(review_request, user, changedesc=None,
         signal = review_request_published
 
     to_field, cc_field = filter_email_recipients_from_hooks(
-        to_field, cc_field, signal, review_request=review_request, user=user,
-        **extra_filter_kwargs)
+        to_field, cc_field, signal, review_request=review_request,
+        user=from_user, **extra_filter_kwargs)
 
     review_request.time_emailed = timezone.now()
     review_request.email_message_id = \
-        send_review_mail(review_request.submitter, review_request, subject,
+        send_review_mail(from_user, review_request, subject,
                          reply_message_id, to_field, cc_field,
                          'notifications/review_request_email.txt',
                          'notifications/review_request_email.html',
@@ -725,7 +787,7 @@ def mail_review(review, user, to_submitter_only):
     Args:
         review (reviewboard.reviews.models.Review):
             The review to send an e-mail about.
-            
+
         to_submitter_only (bool):
             Determines if the review is to the submitter only or not.
     """
@@ -764,7 +826,7 @@ def mail_review(review, user, to_submitter_only):
 
     reviewer = review.user
 
-    limit_to=None
+    limit_to = None
 
     if to_submitter_only:
         limit_to = set([review_request.submitter, review.user])
@@ -855,7 +917,7 @@ def mail_new_user(user):
             The user to send an e-mail about.
     """
     current_site = Site.objects.get_current()
-    siteconfig = current_site.config.get_current()
+    siteconfig = SiteConfiguration.objects.get_current()
     domain_method = siteconfig.get("site_domain_method")
     subject = "New Review Board user registration for %s" % user.username
     from_email = get_email_address_for_user(user)
@@ -883,6 +945,70 @@ def mail_new_user(user):
         logging.error("Error sending e-mail notification with subject '%s' on "
                       "behalf of '%s' to admin: %s",
                       subject.strip(), from_email, e, exc_info=1)
+
+
+def mail_webapi_token(webapi_token, op):
+    """Send an e-mail about an API token update.
+
+    This will inform the user about a newly-created, updated, or deleted
+    token.
+
+    Args:
+        webapi_token (reviewboard.webapi.models.WebAPIToken):
+            The API token the e-mail is about.
+
+        op (unicode):
+            The operation the email is about. This is one of
+            ``created``, ``updated``, or ``deleted``.
+
+    Raises:
+        ValueError:
+            The provided ``op`` argument was invalid.
+    """
+    if op == 'created':
+        subject = 'New Review Board API token created'
+        template_name = 'notifications/api_token_created'
+    elif op == 'updated':
+        subject = 'Review Board API token updated'
+        template_name = 'notifications/api_token_updated'
+    elif op == 'deleted':
+        subject = 'Review Board API token deleted'
+        template_name = 'notifications/api_token_deleted'
+    else:
+        raise ValueError('Unexpected op "%s" passed to mail_webapi_token.'
+                         % op)
+
+    current_site = Site.objects.get_current()
+    siteconfig = SiteConfiguration.objects.get_current()
+    domain_method = siteconfig.get('site_domain_method')
+    user = webapi_token.user
+    user_email = get_email_address_for_user(user)
+
+    context = {
+        'api_token': webapi_token,
+        'domain': current_site.domain,
+        'domain_method': domain_method,
+        'partial_token': '%s...' % webapi_token.token[:10],
+        'user': user,
+    }
+
+    text_message = render_to_string('%s.txt' % template_name, context)
+    html_message = render_to_string('%s.html' % template_name, context)
+
+    message = EmailMessage(
+        subject,
+        text_message,
+        html_message,
+        settings.SERVER_EMAIL,
+        settings.SERVER_EMAIL,
+        [user_email])
+
+    try:
+        message.send()
+    except Exception as e:
+        logging.exception("Error sending API Token e-mail with subject '%s' "
+                          "from '%s' to '%s': %s",
+                          subject, settings.SERVER_EMAIL, user_email, e)
 
 
 def filter_email_recipients_from_hooks(to_field, cc_field, signal, **kwargs):

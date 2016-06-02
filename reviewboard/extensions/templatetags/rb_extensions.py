@@ -7,12 +7,9 @@ from django.template.loader import render_to_string
 from djblets.util.decorators import basictag
 
 from reviewboard.extensions.hooks import (CommentDetailDisplayHook,
-                                          DiffViewerActionHook,
                                           HeaderActionHook,
                                           HeaderDropdownActionHook,
-                                          NavigationBarHook,
-                                          ReviewRequestActionHook,
-                                          ReviewRequestDropdownActionHook)
+                                          NavigationBarHook)
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
@@ -47,30 +44,6 @@ def action_hooks(context, hook_cls, action_key="action",
                           hook, hook.extension.id, e, exc_info=1)
 
     return s
-
-
-@register.tag
-@basictag(takes_context=True)
-def diffviewer_action_hooks(context):
-    """Displays all registered action hooks for the diff viewer."""
-    return action_hooks(context, DiffViewerActionHook)
-
-
-@register.tag
-@basictag(takes_context=True)
-def review_request_action_hooks(context):
-    """Displays all registered action hooks for review requests."""
-    return action_hooks(context, ReviewRequestActionHook)
-
-
-@register.tag
-@basictag(takes_context=True)
-def review_request_dropdown_action_hooks(context):
-    """Displays all registered action hooks for review requests."""
-    return action_hooks(context,
-                        ReviewRequestDropdownActionHook,
-                        "actions",
-                        "extensions/action_dropdown.html")
 
 
 @register.tag

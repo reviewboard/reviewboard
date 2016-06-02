@@ -3,10 +3,14 @@ from __future__ import unicode_literals
 import inspect
 import warnings
 
+from django.template.context import RequestContext
+from django.template.loader import render_to_string
 from django.utils import six
-from djblets.extensions.hooks import (DataGridColumnsHook, ExtensionHook,
-                                      ExtensionHookPoint, SignalHook,
-                                      TemplateHook, URLHook)
+from djblets.extensions.hooks import (AppliesToURLMixin, DataGridColumnsHook,
+                                      ExtensionHook, ExtensionHookPoint,
+                                      SignalHook, TemplateHook, URLHook)
+from djblets.integrations.hooks import BaseIntegrationHook
+from djblets.registries.errors import ItemLookupError
 
 from reviewboard.accounts.backends import (register_auth_backend,
                                            unregister_auth_backend)
@@ -21,8 +25,11 @@ from reviewboard.datagrids.grids import (DashboardDataGrid,
                                          UserPageReviewRequestDataGrid)
 from reviewboard.hostingsvcs.service import (register_hosting_service,
                                              unregister_hosting_service)
+from reviewboard.integrations.base import GetIntegrationManagerMixin
 from reviewboard.notifications.email import (register_email_hook,
                                              unregister_email_hook)
+from reviewboard.reviews.actions import (BaseReviewRequestAction,
+                                         BaseReviewRequestMenuAction)
 from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         register_review_request_fieldset,
                                         unregister_review_request_fieldset)
@@ -30,6 +37,8 @@ from reviewboard.reviews.signals import (review_request_published,
                                          review_published, reply_published,
                                          review_request_closed)
 from reviewboard.reviews.ui.base import register_ui, unregister_ui
+from reviewboard.urls import (diffviewer_url_names,
+                              main_review_request_url_name)
 from reviewboard.webapi.server_info import (register_webapi_capabilities,
                                             unregister_webapi_capabilities)
 
@@ -38,8 +47,8 @@ from reviewboard.webapi.server_info import (register_webapi_capabilities,
 class AuthBackendHook(ExtensionHook):
     """A hook for registering an authentication backend.
 
-    Authentication backends control user authentication, registration, and
-    user lookup, and user data manipulation.
+    Authentication backends control user authentication, registration, user
+    lookup, and user data manipulation.
 
     This hook takes the class of an authentication backend that should
     be made available to the server.
@@ -226,6 +235,16 @@ class HostingServiceHook(ExtensionHook):
         super(HostingServiceHook, self).shutdown()
 
         unregister_hosting_service(self.name)
+
+
+@six.add_metaclass(ExtensionHookPoint)
+class IntegrationHook(GetIntegrationManagerMixin, BaseIntegrationHook):
+    """A hook for registering new integration classes.
+
+    Integrations enable Review Board to connect with third-party services in
+    specialized ways. This class makes it easy to register new integrations on
+    an extension, binding their lifecycles to that of the extension.
+    """
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -466,87 +485,595 @@ class FileAttachmentThumbnailHook(ExtensionHook):
 
 
 class ActionHook(ExtensionHook):
-    """A hook for adding actions to a review request.
+    """A hook for injecting clickable actions into the UI.
 
-    Actions are displayed somewhere on the action bar (alongside Reviews,
-    Close, etc.) of the review request. The subclasses of ActionHook should
-    be used to determine placement.
+    Actions are displayed either on the action bar of each review request or in
+    the page header.
 
-    The provided actions parameter must be a list of actions. Each
-    action must be a dict with the following keys:
+    The provided ``actions`` parameter must be a list of actions. Each action
+    may be a :py:class:`dict` with the following keys:
 
-    * ``id``:           The ID of this action (optional).
-    * ``image``:        The path to the image used for the icon (optional).
-    * ``image_width``:  The width of the image (optional).
-    * ``image_height``: The height of the image (optional).
-    * ``label``:        The label for the action.
-    * ``url``:          The URI to invoke when the action is clicked.
-                        If you want to invoke a javascript action, this should
-                        be '#', and you should use a selector on the `id`
-                        field to attach the handler (as opposed to a
-                        javascript: URL, which doesn't work on all browsers).
+    ``id`` (optional):
+        The ID of the action.
 
-    If your hook needs to access the template context, it can override
-    get_actions and return results from there.
+    ``label``:
+        The label for the action.
+
+    ``url``:
+        The URL to invoke when the action is clicked.
+
+        If we want to invoke a JavaScript action, then this should be ``#``,
+        and there should be a selector on the ``id`` field to attach the
+        handler (as opposed to a ``javascript:`` URL, which doesn't work on all
+        browsers).
+
+    ``image`` (optional):
+        The path to the image used for the icon.
+
+    ``image_width`` (optional):
+        The width of the image.
+
+    ``image_height`` (optional):
+        The height of the image.
+
+    If our hook needs to access the template context, then it can override
+    :py:meth:`get_actions` and return results from there.
     """
-    def __init__(self, extension, actions=[], *args, **kwargs):
+
+    def __init__(self, extension, actions=None, *args, **kwargs):
+        """Initialize this action hook.
+
+        Args:
+            extension (djblets.extensions.extension.Extension):
+                The extension that is creating this action hook.
+
+            actions (list, optional):
+                The list of actions (of type :py:class:`dict` or
+                :py:class:`~.actions.BaseReviewRequestAction`) to be added.
+
+            *args (tuple):
+                Extra arguments.
+
+            **kwargs (dict):
+                Extra keyword arguments.
+        """
         super(ActionHook, self).__init__(extension, *args, **kwargs)
-        self.actions = actions
+
+        self.actions = actions or []
 
     def get_actions(self, context):
-        """Returns the list of action information for this action."""
+        """Return the list of action information for this action hook.
+
+        Args:
+            context (django.template.Context):
+                The collection of key-value pairs available in the template.
+
+        Returns:
+            list: The list of action information for this action hook.
+        """
         return self.actions
 
 
-@six.add_metaclass(ExtensionHookPoint)
-class ReviewRequestActionHook(ActionHook):
-    """A hook for adding an action to the review request page."""
+class _DictAction(BaseReviewRequestAction):
+    """An action for ActionHook-style dictionaries.
 
-
-@six.add_metaclass(ExtensionHookPoint)
-class ReviewRequestDropdownActionHook(ActionHook):
-    """A hook for adding an drop down action to the review request page.
-
-    The actions for a drop down action should contain:
-
-    * ``id``:      The ID of this action (optional).
-    * ``label``:   The label of the drop-down.
-    * ``items``:   A list of ActionHook-style dicts (see ActionHook params).
-
-    For example::
-
-        actions = [{
-            'id': 'id 0',
-            'label': 'Title',
-            'items': [
-                {
-                    'id': 'id 1',
-                    'label': 'Item 1',
-                    'url': '...',
-                },
-                {
-                    'id': 'id 2',
-                    'label': 'Item 2',
-                    'url': '...',
-                }
-            ]
-        }]
+    For backwards compatibility, review request actions may also be supplied as
+    :py:class:`ActionHook`-style dictionaries. This helper class is used by
+    :py:meth:`convert_action` to convert these types of dictionaries into
+    instances of :py:class:`BaseReviewRequestAction`.
     """
 
+    def __init__(self, action_dict, applies_to):
+        """Initialize this action.
+
+        Args:
+            action_dict (dict):
+                A dictionary representing this action, as specified by the
+                :py:class:`ActionHook` class.
+
+            applies_to (callable):
+                A callable that examines a given request and determines if this
+                action applies to the page.
+        """
+        super(_DictAction, self).__init__()
+
+        self.label = action_dict['label']
+        self.action_id = action_dict.get(
+            'id',
+            '%s-dummy-action' % self.label.lower().replace(' ', '-'))
+        self.url = action_dict['url']
+        self._applies_to = applies_to
+
+    def should_render(self, context):
+        """Return whether or not this action should render.
+
+        Args:
+            context (django.template.Context):
+                The collection of key-value pairs available in the template
+                just before this action is to be rendered.
+
+        Returns:
+            bool: Determines if this action should render.
+        """
+        return self._applies_to(context['request'])
+
+
+class _DictMenuAction(BaseReviewRequestMenuAction):
+    """A menu action for ReviewRequestDropdownActionHook-style dictionaries.
+
+    For backwards compatibility, review request actions may also be supplied as
+    :py:class:`ReviewRequestDropdownActionHook`-style dictionaries. This helper
+    class is used by :py:meth:`convert_action` to convert these types of
+    dictionaries into instances of :py:class:`BaseReviewRequestMenuAction`.
+    """
+
+    def __init__(self, child_actions, action_dict, applies_to):
+        """Initialize this action.
+
+        Args:
+            child_actions (list of dict or list of BaseReviewRequestAction):
+                The list of child actions to be contained by this menu action.
+
+            action_dict (dict):
+                A dictionary representing this menu action, as specified by the
+                :py:class:`ReviewRequestDropdownActionHook` class.
+
+            applies_to (callable):
+                A callable that examines a given request and determines if this
+                menu action applies to the page.
+        """
+        super(_DictMenuAction, self).__init__(child_actions)
+
+        self.label = action_dict['label']
+        self.action_id = action_dict.get(
+            'id',
+            '%s-dummy-menu-action' % self.label.lower().replace(' ', '-'))
+        self._applies_to = applies_to
+
+    def should_render(self, context):
+        """Return whether or not this action should render.
+
+        Args:
+            context (django.template.Context):
+                The collection of key-value pairs available in the template
+                just before this action is to be rendered.
+
+        Returns:
+            bool: Determines if this action should render.
+        """
+        return self._applies_to(context['request'])
+
 
 @six.add_metaclass(ExtensionHookPoint)
-class DiffViewerActionHook(ActionHook):
-    """A hook for adding an action to the diff viewer page."""
+class BaseReviewRequestActionHook(AppliesToURLMixin, ActionHook):
+    """A base hook for adding review request actions to the action bar.
+
+    Review request actions are displayed on the action bar (alongside default
+    actions such as :guilabel:`Download Diff` and :guilabel:`Ship It!`) of each
+    review request. This action bar is displayed on three main types of pages:
+
+    #. **Review Request Pages**:
+       Where reviews are displayed.
+
+    #. **File Attachment Pages**:
+       Where files like screenshots can be reviewed.
+
+    #. **Diff Viewer Pages**:
+       Where diffs/interdiffs can be viewed side-by-side.
+
+    Each action should be an instance of
+    :py:class:`~reviewboard.reviews.actions.BaseReviewRequestAction` (in
+    particular, each action could be an instance of the subclass
+    :py:class:`~reviewboard.reviews.actions.BaseReviewRequestMenuAction`). For
+    backwards compatibility, actions may also be supplied as
+    :py:class:`ActionHook`-style dictionaries.
+    """
+
+    def __init__(self, extension, actions=None, apply_to=None, *args,
+                 **kwargs):
+        """Initialize this action hook.
+
+        Args:
+            extension (djblets.extensions.extension.Extension):
+                The extension that is creating this action hook.
+
+            actions (list, optional):
+                The list of actions (of type :py:class:`dict` or
+                :py:class:`~.actions.BaseReviewRequestAction`) to be added.
+
+            apply_to (list of unicode, optional):
+                The list of URL names that this action hook will apply to.
+
+            *args (tuple):
+                Extra arguments.
+
+            **kwargs (dict):
+                Extra keyword arguments.
+
+        Raises:
+            KeyError:
+                Some dictionary is not an :py:class:`ActionHook`-style
+                dictionary.
+
+            ValueError:
+                Some review request action is neither a
+                :py:class:`~.actions.BaseReviewRequestAction` nor a
+                :py:class:`dict` instance.
+        """
+        super(BaseReviewRequestActionHook, self).__init__(
+            extension, apply_to=apply_to or [], *args, **kwargs)
+
+        self.actions = self._register_actions(actions or [])
+
+    def _register_actions(self, actions):
+        """Register the given list of review request actions.
+
+        Args:
+            actions (list, optional):
+                The list of actions (of type :py:class:`dict` or
+                :py:class:`~.actions.BaseReviewRequestAction`) to be added.
+
+        Returns:
+            list of BaseReviewRequestAction:
+            The list of all registered actions.
+
+        Raises:
+            KeyError:
+                Some dictionary is not an :py:class:`ActionHook`-style
+                dictionary.
+
+            ValueError:
+                Some review request action is neither a
+                :py:class:`~.actions.BaseReviewRequestAction` nor a
+                :py:class:`dict` instance.
+        """
+        registered_actions = []
+
+        # Since newly registered top-level actions are appended to the left of
+        # the other previously registered top-level actions, we must iterate
+        # through the actions in reverse. However, we don't want to mutate the
+        # original actions and we want to preserve the order of the original
+        # actions. Hence, we reverse twice in this method.
+        for action in reversed(actions):
+            action = self._normalize_action(action)
+            action.register()
+            registered_actions.append(action)
+
+        registered_actions.reverse()
+
+        return registered_actions
+
+    def _normalize_action(self, action):
+        """Normalize the given review request action.
+
+        For backwards compatibility, review request actions may also be
+        supplied as :py:class:`ActionHook`-style dictionaries. This helper
+        method normalizes the given review request action so that each review
+        request action is an instance of
+        :py:class:`~.actions.BaseReviewRequestAction`.
+
+        Args:
+            action (dict or BaseReviewRequestAction):
+                The review request action to be normalized.
+
+        Returns:
+            BaseReviewRequestAction: The normalized review request action.
+
+        Raises:
+            KeyError:
+                The given dictionary is not an :py:class:`ActionHook`-style
+                dictionary.
+
+            ValueError:
+                The given review request action is neither a
+                :py:class:`~.actions.BaseReviewRequestAction` nor a
+                :py:class:`dict` instance.
+        """
+        if isinstance(action, BaseReviewRequestAction):
+            return action
+
+        if isinstance(action, dict):
+            return self.convert_action(action)
+
+        raise ValueError('Only BaseReviewRequestAction and dict instances are '
+                         'supported')
+
+    def convert_action(self, action_dict):
+        """Convert the given dictionary to a review request action instance.
+
+        Args:
+            action_dict (dict):
+                A dictionary representing a review request action, as specified
+                by the :py:class:`ActionHook` class.
+
+        Returns:
+            BaseReviewRequestAction:
+            The corresponding review request action instance.
+
+        Raises:
+            KeyError:
+                The given dictionary is not an :py:class:`ActionHook`-style
+                dictionary.
+        """
+        for key in ('label', 'url'):
+            if key not in action_dict:
+                raise KeyError('ActionHook-style dicts require a %s key'
+                               % repr(key))
+
+        return _DictAction(action_dict, self.applies_to)
+
+
+@six.add_metaclass(ExtensionHookPoint)
+class ReviewRequestActionHook(BaseReviewRequestActionHook):
+    """A hook for adding review request actions to review request pages.
+
+    By default, actions that are passed into this hook will only be displayed
+    on review request pages and not on any file attachment pages or diff
+    viewer pages.
+    """
+
+    def __init__(self, extension, actions=None, apply_to=None, *args,
+                 **kwargs):
+        """Initialize this action hook.
+
+        Args:
+            extension (djblets.extensions.extension.Extension):
+                The extension that is creating this action hook.
+
+            actions (list, optional):
+                The list of actions (of type :py:class:`dict` or
+                :py:class:`~.actions.BaseReviewRequestAction`) to be added.
+
+            apply_to (list of unicode, optional):
+                The list of URL names that this action hook will apply to.
+
+            *args (tuple):
+                Extra arguments.
+
+            **kwargs (dict):
+                Extra keyword arguments.
+
+        Raises:
+            KeyError:
+                Some dictionary is not an :py:class:`ActionHook`-style
+                dictionary.
+
+            ValueError:
+                Some review request action is neither a
+                :py:class:`~.actions.BaseReviewRequestAction` nor a
+                :py:class:`dict` instance.
+        """
+        apply_to = apply_to or [main_review_request_url_name]
+        super(ReviewRequestActionHook, self).__init__(
+            extension, actions, apply_to, *args, **kwargs)
+
+
+@six.add_metaclass(ExtensionHookPoint)
+class ReviewRequestDropdownActionHook(ReviewRequestActionHook):
+    """A hook for adding dropdown menu actions to review request pages.
+
+    Each menu action should be an instance of
+    :py:class:`~reviewboard.reviews.actions.BaseReviewRequestMenuAction`. For
+    backwards compatibility, menu actions may also be supplied as dictionaries
+    with the following keys:
+
+    ``id`` (optional):
+        The ID of the action.
+
+    ``label``:
+        The label for the dropdown menu action.
+
+    ``items``:
+        A list of :py:class:`ActionHook`-style dictionaries.
+
+    Example:
+        .. code-block:: python
+
+           actions = [{
+               'id': 'sample-menu-action',
+               'label': 'Sample Menu',
+               'items': [
+                   {
+                       'id': 'first-item-action',
+                       'label': 'Item 1',
+                       'url': '#',
+                   },
+                   {
+                       'label': 'Item 2',
+                       'url': '#',
+                   },
+               ],
+           }]
+    """
+
+    def convert_action(self, action_dict):
+        """Convert the given dictionary to a review request action instance.
+
+        Children action dictionaries are recursively converted to action
+        instances.
+
+        Args:
+            action_dict (dict):
+                A dictionary representing a review request menu action, as
+                specified by the :py:class:`ReviewRequestDropdownActionHook`
+                class.
+
+        Returns:
+            BaseReviewRequestMenuAction:
+            The corresponding review request menu action instance.
+
+        Raises:
+            KeyError:
+                The given review request menu action dictionary is not a
+                :py:class:`ReviewRequestDropdownActionHook`-style dictionary.
+        """
+        for key in ('label', 'items'):
+            if key not in action_dict:
+                raise KeyError('ReviewRequestDropdownActionHook-style dicts '
+                               'require a %s key' % repr(key))
+
+        return _DictMenuAction(
+            [
+                super(ReviewRequestDropdownActionHook, self).convert_action(
+                    child_action_dict)
+                for child_action_dict in action_dict['items']
+            ],
+            action_dict,
+            self.applies_to
+        )
+
+
+@six.add_metaclass(ExtensionHookPoint)
+class DiffViewerActionHook(BaseReviewRequestActionHook):
+    """A hook for adding review request actions to diff viewer pages.
+
+    By default, actions that are passed into this hook will only be displayed
+    on diff viewer pages and not on any review request pages or file attachment
+    pages.
+    """
+
+    def __init__(self, extension, actions=None, apply_to=diffviewer_url_names,
+                 *args, **kwargs):
+        """Initialize this action hook.
+
+        Args:
+            extension (djblets.extensions.extension.Extension):
+                The extension that is creating this action hook.
+
+            actions (list, optional):
+                The list of actions (of type :py:class:`dict` or
+                :py:class:`~.actions.BaseReviewRequestAction`) to be added.
+
+            apply_to (list of unicode, optional):
+                The list of URL names that this action hook will apply to.
+
+            *args (tuple):
+                Extra arguments.
+
+            **kwargs (dict):
+                Extra keyword arguments.
+
+        Raises:
+            KeyError:
+                Some dictionary is not an :py:class:`ActionHook`-style
+                dictionary.
+
+            ValueError:
+                Some review request action is neither a
+                :py:class:`~.actions.BaseReviewRequestAction` nor a
+                :py:class:`dict` instance.
+        """
+        super(DiffViewerActionHook, self).__init__(
+            extension, actions, apply_to, *args, **kwargs)
 
 
 @six.add_metaclass(ExtensionHookPoint)
 class HeaderActionHook(ActionHook):
-    """A hook for putting an action in the page header."""
+    """A hook for adding actions to the page header."""
 
 
 @six.add_metaclass(ExtensionHookPoint)
 class HeaderDropdownActionHook(ActionHook):
-    """A hook for putting multiple actions into a header dropdown."""
+    """A hook for adding dropdown menu actions to the page header."""
+
+
+@six.add_metaclass(ExtensionHookPoint)
+class UserInfoboxHook(ExtensionHook):
+    """A hook for adding information to the user infobox.
+
+    Extensions can use this hook to add additional pieces of data to the box
+    which pops up when hovering the mouse over a user.
+    """
+
+    def __init__(self, extension, template_name=None):
+        """Initialize the hook.
+
+        Args:
+            extension (reviewboard.extensions.base.Extension):
+                The extension instance.
+
+            template_name (six.text_type):
+                The template to render with the default :py:func:`render`
+                method.
+        """
+        super(UserInfoboxHook, self).__init__(extension)
+
+        self.template_name = template_name
+
+    def get_extra_context(self, user, request, local_site):
+        """Return extra context to use when rendering the template.
+
+        This may be overridden in order to make use of the default
+        :py:func:`render` method.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user whose infobox is being shown.
+
+            request (django.http.HttpRequest):
+                The request for the infobox view.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The local site, if any.
+
+        Returns:
+            dict:
+            Additional context to include when rendering the template.
+        """
+        return {}
+
+    def get_etag_data(self, user, request, local_site):
+        """Return data to be included in the user infobox ETag.
+
+        The infobox view uses an ETag to enable browser caching of the content.
+        If the extension returns data which can change, this method should
+        return a string which is unique to that data.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user whose infobox is being shown.
+
+            request (django.http.HttpRequest):
+                The request for the infobox view.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The local site, if any.
+
+        Returns:
+            six.text_type:
+            A string to be included in the ETag for the view.
+        """
+        return ''
+
+    def render(self, user, request, local_site):
+        """Return content to include in the user infobox.
+
+        This may be overridden in the case where providing a custom template
+        and overriding :py:func:`get_extra_context` is insufficient.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user whose infobox is being shown.
+
+            request (django.http.HttpRequest):
+                The request for the infobox view.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The local site, if any.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            Text to include in the infobox HTML.
+        """
+        context = {
+            'user': user,
+        }
+        context.update(self.get_extra_context(user, request, local_site))
+
+        assert self.template_name is not None
+
+        return render_to_string(self.template_name,
+                                RequestContext(request, context))
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -900,12 +1427,100 @@ class ReviewRequestPublishedEmailHook(EmailHook):
         return cc_field
 
 
+@six.add_metaclass(ExtensionHookPoint)
+class APIExtraDataAccessHook(ExtensionHook):
+    """A hook for setting access states to extra data fields.
+
+    Extensions can use this hook to register ``extra_data`` fields with
+    certain access states on subclasses of
+    :py:data:`~reviewboard.webapi.base.WebAPIResource`.
+
+    This accepts a list of ``field_set``s specified by the Extension and
+    registers them when the hook is created. Likewise, it unregisters the same
+    list of ``field_set``s when the Extension is disabled.
+
+    Each element of ``field_set`` is a 2-:py:class:`tuple` where the first
+    element of the tuple is the field's path (as a :py:class:`tuple`) and the
+    second is the field's access state (as one of
+    :py:data:`~reviewboard.webapi.base.ExtraDataAccessLevel.ACCESS_STATE_PUBLIC`
+    or :py:data:`~reviewboard.webapi.base.ExtraDataAccessLevel.ACCESS_STATE_PRIVATE`).
+
+    Example:
+        .. code-block:: python
+
+            resource.extra_data = {
+                'foo': {
+                    'bar' : 'pivate_data',
+                    'baz' : 'public_data'
+                }
+            }
+
+            field_set = [(('foo', 'bar'), 'ACCESS_STATE_PRIVATE')]
+    """
+
+    def __init__(self, extension, resource, field_set):
+        """Initialize the APIExtraDataAccessHook.
+
+        Args:
+            extension (reviewboard.extensions.base.Extension):
+                The extension registering this hook.
+
+            resource (reviewboard.webapi.base.WebAPIResource):
+                The resource to modify access states for.
+
+            field_set (list):
+                Each element of ``field_set`` is a 2-:py:class:`tuple` where
+                the first element of the tuple is the field's path (as a
+                :py:class:`tuple`) and the second is the field's access state
+                (as one of
+                :py:data:`~reviewboard.webapi.base.ExtraDataAccessLevel.ACCESS_STATE_PUBLIC`
+                or :py:data:`~reviewboard.webapi.base.ExtraDataAccessLevel.ACCESS_STATE_PRIVATE`).
+        """
+        super(APIExtraDataAccessHook, self).__init__(extension)
+
+        self.resource = resource
+        self.field_set = field_set
+
+        resource.extra_data_access_callbacks.register(
+            self.get_extra_data_state)
+
+    def get_extra_data_state(self, key_path):
+        """Return the state of an extra_data field.
+
+        Args:
+            key_path (tuple):
+                A tuple of strings representing the path of an extra_data
+                field.
+
+        Returns:
+            unicode:
+            The access state of the provided field or ``None``.
+        """
+        for path, access_state in self.field_set:
+            if path == key_path:
+                return access_state
+
+        return None
+
+    def shutdown(self):
+        """Shutdown the hook and unregister the associated ``field_set``."""
+        super(APIExtraDataAccessHook, self).shutdown()
+
+        try:
+            self.resource.extra_data_access_callbacks.unregister(
+                self.get_extra_data_state)
+        except ItemLookupError:
+            pass
+
+
 __all__ = [
     'AccountPageFormsHook',
     'AccountPagesHook',
     'ActionHook',
     'AdminWidgetHook',
+    'APIExtraDataAccessHook',
     'AuthBackendHook',
+    'BaseReviewRequestActionHook',
     'CommentDetailDisplayHook',
     'DashboardColumnsHook',
     'DashboardSidebarItemsHook',
@@ -918,6 +1533,7 @@ __all__ = [
     'HeaderActionHook',
     'HeaderDropdownActionHook',
     'HostingServiceHook',
+    'IntegrationHook',
     'NavigationBarHook',
     'ReviewRequestActionHook',
     'ReviewRequestApprovalHook',
@@ -932,6 +1548,7 @@ __all__ = [
     'SignalHook',
     'TemplateHook',
     'URLHook',
+    'UserInfoboxHook',
     'UserPageSidebarItemsHook',
     'WebAPICapabilitiesHook',
 ]

@@ -90,9 +90,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
         return (get_file_attachment_list_url(review_request, local_site_name),
                 file_attachment_item_mimetype,
-                {
-                    'path': open(self._getTrophyFilename(), 'r'),
-                },
+                {'path': open(self._getTrophyFilename(), 'r')},
                 [review_request])
 
     def check_post_result(self, user, rsp, review_request):
@@ -282,9 +280,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
 
         return (get_file_attachment_item_url(file_attachment, local_site_name),
                 file_attachment_item_mimetype,
-                {
-                    'caption': 'My new caption',
-                },
+                {'caption': 'My new caption'},
                 file_attachment,
                 [review_request])
 

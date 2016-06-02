@@ -7,9 +7,9 @@ suite('rb/pages/views/ReviewablePageView', function() {
         var $container = $('<div/>')
             .appendTo($testsScratch);
 
-        $editReview = $('<a href="#" id="review-link">Edit Review</a>')
+        $editReview = $('<a href="#" id="review-action">Edit Review</a>')
             .appendTo($container);
-        $shipIt = $('<a href="#" id="shipit-link">Ship It</a>')
+        $shipIt = $('<a href="#" id="ship-it-action">Ship It</a>')
             .appendTo($container);
 
         pageView = new RB.ReviewablePageView({
@@ -166,12 +166,32 @@ suite('rb/pages/views/ReviewablePageView', function() {
                 expect(bubbleView.trigger).toHaveBeenCalledWith('closed');
             });
 
-            it('Update Page', function() {
+            it('Update Page displays Updates Bubble', function() {
                 spyOn(bubbleView, 'trigger');
 
                 $bubble.find('.update-page').click();
 
                 expect(bubbleView.trigger).toHaveBeenCalledWith('updatePage');
+            });
+
+            it('Update Page calls notify if shouldNotify', function() {
+                var info = {
+                    user: {
+                        fullname: 'Hello'
+                    }
+                };
+
+                RB.NotificationManager.instance._canNotify = true;
+                spyOn(RB.NotificationManager.instance, 'notify');
+                spyOn(RB.NotificationManager.instance,
+                      '_haveNotificationPermissions').and.returnValue(true);
+                spyOn(pageView, '_showUpdatesBubble');
+
+                pageView._onReviewRequestUpdated(info);
+
+                expect(RB.NotificationManager.instance.notify)
+                    .toHaveBeenCalled();
+                expect(pageView._showUpdatesBubble).toHaveBeenCalled();
             });
         });
     });

@@ -246,9 +246,7 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
 
         return (get_review_reply_item_url(review, reply.pk, local_site_name),
                 review_reply_item_mimetype,
-                {
-                    'body_top': 'New body top',
-                },
+                {'body_top': 'New body top'},
                 reply,
                 [])
 

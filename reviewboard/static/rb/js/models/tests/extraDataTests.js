@@ -1,9 +1,8 @@
 suite('rb/models/ExtraData', function() {
-    var resource,
-        model;
+    var model;
 
     beforeEach(function() {
-        resource = Backbone.Model.extend(_.defaults({
+        var Resource = Backbone.Model.extend(_.defaults({
             defaults: function() {
                 return {
                     extraData: {}
@@ -15,7 +14,7 @@ suite('rb/models/ExtraData', function() {
             }
         }, RB.ExtraDataMixin));
 
-        model = new resource();
+        model = new Resource();
     });
 
     it('change events fired', function() {

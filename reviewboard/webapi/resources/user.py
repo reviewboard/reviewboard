@@ -36,10 +36,16 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     ]
 
     fields = dict({
+        'avatar_url': {
+            'type': six.text_type,
+            'description': 'The URL for an avatar representing the user.',
+            'added_in': '1.6.14',
+            'deprecated_in': '3.0',
+        },
         'avatar_urls': {
             'type': six.text_type,
             'description': 'The URLs for an avatar representing the user.',
-            'added_in': '2.6',
+            'added_in': '3.0',
         },
     }, **DjbletsUserResource.fields)
 
@@ -115,6 +121,14 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     def serialize_url_field(self, user, **kwargs):
         return local_site_reverse('user', kwargs['request'],
                                   kwargs={'username': user.username})
+
+    def serialize_avatar_url_field(self, user, request=None, **kwargs):
+        service = avatar_services.default_service
+
+        if service:
+            return service.get_avatar_urls(request, user, 48)['1x']
+
+        return None
 
     def serialize_avatar_urls_field(self, user, request=None, **kwargs):
         service = avatar_services.default_service

@@ -140,6 +140,8 @@ Reviews
    review-diff-comment
    review-file-attachment-comment-list
    review-file-attachment-comment
+   review-general-comment-list
+   review-general-comment
    review-screenshot-comment-list
    review-screenshot-comment
 
@@ -157,6 +159,8 @@ Review Replies
    review-reply-diff-comment
    review-reply-file-attachment-comment-list
    review-reply-file-attachment-comment
+   review-reply-general-comment-list
+   review-reply-general-comment
    review-reply-screenshot-comment-list
    review-reply-screenshot-comment
 

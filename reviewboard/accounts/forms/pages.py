@@ -55,6 +55,10 @@ class AccountSettingsForm(AccountPageForm):
         label=_('Get e-mail notifications for my own activity'),
         required=False)
 
+    enable_desktop_notifications = forms.BooleanField(
+        label=_('Show desktop notifications'),
+        required=False)
+
     default_use_rich_text = forms.BooleanField(
         label=_('Always use Markdown for text fields'),
         required=False)
@@ -65,6 +69,8 @@ class AccountSettingsForm(AccountPageForm):
             'open_an_issue': self.profile.open_an_issue,
             'should_send_email': self.profile.should_send_email,
             'should_send_own_updates': self.profile.should_send_own_updates,
+            'enable_desktop_notifications':
+                self.profile.should_enable_desktop_notifications,
             'syntax_highlighting': self.profile.syntax_highlighting,
             'timezone': self.profile.timezone,
             'default_use_rich_text': self.profile.should_use_rich_text,
@@ -85,6 +91,8 @@ class AccountSettingsForm(AccountPageForm):
         self.profile.should_send_email = self.cleaned_data['should_send_email']
         self.profile.should_send_own_updates = \
             self.cleaned_data['should_send_own_updates']
+        self.profile.settings['enable_desktop_notifications'] = \
+            self.cleaned_data['enable_desktop_notifications']
         self.profile.default_use_rich_text = \
             self.cleaned_data['default_use_rich_text']
         self.profile.timezone = self.cleaned_data['timezone']

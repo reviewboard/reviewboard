@@ -1,10 +1,8 @@
 from django.core.urlresolvers import reverse
-from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404, render_to_response
+from django.http import HttpResponseRedirect, Http404
+from django.shortcuts import render_to_response
 from django.template.context import RequestContext
 from djblets.util.decorators import simple_decorator
-
-from reviewboard.site.models import LocalSite
 
 
 @simple_decorator
@@ -17,7 +15,10 @@ def check_local_site_access(view_func):
     """
     def _check(request, local_site_name=None, *args, **kwargs):
         if local_site_name:
-            local_site = get_object_or_404(LocalSite, name=local_site_name)
+            if not request.local_site:
+                raise Http404
+
+            local_site = request.local_site
 
             if not local_site.is_accessible_by(request.user):
                 if local_site.public or request.user.is_authenticated():
@@ -46,9 +47,12 @@ def check_localsite_admin(view_func):
     """
     def _check(request, local_site_name=None, *args, **kwargs):
         if local_site_name:
-            site = get_object_or_404(LocalSite, name=local_site_name)
+            if not request.local_site:
+                raise Http404
 
-            if not site.is_mutable_by(request.user):
+            local_site = request.local_site
+
+            if not local_site.is_mutable_by(request.user):
                 response = render_to_response('permission_denied.html',
                                               RequestContext(request))
                 response.status_code = 403

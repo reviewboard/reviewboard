@@ -5,11 +5,11 @@ import gc
 import hashlib
 import os
 
-from django.db import DatabaseError, models, reset_queries, connection
+from django.conf import settings
+from django.db import models, reset_queries, connection
 from django.db.models import Count, Q
 from django.db.utils import IntegrityError
 from django.utils.encoding import smart_unicode
-from django.utils.functional import cached_property
 from django.utils.six.moves import range
 from django.utils.translation import ugettext as _
 from djblets.siteconfig.models import SiteConfiguration
@@ -247,11 +247,30 @@ class FileDiffManager(models.Manager):
         """
         from reviewboard.diffviewer.models import RawFileDiffData
 
+        legacy_hash_field_name = 'legacy_%s' % hash_field_name
+
+        # Since this is a pretty complex operation, we're going to sanity-check
+        # results on DEBUG setups, to help catch issues that might come up as
+        # this code changes.
+        if settings.DEBUG:
+            old_filediff_info = dict(
+                (filediff.pk, getattr(filediff, legacy_hash_field_name).pk)
+                for filediff in self.filter(**{
+                    legacy_hash_field_name + '__in': diff_hashes,
+                })
+            )
+        else:
+            old_filediff_info = None
+
         # If the database supports joins on updates, then we can craft
         # a query that will massively speed up the diff transition time.
         # Otherwise, we need to fall back on doing a select and then an
         # update per result.
-        if self._db_supports_join_on_update:
+        #
+        # The queries are different between databases (yay standards), so
+        # we can't be smart and do this in a generic way. We have to check
+        # the database types.
+        if connection.vendor == 'mysql':
             cursor.execute(
                 'UPDATE %(filediff_table)s'
                 '  INNER JOIN %(raw_fdd_table)s raw_fdd'
@@ -265,54 +284,50 @@ class FileDiffManager(models.Manager):
                     'filediff_table': self.model._meta.db_table,
                     'raw_fdd_table': RawFileDiffData._meta.db_table,
                     'hash_field_name': hash_field_name,
-                    'diff_hashes': ','.join([
+                    'diff_hashes': ','.join(
                         "'%s'" % diff_hash
                         for diff_hash in diff_hashes
-                    ]),
+                    ),
+                })
+        elif connection.vendor == 'postgresql':
+            cursor.execute(
+                'UPDATE %(filediff_table)s'
+                '  SET'
+                '    raw_%(hash_field_name)s_id = raw_fdd.id,'
+                '    %(hash_field_name)s_id = NULL'
+                '  FROM %(raw_fdd_table)s raw_fdd'
+                '  WHERE'
+                '    raw_fdd.binary_hash IN (%(diff_hashes)s) AND'
+                '    raw_fdd.binary_hash = '
+                '        %(hash_field_name)s_id'
+                % {
+                    'filediff_table': self.model._meta.db_table,
+                    'raw_fdd_table': RawFileDiffData._meta.db_table,
+                    'hash_field_name': hash_field_name,
+                    'diff_hashes': ','.join(
+                        "'%s'" % diff_hash
+                        for diff_hash in diff_hashes
+                    ),
                 })
         else:
-            legacy_hash_field_name = 'legacy_%s' % hash_field_name
-            legacy_hash_field_in = '%s__in' % legacy_hash_field_name
-
             raw_fdds = RawFileDiffData.objects.filter(
                 binary_hash__in=diff_hashes).only('pk', 'binary_hash')
 
             for raw_fdd in raw_fdds:
                 self.filter(**{
-                    legacy_hash_field_in: raw_fdd.binary_hash
+                    legacy_hash_field_name: raw_fdd.binary_hash
                 }).update(**{
                     hash_field_name: raw_fdd.pk,
                     legacy_hash_field_name: None
                 })
 
-    @cached_property
-    def _db_supports_join_on_update(self):
-        """Determines whether the database supports joins with updates.
+        if settings.DEBUG:
+            new_filediff_info = dict(
+                (filediff.pk, getattr(filediff, hash_field_name).binary_hash)
+                for filediff in self.filter(pk__in=old_filediff_info.keys())
+            )
 
-        Modern databases allow you to do an UPDATE with an INNER JOIN, but
-        sqlite3 does not. This function will test whether such a query
-        results in a database error.
-        """
-        cursor = connection.cursor()
-        cursor.execute('DROP TABLE IF EXISTS _RB_UPDATE_JOIN_TEST_1')
-        cursor.execute('DROP TABLE IF EXISTS _RB_UPDATE_JOIN_TEST_2')
-        cursor.execute('CREATE TABLE _RB_UPDATE_JOIN_TEST_1 (X INT)')
-        cursor.execute('CREATE TABLE _RB_UPDATE_JOIN_TEST_2 (Y INT)')
-
-        try:
-            cursor.execute(
-                'UPDATE _RB_UPDATE_JOIN_TEST_1'
-                '  INNER JOIN _RB_UPDATE_JOIN_TEST_2'
-                '    ON _RB_UPDATE_JOIN_TEST_2.Y = _RB_UPDATE_JOIN_TEST_1.X'
-                '  SET _RB_UPDATE_JOIN_TEST_1.X = _RB_UPDATE_JOIN_TEST_2.Y')
-            has_support = True
-        except DatabaseError:
-            has_support = False
-
-        cursor.execute('DROP TABLE _RB_UPDATE_JOIN_TEST_1')
-        cursor.execute('DROP TABLE _RB_UPDATE_JOIN_TEST_2')
-
-        return has_support
+            assert old_filediff_info == new_filediff_info
 
 
 class RawFileDiffDataManager(models.Manager):
@@ -475,7 +490,6 @@ class DiffProcessor(object):
             parent_file = None
             orig_rev = None
             parent_content = b''
-
 
             if f.origFile in parent_files:
                 parent_file = parent_files[f.origFile]

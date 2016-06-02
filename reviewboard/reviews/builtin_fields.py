@@ -246,11 +246,13 @@ class TestingDoneField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
         return self.review_request_details.testing_done_rich_text
 
 
-class SubmitterField(BuiltinFieldMixin, BaseReviewRequestField):
+class SubmitterField(BuiltinFieldMixin, BaseEditableField):
     """The Submitter field on a review request."""
     field_id = 'submitter'
     label = _('Submitter')
     model = User
+    model_name_attr = 'username'
+    is_required = True
 
     def render_value(self, user):
         return format_html(
@@ -260,6 +262,26 @@ class SubmitterField(BuiltinFieldMixin, BaseReviewRequestField):
                 local_site=self.review_request_details.local_site,
                 args=[user]),
             user.get_full_name() or user.username)
+
+    def record_change_entry(self, changedesc, old_value, new_value):
+        changedesc.record_field_change(self.field_id, old_value, new_value,
+                                       self.model_name_attr)
+
+    def render_change_entry_value_html(self, info, item):
+        label, url, pk = item
+
+        if url:
+            return '<a href="%s">%s</a>' % (escape(url), escape(label))
+        else:
+            return escape(label)
+
+    def serialize_change_entry(self, changedesc):
+        entry = super(SubmitterField, self).serialize_change_entry(changedesc)
+
+        return dict(
+            (key, value[0])
+            for key, value in six.iteritems(entry)
+        )
 
 
 class RepositoryField(BuiltinFieldMixin, BaseReviewRequestField):
