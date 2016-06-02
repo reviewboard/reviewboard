@@ -1,0 +1,110 @@
+=================================
+Review Board 2.0.24 Release Notes
+=================================
+
+**Release date**: June 2, 2016
+
+
+Upgrade Instructions
+====================
+
+To upgrade to Review Board 2.0.24, run::
+
+    pip install ReviewBoard==2.0.24
+
+or::
+
+    easy_install ReviewBoard==2.0.24
+
+
+New Features
+============
+
+* Added support for Mercurial and Subversion repositories on
+  Codebase_.
+
+  Codebase is a hosting service that supports Mercurial, Subversion, and
+  Git repositories. We previously supported Git repositories, and have now
+  extended that support to Mercurial and Subversion.
+
+  If you already have an account linked on Codebase, you will need to
+  re-authenticate in order to add a new repository. You will automatically be
+  asked for new credentials.
+
+
+.. _Codebase: https://www.codebasehq.com/
+
+
+Extensions
+==========
+
+* Custom hosting services can now collect custom authentication details.
+
+  Previously, all hosting services were expected to take a username and a
+  password. They can now provide a custom authentication form, taking in
+  any credentials needed for that service.
+
+
+Bug Fixes
+=========
+
+Dashboard
+---------
+
+* Fixed harmless but annoying error output when using the Diff Size column.
+
+  Review requests that didn't contain any information on diff sizes would
+  result in spurious log information about missing keys for
+  ``raw_insert_count`` and ``raw_delete_count``. This are no longer generated
+  for such review requests.
+
+
+GitLab
+------
+
+* Fixed posting commits for review against a self-hosted GitLab server on the
+  New Review Request page. (:bug:`3998`)
+
+* Fixed compatibility issues with diffs containing Unicode content.
+  (:bug:`4372`)
+
+* Fixed bad error reporting during authentication linking failures.
+
+
+Subversion
+----------
+
+* Fixed a breakage when prompting to trust SSL certificates when using
+  Subvertpy as the backend.
+
+* Fixed Subversion 1.9 diff compatibility for new files. (:bug:`4374`)
+
+  Subversion 1.9 changed the format of their diffs again to change how
+  revision information is shown for newly-introduced files. While we had
+  some support for this, it didn't work for the cases of diffs between
+  branches, or diffs generated using :command:`svnlook`.
+
+  We now have support for the different variants of this revision, meaning
+  your Subversion 1.9 diffs should work correctly at this point.
+
+  Patch by Martin Hopfeld.
+
+
+Mercurial
+---------
+
+* SSH-backed Mercurial paths are no longer incorrectly accepted when adding
+  repositories.
+
+  Review Board cannot perform the types of requests needed with a SSH-backed
+  Mercurial repository, but we still allowed users to add them, not seeing
+  errors until they went to upload diffs. Those paths are now rejected.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Martin Hopfeld
