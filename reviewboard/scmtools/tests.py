@@ -1014,6 +1014,25 @@ class CommonSVNTestsBase(SpyAgency, SCMTestCase):
             self.tool.parse_diff_revision('', '(不存在的)')[1],
             PRE_CREATION)
 
+    def test_revision_parsing_with_nonexistent_and_branches(self):
+        """Testing SVN (<backend>) revision parsing with relocation
+        information and nonexisitent revision specifier.
+        """
+        self.assertEqual(
+            self.tool.parse_diff_revision(
+                '', '(.../trunk) (nonexistent)')[1],
+            PRE_CREATION)
+
+        self.assertEqual(
+            self.tool.parse_diff_revision(
+                '', '(.../branches/branch-1.0)     (nicht existent)')[1],
+            PRE_CREATION)
+
+        self.assertEqual(
+            self.tool.parse_diff_revision(
+                '', '        (.../trunk)     (不存在的)')[1],
+            PRE_CREATION)
+
     def test_interface(self):
         """Testing SVN (<backend>) with basic SVNTool API"""
         self.assertEqual(self.tool.get_diffs_use_absolute_paths(), False)
