@@ -293,11 +293,14 @@ class GitLabTests(ServiceTests):
             +++ b/f2
             @@ -1 +1,2 @@
             this is f2
-            +add one line to f2
+            +add one line to f2 with Unicode\xe2\x9d\xb6
             ''')
 
         def _http_get(service, url, *args, **kwargs):
+            self.assertTrue(url.startswith(account.hosting_url))
+
             parsed = urlparse(url)
+
             if parsed.path.startswith(
                     '/api/v3/projects/123456/repository/commits'):
                 # If the url is commit_api_url.
