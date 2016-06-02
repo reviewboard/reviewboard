@@ -1,0 +1,95 @@
+================================
+Review Board 2.5.6 Release Notes
+================================
+
+**Release date**: June 2, 2016
+
+
+Bug Fixes
+=========
+
+Installation
+------------
+
+* Fixed a dependency problem that resulted in errors creating new sites.
+
+  We use django-haystack_ for our search functionality. They recently put out
+  a new version that breaks compatibility with the version of Django_ we
+  depend on. We now restrict the version range during installation so that
+  a compatible version is used.
+
+
+.. _django-haystack: https://django-haystack.readthedocs.io/
+.. _Django: https://www.djangoproject.com/
+
+
+Dashboard
+---------
+
+* Fixed the star column not reflecting the correct state when switching from
+  mobile to desktop modes.
+
+* Fixed harmless but annoying error output when using the Diff Size column.
+
+  Review requests that didn't contain any information on diff sizes would
+  result in spurious log information about missing keys for
+  ``raw_insert_count`` and ``raw_delete_count``. This are no longer generated
+  for such review requests.
+
+
+Administration
+--------------
+
+* The "Repository Plan" field no longer displays for hosting services or
+  repositories that don't need this field.
+
+  This was a regression in 2.5.5.
+
+
+Codebase HQ
+-----------
+
+* Removed a workaround for a bug fix for a Codebase API bug.
+
+  Codebase previously had a bug where the last trailing newline of a file
+  was missing, which we had to work around to ensure patching would work.
+  They've since fixed this, requiring that we remove the workaround.
+
+
+GitLab
+------
+
+* Fixed a regression in authenticating new users against GitLab servers.
+
+* Fixed compatibility issues with diffs containing Unicode content.
+  (:bug:`4372`)
+
+* Fixed bad error reporting during authentication linking failures.
+
+
+Subversion
+----------
+
+* Fixed a breakage when prompting to trust SSL certificates when using
+  Subvertpy as the backend.
+
+* Fixed Subversion 1.9 diff compatibility for new files. (:bug:`4374`)
+
+  Subversion 1.9 changed the format of their diffs again to change how
+  revision information is shown for newly-introduced files. While we had
+  some support for this, it didn't work for the cases of diffs between
+  branches, or diffs generated using :command:`svnlook`.
+
+  We now have support for the different variants of this revision, meaning
+  your Subversion 1.9 diffs should work correctly at this point.
+
+  Patch by Martin Hopfeld.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Martin Hopfeld
