@@ -36,6 +36,7 @@ build
 dist
 django_cache
 pickle
+search-index/
 temp
 .idea
 bak
