@@ -550,7 +550,7 @@ class RepositoryForm(forms.ModelForm):
                     _('Unknown error when linking the account: %s. The '
                       'details of the failure are in the Review Board log '
                       'file.')
-                    % e
+                    % e,
                 ])
                 return
 
