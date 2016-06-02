@@ -199,7 +199,7 @@ setup(name=PACKAGE_NAME,
       install_requires=[
           django_version,
           'django_evolution>=0.7.6,<=0.7.999',
-          'django-haystack>=2.3.1',
+          'django-haystack>=2.3.1,<=2.4.999',
           'django-multiselectfield',
           'Djblets>=0.9.3,<=0.9.999',
           'docutils',
