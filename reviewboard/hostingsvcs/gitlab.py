@@ -131,7 +131,7 @@ class GitLab(HostingService):
             rsp, headers = self.client.json_post(
                 url=self._build_api_url(hosting_url, 'session'),
                 fields={
-                    login_key : username,
+                    login_key: username,
                     'password': password,
                 })
         except HTTPError as e:
@@ -143,7 +143,18 @@ class GitLab(HostingService):
                 raise AuthorizationError(
                     ugettext('The username or password is incorrect.'))
             else:
-                raise
+                logging.exception('Unexpected HTTP error when linking GitLab '
+                                  'account for %s: %s',
+                                  username, e)
+                raise HostingServiceError(
+                    ugettext('Unexpected HTTP error %s.')
+                    % e.code)
+        except Exception as e:
+            logging.exception('Unexpected error when linking GitLab account '
+                              'for %s: %s',
+                              username, e)
+            raise HostingServiceError(
+                ugettext('Unexpected error "%s"') % e)
 
         self.account.data['private_token'] = \
             encrypt_password(rsp['private_token'])
@@ -299,8 +310,13 @@ class GitLab(HostingService):
 
         # Step 2: Get the diff. The revision is the commit header in here.
         # Firstly, a diff url should be built up, which has the format of
-        # https://gitlab.com/<user-name>/<project-name>/commit/<revision>.diff,
+        # <hosting_url>/<user-name>/<project-name>/commit/<revision>.diff,
         # then append the private_token to the end of the url and get the diff.
+
+        hosting_url = self.account.hosting_url
+
+        if not hosting_url.endswith('/'):
+            hosting_url += '/'
 
         # Get the project path with the namespace.
         path_api_url = ('%s?private_token=%s'
@@ -309,8 +325,9 @@ class GitLab(HostingService):
         path_with_namespace = project['path_with_namespace']
 
         # Build up diff url and get diff.
-        diff_url = ('https://gitlab.com/%s/commit/%s.diff?private_token=%s'
-                    % (path_with_namespace, revision, private_token))
+        diff_url = ('%s%s/commit/%s.diff?private_token=%s'
+                    % (hosting_url, path_with_namespace, revision,
+                       private_token))
         diff, headers = self.client.http_get(
             diff_url,
             headers={'Accept': 'text/plain'})
@@ -321,11 +338,11 @@ class GitLab(HostingService):
         # two parts using the delimiter '--\nlibgit'. If only use '\n' or '--'
         # delimiter, more characters might be stripped out from file
         # modification commit diff.
-        diff = diff.rsplit('--\nlibgit', 2)[0]
+        diff = diff.rsplit(b'--\nlibgit', 2)[0]
 
         # Make sure there's a trailing newline.
-        if not diff.endswith('\n'):
-            diff += '\n'
+        if not diff.endswith(b'\n'):
+            diff += b'\n'
 
         return Commit(author_name, revision, date, message, parent_revision,
                       diff=diff)

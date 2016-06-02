@@ -295,7 +295,7 @@ class HostingServiceAuthForm(forms.Form):
         hosting_service_id = self.hosting_service_cls.hosting_service_id
         hosting_url = self.cleaned_data.get('hosting_url')
 
-        if not self.hosting_service_cls.supports_two_factor_auth:
+        if not self.hosting_service_cls.self_hosted:
             assert hosting_url is None
 
         if hosting_account:
