@@ -762,8 +762,8 @@ class DiffSizeColumn(Column):
             return ''
 
         counts = diffset.get_total_line_counts()
-        insert_count = counts['raw_insert_count']
-        delete_count = counts['raw_delete_count']
+        insert_count = counts.get('raw_insert_count')
+        delete_count = counts.get('raw_delete_count')
         result = []
 
         if insert_count:
@@ -774,4 +774,7 @@ class DiffSizeColumn(Column):
             result.append('<span class="diff-size-column delete">-%d</span>' %
                           delete_count)
 
-        return '&nbsp;'.join(result)
+        if result:
+            return '&nbsp;'.join(result)
+
+        return ''
