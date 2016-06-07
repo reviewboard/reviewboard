@@ -8,12 +8,14 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.core.exceptions import ValidationError
 from djblets.db.query import get_object_or_none
 from django.utils import six
+from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.admin.import_utils import has_module
 from reviewboard.admin.validation import validate_bug_tracker
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
+                                            HostingServiceError,
                                             SSHKeyAssociationError,
                                             TwoFactorAuthCodeRequiredError)
 from reviewboard.hostingsvcs.fake import FAKE_HOSTING_SERVICES
@@ -1268,6 +1270,11 @@ class RepositoryForm(forms.ModelForm):
                     text = six.text_type(e)
                 except UnicodeDecodeError:
                     text = six.text_type(e, 'ascii', 'replace')
+
+                if isinstance(e, HostingServiceError) and e.help_link:
+                    text = format_html(_('{0} <a href="{1}">{2}</a>'),
+                                       text, e.help_link, e.help_link_text)
+
                 raise ValidationError(text)
 
     def _build_repository_extra_data(self, hosting_service, hosting_type,

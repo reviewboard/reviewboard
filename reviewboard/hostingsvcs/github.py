@@ -489,6 +489,11 @@ class GitHub(HostingService, BugTracker):
     # This should be the prefix for every field on the plan forms.
     plan_field_prefix = 'github'
 
+    _ORG_ACCESS_SUPPORT_URL = (
+        'https://beanbag.freshdesk.com/solution/articles/3000045767'
+        '-granting-organization-access-on-github'
+    )
+
     def get_api_url(self, hosting_url):
         """Returns the API URL for GitHub.
 
@@ -534,7 +539,9 @@ class GitHub(HostingService, BugTracker):
                     raise RepositoryError(
                         _('A repository with this organization or name was '
                           'not found, or your user may not have access to '
-                          'it.'))
+                          'it.'),
+                        help_link=self._ORG_ACCESS_SUPPORT_URL,
+                        help_link_text=_('Get help on granting access.'))
 
             raise
 

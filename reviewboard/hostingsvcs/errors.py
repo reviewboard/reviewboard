@@ -3,10 +3,16 @@ from __future__ import unicode_literals
 
 class HostingServiceError(Exception):
     """Base class for errors related to a hosting service."""
-    def __init__(self, message, http_code=None):
+    def __init__(self, message, http_code=None, help_link=None,
+                 help_link_text=None):
         super(HostingServiceError, self).__init__(message)
 
         self.http_code = http_code
+        self.help_link = help_link
+        self.help_link_text = help_link_text
+
+        if help_link and not help_link_text:
+            raise ValueError('help_link_text cannot be empty')
 
 
 class HostingServiceAPIError(HostingServiceError):
