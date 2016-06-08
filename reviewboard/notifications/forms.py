@@ -66,7 +66,7 @@ class WebHookTargetForm(forms.ModelForm):
         widgets = {
             'apply_to': forms.widgets.RadioSelect(),
             'url': forms.widgets.TextInput(attrs={'size': 100}),
-            'repositories': FilteredSelectMultiple(_('WebHooks'),
+            'repositories': FilteredSelectMultiple(_('Repositories'),
                                                    is_stacked=False),
         }
         error_messages = {
