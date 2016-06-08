@@ -1450,7 +1450,7 @@ class APIExtraDataAccessHook(ExtensionHook):
 
             resource.extra_data = {
                 'foo': {
-                    'bar' : 'pivate_data',
+                    'bar' : 'private_data',
                     'baz' : 'public_data'
                 }
             }
