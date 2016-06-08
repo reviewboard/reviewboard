@@ -13,7 +13,7 @@ class WebHookTargetAdmin(admin.ModelAdmin):
     list_display = ('url', 'enabled')
     filter_horizontal = ('repositories',)
     fieldsets = (
-        (None, {
+        (_('General Information'), {
             'fields': (
                 'enabled',
                 'url',
