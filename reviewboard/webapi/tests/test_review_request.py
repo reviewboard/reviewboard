@@ -960,14 +960,21 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
             },
             expected_mimetype=review_request_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review_request']['commit_id'], commit_id)
-        self.assertEqual(rsp['review_request']['summary'], 'Commit summary')
-        self.assertEqual(rsp['review_request']['description'],
-                         'Commit description.')
+        self.assertEqual(rsp['review_request']['commit_id'], None)
+        self.assertEqual(rsp['review_request']['summary'], '')
+        self.assertEqual(rsp['review_request']['description'], '')
 
         review_request = \
             ReviewRequest.objects.get(pk=rsp['review_request']['id'])
-        self.assertEqual(review_request.commit, commit_id)
+        self.assertEqual(review_request.commit_id, None)
+        self.assertEqual(review_request.summary, '')
+        self.assertEqual(review_request.description, '')
+
+        draft = review_request.get_draft()
+        self.assertIsNotNone(draft)
+        self.assertEqual(draft.commit_id, commit_id)
+        self.assertEqual(draft.summary, 'Commit summary')
+        self.assertEqual(draft.description, 'Commit description.')
 
     def test_post_with_submit_as_and_permission(self):
         """Testing the POST review-requests/?submit_as= API
