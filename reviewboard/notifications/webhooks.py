@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import hashlib
 import hmac
 import logging
 
@@ -134,7 +135,8 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
         }
 
         if webhook_target.secret:
-            signer = hmac.new(webhook_target.secret.encode('utf-8'), body)
+            signer = hmac.new(webhook_target.secret.encode('utf-8'), body,
+                              hashlib.sha1)
             headers['X-Hub-Signature'] = 'sha1=%s' % signer.hexdigest()
 
         logging.info('Dispatching webhook for event %s to %s',

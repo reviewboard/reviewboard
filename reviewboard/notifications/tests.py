@@ -1303,7 +1303,7 @@ class WebHookDispatchTests(SpyAgency, TestCase):
             },
             'application/json',
             '{"items": [1, 2, 3]}',
-            'sha1=cf27ad0de6b5f0c4e77e45bec9f4846e')
+            'sha1=46f8529ef47da2291eeb475f0d0c0a6f58f88f8b')
 
     def _test_dispatch(self, handler, event, payload, expected_content_type,
                        expected_data, expected_sig_header=None):
