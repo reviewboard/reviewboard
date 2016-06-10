@@ -119,7 +119,6 @@ class ReviewRequestManager(ConcurrencyManager):
                 pass
 
             try:
-
                 draft = ReviewRequestDraft.objects.get(
                     commit_id=commit_id,
                     review_request__repository=repository)
