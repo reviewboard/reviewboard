@@ -71,10 +71,10 @@ class MarkdownFieldsMixin(object):
         if force_text_type not in self.TEXT_TYPES:
             force_text_type = None
 
-        extra_text_type_fields = dict([
+        extra_text_type_fields = dict(
             (extra_text_type, {})
             for extra_text_type in self._get_extra_text_types(obj, **kwargs)
-        ])
+        )
 
         for field, field_info in six.iteritems(self.fields):
             if not field_info.get('supports_text_types'):
@@ -99,6 +99,16 @@ class MarkdownFieldsMixin(object):
             for field, value in six.iteritems(obj.extra_data.copy()):
                 if not self.get_extra_data_field_supports_markdown(obj, field):
                     continue
+
+                # If all_text_types_extra_data is empty that implies we have
+                # encountered the first field in extra_data which supports
+                # markdown. In this case we must initialize the dictionary
+                # with the extra text types that should be included in the
+                # payload.
+                if not all_text_types_extra_data:
+                    all_text_types_extra_data = dict(
+                        (k, {}) for k in six.iterkeys(extra_text_type_fields)
+                    )
 
                 # Note that we assume all custom fields are in Markdown by
                 # default. This is to preserve compatibility with older
