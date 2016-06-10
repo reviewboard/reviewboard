@@ -1703,6 +1703,8 @@ def user_infobox(request, username,
     return response
 
 
+@check_login_required
+@check_local_site_access
 def bug_url(request, review_request_id, bug_id, local_site=None):
     """Redirects user to bug tracker issue page."""
     review_request, response = \
@@ -1718,6 +1720,8 @@ def bug_url(request, review_request_id, bug_id, local_site=None):
     return response
 
 
+@check_login_required
+@check_local_site_access
 def bug_infobox(request, review_request_id, bug_id,
                 template_name='reviews/bug_infobox.html',
                 local_site=None):
