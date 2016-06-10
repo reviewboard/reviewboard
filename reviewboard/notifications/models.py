@@ -154,8 +154,7 @@ class WebHookTarget(models.Model):
                  local_site.is_mutable_by(user)))
 
     def __str__(self):
-        return 'Webhook for events %s, url %s' % (','.join(self.events),
-                                                  self.url)
+        return self.url
 
     class Meta:
         verbose_name = _('webhook')

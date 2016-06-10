@@ -335,7 +335,7 @@ class BugsField(BuiltinFieldMixin, BaseCommaEditableField):
                 '%s' in repository.bug_tracker):
                 bug_url = local_site_reverse(
                     'bug_url', local_site_name=local_site_name,
-                    args=(review_request.display_id, bug_id))
+                    args=[review_request.display_id, bug_id])
         except NoReverseMatch:
             pass
 
