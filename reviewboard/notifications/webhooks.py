@@ -36,10 +36,21 @@ class FakeHTTPRequest(HttpRequest):
     _is_secure = None
     _host = None
 
-    def __init__(self, user):
+    def __init__(self, user, local_site_name=None):
+        """Initialize a FakeHTTPRequest.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user who initiated the request.
+
+            local_site_name (unicode, optional):
+                The local site name (if the request was carried out against a
+                local site).
+        """
         super(FakeHTTPRequest, self).__init__()
 
         self.user = user
+        self._local_site_name = local_site_name
 
         if self._is_secure is None:
             siteconfig = SiteConfiguration.objects.get_current()
@@ -188,10 +199,15 @@ def _serialize_reply(reply, request):
     }
 
 
-def review_request_closed_cb(sender, user, review_request, type, **kwargs):
+def review_request_closed_cb(user, review_request, type, **kwargs):
     event = 'review_request_closed'
     webhook_targets = WebHookTarget.objects.for_event(
         event, review_request.local_site_id, review_request.repository_id)
+
+    if review_request.local_site_id:
+        local_site_name = review_request.local_site.name
+    else:
+        local_site_name = None
 
     if webhook_targets:
         if type == review_request.SUBMITTED:
@@ -207,7 +223,7 @@ def review_request_closed_cb(sender, user, review_request, type, **kwargs):
         if not user:
             user = review_request.submitter
 
-        request = FakeHTTPRequest(user)
+        request = FakeHTTPRequest(user, local_site_name=local_site_name)
         payload = {
             'event': event,
             'closed_by': resources.user.serialize_object(
@@ -220,14 +236,19 @@ def review_request_closed_cb(sender, user, review_request, type, **kwargs):
         dispatch_webhook_event(request, webhook_targets, event, payload)
 
 
-def review_request_published_cb(sender, user, review_request, changedesc,
+def review_request_published_cb(user, review_request, changedesc,
                                 **kwargs):
     event = 'review_request_published'
     webhook_targets = WebHookTarget.objects.for_event(
         event, review_request.local_site_id, review_request.repository_id)
 
+    if review_request.local_site_id:
+        local_site_name = review_request.local_site.name
+    else:
+        local_site_name = None
+
     if webhook_targets:
-        request = FakeHTTPRequest(user)
+        request = FakeHTTPRequest(user, local_site_name=local_site_name)
         payload = {
             'event': event,
             'is_new': changedesc is None,
@@ -242,16 +263,21 @@ def review_request_published_cb(sender, user, review_request, changedesc,
         dispatch_webhook_event(request, webhook_targets, event, payload)
 
 
-def review_request_reopened_cb(sender, user, review_request, **kwargs):
+def review_request_reopened_cb(user, review_request, **kwargs):
     event = 'review_request_reopened'
     webhook_targets = WebHookTarget.objects.for_event(
         event, review_request.local_site_id, review_request.repository_id)
+
+    if review_request.local_site_id:
+        local_site_name = review_request.local_site.name
+    else:
+        local_site_name = None
 
     if webhook_targets:
         if not user:
             user = review_request.submitter
 
-        request = FakeHTTPRequest(user)
+        request = FakeHTTPRequest(user, local_site_name=local_site_name)
         payload = {
             'event': event,
             'reopened_by': resources.user.serialize_object(
@@ -263,27 +289,37 @@ def review_request_reopened_cb(sender, user, review_request, **kwargs):
         dispatch_webhook_event(request, webhook_targets, event, payload)
 
 
-def review_published_cb(sender, user, review, **kwargs):
+def review_published_cb(user, review, **kwargs):
     event = 'review_published'
     review_request = review.review_request
     webhook_targets = WebHookTarget.objects.for_event(
         event, review_request.local_site_id, review_request.repository_id)
 
+    if review_request.local_site_id:
+        local_site_name = review_request.local_site.name
+    else:
+        local_site_name = None
+
     if webhook_targets:
-        request = FakeHTTPRequest(user)
+        request = FakeHTTPRequest(user, local_site_name=local_site_name)
         payload = _serialize_review(review, request)
         payload['event'] = event
         dispatch_webhook_event(request, webhook_targets, event, payload)
 
 
-def reply_published_cb(sender, user, reply, **kwargs):
+def reply_published_cb(user, reply, **kwargs):
     event = 'reply_published'
     review_request = reply.review_request
     webhook_targets = WebHookTarget.objects.for_event(
         event, review_request.local_site_id, review_request.repository_id)
 
+    if review_request.local_site_id:
+        local_site_name = review_request.local_site.name
+    else:
+        local_site_name = None
+
     if webhook_targets:
-        request = FakeHTTPRequest(user)
+        request = FakeHTTPRequest(user, local_site_name=local_site_name)
         payload = _serialize_reply(reply, request)
         payload['event'] = event
         dispatch_webhook_event(request, webhook_targets, event, payload)
