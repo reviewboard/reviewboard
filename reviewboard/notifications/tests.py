@@ -1305,6 +1305,65 @@ class WebHookDispatchTests(SpyAgency, TestCase):
             '{"items": [1, 2, 3]}',
             'sha1=46f8529ef47da2291eeb475f0d0c0a6f58f88f8b')
 
+    def test_dispatch_invalid_template(self):
+        """Testing dispatch_webhook_event with an invalid template"""
+        handler = WebHookTarget(events='my-event', url=self.ENDPOINT_URL,
+                                encoding=WebHookTarget.ENCODING_JSON,
+                                use_custom_content=True,
+                                custom_content=r'{% invalid_block_tag %}')
+
+        self.spy_on(logging.exception)
+        self.spy_on(urlopen, call_fake=lambda *args, **kwargs: None)
+
+        dispatch_webhook_event(FakeHTTPRequest(None), [handler], 'my-event',
+                               None)
+
+        self.assertFalse(urlopen.spy.called)
+        self.assertTrue(logging.exception.spy.called)
+        self.assertIsInstance(logging.exception.spy.last_call.args[1],
+                              TemplateSyntaxError)
+
+    def test_dispatch_render_error(self):
+        """Testing dispatch_webhook_event with an unencodable object"""
+        class Unencodable(object):
+            pass
+
+        handler = WebHookTarget(events='my-event', url=self.ENDPOINT_URL,
+                                encoding=WebHookTarget.ENCODING_JSON)
+
+        self.spy_on(logging.exception)
+        self.spy_on(urlopen, call_fake=lambda *args, **kwargs: None)
+
+        dispatch_webhook_event(FakeHTTPRequest(None), [handler], 'my-event', {
+            'unencodable': Unencodable(),
+        })
+
+        self.assertFalse(urlopen.spy.called)
+        self.assertTrue(logging.exception.spy.called)
+        self.assertIsInstance(logging.exception.spy.last_call.args[1],
+                              TypeError)
+
+    def test_dispatch_cannot_open(self):
+        """Testing dispatch_webhook_event with an unresolvable URL"""
+        def _urlopen(*args, **kwargs):
+            raise IOError('')
+
+        handler = WebHookTarget(events='my-event', url=self.ENDPOINT_URL,
+                                encoding=WebHookTarget.ENCODING_JSON)
+
+        self.spy_on(logging.exception)
+        self.spy_on(urlopen, call_fake=_urlopen)
+
+        dispatch_webhook_event(FakeHTTPRequest(None), [handler, handler],
+                               'my-event',
+                               None)
+
+        self.assertEqual(len(urlopen.spy.calls), 2)
+        self.assertTrue(len(logging.exception.spy.calls), 2)
+        self.assertIsInstance(logging.exception.spy.calls[0].args[2], IOError)
+        self.assertIsInstance(logging.exception.spy.calls[1].args[2], IOError)
+
+
     def _test_dispatch(self, handler, event, payload, expected_content_type,
                        expected_data, expected_sig_header=None):
         def _urlopen(request):

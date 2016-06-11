@@ -104,33 +104,44 @@ def render_custom_content(body, context_data={}):
 
 
 def dispatch_webhook_event(request, webhook_targets, event, payload):
-    """Dispatch the given event and payload to the given webhook targets."""
+    """Dispatch the given event and payload to the given WebHook targets."""
     encoder = ResourceAPIEncoder()
     bodies = {}
 
     for webhook_target in webhook_targets:
         if webhook_target.use_custom_content:
-            body = render_custom_content(webhook_target.custom_content,
-                                         payload)
+            try:
+                body = render_custom_content(webhook_target.custom_content,
+                                             payload)
+            except Exception as e:
+                logging.exception('Could not render WebHook payload: %s', e)
+                continue
+
         else:
             encoding = webhook_target.encoding
 
             if encoding not in bodies:
-                if encoding == webhook_target.ENCODING_JSON:
-                    adapter = JSONEncoderAdapter(encoder)
-                    body = adapter.encode(payload, request=request)
-                elif encoding == webhook_target.ENCODING_XML:
-                    adapter = XMLEncoderAdapter(encoder)
-                    body = adapter.encode(payload, request=request)
-                elif encoding == webhook_target.ENCODING_FORM_DATA:
-                    adapter = JSONEncoderAdapter(encoder)
-                    body = urlencode({
-                        'payload': adapter.encode(payload, request=request),
-                    })
-                else:
-                    logging.error('Unexpected WebHookTarget encoding "%s" for '
-                                  'ID %s',
-                                  encoding, webhook_target.pk)
+                try:
+                    if encoding == webhook_target.ENCODING_JSON:
+                        adapter = JSONEncoderAdapter(encoder)
+                        body = adapter.encode(payload, request=request)
+                    elif encoding == webhook_target.ENCODING_XML:
+                        adapter = XMLEncoderAdapter(encoder)
+                        body = adapter.encode(payload, request=request)
+                    elif encoding == webhook_target.ENCODING_FORM_DATA:
+                        adapter = JSONEncoderAdapter(encoder)
+                        body = urlencode({
+                            'payload': adapter.encode(payload,
+                                                      request=request),
+                        })
+                    else:
+                        logging.error('Unexpected WebHookTarget encoding "%s" '
+                                      'for ID %s',
+                                      encoding, webhook_target.pk)
+                        continue
+                except Exception as e:
+                    logging.exception('Could not encode WebHook payload: %s',
+                                      e)
                     continue
 
                 body = body.encode('utf-8')
@@ -152,7 +163,11 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
 
         logging.info('Dispatching webhook for event %s to %s',
                      event, webhook_target.url)
-        urlopen(Request(webhook_target.url, body, headers))
+        try:
+            urlopen(Request(webhook_target.url, body, headers))
+        except Exception as e:
+            logging.exception('Could not dispatch WebHook to %s: %s',
+                              webhook_target.url, e)
 
 
 def _serialize_review(review, request):
