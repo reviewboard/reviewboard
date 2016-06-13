@@ -1,4 +1,4 @@
-// Gradient Bar Colors for buttons and allerts
+// Gradient Bar Colors for buttons and alerts
 .gradientBar(@primaryColor, @secondaryColor) {
   #gradient > .vertical(@primaryColor, @secondaryColor);
   text-shadow: 0 -1px 0 rgba(0,0,0,.25);
@@ -10,7 +10,7 @@
   .horizontal(@startColor: #555, @endColor: #333) {
     background-color: @endColor;
     background-repeat: repeat-x;
-    background-image: linear-gradient(left, @startColor, @endColor);
+    background-image: linear-gradient(to right, @startColor, @endColor);
 
     // Internet Explorer <= 9
     filter: e(%("progid:DXImageTransform.Microsoft.gradient(startColorstr='%d', endColorstr='%d', GradientType=1)", @startColor, @endColor));
@@ -19,7 +19,7 @@
   .vertical(@startColor: #555, @endColor: #333) {
     background-color: @endColor;
     background-repeat: repeat-x;
-    background-image: linear-gradient(top, @startColor, @endColor);
+    background-image: linear-gradient(to bottom, @startColor, @endColor);
 
     // Internet Explorer <= 9
     filter: e(%("progid:DXImageTransform.Microsoft.gradient(startColorstr='%d', endColorstr='%d', GradientType=0)", @startColor, @endColor));
@@ -35,7 +35,7 @@
                          @colorStop: 50%, @endColor: #c3325f) {
     background-color: @endColor;
     background-repeat: no-repeat;
-    background-image: linear-gradient(@startColor, @midColor @colorStop,
+    background-image: linear-gradient(to bottom, @startColor, @midColor @colorStop,
                                       @endColor);
 
     // Internet Explorer <= 9
