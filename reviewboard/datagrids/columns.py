@@ -84,9 +84,15 @@ class BaseSubmitterColumn(Column):
         else:
             gravatar_html = ''
 
+        request = state.datagrid.request
+
+        user_url = local_site_reverse('user', request=request, kwargs={
+            'username': user.username,
+        })
+
         return format_html(
             '<a class="user" href="{0}">{1}{2}</a>',
-            user.get_absolute_url(), gravatar_html, user.username)
+            user_url, gravatar_html, user.username)
 
 
 class BugsColumn(Column):
