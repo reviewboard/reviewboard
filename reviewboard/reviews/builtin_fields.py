@@ -700,6 +700,7 @@ class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
                 'file': attachment,
                 'review_request': review_request,
                 'local_site_name': local_site_name,
+                'request': self.request,
                 'uuid': uuid.uuid4(),
             })))
 

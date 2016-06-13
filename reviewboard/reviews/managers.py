@@ -144,23 +144,26 @@ class ReviewRequestManager(ConcurrencyManager):
             diffset_history=diffset_history,
             local_site=local_site)
 
-        if commit_id:
-            if create_from_commit_id:
-                try:
-                    review_request.update_from_commit_id(commit_id)
-                except Exception as e:
-                    review_request.commit_id = commit_id
-                    logging.error('Unable to update new review request from '
-                                  'commit ID %s: %s',
-                                  commit_id, e, exc_info=1)
-            else:
-                review_request.commit_id = commit_id
+        if commit_id and not create_from_commit_id:
+            review_request.commit_id = commit_id
 
         review_request.validate_unique()
         review_request.save()
 
         if commit_id and create_from_commit_id:
-            review_request.add_default_reviewers()
+            try:
+                draft = ReviewRequestDraft.objects.create(
+                    review_request=review_request)
+                draft.update_from_commit_id(commit_id)
+                draft.commit_id = commit_id
+                draft.save()
+                draft.add_default_reviewers()
+            except Exception as e:
+                review_request.commit_id = commit_id
+                review_request.save(update_fields=['commit_id'])
+                logging.error('Unable to update new review request from '
+                              'commit ID %s: %s',
+                              commit_id, e, exc_info=1)
 
         if local_site:
             # We want to atomically set the local_id to be a monotonically

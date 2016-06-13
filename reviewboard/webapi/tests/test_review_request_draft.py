@@ -10,7 +10,8 @@ from kgb import SpyAgency
 
 from reviewboard.accounts.backends import AuthBackend
 from reviewboard.accounts.models import LocalSiteProfile
-from reviewboard.reviews.fields import (BaseTextAreaField,
+from reviewboard.reviews.fields import (BaseEditableField,
+                                        BaseTextAreaField,
                                         BaseReviewRequestField,
                                         get_review_request_fieldset)
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
@@ -150,6 +151,113 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
             rich_text=False,
             force_text_type='html',
             expected_text='#&lt;`This` is a **test**&gt;')
+
+    def test_get_with_markdown_and_force_markdown_and_custom_markdown(self):
+        """Testing the GET review-requests/<id>/draft/ API with rich text,
+        ?force-text-type=raw,markdown, and custom field that supports markdown
+        """
+        self._test_get_with_custom_and_force(
+            source_text=r'\# `This` is a **test**',
+            rich_text=True,
+            force_text_type='markdown',
+            expected_text=r'\# `This` is a **test**',
+            custom_field_supports_markdown=True)
+
+    def test_get_with_markdown_and_force_plain_and_custom_markdown(self):
+        """Testing the GET review-requests/<id>/draft/ API with rich text,
+        ?force-text-type=raw,plain, and custom field that supports markdown
+        """
+        self._test_get_with_custom_and_force(
+            source_text=r'\# `This` is a **test**',
+            rich_text=True,
+            force_text_type='plain',
+            expected_text='# `This` is a **test**',
+            custom_field_supports_markdown=True)
+
+    def test_get_with_markdown_and_force_html_and_custom_markdown(self):
+        """Testing the GET review-requests/<id>/draft/ API with rich text,
+        ?force-text-type=raw,html, and custom field that supports markdown
+        """
+        self._test_get_with_custom_and_force(
+            source_text=r'\# `This` is a **test**',
+            rich_text=True,
+            force_text_type='html',
+            expected_text='<p># <code>This</code> is a '
+                          '<strong>test</strong></p>',
+            custom_field_supports_markdown=True)
+
+    def test_get_with_markdown_and_force_markdown_and_custom_nomarkdown(self):
+        """Testing the GET review-requests/<id>/draft/ API with rich text,
+        ?force-text-type=raw,markdown, and custom field that does not support
+        markdown
+        """
+        self._test_get_with_custom_and_force(
+            source_text=r'\# `This` is a **test**',
+            rich_text=True,
+            force_text_type='markdown',
+            expected_text=r'\# `This` is a **test**',
+            custom_field_supports_markdown=False)
+
+    def test_get_with_markdown_and_force_plain_and_custom_nomarkdown(self):
+        """Testing the GET review-requests/<id>/draft/ API with rich text,
+        ?force-text-type=raw,plain, and custom field that does not support
+        markdown
+        """
+        self._test_get_with_custom_and_force(
+            source_text=r'\# `This` is a **test**',
+            rich_text=True,
+            force_text_type='plain',
+            expected_text='# `This` is a **test**',
+            custom_field_supports_markdown=False)
+
+    def test_get_with_markdown_and_force_html_and_custom_nomarkdown(self):
+        """Testing the GET review-requests/<id>/draft/ API with rich text,
+        ?force-text-type=raw,html, and custom field that does not support
+        markdown
+        """
+        self._test_get_with_custom_and_force(
+            source_text=r'\# `This` is a **test**',
+            rich_text=True,
+            force_text_type='html',
+            expected_text='<p># <code>This</code> is a '
+                          '<strong>test</strong></p>',
+            custom_field_supports_markdown=False)
+
+    def test_get_with_plain_and_force_markdown_and_custom_nomarkdown(self):
+        """Testing the GET review-requests/<id>/draft/ API with plain text,
+        ?force-text-type=raw,markdown, and custom field that does not support
+        markdown
+        """
+        self._test_get_with_custom_and_force(
+            source_text='#<`This` is a **test**>',
+            rich_text=False,
+            force_text_type='markdown',
+            expected_text=r'\#<\`This\` is a \*\*test\*\*>',
+            custom_field_supports_markdown=False)
+
+    def test_get_with_plain_and_force_plain_and_custom_nomarkdown(self):
+        """Testing the GET review-requests/<id>/draft/ API with plain text,
+        ?force-text-type=raw,markdown, and custom field that does not support
+        markdown
+        """
+        self._test_get_with_custom_and_force(
+            source_text='#<`This` is a **test**>',
+            rich_text=False,
+            force_text_type='plain',
+            expected_text='#<`This` is a **test**>',
+            custom_field_supports_markdown=False)
+
+    def test_get_with_plain_and_force_html_and_custom_nomarkdown(self):
+        """Testing the GET review-requests/<id>/draft/ API with plain text,
+        ?force-text-type=raw,markdown, and custom field that does not support
+        markdown
+        """
+        self._test_get_with_custom_and_force(
+            source_text='#<`This` is a **test**>',
+            rich_text=False,
+            force_text_type='html',
+            expected_text='#&lt;`This` is a **test**&gt;',
+            custom_field_supports_markdown=False)
 
     #
     # HTTP POST tests
@@ -935,6 +1043,127 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.assertEqual(raw_text_fields['changedescription'], text)
         self.assertEqual(raw_text_fields['description'], text)
         self.assertEqual(raw_text_fields['testing_done'], text)
+
+    def _test_get_with_custom_and_force(self, source_text, rich_text,
+                                        force_text_type, expected_text,
+                                        custom_field_supports_markdown):
+        """Helper function to test custom fields and ``?include-text-types=``.
+
+        This will test GET requests of custom text fields in two alternative
+        formats (one fixed as ``raw`` and the other controlled by
+        ``force_text_type``) via the ``?include-text-types=`` query parameter.
+
+        Args:
+            source_text (unicode):
+                Text to use as source data for fields being tested.
+
+            rich_text (bool):
+                Whether ``source_text`` is rich text.
+
+            force_text_type (unicode):
+                Value for ``?force-text-type=`` query parameter. Should be one
+                of: ``plain``, ``markdown`` or ``html``.
+
+            expected_text (unicode):
+                Expected resultant text after forcing ``source_text`` to
+                requested format.
+
+            custom_field_supports_markdown (bool)
+                Whether custom field being tested should enable markdown
+                support.
+        """
+        # Exercise custom fields that support markdown (BaseTextAreaField) and
+        # those that don't (BaseEditableField). Fields that don't support
+        # markdown do not get serialized into
+        # <text_type>_text_fields.extra_data.
+        if custom_field_supports_markdown:
+            base = BaseTextAreaField
+        else:
+            base = BaseEditableField
+
+        class CustomField(base):
+            # Utilize "text" as the field_id because it is a special case and
+            # results in a text type field named "text_type".
+            field_id = 'text'
+
+        fieldset = get_review_request_fieldset('main')
+        fieldset.add_field(CustomField)
+
+        try:
+            url, mimetype, draft = \
+                self.setup_basic_get_test(self.user, False, None)
+
+            source_text_type = "markdown" if rich_text else "plain"
+
+            draft.description = source_text
+            draft.description_rich_text = rich_text
+            draft.extra_data['text'] = source_text
+            if custom_field_supports_markdown:
+                draft.extra_data['text_type'] = source_text_type
+            draft.save()
+
+            rsp = self.api_get(url + '?force-text-type=%s' % force_text_type,
+                               expected_mimetype=mimetype)
+            self.assertEqual(rsp['stat'], 'ok')
+            self.assertIn(self.resource.item_result_key, rsp)
+
+            draft_rsp = rsp[self.resource.item_result_key]
+            self.assertIn('extra_data', draft_rsp)
+            extra_data = draft_rsp['extra_data']
+            self.assertEqual(draft_rsp['description_text_type'],
+                             force_text_type)
+            self.assertEqual(draft_rsp['description'], expected_text)
+            self.assertNotIn('raw_text_fields', draft_rsp)
+
+            if custom_field_supports_markdown:
+                # Ensure the name of the text_type field has not been
+                # formulated incorrectly, since "text" is a special name, and
+                # thus we expect "text_type" not "text_text_type".
+                self.assertNotIn('text_text_type', extra_data)
+
+                self.assertEqual(extra_data['text'], expected_text)
+                self.assertEqual(extra_data['text_type'], force_text_type)
+            else:
+                self.assertEqual(extra_data['text'], source_text)
+                self.assertNotIn('text_type', extra_data)
+
+            # Exercise including multiple text types via a CSV list.
+            rsp = self.api_get(
+                '%s?force-text-type=%s&include-text-types=raw,%s'
+                % (url, force_text_type, force_text_type),
+                expected_mimetype=mimetype)
+            self.assertEqual(rsp['stat'], 'ok')
+
+            draft_rsp = rsp[self.resource.item_result_key]
+            self.assertIn('raw_text_fields', draft_rsp)
+            raw_text_fields = draft_rsp['raw_text_fields']
+            self.assertEqual(raw_text_fields['description'], source_text)
+            self.assertEqual(raw_text_fields['description_text_type'],
+                             source_text_type)
+
+            other_field_name = '%s_text_fields' % force_text_type
+            self.assertIn(other_field_name, draft_rsp)
+            other_text_fields = draft_rsp[other_field_name]
+            self.assertEqual(other_text_fields['description'], expected_text)
+            self.assertEqual(other_text_fields['description_text_type'],
+                             force_text_type)
+
+            if custom_field_supports_markdown:
+                self.assertIn('extra_data', raw_text_fields)
+                extra_data_raw = raw_text_fields['extra_data']
+                self.assertEqual(extra_data_raw['text'], source_text)
+                self.assertEqual(extra_data_raw['text_type'], source_text_type)
+
+                self.assertIn('extra_data', other_text_fields)
+                extra_data_other = other_text_fields['extra_data']
+                self.assertEqual(extra_data_other['text'], expected_text)
+                self.assertEqual(extra_data_other['text_type'],
+                                 force_text_type)
+            else:
+                self.assertNotIn('extra_data', raw_text_fields)
+                self.assertNotIn('extra_data', other_text_fields)
+        finally:
+            fieldset.remove_field(CustomField)
 
     def _test_put_with_text_types(self, text_type_field, text_type_value,
                                   expected_change_text_type,
