@@ -81,9 +81,15 @@ class BaseSubmitterColumn(Column):
                     user=user,
                     size=self.AVATAR_SIZE)
 
+        request = state.datagrid.request
+
+        user_url = local_site_reverse('user', request=request, kwargs={
+            'username': user.username,
+        })
+
         return format_html(
             '<a class="user" href="{0}">{1}{2}</a>',
-            user.get_absolute_url(), avatar_html, user.username)
+            user_url, avatar_html, user.username)
 
 
 class BugsColumn(Column):
