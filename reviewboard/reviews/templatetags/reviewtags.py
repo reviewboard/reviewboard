@@ -17,6 +17,7 @@ from djblets.util.decorators import basictag, blocktag
 from djblets.util.humanize import humanize_list
 
 from reviewboard.accounts.models import Profile, Trophy
+from reviewboard.diffviewer.diffutils import get_displayed_diff_line_ranges
 from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         get_review_request_fieldsets)
 from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
@@ -630,27 +631,72 @@ def rich_text_classname(context, rich_text):
 
 @register.tag
 @basictag(takes_context=True)
-def patched_file_line_numbers(context):
-    """Renders the line numbers of the patched file in a review comment entry.
+def diff_comment_line_numbers(context, chunks, comment):
+    """Render the changed line number ranges for a diff, for use in e-mail.
 
-    Prints nothing if the only chunk is a 'delete' type.
+    This will display the original and patched line ranges covered by a
+    comment, transforming the comment's stored virtual line ranges into
+    human-readable ranges. It's intended for use in e-mail.
+
+    The template tag's output will list the original line ranges only if
+    there are ranges to show, and same with the patched line ranges.
+
+    Args:
+        context (django.template.Context):
+            The template context.
+
+        chunks (list):
+            The list of chunks for the diff.
+
+        comment (reviewboard.reviews.models.diff_comment.Comment):
+            The comment containing the line ranges.
+
+    Returns:
+        unicode:
+        A string representing the line ranges for the comment.
     """
-    chunks = context['entry']['chunks']
-    patched_start_line = context['entry']['comment'].last_line
-    patched_end_line = 1
-    rendering_text = False
-
-    for chunk in chunks:
-        if chunk['change'] != 'delete':
-            rendering_text = True
-            first_chunk_line = chunk['lines'][0]
-            last_chunk_line = chunk['lines'][-1]
-            patched_start_line = min(patched_start_line, first_chunk_line[4])
-            patched_end_line = max(patched_end_line, last_chunk_line[4])
-
-    if not rendering_text:
+    if comment.first_line is None:
+        # Comments without a line number represent the entire file.
         return ''
-    elif patched_start_line == patched_end_line:
-        return _('(line %d)') % patched_start_line
+
+    orig_range_info, patched_range_info = get_displayed_diff_line_ranges(
+        chunks, comment.first_line, comment.last_line)
+
+    if orig_range_info:
+        orig_start_linenum, orig_end_linenum = \
+            orig_range_info['display_range']
+
+        if orig_start_linenum == orig_end_linenum:
+            orig_lines_str = '%s' % orig_start_linenum
+            orig_lines_prefix = 'Line'
+        else:
+            orig_lines_str = '%s-%s' % (orig_start_linenum, orig_end_linenum)
+            orig_lines_prefix = 'Lines'
     else:
-        return _('(lines %d - %d)') % (patched_start_line, patched_end_line)
+        orig_lines_str = None
+        orig_lines_prefix = None
+
+    if patched_range_info:
+        patched_start_linenum, patched_end_linenum = \
+            patched_range_info['display_range']
+
+        if patched_start_linenum == patched_end_linenum:
+            patched_lines_str = '%s' % patched_start_linenum
+            patched_lines_prefix = 'Lines'
+        else:
+            patched_lines_str = '%s-%s' % (patched_start_linenum,
+                                           patched_end_linenum)
+            patched_lines_prefix = 'Lines'
+    else:
+        patched_lines_str = None
+        patched_lines_prefix = None
+
+    if orig_lines_str and patched_lines_str:
+        return '%s %s (original), %s (patched)' % (
+            orig_lines_prefix, orig_lines_str, patched_lines_str)
+    elif orig_lines_str:
+        return '%s %s (original)' % (orig_lines_prefix, orig_lines_str)
+    elif patched_lines_str:
+        return '%s %s (patched)' % (patched_lines_prefix, patched_lines_str)
+    else:
+        return ''

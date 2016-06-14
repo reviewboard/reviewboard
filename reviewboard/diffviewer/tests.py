@@ -18,6 +18,7 @@ import reviewboard.diffviewer.parser as diffparser
 from reviewboard.admin.import_utils import has_module
 from reviewboard.diffviewer.chunk_generator import (DiffChunkGenerator,
                                                     RawDiffChunkGenerator)
+from reviewboard.diffviewer.diffutils import get_displayed_diff_line_ranges
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.forms import UploadDiffForm
 from reviewboard.diffviewer.models import (DiffSet, FileDiff,
@@ -3041,6 +3042,277 @@ class DiffUtilsTests(TestCase):
         # The line numbers start at 1 and not 0.
         self.assertEqual(header['left']['text'],
                          lines[header['left']['line'] - 1][2])
+
+    def test_get_displayed_diff_line_ranges_with_delete_single_lines(self):
+        """Testing get_displayed_diff_line_ranges with delete chunk and single
+        virtual line
+        """
+        chunks = [
+            {
+                'change': 'delete',
+                'lines': [
+                    (10, 20, 'deleted line', [], '', '', [], False),
+                    # ...
+                    (50, 60, 'deleted line', [], '', '', [], False),
+                ],
+            },
+        ]
+
+        self.assertEqual(
+            get_displayed_diff_line_ranges(chunks, 20, 20),
+            ({
+                'display_range': (30, 30),
+                'virtual_range': (20, 20),
+                'chunk_range': (chunks[0], chunks[0]),
+            }, None))
+
+    def test_get_displayed_diff_line_ranges_with_delete_mutiple_lines(self):
+        """Testing get_displayed_diff_line_ranges with delete chunk and multiple
+        virtual lines
+        """
+        chunks = [
+            {
+                'change': 'delete',
+                'lines': [
+                    (10, 20, 'deleted line', [], '', '', [], False),
+                    # ...
+                    (50, 60, 'deleted line', [], '', '', [], False),
+                ],
+            },
+        ]
+
+        self.assertEqual(
+            get_displayed_diff_line_ranges(chunks, 20, 21),
+            ({
+                'display_range': (30, 31),
+                'virtual_range': (20, 21),
+                'chunk_range': (chunks[0], chunks[0]),
+            }, None))
+
+    def test_get_displayed_diff_line_ranges_with_replace_single_line(self):
+        """Testing get_displayed_diff_line_ranges with replace chunk and single
+        virtual line
+        """
+        chunks = [
+            {
+                'change': 'replace',
+                'lines': [
+                    (10, 20, 'foo', [], 30, 'replaced line', [], False),
+                    # ...
+                    (50, 60, 'foo', [], 70, 'replaced line', [], False),
+                ],
+            },
+        ]
+
+        self.assertEqual(
+            get_displayed_diff_line_ranges(chunks, 20, 20),
+            ({
+                'display_range': (30, 30),
+                'virtual_range': (20, 20),
+                'chunk_range': (chunks[0], chunks[0]),
+            }, {
+                'display_range': (40, 40),
+                'virtual_range': (20, 20),
+                'chunk_range': (chunks[0], chunks[0]),
+            }))
+
+    def test_get_displayed_diff_line_ranges_with_replace_multiple_lines(self):
+        """Testing get_displayed_diff_line_ranges with replace chunk and
+        multiple virtual lines
+        """
+        chunks = [
+            {
+                'change': 'replace',
+                'lines': [
+                    (10, 20, 'foo', [], 30, 'replaced line', [], False),
+                    # ...
+                    (50, 60, 'foo', [], 70, 'replaced line', [], False),
+                ],
+            },
+        ]
+
+        self.assertEqual(
+            get_displayed_diff_line_ranges(chunks, 20, 21),
+            ({
+                'display_range': (30, 31),
+                'virtual_range': (20, 21),
+                'chunk_range': (chunks[0], chunks[0]),
+            }, {
+                'display_range': (40, 41),
+                'virtual_range': (20, 21),
+                'chunk_range': (chunks[0], chunks[0]),
+            }))
+
+    def test_get_displayed_diff_line_ranges_with_insert_single_line(self):
+        """Testing get_displayed_diff_line_ranges with insert chunk and single
+        virtual line
+        """
+        chunks = [
+            {
+                'change': 'insert',
+                'lines': [
+                    (10, '', '', [], 20, 'inserted line', [], False),
+                    # ...
+                    (50, '', '', [], 60, 'inserted line', [], False),
+                ],
+            },
+        ]
+
+        self.assertEqual(
+            get_displayed_diff_line_ranges(chunks, 20, 20),
+            (None, {
+                'display_range': (30, 30),
+                'virtual_range': (20, 20),
+                'chunk_range': (chunks[0], chunks[0]),
+            }))
+
+    def test_get_displayed_diff_line_ranges_with_insert_multiple_lines(self):
+        """Testing get_displayed_diff_line_ranges with insert chunk and multiple
+        virtual lines
+        """
+        chunks = [
+            {
+                'change': 'insert',
+                'lines': [
+                    (10, '', '', [], 20, 'inserted line', [], False),
+                    # ...
+                    (50, '', '', [], 60, 'inserted line', [], False),
+                ],
+            },
+        ]
+
+        self.assertEqual(
+            get_displayed_diff_line_ranges(chunks, 20, 21),
+            (None, {
+                'display_range': (30, 31),
+                'virtual_range': (20, 21),
+                'chunk_range': (chunks[0], chunks[0]),
+            }))
+
+    def test_get_displayed_diff_line_ranges_with_spanning_insert_delete(self):
+        """Testing get_displayed_diff_line_ranges with spanning delete and
+        insert
+        """
+        chunks = [
+            {
+                'change': 'delete',
+                'lines': [
+                    (10, 20, 'deleted line', [], '', '', [], False),
+                    # ...
+                    (50, 60, 'deleted line', [], '', '', [], False),
+                ],
+            },
+            {
+                'change': 'insert',
+                'lines': [
+                    (51, '', '', [], 61, 'inserted line', [], False),
+                    # ...
+                    (100, '', '', [], 110, 'inserted line', [], False),
+                ],
+            },
+            {
+                'change': 'equal',
+                'lines': [
+                    (101, 61, 'equal line', [], 111, 'equal line', [],
+                     False),
+                    # ...
+                    (200, 160, 'equal line', [], 210, 'equal line', [],
+                     False),
+                ],
+            },
+        ]
+
+        self.assertEqual(
+            get_displayed_diff_line_ranges(chunks, 20, 69),
+            ({
+                'display_range': (30, 60),
+                'virtual_range': (20, 50),
+                'chunk_range': (chunks[0], chunks[0]),
+            }, {
+                'display_range': (61, 79),
+                'virtual_range': (51, 69),
+                'chunk_range': (chunks[1], chunks[1]),
+            }))
+
+    def test_get_displayed_diff_line_ranges_with_spanning_delete_insert(self):
+        """Testing get_displayed_diff_line_ranges with spanning insert and
+        delete
+        """
+        chunks = [
+            {
+                'change': 'insert',
+                'lines': [
+                    (10, '', '', [], 20, 'inserted line', [], False),
+                    # ...
+                    (50, '', '', [], 60, 'inserted line', [], False),
+                ],
+            },
+            {
+                'change': 'delete',
+                'lines': [
+                    (51, 61, 'inserted line', [], '', '', [], False),
+                    # ...
+                    (100, 110, 'inserted line', [], '', '', [], False),
+                ],
+            },
+            {
+                'change': 'equal',
+                'lines': [
+                    (101, 111, 'equal line', [], 61, 'equal line', [],
+                     False),
+                    # ...
+                    (200, 210, 'equal line', [], 160, 'equal line', [],
+                     False),
+                ],
+            },
+        ]
+
+        self.assertEqual(
+            get_displayed_diff_line_ranges(chunks, 20, 69),
+            ({
+                'display_range': (61, 79),
+                'virtual_range': (51, 69),
+                'chunk_range': (chunks[1], chunks[1]),
+            }, {
+                'display_range': (30, 60),
+                'virtual_range': (20, 50),
+                'chunk_range': (chunks[0], chunks[0]),
+            }))
+
+    def test_get_displayed_diff_line_ranges_with_spanning_last_chunk(self):
+        """Testing get_displayed_diff_line_ranges with spanning chunks through
+        last chunk
+        """
+        chunks = [
+            {
+                'change': 'delete',
+                'lines': [
+                    (10, 20, 'deleted line', [], '', '', [], False),
+                    # ...
+                    (50, 60, 'deleted line', [], '', '', [], False),
+                ],
+            },
+            {
+                'change': 'insert',
+                'lines': [
+                    (51, '', '', [], 61, 'inserted line', [], False),
+                    # ...
+                    (100, '', '', [], 110, 'inserted line', [], False),
+                ],
+            },
+        ]
+
+        self.assertEqual(
+            get_displayed_diff_line_ranges(chunks, 20, 69),
+            ({
+                'display_range': (30, 60),
+                'virtual_range': (20, 50),
+                'chunk_range': (chunks[0], chunks[0]),
+            }, {
+                'display_range': (61, 79),
+                'virtual_range': (51, 69),
+                'chunk_range': (chunks[1], chunks[1]),
+            }))
 
 
 class DiffExpansionHeaderTests(TestCase):

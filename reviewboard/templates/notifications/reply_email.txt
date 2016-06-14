@@ -1,4 +1,4 @@
-{% autoescape off %}{% load djblets_email djblets_utils markdown_email %}
+{% autoescape off %}{% load djblets_email djblets_utils markdown_email reviewtags %}
 
 {% condense %}
 {% ifnotequal reply.body_top "" %}
@@ -40,17 +40,21 @@
 
 
 {% endfor %}
-{% for comment in reply.comments.all %}
+{% for entry in comment_entries %}
 > On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
-> > {{comment.filediff.source_file_display}}, {% ifequal comment.first_line comment.last_line %}line {{comment.first_line}}{% else %}lines {{comment.first_line}}-{{comment.last_line}}{% endifequal %}
-> > <{{domain_method}}://{{domain}}{{comment.get_absolute_url}}>
+{%  condense 1 %}
+{%   definevar "lines_info" %}{% diff_comment_line_numbers entry.chunks entry.comment %}{% enddefinevar %}
+> > {{entry.comment.filediff.source_file_display}}
+{% if lines_info %}{{lines_info|quote_text:2}}{% endif %}
+> > <{{domain_method}}://{{domain}}{{entry.comment.get_absolute_url}}>
+{%  endcondense %}
 > >
-{{comment.reply_to.text|markdown_email_text:comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  ifnotequal comment reply_comment %}
+{{entry.comment.reply_to.text|markdown_email_text:entry.comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in entry.comment.reply_to.public_replies %}{%  ifnotequal entry.comment reply_comment %}
 > 
 > {{reply_comment.review.get.user|user_displayname}} wrote:
 {{reply_comment.text|markdown_email_text:reply_comment.rich_text|indent|quote_text}}{%  endifnotequal %}{% endfor %}
 
-{{comment.text|markdown_email_text:comment.rich_text}}
+{{entry.comment.text|markdown_email_text:entry.comment.rich_text}}
 
 
 {% endfor %}
