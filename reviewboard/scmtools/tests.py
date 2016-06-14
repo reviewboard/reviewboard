@@ -10,6 +10,7 @@ from tempfile import mkdtemp
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.utils import six
 from django.utils.six.moves import zip_longest
 from djblets.util.filesystem import is_exe_in_path
@@ -539,6 +540,221 @@ class CVSTests(SCMTestCase):
                              '/cvsroot/test',
             expected_path='/cvsroot/test')
 
+    def test_path_with_gserver(self):
+        """Testing CVSTool.build_cvsroot with :gserver:"""
+        self._test_build_cvsroot(
+            repo_path=':gserver:localhost:/cvsroot/test',
+            expected_cvsroot=':gserver:localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_gserver_with_username(self):
+        """Testing CVSTool.build_cvsroot with :gserver: with username"""
+        self._test_build_cvsroot(
+            repo_path=':gserver:user@localhost:/cvsroot/test',
+            expected_cvsroot=':gserver:user@localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+        self._test_build_cvsroot(
+            repo_path=':gserver:localhost:/cvsroot/test',
+            username='user',
+            expected_cvsroot=':gserver:user@localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_gserver_with_port(self):
+        """Testing CVSTool.build_cvsroot with :gserver: with port"""
+        self._test_build_cvsroot(
+            repo_path=':gserver:localhost:123/cvsroot/test',
+            expected_cvsroot=':gserver:localhost:123/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_gserver_validates_password(self):
+        """Testing CVSTool.build_cvsroot with :gserver: validates password"""
+        self._test_build_cvsroot(
+            repo_path=':gserver:user:pass@localhost:/cvsroot/test',
+            expected_error='"gserver" CVSROOTs do not support passwords.',
+            expected_cvsroot=':gserver:user@localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_kserver(self):
+        """Testing CVSTool.build_cvsroot with :kserver:"""
+        self._test_build_cvsroot(
+            repo_path=':kserver:localhost:/cvsroot/test',
+            expected_cvsroot=':kserver:localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_kserver_with_username(self):
+        """Testing CVSTool.build_cvsroot with :kserver: with username"""
+        self._test_build_cvsroot(
+            repo_path=':kserver:user@localhost:/cvsroot/test',
+            expected_cvsroot=':kserver:user@localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+        self._test_build_cvsroot(
+            repo_path=':kserver:localhost:/cvsroot/test',
+            username='user',
+            expected_cvsroot=':kserver:user@localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_kserver_with_port(self):
+        """Testing CVSTool.build_cvsroot with :kserver: with port"""
+        self._test_build_cvsroot(
+            repo_path=':kserver:localhost:123/cvsroot/test',
+            expected_cvsroot=':kserver:localhost:123/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_kserver_validates_password(self):
+        """Testing CVSTool.build_cvsroot with :kserver: validates password"""
+        self._test_build_cvsroot(
+            repo_path=':kserver:user:pass@localhost:/cvsroot/test',
+            expected_error='"kserver" CVSROOTs do not support passwords.',
+            expected_cvsroot=':kserver:user@localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_ext(self):
+        """Testing CVSTool.build_cvsroot with :ext:"""
+        self._test_build_cvsroot(
+            repo_path=':ext:localhost:/cvsroot/test',
+            expected_cvsroot=':ext:localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_ext_validates_password(self):
+        """Testing CVSTool.build_cvsroot with :ext: validates password"""
+        self._test_build_cvsroot(
+            repo_path=':ext:user:pass@localhost:/cvsroot/test',
+            expected_error='"ext" CVSROOTs do not support passwords.',
+            expected_cvsroot=':ext:user@localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_ext_validates_port(self):
+        """Testing CVSTool.build_cvsroot with :ext: validates port"""
+        self._test_build_cvsroot(
+            repo_path=':ext:localhost:123/cvsroot/test',
+            expected_error='"ext" CVSROOTs do not support specifying ports.',
+            expected_cvsroot=':ext:localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_server(self):
+        """Testing CVSTool.build_cvsroot with :server:"""
+        self._test_build_cvsroot(
+            repo_path=':server:localhost:/cvsroot/test',
+            expected_cvsroot=':server:localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_server_validates_password(self):
+        """Testing CVSTool.build_cvsroot with :server: validates password"""
+        self._test_build_cvsroot(
+            repo_path=':server:user:pass@localhost:/cvsroot/test',
+            expected_error='"server" CVSROOTs do not support passwords.',
+            expected_cvsroot=':server:user@localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_server_validates_port(self):
+        """Testing CVSTool.build_cvsroot with :server: validates port"""
+        self._test_build_cvsroot(
+            repo_path=':server:localhost:123/cvsroot/test',
+            expected_error='"server" CVSROOTs do not support specifying '
+                           'ports.',
+            expected_cvsroot=':server:localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_ssh(self):
+        """Testing CVSTool.build_cvsroot with :ssh:"""
+        self._test_build_cvsroot(
+            repo_path=':ssh:localhost:/cvsroot/test',
+            expected_cvsroot=':ssh:localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_ssh_validates_password(self):
+        """Testing CVSTool.build_cvsroot with :ssh: validates password"""
+        self._test_build_cvsroot(
+            repo_path=':ssh:user:pass@localhost:/cvsroot/test',
+            expected_error='"ssh" CVSROOTs do not support passwords.',
+            expected_cvsroot=':ssh:user@localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_ssh_validates_port(self):
+        """Testing CVSTool.build_cvsroot with :ssh: validates port"""
+        self._test_build_cvsroot(
+            repo_path=':ssh:localhost:123/cvsroot/test',
+            expected_error='"ssh" CVSROOTs do not support specifying '
+                           'ports.',
+            expected_cvsroot=':ssh:localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_extssh(self):
+        """Testing CVSTool.build_cvsroot with :extssh:"""
+        self._test_build_cvsroot(
+            repo_path=':extssh:localhost:/cvsroot/test',
+            expected_cvsroot=':extssh:localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_extssh_validates_password(self):
+        """Testing CVSTool.build_cvsroot with :extssh: validates password"""
+        self._test_build_cvsroot(
+            repo_path=':extssh:user:pass@localhost:/cvsroot/test',
+            expected_error='"extssh" CVSROOTs do not support passwords.',
+            expected_cvsroot=':extssh:user@localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_extssh_validates_port(self):
+        """Testing CVSTool.build_cvsroot with :extssh: validates port"""
+        self._test_build_cvsroot(
+            repo_path=':extssh:localhost:123/cvsroot/test',
+            expected_error='"extssh" CVSROOTs do not support specifying '
+                           'ports.',
+            expected_cvsroot=':extssh:localhost:/cvsroot/test',
+            expected_path='/cvsroot/test')
+
+    def test_path_with_fork(self):
+        """Testing CVSTool.build_cvsroot with :fork:"""
+        self._test_build_cvsroot(
+            repo_path=':fork:/home/myuser/cvsroot',
+            expected_cvsroot=':fork:/home/myuser/cvsroot',
+            expected_path='/home/myuser/cvsroot')
+
+    def test_path_with_fork_validates_username(self):
+        """Testing CVSTool.build_cvsroot with :fork: validates usernames"""
+        self._test_build_cvsroot(
+            repo_path=':fork:/home/myuser/cvsroot',
+            username='myuser',
+            expected_error='"fork" CVSROOTs do not support usernames.',
+            expected_cvsroot=':fork:/home/myuser/cvsroot',
+            expected_path='/home/myuser/cvsroot')
+
+    def test_path_with_fork_validates_password(self):
+        """Testing CVSTool.build_cvsroot with :fork: validates passwords"""
+        self._test_build_cvsroot(
+            repo_path=':fork:/home/myuser/cvsroot',
+            password='myuser',
+            expected_error='"fork" CVSROOTs do not support passwords.',
+            expected_cvsroot=':fork:/home/myuser/cvsroot',
+            expected_path='/home/myuser/cvsroot')
+
+    def test_path_with_local(self):
+        """Testing CVSTool.build_cvsroot with :local:"""
+        self._test_build_cvsroot(
+            repo_path=':local:/home/myuser/cvsroot',
+            expected_cvsroot=':local:/home/myuser/cvsroot',
+            expected_path='/home/myuser/cvsroot')
+
+    def test_path_with_local_validates_username(self):
+        """Testing CVSTool.build_cvsroot with :local: validates usernames"""
+        self._test_build_cvsroot(
+            repo_path=':local:/home/myuser/cvsroot',
+            username='myuser',
+            expected_error='"local" CVSROOTs do not support usernames.',
+            expected_cvsroot=':local:/home/myuser/cvsroot',
+            expected_path='/home/myuser/cvsroot')
+
+    def test_path_with_local_validates_password(self):
+        """Testing CVSTool.build_cvsroot with :local: validates passwords"""
+        self._test_build_cvsroot(
+            repo_path=':local:/home/myuser/cvsroot',
+            password='myuser',
+            expected_error='"local" CVSROOTs do not support passwords.',
+            expected_cvsroot=':local:/home/myuser/cvsroot',
+            expected_path='/home/myuser/cvsroot')
+
     def test_get_file(self):
         """Testing CVSTool.get_file"""
         expected = b"test content\n"
@@ -619,7 +835,7 @@ class CVSTests(SCMTestCase):
         self.assertEqual(file.origFile, 'test/testfile')
         self.assertEqual(file.origInfo,
                          '26 Jul 2007 08:50:30 -0000      1.1.1.1')
-        self.assertEqual(file.newFile, 'testfile')
+        self.assertEqual(file.newFile, 'test/testfile')
         self.assertEqual(file.newInfo, '26 Jul 2007 10:20:20 -0000')
         self.assertEqual(file.data, diff)
         self.assertEqual(file.insert_count, 2)
@@ -719,7 +935,7 @@ class CVSTests(SCMTestCase):
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, 'test/testfile')
         self.assertEqual(file.origInfo, '26 Jul 2007 08:50:30 -0000      1.1')
-        self.assertEqual(file.newFile, 'testfile')
+        self.assertEqual(file.newFile, 'test/testfile')
         self.assertEqual(file.newInfo, '27 Sep 2007 22:57:16 -0000      1.2')
         self.assertEqual(file.data, diff)
         self.assertEqual(file.insert_count, 2)
@@ -746,7 +962,7 @@ class CVSTests(SCMTestCase):
         self.assertEqual(file.origFile, 'test/téstfile')
         self.assertEqual(file.origInfo,
                          '26 Jul 2007 08:50:30 -0000      1.1.1.1')
-        self.assertEqual(file.newFile, 'téstfile')
+        self.assertEqual(file.newFile, 'test/téstfile')
         self.assertEqual(file.newInfo, '26 Jul 2007 10:20:20 -0000')
         self.assertEqual(file.data, diff)
         self.assertEqual(file.insert_count, 2)
@@ -860,9 +1076,14 @@ class CVSTests(SCMTestCase):
         self._test_ssh_with_site(self.cvs_ssh_path, 'CVSROOT/modules')
 
     def _test_build_cvsroot(self, repo_path, expected_cvsroot, expected_path,
-                            username=None, password=None):
+                            expected_error=None, username=None, password=None):
+        if expected_error:
+            with self.assertRaisesMessage(ValidationError, expected_error):
+                self.tool.build_cvsroot(repo_path, username, password,
+                                        validate=True)
+
         cvsroot, norm_path = self.tool.build_cvsroot(repo_path, username,
-                                                     password)
+                                                     password, validate=False)
 
         self.assertEqual(cvsroot, expected_cvsroot)
         self.assertEqual(norm_path, expected_path)
