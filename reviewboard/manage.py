@@ -167,6 +167,12 @@ def run():
     else:
         in_subprocess = True
 
+    if len(sys.argv) > 1 and sys.argv[1] == 'test':
+        # We're running unit tests, so we need to be sure to mark this in
+        # order for the settings to reflect that. Otherwise, the test runner
+        # will do things like load extensions or compile static media.
+        os.environ[b'RB_RUNNING_TESTS'] = b'1'
+
     try:
         from reviewboard import settings
     except ImportError as e:
