@@ -1333,6 +1333,75 @@ class FileDiffMigrationTests(TestCase):
                          self.parent_diff)
         self.assertEqual(self.filediff.parent_diff, parent_diff)
 
+    def test_migration_with_legacy_and_race_condition(self):
+        """Testing RawFileDiffData migration with LegacyFileDiffData and race
+        condition in migrating
+        """
+        legacy = LegacyFileDiffData.objects.create(
+            binary_hash='abc123',
+            binary=Base64DecodedValue(self.diff))
+        parent_legacy = LegacyFileDiffData.objects.create(
+            binary_hash='def456',
+            binary=Base64DecodedValue(self.parent_diff))
+
+        filediff1 = self.filediff
+        filediff1.legacy_diff_hash = legacy
+        filediff1.legacy_parent_diff_hash = parent_legacy
+        filediff1.save()
+
+        filediff2 = FileDiff.objects.get(pk=filediff1.pk)
+
+        # Make sure that we're in the expected state.
+        self.assertEqual(filediff1.legacy_diff_hash_id, legacy.pk)
+        self.assertEqual(filediff1.legacy_parent_diff_hash_id,
+                         parent_legacy.pk)
+        self.assertEqual(filediff2.legacy_diff_hash_id, legacy.pk)
+        self.assertEqual(filediff2.legacy_parent_diff_hash_id,
+                         parent_legacy.pk)
+
+        # This should prompt the migration of the first instance.
+        diff1 = self.filediff.diff
+        parent_diff1 = filediff1.parent_diff
+
+        # This should prompt the migration of the second instance.
+        diff2 = filediff2.diff
+        parent_diff2 = filediff2.parent_diff
+
+        # At this point, we should have valid diffs, and neither call
+        # above should have raised an exception due to a dangling hash ID.
+        self.assertEqual(diff1, self.diff)
+        self.assertEqual(diff1, diff2)
+        self.assertEqual(parent_diff1, self.parent_diff)
+        self.assertEqual(parent_diff1, parent_diff2)
+
+        self.assertEqual(LegacyFileDiffData.objects.count(), 0)
+        self.assertEqual(RawFileDiffData.objects.count(), 2)
+
+        # Check the hash references.
+        self.assertIsNotNone(filediff1.diff_hash)
+        self.assertIsNotNone(filediff2.diff_hash)
+        self.assertEqual(filediff1.diff_hash, filediff2.diff_hash)
+        self.assertIsNotNone(filediff1.parent_diff_hash)
+        self.assertIsNotNone(filediff2.parent_diff_hash)
+        self.assertEqual(filediff1.parent_diff_hash,
+                         filediff2.parent_diff_hash)
+        self.assertIsNone(filediff1.legacy_diff_hash)
+        self.assertIsNone(filediff2.legacy_diff_hash)
+        self.assertIsNone(filediff1.legacy_parent_diff_hash)
+        self.assertIsNone(filediff2.legacy_parent_diff_hash)
+
+        # Check the diff content.
+        self.assertEqual(filediff1.diff64, '')
+        self.assertEqual(filediff2.diff64, '')
+        self.assertEqual(filediff1.diff_hash.content, self.diff)
+        self.assertEqual(filediff2.diff_hash.content, self.diff)
+
+        # Check the parent_diff content.
+        self.assertEqual(filediff1.parent_diff64, '')
+        self.assertEqual(filediff2.parent_diff64, '')
+        self.assertEqual(filediff1.parent_diff_hash.content, self.parent_diff)
+        self.assertEqual(filediff2.parent_diff_hash.content, self.parent_diff)
+
 
 class HighlightRegionTest(TestCase):
     def setUp(self):
