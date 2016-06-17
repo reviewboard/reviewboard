@@ -46,6 +46,8 @@ from djblets.siteconfig.forms import SiteSettingsForm
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.forms.auth import LegacyAuthModuleSettingsForm
+from reviewboard.accounts.forms.pages import AvatarSettingsForm
+from reviewboard.accounts.pages import AccountPage, ProfilePage
 from reviewboard.admin.checks import (get_can_use_amazon_s3,
                                       get_can_use_openstack_swift,
                                       get_can_use_couchdb)
@@ -558,8 +560,19 @@ class AvatarServicesForm(SiteSettingsForm):
         avatar_services.set_default_service(
             self.cleaned_data['default_service'],
             save=False)
+
+        avatars_enabled_changed = (avatar_services.avatars_enabled !=
+                                   self.cleaned_data['avatars_enabled'])
         avatar_services.avatars_enabled = self.cleaned_data['avatars_enabled']
         avatar_services.save()
+
+        if avatars_enabled_changed:
+            if avatar_services.avatars_enabled:
+                AccountPage.registry.add_form_to_page(ProfilePage,
+                                                      AvatarSettingsForm)
+            else:
+                AccountPage.registry.remove_form_from_page(ProfilePage,
+                                                           AvatarSettingsForm)
 
     class Meta:
         title = _('Avatar Services')
