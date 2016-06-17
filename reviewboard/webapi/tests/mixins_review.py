@@ -162,7 +162,7 @@ class ReviewItemMixin(ExtraDataItemMixin):
 
     @webapi_test_template
     def test_put_with_text_type_markdown(self):
-        """Testing the POST <URL> API with text_type=markdown"""
+        """Testing the PUT <URL> API with text_type=markdown"""
         self._test_put_with_text_types(
             text_type_field='text_type',
             text_type_value='markdown',
@@ -171,7 +171,7 @@ class ReviewItemMixin(ExtraDataItemMixin):
 
     @webapi_test_template
     def test_put_with_text_type_plain(self):
-        """Testing the POST <URL> API with text_type=plain"""
+        """Testing the PUT <URL> API with text_type=plain"""
         self._test_put_with_text_types(
             text_type_field='text_type',
             text_type_value='plain',
@@ -180,7 +180,7 @@ class ReviewItemMixin(ExtraDataItemMixin):
 
     @webapi_test_template
     def test_put_with_body_top_text_type_markdown(self):
-        """Testing the POST <URL> API with body_top_text_type=markdown"""
+        """Testing the PUT <URL> API with body_top_text_type=markdown"""
         self._test_put_with_text_types(
             text_type_field='body_top_text_type',
             text_type_value='markdown',
@@ -189,7 +189,7 @@ class ReviewItemMixin(ExtraDataItemMixin):
 
     @webapi_test_template
     def test_put_with_body_top_text_type_plain(self):
-        """Testing the POST <URL> API with body_top_text_type=plain"""
+        """Testing the PUT <URL> API with body_top_text_type=plain"""
         self._test_put_with_text_types(
             text_type_field='body_top_text_type',
             text_type_value='plain',
@@ -198,7 +198,7 @@ class ReviewItemMixin(ExtraDataItemMixin):
 
     @webapi_test_template
     def test_put_with_body_bottom_text_type_markdown(self):
-        """Testing the POST <URL> API with body_bottom_text_type=markdown"""
+        """Testing the PUT <URL> API with body_bottom_text_type=markdown"""
         self._test_put_with_text_types(
             text_type_field='body_bottom_text_type',
             text_type_value='markdown',
@@ -207,7 +207,7 @@ class ReviewItemMixin(ExtraDataItemMixin):
 
     @webapi_test_template
     def test_put_with_body_bottom_text_type_plain(self):
-        """Testing the POST <URL> API with body_bottom_text_type=plain"""
+        """Testing the PUT <URL> API with body_bottom_text_type=plain"""
         self._test_put_with_text_types(
             text_type_field='body_bottom_text_type',
             text_type_value='plain',

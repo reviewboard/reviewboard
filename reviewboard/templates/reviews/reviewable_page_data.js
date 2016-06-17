@@ -88,7 +88,9 @@
                 {
                     id: {{file.pk}},
                     loaded: true,
+{%  if file.attachment_history_id %}
                     attachmentHistoryID: {{file.attachment_history_id}},
+{%  endif %}
                     caption: _.unescape('{{caption|escapejs}}'),
                     downloadURL: '{{file.get_absolute_url|escapejs}}',
                     filename: '{{file.filename|escapejs}}',

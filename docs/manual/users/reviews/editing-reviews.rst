@@ -38,7 +38,7 @@ The bottom of the dialog have the following buttons:
 * :guilabel:`Save`
 
 Clicking :guilabel:`Publish Review` will save any comments you have made on
-your review and immediately `publish your review <publishing-reviews>`_.
+your review and immediately :ref:`publish your review <publishing-reviews>`.
 
 Clicking :guilabel:`Discard Review` will immediately discard your review.
 

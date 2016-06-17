@@ -22,6 +22,7 @@ PIPELINE_JAVASCRIPT = dict({
             'lib/js/moment-2.12.0.js',
             'lib/js/moment-timezone-0.5.2.js',
             'lib/js/retina.js',
+            'lib/js/selectize-0.12.1.js',
             'lib/js/ui.autocomplete.js',
             'lib/js/codemirror-5.8.min.js',
         ),
@@ -236,7 +237,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/views/fileAttachmentThumbnailView.js',
             'rb/js/views/floatingBannerView.js',
             'rb/js/views/issueSummaryTableView.js',
-            'rb/js/views/regionCommentBlockView.js',
+            'rb/js/views/regionCommentBlockView.es6.js',
             'rb/js/views/changeBoxView.js',
             'rb/js/views/reviewBoxListView.js',
             'rb/js/views/reviewBoxView.js',
@@ -245,7 +246,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/views/reviewReplyEditorView.js',
             'rb/js/views/reviewRequestEditorView.js',
             'rb/js/views/screenshotThumbnailView.js',
-            'rb/js/views/imageReviewableView.js',
+            'rb/js/views/imageReviewableView.es6.js',
             'rb/js/views/dummyReviewableView.js',
             'rb/js/views/textBasedCommentBlockView.js',
             'rb/js/views/textBasedReviewableView.js',
@@ -298,12 +299,19 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'admin': {
         'source_filenames': (
+            'rb/js/admin/views/relatedObjectSelectorView.js',
+            'rb/js/admin/views/relatedUserSelectorView.js',
+        ),
+        'output_filename': 'rb/js/admin.min.js',
+    },
+    'admin-dashboard': {
+        'source_filenames': (
             'lib/js/jquery.masonry.js',
             'rb/js/admin/admin.js',
             'rb/js/admin/models/supportContractModel.js',
             'rb/js/admin/views/supportBannerView.js',
         ),
-        'output_filename': 'rb/js/admin.min.js',
+        'output_filename': 'rb/js/admin-dashboard.min.js',
     },
     'repositoryform': {
         'source_filenames': (
@@ -326,6 +334,7 @@ PIPELINE_STYLESHEETS = dict({
             'lib/css/codemirror.css',
             'lib/css/jquery-ui-1.8.24.min.css',
             'lib/css/font-awesome-4.3.0.min.css',
+            'lib/css/selectize.default-0.12.1.css',
             'rb/css/assets/icons.less',
             'rb/css/layout/helpers.less',
             'rb/css/pages/base.less',
@@ -335,6 +344,7 @@ PIPELINE_STYLESHEETS = dict({
             'rb/css/ui/buttons.less',
             'rb/css/ui/datagrids.less',
             'rb/css/ui/forms.less',
+            'rb/css/ui/menus.less',
             'rb/css/ui/sidebars.less',
             'rb/css/common.less',
         ),

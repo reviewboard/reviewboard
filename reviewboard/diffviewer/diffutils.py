@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import logging
 import os
 import re
 import subprocess
@@ -910,3 +911,177 @@ def get_sorted_filediffs(filediffs, key=None):
             return filename[:i], filename[i + 1:]
 
     return sorted(filediffs, cmp=cmp_filediffs, key=make_key)
+
+
+def get_displayed_diff_line_ranges(chunks, first_vlinenum, last_vlinenum):
+    """Return the displayed line ranges based on virtual line numbers.
+
+    This takes the virtual line numbers (the index in the side-by-side diff
+    lines) and returns the human-readable line numbers, the chunks they're in,
+    and mapped virtual line numbers.
+
+    A virtual line range may start or end in a chunk not containing displayed
+    line numbers (such as an "original" range starting/ending in an "insert"
+    chunk). The resulting displayed line ranges will exclude these chunks.
+
+    Args:
+        chunks (list of dict):
+            The list of chunks for the diff.
+
+        first_vlinenum (int):
+            The first virtual line number. This uses 1-based indexes.
+
+        last_vlinenum (int):
+            The last virtual line number. This uses 1-based indexes.
+
+    Returns:
+        tuple:
+        A tuple of displayed line range information, containing 2 items.
+
+        Each item will either be a dictionary of information, or ``None``
+        if there aren't any displayed lines to show.
+
+        The dictionary contains the following keys:
+
+        ``display_range``:
+            A tuple containing the displayed line range.
+
+        ``virtual_range``:
+            A tuple containing the virtual line range that ``display_range``
+            maps to.
+
+        ``chunk_range``:
+            A tuple containing the beginning/ending chunks that
+            ``display_range` maps to.
+
+    Raises:
+        ValueError:
+            The range provided was invalid.
+    """
+    if first_vlinenum < 0:
+        raise ValueError('first_vlinenum must be >= 0')
+
+    if last_vlinenum < first_vlinenum:
+        raise ValueError('last_vlinenum must be >= first_vlinenum')
+
+    orig_start_linenum = None
+    orig_end_linenum = None
+    orig_start_chunk = None
+    orig_last_valid_chunk = None
+    patched_start_linenum = None
+    patched_end_linenum = None
+    patched_start_chunk = None
+    patched_last_valid_chunk = None
+
+    for chunk in chunks:
+        lines = chunk['lines']
+
+        if not lines:
+            logging.warning('get_displayed_diff_line_ranges: Encountered '
+                            'empty chunk %r',
+                            chunk)
+            continue
+
+        first_line = lines[0]
+        last_line = lines[-1]
+        chunk_first_vlinenum = first_line[0]
+        chunk_last_vlinenum = last_line[0]
+
+        if first_vlinenum > chunk_last_vlinenum:
+            # We're too early. There won't be anything of interest here.
+            continue
+
+        if last_vlinenum < chunk_first_vlinenum:
+            # We're not going to find anything useful at this point, so bail.
+            break
+
+        change = chunk['change']
+        valid_for_orig = (change != 'insert')
+        valid_for_patched = (change != 'delete')
+
+        if valid_for_orig:
+            orig_last_valid_chunk = chunk
+
+            if not orig_start_chunk:
+                orig_start_chunk = chunk
+
+        if valid_for_patched:
+            patched_last_valid_chunk = chunk
+
+            if not patched_start_chunk:
+                patched_start_chunk = chunk
+
+        if chunk_first_vlinenum <= first_vlinenum <= chunk_last_vlinenum:
+            # This chunk contains the first line that can possibly be used for
+            # the comment range. We know the start and end virtual line numbers
+            # in the range, so we can compute the proper offset.
+            offset = first_vlinenum - chunk_first_vlinenum
+
+            if valid_for_orig:
+                orig_start_linenum = first_line[1] + offset
+                orig_start_vlinenum = first_line[0] + offset
+
+            if valid_for_patched:
+                patched_start_linenum = first_line[4] + offset
+                patched_start_vlinenum = first_line[0] + offset
+        elif first_vlinenum < chunk_first_vlinenum:
+            # One side of the the comment range may not have started in a valid
+            # chunk (this would happen if a comment began in an insert or
+            # delete chunk). If that happened, we may not have been able to set
+            # the beginning of the range in the condition above. Check for this
+            # and try setting it now.
+            if orig_start_linenum is None and valid_for_orig:
+                orig_start_linenum = first_line[1]
+                orig_start_vlinenum = first_line[0]
+
+            if patched_start_linenum is None and valid_for_patched:
+                patched_start_linenum = first_line[4]
+                patched_start_vlinenum = first_line[0]
+
+    # Figure out the end ranges, now that we know the valid ending chunks of
+    # each. We're going to try to get the line within the chunk that represents
+    # the end, if within the chunk, capping it to the last line in the chunk.
+    #
+    # If a particular range did not have a valid chunk anywhere in that range,
+    # we're going to invalidate the entire range.
+    if orig_last_valid_chunk:
+        lines = orig_last_valid_chunk['lines']
+        first_line = lines[0]
+        last_line = lines[-1]
+        offset = last_vlinenum - first_line[0]
+
+        orig_end_linenum = min(last_line[1], first_line[1] + offset)
+        orig_end_vlinenum = min(last_line[0], first_line[0] + offset)
+
+        assert orig_end_linenum >= orig_start_linenum
+        assert orig_end_vlinenum >= orig_start_vlinenum
+
+        orig_range_info = {
+            'display_range': (orig_start_linenum, orig_end_linenum),
+            'virtual_range': (orig_start_vlinenum, orig_end_vlinenum),
+            'chunk_range': (orig_start_chunk, orig_last_valid_chunk),
+        }
+    else:
+        orig_range_info = None
+
+    if patched_last_valid_chunk:
+        lines = patched_last_valid_chunk['lines']
+        first_line = lines[0]
+        last_line = lines[-1]
+        offset = last_vlinenum - first_line[0]
+
+        patched_end_linenum = min(last_line[4], first_line[4] + offset)
+        patched_end_vlinenum = min(last_line[0], first_line[0] + offset)
+
+        assert patched_end_linenum >= patched_start_linenum
+        assert patched_end_vlinenum >= patched_start_vlinenum
+
+        patched_range_info = {
+            'display_range': (patched_start_linenum, patched_end_linenum),
+            'virtual_range': (patched_start_vlinenum, patched_end_vlinenum),
+            'chunk_range': (patched_start_chunk, patched_last_valid_chunk),
+        }
+    else:
+        patched_range_info = None
+
+    return orig_range_info, patched_range_info

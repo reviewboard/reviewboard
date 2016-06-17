@@ -109,6 +109,19 @@ class DiffViewerView(TemplateView):
 
             return response
         except Exception as e:
+            if interdiffset:
+                interdiffset_id = interdiffset.pk
+            else:
+                interdiffset_id = None
+
+            logging.exception('%s.get: Error rendering diff for diffset '
+                              'ID=%s, interdiffset ID=%s: %s',
+                              self.__class__.__name__,
+                              diffset.pk,
+                              interdiffset_id,
+                              e,
+                              request=request)
+
             return exception_traceback(request, e, self.template_name)
 
     def render_to_response(self, *args, **kwargs):
@@ -333,6 +346,16 @@ class DiffFragmentView(View):
         except Http404:
             raise
         except Exception as e:
+            logging.exception('%s.get: Error when processing diffset info '
+                              'for filediff ID=%s, interfilediff ID=%s, '
+                              'chunkindex=%s: %s',
+                              self.__class__.__name__,
+                              kwargs.get('filediff_id'),
+                              kwargs.get('interfilediff_id'),
+                              kwargs.get('chunkindex'),
+                              e,
+                              request=request)
+
             return exception_traceback(self.request, e,
                                        self.error_template_name)
 
@@ -347,6 +370,16 @@ class DiffFragmentView(View):
                 *args, **kwargs)
             response = renderer.render_to_response(request)
         except Exception as e:
+            logging.exception('%s.get: Error when rendering diffset for '
+                              'filediff ID=%s, interfilediff ID=%s, '
+                              'chunkindex=%s: %s',
+                              self.__class__.__name__,
+                              kwargs.get('filediff_id'),
+                              kwargs.get('interfilediff_id'),
+                              kwargs.get('chunkindex'),
+                              e,
+                              request=request)
+
             return exception_traceback(
                 self.request, e, self.error_template_name,
                 extra_context={

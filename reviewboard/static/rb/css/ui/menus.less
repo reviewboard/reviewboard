@@ -1,0 +1,25 @@
+@import (reference) "../defs.less";
+
+
+.popup-menu() {
+  display: block;
+  list-style: none;
+  opacity: 0;
+  padding: 0;
+  position: absolute;
+  transition: visibility 0.1s, opacity 0.1s;;
+  visibility: hidden;
+  z-index: @z-index-menu;
+}
+
+
+.has-menu {
+  .menu {
+    .popup-menu();
+  }
+
+  &:hover .menu {
+    visibility: visible;
+    opacity: 1;
+  }
+}

@@ -134,14 +134,13 @@
     border-bottom: 1px darken(#f0f0f0, 18%) solid;
     list-style: none;
     margin: 0;
-    padding: 1em;
+    padding: 0;
     text-align: center;
 
-    li {
+    > li {
       display: inline-block;
-      margin: 0 1em;
-      padding: 0;
       text-align: center;
+      white-space: nowrap;
 
       &.selected {
         a {
@@ -150,9 +149,10 @@
         }
       }
 
-      a {
+      > a {
         color: #444;
-        padding: 1em 0;
+        display: block;
+        margin: 1em;
       }
     }
   }
@@ -206,5 +206,89 @@
   .selection-rect {
     border: 1px #ff0000 dashed;
     position: absolute;
+  }
+}
+
+.image-resolution-menu {
+  @menu-width: 8em;
+
+  float: right;
+  margin-left: -@menu-width;
+  min-width: @menu-width;
+  text-align: left;
+
+  .on-mobile-medium-screen-720({
+    float: none;
+    margin-left: 0;
+  });
+
+  .menu-header {
+    display: inline-block;
+    text-decoration: none;
+    text-align: center;
+    width: @menu-width;
+  }
+
+  .menu {
+    border-radius: 0 0 @box-border-radius @box-border-radius;
+    box-shadow: @box-shadow;
+    box-sizing: border-box;
+    min-width: @menu-width;
+    text-align: left;
+  }
+
+  .menu-item {
+    cursor: pointer;
+    color: #444;
+    padding: 8px 10px;
+
+    &:last-child {
+      border-radius: 0 0 @box-border-radius @box-border-radius;
+    }
+  }
+}
+
+// Version of the menu when there's a diff
+.image-diff-modes .image-resolution-menu {
+  .menu-header {
+    margin: 1em 0;
+  }
+
+  .menu {
+    background: darken(#f0f0f0, 3%);
+    border: 1px darken(#f0f0f0, 18%) solid;
+  }
+
+  .menu-item:hover {
+    background-color: darken(#f0f0f0, 10%);
+  }
+}
+
+// Version of the menu when there's a single revision
+.image-single-revision {
+  text-align: center;
+
+  .caption,
+  .image-resolution-menu {
+    display: inline-block;
+  }
+
+  .image-resolution-menu {
+    padding: 8px 0;
+
+    .menu {
+      border: 1px @diff-file-border-color solid;
+      background: @review-ui-header-bg;
+      margin: 8px 0 0 0;
+    }
+
+    .menu-header {
+      color: #444;
+      line-height: 16px;
+    }
+
+    .menu-item:hover {
+      background-color: darken(@review-ui-header-bg, 10%);
+    }
   }
 }

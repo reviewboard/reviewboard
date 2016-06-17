@@ -1,13 +1,15 @@
 from __future__ import unicode_literals
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Permission, User
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
+from djblets.webapi.testing.decorators import webapi_test_template
 from kgb import SpyAgency
 
 from reviewboard.accounts.backends import (AuthBackend,
                                            get_enabled_auth_backends)
 from reviewboard.accounts.models import Profile
+from reviewboard.site.models import LocalSite
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (user_item_mimetype,
@@ -23,6 +25,8 @@ class ResourceListTests(SpyAgency, BaseWebAPITestCase):
     fixtures = ['test_users']
     sample_api_url = 'users/'
     resource = resources.user
+
+    test_http_methods = ('GET',)
 
     def setup_http_not_allowed_list_test(self, user):
         return get_user_list_url()
@@ -99,6 +103,143 @@ class ResourceListTests(SpyAgency, BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
 
         self.assertTrue(backend.search_users.called)
+
+    #
+    # HTTP POST tests
+    #
+    @webapi_test_template
+    def test_post_anonymous(self):
+        """Testing the POST <URL> API as an anonymous user"""
+        self.client.logout()
+        rsp = self.api_post(
+            get_user_list_url(),
+            {
+                'username': 'username',
+                'password': 'password',
+                'email': 'email@example.com',
+            },
+            expected_status=401)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('err', rsp)
+        self.assertIn('code', rsp['err'])
+        self.assertEqual(rsp['err']['code'], 103)
+
+    @webapi_test_template
+    def test_post(self):
+        """Testing the POST <URL> API as a regular user"""
+        rsp = self.api_post(
+            get_user_list_url(),
+            {
+                'username': 'username',
+                'password': 'password',
+                'email': 'email@example.com'
+            },
+            expected_status=403)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('err', rsp)
+        self.assertIn('code', rsp['err'])
+        self.assertEqual(rsp['err']['code'], 101)
+
+    @webapi_test_template
+    def test_post_superuser(self):
+        """Testing the POST <URL> API as a superuser"""
+        self.client.login(username='admin', password='admin')
+
+        rsp = self.api_post(
+            get_user_list_url(),
+            {
+                'username': 'username',
+                'password': 'password',
+                'email': 'email@example.com',
+            },
+            expected_mimetype=user_item_mimetype)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.compare_item(rsp['user'], User.objects.get(username='username'))
+
+    @webapi_test_template
+    def test_post_auth_add_user_perm(self):
+        """Testing the POST <URL> API as a user with the auth.add_user
+        permission
+        """
+        self.user.user_permissions.add(
+            Permission.objects.get(content_type__app_label='auth',
+                                   codename='add_user'))
+
+        rsp = self.api_post(
+            get_user_list_url(),
+            {
+                'username': 'username',
+                'password': 'password',
+                'email': 'email@example.com',
+            },
+            expected_mimetype=user_item_mimetype)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.compare_item(rsp['user'], User.objects.get(username='username'))
+
+    @webapi_test_template
+    def test_post_local_site(self):
+        """Testing the POST <URL> API with a local site"""
+        local_site = LocalSite.objects.create(name='test', public=True)
+
+        self.client.login(username='admin', password='admin')
+        rsp = self.api_post(
+            get_user_list_url(local_site.name),
+            {
+                'username': 'username',
+                'password': 'password',
+                'email': 'email@example.com'
+            },
+            expected_status=403)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('err', rsp)
+        self.assertIn('code', rsp['err'])
+        self.assertEqual(rsp['err']['code'], 101)
+
+    @webapi_test_template
+    def test_post_duplicate_username(self):
+        """Testing the POST <URL> API for a username that already exists"""
+        self.client.login(username='admin', password='admin')
+        rsp = self.api_post(
+            get_user_list_url(),
+            {
+                'username': 'doc',
+                'password': 'password',
+                'email': 'doc@example.com'
+            },
+            expected_status=400)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('fields', rsp)
+        self.assertIn('username', rsp['fields'])
+
+    @webapi_test_template
+    def test_post_invalid_email(self):
+        """Testing the POST <URL> API for an invalid e-mail address"""
+        self.client.login(username='admin', password='admin')
+        rsp = self.api_post(
+            get_user_list_url(),
+            {
+                'username': 'username',
+                'password': 'password',
+                'email': 'invalid e-mail',
+            },
+            expected_status=400)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('fields', rsp)
+        self.assertIn('email', rsp['fields'])
 
 
 @six.add_metaclass(BasicTestsMetaclass)

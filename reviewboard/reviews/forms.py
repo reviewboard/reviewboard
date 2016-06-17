@@ -4,9 +4,11 @@ import re
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
+from reviewboard.admin.form_widgets import RelatedUserWidget
 from reviewboard.diffviewer import forms as diffviewer_forms
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import (DefaultReviewer, Group,
@@ -36,6 +38,12 @@ class DefaultReviewerForm(forms.ModelForm):
         validators=[regex_validator],
         help_text=_('File paths are matched against this regular expression '
                     'to determine if these reviewers should be added.'))
+
+    people = forms.ModelMultipleChoiceField(
+        queryset=User.objects.filter(is_active=True),
+        label=_('Default users'),
+        required=False,
+        widget=RelatedUserWidget())
 
     repository = forms.ModelMultipleChoiceField(
         label=_('Repositories'),
@@ -76,6 +84,12 @@ class DefaultReviewerForm(forms.ModelForm):
 
 
 class GroupForm(forms.ModelForm):
+    users = forms.ModelMultipleChoiceField(
+        queryset=User.objects.filter(is_active=True),
+        label=_('Users'),
+        required=False,
+        widget=RelatedUserWidget())
+
     def clean(self):
         validate_users(self)
 

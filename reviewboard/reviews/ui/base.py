@@ -351,6 +351,7 @@ class FileAttachmentReviewUI(ReviewUI):
         data = {
             'fileAttachmentID': self.obj.pk,
             'fileRevision': self.obj.attachment_revision,
+            'filename': self.obj.orig_filename,
         }
 
         if self.obj.attachment_history is not None:

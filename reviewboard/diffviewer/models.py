@@ -419,9 +419,13 @@ class FileDiff(models.Model):
         needs_save = False
         diff_hash_is_new = False
         parent_diff_hash_is_new = False
+        fix_refs = False
         legacy_pks = []
+        needs_diff_migration = self._needs_diff_migration()
+        needs_parent_diff_migration = self._needs_parent_diff_migration()
 
-        if self._needs_diff_migration():
+        if needs_diff_migration:
+            recalculate_diff_counts = recalculate_counts
             needs_save = True
 
             if self.legacy_diff_hash_id:
@@ -429,9 +433,17 @@ class FileDiff(models.Model):
                               'RawFileDiffData for diff in FileDiff %s',
                               self.legacy_diff_hash_id, self.pk)
 
-                diff_hash_is_new = self._set_diff(self.legacy_diff_hash.binary)
-                legacy_pks.append(self.legacy_diff_hash_id)
-                self.legacy_diff_hash = None
+                try:
+                    legacy_data = self.legacy_diff_hash.binary
+                except LegacyFileDiffData.DoesNotExist:
+                    # Another process migrated this before we could.
+                    # We'll need to fix the references.
+                    fix_refs = True
+                    recalculate_diff_counts = False
+                else:
+                    diff_hash_is_new = self._set_diff(legacy_data)
+                    legacy_pks.append(self.legacy_diff_hash_id)
+                    self.legacy_diff_hash = None
             else:
                 logging.debug('Migrating FileDiff %s diff data to '
                               'RawFileDiffData',
@@ -439,10 +451,11 @@ class FileDiff(models.Model):
 
                 diff_hash_is_new = self._set_diff(self.diff64)
 
-            if recalculate_counts:
+            if recalculate_diff_counts:
                 self._recalculate_line_counts(self.diff_hash)
 
-        if self._needs_parent_diff_migration():
+        if needs_parent_diff_migration:
+            recalculate_parent_diff_counts = recalculate_counts
             needs_save = True
 
             if self.legacy_parent_diff_hash_id:
@@ -450,10 +463,18 @@ class FileDiff(models.Model):
                               'RawFileDiffData for parent diff in FileDiff %s',
                               self.legacy_parent_diff_hash_id, self.pk)
 
-                parent_diff_hash_is_new = \
-                    self._set_parent_diff(self.legacy_parent_diff_hash.binary)
-                legacy_pks.append(self.legacy_parent_diff_hash_id)
-                self.legacy_parent_diff_hash = None
+                try:
+                    legacy_parent_data = self.legacy_parent_diff_hash.binary
+                except LegacyFileDiffData.DoesNotExist:
+                    # Another process migrated this before we could.
+                    # We'll need to fix the references.
+                    fix_refs = True
+                    recalculate_parent_diff_counts = False
+                else:
+                    parent_diff_hash_is_new = \
+                        self._set_parent_diff(legacy_parent_data)
+                    legacy_pks.append(self.legacy_parent_diff_hash_id)
+                    self.legacy_parent_diff_hash = None
             else:
                 logging.debug('Migrating FileDiff %s parent diff data to '
                               'RawFileDiffData',
@@ -462,11 +483,50 @@ class FileDiff(models.Model):
                 parent_diff_hash_is_new = \
                     self._set_parent_diff(self.parent_diff64)
 
-            if recalculate_counts:
+            if recalculate_parent_diff_counts:
                 self._recalculate_line_counts(self.parent_diff_hash)
 
+        if fix_refs:
+            # Another server/process/thread got to this before we could.
+            # We need to pull the latest refs and make sure they're set here.
+            diff_hash, parent_diff_hash = (
+                FileDiff.objects.filter(pk=self.pk)
+                .values_list('diff_hash_id', 'parent_diff_hash_id')[0]
+            )
+
+            if needs_diff_migration:
+                if diff_hash:
+                    self.diff_hash_id = diff_hash
+                    self.legacy_diff_hash = None
+                    self.diff64 = ''
+                else:
+                    logging.error('Unable to migrate diff for FileDiff %s: '
+                                  'LegacyFileDiffData "%s" is missing, and '
+                                  'database entry does not have a new '
+                                  'diff_hash! Data may be missing.',
+                                  self.pk, self.legacy_diff_hash_id)
+
+            if needs_parent_diff_migration:
+                if parent_diff_hash:
+                    self.parent_diff_hash_id = parent_diff_hash
+                    self.legacy_parent_diff_hash = None
+                    self.parent_diff64 = ''
+                else:
+                    logging.error('Unable to migrate parent diff for '
+                                  'FileDiff %s: LegacyFileDiffData "%s" is '
+                                  'missing, and database entry does not have '
+                                  'a new parent_diff_hash! Data may be '
+                                  'missing.',
+                                  self.pk, self.legacy_parent_diff_hash_id)
+
         if needs_save:
-            self.save()
+            if self.pk:
+                self.save(update_fields=[
+                    'diff64', 'parent_diff64', 'diff_hash', 'parent_diff_hash',
+                    'legacy_diff_hash', 'legacy_parent_diff_hash',
+                ])
+            else:
+                self.save()
 
         if legacy_pks:
             # Delete any LegacyFileDiffData objects no longer associated
@@ -559,7 +619,7 @@ class DiffSet(DiffLineCountsMixin, models.Model):
             self.history.last_diff_updated = self.timestamp
             self.history.save()
 
-        super(DiffSet, self).save()
+        super(DiffSet, self).save(**kwargs)
 
     def build_commit_graph(self, *extra_commits):
         """Build the directed acyclic graph of the DiffSet's commit history.

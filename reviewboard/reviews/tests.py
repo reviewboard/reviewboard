@@ -1233,16 +1233,15 @@ class ActionTests(TestCase):
             '    href="#">Close &#9662;</a>',
             ' <ul class="menu" style="display: none;">',
             '<li>',
-            ' <a id="submit-review-request-action" href="#"',
-            '    >Submitted</a>',
+            ' <a id="submit-review-request-action" href="#">Submitted</a>',
             '</li>',
             '<li>',
-            ' <a id="delete-review-request-action" href="#"',
-            '    >Delete Permanently</a>',
+            (' <a id="delete-review-request-action" href="#">Delete '
+             'Permanently</a>'),
             '</li>',
             '<li>',
-            ' <a id="%s" href="%s"' % (foo_action.action_id, foo_action.url),
-            '    >%s</a>' % foo_action.label,
+            (' <a id="%s" href="%s">%s</a>'
+             % (foo_action.action_id, foo_action.url, foo_action.label)),
             '</li>',
         ])
 
@@ -1411,7 +1410,7 @@ class ActionTests(TestCase):
         self.assertEquals(old_dict_count, new_dict_count)
 
 
-class DefaultActionTests(TestCase):
+class DefaultActionTests(SpyAgency, TestCase):
     """Tests for default actions in reviewboard.reviews.default_actions"""
 
     fixtures = ['test_users']
@@ -1437,8 +1436,7 @@ class DefaultActionTests(TestCase):
         review_request.display_id = display_id
 
         if not has_diffs:
-            review_request.get_draft.return_value = None
-            review_request.get_diffsets.return_value = None
+            review_request.repository_id = None
 
         context = Context({
             'request': request,
@@ -1565,42 +1563,6 @@ class DefaultActionTests(TestCase):
             self.assertEqual(content.count('id="%s"' % action_id), 1,
                              '%s should\'ve rendered exactly once' % action_id)
 
-    def test_get_url_with_display_id_and_local_site(self):
-        """Testing get_url with display ID and local_site"""
-        display_id = '42'
-        local_site_name = 'test_local_site'
-        not_local = ('<a id="download-diff-action" href="/r/%s/diff/raw/"'
-                     % display_id)
-        local = ('<a id="download-diff-action" href="/s/%s/r/%s/diff/raw/"'
-                 % (local_site_name, display_id))
-        url_names = [
-            'view-diff',
-            'file-attachment',
-            'review-request-detail',
-        ]
-
-        for url_name in url_names:
-            content = self._get_content(display_id=display_id,
-                                        url_name=url_name,
-                                        local_site_name=None)
-            self.assertEqual(
-                content.count(not_local),
-                1,
-                'Incorrect Download Diff URL on %s (local_site = None)'
-                % url_name
-            )
-
-        for url_name in url_names:
-            content = self._get_content(display_id=display_id,
-                                        url_name=url_name,
-                                        local_site_name=local_site_name)
-            self.assertEqual(
-                content.count(local),
-                1,
-                'Incorrect Download Diff URL on %s (local_site = %s)'
-                % (url_name, local_site_name)
-            )
-
     def test_get_label_and_should_render_when_review_request_has_diffs(self):
         """Testing get_label and should_ render when diffs exist"""
         update_diff_label = 'Update Diff'
@@ -1614,7 +1576,7 @@ class DefaultActionTests(TestCase):
 
         content = self._get_content(has_diffs=False)
         self.assertEqual(content.count('>%s<' % update_diff_label), 0)
-        self.assertEqual(content.count('>%s<' % upload_diff_label), 1)
+        self.assertEqual(content.count('>%s<' % upload_diff_label), 0)
         self.assertEqual(content.count('id="%s"' % download_diff_action_id), 0)
 
     def test_get_hidden_when_viewing_interdiff(self):

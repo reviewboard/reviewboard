@@ -1345,7 +1345,66 @@ class WebHookDispatchTests(SpyAgency, TestCase):
             },
             'application/json',
             '{"items": [1, 2, 3]}',
-            'sha1=cf27ad0de6b5f0c4e77e45bec9f4846e')
+            'sha1=46f8529ef47da2291eeb475f0d0c0a6f58f88f8b')
+
+    def test_dispatch_invalid_template(self):
+        """Testing dispatch_webhook_event with an invalid template"""
+        handler = WebHookTarget(events='my-event', url=self.ENDPOINT_URL,
+                                encoding=WebHookTarget.ENCODING_JSON,
+                                use_custom_content=True,
+                                custom_content=r'{% invalid_block_tag %}')
+
+        self.spy_on(logging.exception)
+        self.spy_on(urlopen, call_fake=lambda *args, **kwargs: None)
+
+        dispatch_webhook_event(FakeHTTPRequest(None), [handler], 'my-event',
+                               None)
+
+        self.assertFalse(urlopen.spy.called)
+        self.assertTrue(logging.exception.spy.called)
+        self.assertIsInstance(logging.exception.spy.last_call.args[1],
+                              TemplateSyntaxError)
+
+    def test_dispatch_render_error(self):
+        """Testing dispatch_webhook_event with an unencodable object"""
+        class Unencodable(object):
+            pass
+
+        handler = WebHookTarget(events='my-event', url=self.ENDPOINT_URL,
+                                encoding=WebHookTarget.ENCODING_JSON)
+
+        self.spy_on(logging.exception)
+        self.spy_on(urlopen, call_fake=lambda *args, **kwargs: None)
+
+        dispatch_webhook_event(FakeHTTPRequest(None), [handler], 'my-event', {
+            'unencodable': Unencodable(),
+        })
+
+        self.assertFalse(urlopen.spy.called)
+        self.assertTrue(logging.exception.spy.called)
+        self.assertIsInstance(logging.exception.spy.last_call.args[1],
+                              TypeError)
+
+    def test_dispatch_cannot_open(self):
+        """Testing dispatch_webhook_event with an unresolvable URL"""
+        def _urlopen(*args, **kwargs):
+            raise IOError('')
+
+        handler = WebHookTarget(events='my-event', url=self.ENDPOINT_URL,
+                                encoding=WebHookTarget.ENCODING_JSON)
+
+        self.spy_on(logging.exception)
+        self.spy_on(urlopen, call_fake=_urlopen)
+
+        dispatch_webhook_event(FakeHTTPRequest(None), [handler, handler],
+                               'my-event',
+                               None)
+
+        self.assertEqual(len(urlopen.spy.calls), 2)
+        self.assertTrue(len(logging.exception.spy.calls), 2)
+        self.assertIsInstance(logging.exception.spy.calls[0].args[2], IOError)
+        self.assertIsInstance(logging.exception.spy.calls[1].args[2], IOError)
+
 
     def _test_dispatch(self, handler, event, payload, expected_content_type,
                        expected_data, expected_sig_header=None):
@@ -1537,14 +1596,16 @@ class WebHookTargetManagerTests(TestCase):
 
 class WebHookSignalDispatchTests(SpyAgency, TestCase):
     """Unit tests for dispatching webhooks by signals."""
+
     ENDPOINT_URL = 'http://example.com/endpoint/'
+
+    fixtures = ['test_users']
 
     def setUp(self):
         super(WebHookSignalDispatchTests, self).setUp()
 
         self.spy_on(dispatch_webhook_event, call_original=False)
 
-    @add_fixtures(['test_users'])
     def test_review_request_closed_submitted(self):
         """Testing webhook dispatch from 'review_request_closed' signal
         with submitted
@@ -1571,7 +1632,37 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         self.assertEqual(payload['review_request']['id'],
                          review_request.display_id)
 
-    @add_fixtures(['test_users'])
+    def test_review_request_closed_submitted_local_site(self):
+        """Testing webhook dispatch from 'review_request_closed' signal with
+        submitted for a local site
+        """
+        local_site = LocalSite.objects.create(name='test-site')
+        local_site.users.add(User.objects.get(username='doc'))
+
+        target = WebHookTarget.objects.create(events='review_request_closed',
+                                              url=self.ENDPOINT_URL,
+                                              local_site=local_site)
+
+        review_request = self.create_review_request(local_site=local_site,
+                                                    publish=True)
+        review_request.close(review_request.SUBMITTED)
+
+        spy = dispatch_webhook_event.spy
+        self.assertTrue(spy.called)
+        self.assertEqual(len(spy.calls), 1)
+
+        last_call = spy.last_call
+        self.assertEqual(last_call.args[1], [target])
+        self.assertEqual(last_call.args[2], 'review_request_closed')
+
+        payload = last_call.args[3]
+        self.assertEqual(payload['event'], 'review_request_closed')
+        self.assertEqual(payload['closed_by']['id'],
+                         review_request.submitter.pk)
+        self.assertEqual(payload['close_type'], 'submitted')
+        self.assertEqual(payload['review_request']['id'],
+                         review_request.display_id)
+
     def test_review_request_closed_discarded(self):
         """Testing webhook dispatch from 'review_request_closed' signal
         with discarded
@@ -1598,7 +1689,37 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         self.assertEqual(payload['review_request']['id'],
                          review_request.display_id)
 
-    @add_fixtures(['test_users'])
+    def test_review_request_closed_discarded_local_site(self):
+        """Testing webhook dispatch from 'review_request_closed' signal with
+        discarded for a local site
+        """
+        local_site = LocalSite.objects.create(name='test-site')
+        local_site.users.add(User.objects.get(username='doc'))
+
+        target = WebHookTarget.objects.create(events='review_request_closed',
+                                              url=self.ENDPOINT_URL,
+                                              local_site=local_site)
+
+        review_request = self.create_review_request(local_site=local_site,
+                                                    publish=True)
+        review_request.close(review_request.DISCARDED)
+
+        spy = dispatch_webhook_event.spy
+        self.assertTrue(spy.called)
+        self.assertEqual(len(spy.calls), 1)
+
+        last_call = spy.last_call
+        self.assertEqual(last_call.args[1], [target])
+        self.assertEqual(last_call.args[2], 'review_request_closed')
+
+        payload = last_call.args[3]
+        self.assertEqual(payload['event'], 'review_request_closed')
+        self.assertEqual(payload['closed_by']['id'],
+                         review_request.submitter.pk)
+        self.assertEqual(payload['close_type'], 'discarded')
+        self.assertEqual(payload['review_request']['id'],
+                         review_request.display_id)
+
     def test_review_request_published(self):
         """Testing webhook dispatch from 'review_request_published' signal"""
         target = WebHookTarget.objects.create(
@@ -1622,7 +1743,34 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         self.assertEqual(payload['review_request']['id'],
                          review_request.display_id)
 
-    @add_fixtures(['test_users'])
+    def test_review_request_published_local_site(self):
+        """Testing webhook dispatch from 'review_request_published' signal for
+        a local site
+        """
+        local_site = LocalSite.objects.create(name='test-site')
+        local_site.users.add(User.objects.get(username='doc'))
+
+        target = WebHookTarget.objects.create(
+            events='review_request_published', url=self.ENDPOINT_URL,
+            local_site=local_site)
+
+        review_request = self.create_review_request(local_site=local_site)
+        review_request.publish(review_request.submitter)
+
+        spy = dispatch_webhook_event.spy
+        self.assertTrue(spy.called)
+        self.assertEqual(len(spy.calls), 1)
+
+        last_call = spy.last_call
+        self.assertEqual(last_call.args[1], [target])
+        self.assertEqual(last_call.args[2], 'review_request_published')
+
+        payload = last_call.args[3]
+        self.assertEqual(payload['event'], 'review_request_published')
+        self.assertIn('is_new', payload)
+        self.assertEqual(payload['review_request']['id'],
+                         review_request.display_id)
+
     def test_review_request_reopened(self):
         """Testing webhook dispatch from 'review_request_reopened' signal"""
         target = WebHookTarget.objects.create(
@@ -1648,7 +1796,37 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         self.assertEqual(payload['review_request']['id'],
                          review_request.display_id)
 
-    @add_fixtures(['test_users'])
+    def test_review_request_reopened_local_site(self):
+        """Testing webhook dispatch from 'review_request_reopened' signal
+        for a local site
+        """
+        local_site = LocalSite.objects.create(name='test-site')
+        local_site.users.add(User.objects.get(username='doc'))
+
+        target = WebHookTarget.objects.create(events='review_request_reopened',
+                                              url=self.ENDPOINT_URL,
+                                              local_site=local_site)
+
+        review_request = self.create_review_request(local_site=local_site,
+                                                    publish=True)
+        review_request.close(review_request.SUBMITTED)
+        review_request.reopen()
+
+        spy = dispatch_webhook_event.spy
+        self.assertTrue(spy.called)
+        self.assertEqual(len(spy.calls), 1)
+
+        last_call = spy.last_call
+        self.assertEqual(last_call.args[1], [target])
+        self.assertEqual(last_call.args[2], 'review_request_reopened')
+
+        payload = last_call.args[3]
+        self.assertEqual(payload['event'], 'review_request_reopened')
+        self.assertEqual(payload['reopened_by']['id'],
+                         review_request.submitter.pk)
+        self.assertEqual(payload['review_request']['id'],
+                         review_request.display_id)
+
     def test_review_published(self):
         """Testing webhook dispatch from 'review_published' signal"""
         target = WebHookTarget.objects.create(events='review_published',
@@ -1674,7 +1852,37 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         self.assertIn('file_attachment_comments', payload)
         self.assertIn('general_comments', payload)
 
-    @add_fixtures(['test_users'])
+    def test_review_published_local_site(self):
+        """Testing webhook dispatch from 'review_published' signal for a local
+        site
+        """
+        local_site = LocalSite.objects.create(name='test-site')
+        local_site.users.add(User.objects.get(username='doc'))
+
+        target = WebHookTarget.objects.create(events='review_published',
+                                              url=self.ENDPOINT_URL,
+                                              local_site=local_site)
+
+        review_request = self.create_review_request(local_site=local_site,
+                                                    publish=True)
+        review = self.create_review(review_request)
+        review.publish()
+
+        spy = dispatch_webhook_event.spy
+        self.assertTrue(spy.called)
+        self.assertEqual(len(spy.calls), 1)
+
+        last_call = spy.last_call
+        self.assertEqual(last_call.args[1], [target])
+        self.assertEqual(last_call.args[2], 'review_published')
+
+        payload = last_call.args[3]
+        self.assertEqual(payload['event'], 'review_published')
+        self.assertEqual(payload['review']['id'], review.pk)
+        self.assertIn('diff_comments', payload)
+        self.assertIn('screenshot_comments', payload)
+        self.assertIn('file_attachment_comments', payload)
+
     def test_reply_published(self):
         """Testing webhook dispatch from 'reply_published' signal"""
         target = WebHookTarget.objects.create(events='reply_published',
@@ -1705,6 +1913,38 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
         self.assertEqual(payload['reply']['links']['diff_comments']['href'],
                          'http://example.com/api/review-requests/1/reviews/1/'
                          'replies/2/diff-comments/')
+
+    def test_reply_published_local_site(self):
+        """Testing webhook dispatch from 'reply_published' signal for a local
+        site
+        """
+        local_site = LocalSite.objects.create(name='test-site')
+        local_site.users.add(User.objects.get(username='doc'))
+
+        target = WebHookTarget.objects.create(events='reply_published',
+                                              url=self.ENDPOINT_URL,
+                                              local_site=local_site)
+
+        review_request = self.create_review_request(local_site=local_site,
+                                                    publish=True)
+        review = self.create_review(review_request)
+        reply = self.create_reply(review)
+        reply.publish()
+
+        spy = dispatch_webhook_event.spy
+        self.assertTrue(spy.called)
+        self.assertEqual(len(spy.calls), 1)
+
+        last_call = spy.last_call
+        self.assertEqual(last_call.args[1], [target])
+        self.assertEqual(last_call.args[2], 'reply_published')
+
+        payload = last_call.args[3]
+        self.assertEqual(payload['event'], 'reply_published')
+        self.assertEqual(payload['reply']['id'], reply.pk)
+        self.assertIn('diff_comments', payload)
+        self.assertIn('screenshot_comments', payload)
+        self.assertIn('file_attachment_comments', payload)
 
 
 class EmailUtilsTests(TestCase):

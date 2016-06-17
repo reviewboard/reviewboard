@@ -11,8 +11,9 @@
 {% endblock %}
 
 {% block scripts-post %}
+{{block.super}}
 <!--[if IE]><script src="{% static "lib/js/flot/excanvas.min.js" %}"></script><![endif]-->
-{% javascript 'admin' %}
+{% javascript 'admin-dashboard' %}
 {% endblock %}
 
 {% block content_title %}{% endblock %}

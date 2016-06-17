@@ -1,15 +1,7 @@
-(function() {
+{
 
 
-var BaseImageView,
-    ImageAttachmentView,
-    ImageDifferenceDiffView,
-    ImageOnionDiffView,
-    ImageSplitDiffView,
-    ImageTwoUpDiffView;
-
-
-/*
+/**
  * Base class for providing a view onto an image or diff of images.
  *
  * This handles the common functionality, such as loading images, determining
@@ -19,79 +11,92 @@ var BaseImageView,
  * $commentRegion to an element representing the region where comments are
  * allowed.
  */
-BaseImageView = Backbone.View.extend({
+const BaseImageView = Backbone.View.extend({
     template: null,
     mode: null,
     name: null,
 
-    /*
-     * Initializes the view.
+    /**
+     * Initialize the view.
      */
-    initialize: function() {
+    initialize() {
         this.$commentRegion = null;
+        this._scale = 1.0;
     },
 
-    /*
-     * Computes a CSS class name for this view.
+    /**
+     * Compute a CSS class name for this view.
      *
-     * The class name is based on the view mode.
+     * Returns:
+     *     string:
+     *     A class name based on the current mode.
      */
-    className: function() {
-        return 'image-diff-' + this.mode;
+    className() {
+        return `image-diff-${this.mode}`;
     },
 
-    /*
-     * Renders the view.
-     *
-     * This will by default render the template into the element and begin
-     * loading images.
-     */
-    render: function() {
-        if (this.template) {
-            this.$el.html(this.template(this.model.attributes));
-        }
-
-        this.loadImages(this.$('img'));
-
-        return this;
-    },
-
-    /*
-     * Loads a list of images.
+    /**
+     * Load a list of images.
      *
      * Once each image is loaded, the view's onImagesLoaded function will
      * be called. Subclasses can override this to provide functionality based
      * on image sizes and content.
+     *
+     * Args:
+     *     $images (jQuery):
+     *         The image elements to load.
      */
-    loadImages: function(images) {
-        var loadsRemaining = images.length;
+    loadImages($images) {
+        let loadsRemaining = $images.length;
 
-        _.each(images, function(image) {
-            image.onload = _.bind(function() {
+        this._$images = $images;
+
+        $images.each((ix, image) => {
+            const $image = $(image);
+
+            if ($image.data('initial-width') === undefined) {
+                image.onload = () => {
+                    loadsRemaining--;
+                    console.assert(loadsRemaining >= 0);
+
+                    $image
+                        .data({
+                            'initial-width': image.width,
+                            'initial-height': image.height
+                        })
+                        .css({
+                            width: image.width * this._scale,
+                            height: image.height * this._scale
+                        });
+
+                    if (loadsRemaining === 0) {
+                        this.onImagesLoaded();
+                        this.trigger('regionChanged');
+                    }
+                };
+            } else {
                 loadsRemaining--;
-                console.assert(loadsRemaining >= 0);
-
-                $(image)
-                    .width(image.width)
-                    .height(image.height);
-
                 if (loadsRemaining === 0) {
                     this.onImagesLoaded();
                     this.trigger('regionChanged');
                 }
-            }, this);
-        }, this);
+            }
+        });
     },
 
-    /*
-     * Returns the region of the view where commenting can take place.
+    /**
+     * Return the region of the view where commenting can take place.
      *
      * The region is based on the $commentRegion member variable, which must
      * be set by a subclass.
+     *
+     * Returns:
+     *     object:
+     *     An object with ``left``, ``top``, ``width``, and ``height`` keys.
      */
-    getSelectionRegion: function() {
-        var $region = this.$commentRegion,
-            offset = $region.position();
+    getSelectionRegion() {
+        const $region = this.$commentRegion;
+        const offset = $region.position();
 
         /*
          * The margin: 0 auto means that position.left() will return
@@ -110,31 +115,57 @@ BaseImageView = Backbone.View.extend({
         };
     },
 
-    /*
+    /**
      * Callback handler for when the images on the view are loaded.
      *
      * By default, this doesn't do anything. Subclasses can override this
      * to provide logic dependent on loaded images.
      */
-    onImagesLoaded: function() {
+    onImagesLoaded() {
+    },
+
+    /**
+     * Set the zoom level for the view.
+     *
+     * Subclasses can override this to provide specific zooming behavior.
+     *
+     * Args:
+     *     scale (number):
+     *         A zoom multiplier (where 1.0 is 100%, 0.5 is 50%, etc).
+     */
+    setScale(scale) {
+        this._scale = scale;
+
+        this._$images.each((ix, el) => {
+            const $image = $(el);
+
+            $image.css({
+                width: $image.data('initial-width') * scale,
+                height: $image.data('initial-height') * scale
+            });
+        });
     }
 });
 
 
-/*
+/**
  * Displays a single image.
  *
  * This view is used for standalone images, without diffs. It displays the
  * image and allows it to be commented on.
  */
-ImageAttachmentView = BaseImageView.extend({
+const ImageAttachmentView = BaseImageView.extend({
     mode: 'attachment',
     tagName: 'img',
 
-    /*
-     * Renders the view.
+    /**
+     * Render the view.
+     *
+     * Returns:
+     *     ImageAttachmentView:
+     *     This object, for chaining.
      */
-    render: function() {
+    render() {
         this.$el.attr({
             caption: this.model.get('caption'),
             src: this.model.get('imageURL')
@@ -142,12 +173,14 @@ ImageAttachmentView = BaseImageView.extend({
 
         this.$commentRegion = this.$el;
 
+        this.loadImages(this.$el);
+
         return this;
     }
 });
 
 
-/*
+/**
  * Displays a color difference view of two images.
  *
  * Each pixel in common between images will be shown in black. Added pixels
@@ -157,7 +190,7 @@ ImageAttachmentView = BaseImageView.extend({
  * See:
  * http://jeffkreeftmeijer.com/2011/comparing-images-and-creating-image-diffs/
  */
-ImageDifferenceDiffView = BaseImageView.extend({
+const ImageDifferenceDiffView = BaseImageView.extend({
     mode: 'difference',
     name: gettext('Difference'),
 
@@ -167,27 +200,32 @@ ImageDifferenceDiffView = BaseImageView.extend({
         '</div>'
     ].join('')),
 
-    /*
-     * Initializes the view.
+    /**
+     * Initialize the view.
      */
-    initialize: function() {
+    initialize() {
         _super(this).initialize.call(this);
 
         this._origImage = null;
         this._modifiedImage = null;
     },
 
-    /*
-     * Renders the view.
+    /**
+     * Render the view.
      *
      * Image elements representing the original and modified images will be
      * created and loaded. After loading, onImagesLoaded will handle populating
      * the canvas with the difference view.
+     *
+     * Returns:
+     *     ImageDifferenceDiffView:
+     *     This object, for chaining.
      */
-    render: function() {
+    render() {
         this.$el.html(this.template(this.model.attributes));
 
         this.$commentRegion = this.$('canvas');
+        this._$canvas = this.$commentRegion;
 
         this._origImage = new Image();
         this._origImage.src = this.model.get('diffAgainstImageURL');
@@ -195,45 +233,50 @@ ImageDifferenceDiffView = BaseImageView.extend({
         this._modifiedImage = new Image();
         this._modifiedImage.src = this.model.get('imageURL');
 
-        this.loadImages([this._origImage, this._modifiedImage]);
+        this.loadImages($([this._origImage, this._modifiedImage]));
 
         return this;
     },
 
-    /*
-     * Renders the difference between two images onto the canvas.
+    /**
+     * Render the difference between two images onto the canvas.
      */
-    onImagesLoaded: function() {
-        var origImage = this._origImage,
-            modifiedImage = this._modifiedImage,
-            maxWidth = Math.max(origImage.width, modifiedImage.width),
-            maxHeight = Math.max(origImage.height, modifiedImage.height),
-            $origCanvas = this.$('canvas'),
-            $modifiedCanvas = $('<canvas/>'),
-            origContext = $origCanvas[0].getContext('2d'),
-            modifiedContext = $modifiedCanvas[0].getContext('2d'),
-            origImageData,
-            origPixels,
-            origPixelsLen,
-            modifiedPixels,
-            i;
+    onImagesLoaded() {
+        const origImage = this._origImage;
+        const modifiedImage = this._modifiedImage;
+        this._maxWidth = Math.max(origImage.width, modifiedImage.width);
+        this._maxHeight = Math.max(origImage.height, modifiedImage.height);
 
-        $origCanvas[0].width = maxWidth;
-        $origCanvas[0].height = maxHeight;
-        $modifiedCanvas[0].width = maxWidth;
-        $modifiedCanvas[0].height = maxHeight;
+        this._$canvas
+            .attr({
+                width: this._maxWidth,
+                height: this._maxHeight
+            })
+            .css({
+                width: this._maxWidth * this._scale + 'px',
+                height: this._maxHeight * this._scale + 'px'
+            });
 
+        const $modifiedCanvas = $('<canvas/>')
+            .attr({
+                width: this._maxWidth,
+                height: this._maxHeight
+            });
+
+        const origContext = this._$canvas[0].getContext('2d');
         origContext.drawImage(origImage, 0, 0);
+
+        const modifiedContext = $modifiedCanvas[0].getContext('2d');
         modifiedContext.drawImage(modifiedImage, 0, 0);
 
-        origImageData = origContext.getImageData(0, 0, maxWidth, maxHeight);
-        origPixels = origImageData.data;
-        origPixelsLen = origPixels.length;
+        const origImageData = origContext.getImageData(
+            0, 0, this._maxWidth, this._maxHeight);
+        const origPixels = origImageData.data;
 
-        modifiedPixels = modifiedContext.getImageData(0, 0, maxWidth,
-                                                      maxHeight).data;
+        const modifiedPixels = modifiedContext.getImageData(
+            0, 0, this._maxWidth, this._maxHeight).data;
 
-        for (i = 0; i < origPixelsLen; i += 4) {
+        for (let i = 0; i < origPixels.length; i += 4) {
             origPixels[i] += modifiedPixels[i] -
                              2 * Math.min(origPixels[i], modifiedPixels[i]);
             origPixels[i + 1] += modifiedPixels[i + 1] -
@@ -246,11 +289,26 @@ ImageDifferenceDiffView = BaseImageView.extend({
         }
 
         origContext.putImageData(origImageData, 0, 0);
+    },
+
+    /**
+     * Set the zoom level for the view.
+     *
+     * Args:
+     *     scale (number):
+     *         A zoom multiplier (where 1.0 is 100%, 0.5 is 50%, etc).
+     */
+    setScale(scale) {
+        this._scale = scale;
+        this._$canvas.css({
+            width: this._maxWidth * this._scale + 'px',
+            height: this._maxHeight * this._scale + 'px'
+        });
     }
 });
 
 
-/*
+/**
  * Displays an onion skin view of two images.
  *
  * Onion skinning allows the user to see subtle changes in two images by
@@ -258,7 +316,7 @@ ImageDifferenceDiffView = BaseImageView.extend({
  * be able to play around with the transparency and see if any pixels move,
  * disappear, or otherwise change.
  */
-ImageOnionDiffView = BaseImageView.extend({
+const ImageOnionDiffView = BaseImageView.extend({
     mode: 'onion',
     name: gettext('Onion Skin'),
 
@@ -276,10 +334,10 @@ ImageOnionDiffView = BaseImageView.extend({
 
     DEFAULT_OPACITY: 0.25,
 
-    /*
-     * Initializes the view.
+    /**
+     * Initialize the view.
      */
-    initialize: function() {
+    initialize() {
         _super(this).initialize.call(this);
 
         this._$origImage = null;
@@ -287,13 +345,17 @@ ImageOnionDiffView = BaseImageView.extend({
         this._$modifiedImageContainer = null;
     },
 
-    /*
-     * Renders the view.
+    /**
+     * Render the view.
      *
      * This will set up the slider and set it to a default of 25% opacity.
+     *
+     * Returns:
+     *     ImageOnionDiffView:
+     *     This object, for chaining.
      */
-    render: function() {
-        _super(this).render.call(this);
+    render() {
+        this.$el.html(this.template(this.model.attributes));
 
         this.$commentRegion = this.$('.image-containers');
         this._$origImage = this.$('.orig-image img');
@@ -303,61 +365,81 @@ ImageOnionDiffView = BaseImageView.extend({
         this.$('.image-slider')
             .slider({
                 value: this.DEFAULT_OPACITY * 100,
-
-                slide: _.bind(function(event, ui) {
-                    this.setOpacity(ui.value / 100.0);
-                }, this)
+                slide: (e, ui) => this.setOpacity(ui.value / 100.0)
             });
 
         this.setOpacity(this.DEFAULT_OPACITY);
 
+        this.loadImages(this.$('img'));
+
         return this;
     },
 
-    /*
-     * Sets the opacity value for the images.
+    /**
+     * Set the opacity value for the images.
      *
-     * This takes a value between 0.0 and 1.0 as the opacity.
+     * Args:
+     *     percentage (number):
+     *         The opacity percentage, in [0.0, 1.0].
      */
-    setOpacity: function(pct) {
-        this._$modifiedImageContainer.css('opacity', pct);
+    setOpacity(percentage) {
+        this._$modifiedImageContainer.css('opacity', percentage);
     },
 
-    /*
-     * Positions the images after they load.
+    /**
+     * Position the images after they load.
      *
      * The images will be layered on top of each other, consuming the
      * same width and height.
      */
-    onImagesLoaded: function() {
-        var origWidth = this._$origImage.width(),
-            origHeight = this._$origImage.height(),
-            modifiedWidth = this._$modifiedImage.width(),
-            modifiedHeight = this._$modifiedImage.height();
+    onImagesLoaded() {
+        this._resize();
+    },
+
+    /**
+     * Set the zoom level for the view.
+     *
+     * Args:
+     *     scale (number):
+     *         A zoom multiplier (where 1.0 is 100%, 0.5 is 50%, etc).
+     */
+    setScale(scale) {
+        _super(this).setScale.call(this, scale);
+        this._resize();
+    },
+
+    /**
+     * Resize the image containers.
+     */
+    _resize() {
+        const origW = this._$origImage.data('initial-width') * this._scale;
+        const origH = this._$origImage.data('initial-height') * this._scale;
+        const newW = this._$modifiedImage.data('initial-width') * this._scale;
+        const newH = this._$modifiedImage.data('initial-height') * this._scale;
 
         this._$origImage.parent()
-            .width(origWidth)
-            .height(origHeight);
+            .width(origW)
+            .height(origH);
 
         this._$modifiedImage.parent()
-            .width(modifiedWidth)
-            .height(modifiedHeight);
+            .width(newW)
+            .height(newH);
 
         this.$('.image-containers')
-            .width(Math.max(origWidth, modifiedWidth))
-            .height(Math.max(origHeight, modifiedHeight));
+            .width(Math.max(origW, newW))
+            .height(Math.max(origH, newH));
     }
 });
 
 
-/*
+/**
  * Displays an overlapping split view between two images.
  *
  * The images will be overlapping, and a horizontal slider will control how
  * much of the modified image is shown. The modified image will overlap the
  * original image. This makes it easy to compare the two images incrementally.
  */
-ImageSplitDiffView = BaseImageView.extend({
+const ImageSplitDiffView = BaseImageView.extend({
     mode: 'split',
     name: gettext('Split'),
 
@@ -377,12 +459,13 @@ ImageSplitDiffView = BaseImageView.extend({
         '<div class="image-slider"></div>'
     ].join('')),
 
+    // The default slider position of 25%
     DEFAULT_SPLIT_PCT: 0.25,
 
-    /*
-     * Initializes the view.
+    /**
+     * Initialize the view.
      */
-    initialize: function() {
+    initialize() {
         _super(this).initialize.call(this);
 
         this._$modifiedImage = null;
@@ -393,13 +476,15 @@ ImageSplitDiffView = BaseImageView.extend({
         this._maxWidth = 0;
     },
 
-    /*
-     * Renders the view.
+    /**
+     * Render the view.
      *
-     * This will set up the slider and set it to a default of 25%.
+     * Returns:
+     *     ImageSplitDiffView:
+     *     This object, for chaining.
      */
-    render: function() {
-        _super(this).render.call(this);
+    render() {
+        this.$el.html(this.template(this.model.attributes));
 
         this.$commentRegion = this.$('.image-containers');
         this._$origImage = this.$('.orig-image img');
@@ -411,24 +496,29 @@ ImageSplitDiffView = BaseImageView.extend({
         this._$slider = this.$('.image-slider')
             .slider({
                 value: this.DEFAULT_SPLIT_PCT * 100,
-                slide: _.bind(function(event, ui) {
-                    this.setSplitPct(ui.value / 100.0);
-                }, this)
+                slide: (e, ui) => this.setSplitPercentage(ui.value / 100.0)
             });
+
+        this.loadImages(this.$('img'));
 
         return this;
     },
 
-    /*
-     * Sets the percentage for the split view.
+    /**
+     * Set the percentage for the split view.
+     *
+     * Args:
+     *     percentage (number):
+     *         The position of the slider, in [0.0, 1.0].
      */
-    setSplitPct: function(pct) {
-        this._$origSplitContainer.outerWidth(this._maxWidth * pct);
-        this._$modifiedSplitContainer.outerWidth(this._maxWidth * (1.0 - pct));
+    setSplitPercentage(percentage) {
+        this._$origSplitContainer.outerWidth(this._maxWidth * percentage);
+        this._$modifiedSplitContainer.outerWidth(
+            this._maxWidth * (1.0 - percentage));
     },
 
-    /*
-     * Positions the images after they load.
+    /**
+     * Position the images after they load.
      *
      * The images will be layered on top of each other, anchored to the
      * top-left.
@@ -436,53 +526,71 @@ ImageSplitDiffView = BaseImageView.extend({
      * The slider will match the width of the two images, in order to
      * position the slider's handle with the divider between images.
      */
-    onImagesLoaded: function() {
-        var $origImageContainer = this._$origImage.parent(),
-            origWidth = this._$origImage.outerWidth(),
-            origHeight = this._$origImage.height(),
-            modifiedWidth = this._$modifiedImage.outerWidth(),
-            modifiedHeight = this._$modifiedImage.height(),
-            maxHeight = Math.max(origHeight, modifiedHeight),
-            maxOuterHeight = maxHeight +
-                             $origImageContainer.getExtents('b', 'tb');
+    onImagesLoaded() {
+        this._resize();
+    },
 
-        this._maxWidth = Math.max(origWidth, modifiedWidth);
+    /**
+     * Set the zoom level for the view.
+     *
+     * Args:
+     *     scale (number):
+     *         A zoom multiplier (where 1.0 is 100%, 0.5 is 50%, etc).
+     */
+    setScale(scale) {
+        _super(this).setScale.call(this, scale);
+        this._resize();
+    },
+
+    /**
+     * Resize the image containers.
+     */
+    _resize() {
+        const $origImageContainer = this._$origImage.parent();
+        const origW = this._$origImage.data('initial-width') * this._scale;
+        const origH = this._$origImage.data('initial-height') * this._scale;
+        const newW = this._$modifiedImage.data('initial-width') * this._scale;
+        const newH = this._$modifiedImage.data('initial-height') * this._scale;
+        const maxH = Math.max(origH, newH);
+        const maxOuterH = maxH + $origImageContainer.getExtents('b', 'tb');
+
+        this._maxWidth = Math.max(origW, newW);
 
         $origImageContainer
-            .outerWidth(origWidth)
-            .height(origHeight);
+            .outerWidth(origW)
+            .height(origH);
 
         this._$modifiedImage.parent()
-            .outerWidth(modifiedWidth)
-            .height(modifiedHeight);
+            .outerWidth(newW)
+            .height(newH);
 
         this._$origSplitContainer
             .outerWidth(this._maxWidth)
-            .height(maxOuterHeight);
+            .height(maxOuterH);
 
         this._$modifiedSplitContainer
             .outerWidth(this._maxWidth)
-            .height(maxOuterHeight);
+            .height(maxOuterH);
 
         this.$('.image-containers')
             .width(this._maxWidth)
-            .height(maxHeight);
+            .height(maxH);
 
         this._$slider.width(this._maxWidth);
 
         /* Now that these are loaded, set the default for the split. */
-        this.setSplitPct(this.DEFAULT_SPLIT_PCT);
+        this.setSplitPercentage(this.DEFAULT_SPLIT_PCT);
     }
 });
 
 
-/*
+/**
  * Displays a two-up, side-by-side view of two images.
  *
  * The images will be displayed horizontally, side-by-side. Comments will
  * only be able to be added against the new file.
  */
-ImageTwoUpDiffView = BaseImageView.extend({
+const ImageTwoUpDiffView = BaseImageView.extend({
     mode: 'two-up',
     name: gettext('Two-Up'),
 
@@ -499,20 +607,25 @@ ImageTwoUpDiffView = BaseImageView.extend({
         '</div>'
     ].join('')),
 
-    /*
-     * Renders the view.
+    /**
+     * Render the view.
+     *
+     * Returns:
+     *     ImageTwoUpDiffView:
+     *     This object, for chaining.
      */
-    render: function() {
-        _super(this).render.call(this);
-
+    render() {
+        this.$el.html(this.template(this.model.attributes));
         this.$commentRegion = this.$('.modified-image img');
+
+        this.loadImages(this.$('img'));
 
         return this;
     }
 });
 
 
-/*
+/**
  * Displays a review UI for images.
  *
  * This supports reviewing individual images, and diffs between images.
@@ -532,14 +645,15 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
     commentBlockView: RB.RegionCommentBlockView,
 
     events: {
-        'click .image-diff-modes a': '_onImageModeClicked',
+        'click .image-diff-mode': '_onImageModeClicked',
+        'click .image-resolution-menu .menu-item': '_onImageZoomLevelClicked',
         'mousedown .selection-container': '_onMouseDown',
         'mouseup .selection-container': '_onMouseUp',
         'mousemove .selection-container': '_onMouseMove'
     },
 
     modeItemTemplate: _.template(
-        '<li><a href="#" data-mode="<%- mode %>"><%- name %></a></li>'
+        '<li class="image-diff-mode"><a href="#" data-mode="<%- mode %>"><%- name %></a></li>'
     ),
 
     captionTableTemplate: _.template(
@@ -561,54 +675,76 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         '</div>'
         ].join('')),
 
+    resolutionMenuTemplate: [
+        '<li class="image-resolution-menu has-menu">',
+        ' <a href="#" class="menu-header">',
+        '  <span class="fa fa-search-plus"></span>',
+        '  <span class="image-resolution-menu-current">100%</span>',
+        '  &#9662;',
+        ' </a>',
+        ' <ul class="menu">',
+        '  <li class="menu-item" data-image-scale="0.33"',
+        '      id="image-resolution-zoom-3x">33%</li>',
+        '  <li class="menu-item" data-image-scale="0.5"',
+        '      id="image-resolution-zoom-2x">50%</li>',
+        '  <li class="menu-item" data-image-scale="1.0">100%</li>',
+        '  <li class="menu-item" data-image-scale="2.0">200%</li>',
+        ' </ul>',
+        '</li>',
+    ].join(''),
+
     ANIM_SPEED_MS: 200,
 
-    /*
-     * Initializes the view.
+    /**
+     * Initialize the view.
      */
-    initialize: function(options) {
-        RB.FileAttachmentReviewableView.prototype.initialize.call(
-            this, options);
+    initialize() {
+        RB.FileAttachmentReviewableView.prototype.initialize.apply(
+            this, arguments);
 
         _.bindAll(this, '_adjustPos');
 
+        this._scale = 1.0;
         this._activeSelection = {};
         this._diffModeSelectors = {};
         this._diffModeViews = {};
+        this._commentBlockViews = [];
 
         /*
          * Add any CommentBlockViews to the selection area when they're
          * created.
          */
-        this.on('commentBlockViewAdded', function(commentBlockView) {
-            commentBlockView.setSelectionRegionSizeFunc(_.bind(function() {
-                var region = this._imageView.getSelectionRegion();
-
-                return {
-                    width: region.width,
-                    height: region.height
-                };
-            }, this));
+        this.on('commentBlockViewAdded', commentBlockView => {
+            commentBlockView.setSelectionRegionSizeFunc(
+                () => _.pick(this._imageView.getSelectionRegion(),
+                             'width', 'height'));
+            commentBlockView.setScale(this._scale);
 
             this._$selectionArea.append(commentBlockView.$el);
-        }, this);
+
+            this._commentBlockViews.push(commentBlockView);
+            this.listenTo(
+                commentBlockView, 'removing', () => {
+                    this._commentBlockViews =
+                        _.without(this._commentBlockViews, commentBlockView);
+                });
+        });
     },
 
-    /*
-     * Renders the view.
+    /**
+     * Render the view.
      *
      * This will set up a selection area over the image and create a
      * selection rectangle that will be shown when dragging.
      *
      * Any time the window resizes, the comment positions will be adjusted.
+     *
+     * Returns:
+     *     RB.ImageReviewableView:
+     *     This object, for chaining.
      */
-    renderContent: function() {
-        var self = this,
-            hasDiff = !!this.model.get('diffAgainstFileAttachmentID'),
-            captionItems = [],
-            $header,
-            $revisionLabel,
-            $revisionSelector;
+    renderContent() {
+        const hasDiff = !!this.model.get('diffAgainstFileAttachmentID');
 
         this._$selectionArea = $('<div/>')
             .addClass('selection-container')
@@ -627,14 +763,14 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
              * is not over the comment area.
              */
             .hover(
-                function() {
-                    self._$selectionArea.show();
-                    self._adjustPos();
+                () => {
+                    this._$selectionArea.show();
+                    this._adjustPos();
                 },
-                function() {
-                    if (self._$selectionRect.is(':hidden') &&
-                        !self.commentDlg) {
-                        self._$selectionArea.hide();
+                () => {
+                    if (this._$selectionRect.is(':hidden') &&
+                        !this.commentDlg) {
+                        this._$selectionArea.hide();
                     }
                 })
             .append(this._$selectionArea);
@@ -674,12 +810,12 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             .resize(this._adjustPos)
             .load(this._adjustPos);
 
-        $header = $('<div />')
+        const $header = $('<div />')
             .addClass('review-ui-header')
             .prependTo(this.$el);
 
         if (this.model.get('numRevisions') > 1) {
-            $revisionLabel = $('<div id="revision_label" />')
+            const $revisionLabel = $('<div id="revision_label" />')
                 .appendTo($header);
             this._revisionLabelView = new RB.FileAttachmentRevisionLabelView({
                 el: $revisionLabel,
@@ -689,7 +825,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             this.listenTo(this._revisionLabelView, 'revisionSelected',
                           this._onRevisionSelected);
 
-            $revisionSelector = $('<div id="attachment_revision_selector" />')
+            const $revisionSelector = $('<div id="attachment_revision_selector" />')
                 .appendTo($header);
             this._revisionSelectorView = new RB.FileAttachmentRevisionSelectorView({
                 el: $revisionSelector,
@@ -700,101 +836,140 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                           this._onRevisionSelected);
 
             if (!this.renderedInline) {
-                captionItems.push(this.captionItemTemplate({
-                    caption: interpolate(
-                        gettext('%(caption)s (revision %(revision)s)'),
-                        {
-                            caption: this.model.get('caption'),
-                            revision: this.model.get('fileRevision')
-                        },
-                        true)
-                }));
-
                 if (hasDiff) {
-                    captionItems.push(this.captionItemTemplate({
-                        caption: interpolate(
+                    const captionItems = [
+                        this.captionItemTemplate({
+                            caption: interpolate(
+                                gettext('%(caption)s (revision %(revision)s)'),
+                                {
+                                    caption: this.model.get('diffCaption'),
+                                    revision: this.model.get('diffRevision')
+                                },
+                                true)
+                        }),
+                        this.captionItemTemplate({
+                            caption: interpolate(
+                                gettext('%(caption)s (revision %(revision)s)'),
+                                {
+                                    caption: this.model.get('caption'),
+                                    revision: this.model.get('fileRevision')
+                                },
+                                true)
+                        })
+                    ];
+
+                    $header.append(this.captionTableTemplate({
+                        items: captionItems.join('')
+                    }));
+                } else {
+                    const $captionBar = $('<div class="image-single-revision">')
+                        .appendTo($header);
+
+                    $('<h1 class="caption" />')
+                        .text(interpolate(
                             gettext('%(caption)s (revision %(revision)s)'),
                             {
-                                caption: this.model.get('diffCaption'),
-                                revision: this.model.get('diffRevision')
+                                caption: this.model.get('caption'),
+                                revision: this.model.get('fileRevision')
                             },
-                            true)
-                    }));
+                            true))
+                        .appendTo($captionBar);
                 }
-
-                $header.append(this.captionTableTemplate({
-                    items: captionItems.join('')
-                }));
             }
         } else {
             if (!this.renderedInline) {
-                $('<h1 />')
-                    .addClass('caption')
+                $header.addClass('image-single-revision');
+
+                $('<h1 class="caption" />')
                     .text(this.model.get('caption'))
                     .appendTo($header);
             }
         }
 
+        if (hasDiff) {
+            this._$modeBar.append(this.resolutionMenuTemplate);
+        } else {
+            this.$('.caption').after(this.resolutionMenuTemplate);
+        }
+
+        /*
+         * If the image is obviously a 2x or 3x pixel ratio, pre-select the
+         * right zoom level.
+         */
+        const filename = this.model.get('filename');
+
+        if (filename.includes('@2x.')) {
+            this.$('#image-resolution-zoom-2x').click();
+        } else if (filename.includes('@3x.')) {
+            this.$('#image-resolution-zoom-3x').click();
+        }
+
         return this;
     },
 
-    /*
+    /**
      * Callback for when a new file revision is selected.
      *
      * This supports single revisions and diffs. If 'base' is 0, a
      * single revision is selected, If not, the diff between `base` and
      * `tip` will be shown.
+     *
+     * Args:
+     *     revisions (Array of number):
+     *         A two-element array of [base, tip] revisions.
      */
-    _onRevisionSelected: function(revisions) {
-        var revisionIDs = this.model.get('attachmentRevisionIDs'),
-            base = revisions[0],
-            tip = revisions[1],
-            revisionBase,
-            revisionTip,
-            redirectURL;
+    _onRevisionSelected(revisions) {
+        const revisionIDs = this.model.get('attachmentRevisionIDs');
+        const [base, tip] = revisions;
 
         // Ignore clicks on No Diff Label
         if (tip === 0) {
             return;
         }
 
-        revisionTip = revisionIDs[tip-1];
-
-        /* Eventually these hard redirects will use a router
+        /*
+         * Eventually these hard redirects will use a router
          * (see diffViewerPageView.js for example)
          * this.router.navigate(base + '-' + tip + '/', {trigger: true});
          */
+        const revisionTip = revisionIDs[tip-1];
+        let redirectURL;
 
         if (base === 0) {
-            redirectURL = '../' + revisionTip + '/';
+            redirectURL = `../${revisionTip}/`;
         } else {
-            revisionBase = revisionIDs[base-1];
-            redirectURL = '../' + revisionBase + '-' + revisionTip + '/';
+            const revisionBase = revisionIDs[base-1];
+            redirectURL = `../${revisionBase}-${revisionTip}/`;
         }
+
         window.location.replace(redirectURL);
     },
 
-    /*
-     * Registers a diff mode.
+    /**
+     * Register a diff mode.
      *
      * This will register a class for the mode and add an entry to the
      * mode bar.
+     *
+     * Args:
+     *     ViewClass (function):
+     *         The constructor for the view class.
      */
-    _addDiffMode: function(ViewClass) {
-        var mode = ViewClass.prototype.mode,
-            view = new ViewClass({
-                model: this.model
-            }),
-            $selector = $(this.modeItemTemplate({
-                mode: mode,
-                name: view.name
-            })),
-            selectorWidth;
+    _addDiffMode(ViewClass) {
+        const mode = ViewClass.prototype.mode;
+        const view = new ViewClass({
+            model: this.model
+        });
 
         this._diffModeViews[mode] = view;
         view.$el.hide();
         this._$imageDiffs.append(view.$el);
         view.render();
+
+        const $selector = $(this.modeItemTemplate({
+            mode: mode,
+            name: view.name
+        }));
 
         /*
          * Since we're making the text bold when selected, we need to reserve
@@ -806,7 +981,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         $selector
             .appendTo(this._$modeBar)
             .addClass('selected');
-        selectorWidth = $selector.outerWidth(true);
+        const selectorWidth = $selector.outerWidth(true);
         $selector
             .removeClass('selected')
             .width(selectorWidth);
@@ -814,24 +989,28 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         this._diffModeSelectors[mode] = $selector;
     },
 
-    /*
-     * Sets the current diff mode.
+    /**
+     * Set the current diff mode.
      *
      * That mode will be displayed on the page and comments will be shown.
      *
      * The height of the review UI will animate to the new height for this
      * mode.
+     *
+     * Args:
+     *     mode (string):
+     *         The new diff mode.
      */
-    _setDiffMode: function(mode) {
-        var newView = this._diffModeViews[mode],
-            height;
+    _setDiffMode(mode) {
+        const newView = this._diffModeViews[mode];
 
         if (this._imageView) {
             this._diffModeSelectors[this._imageView.mode]
                 .removeClass('selected');
 
+            newView.setScale(this._scale);
             newView.$el.show();
-            height = newView.$el.height();
+            const height = newView.$el.height();
             newView.$el.hide();
 
             this._$imageDiffs.animate({
@@ -842,9 +1021,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             this._$selectionArea.fadeOut(this.ANIM_SPEED_MS);
             this._imageView.$el.fadeOut(
                 this.ANIM_SPEED_MS,
-                _.bind(function() {
-                    this._showDiffMode(newView, true);
-                }, this));
+                () => this._showDiffMode(newView, true));
         } else {
             this._showDiffMode(newView);
         }
@@ -853,16 +1030,23 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             .addClass('selected');
     },
 
-    /*
-     * Shows the diff mode.
+    /**
+     * Show the diff mode.
      *
      * This is called by _setDiffMode when it's ready to actually show the
      * new mode.
      *
      * The new mode will be faded in, if we're animating, or immediately shown
      * otherwise.
+     *
+     * Args:
+     *     newView (Backbone.View):
+     *         The new view to show.
+     *
+     *     animate (boolean):
+     *         Whether to animate the transition.
      */
-    _showDiffMode: function(newView, animate) {
+    _showDiffMode(newView, animate) {
         if (this._imageView) {
             this.stopListening(this._imageView, 'regionChanged');
         }
@@ -882,41 +1066,87 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         this._adjustPos();
     },
 
-    /*
+    /**
+     * Set the zoom level for the view.
+     *
+     * Args:
+     *     scale (number):
+     *         A zoom multiplier (where 1.0 is 100%, 0.5 is 50%, etc).
+     */
+    _setScale(scale) {
+        this._scale = scale;
+        this._imageView.setScale(scale);
+        this._adjustPos();
+        this._commentBlockViews.forEach(view => view.setScale(scale));
+    },
+
+    /**
      * Handler for when a mode in the diff mode bar is clicked.
      *
      * Sets the diff view to the given mode.
+     *
+     * Args:
+     *     e (Event):
+     *         The event which triggered the callback.
      */
-    _onImageModeClicked: function(e) {
+    _onImageModeClicked(e) {
         e.preventDefault();
         e.stopPropagation();
 
         this._setDiffMode($(e.target).data('mode'));
     },
 
-    /*
-     * Handles a mousedown on the selection area.
+    /**
+     * Handler for when a zoom level is clicked.
+     *
+     * Args:
+     *     e (Event):
+     *         The event which triggered the callback.
+     */
+    _onImageZoomLevelClicked(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const $target = $(e.target);
+        const scale = $target.data('image-scale');
+        const text = $target.text();
+
+        this.$('.image-resolution-menu-current').text(text);
+        this._setScale(scale);
+    },
+
+    /**
+     * Handle a mousedown on the selection area.
      *
      * If this is the first mouse button, and it's not being placed on
      * an existing comment block, then this will begin the creation of a new
      * comment block starting at the mousedown coordinates.
+     *
+     * Args:
+     *     e (Event):
+     *         The event which triggered the callback.
      */
-    _onMouseDown: function(evt) {
-        if (evt.which === 1 &&
+    _onMouseDown(e) {
+        if (e.which === 1 &&
             !this.commentDlg &&
-            !$(evt.target).hasClass('selection-flag')) {
-            var offset = this._$selectionArea.offset();
+            !$(e.target).hasClass('selection-flag')) {
+            const offset = this._$selectionArea.offset();
 
             this._activeSelection.beginX =
-                evt.pageX - Math.floor(offset.left) - 1;
+                e.pageX - Math.floor(offset.left) - 1;
             this._activeSelection.beginY =
-                evt.pageY - Math.floor(offset.top) - 1;
+                e.pageY - Math.floor(offset.top) - 1;
+
+            const updateData = {
+                left: this._activeSelection.beginX,
+                top: this._activeSelection.beginY,
+                width: 1,
+                height: 1
+            };
 
             this._$selectionRect
-                .move(this._activeSelection.beginX,
-                      this._activeSelection.beginY)
-                .width(1)
-                .height(1)
+                .css(updateData)
+                .data(updateData)
                 .show();
 
             if (this._$selectionRect.is(':hidden')) {
@@ -927,20 +1157,20 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         }
     },
 
-    /*
-     * Handles a mouseup on the selection area.
+    /**
+     * Handle a mouseup on the selection area.
      *
      * This will finalize the creation of a comment block and pop up the
      * comment dialog.
+     *
+     * Args:
+     *     e (Event):
+     *         The event which triggered the callback.
      */
-    _onMouseUp: function(evt) {
+    _onMouseUp(e) {
         if (!this.commentDlg &&
-            this._$selectionRect.is(":visible")) {
-            var width = this._$selectionRect.width(),
-                height = this._$selectionRect.height(),
-                offset = this._$selectionRect.position();
-
-            evt.stopPropagation();
+            this._$selectionRect.is(':visible')) {
+            e.stopPropagation();
             this._$selectionRect.hide();
 
             /*
@@ -948,58 +1178,65 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
              * don't do anything. This helps avoid making people mad
              * if they accidentally click on the image.
              */
-            if (width > 5 && height > 5) {
+            const position = this._$selectionRect.data();
+
+            if (position.width > 5 && position.height > 5) {
                 this.createAndEditCommentBlock({
-                    x: Math.floor(offset.left),
-                    y: Math.floor(offset.top),
-                    width: width,
-                    height: height
+                    x: Math.floor(position.left / this._scale),
+                    y: Math.floor(position.top / this._scale),
+                    width: Math.floor(position.width / this._scale),
+                    height: Math.floor(position.height / this._scale)
                 });
             }
         }
     },
 
-    /*
-     * Handles a mousemove on the selection area.
+    /**
+     * Handle a mousemove on the selection area.
      *
      * If we're creating a comment block, this will update the
      * size/position of the block.
+     *
+     * Args:
+     *     e (Event):
+     *         The event which triggered the callback.
      */
-    _onMouseMove: function(evt) {
-        if (!this.commentDlg && this._$selectionRect.is(":visible")) {
-            var offset = this._$selectionArea.offset(),
-                x = evt.pageX - Math.floor(offset.left) - 1,
-                y = evt.pageY - Math.floor(offset.top) - 1;
+    _onMouseMove(e) {
+        if (!this.commentDlg && this._$selectionRect.is(':visible')) {
+            const offset = this._$selectionArea.offset();
+            const x = e.pageX - Math.floor(offset.left) - 1;
+            const y = e.pageY - Math.floor(offset.top) - 1;
+            const updateData = {};
+
+            if (this._activeSelection.beginX <= x) {
+                updateData.left = this._activeSelection.beginX;
+                updateData.width = x - this._activeSelection.beginX;
+            } else {
+                updateData.left = x;
+                updateData.width = this._activeSelection.beginX - x;
+            }
+
+            if (this._activeSelection.beginY <= y) {
+                updateData.top = this._activeSelection.beginY;
+                updateData.height = y - this._activeSelection.beginY;
+            } else {
+                updateData.top = y;
+                updateData.height = this._activeSelection.beginY - y;
+            }
 
             this._$selectionRect
-                .css(this._activeSelection.beginX <= x
-                     ? {
-                           left:  this._activeSelection.beginX,
-                           width: x - this._activeSelection.beginX
-                       }
-                     : {
-                           left:  x,
-                           width: this._activeSelection.beginX - x
-                       })
-                .css(this._activeSelection.beginY <= y
-                     ? {
-                           top:    this._activeSelection.beginY,
-                           height: y - this._activeSelection.beginY
-                       }
-                     : {
-                           top:    y,
-                           height: this._activeSelection.beginY - y
-                       });
+                .css(updateData)
+                .data(updateData);
 
             return false;
         }
     },
 
-    /*
+    /**
      * Reposition the selection area to the right locations.
      */
-    _adjustPos: function() {
-        var region = this._imageView.getSelectionRegion();
+    _adjustPos() {
+        const region = this._imageView.getSelectionRegion();
 
         this._$selectionArea
             .width(region.width)
@@ -1008,8 +1245,12 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                 left: region.left,
                 top: region.top
             });
+
+        if (this._$imageDiffs) {
+            this._$imageDiffs.height(this._imageView.$el.height());
+        }
     }
 });
 
 
-})();
+}
