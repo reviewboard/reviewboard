@@ -2,9 +2,12 @@ from __future__ import unicode_literals
 
 from djblets.avatars.registry import (
     AvatarServiceRegistry as DjbletsAvatarServiceRegistry)
+from djblets.avatars.services.file_upload import FileUploadService
 from djblets.avatars.services.gravatar import GravatarService
 from djblets.registries.mixins import ExceptionFreeGetterMixin
 from djblets.siteconfig.models import SiteConfiguration
+
+from reviewboard.avatars.settings import UserProfileAvatarSettingsManager
 
 
 class AvatarServiceRegistry(ExceptionFreeGetterMixin,
@@ -23,6 +26,14 @@ class AvatarServiceRegistry(ExceptionFreeGetterMixin,
 
     #: The key for migrating avatars.
     AVATARS_MIGRATED_KEY = 'avatars_migrated'
+
+    #: The default avatar service classes.
+    default_avatar_service_classes = [
+        GravatarService,
+        FileUploadService,
+    ]
+
+    settings_manager_class = UserProfileAvatarSettingsManager
 
     @property
     def avatars_enabled(self):
@@ -68,36 +79,15 @@ class AvatarServiceRegistry(ExceptionFreeGetterMixin,
             siteconfig.set(self.AVATARS_ENABLED_KEY, avatars_enabled)
 
             if avatars_enabled:
-                siteconfig.set(self.ENABLED_SERVICES_KEY,
-                               [GravatarService.avatar_service_id])
+                siteconfig.set(
+                    self.ENABLED_SERVICES_KEY, [
+                        service.avatar_service_id
+                        for service in self.default_avatar_service_classes
+                    ]
+                )
                 siteconfig.set(self.DEFAULT_SERVICE_KEY,
                                GravatarService.avatar_service_id)
 
             siteconfig.save()
 
         super(AvatarServiceRegistry, self).populate()
-
-    def get_or_default(self, service_id=None):
-        """Return either the requested avatar service or the default.
-
-        If the requested service is unregistered or disabled, the default
-        avatar service will be returned (which may be ``None`` if there is no
-        default).
-
-        Args:
-            service_id (unicode, optional):
-                The unique identifier of the service that is to be retrieved.
-                If this is ``None``, the default service will be used.
-
-        Returns:
-            djblets.avatars.services.base.AvatarService:
-            Either the requested avatar service, if it is both registered and
-            enabled, or the default avatar service. If there is no default
-            avatar service, this will return ``None``.
-        """
-        if (service_id is not None and
-            self.has_service(service_id) and
-            self.is_enabled(service_id)):
-            return self.get('avatar_service_id', service_id)
-
-        return self.default_service

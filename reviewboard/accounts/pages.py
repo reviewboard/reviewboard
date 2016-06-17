@@ -11,6 +11,7 @@ from djblets.registries.errors import ItemLookupError
 from djblets.registries.mixins import ExceptionFreeGetterMixin
 
 from reviewboard.accounts.forms.pages import (AccountSettingsForm,
+                                              AvatarSettingsForm,
                                               APITokensForm,
                                               ChangePasswordForm,
                                               ProfileForm,
@@ -97,7 +98,7 @@ class ProfilePage(AccountPage):
 
     page_id = 'profile'
     page_title = _('Profile')
-    form_classes = [ProfileForm]
+    form_classes = [ProfileForm, AvatarSettingsForm]
 
 
 class GroupsPage(AccountPage):

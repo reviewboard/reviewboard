@@ -16,6 +16,7 @@ from reviewboard.accounts.managers import (ProfileManager,
                                            ReviewRequestVisitManager,
                                            TrophyManager)
 from reviewboard.accounts.trophies import TrophyType
+from reviewboard.avatars import avatar_services
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.signals import (reply_published,
                                          review_published,
@@ -263,6 +264,28 @@ class Profile(models.Model):
         """Return a string used for the admin site listing."""
         return self.user.username
 
+    @property
+    def avatar_service(self):
+        """The avatar service the user has selected.
+
+        Returns:
+            djblets.avatars.services.base.AvatarService:
+            The avatar service.
+        """
+        service_id = self.settings.get('avatars', {}).get('avatar_service_id')
+        return avatar_services.get_or_default(service_id)
+
+    @avatar_service.setter
+    def avatar_service(self, service):
+        """Set the avatar service.
+
+        Args:
+            service (djblets.avatars.services.base.AvatarService):
+                The avatar service.
+        """
+        self.settings.setdefault('avatars', {})['avatar_service_id'] = \
+            service.avatar_service_id
+
 
 @python_2_unicode_compatible
 class LocalSiteProfile(models.Model):
@@ -404,7 +427,7 @@ def _get_profile(self):
     The profile will be cached, preventing queries for future lookups.
     """
     if not hasattr(self, '_profile'):
-        self._profile = Profile.objects.get(user=self)
+        self._profile = Profile.objects.get_or_create(user=self)[0]
         self._profile.user = self
 
     return self._profile
