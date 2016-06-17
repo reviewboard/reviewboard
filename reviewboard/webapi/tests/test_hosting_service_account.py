@@ -17,7 +17,7 @@ from reviewboard.webapi.tests.urls import (
 def _compare_item(self, item_rsp, account):
     self.assertEqual(item_rsp['id'], account.id)
     self.assertEqual(item_rsp['username'], account.username)
-    self.assertEqual(item_rsp['service'], account.service.id)
+    self.assertEqual(item_rsp['service'], account.service.hosting_service_id)
 
 
 @six.add_metaclass(BasicTestsMetaclass)
