@@ -26,7 +26,7 @@ class HostingServiceResource(WebAPIResource):
     added_in = '2.5'
 
     name = 'hosting_service'
-    model_object_key = 'id'
+    model_object_key = 'hosting_service_id'
     model = HostingService
     uri_object_key = 'hosting_service_id'
     uri_object_key_regex = r'[a-z0-9_-]+'
@@ -74,6 +74,9 @@ class HostingServiceResource(WebAPIResource):
         },
     }
 
+    def serialize_id_field(self, hosting_service, *args, **kwargs):
+        return hosting_service.hosting_service_id
+
     def has_list_access_permissions(self, *args, **kwargs):
         return True
 
@@ -106,13 +109,15 @@ class HostingServiceResource(WebAPIResource):
                 'accounts': {
                     'method': 'GET',
                     'href': request.build_absolute_uri(
-                        '%s?service=%s' % (accounts_url, obj.id)
+                        '%s?service=%s' % (accounts_url,
+                                           obj.hosting_service_id)
                     ),
                 },
                 'repositories': {
                     'method': 'GET',
                     'href': request.build_absolute_uri(
-                        '%s?hosting-service=%s' % (repos_url, obj.id)
+                        '%s?hosting-service=%s'
+                        % (repos_url, obj.hosting_service_id)
                     ),
                 }
             })

@@ -5,6 +5,7 @@ import sys
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from djblets.db.query import get_object_or_none
 from django.utils import six
@@ -12,6 +13,7 @@ from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
+from reviewboard.admin.form_widgets import RelatedUserWidget
 from reviewboard.admin.import_utils import has_module
 from reviewboard.admin.validation import validate_bug_tracker
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -165,6 +167,13 @@ class RepositoryForm(forms.ModelForm):
         initial=False,
         required=False)
 
+    # Access control fields
+    users = forms.ModelMultipleChoiceField(
+        queryset=User.objects.filter(is_active=True),
+        label=_('Users with access'),
+        required=False,
+        widget=RelatedUserWidget())
+
     def __init__(self, *args, **kwargs):
         self.local_site_name = kwargs.pop('local_site_name', None)
 
@@ -233,16 +242,18 @@ class RepositoryForm(forms.ModelForm):
             auth_form_cls = hosting_service.auth_form or HostingServiceAuthForm
 
             if hosting_service.supports_repositories:
-                hosting_service_choices.append((hosting_service.id,
-                                                hosting_service.name))
+                hosting_service_choices.append(
+                    (hosting_service.hosting_service_id, hosting_service.name)
+                )
 
             if hosting_service.supports_bug_trackers:
-                bug_tracker_choices.append((hosting_service.id,
-                                            hosting_service.name))
+                bug_tracker_choices.append(
+                    (hosting_service.hosting_service_id, hosting_service.name)
+                )
 
-            self.bug_tracker_forms[hosting_service.id] = {}
-            self.repository_forms[hosting_service.id] = {}
-            self.hosting_service_info[hosting_service.id] = \
+            self.bug_tracker_forms[hosting_service.hosting_service_id] = {}
+            self.repository_forms[hosting_service.hosting_service_id] = {}
+            self.hosting_service_info[hosting_service.hosting_service_id] = \
                 self._get_hosting_service_info(hosting_service,
                                                hosting_accounts)
 
@@ -252,19 +263,21 @@ class RepositoryForm(forms.ModelForm):
                         form = info.get('form', None)
 
                         if form:
-                            self._load_hosting_service(hosting_service.id,
-                                                       hosting_service,
-                                                       type_id,
-                                                       info['name'],
-                                                       form,
-                                                       *args, **kwargs)
+                            self._load_hosting_service(
+                                hosting_service.hosting_service_id,
+                                hosting_service,
+                                type_id,
+                                info['name'],
+                                form,
+                                *args, **kwargs)
                 elif hosting_service.form:
-                    self._load_hosting_service(hosting_service.id,
-                                               hosting_service,
-                                               self.DEFAULT_PLAN_ID,
-                                               self.DEFAULT_PLAN_NAME,
-                                               hosting_service.form,
-                                               *args, **kwargs)
+                    self._load_hosting_service(
+                        hosting_service.hosting_service_id,
+                        hosting_service,
+                        self.DEFAULT_PLAN_ID,
+                        self.DEFAULT_PLAN_NAME,
+                        hosting_service.form,
+                        *args, **kwargs)
 
                 # Load the hosting service's custom authentication form.
                 #
@@ -277,14 +290,13 @@ class RepositoryForm(forms.ModelForm):
                 #
                 # Note that we do still need the form instantiated here, for
                 # template rendering.
-                self.hosting_auth_forms[hosting_service.id] = \
+                self.hosting_auth_forms[hosting_service.hosting_service_id] = \
                     auth_form_cls(hosting_service_cls=hosting_service,
                                   local_site=self.local_site,
-                                  prefix=hosting_service.id)
+                                  prefix=hosting_service.hosting_service_id)
             except Exception as e:
-                logging.error('Error loading hosting service %s: %s'
-                              % (hosting_service.id, e),
-                              exc_info=1)
+                logging.exception('Error loading hosting service %s: %s',
+                                  hosting_service.hosting_service_id, e)
 
         for class_name, cls in six.iteritems(FAKE_HOSTING_SERVICES):
             if class_name not in hosting_services:
@@ -418,7 +430,7 @@ class RepositoryForm(forms.ModelForm):
                     'is_authorized': account.is_authorized,
                 }
                 for account in hosting_accounts
-                if account.service_name == hosting_service.id
+                if account.service_name == hosting_service.hosting_service_id
             ],
         }
 
@@ -1302,7 +1314,6 @@ class RepositoryForm(forms.ModelForm):
                                            'autocomplete': 'off'}),
             'username': forms.TextInput(attrs={'size': '30',
                                                'autocomplete': 'off'}),
-            'users': FilteredSelectMultiple(_('users with access'), False),
             'review_groups': FilteredSelectMultiple(
                 _('review groups with access'), False),
         }
