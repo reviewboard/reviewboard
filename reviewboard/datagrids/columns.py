@@ -129,7 +129,7 @@ class BugsColumn(Column):
                     url = local_site_reverse(
                         'bug_url',
                         local_site_name=local_site_name,
-                        args=(review_request.display_id, bug))
+                        args=[review_request.display_id, bug])
                     links.append(
                         format_html('<a href="{0}">{1}</a>', url, bug))
                 except NoReverseMatch:
