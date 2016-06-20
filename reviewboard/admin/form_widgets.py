@@ -50,6 +50,7 @@ class RelatedUserWidget(HiddenInput):
             The rendered HTML.
         """
         if value:
+            value = [v for v in value if v]
             input_value = ','.join(force_text(v) for v in value)
             existing_users = (
                 User.objects
@@ -122,6 +123,6 @@ class RelatedUserWidget(HiddenInput):
         if isinstance(value, list):
             return value
         elif isinstance(value, six.string_types):
-            return value.split(',')
+            return [v for v in value.split(',') if v]
         else:
             return None

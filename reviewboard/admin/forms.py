@@ -54,6 +54,7 @@ from reviewboard.admin.checks import (get_can_use_amazon_s3,
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.admin.support import get_install_key
 from reviewboard.avatars import avatar_services
+from reviewboard.search import search_engines
 from reviewboard.ssh.client import SSHClient
 
 
@@ -82,6 +83,11 @@ class GeneralSettingsForm(SiteSettingsForm):
         'file': 'cache_path',
         'memcached': 'cache_host',
     }
+
+    SEARCH_ENGINE_CHOICES = (
+        (search_engines.WHOOSH, _('Whoosh')),
+        (search_engines.ELASTICSEARCH, _('Elasticsearch')),
+    )
 
     company = forms.CharField(
         label=_("Company/Organization"),
@@ -130,6 +136,22 @@ class GeneralSettingsForm(SiteSettingsForm):
         label=_("Enable search"),
         help_text=_("Provides a search field for quickly searching through "
                     "review requests."),
+        required=False)
+
+    search_engine = forms.ChoiceField(
+        label=_('Search engine'),
+        help_text=_('The search engine provider to use.'),
+        choices=SEARCH_ENGINE_CHOICES,
+        required=False)
+
+    elasticsearch_index_name = forms.CharField(
+        label=_('Elasticsearch index name'),
+        help_text=_('The name of the Elasticsearch index.'),
+        required=False)
+
+    elasticsearch_url = forms.URLField(
+        label=_('Elasticsearch URL'),
+        help_text=_('The URL of the Elasticsearch server.'),
         required=False)
 
     search_results_per_page = forms.IntegerField(
@@ -287,6 +309,37 @@ class GeneralSettingsForm(SiteSettingsForm):
 
         return cache_path
 
+    def clean_search_engine(self):
+        """Clean the ``search_engine`` field.
+
+        This ensures that the selected search engine is valid (i.e., it is
+        specified in :py:mod:`reviewboard.search.search_engines`) and any
+        optional dependencies are installed.
+
+        Returns:
+            unicode:
+            The name of the selected search engine.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                Raised when the search engine is invalid or is missing a
+                depdency.
+        """
+        search_engine = self.cleaned_data['search_engine']
+
+        if search_engine == search_engines.ELASTICSEARCH:
+            try:
+                import elasticsearch
+            except ImportError:
+                raise ValidationError(
+                    _('The "elasticsearch" module is required.'))
+        elif search_engine != search_engines.WHOOSH:
+            raise ValidationError(
+                _('Invalid search engine: %s')
+                % search_engine)
+
+        return search_engine
+
     def clean_search_index_file(self):
         """Validate that the specified index file is valid.
 
@@ -330,7 +383,8 @@ class GeneralSettingsForm(SiteSettingsForm):
                 'classes': ('wide',),
                 'title': _("Search"),
                 'fields': ('search_enable', 'search_results_per_page',
-                           'search_index_file'),
+                           'search_engine', 'elasticsearch_url',
+                           'elasticsearch_index_name', 'search_index_file'),
             },
         )
 
