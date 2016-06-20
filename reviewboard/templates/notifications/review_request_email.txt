@@ -49,12 +49,21 @@ Description{% if changes %}{% if changes.description %} (updated){% endif %}{% e
 {{review_request.description|markdown_email_text:review_request.description_rich_text}}
 
 
+{% with review_request.get_latest_diffset as latest_diffset %}
+{%  if latest_diffset %}
 Diffs{% if changes and changes.diff %} (updated){% endif %}
 -----
-{% for filediff in review_request.diffset_history.diffsets.latest.files.all %}
+{%   for filediff in latest_diffset.files.all %}
   {{ filediff.source_file_display }} {{ filediff.source_revision }} {% endfor %}
 
-Diff: {{domain_method}}://{{domain}}{% url 'view-diff' review_request.display_id %}
+{%   with latest_diffset.revision as rev %}
+Diff: {{domain_method}}://{{domain}}{% url 'view-diff-revision' review_request.display_id rev %}
+{%    if rev > 1 and changes and changes.diff %}
+Changes: {{domain_method}}://{{domain}}{% url 'view-interdiff' review_request.display_id rev|add:"-1" rev %}
+{%    endif %}
+{%   endwith %}
+{%  endif %}
+{% endwith %}
 
 
 Testing{% if changes and changes.testing_done %} (updated){% endif %}
