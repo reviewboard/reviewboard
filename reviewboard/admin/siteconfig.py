@@ -48,6 +48,7 @@ from haystack import connections
 
 from reviewboard.accounts.backends import get_registered_auth_backend
 from reviewboard.signals import site_settings_loaded
+from reviewboard.search import search_engines
 
 
 # A mapping of our supported storage backend names to backend class paths.
@@ -157,6 +158,10 @@ defaults.update({
     'search_index_file': os.path.join(settings.SITE_DATA_DIR,
                                       'search-index'),
     'search_results_per_page': 20,
+    'search_engine': search_engines.WHOOSH,
+
+    'elasticsearch_url': 'http://127.0.0.1:9200/',
+    'elasticsearch_index_name': 'reviewboard',
 
     # Overwrite this.
     'site_media_url': settings.SITE_ROOT + "media/",
@@ -204,12 +209,31 @@ def load_site_config(full_reload=False):
 
     def update_haystack_settings():
         """Update the haystack settings with settings in site config."""
-        apply_setting("HAYSTACK_CONNECTIONS", None, {
-            'default': {
-                'ENGINE': settings.HAYSTACK_CONNECTIONS['default']['ENGINE'],
+        search_engine = (siteconfig.get('search_engine') or
+                         defaults['search_engine'])
+
+        if search_engine == search_engines.WHOOSH:
+            search_engine_settings = {
+                'ENGINE': 'haystack.backends.whoosh_backend.WhooshEngine',
                 'PATH': (siteconfig.get('search_index_file') or
                          defaults['search_index_file']),
-            },
+            }
+        elif search_engine == search_engines.ELASTICSEARCH:
+            search_engine_settings = {
+                'ENGINE': 'haystack.backends.elasticsearch_backend.'
+                          'ElasticsearchSearchEngine',
+                'URL': (siteconfig.get('elasticsearch_url') or
+                        defaults['search_index_file']),
+                'INDEX_NAME': (siteconfig.get('elasticsearch_index_name') or
+                               defaults['elasticsearch_index_name']),
+            }
+        else:
+            raise ImproperlyConfigured(
+                'Search engine choice ("%s") is unavailable.'
+                % (search_engine,))
+
+        apply_setting('HAYSTACK_CONNECTIONS', None, {
+            'default': search_engine_settings,
         })
 
         # Re-initialize Haystack's connection information to use the updated
