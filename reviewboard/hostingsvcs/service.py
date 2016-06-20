@@ -552,7 +552,7 @@ class HostingServiceRegistry(EntryPointRegistry):
         if service.repository_url_patterns:
             cls_urlpatterns = patterns(
                 '',
-                url('r^(?P<hosting_service_id>%s)/'
+                url(r'^(?P<hosting_service_id>%s)/'
                     % re.escape(service.hosting_service_id),
                     include(service.repository_url_patterns)))
 
