@@ -106,7 +106,20 @@ class AccountSettingsForm(AccountPageForm):
 
 
 class AvatarSettingsForm(DjbletsAvatarSettingsForm):
+    """A form for configuring the avatar for a user.
+
+    This form will only be shown when avatars are enabled for the server.
+    """
     avatar_service_registry = avatar_services
+
+    def is_visible(self):
+        """Return whether or not to show the avatar settings form.
+
+        Returns:
+            bool:
+            Whether or not to show the avatar settings form.
+        """
+        return self.avatar_service_registry.avatars_enabled
 
 
 class APITokensForm(AccountPageForm):
