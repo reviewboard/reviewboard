@@ -18,7 +18,7 @@ tests, etc. See the sections below.
 
 We use nose_ to run our test suites, which will be installed if you followed
 our :ref:`getting-started` guide. You can refer to their `usage guide
-<nose-usage>`_ for additional options not covered here.
+<nose-usage_>`_ for additional options not covered here.
 
 If you're updating the unit tests, you may want to see the
 :ref:`unit-test-fixtures` documentation.
