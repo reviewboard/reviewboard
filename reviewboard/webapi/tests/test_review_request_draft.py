@@ -904,6 +904,30 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
 
         self.assertEqual(len(mail.outbox), 0)
 
+    def test_put_with_numeric_extra_data(self):
+        """Testing the PUT review-requests/<id>/draft/ API with numeric
+        extra_data values
+        """
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'extra_data.int_val': 42,
+                'extra_data.float_val': 3.14159,
+                'extra_data.scientific_val': 2.75e-15
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        draft_rsp = rsp['draft']
+        extra_data = draft_rsp['extra_data']
+        self.assertEqual(extra_data['int_val'], 42)
+        self.assertEqual(extra_data['float_val'], 3.14159)
+        self.assertEqual(extra_data['scientific_val'], 2.75e-15)
+
     def test_get_or_create_user_auth_backend(self):
         """Testing the PUT review-requests/<id>/draft/ API
         with AuthBackend.get_or_create_user failure

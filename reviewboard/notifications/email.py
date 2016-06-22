@@ -799,11 +799,8 @@ def mail_review(review, user, to_submitter_only):
     review.ordered_comments = \
         review.comments.order_by('filediff', 'first_line')
 
-    has_issues = (
-        review.comments.filter(issue_opened=True).exists() or
-        review.file_attachment_comments.filter(issue_opened=True).exists() or
-        review.screenshot_comments.filter(issue_opened=True).exists()
-    )
+    has_issues = (review.ship_it and
+                  review.has_comments(only_issues=True))
 
     extra_context = {
         'user': review.user,

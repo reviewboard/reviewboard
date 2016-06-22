@@ -12,7 +12,8 @@ through an automated review), or from fields added to the comment dialog.
 :py:class:`CommentDetailDisplayHook` has two functions that can be
 implemented. Both are optional. These are passed the comment being rendered,
 which may be a :py:class:`Comment` (for diff comments),
-:py:class:`FileAttachmentComment`, or :py:class:`ScreenshotComment`.
+:py:class:`FileAttachmentComment`, :py:class:`ScreenshotComment`, or
+:py:class:`GeneralComment`.
 
 :py:meth:`render_review_comment_detail` renders comments for display in a
 review on the review request page.
