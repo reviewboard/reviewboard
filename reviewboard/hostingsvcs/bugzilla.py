@@ -46,9 +46,11 @@ class Bugzilla(HostingService, BugTracker):
             url = '%s/rest/bug/%s' % (
                 repository.extra_data['bug_tracker-bugzilla_url'],
                 bug_id)
-            rsp, headers = self.client.json_get(url)
-            result['summary'] = rsp['bugs'][0]['summary'],
-            result['status'] = rsp['bugs'][0]['status'],
+            rsp, headers = self.client.json_get(
+                '%s?include_fields=summary,status'
+                % url)
+            result['summary'] = rsp['bugs'][0]['summary']
+            result['status'] = rsp['bugs'][0]['status']
         except Exception as e:
             logging.warning('Unable to fetch bugzilla data from %s: %s',
                             url, e, exc_info=1)
