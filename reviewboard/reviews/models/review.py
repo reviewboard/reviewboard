@@ -28,7 +28,11 @@ from reviewboard.reviews.signals import (reply_publishing, reply_published,
 class Review(models.Model):
     """A review of a review request."""
 
+    # Constants used in e-mails when a review contains a Ship It designation.
+    # These are explicitly not marked for localization to prevent taking the
+    # submitting user's local into account when generating the e-mail.
     SHIP_IT_TEXT = 'Ship It!'
+    FIX_IT_THEN_SHIP_IT_TEXT = 'Fix it, then Ship it!'
 
     review_request = models.ForeignKey(ReviewRequest,
                                        related_name="reviews",
@@ -130,9 +134,7 @@ class Review(models.Model):
                 (not self.body_top or
                  self.body_top == Review.SHIP_IT_TEXT) and
                 not (self.body_bottom or
-                     self.comments.exists() or
-                     self.file_attachment_comments.exists() or
-                     self.screenshot_comments.exists()))
+                     self.has_comments(only_issues=False)))
 
     def get_participants(self):
         """Returns a list of participants in a review's discussion."""
@@ -293,6 +295,35 @@ class Review(models.Model):
                 list(self.screenshot_comments.filter(**kwargs)) +
                 list(self.file_attachment_comments.filter(**kwargs)) +
                 list(self.general_comments.filter(**kwargs)))
+
+    def has_comments(self, only_issues=False):
+        """Return whether the review contains any comments/issues.
+
+        Args:
+            only_issues (bool, optional):
+                Whether or not to check for comments where ``issue_opened`` is
+                ``True``. ``True`` to check for issues, or ``False`` to check
+                for comments only. Defaults to ``False``.
+
+        Returns:
+            bool:
+            ``True`` if the review contains any comments/issues and
+            ``False`` otherwise.
+        """
+        qs = [
+            self.comments,
+            self.file_attachment_comments,
+            self.screenshot_comments,
+            self.general_comments,
+        ]
+
+        if only_issues:
+            qs = [
+                q.filter(issue_opened=True)
+                for q in qs
+            ]
+
+        return any(q.exists() for q in qs)
 
     class Meta:
         app_label = 'reviews'

@@ -5,9 +5,9 @@ This is an automatically generated e-mail. To reply, visit:
 -----------------------------------------------------------
 {% if review.ship_it %}
 {%  if has_issues %}
-Fix it, then Ship it!
+{{review.FIX_IT_THEN_SHIP_IT_TEXT}}
 {%  else %}
-Ship it!
+{{review.SHIP_IT_TEXT}}
 {%  endif %}
 {% endif %}
 
