@@ -247,7 +247,10 @@ class WebAPIResource(ResourceAPITokenMixin, APIQueryUtilsMixin,
                             try:
                                 value = int(value)
                             except ValueError:
-                                pass
+                                try:
+                                    value = float(value)
+                                except ValueError:
+                                    pass
 
                         extra_data[key] = value
                     elif key in extra_data:
