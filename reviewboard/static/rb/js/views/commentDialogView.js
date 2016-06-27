@@ -264,9 +264,7 @@ RB.CommentDialogView = Backbone.View.extend({
         });
         this._textEditor.render();
         this._textEditor.show();
-        this._textEditor.$el
-            .keypress(_.bind(this._onTextKeyPress, this))
-            .bindVisibility(this.model, 'canEdit');
+        this._textEditor.$el.bindVisibility(this.model, 'canEdit');
         this._textEditor.on('change', function() {
             this.model.set('text', this._textEditor.getText());
         }, this);
@@ -526,42 +524,38 @@ RB.CommentDialogView = Backbone.View.extend({
      * Callback for key down events in the text field.
      *
      * If the Escape key is pressed, the dialog will be closed.
+     * If the Control-Enter or Alt-I keys are pressed, we'll handle them
+     * specially. Control-Enter is the same thing as clicking Save.
+     *
+     * metaKey used as alternative for Mac key shortcut philosophy.
+     * metaKey is only fired on keydown in Chrome and Brave.
      *
      * The keydown event won't be propagated to the parent elements.
      */
     _onTextKeyDown: function(e) {
         e.stopPropagation();
 
-        if (e.which === $.ui.keyCode.ESCAPE) {
-            this._onCancelClicked();
-            return false;
-        }
-    },
-
-    /*
-     * Callback for key press events in the text field.
-     *
-     * If the Control-Enter or Alt-I keys are pressed, we'll handle them
-     * specially. Control-enter is the same thing as clicking Save,
-     * and Alt-I is the same as toggling the Issue checkbox.
-     */
-    _onTextKeyPress: function(e) {
-        e.stopPropagation();
-
         switch (e.which) {
+            case $.ui.keyCode.ESCAPE:
+                this._onCancelClicked();
+                return false;
+
             case 10:
             case $.ui.keyCode.ENTER:
                 /* Enter */
-                if (e.ctrlKey) {
+                if (e.metaKey || e.ctrlKey) {
                     this.save();
-                    return false;
+                    e.preventDefault();
+                    e.stopPropagation();
                 }
                 break;
 
             case 73:
             case 105:
                 /* I */
-                if (e.altKey) {
+                if (e.metaKey || e.altKey) {
+                    // preventDefault is called to avoid Firefox info window.
+                    e.preventDefault();
                     this.model.set('openIssue', !this.model.get('openIssue'));
                 }
                 break;
@@ -569,7 +563,9 @@ RB.CommentDialogView = Backbone.View.extend({
             case 77:
             case 109:
                 /* M */
-                if (e.altKey) {
+                if (e.metaKey || e.altKey) {
+                    // preventDefault is called to avoid Mac's window minimize.
+                    e.preventDefault();
                     this.model.set('richText', !this.model.get('richText'));
                 }
                 break;
