@@ -222,6 +222,56 @@ class ReviewTagTests(SpyAgency, TestCase):
 
         self.assertEqual(result, 'Lines 30-31 (patched)')
 
+    def test_diff_comment_line_numbers_with_fake_equal_orig(self):
+        """Testing diff_comment_line_numbers with fake equal from original
+        side of interdiff
+        """
+        t = Template(
+            '{% load reviewtags %}'
+            '{% diff_comment_line_numbers chunks comment %}'
+        )
+
+        result = t.render(Context({
+            'comment': Comment(first_line=20, num_lines=2),
+            'chunks': [
+                {
+                    'change': 'equal',
+                    'lines': [
+                        (10, '', '', [], 20, 'inserted line', [], False),
+                        # ...
+                        (50, '', '', [], 60, 'inserted line', [], False),
+                    ],
+                },
+            ],
+        }))
+
+        self.assertEqual(result, 'Lines 30-31 (patched)')
+
+    def test_diff_comment_line_numbers_with_fake_equal_patched(self):
+        """Testing diff_comment_line_numbers with fake equal from patched
+        side of interdiff
+        """
+        t = Template(
+            '{% load reviewtags %}'
+            '{% diff_comment_line_numbers chunks comment %}'
+        )
+
+        result = t.render(Context({
+            'comment': Comment(first_line=20, num_lines=2),
+            'chunks': [
+                {
+                    'change': 'equal',
+                    'lines': [
+                        (10, 20, 'deleted line', [], '', '', [], False),
+                        # ...
+                        (50, 60, 'deleted line', [], '', '', [], False),
+                    ],
+                },
+            ],
+        }))
+
+        self.assertEqual(result, 'Lines 30-31 (original)')
+
     def test_diff_comment_line_numbers_with_spanning_inserts_deletes(self):
         """Testing diff_comment_line_numbers with spanning delete and insert"""
         t = Template(
