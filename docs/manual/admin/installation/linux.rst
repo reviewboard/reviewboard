@@ -71,23 +71,6 @@ environment variable to your proxy server before running
     $ easy_install ....
 
 
-If you're running Fedora
-------------------------
-
-Fedora provides Review Board packages that are released shortly after we
-perform new releases. To install Review Board and its dependencies on
-Fedora, simply run::
-
-    $ yum install ReviewBoard
-
-You can then skip the rest of this guide for the required components. You may
-still want to install optional components, such as
-:ref:`Amazon S3 Support <linux-installing-amazon-s3-support>`.
-
-You will still need to install your site. See :ref:`creating-sites` for
-details.
-
-
 If you're running CentOS, Red Hat, etc.
 ---------------------------------------
 
