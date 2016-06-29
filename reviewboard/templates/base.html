@@ -118,10 +118,7 @@
         fullName: "{{request.user|user_displayname|escapejs}}",
 {% if siteconfig_settings.avatars_enabled %}
         avatarURLs: {
-            32: {
-               '1x': "{% filter escapejs %}{% avatar_url request.user 32 "1x" %}{% endfilter %}",
-               '2x': "{% filter escapejs %}{% avatar_url request.user 32 "2x" %}{% endfilter %}"
-            }
+            32: {% avatar_urls request.user 32 %}
         },
 {% else %}
         avatarURLs: {},

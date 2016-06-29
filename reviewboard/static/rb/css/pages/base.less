@@ -364,6 +364,9 @@ textarea {
       background-color: #EEEEEE;
       font-size: 1.2em;
 
+      // Safari does super dumb things with input[type="search"]. Fix that.
+      -webkit-appearance: textfield;
+
       .on-mobile-medium-screen-720({
         /*
          * Style the search input to appear more like the saerch bars on
