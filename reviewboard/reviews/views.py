@@ -63,7 +63,6 @@ from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.decorators import check_local_site_access
 from reviewboard.site.urlresolvers import local_site_reverse
-from reviewboard.webapi.encoder import status_to_string
 
 
 #
@@ -734,7 +733,8 @@ def review_detail(request,
 
         if status_change:
             assert 'new' in status_change
-            new_status = status_to_string(status_change['new'][0])
+            new_status = ReviewRequest.status_to_string(
+                status_change['new'][0])
         else:
             new_status = None
 

@@ -36,7 +36,6 @@ from reviewboard.ssh.errors import SSHError
 from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
-from reviewboard.webapi.encoder import status_to_string, string_to_status
 from reviewboard.webapi.errors import (CHANGE_NUMBER_IN_USE,
                                        CLOSE_ERROR,
                                        COMMIT_ID_ALREADY_EXISTS,
@@ -409,7 +408,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 if date:
                     q = q & Q(last_updated__lt=date)
 
-            status = string_to_status(request.GET.get('status', 'pending'))
+            status = ReviewRequest.string_to_status(
+                request.GET.get('status', 'pending'))
 
             can_submit_as = request.user.has_perm(
                 'reviews.can_submit_as_another_user', local_site)
@@ -486,7 +486,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         return obj.shipit_count
 
     def serialize_status_field(self, obj, **kwargs):
-        return status_to_string(obj.status)
+        return ReviewRequest.status_to_string(obj.status)
 
     def serialize_testing_done_text_type_field(self, obj, **kwargs):
         # This will be overridden by MarkdownFieldsMixin.
@@ -831,7 +831,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             return self.get_no_access_error(request)
 
         if (status is not None and
-            (review_request.status != string_to_status(status) or
+            (review_request.status != ReviewRequest.string_to_status(status) or
              review_request.status != ReviewRequest.PENDING_REVIEW)):
             try:
                 if status in self._close_type_map:
