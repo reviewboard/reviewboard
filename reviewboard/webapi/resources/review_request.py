@@ -283,11 +283,12 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         resources.change,
         resources.diff,
         resources.diff_context,
+        resources.file_attachment,
+        resources.review,
         resources.review_request_draft,
         resources.review_request_last_update,
-        resources.review,
         resources.screenshot,
-        resources.file_attachment,
+        resources.status_update,
     ]
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')

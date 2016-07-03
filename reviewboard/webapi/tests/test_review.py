@@ -110,14 +110,15 @@ class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
             submitter=user,
             publish=True)
 
-        return (get_review_list_url(review_request, local_site_name),
-                review_item_mimetype,
-                {
-                    'ship_it': True,
-                    'body_top': 'My body top',
-                    'body_bottom': 'My body bottom',
-                },
-                [review_request])
+        return (
+            get_review_list_url(review_request, local_site_name),
+            review_item_mimetype,
+            {
+                'ship_it': True,
+                'body_top': 'My body top',
+                'body_bottom': 'My body bottom',
+            },
+            [review_request])
 
     def check_post_result(self, user, rsp, review_request):
         review = Review.objects.get(pk=rsp['review']['id'])
