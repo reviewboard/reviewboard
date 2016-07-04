@@ -126,7 +126,7 @@ def file_attachment_comments(context, file_attachment):
 
 @register.tag
 @basictag(takes_context=True)
-def reply_list(context, entry, comment, context_type, context_id):
+def reply_list(context, review, comment, context_type, context_id):
     """
     Renders a list of comments of a specified type.
 
@@ -183,8 +183,6 @@ def reply_list(context, entry, comment, context_type, context_id):
     siteconfig = SiteConfiguration.objects.get_current()
     use_avatars = siteconfig.get('avatars_enabled')
 
-    review = entry['review']
-
     user = context.get('user', None)
     if user.is_anonymous():
         user = None
@@ -220,7 +218,7 @@ def reply_list(context, entry, comment, context_type, context_id):
 
 @register.inclusion_tag('reviews/review_reply_section.html',
                         takes_context=True)
-def reply_section(context, entry, comment, context_type, context_id,
+def reply_section(context, review, comment, context_type, context_id,
                   reply_to_text=''):
     """
     Renders a template for displaying a reply.
@@ -241,7 +239,7 @@ def reply_section(context, entry, comment, context_type, context_id,
         context_id += six.text_type(comment.id)
 
     return {
-        'entry': entry,
+        'review': review,
         'comment': comment,
         'context_type': context_type,
         'context_id': context_id,

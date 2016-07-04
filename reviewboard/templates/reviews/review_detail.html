@@ -46,7 +46,9 @@
 
 {%  for entry in entries %}
 {%   if entry.review %}
-{%    include "reviews/boxes/review.html" %}
+{%    with review=entry.review %}
+{%     include "reviews/boxes/review.html" %}
+{%    endwith %}
 {%   elif entry.changedesc %}
 {%    include "reviews/boxes/change.html" %}
 {%   endif %}
