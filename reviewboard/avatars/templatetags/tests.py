@@ -7,31 +7,29 @@ from djblets.avatars.services.gravatar import GravatarService
 
 from reviewboard.testing import TestCase
 from reviewboard.avatars import avatar_services
+from reviewboard.avatars.testcase import AvatarServicesTestMixin
 from reviewboard.avatars.tests import DummyAvatarService
 
 
-class TemplateTagTests(TestCase):
+class TemplateTagTests(AvatarServicesTestMixin, TestCase):
     """Tests for reviewboard.avatars.templatetags."""
 
     fixtures = ['test_users']
 
-    @staticmethod
-    def _reset_avatar_services():
-        avatar_services.reset()
+    @classmethod
+    def setUpClass(cls):
+        super(TemplateTagTests, cls).setUpClass()
+        avatar_services.enable_service(GravatarService.avatar_service_id,
+                                       save=False)
+
+    def setUp(self):
+        super(TemplateTagTests, self).setUp()
+
         gravatar_service = avatar_services.get_avatar_service(
             GravatarService.avatar_service_id)
         avatar_services.enable_service(gravatar_service.avatar_service_id,
                                        save=False)
         avatar_services.set_default_service(gravatar_service, save=False)
-
-    @classmethod
-    def tearDownClass(cls):
-        super(TemplateTagTests, cls).tearDownClass()
-        cls._reset_avatar_services()
-
-    def setUp(self):
-        super(TemplateTagTests, self).setUp()
-        self._reset_avatar_services()
 
         self.user = User.objects.get(username='doc')
         self.request = HttpRequest()
