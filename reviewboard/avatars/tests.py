@@ -4,37 +4,20 @@ from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.template import Context, Template
 from django.utils.html import escape
+from djblets.avatars.services.file_upload import FileUploadService
 from djblets.avatars.services.gravatar import GravatarService
 from djblets.avatars.tests import DummyAvatarService
 from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.accounts.models import Profile
 from reviewboard.avatars import avatar_services
 from reviewboard.avatars.registry import AvatarServiceRegistry
+from reviewboard.avatars.testcase import AvatarServicesTestMixin
 from reviewboard.testing.testcase import TestCase
 
 
-class AvatarServiceRegistryTests(TestCase):
+class AvatarServiceRegistryTests(AvatarServicesTestMixin, TestCase):
     """Tests for reviewboard.avatars."""
-
-    @classmethod
-    def setUpClass(cls):
-        siteconfig = SiteConfiguration.objects.get_current()
-        cls._original_settings = siteconfig.settings.copy()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(AvatarServiceRegistryTests, cls).tearDownClass()
-        cls._reset_siteconfig()
-
-    def setUp(self):
-        super(AvatarServiceRegistryTests, self).setUp()
-        self._reset_siteconfig()
-
-    @classmethod
-    def _reset_siteconfig(cls):
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.settings = cls._original_settings.copy()
-        siteconfig.save(update_fields=('settings',))
 
     def test_migrate_enabled(self):
         """Testing AvatarServiceRegistry migrates avatar settings for enabled
@@ -52,17 +35,19 @@ class AvatarServiceRegistryTests(TestCase):
 
         registry = AvatarServiceRegistry()
 
-        # Verify that the Gravatar service is the only service and it is
-        # enabled and default.
-        gravatar_service = registry.get('avatar_service_id',
-                                        GravatarService.avatar_service_id)
+        # Verify that the Gravatar service is enabled.
+        gravatar_service = registry.get_avatar_service(
+            GravatarService.avatar_service_id)
+
+        upload_service = registry.get_avatar_service(
+            FileUploadService.avatar_service_id)
         self.assertIsNotNone(gravatar_service)
         self.assertIs(type(gravatar_service), GravatarService)
-        self.assertSetEqual(set(registry), set([gravatar_service]))
+        self.assertSetEqual(set(registry), {upload_service, gravatar_service})
 
         self.assertIs(registry.default_service, gravatar_service)
         self.assertSetEqual(set(registry.enabled_services),
-                            {gravatar_service})
+                            {gravatar_service, upload_service})
 
         # Verify that the settings were saved correctly to the database.
         self.assertTrue(
@@ -71,7 +56,8 @@ class AvatarServiceRegistryTests(TestCase):
             siteconfig.get(AvatarServiceRegistry.AVATARS_ENABLED_KEY))
         self.assertListEqual(
             siteconfig.get(AvatarServiceRegistry.ENABLED_SERVICES_KEY),
-            [GravatarService.avatar_service_id])
+            [GravatarService.avatar_service_id,
+             FileUploadService.avatar_service_id])
         self.assertEqual(
             siteconfig.get(AvatarServiceRegistry.DEFAULT_SERVICE_KEY),
             GravatarService.avatar_service_id)
@@ -92,12 +78,15 @@ class AvatarServiceRegistryTests(TestCase):
 
         registry = AvatarServiceRegistry()
 
-        # Verify the GravatarService is the only service and that is disabled.
-        gravatar_service = registry.get('avatar_service_id',
-                                        GravatarService.avatar_service_id)
+        # Verify all services are disabled.
+        gravatar_service = registry.get_avatar_service(
+            GravatarService.avatar_service_id)
+        upload_service = registry.get_avatar_service(
+            FileUploadService.avatar_service_id)
         self.assertIsNotNone(gravatar_service)
         self.assertIs(type(gravatar_service), GravatarService)
-        self.assertSetEqual(set(registry), set([gravatar_service]))
+        self.assertIs(type(upload_service), FileUploadService)
+        self.assertSetEqual(set(registry), {upload_service, gravatar_service})
 
         self.assertIsNone(registry.default_service)
         self.assertSetEqual(set(registry.enabled_services), set())
@@ -192,9 +181,12 @@ class TemplateTagTests(TestCase):
         t = Template('{% load avatars %}'
                      '{% avatar user 32 avatar_service_id %}')
 
-        user = User(first_name='<b>Bad',
-                    last_name='User</b>',
-                    username='bad_user')
+        user = User.objects.create(
+            first_name='<b>Bad',
+            last_name='User</b>',
+            username='bad_user')
+
+        Profile.objects.create(user=user)
 
         escaped_user = escape(user.get_full_name())
 

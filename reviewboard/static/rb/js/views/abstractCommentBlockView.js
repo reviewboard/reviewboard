@@ -11,6 +11,7 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
      * This will remove the view and the tooltip.
      */
     dispose: function() {
+        this.trigger('removing');
         this.remove();
         this._$tooltip.remove();
     },

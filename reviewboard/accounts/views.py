@@ -14,8 +14,7 @@ from djblets.util.decorators import augment_method_from
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.accounts.forms.registration import RegistrationForm
-from reviewboard.accounts.pages import get_page_classes
-
+from reviewboard.accounts.pages import AccountPage
 
 @csrf_protect
 def account_register(request, next_url='dashboard'):
@@ -76,7 +75,7 @@ class MyAccountView(ConfigPagesView):
     @property
     def page_classes(self):
         """Get the list of page classes for this view."""
-        return get_page_classes()
+        return list(AccountPage.registry)
 
     @cached_property
     def ordered_user_local_sites(self):

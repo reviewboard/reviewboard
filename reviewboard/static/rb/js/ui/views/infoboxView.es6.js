@@ -33,7 +33,16 @@ RB.InfoboxView = Backbone.View.extend({
      */
     render() {
         this._$target.on('mouseover', () => {
-            this._timeout = setTimeout(() => this.fetch());
+            if (this.$el.is(':visible')) {
+                /*
+                 * The infobox is already visible, but the user has changed
+                 * which element they're mousing over. Just show immediately.
+                 */
+                this.fetch();
+            } else {
+                this._timeout = setTimeout(() => this.fetch(),
+                                           RB.InfoboxView.POPUP_DELAY_MS);
+            }
         });
 
         $([this._$target[0], this.$el[0]]).on({
@@ -46,13 +55,16 @@ RB.InfoboxView = Backbone.View.extend({
                 clearTimeout(this._timeout);
 
                 if (this.$el.is(':visible')) {
-                    this._timeout = setTimeout(() => this.$el.fadeOut(),
-                                               RB.InfoboxView.HIDE_DELAY_MS);
+                    this._timeout = setTimeout(
+                        () => {
+                            if (this.$el.data('infobox-owner') === this.cid) {
+                                this.$el.fadeOut();
+                            }
+                        },
+                        RB.InfoboxView.HIDE_DELAY_MS);
                 }
             }
         });
-
-        this.$el.hide();
 
         return this;
     },
@@ -93,7 +105,9 @@ RB.InfoboxView = Backbone.View.extend({
      *         contents will be updated.
      */
     _show(data, popup) {
-        this.$el.html(data);
+        this.$el
+            .html(data)
+            .data('infobox-owner', this.cid);
 
         if (popup) {
             this.$el

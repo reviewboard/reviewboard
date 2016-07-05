@@ -472,6 +472,9 @@ class Bitbucket(HostingService):
             raise AuthorizationError(
                 message or ugettext('Invalid Bitbucket username or password'))
         elif e.code == 404:
+            if message.startswith('Repository'):
+                raise HostingServiceError(message)
+
             # We don't have a path here, but it will be filled in inside
             # _api_get_src.
             raise FileNotFoundError('')

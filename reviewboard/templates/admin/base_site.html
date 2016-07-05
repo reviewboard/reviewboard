@@ -7,6 +7,11 @@
 <script type="text/javascript">window.__admin_media_prefix__ = "{% filter escapejs %}{% static "admin/" %}{% endfilter %}";</script>
 {% endblock %}
 
+{% block scripts-post %}
+{{block.super}}
+{%  javascript 'admin' %}
+{% endblock %}
+
 {% block extrahead %}
 {% block blockbots %}<meta name="robots" content="NONE,NOARCHIVE" />{% endblock %}
 {% endblock %}

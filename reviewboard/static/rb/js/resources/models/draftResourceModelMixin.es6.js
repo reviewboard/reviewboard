@@ -69,12 +69,12 @@ RB.DraftResourceModelMixin = {
                     _super(this).destroy.call(
                         this,
                         _.defaults({
-                            success: () => {
+                            success: (...args) => {
                                 /* We need to fetch the draft resource again. */
                                 this._needDraft = true;
 
                                 if (_.isFunction(options.success)) {
-                                    options.success.apply(context, arguments);
+                                    options.success.apply(context, args);
                                 }
                             }
                         }, options),

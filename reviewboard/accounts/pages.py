@@ -11,6 +11,7 @@ from djblets.registries.errors import ItemLookupError
 from djblets.registries.mixins import ExceptionFreeGetterMixin
 
 from reviewboard.accounts.forms.pages import (AccountSettingsForm,
+                                              AvatarSettingsForm,
                                               APITokensForm,
                                               ChangePasswordForm,
                                               ProfileForm,
@@ -97,7 +98,7 @@ class ProfilePage(AccountPage):
 
     page_id = 'profile'
     page_title = _('Profile')
-    form_classes = [ProfileForm]
+    form_classes = [ProfileForm, AvatarSettingsForm]
 
 
 class GroupsPage(AccountPage):
@@ -128,7 +129,7 @@ def register_account_page_class(cls):
             registered page or if any of its forms share an attribute
             with an already registered form.
     """
-    warn('register_account_page_class is deprecated in Review Board 2.6 and '
+    warn('register_account_page_class is deprecated in Review Board 3.0 and '
          'will be removed; use AccountPage.registry.register instead.',
          DeprecationWarning)
     AccountPage.registry.register(cls)
@@ -142,7 +143,7 @@ def unregister_account_page_class(page_cls):
             The page class to unregister, as a subclass of
             :py:class:`AccountPage`.
     """
-    warn('unregister_account_page_class is deprecated in Review Board 2.6 and '
+    warn('unregister_account_page_class is deprecated in Review Board 3.0 and '
          'will be removed; use AccountPage.registry.unregister instead.',
          DeprecationWarning)
     AccountPage.registry.unregister(page_cls)
@@ -160,7 +161,7 @@ def get_page_class(page_id):
         The :py:class:`AccountPage` subclass, or ``None`` if it could not be
         found.
     """
-    warn('get_page_class is deprecated in Review Board 2.6 and will be '
+    warn('get_page_class is deprecated in Review Board 3.0 and will be '
          'removed; use AccountPage.registry.get instead.',
          DeprecationWarning)
     return AccountPage.registry.get('page_id', page_id)
@@ -173,7 +174,7 @@ def get_page_classes():
         type: Each registered page class, as a subclass of
         :py:class:`AccountPage`.
     """
-    warn('get_page_classes is deprecated in Review Board 2.6 and will be '
+    warn('get_page_classes is deprecated in Review Board 3.0 and will be '
          'removed; iterate through AccountPage.registry instead.',
          DeprecationWarning)
     return iter(AccountPage.registry)

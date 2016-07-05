@@ -1,10 +1,11 @@
 from __future__ import unicode_literals
 
+import json
 import logging
 
 from django import template
+from django.utils import six
 from django.utils.html import mark_safe
-from djblets.util.decorators import basictag
 
 from reviewboard.avatars import avatar_services
 
@@ -12,14 +13,13 @@ from reviewboard.avatars import avatar_services
 register = template.Library()
 
 
-@register.tag()
-@basictag(takes_context=True)
+@register.simple_tag(takes_context=True)
 def avatar(context, user, size, service_id=None):
     """Render the user's avatar to HTML.
 
     When the ``service_id`` argument is not provided, or the specified service
-    is not registered or is not enabled, the default avatar service will be
-    used for rendering instead.
+    is not registered or is not enabled, the user's specified avatar service
+    will be used for rendering instead.
 
     Args:
         context (django.template.Context):
@@ -41,7 +41,7 @@ def avatar(context, user, size, service_id=None):
         The user's avatar rendered to HTML, or an empty string if no avatar
         service could be found.
     """
-    service = avatar_services.get_or_default(service_id)
+    service = avatar_services.for_user(user, service_id)
 
     if service is None:
         logging.error('Could not get a suitable avatar service for user %s.',
@@ -51,8 +51,7 @@ def avatar(context, user, size, service_id=None):
     return service.render(request=context['request'], user=user, size=size)
 
 
-@register.tag()
-@basictag(takes_context=True)
+@register.simple_tag(takes_context=True)
 def avatar_url(context, user, size, resolution='1x', service_id=None):
     """Return the URL of the requested avatar.
 
@@ -84,7 +83,7 @@ def avatar_url(context, user, size, resolution='1x', service_id=None):
         raise ValueError('resolution should be "1x" or "2x", not %r.'
                          % resolution)
 
-    service = avatar_services.get_or_default(service_id)
+    service = avatar_services.for_user(user, service_id)
 
     if service is None:
         logging.error('Could not get a suitable avatar service for user %s.',
@@ -95,3 +94,45 @@ def avatar_url(context, user, size, resolution='1x', service_id=None):
                                    user=user,
                                    size=size)
     return urls[resolution]
+
+
+@register.simple_tag(takes_context=True)
+def avatar_urls(context, user, size, service_id=None):
+    """Serialize the user's avatar URLs into a JavaScript object.
+
+    Args:
+        context (django.template.Context):
+            The template rendering context.
+
+        user (django.contrib.auth.models.User):
+            The user whose avatar URLs are to be serialized.
+
+        size (int):
+            The height and width of the avatar, in pixels.
+
+        service_id (unicode, optional):
+            The unique identifier of the avatar service to use. If this is
+            omitted, or the specified service is not registered and enabled,
+            the default avatar service will be used.
+
+    Returns:
+        django.utils.safestring.SafeText:
+        The rendered JavaScript object.
+    """
+    service = avatar_services.for_user(user, service_id)
+
+    if service is None:
+        logging.error('Could not get a suitable avatar service for user %s.',
+                      user)
+        urls = {}
+    else:
+        urls = {
+            resolution: url
+            for resolution, url in six.iteritems(
+                service.get_avatar_urls(request=context['request'],
+                                        user=user,
+                                        size=size)
+            )
+        }
+
+    return mark_safe(json.dumps(urls))

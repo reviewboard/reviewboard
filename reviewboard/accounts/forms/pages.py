@@ -7,11 +7,14 @@ from django.contrib import messages
 from django.forms import widgets
 from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext_lazy as _
+from djblets.avatars.forms import (
+    AvatarSettingsForm as DjbletsAvatarSettingsForm)
 from djblets.forms.fields import TimeZoneField
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.configforms.forms import ConfigPageForm
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
+from reviewboard.avatars import avatar_services
 from reviewboard.reviews.models import Group
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -100,6 +103,23 @@ class AccountSettingsForm(AccountPageForm):
 
         messages.add_message(self.request, messages.INFO,
                              _('Your settings have been saved.'))
+
+
+class AvatarSettingsForm(DjbletsAvatarSettingsForm):
+    """A form for configuring the avatar for a user.
+
+    This form will only be shown when avatars are enabled for the server.
+    """
+    avatar_service_registry = avatar_services
+
+    def is_visible(self):
+        """Return whether or not to show the avatar settings form.
+
+        Returns:
+            bool:
+            Whether or not to show the avatar settings form.
+        """
+        return self.avatar_service_registry.avatars_enabled
 
 
 class APITokensForm(AccountPageForm):

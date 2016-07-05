@@ -975,7 +975,7 @@ class AuthBackendRegistry(EntryPointRegistry):
             'Error loading authentication backend %(entry_point)s: %(error)s'
         ),
         NOT_REGISTERED: _(
-            'No authentication backend registered with %(attr_name) = '
+            'No authentication backend registered with %(attr_name)s = '
             '%(attr_value)s.'
         ),
         UNREGISTER: _(

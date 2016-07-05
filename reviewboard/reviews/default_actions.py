@@ -109,7 +109,7 @@ class UploadDiffAction(BaseReviewRequestAction):
         Returns:
             bool: Determines if this action should render.
         """
-        return context['review_request'].repository is not None
+        return context['review_request'].repository_id is not None
 
 
 class UploadFileAction(BaseReviewRequestAction):
@@ -135,6 +135,13 @@ class DownloadDiffAction(BaseReviewRequestAction):
         Returns:
             unicode: The URL to invoke if this action is clicked.
         """
+        match = context['request'].resolver_match
+
+        # We want to use a relative URL in the diff viewer as we will not be
+        # re-rendering the page when switching between revisions.
+        if match.url_name in diffviewer_url_names:
+            return 'raw/'
+
         return local_site_reverse('raw-diff', context['request'], kwargs={
             'review_request_id': context['review_request'].display_id,
         })
@@ -176,11 +183,7 @@ class DownloadDiffAction(BaseReviewRequestAction):
         if match.url_name in diffviewer_url_names:
             return True
 
-        # Otherwise, we're either on a review request page or a file attachment
-        # page, so check if the corresponding review request has a diff.
-        draft = review_request.get_draft(request.user)
-        return (draft and draft.diffset is not None or
-                review_request.get_diffsets() is not None)
+        return review_request.repository_id is not None
 
 
 class EditReviewAction(BaseReviewRequestAction):

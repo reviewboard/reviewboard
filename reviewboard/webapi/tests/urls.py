@@ -299,7 +299,7 @@ def get_hosting_service_list_url(local_site_name=None):
 def get_hosting_service_item_url(hosting_service_or_id, local_site_name=None):
     hosting_service_id = _normalize_id(hosting_service_or_id,
                                        HostingService,
-                                       id_field='id',
+                                       id_field='hosting_service_id',
                                        ischecker=issubclass)
 
     return resources.hosting_service.get_item_url(

@@ -1,0 +1,19 @@
+==================================
+Review Board 2.5.6.1 Release Notes
+==================================
+
+**Release date**: June 3, 2016
+
+
+Bug Fixes
+=========
+
+* Fixed a packaging problem that broke certain pages, including the
+  New Review Request page.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond

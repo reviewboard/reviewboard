@@ -305,7 +305,6 @@ $(document).ready(function() {
             }
 
             $bugTrackerTypeRow.setVisible(!isFake);
-            $repoPlanRow.setVisible(!isFake);
             $hostingAccountRow.setVisible(!isFake);
             $toolRow.setVisible(!isFake);
 

@@ -113,6 +113,13 @@
   z-index: @z-index-menu;
 }
 
+/* Make the code blocks flush against the sides of the field. */
+.flush-codehilite() {
+  border-left: 0;
+  border-right: 0;
+  border-radius: 0;
+}
+
 
 /****************************************************************************
  * Actions
@@ -369,8 +376,8 @@
   }
 
   .CodeMirror-scroll {
-    overflow-y: hidden;
-    overflow-x: auto;
+    overflow-y: hidden !important;
+    overflow-x: auto !important;
   }
 
   pre {
@@ -468,10 +475,7 @@
         white-space: pre-wrap;
 
         .codehilite {
-          /* Make the code blocks flush against the sides of the field. */
-          border-left: 0;
-          border-right: 0;
-          border-radius: 0;
+          .flush-codehilite();
           margin-left: -(@code-block-border-size + @code-block-padding-horiz -
                          @textarea-border-size);
           margin-right: -(@code-block-border-size + @code-block-padding-horiz -
@@ -766,6 +770,7 @@
       margin: 0;
       padding: 8px;
       font-size: 10pt;
+      line-height: 16px;
     }
   }
 }
@@ -2484,19 +2489,20 @@
       padding: 0;
 
       > li {
-        background-color: #a1c0e3;
-        border-bottom: 1px #5170b3 solid;
+        background-color: @comments-tooltip-background;
+        border-bottom: 1px @comments-tooltip-border-color solid;
         margin: 0;
-        padding: 5px;
+        padding: @comments-tooltip-padding;
 
         &.draft {
-          background-color: #aceb6f;
+          background-color: @comments-tooltip-draft-background;
           border-bottom: 1px black solid;
         }
 
         div {
           &.reviewer {
             font-weight: bold;
+            margin-bottom: 1em;
           }
         }
 
@@ -2505,6 +2511,19 @@
           margin: 0;
           padding: 0;
           white-space: pre-wrap;
+        }
+
+        .rich-text {
+          code {
+            border-color: @comments-tooltip-border-color;
+          }
+
+          .codehilite {
+            .flush-codehilite();
+            border-color: @comments-tooltip-border-color;
+            margin-left: -@comments-tooltip-padding;
+            margin-right: -@comments-tooltip-padding;
+          }
         }
       }
     }

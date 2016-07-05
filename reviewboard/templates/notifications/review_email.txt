@@ -5,9 +5,9 @@ This is an automatically generated e-mail. To reply, visit:
 -----------------------------------------------------------
 {% if review.ship_it %}
 {%  if has_issues %}
-Fix it, then Ship it!
+{{review.FIX_IT_THEN_SHIP_IT_TEXT}}
 {%  else %}
-Ship it!
+{{review.SHIP_IT_TEXT}}
 {%  endif %}
 {% endif %}
 
@@ -45,8 +45,11 @@ Screenshot: {{ comment.screenshot.caption }}
 
 {% endfor %}{% for entry in comment_entries %}
 
-{{ entry.comment.filediff.source_file_display }} {% patched_file_line_numbers %}
+{% condense 1 %}
+{{entry.comment.filediff.source_file_display}}
+{% diff_comment_line_numbers entry.chunks entry.comment %}
 <{{domain_method}}://{{domain}}{{entry.comment.get_review_url}}>
+{% endcondense %}
 
 {% filter indent %}{% condense 2 %}
 {%  comment_detail_display_hook entry.comment "text-email" %}

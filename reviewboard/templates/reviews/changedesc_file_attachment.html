@@ -12,7 +12,9 @@ $(document).ready(function() {
             model: new RB.FileAttachment({
                 id: {{file.pk}},
                 loaded: true,
+{% if file.attachment_history_id %}
                 attachmentHistoryID: {{file.attachment_history_id}},
+{% endif %}
                 caption: '{{file.caption|escapejs}}',
                 downloadURL: '{{file.get_absolute_url|escapejs}}',
                 filename: '{{file.filename}}|escapejs}}',

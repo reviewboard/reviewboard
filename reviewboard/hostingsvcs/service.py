@@ -4,6 +4,7 @@ import base64
 import json
 import logging
 import mimetools
+import re
 
 from django.conf.urls import include, patterns, url
 from django.dispatch import receiver
@@ -472,16 +473,14 @@ class HostingService(object):
         return getattr(cls, name, default)
 
 
-_hosting_services = {}
 _hostingsvcs_urlpatterns = {}
-_populated = False
 
 
 class HostingServiceRegistry(EntryPointRegistry):
     """A registry for managing hosting services."""
 
     entry_point = 'reviewboard.hosting_services'
-    lookup_attrs = ['id']
+    lookup_attrs = ['hosting_service_id']
 
     errors = {
         ALREADY_REGISTERED: _(
@@ -514,10 +513,10 @@ class HostingServiceRegistry(EntryPointRegistry):
         """
         super(HostingServiceRegistry, self).unregister(service)
 
-        if service.id in self._url_patterns:
-            cls_urlpatterns = self._url_patterns[service.id]
+        if service.hosting_service_id in self._url_patterns:
+            cls_urlpatterns = self._url_patterns[service.hosting_service_id]
             hostingsvcs_urls.dynamic_urls.remove_patterns(cls_urlpatterns)
-            del self._url_patterns[service.id]
+            del self._url_patterns[service.hosting_service_id]
 
     def process_value_from_entry_point(self, entry_point):
         """Load the class from the entry point.
@@ -534,7 +533,7 @@ class HostingServiceRegistry(EntryPointRegistry):
             The :py:class:`HostingService` subclass.
         """
         cls = entry_point.load()
-        cls.id = entry_point.name
+        cls.hosting_service_id = entry_point.name
         return cls
 
     def register(self, service):
@@ -553,10 +552,11 @@ class HostingServiceRegistry(EntryPointRegistry):
         if service.repository_url_patterns:
             cls_urlpatterns = patterns(
                 '',
-                url(r'^(?P<hosting_service_id>' + service.id + ')/',
+                url(r'^(?P<hosting_service_id>%s)/'
+                    % re.escape(service.hosting_service_id),
                     include(service.repository_url_patterns)))
 
-            self._url_patterns[service.id] = cls_urlpatterns
+            self._url_patterns[service.hosting_service_id] = cls_urlpatterns
             hostingsvcs_urls.dynamic_urls.add_patterns(cls_urlpatterns)
 
 
@@ -580,7 +580,7 @@ def get_hosting_service(name):
     If the hosting service is not found, None will be returned.
     """
     try:
-        return _hosting_service_registry.get('id', name)
+        return _hosting_service_registry.get('hosting_service_id', name)
     except ItemLookupError:
         return None
 
@@ -600,8 +600,6 @@ def register_hosting_service(name, cls):
             :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
     """
     cls.hosting_service_id = name
-    _hosting_services[name] = cls
-    cls.id = name
     _hosting_service_registry.register(cls)
 
 
@@ -613,7 +611,8 @@ def unregister_hosting_service(name):
             The name of the hosting service.
     """
     try:
-        _hosting_service_registry.unregister_by_attr('id', name)
+        _hosting_service_registry.unregister_by_attr('hosting_service_id',
+                                                     name)
     except ItemLookupError as e:
         logging.error('Failed to unregister unknown hosting service "%s"'
                       % name)

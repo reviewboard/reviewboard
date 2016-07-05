@@ -56,6 +56,14 @@ RB.DatagridPageView = Backbone.View.extend({
 
         this._$window.resize(_.bind(this._updateSize, this));
 
+        if (RB.UserSession.instance.get('authenticated')) {
+            this._starManager = new RB.StarManagerView({
+                model: new RB.StarManager(),
+                el: this._$datagrid,
+                datagridMode: true
+            });
+        }
+
         return this;
     },
 

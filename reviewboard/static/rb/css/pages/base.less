@@ -74,6 +74,14 @@ pre, textarea, .CodeMirror, .editable.field-text-area {
   line-height: @textarea-line-height;
 }
 
+.editable.field-text-area {
+  /*
+   * Always show the text cursor when hovering over an editable text field
+   * placeholder, so the entire thing feels like a text field.
+   */
+  cursor: text;
+}
+
 textarea {
   resize: none;
 }
@@ -355,6 +363,9 @@ textarea {
       border-radius: 6px;
       background-color: #EEEEEE;
       font-size: 1.2em;
+
+      // Safari does super dumb things with input[type="search"]. Fix that.
+      -webkit-appearance: textfield;
 
       .on-mobile-medium-screen-720({
         /*

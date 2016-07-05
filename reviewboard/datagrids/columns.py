@@ -81,9 +81,15 @@ class BaseSubmitterColumn(Column):
                     user=user,
                     size=self.AVATAR_SIZE)
 
+        request = state.datagrid.request
+
+        user_url = local_site_reverse('user', request=request, kwargs={
+            'username': user.username,
+        })
+
         return format_html(
             '<a class="user" href="{0}">{1}{2}</a>',
-            user.get_absolute_url(), avatar_html, user.username)
+            user_url, avatar_html, user.username)
 
 
 class BugsColumn(Column):
@@ -123,7 +129,7 @@ class BugsColumn(Column):
                     url = local_site_reverse(
                         'bug_url',
                         local_site_name=local_site_name,
-                        args=(review_request.display_id, bug))
+                        args=[review_request.display_id, bug])
                     links.append(
                         format_html('<a href="{0}">{1}</a>', url, bug))
                 except NoReverseMatch:
@@ -762,8 +768,8 @@ class DiffSizeColumn(Column):
             return ''
 
         counts = diffset.get_total_line_counts()
-        insert_count = counts['raw_insert_count']
-        delete_count = counts['raw_delete_count']
+        insert_count = counts.get('raw_insert_count')
+        delete_count = counts.get('raw_delete_count')
         result = []
 
         if insert_count:
@@ -774,4 +780,7 @@ class DiffSizeColumn(Column):
             result.append('<span class="diff-size-column delete">-%d</span>' %
                           delete_count)
 
-        return '&nbsp;'.join(result)
+        if result:
+            return '&nbsp;'.join(result)
+
+        return ''

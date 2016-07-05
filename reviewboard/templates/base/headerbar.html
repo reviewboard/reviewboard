@@ -13,7 +13,7 @@
 {% if siteconfig_settings.search_enable %}
   <form method="get" action="{% url 'search' %}">
 {% endif %}
-   <input type="text" name="q" placeholder="{% if siteconfig_settings.search_enable %}{% trans "Search" %}{% else %}{% trans "Jump to..." %}{% endif %}" id="search_field" {% attr "value" %}{{query}}{% endattr %} />
+   <input type="search" name="q" placeholder="{% if siteconfig_settings.search_enable %}{% trans "Search" %}{% else %}{% trans "Jump to..." %}{% endif %}" id="search_field" {% attr "value" %}{{query}}{% endattr %} />
 {% if siteconfig_settings.search_enable %}
   </form>
 {% endif %}

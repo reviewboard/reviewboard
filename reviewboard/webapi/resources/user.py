@@ -2,13 +2,18 @@ from __future__ import unicode_literals
 
 import logging
 
+from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+from django.db import IntegrityError, transaction
 from django.db.models import Q
 from django.utils import six
 from djblets.util.decorators import augment_method_from
-from djblets.webapi.decorators import (webapi_request_fields,
+from djblets.webapi.decorators import (webapi_login_required,
+                                       webapi_request_fields,
                                        webapi_response_errors)
-from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
-                                   PERMISSION_DENIED)
+from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
+                                   NOT_LOGGED_IN, PERMISSION_DENIED)
 from djblets.webapi.resources.user import UserResource as DjbletsUserResource
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
@@ -22,8 +27,7 @@ from reviewboard.webapi.resources import resources
 
 
 class UserResource(WebAPIResource, DjbletsUserResource):
-    """
-    Provides information on registered users.
+    """Creates and provides information on users.
 
     If a user's profile is private, the fields ``email``, ``first_name``,
     ``last_name``, and ``fullname`` will be omitted for non-staff users.
@@ -49,6 +53,8 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             'added_in': '3.0',
         },
     }, **DjbletsUserResource.fields)
+
+    allowed_methods = ('GET', 'POST')
 
     hidden_fields = ('email', 'first_name', 'last_name', 'fullname')
 
@@ -200,6 +206,83 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         that the user has "starred".
         """
         pass
+
+    @webapi_login_required
+    @webapi_check_local_site
+    @webapi_response_errors(PERMISSION_DENIED, INVALID_FORM_DATA)
+    @webapi_request_fields(
+        required={
+            'username': {
+                'type': six.text_type,
+                'description': 'The username of the user to create.',
+            },
+            'email': {
+                'type': six.text_type,
+                'description': 'The e-mail address of the user to create.',
+            },
+            'password': {
+                'type': six.text_type,
+                'description': 'The password of the user to create.',
+            }
+        },
+        optional={
+            'first_name': {
+                'type': six.text_type,
+                'description': 'The first name of the user to create.',
+            },
+            'last_name': {
+                'type': six.text_type,
+                'description': 'The last name of the user to create.',
+            }
+        })
+    def create(self, request, username, email, password, first_name='',
+               last_name='', local_site=None, *args, **kwargs):
+        """Create a user
+
+        This functionality is limited to superusers.
+        """
+        if (not request.user.is_superuser and
+            not request.user.has_perm('auth.add_user')):
+            return PERMISSION_DENIED.with_message(
+                'You do not have permission to create users.')
+
+        if local_site:
+            return PERMISSION_DENIED.with_message(
+                'This API is not available for local sites.')
+
+        try:
+            validate_email(email)
+        except ValidationError as e:
+            return INVALID_FORM_DATA, {
+                'fields': {
+                    'email': [six.text_type(e)]
+                },
+            }
+
+        try:
+            # We wrap this in a transaction.atomic block because attempting to
+            # create a user with a username that already exists will generate
+            # an IntegrityError and break the current transaction.
+            #
+            # Unit tests wrap each test case in a transaction.atomic block as
+            # well. If this is block is not here, the test case's transaction
+            # will break and cause errors during test teardown.
+            with transaction.atomic():
+                user = User.objects.create_user(username, email, password,
+                                                first_name=first_name,
+                                                last_name=last_name)
+        except IntegrityError:
+            return INVALID_FORM_DATA, {
+                'fields': {
+                    'username': [
+                        'A user with the requested username already exists.',
+                    ]
+                }
+            }
+
+        return 201, {
+            self.item_result_key: user,
+        }
 
 
 user_resource = UserResource()
