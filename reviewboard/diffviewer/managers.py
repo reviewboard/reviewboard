@@ -583,7 +583,7 @@ class DiffProcessor(object):
                                          repository, base_commit_id, request,
                                          check_existence=True,
                                          limit_to=diff_filenames):
-                parent_files[f.origFile] = f
+                parent_files[f.newFile] = f
 
             # This will return a non-None value only for tools that use
             # commit IDs to identify file versions as opposed to file revision

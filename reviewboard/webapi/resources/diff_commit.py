@@ -219,7 +219,7 @@ class DiffCommitResource(WebAPIResource):
     def update(self, request, extra_fields={}, *args, **kwargs):
         """Updates information on the commit.
 
-        Extra data can be stored on the diff for later lookup by passing
+        Extra data can be stored on the diff commit for later lookup by passing
         ``extra_data.key_name=value``. The ``key_name`` and ``value`` can be
         any valid strings. Passing a blank ``value`` will remove the key. The
         ``extra_data.`` prefix is required.
@@ -232,7 +232,7 @@ class DiffCommitResource(WebAPIResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if extra_fields:
             self.import_extra_data(commit, commit.extra_data, extra_fields)
@@ -252,7 +252,7 @@ class DiffCommitResource(WebAPIResource):
         return '%scommit-id=%s' % (url, commit_id)
 
     def _get_files_link(self, commit, request, diff_resource,
-                         filediff_resource, files_key, *args, **kwargs):
+                        filediff_resource, files_key, *args, **kwargs):
         """Build the files link for the given commit."""
         files_link = diff_resource.get_links([filediff_resource],
                                              commit.diffset,

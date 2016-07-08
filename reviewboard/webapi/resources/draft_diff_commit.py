@@ -181,7 +181,7 @@ class DraftDiffCommitResource(DiffCommitResource):
             return DOES_NOT_EXIST
 
         if not review_request.is_mutable_by(request.user):
-            return self._no_access_error(request.user)
+            return self.get_no_access_error(request)
 
         if review_request.repository is None:
             return INVALID_ATTRIBUTE, {

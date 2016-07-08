@@ -1922,6 +1922,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         # We shouldn't call out to patch because the parent diff is just a
         # rename.
         original_file = diffutils.get_original_file(f, None, ['ascii'])
+        self.assertTrue(repository.get_file.spy.called)
         self.assertEqual(original_file, b'Foo\n')
         self.assertFalse(diffutils.patch.spy.called)
 
