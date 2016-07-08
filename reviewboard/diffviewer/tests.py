@@ -4016,6 +4016,52 @@ class DiffUtilsTests(TestCase):
                 'chunk_range': (chunks[0], chunks[0]),
             }))
 
+    def test_get_displayed_diff_line_ranges_with_fake_equal_orig(self):
+        """Testing get_displayed_diff_line_ranges with fake equal from
+        original side of interdiff
+        """
+        chunks = [
+            {
+                'change': 'equal',
+                'lines': [
+                    (10, '', '', [], 20, 'inserted line', [], False),
+                    # ...
+                    (50, '', '', [], 60, 'inserted line', [], False),
+                ],
+            },
+        ]
+
+        self.assertEqual(
+            get_displayed_diff_line_ranges(chunks, 20, 21),
+            (None, {
+                'display_range': (30, 31),
+                'virtual_range': (20, 21),
+                'chunk_range': (chunks[0], chunks[0]),
+            }))
+
+    def test_get_displayed_diff_line_ranges_with_fake_equal_patched(self):
+        """Testing get_displayed_diff_line_ranges with fake equal from
+        patched side of interdiff
+        """
+        chunks = [
+            {
+                'change': 'equal',
+                'lines': [
+                    (10, 20, 'deleted line', [], '', '', [], False),
+                    # ...
+                    (50, 60, 'deleted line', [], '', '', [], False),
+                ],
+            },
+        ]
+
+        self.assertEqual(
+            get_displayed_diff_line_ranges(chunks, 20, 21),
+            ({
+                'display_range': (30, 31),
+                'virtual_range': (20, 21),
+                'chunk_range': (chunks[0], chunks[0]),
+            }, None))
+
     def test_get_displayed_diff_line_ranges_with_spanning_insert_delete(self):
         """Testing get_displayed_diff_line_ranges with spanning delete and
         insert

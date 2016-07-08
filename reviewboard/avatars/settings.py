@@ -22,10 +22,6 @@ class UserProfileAvatarSettingsManager(AvatarSettingsManager):
     def avatar_service_id(self):
         """Return service ID for the user's selected avatar service.
 
-        Args:
-            user (django.contrib.auth.models.User):
-                The user whose selected avatar service's ID is to be retrieved.
-
         Returns:
             unicode:
             The avatar service ID for the user's selected avatar service, or
@@ -40,8 +36,7 @@ class UserProfileAvatarSettingsManager(AvatarSettingsManager):
         Args:
             avatar_service_id (unicode):
                 The ID of the :py:class:`avatar service
-                <djblets.avatars.services.base.AvatarService>`
-                to set.
+                <djblets.avatars.services.base.AvatarService>` to set.
         """
         self.avatar_settings[self.AVATAR_SETTINGS_SERVICE_ID_KEY] = \
             avatar_service_id
@@ -63,7 +58,7 @@ class UserProfileAvatarSettingsManager(AvatarSettingsManager):
 
         Args:
             settings (dict):
-
+                The configuration to save.
         """
         self.avatar_settings[self.AVATAR_SETTINGS_CONFIGURATION_KEY] = settings
 

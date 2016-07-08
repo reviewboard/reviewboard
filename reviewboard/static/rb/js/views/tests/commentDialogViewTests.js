@@ -516,7 +516,7 @@ suite('rb/views/CommentDialogView', function() {
         describe('Special keys', function() {
             var $textarea;
 
-            function simulateKeyPress(c, altKey, ctrlKey) {
+            function simulateKeyPress(c, altKey, ctrlKey, metaKey) {
                 var e;
 
                 $textarea.focus();
@@ -526,6 +526,7 @@ suite('rb/views/CommentDialogView', function() {
                     e.which = c;
                     e.altKey = altKey;
                     e.ctrlKey = ctrlKey;
+                    e.metaKey = metaKey;
                     $textarea.trigger(e);
                 });
             }
@@ -621,6 +622,93 @@ suite('rb/views/CommentDialogView', function() {
                             setupForRichText(false);
 
                             simulateKeyPress(13, false, true);
+                            expect(editor.save).not.toHaveBeenCalled();
+                            expect(dlg.close).not.toHaveBeenCalled();
+                        });
+                    });
+                });
+            });
+
+            describe('Command-Enter to save', function() {
+                beforeEach(function() {
+                    spyOn(editor, 'save');
+                    spyOn(dlg, 'close');
+                });
+
+                describe('With editor.canSave=true', function() {
+                    describe('Keycode 10', function() {
+                        it('If Markdown', function() {
+                            setupForRichText(true, true);
+
+                            simulateKeyPress(10, false, false, true);
+                            expect(editor.save).toHaveBeenCalled();
+                            expect(dlg.close).toHaveBeenCalled();
+                        });
+
+                        it('If plain text', function() {
+                            setupForRichText(false, true);
+
+                            simulateKeyPress(10, false, false, true);
+                            expect(editor.save).toHaveBeenCalled();
+                            expect(dlg.close).toHaveBeenCalled();
+                        });
+                    });
+
+                    describe('Keycode 13', function() {
+                        it('If Markdown', function() {
+                            setupForRichText(true, true);
+
+                            simulateKeyPress(13, false, false, true);
+                            expect(editor.save).toHaveBeenCalled();
+                            expect(dlg.close).toHaveBeenCalled();
+                        });
+
+                        it('If plain text', function() {
+                            setupForRichText(false, true);
+
+                            simulateKeyPress(13, false, false, true);
+                            expect(editor.save).toHaveBeenCalled();
+                            expect(dlg.close).toHaveBeenCalled();
+                        });
+                    });
+                });
+
+                describe('With editor.canSave=false', function() {
+                    beforeEach(function() {
+                        editor.set('canSave', false);
+                    });
+
+                    describe('Keycode 10', function() {
+                        it('If Markdown', function() {
+                            setupForRichText(true);
+
+                            simulateKeyPress(10, false, false, true);
+                            expect(editor.save).not.toHaveBeenCalled();
+                            expect(dlg.close).not.toHaveBeenCalled();
+                        });
+
+                        it('If plain text', function() {
+                            setupForRichText(false);
+
+                            simulateKeyPress(10, false, false, true);
+                            expect(editor.save).not.toHaveBeenCalled();
+                            expect(dlg.close).not.toHaveBeenCalled();
+                        });
+                    });
+
+                    describe('Keycode 13', function() {
+                        it('If Markdown', function() {
+                            setupForRichText(true);
+
+                            simulateKeyPress(13, false, false, true);
+                            expect(editor.save).not.toHaveBeenCalled();
+                            expect(dlg.close).not.toHaveBeenCalled();
+                        });
+
+                        it('If plain text', function() {
+                            setupForRichText(false);
+
+                            simulateKeyPress(13, false, false, true);
                             expect(editor.save).not.toHaveBeenCalled();
                             expect(dlg.close).not.toHaveBeenCalled();
                         });

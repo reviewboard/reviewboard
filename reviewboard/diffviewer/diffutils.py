@@ -996,8 +996,8 @@ def get_displayed_diff_line_ranges(chunks, first_vlinenum, last_vlinenum):
             break
 
         change = chunk['change']
-        valid_for_orig = (change != 'insert')
-        valid_for_patched = (change != 'delete')
+        valid_for_orig = (change != 'insert' and first_line[1])
+        valid_for_patched = (change != 'delete' and first_line[4])
 
         if valid_for_orig:
             orig_last_valid_chunk = chunk
