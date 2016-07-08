@@ -653,7 +653,7 @@ RB.TextEditorView = Backbone.View.extend({
 
         if (this.richText) {
             RB.DnDUploader.instance.registerDropTarget(
-                this.$el, gettext('Drop to add image'),
+                this.$el, gettext('Drop to add an image'),
                 this._uploadImage.bind(this));
         }
 
@@ -716,7 +716,7 @@ RB.TextEditorView = Backbone.View.extend({
      * Return whether or not a given file is an image.
      *
      * Args:
-     *     file (file):
+     *     file (File):
      *         The file to check.
      *
      * Returns:
@@ -742,7 +742,7 @@ RB.TextEditorView = Backbone.View.extend({
      * UserFileAttachment is created.
      *
      * Args:
-     *     file (file):
+     *     file (File):
      *         The image file to upload.
      */
     _uploadImage(file) {

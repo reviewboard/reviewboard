@@ -260,12 +260,46 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                                     has_file=False,
                                     orig_filename='filename.png',
                                     **kwargs):
-        """Creates a user FileAttachment for testing.
+        """Create a user FileAttachment for testing.
 
-        The FileAttachment is tied to the given User. It's populated
-        with default data that can be overridden by the caller.
+        The :py:class:`reviewboard.attachments.models.FileAttachment` is tied
+        to the given :py:class:`django.contrib.auth.models.User`. It's
+        populated with default data that can be overridden by the caller.
         Notably, by default the FileAttachment will be created without a file
-        or a local_site
+        or a local_site.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user who owns the file attachment.
+
+            caption (unicode, optional):
+                The caption for the file attachment.
+
+            with_local_site (bool, optional):
+                ``True`` if the file attachment should be associated with a
+                local site. If this is set, one of ``local_site_name`` or
+                ``local_site`` should be provided as well.
+
+            local_site_name (unicode, optional):
+                The name of the local site to associate this attachment with.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The local site to associate this attachment with.
+
+            has_file (bool, optional):
+                ``True`` if an actual file object should be included in the
+                model.
+
+            orig_filename (unicode, optional):
+                The original name of the file to set in the model.
+
+            kwargs (dict):
+                Additional keyword arguments to pass into the FileAttachment
+                constructor.
+
+        Returns:
+            reviewboard.attachments.models.FileAttachment:
+            The new file attachment instance.
         """
         return self._create_base_file_attachment(
             caption=caption,
@@ -586,10 +620,45 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                                      local_site_name=None,
                                      local_site=None,
                                      **kwargs):
-        """Creates a FileAttachment object with the given parameters.
+        """Create a FileAttachment object with the given parameters.
 
-        When creating a FileAttachment that will be associated to a review
-        request, a user and local_site should not be specified.
+        When creating a
+        :py:class:`reviewboard.attachments.models.FileAttachment` that will be
+        associated to a review request, a user and local_site should not be
+        specified.
+
+        Args:
+            caption (unicode, optional):
+                The caption for the file attachment.
+
+            orig_filename (unicode, optional):
+                The original name of the file to set in the model.
+
+            has_file (bool, optional):
+                ``True`` if an actual file object should be included in the
+                model.
+
+            user (django.contrib.auth.models.User, optonal):
+                The user who owns the file attachment.
+
+            with_local_site (bool, optional):
+                ``True`` if the file attachment should be associated with a
+                local site. If this is set, one of ``local_site_name`` or
+                ``local_site`` should be provided as well.
+
+            local_site_name (unicode, optional):
+                The name of the local site to associate this attachment with.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The local site to associate this attachment with.
+
+            kwargs (dict):
+                Additional keyword arguments to pass into the FileAttachment
+                constructor.
+
+        Returns:
+            reviewboard.attachments.models.FileAttachment:
+            The new file attachment instance.
         """
         if with_local_site:
             local_site = self.get_local_site(name=local_site_name)

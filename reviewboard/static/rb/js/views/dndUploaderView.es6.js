@@ -13,7 +13,7 @@
  *     $target (jQuery):
  *         The target element to allow file drops on.
  *
- *     dropAction (function):
+ *     callback (function):
  *         The function to call when a file is dropped.
  *
  *     dropText (string):

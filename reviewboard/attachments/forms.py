@@ -20,9 +20,10 @@ class UploadFileForm(forms.Form):
     #: The file itself.
     path = forms.FileField(required=True)
 
-    #: An optional file attachment history, used when creating a new revision
-    #: for an existing file attachment. If this is not specified, a new history
-    #: will be created.
+    #: An optional file attachment history.
+    #:
+    #: This is used when creating a new revision for an existing file
+    #: attachment. If this is not specified, a new history will be created.
     attachment_history = forms.ModelChoiceField(
         queryset=FileAttachmentHistory.objects.all(),
         required=False)
@@ -33,6 +34,12 @@ class UploadFileForm(forms.Form):
         Args:
             review_request (reviewboard.reviews.models.ReviewRequest):
                 The review request to attach the file to.
+
+            args (tuple):
+                Extra positional arguments for the form.
+
+            **kwargs (dict):
+                Extra keyword arguments for the form.
         """
         super(UploadFileForm, self).__init__(*args, **kwargs)
 
@@ -60,7 +67,7 @@ class UploadFileForm(forms.Form):
         """Create a FileAttachment based on this form.
 
         Args:
-            filediff (reviewboard.diffviewer.models.FileDiff):
+            filediff (reviewboard.diffviewer.models.FileDiff, optional):
                 The optional diff to attach this file to (for use when this
                 file represents a binary file within the diff).
 
@@ -147,7 +154,7 @@ class UploadUserFileForm(forms.Form):
             user (django.contrib.auth.models.User):
                 The user who owns this file attachment.
 
-            local_site (reviewboard.site.models.LocalSite):
+            local_site (reviewboard.site.models.LocalSite, optional):
                 The optional local site.
 
         Returns:
@@ -156,32 +163,29 @@ class UploadUserFileForm(forms.Form):
         """
         file_obj = self.files.get('path')
 
+        attachment_kwargs = {
+            'uuid': uuid4(),
+            'user': user,
+            'local_site': local_site,
+        }
+
         if file_obj:
             mimetype = get_uploaded_file_mimetype(file_obj)
             filename = get_unique_filename(file_obj.name)
 
-            attachment_kwargs = {
+            attachment_kwargs.update({
                 'caption': self.cleaned_data['caption'] or file_obj.name,
-                'uuid': uuid4(),
                 'orig_filename': os.path.basename(file_obj.name),
                 'mimetype': mimetype,
-                'user': user,
-                'local_site': local_site,
-            }
+            })
 
             file_attachment = FileAttachment(**attachment_kwargs)
             file_attachment.file.save(filename, file_obj, save=True)
         else:
-            attachment_kwargs = {
-                'caption': self.cleaned_data['caption'] or '',
-                'uuid': uuid4(),
-                'user': user,
-                'local_site': local_site,
-            }
+            attachment_kwargs['caption'] = self.cleaned_data['caption'] or ''
 
-            file_attachment = FileAttachment(**attachment_kwargs)
-
-        file_attachment.save()
+            file_attachment = FileAttachment.objects.create(
+                **attachment_kwargs)
 
         return file_attachment
 
@@ -203,12 +207,10 @@ class UploadUserFileForm(forms.Form):
             file_attachment.caption = caption
 
         if file_obj:
-            mimetype = get_uploaded_file_mimetype(file_obj)
-            filename = get_unique_filename(file_obj.name)
-
-            file_attachment.mimetype = mimetype
+            file_attachment.mimetype = get_uploaded_file_mimetype(file_obj)
             file_attachment.orig_filename = os.path.basename(file_obj.name)
-            file_attachment.file.save(filename, file_obj, save=True)
+            file_attachment.file.save(get_unique_filename(file_obj.name),
+                                      file_obj, save=True)
 
         file_attachment.save()
 
@@ -221,11 +223,11 @@ def get_unique_filename(filename):
     Create a unique filename by concatenating a UUID with the given filename.
 
     Args:
-        filename (six.text_type):
+        filename (unicode):
             The original filename.
 
     Returns:
-        six.text_type:
+        unicode:
         A new filename which is more unique.
     """
     return '%s__%s' % (uuid4(), filename)

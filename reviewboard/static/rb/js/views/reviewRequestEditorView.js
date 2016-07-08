@@ -1050,12 +1050,16 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         $el.find('img').load(this._checkResizeLayout);
     },
 
-    /*
-     * Uploads a dropped file as a file attachment.
+    /**
+     * Upload a dropped file as a file attachment.
      *
      * A temporary file attachment placeholder will appear while the
      * file attachment uploads. After the upload has finished, it will
      * be replaced with the thumbnail depicting the file attachment.
+     *
+     * Args:
+     *     file (File):
+     *         The file to upload.
      */
     _uploadFile: function(file) {
         /* Create a temporary file listing. */

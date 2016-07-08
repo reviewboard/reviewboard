@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, redirect
 
 from reviewboard.attachments.models import FileAttachment
@@ -16,24 +15,22 @@ def user_file_attachment(request, file_attachment_uuid, username,
         request (django.http.HttpRequest):
             The request.
 
-        file_attachment_uuid (six.text_type):
+        file_attachment_uuid (unicode):
             The UUID of the file attachment.
 
-        username (six.text_type):
+        username (unicode):
             The username of the user who uploaded the file.
 
-        local_site (reviewboard.site.models.LocalSite):
+        local_site (reviewboard.site.models.LocalSite, optional):
             The local site, if any.
 
     Returns:
         django.http.HttpResponseRedirect:
         The response to send back to the browser.
     """
-    user = get_object_or_404(User, username=username)
-
     file_attachment = get_object_or_404(FileAttachment,
                                         uuid=file_attachment_uuid,
-                                        user=user,
+                                        user__username=username,
                                         local_site=local_site,
                                         file__isnull=False)
 
