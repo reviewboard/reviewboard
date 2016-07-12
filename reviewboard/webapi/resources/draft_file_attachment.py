@@ -9,11 +9,11 @@ from djblets.webapi.responses import WebAPIResponsePaginated
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources import resources
-from reviewboard.webapi.resources.base_file_attachment import \
-    BaseFileAttachmentResource
+from reviewboard.webapi.resources.base_review_request_file_attachment import \
+    BaseReviewRequestFileAttachmentResource
 
 
-class DraftFileAttachmentResource(BaseFileAttachmentResource):
+class DraftFileAttachmentResource(BaseReviewRequestFileAttachmentResource):
     """Provides information on new file attachments being added to a draft of
     a review request.
 
@@ -47,13 +47,13 @@ class DraftFileAttachmentResource(BaseFileAttachmentResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @augment_method_from(BaseFileAttachmentResource)
+    @augment_method_from(BaseReviewRequestFileAttachmentResource)
     def get(self, *args, **kwargs):
         pass
 
     @webapi_check_local_site
     @webapi_login_required
-    @augment_method_from(BaseFileAttachmentResource)
+    @augment_method_from(BaseReviewRequestFileAttachmentResource)
     def delete(self, *args, **kwargs):
         """Deletes the file attachment from the draft.
 

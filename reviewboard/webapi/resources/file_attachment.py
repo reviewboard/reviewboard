@@ -5,12 +5,13 @@ from djblets.webapi.decorators import webapi_login_required
 
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources import resources
-from reviewboard.webapi.resources.base_file_attachment import \
-    BaseFileAttachmentResource
+from reviewboard.webapi.resources.base_review_request_file_attachment import \
+    BaseReviewRequestFileAttachmentResource
 
 
-class FileAttachmentResource(BaseFileAttachmentResource):
+class FileAttachmentResource(BaseReviewRequestFileAttachmentResource):
     """A resource representing a file attachment on a review request."""
+
     added_in = '1.6'
 
     model_parent_key = 'review_request'
@@ -27,7 +28,7 @@ class FileAttachmentResource(BaseFileAttachmentResource):
     def get_parent_object(self, obj):
         return obj.get_review_request()
 
-    @augment_method_from(BaseFileAttachmentResource)
+    @augment_method_from(BaseReviewRequestFileAttachmentResource)
     def get_list(self, *args, **kwargs):
         """Returns a list of file attachments on the review request.
 
@@ -36,7 +37,7 @@ class FileAttachmentResource(BaseFileAttachmentResource):
         """
         pass
 
-    @augment_method_from(BaseFileAttachmentResource)
+    @augment_method_from(BaseReviewRequestFileAttachmentResource)
     def create(self, request, *args, **kwargs):
         """Creates a new file attachment from a file attachment.
 
@@ -61,7 +62,7 @@ class FileAttachmentResource(BaseFileAttachmentResource):
         """
         pass
 
-    @augment_method_from(BaseFileAttachmentResource)
+    @augment_method_from(BaseReviewRequestFileAttachmentResource)
     def update(self, request, caption=None, *args, **kwargs):
         """Updates the file attachment's data.
 
@@ -75,7 +76,7 @@ class FileAttachmentResource(BaseFileAttachmentResource):
 
     @webapi_check_local_site
     @webapi_login_required
-    @augment_method_from(BaseFileAttachmentResource)
+    @augment_method_from(BaseReviewRequestFileAttachmentResource)
     def delete(self, *args, **kwargs):
         """Deletes the file attachment.
 

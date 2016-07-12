@@ -1,5 +1,11 @@
 suite('rb/ui/views/TextEditorView', function() {
-    var view;
+    var view,
+        file;
+
+    beforeEach(function() {
+        RB.DnDUploader.instance = null;
+        RB.DnDUploader.create();
+    });
 
     describe('Construction', function() {
         it('Initial text', function() {
@@ -408,9 +414,71 @@ suite('rb/ui/views/TextEditorView', function() {
                 expect(view.getText()).toBe('Test');
             });
         });
-    });
 
-    describe('Events', function() {
+        describe('insertLine', function() {
+            it('If plain text', function() {
+                view = new RB.TextEditorView({
+                    richText: false
+                });
+                view.show();
+                view.setText('Test');
+                view.insertLine('Test');
+
+                expect(view.getText()).toBe('Test\nTest');
+            });
+
+            it('If Markdown', function() {
+                view = new RB.TextEditorView({
+                    richText:true
+                });
+                view.show();
+                view.setText('Test');
+                view.insertLine('Test');
+
+                expect(view.getText()).toBe('Test\nTest');
+            });
+        });
+
+        describe('show', function() {
+            it('registers drop target if rich text', function() {
+                spyOn(RB.DnDUploader.instance, 'registerDropTarget');
+
+                view = new RB.TextEditorView({
+                    richText: true
+                });
+                view.show();
+
+                expect(RB.DnDUploader.instance.registerDropTarget)
+                    .toHaveBeenCalled();
+            });
+
+            it('does not register drop target if plain text', function() {
+                spyOn(RB.DnDUploader.instance, 'registerDropTarget');
+
+                view = new RB.TextEditorView({
+                    richText: false
+                });
+                view.show();
+
+                expect(RB.DnDUploader.instance.registerDropTarget)
+                    .not.toHaveBeenCalled();
+            });
+        });
+
+        describe('hide', function() {
+            it('disables drop target', function() {
+                spyOn(RB.DnDUploader.instance, 'unregisterDropTarget');
+
+                view = new RB.TextEditorView({
+                    richText: true
+                });
+                view.show();
+                view.hide();
+
+                expect(RB.DnDUploader.instance.unregisterDropTarget)
+                    .toHaveBeenCalled();
+            });
+        });
     });
 
     describe('inlineEditor options', function() {
@@ -499,6 +567,42 @@ suite('rb/ui/views/TextEditorView', function() {
 
                     expect($markdownCheckbox.prop('checked')).toBe(true);
                 });
+            });
+        });
+    });
+
+    describe('Drag and Drop', function() {
+        beforeEach(function() {
+            view = new RB.TextEditorView({
+                richText: true
+            });
+        });
+
+        describe('_isImage', function() {
+            it('correctly checks mimetype', function() {
+                file = {
+                    type: 'image/jpeg',
+                    name: 'testimage.jpg'
+                };
+
+                expect(view._isImage(file)).toBe(true);
+            });
+
+            it('checks filename extension', function() {
+                file = {
+                    name: 'testimage.jpg'
+                };
+
+                expect(view._isImage(file)).toBe(true);
+            });
+
+            it('returns false when given invalid type', function() {
+                file = {
+                    type: 'application/json',
+                    name: 'testimage.jps'
+                };
+
+                expect(view._isImage(file)).toBe(false);
             });
         });
     });

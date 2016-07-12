@@ -36,6 +36,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         resources.api_token,
         resources.archived_review_request,
         resources.muted_review_request,
+        resources.user_file_attachment,
         resources.watched,
     ]
 
