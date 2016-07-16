@@ -2078,6 +2078,140 @@ class UploadDiffCommitFormTests(SpyAgency, TestCase):
             list(commit.merge_parent_ids.values_list('commit_id', flat=True)),
             merge_parents)
 
+    def test_original_commit_ids(self):
+        """Testing creating a DiffCommit with original_commit_ids for an
+        additional diff revision
+        """
+        repository = self.create_repository(tool_name='Test')
+        self.spy_on(repository.get_file_exists,
+                    call_fake=lambda *args, **kwargs: True)
+
+        review_request = self.create_review_request(repository=repository)
+
+        diffsets = [
+            self.create_diffset(review_request),
+            self.create_diffset(review_request, draft=True, revision=2),
+        ]
+
+        self.create_diff_commit(diffsets[0], repository, 'r1', 'r0')
+        self.create_diff_commit(
+            diffsets[0], repository, 'r2', 'r1',
+            diff_contents=(
+                b'diff --git a/readme b/readme\n'
+                b'index 5b50866..27bc727 100644\n'
+                b'--- a/readme\n'
+                b'+++ b/readme\n'
+                b'@@ -1,3 +1,4 @@\n'
+                b' Hello there\n'
+                b' \n'
+                b' Oh hi!\n'
+                b'+Goodbye!\n'
+            ))
+
+        diff = SimpleUploadedFile(
+            'diff',
+            b'diff --git a/readme b/readme\n'
+            b'index d6613f5..27bc727 100644\n'
+            b'--- a/readme\n'
+            b'+++ b/readme\n'
+            b'@@ -1 +1,4 @@\n'
+            b' Hello there\n'
+            b'+\n'
+            b'+Oh hi!\n'
+            b'+Foo\n',
+            'text/x-patch')
+
+        form = UploadDiffCommitForm(
+            review_request,
+            data={
+                'author_name': 'Author name',
+                'author_email': 'author@example.com',
+                'author_date': timezone.now().strftime(DiffCommit.DATE_FORMAT),
+                'description': 'Description',
+                'commit_id': 'r3',
+                'parent_id': 'r0',
+                'commit_type': 'change',
+                'original_commit_ids': 'r1,r2',
+            },
+            files={
+                'path': diff,
+            })
+
+        self.assertTrue(form.is_valid())
+
+        commit = form.create(diffsets[1], diff)
+        self.assertSetEqual(
+            set(commit.original_commits.all()),
+            set(DiffCommit.objects.filter(diffset__id=diffsets[0].pk,
+                                          commit_id__in=('r1', 'r2'))))
+
+    def test_original_commit_ids_initial_diffset(self):
+        """Testing creating a DiffCommit with original_commit_ids for the
+        initial diff revision
+        """
+        repository = self.create_repository(tool_name='Test')
+        self.spy_on(repository.get_file_exists,
+                    call_fake=lambda *args, **kwargs: True)
+
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request,
+                                      draft=True)
+
+        diff = SimpleUploadedFile('diff', self.DEFAULT_COMMIT_FILEDIFF_DATA,
+                                  'text/x-patch')
+
+        form = UploadDiffCommitForm(
+            review_request,
+            data={
+                'author_name': 'Author name',
+                'author_email': 'author@example.com',
+                'author_date': timezone.now().strftime(DiffCommit.DATE_FORMAT),
+                'description': 'Description',
+                'commit_id': 'r1',
+                'parent_id': 'r0',
+                'commit_type': 'change',
+                'original_commit_ids': 'foo,bar,baz',
+            },
+            files={
+                'path': diff,
+            })
+
+        self.assertTrue(form.is_valid())
+        commit = form.create(diffset, diff)
+
+        self.assertQuerysetEqual(commit.original_commits.all(), [])
+
+    def test_original_commit_ids_invalid(self):
+        """Testing creating a DiffCommit with invalid original_commit_ids for
+        an additional diff revision
+        """
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository)
+        diff = SimpleUploadedFile('diff', self.DEFAULT_COMMIT_FILEDIFF_DATA,
+                                  'text/x-patch')
+
+        self.create_diffset(review_request)
+
+        form = UploadDiffCommitForm(
+            review_request,
+            data={
+                'author_name': 'Author name',
+                'author_email': 'author@example.com',
+                'author_date': timezone.now().strftime(DiffCommit.DATE_FORMAT),
+                'description': 'Description',
+                'commit_id': 'r1',
+                'parent_id': 'r0',
+                'commit_type': 'change',
+                'original_commit_ids': 'foo,bar,baz',
+            },
+            files={
+                'path': diff,
+            })
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('original_commit_ids', form.errors)
+        self.assertEqual(len(form.errors['original_commit_ids']), 3)
+
 
 class ProcessorsTests(TestCase):
     """Unit tests for diff processors."""

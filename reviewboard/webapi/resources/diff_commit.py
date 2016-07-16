@@ -46,61 +46,66 @@ class DiffCommitResource(WebAPIResource):
             'type': int,
             'description': 'The numeric ID of the commit resource.',
         },
-        'extra_data': {
-            'type': dict,
-            'description': 'Extra data as part of the commit. This can be set '
-                           'by the API or extensions.',
-        },
-        'name': {
-            'type': six.text_type,
-            'description': 'The name of the corresponding diff.',
-        },
-        'commit_id': {
-            'type': six.text_type,
-            'description': 'The ID/revision of this commit.',
-        },
-        'parent_id': {
-            'type': six.text_type,
-            'description': "The ID/revision of this commit's parent.",
-        },
-        'merge_parent_ids': {
-            'type': list,
-            'description': 'A list of merge parents of this commit.',
-        },
         'author_name': {
             'type': six.text_type,
             'description': 'The name of the author of this commit.',
-        },
-        'author_email': {
-            'type': six.text_type,
-            'description': 'The e-mail address of the author of this commit.',
         },
         'author_date': {
             'type': six.text_type,
             'description': 'The date and time this commit was authored in ISO '
                            '8601 format (YYYY-MM-DD HH:MM:SS+ZZZZ).',
         },
+        'author_email': {
+            'type': six.text_type,
+            'description': 'The e-mail address of the author of this commit.',
+        },
+        'commit_id': {
+            'type': six.text_type,
+            'description': 'The ID/revision of this commit.',
+        },
+        'commit_type': {
+            'type': ('merge', 'change'),
+            'description': 'The type of this commit.',
+        },
         'committer_name': {
             'type': six.text_type,
             'description': 'The name of the committer of this commit.',
-        },
-        'committer_email': {
-            'type': six.text_type,
-            'description': 'The e-mail address of the committer of this '
-                           'commit.',
         },
         'committer_date': {
             'type': six.text_type,
             'description': 'The date and time this commit was committed in '
                            'ISO 8601 format (YYYY-MM-DD HH:MM:SS+ZZZZ).',
         },
-        'commit_type': {
-            'type': ('merge', 'change'),
-            'description': 'The type of this commit.',
+        'committer_email': {
+            'type': six.text_type,
+            'description': 'The e-mail address of the committer of this '
+                           'commit.',
         },
         'description': {
             'type': six.text_type,
             'description': 'The commit message.',
+        },
+        'extra_data': {
+            'type': dict,
+            'description': 'Extra data as part of the commit. This can be set '
+                           'by the API or extensions.',
+        },
+        'merge_parent_ids': {
+            'type': list,
+            'description': 'A list of merge parents of this commit.',
+        },
+        'name': {
+            'type': six.text_type,
+            'description': 'The name of the corresponding diff.',
+        },
+        'original_commits': {
+            'type': 'reviewboard.webapi.resources.DiffCommitResource',
+            'description': 'The original commit(s) that this commit was '
+                           'created from.',
+        },
+        'parent_id': {
+            'type': six.text_type,
+            'description': "The ID/revision of this commit's parent.",
         },
     }
 

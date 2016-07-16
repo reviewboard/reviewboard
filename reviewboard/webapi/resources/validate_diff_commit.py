@@ -131,6 +131,15 @@ class ValidateDiffCommitResource(DiffCommitResource):
                 'description': 'The other parents of this commit if it is a '
                                'merge commit.',
             },
+            'original_commit_ids': {
+                'type': six.text_type,
+                'description': 'The original commit ID(s) of this commit. '
+                               'This should be provided when the commit is '
+                               'result of amending of squashing one or more '
+                               'commits.\n\n'
+                               'This argument is ignored when creating '
+                               'commits in the first diff revision.',
+            },
         })
     def create(self, request, diff_id, *args, **kwargs):
         """Validate a diff commit.

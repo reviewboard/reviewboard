@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import dateutil.parser
 from django import forms
 from django.core.validators import ValidationError
+from django.utils import six
 from django.utils.encoding import smart_unicode
 from django.utils.translation import ugettext_lazy as _
 
@@ -135,6 +136,7 @@ class UploadDiffCommitForm(forms.Form):
     path = forms.FileField(
         label=_('Diff'),
         help_text=_('The new diff to upload.'))
+
     parent_path = forms.FileField(
         label=_('Parent diff'),
         help_text=_('An optional diff that the main diff is based on. '
@@ -146,10 +148,12 @@ class UploadDiffCommitForm(forms.Form):
         label=_('Commit author name'),
         help_text=_('The name of the author of this commit.'),
         max_length=DiffCommit.NAME_MAX_LENGTH)
+
     author_email = forms.EmailField(
         label=_('Commit author email'),
         help_text=_('The email of the author of this commit.'),
         max_length=DiffCommit.EMAIL_MAX_LENGTH)
+
     author_date = forms.CharField(
         help_text=_('The date and time the commit was authored.'))
 
@@ -158,11 +162,13 @@ class UploadDiffCommitForm(forms.Form):
         help_text=_('The committer of this commit.'),
         max_length=DiffCommit.NAME_MAX_LENGTH,
         required=False)
+
     committer_email = forms.EmailField(
         label=_('Commiter email'),
         help_text=_('The email address of the committer.'),
         max_length=DiffCommit.EMAIL_MAX_LENGTH,
         required=False)
+
     committer_date = forms.CharField(
         help_text=_('The date and time the commit was committed.'),
         required=False)
@@ -171,28 +177,38 @@ class UploadDiffCommitForm(forms.Form):
         label=_('Description'),
         help_text=_('The description of this commit.'),
         required=False)
+
     commit_id = forms.CharField(
         label=_('Commit ID'),
         help_text=_('The ID/revision of this commit.'),
         max_length=DiffCommit.COMMIT_ID_LENGTH,
         validators=[DiffCommit.validate_commit_id])
+
     parent_id = forms.CharField(
         label=_('Parent commit ID'),
         help_text=_('The parent ID/revision of this commit.'),
         max_length=DiffCommit.COMMIT_ID_LENGTH,
         validators=[DiffCommit.validate_commit_id])
+
     merge_parent_ids = forms.CharField(
         label=_('Merge parent IDs'),
         help_text=_('The other merge parent of this commit.'),
         required=False)
+
     commit_type = forms.CharField(
         label=_('Commit type'),
         validators=[_validate_commit_type])
+
+    original_commit_ids = forms.CharField(
+        label=_('Original Commit IDs'),
+        help_text=_('The comma-separated list of commit IDs.'),
+        required=False)
 
     def __init__(self, review_request, data=None, files=None, request=None,
                  *args, **kwargs):
         super(UploadDiffCommitForm, self).__init__(data, files, request, *args,
                                                    **kwargs)
+        self.review_request = review_request
         self.repository = review_request.repository
         self.request = request
 
@@ -249,8 +265,75 @@ class UploadDiffCommitForm(forms.Form):
 
         return None
 
+    def clean_original_commit_ids(self):
+        """Clean the ``original_commit_ids`` field.
+
+        The original commit IDs field should either be empty or a list of
+        commit IDs from the previous diffset. If there is no previous diffset
+        (i.e., this commit is part of the first diffset), then this field must
+        be empty.
+
+        If the value of ``original_commit_ids`` is valid, the
+        ``orignal_commits`` field will be added to :py:attr:`cleaned_data`,
+        which will contain the corresponding
+        :py:class:`~reviewboard.diffviewer.models.DiffCommit` objects.
+        """
+        original_commit_ids = self.cleaned_data['original_commit_ids']
+        original_commits = None
+
+        if original_commit_ids:
+            original_commit_ids = set(original_commit_ids.split(','))
+
+            diffset = self.review_request.get_latest_diffset()
+
+            if diffset:
+                found_commits = {
+                    commit.commit_id: commit
+                    for commit in (
+                        diffset.diff_commits
+                        .filter(commit_id__in=original_commit_ids)
+                    )
+                }
+
+                found_commit_ids = set(six.iterkeys(found_commits))
+
+                if original_commit_ids != found_commit_ids:
+                    missing = original_commit_ids - found_commit_ids
+
+                    raise ValidationError([
+                        _('Commit ID "%s" is not a commit in the previous '
+                          'diff revision.')
+                        % commit_id
+                        for commit_id in missing
+                    ])
+
+                original_commits = list(six.itervalues(found_commits))
+
+        self.cleaned_data['original_commits'] = original_commits
+
     def create(self, diffset, diff_file, parent_diff_file=None, save=True):
-        return DiffCommit.objects.create_from_upload(
+        """Create the DiffCommit.
+
+        Args:
+            diffset (reviewboard.diffviewer.models.DiffSet):
+                The DiffSet this commit is associated with.
+
+            diff_file (django.forms.UploadedFile):
+                The diff to create the commit from.
+
+            parent_diff_file (django.forms.UploadedFile, optional):
+                The parent diff file. This can only be ``None`` for the first
+                commit in a series.
+
+            save (bool, optional):
+                Whether or not the model should actually be created. If
+                ``False``, the diff will be verified instead.
+
+        Returns:
+            reviewboard.diffviewer.models.DiffCommit:
+            The created commit.
+        """
+        commit = DiffCommit.objects.create_from_upload(
             repository=self.repository,
             diff_file=diff_file,
             parent_diff_file=parent_diff_file,
@@ -268,3 +351,8 @@ class UploadDiffCommitForm(forms.Form):
             description=self.cleaned_data['description'],
             commit_type=self.cleaned_data['commit_type'],
             save=save)
+
+        if save and self.cleaned_data['original_commits']:
+            commit.original_commits = self.cleaned_data['original_commits']
+
+        return commit

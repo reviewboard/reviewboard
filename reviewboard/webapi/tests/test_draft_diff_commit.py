@@ -103,9 +103,7 @@ class ResourceListTests(BaseWebAPITestCase, ExtraDataListMixin):
         self.compare_item(item_rsp, commit)
 
     def test_post_with_non_empty_diffset(self):
-        """Testing the POST review-requests/<id>/diffs/<revision>/commits list
-        API with a non-empty parent DiffSet
-        """
+        """Testing the POST <URL> API with a non-empty parent DiffSet"""
         repository = self.create_repository(tool_name='Test')
         review_request = self.create_review_request(repository=repository,
                                                     submitter=self.user)

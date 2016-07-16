@@ -908,6 +908,12 @@ class DiffCommit(DiffLineCountsMixin, models.Model):
     #: A timestamp used for generating HTTP caching headers.
     timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
 
+    #: The original commit IDs of this commit.
+    original_commits = models.ManyToManyField(
+        'self',
+        blank=True,
+        related_name='descendant_commits')
+
     @property
     def author_date(self):
         """Get the author date with its original timezone information."""
