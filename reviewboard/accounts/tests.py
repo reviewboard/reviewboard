@@ -10,10 +10,12 @@ from djblets.registries.errors import ItemLookupError, RegistrationError
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
-from reviewboard.accounts.backends import (AuthBackend,
+from reviewboard.accounts.backends import (AuthBackend, auth_backends,
                                            get_enabled_auth_backends,
                                            INVALID_USERNAME_CHAR_REGEX,
-                                           StandardAuthBackend)
+                                           register_auth_backend,
+                                           StandardAuthBackend,
+                                           unregister_auth_backend)
 from reviewboard.accounts.forms.pages import (AccountPageForm,
                                               ChangePasswordForm,
                                               ProfileForm)
@@ -25,6 +27,10 @@ from reviewboard.accounts.pages import (AccountPage, get_page_classes,
                                         register_account_page_class,
                                         unregister_account_page_class)
 from reviewboard.testing import TestCase
+
+
+class DummyAuthBackend(AuthBackend):
+    backend_id = 'dummy'
 
 
 class AuthBackendTests(TestCase):
@@ -86,6 +92,33 @@ class AuthBackendTests(TestCase):
         result = backend.get_user(1)
 
         self.assertIsNone(result)
+
+
+class AuthBackendRegistryTests(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(AuthBackendRegistryTests, cls).setUpClass()
+
+        auth_backends.reset()
+
+    def tearDown(self):
+        super(AuthBackendRegistryTests, self).tearDown()
+
+        auth_backends.reset()
+
+    def test_register_auth_backend(self):
+        """Testing register_auth_backend"""
+        self.assertEqual(set(auth_backends), {StandardAuthBackend})
+        register_auth_backend(DummyAuthBackend)
+
+        self.assertSetEqual(set(auth_backends),
+                            {StandardAuthBackend, DummyAuthBackend})
+
+    def test_unregister_auth_backend(self):
+        """Testing unregister_auth_backend"""
+        register_auth_backend(DummyAuthBackend)
+        unregister_auth_backend(DummyAuthBackend)
+        self.assertSetEqual(set(auth_backends), {StandardAuthBackend})
 
 
 class ReviewRequestVisitTests(TestCase):

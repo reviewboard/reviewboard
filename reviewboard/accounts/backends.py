@@ -1010,26 +1010,6 @@ class AuthBackendRegistry(EntryPointRegistry):
 
         return cls
 
-    def get(self, attr_name, attr_value):
-        """Return the requested authentication backend.
-
-        Args:
-            attr_name (unicode):
-                The attribute name to find the authentication backend by.
-
-            attr_value (object):
-                The corresponding attribute value.
-
-        Returns:
-            type:
-            Either the requested :py:class:`AuthBackend` subclass, or ``None``
-            if it could not be found.
-        """
-        try:
-            return super(AuthBackendRegistry, self).get(attr_name, attr_value)
-        except ItemLookupError:
-            return None
-
     def get_defaults(self):
         """Yield the authentication backends.
 
@@ -1088,7 +1068,7 @@ def register_auth_backend(backend_cls):
 def unregister_auth_backend(backend_cls):
     """Unregister a previously registered authentication backend."""
     try:
-        auth_backends.unregister_item(backend_cls)
+        auth_backends.unregister(backend_cls)
     except ItemLookupError as e:
         logging.error('Failed to unregister unknown authentication '
                       'backend "%s".',
