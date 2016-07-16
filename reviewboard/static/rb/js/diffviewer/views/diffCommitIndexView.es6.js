@@ -74,7 +74,7 @@ RB.DiffCommitIndexView = Backbone.View.extend({
           </td>
          <% } %>
          <td class="diff-file-icon"></td>
-         <td class="<%- sumaryClasses.join(' ') %>"
+         <td class="<%- summaryClasses.join(' ') %>"
              data-diff-commit-cid="<%- cid %>">
           <%- summary %>
          </td>
@@ -162,7 +162,7 @@ RB.DiffCommitIndexView = Backbone.View.extend({
         if (this.collection.length > 0) {
             const $tbody = $('<tbody/>');
 
-            for (let [i, diffCommit] of Array.entries(this.collection.models)) {
+            for (const [i, diffCommit] of Array.entries(this.collection.models)) {
                 const lineCounts = diffCommit.attributes.lineCounts;
                 const lastCommit = (i + 1 === itemCount);
                 const summaryClasses = ['diff-commit-summary'];
@@ -336,7 +336,7 @@ RB.DiffCommitIndexView = Backbone.View.extend({
         const $target = $(e.target);
 
         _.delay(() => {
-            if (target.is(':hover')) {
+            if ($target.is(':hover')) {
                 this._expandSummary($target)
             }
         }, 500);

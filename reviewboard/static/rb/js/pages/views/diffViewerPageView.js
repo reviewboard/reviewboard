@@ -361,23 +361,27 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             prefix;
 
         options = options || {};
-        
-        if (hasCommits) {
+
+        if (hasCommits && !this._diffCommitIndexView.isShowingInterdiff()) {
             commitRange = this._diffCommitIndexView.getSelectedRange();
-            
+
             if (commitRange.base !== undefined) {
-                cumulativeDiff = (this._diffCommitIndexView.getDistance(commitRange.base,
-                    commitRange.tip) !== 1);
-                
+                const distance = this._diffCommitIndexView.getDistance(
+                    commitRange.base, commitRange.tip);
+
+                cumulativeDiff = (distance !== 1);
+
                 if (cumulativeDiff && commitRange.base !== null) {
                     baseCommitID = commitRange.base.get('commitID');
                 }
             } else {
-                cumulativeDiff = (this
+                const tipIndex = this
                     ._diffCommitIndexView
                     .collection
                     .models
-                    .indexOf(commitRange.tip) !== 0);
+                    .indexOf(commitRange.tip);
+
+                cumulativeDiff = (tipIndex !== 0);
             }
         }
 

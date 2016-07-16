@@ -126,6 +126,6 @@ RB.DiffCommit = Backbone.Model.extend({
      *     bool: Whether or not the description and summary differ.
      */
     isSummarized() {
-        return this.get('summary') !== this.get('description');
+        return this.get('summary').trim() !== this.get('description').trim();
     }
 });
