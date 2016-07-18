@@ -388,6 +388,12 @@ def _get_profile(self):
         self._profile = Profile.objects.get(user=self)
         self._profile.user = self
 
+    # While modern versions of Review Board set this to an empty dictionary,
+    # old versions would initialize this to None. Since we don't want to litter
+    # our code with extra None checks everywhere we use it, normalize it here.
+    if self._profile.extra_data is None:
+        self._profile.extra_data = {}
+
     return self._profile
 
 
