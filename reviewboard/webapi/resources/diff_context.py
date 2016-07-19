@@ -84,8 +84,11 @@ class DiffContextResource(WebAPIResource):
         revision = request.GET.get('revision')
         interdiff_revision = request.GET.get('interdiff-revision')
 
-        send_commits = (request.GET.get('base-commit-id') is not None and
-                        request.GET.get('tip-commit-id') is not None)
+        # We do not have to send commits when either the base-commit-id or
+        # tip-commit-id arguments are specified, as the client will already
+        # have information about the commits.
+        send_commits = (request.GET.get('base-commit-id') is None and
+                        request.GET.get('tip-commit-id') is None)
 
         try:
             view = DiffViewerContextView.as_view()
