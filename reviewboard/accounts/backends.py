@@ -15,7 +15,6 @@ from django.contrib.auth import hashers
 from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.query import get_object_or_none
-from djblets.registries.errors import ItemLookupError
 from djblets.siteconfig.models import SiteConfiguration
 try:
     from ldap.filter import filter_format
@@ -1010,26 +1009,6 @@ class AuthBackendRegistry(EntryPointRegistry):
 
         return cls
 
-    def get(self, attr_name, attr_value):
-        """Return the requested authentication backend.
-
-        Args:
-            attr_name (unicode):
-                The attribute name to find the authentication backend by.
-
-            attr_value (object):
-                The corresponding attribute value.
-
-        Returns:
-            type:
-            Either the requested :py:class:`AuthBackend` subclass, or ``None``
-            if it could not be found.
-        """
-        try:
-            return super(AuthBackendRegistry, self).get(attr_name, attr_value)
-        except ItemLookupError:
-            return None
-
     def get_defaults(self):
         """Yield the authentication backends.
 
@@ -1044,6 +1023,41 @@ class AuthBackendRegistry(EntryPointRegistry):
 
         for value in super(AuthBackendRegistry, self).get_defaults():
             yield value
+
+    def unregister(self, backend_class):
+        """Unregister the requested authentication backend.
+
+        Args:
+            backend_class (type):
+                The class of the backend to unregister.
+
+        Raises:
+            djblets.registries.errors.ItemLookupError:
+                Raised when the class cannot be found.
+        """
+        self.populate()
+
+        try:
+            super(AuthBackendRegistry, self).unregister(backend_class)
+        except self.lookup_error_class as e:
+            logging.error('Failed to unregister unknown authentication '
+                          'backend "%s".',
+                          backend_class.backend_id)
+            raise e
+
+    def get_auth_backend(self, auth_backend_id):
+        """Return the requested authentication backend, if it exists.
+
+        Args:
+            auth_backend_id (unicode):
+                The unique ID of the :py:class:`AuthBackend` class.
+
+        Returns:
+            type:
+            The :py:class:`AuthBackend` subclass, or ``None`` if it is not
+            registered.
+        """
+        return self.get('auth_backend_id', auth_backend_id)
 
 
 auth_backends = AuthBackendRegistry()
@@ -1060,7 +1074,14 @@ def get_registered_auth_backends():
         type:
         The :py:class:`~reviewboard.accounts.backends.AuthBackend`
         subclasses.
+
+    .. deprecated:: 3.0
+       Iterate over :py:data:`~reviewboard.accounts.auth_backends` instead.
     """
+    warn('reviewboard.accounts.get_registered_auth_backends is deprecated. '
+         'Iterate over reviewboard.accounts.auth_backends instead.',
+         DeprecationWarning)
+
     for backend in auth_backends:
         yield backend
 
@@ -1069,7 +1090,14 @@ def get_registered_auth_backend(backend_id):
     """Return the authentication backends with the specified ID.
 
     If the authentication backend could not be found, this will return None.
+
+    .. deprecated:: 3.0
+       Use the :py:func:`~AuthBackendRegistry.get_auth_backend` method of
+       :py:data:`~reviewboard.accounts.auth_backends` instead.
     """
+    warn('reviewboard.accounts.get_registered_auth_backend is deprecated. Use'
+         'reviewboard.accounts.auth_backends.register instead.',
+         DeprecationWarning)
     return auth_backends.get('backend_id', backend_id)
 
 
@@ -1081,16 +1109,25 @@ def register_auth_backend(backend_cls):
     The backend class must have a backend_id attribute set, and can only
     be registered once. A KeyError will be thrown if attempting to register
     a second time.
+
+    .. deprecated:: 3.0
+       Use the :py:func:`~AuthBackendRegistry.register` method of
+       :py:data:`~reviewboard.accounts.auth_backends` instead.
     """
+    warn('reviewboard.accounts.register_auth_backend is deprecated. Use'
+         'reviewboard.accounts.auth_backends.register instead.',
+         DeprecationWarning)
     auth_backends.register(backend_cls)
 
 
 def unregister_auth_backend(backend_cls):
-    """Unregister a previously registered authentication backend."""
-    try:
-        auth_backends.unregister_item(backend_cls)
-    except ItemLookupError as e:
-        logging.error('Failed to unregister unknown authentication '
-                      'backend "%s".',
-                      backend_cls.backend_id)
-        raise e
+    """Unregister a previously registered authentication backend.
+
+    .. deprecated:: 3.0
+       Use the :py:func:`~AuthBackendRegistry.unregister` method of
+       :py:data:`~reviewboard.accounts.auth_backends` instead.
+    """
+    warn('reviewboard.accounts.unregister_auth_backend is deprecated. Use '
+         'reviewboard.accounts.auth_backends.unregister instead.',
+         DeprecationWarning)
+    auth_backends.unregister(backend_cls)

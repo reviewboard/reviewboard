@@ -12,7 +12,7 @@ from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
 from reviewboard import initialize
-from reviewboard.attachments.forms import UploadFileForm
+from reviewboard.attachments.forms import UploadFileForm, UploadUserFileForm
 from reviewboard.attachments.mimetypes import (MimetypeHandler,
                                                register_mimetype_handler,
                                                unregister_mimetype_handler)
@@ -21,6 +21,7 @@ from reviewboard.attachments.models import (FileAttachment,
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.core import PRE_CREATION
+from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
 
@@ -249,6 +250,106 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
                 '\u23ab</pre><pre>                                           '
                 ' \u23aa\u23a2\u239c\u2502a\xb2+b\xb3 \u239f\u23a5\u23aa'
                 '</pre><pre>  \u2200x\u2208</pre></div></div>')
+
+
+class UserFileAttachmentTests(BaseFileAttachmentTestCase):
+    fixtures = ['test_users']
+
+    def test_user_file_add_file_after_create(self):
+        """Testing user FileAttachment create without initial file and
+        adding file through update
+        """
+        user = User.objects.get(username='doc')
+
+        form = UploadUserFileForm(files={})
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create(user)
+        self.assertFalse(file_attachment.file)
+        self.assertEqual(file_attachment.user, user)
+
+        uploaded_file = self.make_uploaded_file()
+        form = UploadUserFileForm(files={
+            'path': uploaded_file,
+        })
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.update(file_attachment)
+
+        self.assertTrue(os.path.basename(file_attachment.file.name).endswith(
+            '__trophy.png'))
+        self.assertEqual(file_attachment.mimetype, 'image/png')
+
+    def test_user_file_with_upload_file(self):
+        """Testing user FileAttachment create with initial file"""
+        user = User.objects.get(username='doc')
+        uploaded_file = self.make_uploaded_file()
+
+        form = UploadUserFileForm(files={
+            'path': uploaded_file,
+        })
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create(user)
+
+        self.assertEqual(file_attachment.user, user)
+        self.assertTrue(os.path.basename(file_attachment.file.name).endswith(
+            '__trophy.png'))
+        self.assertEqual(file_attachment.mimetype, 'image/png')
+
+    @add_fixtures(['test_site'])
+    def test_user_file_local_sites(self):
+        """Testing user FileAttachment create with local site"""
+        user = User.objects.get(username='doc')
+        local_site = LocalSite.objects.get(name='local-site-1')
+
+        form = UploadUserFileForm(files={})
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create(user, local_site)
+
+        self.assertEqual(file_attachment.user, user)
+        self.assertEqual(file_attachment.local_site, local_site)
+
+    @add_fixtures(['test_site'])
+    def test_user_file_is_accessible_by(self):
+        """Testing user FileAttachment.is_accessible_by"""
+        creating_user = User.objects.get(username='doc')
+        admin_user = User.objects.get(username='admin')
+        same_site_user = User.objects.get(username='dopey')
+        different_site_user = User.objects.get(username='grumpy')
+
+        local_site = LocalSite.objects.get(name='local-site-1')
+        local_site.users.add(same_site_user)
+
+        form = UploadUserFileForm(files={})
+        self.assertTrue(form.is_valid())
+        file_attachment = form.create(creating_user, local_site)
+
+        self.assertTrue(file_attachment.is_accessible_by(admin_user))
+        self.assertTrue(file_attachment.is_accessible_by(creating_user))
+        self.assertFalse(file_attachment.is_accessible_by(same_site_user))
+        self.assertFalse(file_attachment.is_accessible_by(different_site_user))
+
+    @add_fixtures(['test_site'])
+    def test_user_file_is_mutably_by(self):
+        """Testing user FileAttachment.is_mutable_by"""
+        creating_user = User.objects.get(username='doc')
+        admin_user = User.objects.get(username='admin')
+        same_site_user = User.objects.get(username='dopey')
+        different_site_user = User.objects.get(username='grumpy')
+
+        local_site = LocalSite.objects.get(name='local-site-1')
+        local_site.users.add(same_site_user)
+
+        form = UploadUserFileForm(files={})
+        self.assertTrue(form.is_valid())
+        file_attachment = form.create(creating_user, local_site)
+
+        self.assertTrue(file_attachment.is_mutable_by(admin_user))
+        self.assertTrue(file_attachment.is_mutable_by(creating_user))
+        self.assertFalse(file_attachment.is_mutable_by(same_site_user))
+        self.assertFalse(file_attachment.is_mutable_by(different_site_user))
 
 
 class MimetypeTest(MimetypeHandler):

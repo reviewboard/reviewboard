@@ -456,9 +456,7 @@ def review_detail(request,
     draft = review_request.get_draft(request.user)
     review_request_details = draft or review_request
 
-    # Map diffset IDs to their object.
     diffsets = review_request.get_diffsets()
-    diffsets_by_id = {}
     diff_commits = DiffCommit.objects.filter(diffset__in=diffsets)
     diff_commits_by_id = defaultdict(list)
 
