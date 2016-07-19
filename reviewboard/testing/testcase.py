@@ -230,17 +230,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         The FileAttachment is tied to the given ReviewRequest. It's populated
         with default data that can be overridden by the caller.
         """
-        file_attachment = FileAttachment(
+        file_attachment = self._create_base_file_attachment(
             caption=caption,
             orig_filename=orig_filename,
-            mimetype='image/png',
             **kwargs)
-
-        filename = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
-                                'trophy.png')
-
-        with open(filename, 'r') as f:
-            file_attachment.file.save(filename, File(f), save=True)
 
         if draft:
             review_request_draft = ReviewRequestDraft.create(review_request)
@@ -258,6 +251,65 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         attachments.add(file_attachment)
 
         return file_attachment
+
+    def create_user_file_attachment(self, user,
+                                    caption='My Caption',
+                                    with_local_site=False,
+                                    local_site_name=None,
+                                    local_site=None,
+                                    has_file=False,
+                                    orig_filename='filename.png',
+                                    **kwargs):
+        """Create a user FileAttachment for testing.
+
+        The :py:class:`reviewboard.attachments.models.FileAttachment` is tied
+        to the given :py:class:`django.contrib.auth.models.User`. It's
+        populated with default data that can be overridden by the caller.
+        Notably, by default the FileAttachment will be created without a file
+        or a local_site.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user who owns the file attachment.
+
+            caption (unicode, optional):
+                The caption for the file attachment.
+
+            with_local_site (bool, optional):
+                ``True`` if the file attachment should be associated with a
+                local site. If this is set, one of ``local_site_name`` or
+                ``local_site`` should be provided as well.
+
+            local_site_name (unicode, optional):
+                The name of the local site to associate this attachment with.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The local site to associate this attachment with.
+
+            has_file (bool, optional):
+                ``True`` if an actual file object should be included in the
+                model.
+
+            orig_filename (unicode, optional):
+                The original name of the file to set in the model.
+
+            kwargs (dict):
+                Additional keyword arguments to pass into the FileAttachment
+                constructor.
+
+        Returns:
+            reviewboard.attachments.models.FileAttachment:
+            The new file attachment instance.
+        """
+        return self._create_base_file_attachment(
+            caption=caption,
+            user=user,
+            has_file=has_file,
+            orig_filename=orig_filename,
+            with_local_site=with_local_site,
+            local_site_name=local_site_name,
+            local_site=local_site,
+            **kwargs)
 
     def create_file_attachment_comment(self, review, file_attachment,
                                        text='My comment', issue_opened=False,
@@ -558,6 +610,79 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         review.screenshot_comments.add(comment)
 
         return comment
+
+    def _create_base_file_attachment(self,
+                                     caption='My Caption',
+                                     orig_filename='filename.png',
+                                     has_file=True,
+                                     user=None,
+                                     with_local_site=False,
+                                     local_site_name=None,
+                                     local_site=None,
+                                     **kwargs):
+        """Create a FileAttachment object with the given parameters.
+
+        When creating a
+        :py:class:`reviewboard.attachments.models.FileAttachment` that will be
+        associated to a review request, a user and local_site should not be
+        specified.
+
+        Args:
+            caption (unicode, optional):
+                The caption for the file attachment.
+
+            orig_filename (unicode, optional):
+                The original name of the file to set in the model.
+
+            has_file (bool, optional):
+                ``True`` if an actual file object should be included in the
+                model.
+
+            user (django.contrib.auth.models.User, optonal):
+                The user who owns the file attachment.
+
+            with_local_site (bool, optional):
+                ``True`` if the file attachment should be associated with a
+                local site. If this is set, one of ``local_site_name`` or
+                ``local_site`` should be provided as well.
+
+            local_site_name (unicode, optional):
+                The name of the local site to associate this attachment with.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The local site to associate this attachment with.
+
+            kwargs (dict):
+                Additional keyword arguments to pass into the FileAttachment
+                constructor.
+
+        Returns:
+            reviewboard.attachments.models.FileAttachment:
+            The new file attachment instance.
+        """
+        if with_local_site:
+            local_site = self.get_local_site(name=local_site_name)
+
+        file_attachment = FileAttachment(
+            caption=caption,
+            user=user,
+            uuid='test-uuid',
+            local_site=local_site,
+            **kwargs)
+
+        if has_file:
+            filename = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
+                                    'trophy.png')
+
+            file_attachment.orig_filename = orig_filename
+            file_attachment.mimetype = 'image/png'
+
+            with open(filename, 'r') as f:
+                file_attachment.file.save(filename, File(f), save=True)
+
+        file_attachment.save()
+
+        return file_attachment
 
     def create_general_comment(self, review, text='My comment',
                                issue_opened=False, extra_fields=None,

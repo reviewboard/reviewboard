@@ -2,41 +2,56 @@ from __future__ import unicode_literals
 
 from uuid import uuid4
 import os
-import subprocess
 
 from django import forms
-from django.utils import timezone
-from djblets.util.filesystem import is_exe_in_path
 
+from reviewboard.attachments.mimetypes import get_uploaded_file_mimetype
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
-from reviewboard.reviews.models import (ReviewRequestDraft,
-                                        FileAttachmentComment)
+from reviewboard.reviews.models import ReviewRequestDraft
 
 
 class UploadFileForm(forms.Form):
-    """A form that handles uploading of new files.
+    """A form that handles uploading of new files."""
 
-    A file takes a path argument and optionally a caption.
-    """
-
-    DEFAULT_MIMETYPE = 'application/octet-stream'
-    READ_BUF_SIZE = 1024
-
+    #: The caption for the file.
     caption = forms.CharField(required=False)
+
+    #: The file itself.
     path = forms.FileField(required=True)
+
+    #: An optional file attachment history.
+    #:
+    #: This is used when creating a new revision for an existing file
+    #: attachment. If this is not specified, a new history will be created.
     attachment_history = forms.ModelChoiceField(
         queryset=FileAttachmentHistory.objects.all(),
         required=False)
 
     def __init__(self, review_request, *args, **kwargs):
-        """Initialize the form."""
+        """Initialize the form.
+
+        Args:
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request to attach the file to.
+
+            args (tuple):
+                Extra positional arguments for the form.
+
+            **kwargs (dict):
+                Extra keyword arguments for the form.
+        """
         super(UploadFileForm, self).__init__(*args, **kwargs)
 
         self.review_request = review_request
 
     def clean_attachment_history(self):
-        """Validate that the specified file attachment history exists."""
+        """Validate that the specified file attachment history exists.
+
+        Returns:
+            reviewboard.attachments.models.FileAttachmentHistory:
+            The history model.
+        """
         history = self.cleaned_data['attachment_history']
 
         if (history is not None and
@@ -49,25 +64,22 @@ class UploadFileForm(forms.Form):
         return history
 
     def create(self, filediff=None):
-        """Create a FileAttachment based on this form."""
-        file = self.files['path']
-        caption = self.cleaned_data['caption'] or file.name
+        """Create a FileAttachment based on this form.
 
-        # There are several things that can go wrong with browser-provided
-        # mimetypes. In one case (bug 3427), Firefox on Linux Mint was
-        # providing a mimetype that looked like 'text/text/application/pdf',
-        # which is unparseable. IE also has a habit of setting any unknown file
-        # type to 'application/octet-stream', rather than just choosing not to
-        # provide a mimetype. In the case where what we get from the browser
-        # is obviously wrong, try to guess.
-        if (file.content_type and
-            len(file.content_type.split('/')) == 2 and
-            file.content_type != 'application/octet-stream'):
-            mimetype = file.content_type
-        else:
-            mimetype = self._guess_mimetype(file)
+        Args:
+            filediff (reviewboard.diffviewer.models.FileDiff, optional):
+                The optional diff to attach this file to (for use when this
+                file represents a binary file within the diff).
 
-        filename = '%s__%s' % (uuid4(), file.name)
+        Returns:
+            reviewboard.attachments.models.FileAttachment:
+            The new file attachment model.
+        """
+        file_obj = self.files['path']
+        caption = self.cleaned_data['caption'] or file_obj.name
+
+        mimetype = get_uploaded_file_mimetype(file_obj)
+        filename = get_unique_filename(file_obj.name)
 
         if self.cleaned_data['attachment_history'] is None:
             # This is a new file: create a new FileAttachmentHistory for it
@@ -105,7 +117,7 @@ class UploadFileForm(forms.Form):
             'attachment_revision': attachment_revision,
             'caption': '',
             'draft_caption': caption,
-            'orig_filename': os.path.basename(file.name),
+            'orig_filename': os.path.basename(file_obj.name),
             'mimetype': mimetype,
         }
 
@@ -117,7 +129,7 @@ class UploadFileForm(forms.Form):
         else:
             file_attachment = FileAttachment(**attachment_kwargs)
 
-        file_attachment.file.save(filename, file, save=True)
+        file_attachment.file.save(filename, file_obj, save=True)
 
         draft = ReviewRequestDraft.create(self.review_request)
         draft.file_attachments.add(file_attachment)
@@ -125,67 +137,97 @@ class UploadFileForm(forms.Form):
 
         return file_attachment
 
-    def _guess_mimetype(self, file):
-        """Guess the mimetype of an uploaded file.
 
-        Uploaded files don't necessarily have valid mimetypes provided,
-        so attempt to guess them when they're blank.
+class UploadUserFileForm(forms.Form):
+    """A form that handles uploading of user files."""
 
-        This only works if `file` is in the path. If it's not, or guessing
-        fails, we fall back to a mimetype of application/octet-stream.
+    #: The caption for the file.
+    caption = forms.CharField(required=False)
+
+    #: The file itself.
+    path = forms.FileField(required=False)
+
+    def create(self, user, local_site=None):
+        """Create a FileAttachment based on this form.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user who owns this file attachment.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The optional local site.
+
+        Returns:
+            reviewboard.attachments.models.FileAttachment:
+            The new file attachment model.
         """
-        if not is_exe_in_path('file'):
-            return self.DEFAULT_MIMETYPE
+        file_obj = self.files.get('path')
 
-        # The browser didn't know what this was, so we'll need to do
-        # some guess work. If we have 'file' available, use that to
-        # figure it out.
-        p = subprocess.Popen(['file', '--mime-type', '-b', '-'],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             stdin=subprocess.PIPE)
+        attachment_kwargs = {
+            'uuid': uuid4(),
+            'user': user,
+            'local_site': local_site,
+        }
 
-        # Write the content from the file until file has enough data to
-        # make a determination.
-        for chunk in file.chunks():
-            try:
-                p.stdin.write(chunk)
-            except IOError:
-                # file closed, so we hopefully have an answer.
-                break
+        if file_obj:
+            mimetype = get_uploaded_file_mimetype(file_obj)
+            filename = get_unique_filename(file_obj.name)
 
-        p.stdin.close()
-        ret = p.wait()
+            attachment_kwargs.update({
+                'caption': self.cleaned_data['caption'] or file_obj.name,
+                'orig_filename': os.path.basename(file_obj.name),
+                'mimetype': mimetype,
+            })
 
-        if ret == 0:
-            mimetype = p.stdout.read().strip()
+            file_attachment = FileAttachment(**attachment_kwargs)
+            file_attachment.file.save(filename, file_obj, save=True)
         else:
-            mimetype = None
+            attachment_kwargs['caption'] = self.cleaned_data['caption'] or ''
 
-        # Reset the read position so we can properly save this.
-        file.seek(0)
+            file_attachment = FileAttachment.objects.create(
+                **attachment_kwargs)
 
-        return mimetype or self.DEFAULT_MIMETYPE
+        return file_attachment
+
+    def update(self, file_attachment):
+        """Update an existing file attachment.
+
+        Args:
+            file_attachment (reviewboard.attachments.models.FileAttachment):
+                The file attachment to update.
+
+        Returns:
+            reviewboard.attachments.models.FileAttachment:
+            The updated file attachment.
+        """
+        caption = self.cleaned_data['caption']
+        file_obj = self.files.get('path')
+
+        if caption:
+            file_attachment.caption = caption
+
+        if file_obj:
+            file_attachment.mimetype = get_uploaded_file_mimetype(file_obj)
+            file_attachment.orig_filename = os.path.basename(file_obj.name)
+            file_attachment.file.save(get_unique_filename(file_obj.name),
+                                      file_obj, save=True)
+
+        file_attachment.save()
+
+        return file_attachment
 
 
-class CommentFileForm(forms.Form):
-    """A form that handles commenting on a file."""
+def get_unique_filename(filename):
+    """Return a unique filename.
 
-    review = forms.CharField(widget=forms.Textarea(attrs={
-        'rows': '8',
-        'cols': '70'
-    }))
+    Create a unique filename by concatenating a UUID with the given filename.
 
-    def create(self, file_attachment, review_request):
-        """Create a FileAttachmentComment based on this form."""
-        comment = FileAttachmentComment(text=self.cleaned_data['review'],
-                                        file_attachment=file_attachment)
+    Args:
+        filename (unicode):
+            The original filename.
 
-        comment.timestamp = timezone.now()
-        comment.save(save=True)
-
-        draft = ReviewRequestDraft.create(review_request)
-        draft.file_attachment_comments.add(comment)
-        draft.save()
-
-        return comment
+    Returns:
+        unicode:
+        A new filename which is more unique.
+    """
+    return '%s__%s' % (uuid4(), filename)

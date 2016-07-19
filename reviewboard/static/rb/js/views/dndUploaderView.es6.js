@@ -2,10 +2,39 @@
 
 
 /**
- * Displays an overlay over the page that accepts file drops.
+ * A model for creating drag and drop targets.
  *
- * The overlay appears as semi-transparent black, and displays a helpful
- * "Drop to Upload" message in the middle.
+ * Registering a RB.DnDDropTarget with the RB.DnDUploader will create an
+ * overlay on top of the target when files are dragged over the page. This
+ * overlay will accept dropped files and run the dropAction for each file
+ * dropped on it.
+ *
+ * Model Attributes:
+ *     $target (jQuery):
+ *         The target element to allow file drops on.
+ *
+ *     callback (function):
+ *         The function to call when a file is dropped.
+ *
+ *     dropText (string):
+ *         The string to show in the overlay.
+ */
+const DnDDropTarget = Backbone.Model.extend({
+    defaults() {
+        return {
+            $target: $(window),
+            callback: function() {},
+            dropText: gettext('Drop to upload')
+        };
+    }
+});
+
+
+/**
+ * Displays an overlay over an element that accepts file drops.
+ *
+ * The overlay appears as semi-transparent black with the dropText message in
+ * the center.
  *
  * If the user cancels the drop or moves the mouse out of the page, the
  * overlay will fade away.
@@ -14,10 +43,10 @@ const DnDDropOverlayView = Backbone.View.extend({
     className: 'dnd-overlay',
 
     events: {
-        'dragleave': '_onDragLeave',
-        'drop': '_onDrop',
+        'dragenter': '_onDragEnter',
         'dragover': '_onDragOver',
-        'mouseenter': '_onMouseEnter'
+        'dragleave': '_onDragLeave',
+        'drop': '_onDrop'
     },
 
     /**
@@ -28,17 +57,45 @@ const DnDDropOverlayView = Backbone.View.extend({
      *     This object, for chaining.
      */
     render() {
-        const $window = $(window);
-        const height = $window.height();
-        const width = $window.width();
-
-        this.$el
-            .width(width)
-            .height(height)
-            .css('line-height', height + 'px')
-            .text(gettext('Drop to Upload'));
+        this.$el.text(this.model.get('dropText'));
 
         return this;
+    },
+
+    /**
+     * Show the overlay.
+     */
+    show() {
+        const $target = this.model.get('$target');
+        $target.addClass('dnd-overlay-visible');
+
+        /*
+         * Adding the class to the target may change its visibility or size.
+         * Let that clear before trying to position/size the overlay.
+         */
+        _.defer(() => {
+            const offset = $target.offset();
+            const width = $target.outerWidth() + 'px';
+            const height = $target.outerHeight() + 'px';
+
+            this.$el
+                .css({
+                    width: width,
+                    height: height,
+                    'line-height': height,
+                    left: offset.left + 'px',
+                    top: offset.top + 'px'
+                })
+                .show();
+        });
+    },
+
+    /**
+     * Hide the overlay.
+     */
+    hide() {
+        this.model.get('$target').removeClass('dnd-overlay-visible');
+        this.$el.hide();
     },
 
     /**
@@ -57,11 +114,10 @@ const DnDDropOverlayView = Backbone.View.extend({
     /**
      * Handle drop events on the overlay.
      *
-     * If there are any files, it will emit the "filesDropped" event. Once that
-     * is done, the overlay will close.
+     * This will call the appropriate callback for all dropped files.
      *
      * Args:
-     *     e (Event):
+     *     e (DragEvent):
      *         The event that triggered the callback.
      */
     _onDrop(e) {
@@ -72,31 +128,49 @@ const DnDDropOverlayView = Backbone.View.extend({
         const files = dt && dt.files;
 
         if (files) {
-            this.trigger('filesDropped', files);
+            const callback = this.model.get('callback');
+
+            for (let file of Array.from(files)) {
+                callback(file);
+            }
         }
 
-        this.close();
+        this.trigger('closing');
     },
 
     /**
-     * Handle dragover events on the overlay.
+     * Handle dragenter events on the overlay.
      *
      * If there's files being dragged, the drop effect (usually represented
      * by a mouse cursor) will be set to indicate a copy of the files.
      *
      * Args:
-     *     e (Event):
+     *     e (DragEvent):
      *         The event that triggered the callback.
      */
-    _onDragOver(e) {
-        e.stopPropagation();
+    _onDragEnter(e) {
         e.preventDefault();
 
         const dt = e.originalEvent.dataTransfer;
 
         if (dt) {
             dt.dropEffect = 'copy';
+            this.$el.addClass('dnd-overlay-highlight');
         }
+    },
+
+    /**
+     * Handle dragover events on the overlay.
+     *
+     * This merely prevents the default action, which indicates to the
+     * underlying API that this element can be dropped on.
+     *
+     * Args:
+     *     e (DragEvent):
+     *         The event which triggered the callback.
+     */
+    _onDragOver(e) {
+        e.preventDefault();
     },
 
     /**
@@ -108,39 +182,18 @@ const DnDDropOverlayView = Backbone.View.extend({
      * The overlay is always closed on a dragleave.
      *
      * Args:
-     *     e (Event):
+     *     e (DragEvent):
      *         The event that triggered the callback.
      */
     _onDragLeave(e) {
-        e.stopPropagation();
         e.preventDefault();
 
         const dt = e.originalEvent.dataTransfer;
 
         if (dt) {
-            dt.dropEffect = "none";
+            dt.dropEffect = 'none';
+            this.$el.removeClass('dnd-overlay-highlight');
         }
-
-        this.close();
-    },
-
-    /**
-     * Handles mouseenter events on the overlay.
-     *
-     * If we get a mouse enter, then the user has moved the mouse over
-     * the DnD overlay without there being any drag-and-drop going on.
-     * This is likely due to the broken Firefox 4+ behavior where
-     * dragleave events when leaving windows aren't firing.
-     *
-     * Args:
-     *     e (Event):
-     *         The event that triggered the callback.
-     */
-    _onMouseEnter(e) {
-        e.stopPropagation();
-        e.preventDefault();
-
-        this.close();
     }
 });
 
@@ -153,66 +206,152 @@ const DnDDropOverlayView = Backbone.View.extend({
  * drag-and-drop, which is available in most modern browsers.
  *
  * The moment the DnDUploader is created, it will begin listening for
- * DnD-related events on the document.
+ * DnD-related events on the window.
  */
 RB.DnDUploader = Backbone.View.extend({
     /**
      * Initialize the view.
      */
     initialize() {
-        this._dropOverlay = null;
+        this._dropTargets = new Backbone.Collection({
+            model: DnDDropTarget
+        });
+        this._dropOverlays = [];
+        this._hideOverlayTimeout = null;
+        this._overlaysVisible = false;
+        this._overlaysHiding = false;
 
-        $(document.body).on('dragenter', this._onDragEnter.bind(this));
+        _.bindAll(this, '_showOverlays', '_hideOverlays');
+
+        $(window)
+            .on('dragstart dragenter dragover', this._showOverlays)
+            .on('dragend dragleave', this._hideOverlays);
     },
 
     /**
-     * Handle dragenter events on the document.
-     *
-     * An overlay will be displayed to give the user a place to drop
-     * the files onto. The overlay will report any files dropped, if
-     * any.
+     * Register a new drop target.
      *
      * Args:
-     *     e (Event):
-     *         The event that triggered the callback.
+     *     $target (jQuery):
+     *         The target element for drops.
+     *
+     *     dropText (string):
+     *         The text to show on the overlay.
+     *
+     *     callback (function):
+     *         The function to call when a file is dropped. This takes a single
+     *         file argument, and will be called for each file that is dropped
+     *         on the target.
      */
-    _onDragEnter(e) {
-        if (!this._dropOverlay &&
-            Array.from(e.originalEvent.dataTransfer.types).includes('Files')) {
-            this._dropOverlay = new DnDDropOverlayView();
-            this._dropOverlay.render().$el.appendTo(document.body);
-            this.listenTo(this._dropOverlay, 'closed',
-                          () => {
-                              this._dropOverlay = null;
-                          });
-            this.listenTo(
-                this._dropOverlay,
-                'filesDropped',
-                files => {
-                    for (let file of Array.from(files)) {
-                        this._uploadFile(file);
-                    }
-                });
+    registerDropTarget($target, dropText, callback) {
+        if (this._dropTargets.findWhere({ $target }) === undefined) {
+            const target = new DnDDropTarget({
+                $target,
+                dropText,
+                callback
+            });
+            this._dropTargets.add(target);
+
+            const overlay = new DnDDropOverlayView({
+                model: target
+            });
+
+            overlay.render().$el
+                .hide()
+                .appendTo(document.body);
+            this.listenTo(overlay, 'closing', this._hideOverlays);
+
+            this._dropOverlays.push(overlay);
+        } else {
+            console.error('Drop target was already registered!', $target);
         }
     },
 
     /**
-     * Upload a dropped file as a file attachment.
-     *
-     * A temporary file attachment placeholder will appear while the
-     * file attachment uploads. After the upload has finished, it will
-     * be replaced with the thumbnail depicting the file attachment.
+     * Unregister an existing drop target.
      *
      * Args:
-     *     file (file):
-     *         The file to upload.
+     *     $target (jQuery):
+     *         The target element for drops.
      */
-    _uploadFile(file) {
-        const editor = this.options.reviewRequestEditor;
-        const fileAttachment = editor.createFileAttachment();
+    unregisterDropTarget($target) {
+        const target = this._dropTargets.findWhere({ $target: $target });
+        const overlayIx = this._dropOverlays.findIndex(
+            overlay => (overlay.model === target));
 
-        fileAttachment.set('file', file);
-        fileAttachment.save();
+        if (overlayIx !== -1) {
+            this._dropOverlays[overlayIx].remove();
+            this._dropOverlays.splice(overlayIx, 1);
+        }
+
+        if (target !== undefined) {
+            this._dropTargets.remove(target);
+        }
+    },
+
+    /**
+     * Show the drop overlays.
+     *
+     * An overlay will be displayed over all the registered drop targets to
+     * give the user a place to drop the files onto. The overlay will report
+     * any files dropped.
+     *
+     * Args:
+     *     e (DragEvent):
+     *         The event that triggered the callback.
+     */
+    _showOverlays(e) {
+        if (Array.from(e.originalEvent.dataTransfer.types).includes('Files')) {
+            this._overlaysHiding = false;
+
+            if (!this._overlaysVisible) {
+                this._overlaysVisible = true;
+                this._dropOverlays.forEach(overlay => overlay.show());
+            }
+        }
+    },
+
+    /**
+     * Hide the drop overlays.
+     */
+    _hideOverlays() {
+        /*
+         * This will get called many times because the event bubbles up from
+         * all the children of the document. We only want to hide the overlays
+         * when the drag exits the window.
+         *
+         * In order to make this work reliably, we only hide the overlays after
+         * a timeout (to make sure there's not a dragenter event coming
+         * immediately after this).
+         */
+        if (this._hideOverlayTimeout) {
+            clearTimeout(this._hideOverlayTimeout);
+        }
+
+        this._overlaysHiding = true;
+        this._hideOverlayTimeout = setTimeout(() => {
+            if (this._overlaysHiding) {
+                this._overlaysVisible = false;
+                this._dropOverlays.forEach(overlay => overlay.hide());
+            }
+        }, 200);
+    }
+}, {
+    instance: null,
+
+    /**
+     * Create the DnDUploader instance.
+     *
+     * Returns:
+     *     RB.DnDUploader:
+     *     The new instance.
+     */
+    create() {
+        console.assert(RB.DnDUploader.instance === null,
+                       'DnDUploader.create may only be called once');
+
+        RB.DnDUploader.instance = new RB.DnDUploader();
+        return RB.DnDUploader.instance;
     }
 });
 

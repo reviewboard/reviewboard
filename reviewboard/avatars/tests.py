@@ -12,31 +12,12 @@ from djblets.siteconfig.models import SiteConfiguration
 from reviewboard.accounts.models import Profile
 from reviewboard.avatars import avatar_services
 from reviewboard.avatars.registry import AvatarServiceRegistry
+from reviewboard.avatars.testcase import AvatarServicesTestMixin
 from reviewboard.testing.testcase import TestCase
 
 
-class AvatarServiceRegistryTests(TestCase):
+class AvatarServiceRegistryTests(AvatarServicesTestMixin, TestCase):
     """Tests for reviewboard.avatars."""
-
-    @classmethod
-    def setUpClass(cls):
-        siteconfig = SiteConfiguration.objects.get_current()
-        cls._original_settings = siteconfig.settings.copy()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(AvatarServiceRegistryTests, cls).tearDownClass()
-        cls._reset_siteconfig()
-
-    def setUp(self):
-        super(AvatarServiceRegistryTests, self).setUp()
-        self._reset_siteconfig()
-
-    @classmethod
-    def _reset_siteconfig(cls):
-        siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.settings = cls._original_settings.copy()
-        siteconfig.save(update_fields=('settings',))
 
     def test_migrate_enabled(self):
         """Testing AvatarServiceRegistry migrates avatar settings for enabled

@@ -115,6 +115,43 @@ const CodeMirrorWrapper = Backbone.View.extend({
     },
 
     /**
+     * Insert a new line of text into the editor.
+     *
+     * If the editor has focus, insert at the cursor position. Otherwise,
+     * insert at the end.
+     *
+     * Args:
+     *     text (string):
+     *         The text to insert.
+     */
+    insertLine(text) {
+        let position;
+
+        if (this._codeMirror.hasFocus()) {
+            const cursor = this._codeMirror.getCursor();
+            const line = this._codeMirror.getLine(cursor.line);
+            position = CodeMirror.Pos(cursor.line, line.length - 1);
+
+            if (line.length !== 0) {
+                /*
+                 * If the current line has some content, insert the new text on
+                 * the line after it.
+                 */
+                text = '\n' + text;
+            }
+
+            if (!text.endsWith('\n')) {
+                text += '\n';
+            }
+        } else {
+            position = CodeMirror.Pos(this._codeMirror.lastLine());
+            text = '\n' + text;
+        }
+
+        this._codeMirror.replaceRange(text, position);
+    },
+
+    /**
      * Return the full client height of the content.
      *
      * Returns:
@@ -243,6 +280,32 @@ const TextAreaWrapper = Backbone.View.extend({
     },
 
     /**
+     * Insert a new line of text into the editor.
+     *
+     * Args:
+     *     text (string):
+     *         The text to insert.
+     */
+    insertLine(text) {
+        if (this.$el.is(':focus')) {
+            const value = this.el.value;
+            const cursor = this.el.selectionEnd;
+            const endOfLine = value.indexOf('\n', cursor);
+
+            if (endOfLine === -1) {
+                // The cursor is on the last line.
+                this.el.value += '\n' + text;
+            } else {
+                // The cursor is in the middle of the text.
+                this.el.value = (value.slice(0, endOfLine + 1) + '\n' + text +
+                                 '\n' + value.slice(endOfLine));
+            }
+        } else {
+            this.el.value += '\n' + text;
+        }
+    },
+
+    /**
      * Return the full client height of the content.
      *
      * Returns:
@@ -306,7 +369,8 @@ RB.TextEditorView = Backbone.View.extend({
     },
 
     events: {
-        'focus': 'focus'
+        'focus': 'focus',
+        'remove': '_onRemove'
     },
 
     /**
@@ -328,11 +392,13 @@ RB.TextEditorView = Backbone.View.extend({
      *         rich text should be bound to an attribute on another model.
      */
     initialize(options={}) {
+        this._files = [];
         this._editor = null;
         this._prevClientHeight = null;
 
         this.options = _.defaults(options, this.defaultOptions);
         this.richText = !!this.options.richText;
+        this._dropTarget = null;
         this._value = this.options.text || '';
         this._richTextDirty = false;
 
@@ -508,6 +574,25 @@ RB.TextEditorView = Backbone.View.extend({
     },
 
     /**
+     * Insert a new line of text into the editor.
+     *
+     * Args:
+     *     text (string):
+     *         The text to insert.
+     */
+    insertLine(text) {
+        if (this._editor) {
+            this._editor.insertLine(text);
+        } else {
+            if (this._value.endsWith('\n')) {
+                this._value += text + '\n';
+            } else {
+                this._value += '\n' + text;
+            }
+        }
+    },
+
+    /**
      * Set the size of the editor.
      *
      * Args:
@@ -549,6 +634,15 @@ RB.TextEditorView = Backbone.View.extend({
     },
 
     /**
+     * Handler for the remove event.
+     *
+     * Disables the drag-and-drop overlay.
+     */
+    _onRemove() {
+        RB.DnDUploader.instance.unregisterDropTarget(this.$el);
+    },
+
+    /**
      * Show the actual editor wrapper.
      *
      * Any stored text will be transferred to the editor, and the editor
@@ -556,6 +650,12 @@ RB.TextEditorView = Backbone.View.extend({
      */
     _showEditor() {
         const EditorCls = this.richText ? CodeMirrorWrapper : TextAreaWrapper;
+
+        if (this.richText) {
+            RB.DnDUploader.instance.registerDropTarget(
+                this.$el, gettext('Drop to add an image'),
+                this._uploadImage.bind(this));
+        }
 
         this._editor = new EditorCls({
             parentEl: this.el,
@@ -600,6 +700,8 @@ RB.TextEditorView = Backbone.View.extend({
      * The last value from the editor will be stored for later retrieval.
      */
     _hideEditor() {
+        RB.DnDUploader.instance.unregisterDropTarget(this.$el);
+
         if (this._editor) {
             this._value = this._editor.getText();
             this._richTextDirty = false;
@@ -608,6 +710,63 @@ RB.TextEditorView = Backbone.View.extend({
 
             this.$el.empty();
         }
+    },
+
+    /**
+     * Return whether or not a given file is an image.
+     *
+     * Args:
+     *     file (File):
+     *         The file to check.
+     *
+     * Returns:
+     *     boolean:
+     *     True if the given file appears to be an image.
+     */
+    _isImage(file) {
+        if (file.type) {
+            return (file.type.split('/')[0] === 'image');
+        }
+
+        const filename = file.name.toLowerCase();
+        return ['.jpeg', '.jpg', '.png', '.gif', '.bmp', '.tiff', '.svg'].some(
+            extension => filename.endsWith(extension));
+    },
+
+    /**
+     * Upload the image and append an image link to the editor's contents.
+     *
+     * Creates an instance of UserFileAttachment and saves it without the file,
+     * then updates the model with the file. This allows the file to be
+     * uploaded asynchronously after we get the link that is generated when the
+     * UserFileAttachment is created.
+     *
+     * Args:
+     *     file (File):
+     *         The image file to upload.
+     */
+    _uploadImage(file) {
+        if (!this._isImage(file)) {
+            return;
+        }
+
+        const userFileAttachment = new RB.UserFileAttachment({
+            caption: file.name,
+            userName: RB.UserSession.instance.get('username')
+        });
+
+        userFileAttachment.save({
+            success: () => {
+                this.insertLine(
+                    `![Image](${userFileAttachment.get('downloadURL')})`);
+
+                userFileAttachment.set('file', file);
+                userFileAttachment.save({
+                    error: (model, response) => alert(response.errorText)
+                });
+            },
+            error: (model, response) => alert(response.errorText)
+        });
     }
 }, {
     /**

@@ -82,21 +82,34 @@ if settings.DEBUG and not settings.PRODUCTION:
             name='js-extensions-tests'),
     )
 
+user_urlpatterns = patterns(
+    '',
+
+    # User info box
+    url(r'^infobox/$',
+        'reviewboard.reviews.views.user_infobox', name='user-infobox'),
+
+    # User file attachments
+    url(r'file-attachments/(?P<file_attachment_uuid>[a-zA-Z0-9\-]+)/$',
+        'reviewboard.attachments.views.user_file_attachment',
+        name='user-file-attachment'),
+)
+
 localsite_urlpatterns = patterns(
     '',
 
-    url(r'^$', 'reviewboard.reviews.views.root', name="root"),
+    url(r'^$', 'reviewboard.reviews.views.root', name='root'),
 
     (r'^api/', include(resources.root.get_url_patterns())),
     (r'^r/', include('reviewboard.reviews.urls')),
 
     # Support
     url(r'^support/$',
-        'reviewboard.admin.views.support_redirect', name="support"),
+        'reviewboard.admin.views.support_redirect', name='support'),
 
-    # User info box
-    url(r"^users/(?P<username>[A-Za-z0-9@_\-\.'\+]+)/infobox/$",
-        'reviewboard.reviews.views.user_infobox', name="user-infobox"),
+    # Users
+    (r'^users/(?P<username>[A-Za-z0-9@_\-\.\'\+]+)/',
+     include(user_urlpatterns)),
 
     # Search
     url(r'^search/', include(search_urlpatterns)),

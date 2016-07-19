@@ -7,11 +7,11 @@ from djblets.webapi.decorators import webapi_request_fields
 
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources import resources
-from reviewboard.webapi.resources.base_file_attachment import \
-    BaseFileAttachmentResource
+from reviewboard.webapi.resources.base_review_request_file_attachment import \
+    BaseReviewRequestFileAttachmentResource
 
 
-class DiffFileAttachmentResource(BaseFileAttachmentResource):
+class DiffFileAttachmentResource(BaseReviewRequestFileAttachmentResource):
     """Provides information on file attachments associated with files in diffs.
 
     The list of file attachments are tied to files either committed to the
@@ -47,7 +47,7 @@ class DiffFileAttachmentResource(BaseFileAttachmentResource):
                            'this file is just part of a proposed change, and '
                            'not necessarily committed in the repository.',
         },
-    }, **BaseFileAttachmentResource.fields)
+    }, **BaseReviewRequestFileAttachmentResource.fields)
 
     def serialize_repository_file_path_field(self, attachment, **kwargs):
         if attachment.added_in_filediff_id:
@@ -116,10 +116,11 @@ class DiffFileAttachmentResource(BaseFileAttachmentResource):
                     'Filter file attachments with the given mimetype.'
                 ),
             },
-        }, **BaseFileAttachmentResource.get_list.optional_fields),
-        required=BaseFileAttachmentResource.get_list.required_fields
+        }, **BaseReviewRequestFileAttachmentResource.get_list.optional_fields),
+        required=BaseReviewRequestFileAttachmentResource.get_list
+                                                        .required_fields
     )
-    @augment_method_from(BaseFileAttachmentResource)
+    @augment_method_from(BaseReviewRequestFileAttachmentResource)
     def get_list(self, request, *args, **kwargs):
         """Returns the list of file attachments associated with diffs.
 

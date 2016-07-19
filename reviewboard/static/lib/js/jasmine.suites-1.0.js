@@ -1,5 +1,5 @@
 /*
- * Namespaced test suites for Jasmine.
+ * Namespaced test suites for Jasmine 1.4+.
  *
  * Copyright (C) 2014 Beanbag, Inc.
  *
@@ -62,7 +62,7 @@ SuiteInfo.prototype._addSpecs = function() {
     if (!this.specs) {
         for (key in this.children) {
             if (this.children.hasOwnProperty(key)) {
-                this.children[key].describe();
+                this.children[key].describe(this);
             }
         }
     } else if (!this._added) {
@@ -79,26 +79,51 @@ SuiteInfo.prototype._addSpecs = function() {
  *
  * The result will be a jasmine.Suite object.
  */
-SuiteInfo.prototype.describe = function() {
-    var self = this,
-        env = jasmine.getEnv(),
-        oldCurrentSuite;
+SuiteInfo.prototype.describe = function(parentSuiteInfo) {
+    var self = this;
 
     if (self._added) {
-        oldCurrentSuite = env.currentSuite;
-
-        env.currentSuite = self._suiteObj;
         self._addSpecs();
-        env.currentSuite = oldCurrentSuite;
     } else {
         describe(self.description, function() {
-            self._suiteObj = env.currentSuite;
+            var parentSuiteObj,
+                oldParentSuiteObj,
+                i;
+
+            self._suiteObj = this;
+
+            if (parentSuiteInfo) {
+                parentSuiteObj = parentSuiteInfo._suiteObj;
+                oldParentSuiteObj = self._suiteObj.parentSuite;
+
+                if (oldParentSuiteObj !== parentSuiteObj) {
+                    /*
+                     * Remove the suite object from the old parent. This could
+                     * potentially be slow, but in reality it's not going to
+                     * have a large search space for most suites.
+                     */
+                    i = oldParentSuiteObj.children.indexOf(self._suiteObj);
+
+                    if (i !== -1) {
+                        oldParentSuiteObj.children.splice(i, 1);
+                    }
+
+                    /* Add the suite to the new parent and fix relations. */
+                    parentSuiteObj.addChild(self._suiteObj);
+                    self._suiteObj.parentSuite = parentSuiteObj;
+
+                    /* Re-generate the full name of the suite. */
+                    self._suiteObj.result.fullName =
+                        self._suiteObj.getFullName();
+                }
+            }
+
             self._addSpecs();
             self._added = true;
         });
     }
 
-    return self.suiteObj;
+    return self._suiteObj;
 };
 
 

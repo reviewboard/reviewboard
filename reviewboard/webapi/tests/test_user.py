@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import Permission, User
 from django.utils import six
+from djblets.avatars.services.gravatar import GravatarService
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.testing.decorators import webapi_test_template
 from kgb import SpyAgency
@@ -9,6 +10,8 @@ from kgb import SpyAgency
 from reviewboard.accounts.backends import (AuthBackend,
                                            get_enabled_auth_backends)
 from reviewboard.accounts.models import Profile
+from reviewboard.avatars import avatar_services
+from reviewboard.avatars.testcase import AvatarServicesTestMixin
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -243,11 +246,17 @@ class ResourceListTests(SpyAgency, BaseWebAPITestCase):
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(BaseWebAPITestCase):
+class ResourceItemTests(AvatarServicesTestMixin, BaseWebAPITestCase):
     """Testing the UserResource item API tests."""
     fixtures = ['test_users']
     sample_api_url = 'users/<username>/'
     resource = resources.user
+
+    def setUp(self):
+        super(ResourceItemTests, self).setUp()
+
+        avatar_services.enable_service(GravatarService.avatar_service_id,
+                                       save=False)
 
     def setup_http_not_allowed_item_test(self, user):
         return get_user_item_url(user.username)

@@ -129,6 +129,8 @@ RB.ReviewablePageView = Backbone.View.extend({
         console.assert(this.options.reviewRequestData);
         console.assert(this.options.editorData);
 
+        RB.DnDUploader.create();
+
         this.reviewRequest = new RB.ReviewRequest(
             this.options.reviewRequestData,
             {

@@ -650,6 +650,14 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         e.preventDefault();
         e.stopPropagation();
 
+        /*
+         * Replace the current contents ("This file was deleted ... ") with a
+         * spinner. This will be automatically replaced with the file contents
+         * once loaded from the server.
+         */
+        $(e.target).parent()
+            .html('<span class="fa fa-spinner fa-pulse"></span>');
+
         this.trigger('showDeletedClicked');
     }
 });
