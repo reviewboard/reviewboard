@@ -40,6 +40,7 @@ PIPELINE_JAVASCRIPT = dict({
             'lib/js/jasmine-html-2.4.1.js',
             'lib/js/jasmine-boot-2.4.1.js',
             'lib/js/jasmine.suites-1.0.js',
+            'lib/js/jasmine.hide-filtered-1.0.js',
         ),
         'output_filename': 'rb/js/js-test-libs.min.js',
     },

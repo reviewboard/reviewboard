@@ -684,10 +684,10 @@ in the class docs. For example, this looks like:
     * Some additional details that may be useful.
     *
     * Model Attributes:
-    *     enabled (Boolean):
+    *     enabled (boolean):
     *         Whether the object is enabled. Defaults to ``true``.
     *
-    *     text (String):
+    *     text (string):
     *         The text used for display. Defaults to an empty string.
     */
    MyModel = Backbone.Model.extend({
@@ -730,23 +730,23 @@ For example:
     * Some additional details that may be useful.
     *
     * Args:
-    *     someValue (Boolean):
+    *     someValue (boolean):
     *         Some boolean value that this function cares about.
     *
-    *     options (Object):
+    *     options (object):
     *         Option arguments controlling the behavior of the function.
     *
-    *     context (Object):
+    *     context (object):
     *         The context passed to any callback functions.
     *
     * Option Args:
-    *     error (Function):
+    *     error (function):
     *         An error callback called when the operation fails.
     *
-    *     identifier (String):
+    *     identifier (string):
     *         An identifier for this operation.
     *
-    *     success (Function):
+    *     success (function):
     *         A success callback called when the operation is completed.
     */
    function myFunction(someValue, options, context) {
@@ -793,7 +793,7 @@ Here's how you might document a file:
     * Some additional details that might be useful.
     *
     * Model Attributes:
-    *     text (String):
+    *     text (string):
     *         The text used for display.
     */
    MyModel = Backbone.Model.extend({
