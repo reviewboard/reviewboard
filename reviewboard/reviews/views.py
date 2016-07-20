@@ -455,7 +455,12 @@ def review_detail(request,
     draft = review_request.get_draft(request.user)
     review_request_details = draft or review_request
 
+    # Map diffset IDs to their object.
     diffsets = review_request.get_diffsets()
+    diffsets_by_id = {}
+
+    for diffset in diffsets:
+        diffsets_by_id[diffset.pk] = diffset
 
     # Find out if we can bail early. Generate an ETag for this.
     last_activity_time, updated_object = \
