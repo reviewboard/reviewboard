@@ -56,6 +56,16 @@ class TestCase(DjbletsTestCase):
         b'+Hello, everybody!\n'
     )
 
+    DEFAULT_GIT_FILEDIFF_DATA = (
+        b'diff --git a/README b/README\n'
+        b'index 94bdd3e..197009f 100644\n'
+        b'--- README\n'
+        b'+++ README\n'
+        b'@ -1,1 +1,1 @@\n'
+        b'-blah blah\n'
+        b'+blah!\n'
+    )
+
     def setUp(self):
         super(TestCase, self).setUp()
 

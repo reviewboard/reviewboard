@@ -971,13 +971,14 @@ class FileDiffTests(TestCase):
 
         diff = (
             b'diff --git a/README b/README\n'
-            b'index d6613f5..5b50866 100644\n'
+            b'index 3d2b777..48272a3 100644\n'
             b'--- README\n'
             b'+++ README\n'
             b'@ -1,1 +1,2 @@\n'
             b'-blah blah\n'
             b'+blah!\n'
-            b'+blah!!\n')
+            b'+blah!!\n'
+        )
 
         repository = self.create_repository(tool_name='Test')
         diffset = DiffSet.objects.create(name='test',
@@ -1043,17 +1044,9 @@ class FileDiffMigrationTests(TestCase):
     def setUp(self):
         super(FileDiffMigrationTests, self).setUp()
 
-        self.diff = (
-            b'diff --git a/README b/README\n'
-            b'index d6613f5..5b50866 100644\n'
-            b'--- README\n'
-            b'+++ README\n'
-            b'@ -1,1 +1,1 @@\n'
-            b'-blah blah\n'
-            b'+blah!\n')
         self.parent_diff = (
             b'diff --git a/README b/README\n'
-            b'index d6613f5..5b50866 100644\n'
+            b'index 94bdd3e..3d2b777 100644\n'
             b'--- README\n'
             b'+++ README\n'
             b'@ -1,1 +1,1 @@\n'
@@ -1072,7 +1065,7 @@ class FileDiffMigrationTests(TestCase):
 
     def test_migration_by_diff(self):
         """Testing FileDiffData migration accessing FileDiff.diff"""
-        self.filediff.diff64 = self.diff
+        self.filediff.diff64 = self.DEFAULT_GIT_FILEDIFF_DATA
 
         self.assertEqual(self.filediff.diff_hash, None)
         self.assertEqual(self.filediff.parent_diff_hash, None)
@@ -1083,16 +1076,17 @@ class FileDiffMigrationTests(TestCase):
         self.assertEqual(self.filediff.parent_diff_hash, None)
         self.assertNotEqual(self.filediff.diff_hash, None)
 
-        self.assertEqual(diff, self.diff)
+        self.assertEqual(diff, self.DEFAULT_GIT_FILEDIFF_DATA)
         self.assertEqual(self.filediff.diff64, '')
-        self.assertEqual(self.filediff.diff_hash.binary, self.diff)
+        self.assertEqual(self.filediff.diff_hash.binary,
+                         self.DEFAULT_GIT_FILEDIFF_DATA)
         self.assertEqual(self.filediff.diff, diff)
         self.assertEqual(self.filediff.parent_diff, None)
         self.assertEqual(self.filediff.parent_diff_hash, None)
 
     def test_migration_by_parent_diff(self):
         """Testing FileDiffData migration accessing FileDiff.parent_diff"""
-        self.filediff.diff64 = self.diff
+        self.filediff.diff64 = self.DEFAULT_GIT_FILEDIFF_DATA
         self.filediff.parent_diff64 = self.parent_diff
 
         self.assertEqual(self.filediff.parent_diff_hash, None)
@@ -1110,7 +1104,7 @@ class FileDiffMigrationTests(TestCase):
 
     def test_migration_by_delete_count(self):
         """Testing FileDiffData migration accessing FileDiff.delete_count"""
-        self.filediff.diff64 = self.diff
+        self.filediff.diff64 = self.DEFAULT_GIT_FILEDIFF_DATA
 
         self.assertEqual(self.filediff.diff_hash, None)
 
@@ -1123,7 +1117,7 @@ class FileDiffMigrationTests(TestCase):
 
     def test_migration_by_insert_count(self):
         """Testing FileDiffData migration accessing FileDiff.insert_count"""
-        self.filediff.diff64 = self.diff
+        self.filediff.diff64 = self.DEFAULT_GIT_FILEDIFF_DATA
 
         self.assertEqual(self.filediff.diff_hash, None)
 
@@ -1136,7 +1130,7 @@ class FileDiffMigrationTests(TestCase):
 
     def test_migration_by_set_line_counts(self):
         """Testing FileDiffData migration calling FileDiff.set_line_counts"""
-        self.filediff.diff64 = self.diff
+        self.filediff.diff64 = self.DEFAULT_GIT_FILEDIFF_DATA
 
         self.assertEqual(self.filediff.diff_hash, None)
 
@@ -1280,23 +1274,14 @@ class DiffSetManagerTests(SpyAgency, TestCase):
 
     def test_creating_with_diff_data(self):
         """Test creating a DiffSet from diff file data"""
-        diff = (
-            b'diff --git a/README b/README\n'
-            b'index d6613f5..5b50866 100644\n'
-            b'--- README\n'
-            b'+++ README\n'
-            b'@ -1,1 +1,1 @@\n'
-            b'-blah..\n'
-            b'+blah blah\n'
-        )
-
         repository = self.create_repository(tool_name='Test')
 
         self.spy_on(repository.get_file_exists,
                     call_fake=lambda *args, **kwargs: True)
 
         diffset = DiffSet.objects.create_from_data(
-            repository, 'diff', diff, None, None, None, '/', None)
+            repository, 'diff', self.DEFAULT_GIT_FILEDIFF_DATA, None, None,
+            None, '/', None)
 
         self.assertEqual(diffset.files.count(), 1)
 
@@ -1304,23 +1289,14 @@ class DiffSetManagerTests(SpyAgency, TestCase):
         """Test creating a DiffSet from diff file data with basedir without
         leading slash
         """
-        diff = (
-            b'diff --git a/README b/README\n'
-            b'index d6613f5..5b50866 100644\n'
-            b'--- README\n'
-            b'+++ README\n'
-            b'@ -1,1 +1,1 @@\n'
-            b'-blah..\n'
-            b'+blah blah\n'
-        )
-
         repository = self.create_repository(tool_name='Test')
 
         self.spy_on(repository.get_file_exists,
                     call_fake=lambda *args, **kwargs: True)
 
         diffset = DiffSet.objects.create_from_data(
-            repository, 'diff', diff, None, None, None, 'trunk/', None)
+            repository, 'diff', self.DEFAULT_GIT_FILEDIFF_DATA, None, None,
+            None, 'trunk/', None)
 
         self.assertEqual(diffset.files.count(), 1)
 
@@ -1332,23 +1308,14 @@ class DiffSetManagerTests(SpyAgency, TestCase):
         """Test creating a DiffSet from diff file data with basedir with
         leading slash
         """
-        diff = (
-            b'diff --git a/README b/README\n'
-            b'index d6613f5..5b50866 100644\n'
-            b'--- README\n'
-            b'+++ README\n'
-            b'@ -1,1 +1,1 @@\n'
-            b'-blah..\n'
-            b'+blah blah\n'
-        )
-
         repository = self.create_repository(tool_name='Test')
 
         self.spy_on(repository.get_file_exists,
                     call_fake=lambda *args, **kwargs: True)
 
         diffset = DiffSet.objects.create_from_data(
-            repository, 'diff', diff, None, None, None, '/trunk/', None)
+            repository, 'diff', self.DEFAULT_GIT_FILEDIFF_DATA, None, None,
+            None, '/trunk/', None)
 
         self.assertEqual(diffset.files.count(), 1)
 
@@ -1363,17 +1330,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
 
     def test_creating_diffsets(self):
         """Test creating a DiffSet from form data"""
-        diff = (
-            b'diff --git a/README b/README\n'
-            b'index d6613f5..5b50866 100644\n'
-            b'--- README\n'
-            b'+++ README\n'
-            b'@ -1,1 +1,1 @@\n'
-            b'-blah..\n'
-            b'+blah blah\n'
-        )
-
-        diff_file = SimpleUploadedFile('diff', diff,
+        diff_file = SimpleUploadedFile('diff', self.DEFAULT_GIT_FILEDIFF_DATA,
                                        content_type='text/x-patch')
 
         repository = self.create_repository(tool_name='Test')
@@ -1405,15 +1362,6 @@ class UploadDiffFormTests(SpyAgency, TestCase):
             saw_file_exists[(filename, revision)] = True
             return True
 
-        diff = (
-            b'diff --git a/README b/README\n'
-            b'index d6613f5..5b50866 100644\n'
-            b'--- README\n'
-            b'+++ README\n'
-            b'@ -1,1 +1,1 @@\n'
-            b'-blah blah\n'
-            b'+blah!\n'
-        )
         parent_diff_1 = (
             b'diff --git a/README b/README\n'
             b'index d6613f4..5b50865 100644\n'
@@ -1434,7 +1382,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         )
         parent_diff = parent_diff_1 + parent_diff_2
 
-        diff_file = SimpleUploadedFile('diff', diff,
+        diff_file = SimpleUploadedFile('diff', self.DEFAULT_GIT_FILEDIFF_DATA,
                                        content_type='text/x-patch')
         parent_diff_file = SimpleUploadedFile('parent_diff', parent_diff,
                                               content_type='text/x-patch')
@@ -1457,7 +1405,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         self.assertEqual(diffset.files.count(), 1)
 
         filediff = diffset.files.get()
-        self.assertEqual(filediff.diff, diff)
+        self.assertEqual(filediff.diff, self.DEFAULT_GIT_FILEDIFF_DATA)
         self.assertEqual(filediff.parent_diff, parent_diff_1)
 
         self.assertIn(('/README', 'd6613f4'), saw_file_exists)
