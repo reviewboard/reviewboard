@@ -2810,7 +2810,7 @@ class GitTests(SpyAgency, SCMTestCase):
                 b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n'
                 b'--- a/foo/bar\n'
                 b'+++ b/foo/bar3\n'
-                b'@ -1,1 +1,1 @@\n'
+                b'@@ -1,1 +1,1 @@\n'
                 b'-blah blah\n'
                 b'+blah\n')
         files = self.tool.get_parser(diff).parse()
@@ -2850,7 +2850,7 @@ class GitTests(SpyAgency, SCMTestCase):
                 b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1\n'
                 b'--- a/foo/bar\n'
                 b'+++ b/foo/bar2\n'
-                b'@ -1,1 +1,1 @@\n'
+                b'@@ -1,1 +1,1 @@\n'
                 b'-blah blah\n'
                 b'+blah\n')
         files = self.tool.get_parser(diff).parse()

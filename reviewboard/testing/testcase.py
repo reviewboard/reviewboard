@@ -61,7 +61,7 @@ class TestCase(DjbletsTestCase):
         b'index 94bdd3e..197009f 100644\n'
         b'--- README\n'
         b'+++ README\n'
-        b'@ -1,1 +1,1 @@\n'
+        b'@@ -2 +2 @@\n'
         b'-blah blah\n'
         b'+blah!\n'
     )

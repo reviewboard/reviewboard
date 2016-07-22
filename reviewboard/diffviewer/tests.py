@@ -348,7 +348,7 @@ class DiffParserTest(TestCase):
         data = (
             b'--- README  123\n'
             b'+++ README  (new)\n'
-            b'@ -1,4 +1,6 @@\n'
+            b'@@ -1,4 +1,6 @@\n'
             b' Line 1\n'
             b' Line 2\n'
             b'+\x0c\n'
@@ -928,7 +928,7 @@ class DiffParserTest(TestCase):
             b'- One last.\n'
             b'--- README  123\n'
             b'+++ README  (new)\n'
-            b'@ -1,1 +1,1 @@\n'
+            b'@@ -1,1 +1,1 @@\n'
             b'-blah blah\n'
             b'-blah\n'
             b'+blah!\n'
@@ -974,7 +974,7 @@ class FileDiffTests(TestCase):
             b'index 3d2b777..48272a3 100644\n'
             b'--- README\n'
             b'+++ README\n'
-            b'@ -1,1 +1,2 @@\n'
+            b'@@ -2 +2,2 @@\n'
             b'-blah blah\n'
             b'+blah!\n'
             b'+blah!!\n'
@@ -1049,7 +1049,7 @@ class FileDiffMigrationTests(TestCase):
             b'index 94bdd3e..3d2b777 100644\n'
             b'--- README\n'
             b'+++ README\n'
-            b'@ -1,1 +1,1 @@\n'
+            b'@@ -2 +2 @@\n'
             b'-blah..\n'
             b'+blah blah\n')
 
@@ -1367,7 +1367,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
             b'index d6613f4..5b50865 100644\n'
             b'--- README\n'
             b'+++ README\n'
-            b'@ -1,1 +1,1 @@\n'
+            b'@@ -2 +2 @@\n'
             b'-blah..\n'
             b'+blah blah\n'
         )
@@ -1376,7 +1376,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
             b'index 1234567..5b50866 100644\n'
             b'--- UNUSED\n'
             b'+++ UNUSED\n'
-            b'@ -1,1 +1,1 @@\n'
+            b'@@ -1,1 +1,1 @@\n'
             b'-foo\n'
             b'+bar\n'
         )
