@@ -18,27 +18,8 @@
  <div id="review_request_banners"></div>
 
 {%  box "review-request" %}
- <div class="review-request-header">
-  <ul class="actions page-tabs">
-   <li><a href="{{review_request.get_absolute_url}}">{% trans "Reviews" %}</a></li>
-   <li class="active"><a href=".">{% trans "File" %}</a></li>
-{%   if has_diffs %}
-   <li><a href="{% url 'view-diff' review_request.display_id %}#index_header">{% trans "Diff" %}</a></li>
-{%   endif %}
-  </ul>
+{%   include "reviews/review_request_header.html" %}
 
-  <div class="actions-container">
-   {% star review_request %}
-   <ul class="actions actions-right-container">
-    <li class="has-menu">
-     <a href="#" class="mobile-actions-menu-label"><span class="fa fa-ellipsis-h fa-lg"></span></a>
-     <ul class="actions actions-right">
-{%   review_request_actions %}
-     </ul>
-    </li>
-   </ul>
-  </div>
- </div>
  <div class="content review-ui-box-content">
   {{review_ui_box_content}}
  </div>

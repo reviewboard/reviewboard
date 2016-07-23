@@ -642,9 +642,9 @@ class ReviewRequest(BaseReviewRequestDetails):
         if not hasattr(self, '_diffsets'):
             self._diffsets = list(
                 DiffSet.objects
-                    .filter(history__pk=self.diffset_history_id)
-                    .annotate(file_count=Count('files'))
-                    .prefetch_related('files'))
+                .filter(history__pk=self.diffset_history_id)
+                .annotate(file_count=Count('files'))
+                .prefetch_related('files'))
 
         return self._diffsets
 

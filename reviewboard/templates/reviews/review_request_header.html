@@ -1,0 +1,31 @@
+{% load reviewtags %}
+
+<div class="review-request-header">
+ <ul class="actions page-tabs">
+{%   for tab in tabs %}
+  <li {% if tab.active or tab.url == request.path %}class="active"{% endif %}>
+   <a href="{{tab.url}}">{{tab.text}}</a>
+  </li>
+{%   endfor %}
+ </ul>
+
+ <div class="actions-container">
+  <ul class="actions actions-left">
+{%   if request.user.is_authenticated and review_request.status == 'P' %}
+   <li>{% star review_request %}</li>
+   <li class="has-menu">
+    <a class="menu-title" id="hide-review-request-link" href="#"><span class="rb-icon rb-icon-archive-off"></span></a>
+    <ul class="menu" id="hide-review-request-menu" style="display: none;"></ul>
+   </li>
+{%   endif %}
+  </ul>
+  <ul class="actions actions-right-container">
+   <li class="has-menu">
+    <a href="#" class="mobile-actions-menu-label"><span class="fa fa-ellipsis-h fa-lg"></span></a>
+    <ul class="actions actions-right">
+{%   review_request_actions %}
+    </ul>
+   </li>
+  </ul>
+ </div>
+</div>

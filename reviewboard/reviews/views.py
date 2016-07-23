@@ -777,7 +777,6 @@ def review_detail(request,
         'close_description': close_description,
         'close_description_rich_text': close_description_rich_text,
         'issues': issues,
-        'has_diffs': (draft and draft.diffset_id) or len(diffsets) > 0,
         'file_attachments': latest_file_attachments,
         'all_file_attachments': file_attachments,
         'screenshots': screenshots,
@@ -926,7 +925,9 @@ class ReviewsDiffViewerView(DiffViewerView):
         })
 
         context.update(
-            make_review_request_context(self.request, self.review_request))
+            make_review_request_context(self.request,
+                                        self.review_request,
+                                        is_diff_view=True))
 
         diffset_pair = context['diffset_pair']
         context['diff_context'].update({
