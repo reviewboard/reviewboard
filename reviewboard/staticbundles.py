@@ -370,6 +370,7 @@ PIPELINE_STYLESHEETS = dict({
             'rb/css/pages/diffviewer.less',
             'rb/css/pages/image-review-ui.less',
             'rb/css/pages/text-review-ui.less',
+            'rb/css/pages/review-request.less',
             'rb/css/pages/reviews.less',
             'rb/css/ui/dnd-uploader.less',
             'rb/css/syntax.less',

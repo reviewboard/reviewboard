@@ -12,8 +12,10 @@
  <div class="actions-container">
   <ul class="actions actions-left">
 {%   if request.user.is_authenticated and review_request.status == 'P' %}
-   <li>{% star review_request %}</li>
-   <li class="has-menu">
+   <li class="review-request-action-icon">
+    <a href="#">{% star review_request %}</a>
+   </li>
+   <li class="review-request-action-icon has-menu">
     <a class="menu-title" id="hide-review-request-link" href="#"><span class="rb-icon rb-icon-archive-off"></span></a>
     <ul class="menu" id="hide-review-request-menu" style="display: none;"></ul>
    </li>
