@@ -1,9 +1,9 @@
 {% load avatars djblets_utils i18n reviewtags %}
 
 {% if issues.total > 0 %}
-<div class="content" id="issue-summary">
+<div class="review-request-section" id="issue-summary">
  <a name="issue-summary"></a>
- <h3>{% trans "Issues" %}</h3>
+ <label class="review-request-section-label">{% trans "Issues" %}</label>
  <div class="issue-summary-header">
   <div class="issue-summary-filters">
    <select class="issue-summary-filter" id="issue-reviewer-filter">

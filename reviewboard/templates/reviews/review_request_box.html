@@ -1,8 +1,9 @@
 {% load djblets_utils i18n reviewtags staticfiles %}
 
-<div class="header">
- <div id="summary_wrapper"><label for="field_summary">{% trans "Summary" %}:</label><h1 id="field_summary" class="field editable required" data-field-id="summary">{{review_request_details.summary|escape}}</h1></div>
- <p id="status">
+<div class="review-request-section review-request-summary">
+ <label class="review-request-section-label" for="field_summary">{% trans "Summary" %}: </label>
+ <h1 id="field_summary" class="field editable required" data-field-id="summary">{{review_request_details.summary|escape}}</h1>
+ <p>
 {% with review_request_details.time_added|date as dateadded and review_request_details.last_updated as lastupdated and review_request_details.last_updated|date:"c" as lastupdatedraw and latest_diffset.timestamp|date:"c" as lastdiffdateraw and latest_diffset.timestamp as lastdiffdate %}
 {%  blocktrans with review_request.display_id as review_request_id and review_request.get_absolute_url as review_request_url %}
    Review Request <a href="{{review_request_url}}">#{{review_request_id}}</a> -
@@ -34,7 +35,7 @@
 </div>
 <div id="review-request-warning"></div>
 
-<table id="review_request_details">
+<table id="review-request-details" class="review-request-section">
  <colgroup>
   <col width="0%" />
   <col width="100%" />
@@ -42,7 +43,7 @@
 {% for_review_request_fieldset review_request_details %}
  <thead id="fieldset_{{fieldset.fieldset_id}}_head"{% if forloop.first %} class="first-fieldset"{% endif %}>
   <tr>
-   <th colspan="2">{{fieldset.label}}
+   <th class="review-request-section-label" colspan="2">{{fieldset.label}}
 {%  if show_fieldset_required %}
     <span class="required-flag" aria-label="{% trans 'This field is required' %}" title="{% trans 'This field is required' %}">*</span>
 {%  endif %}
@@ -60,10 +61,10 @@
 {% end_for_review_request_fieldset %}
 </table>
 
-<div id="review_request_main">
+<div id="review-request-main">
 {% for_review_request_field review_request_details 'main' %}
- <div class="content">
-  <label class="textarea-label" for="field_{{field.field_id}}">{{field.label}}</label>
+ <div class="review-request-section">
+  <label class="review-request-section-label" for="field_{{field.field_id}}">{{field.label}}</label>
   <div class="field-container">
    <{{field.tag_name|default:"div"}} id="field_{{field.field_id}}" class="field {{field.get_css_classes|join:' '}}" data-field-id="{{field.field_id}}"{% for key, value in field.get_data_attributes.items %} data-{{key}}="{{value}}"{% endfor %}>{{field.as_html|safe}}</{{field.tag_name|default:"div"}}>
   </div>
@@ -71,9 +72,9 @@
 {% end_for_review_request_field %}
 </div>
 
-<div id="review_request_extra">
- <div class="content"{% if not screenshots %} style="display: none;"{% endif %}>
-  <h3>{% trans "Screenshots" %}</h3>
+<div id="review-request-extra">
+ <div class="review-request-section"{% if not screenshots %} style="display: none;"{% endif %}>
+  <label class="review-request-section-label">{% trans "Screenshots" %}</label>
   <div id="screenshot-thumbnails">
 {% for image in screenshots %}
    <div class="screenshot-container" data-screenshot-id="{{image.id}}">
@@ -92,8 +93,8 @@
   </div>
  </div>
 
- <div id="file-list-container" class="content clearfix"{% if not file_attachments %} style="display: none;"{% endif %}>
-  <h3>{% trans "Files" %}</h3>
+ <div id="file-list-container" class="review-request-section clearfix"{% if not file_attachments %} style="display: none;"{% endif %}>
+  <label class="review-request-section-label">{% trans "Files" %}</label>
   <div id="file-list">
    <br clear="both" />
   </div>

@@ -1,17 +1,501 @@
 @import (reference) "../defs.less";
+@import (reference) "../ui/menus.less";
+@import (reference) "djblets/css/mixins/markdown.less";
+
+
+/*
+ * Any changes to this need to be reflected in _resizeLayout in
+ * reviewRequestEditorView.js
+ */
+
+@details-width: 300px;
+
+
+/****************************************************************************
+ * Review request box
+ ****************************************************************************/
+
+.review-request {
+  background: none;
+  border-radius: @box-border-radius;
+  box-shadow: @box-shadow;
+
+  textarea {
+    border: @textarea-border;
+    height: 1.5rem;
+    overflow: hidden;
+  }
+
+  .inline-editor-form input[type='text']:not(:focus) {
+    box-shadow: 0px 0px 4px rgba(255, 0, 0, .75);
+  }
+
+  .required-flag {
+    color: @required-flag-color;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 0 2px;
+  }
+}
+
+.review-request-header {
+  border-bottom: 1px @review-request-action-border-color solid;
+
+  .on-mobile-medium-screen-720({
+    text-align: center;
+  });
+}
+
+.review-request-body {
+  background-color: @review-request-bg;
+  #gradient > .vertical(@review-request-bg-gradient-start,
+                        @review-request-bg-gradient-end);
+  border: 1px @review-request-border-color solid;
+  border-top: 0;
+  border-radius: 0 0 @box-border-radius @box-border-radius;
+  clear: both;
+  padding: 0.5rem;
+
+  .field-container {
+    position: relative;
+
+    > pre {
+      background-color: #FFFFFF;
+      border: @textarea-border;
+      margin: @textarea-editor-margin;
+      padding: @textarea-editor-padding;
+      white-space: pre-wrap;
+
+      .codehilite {
+        .flush-codehilite();
+
+        @codehilite-margin: -(@code-block-border-size +
+                              @code-block-padding-horiz -
+                              @textarea-border-size);
+        margin-left: @codehilite-margin;
+        margin-right: @codehilite-margin;
+      }
+    }
+  }
+}
+
+.review-request-section {
+  padding: @box-padding;
+}
+
+.review-request-section-label {
+  color: @review-request-label-color;
+  font-size: @review-request-section-label-font-size;
+  font-weight: bold;
+}
+
+.review-request-summary {
+  p {
+    margin: @box-padding 0 0 0;
+  }
+
+  #field_summary {
+    display: inline;
+
+    a {
+      color: black;
+      text-decoration: none;
+    }
+  }
+
+  .review-request-section-label, #field_summary {
+    font-size: @review-request-summary-font-size;
+  }
+
+  .review-request-section-label {
+    /* Hide the "Summary:" label on mobile. */
+    .desktop-only();
+  }
+
+  .rb-icon-edit {
+    vertical-align: text-bottom;
+  }
+}
+
+#review-request-main {
+  margin-right: (@details-width + 10px);
+  position: relative;
+
+  .on-mobile-medium-screen-720({
+    margin-right: 0;
+  });
+}
+
+#review-request-extra {
+  clear: both;
+}
+
+#review-request-warning {
+  background-color: @review-request-warning-bg;
+  border: 1px solid @review-request-warning-border-color;
+  display: none;
+  font-weight: bold;
+  padding: 5px;
+  text-align: center;
+}
+
+
+/****************************************************************************
+ * Review request details pane
+ ****************************************************************************/
+
+#review-request-details {
+  border-spacing: 0px;
+  float: right;
+  width: @details-width;
+
+  .on-mobile-medium-screen-720({
+    /* Give the details pane its own full row above the other sections. */
+    float: none;
+    width: auto;
+  });
+
+  a {
+    color: @review-request-link-color;
+    text-decoration: none;
+  }
+
+  tbody {
+    td, th {
+      padding: 0 0 (@box-padding * 1.5) @box-padding;
+      vertical-align: baseline;
+    }
+
+    th {
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .editicon {
+      /* Undo style added in common.less */
+      margin-left: 0;
+    }
+
+    .field {
+      margin-right: 4px;
+
+      &:empty {
+        margin-right: 0;
+      }
+    }
+  }
+
+  thead {
+    &.first-fieldset th {
+      padding-top: 0;
+    }
+
+    th {
+      color: @review-request-label-color;
+      font-size: @review-request-section-label-font-size;
+      padding: (@box-padding * 2) 0 @box-padding 0;
+      text-align: left;
+    }
+  }
+
+  th {
+    color: #39350B;
+    font-weight: bold;
+  }
+
+  .buttons {
+    display: block;
+    margin-bottom: @box-padding;
+    padding: 6px 0 0 0;
+
+    input {
+      font-size: 11px;
+    }
+  }
+}
 
 
 /****************************************************************************
  * Review request actions
  ****************************************************************************/
 
-.review-request-action-icon {
-  padding-right: 5px;
-  vertical-align: middle;
+.action-menu() {
+  background: @review-request-action-menu-bg;
+  border: 1px @review-request-action-menu-border-color solid;
+  border-radius: 0 0 @box-border-radius @box-border-radius;
+  box-shadow: @box-shadow;
+  list-style: none;
+  margin: 0;
 
-  > a:first-child {
+  li {
+    background: @review-request-action-bg;
+    border: 0;
+    float: none;
+    margin: 0;
+    padding: 0;
+
+    .on-mobile-medium-screen-720({
+      /* Give some extra room for tapping. */
+      padding: @review-request-action-mobile-padding;
+    });
+
+    &:last-child {
+      border-radius: 0 0 @box-border-radius @box-border-radius;
+    }
+
+    &:hover {
+      background-color: @review-request-action-menu-item-hover-bg;
+    }
+  }
+}
+
+.review-request-actions-container {
+  background: @review-request-action-bg;
+  border-color: @review-request-action-border-color;
+  border-radius: @box-inner-border-radius @box-inner-border-radius 0 0;
+  border-style: solid;
+  border-width: 1px 1px 0 1px;
+  box-sizing: border-box;
+  min-height: (@review-request-action-line-height +
+               2 * @review-request-action-padding-vert);
+  overflow: hidden;
+
+  .review-ui-box & {
+    border-radius: @box-inner-border-radius;
+  }
+
+  .review-ui-box.has-review-ui-box-content & {
+    border-radius: @box-inner-border-radius @box-inner-border-radius 0 0;
+  }
+}
+
+.review-request-actions-left {
+  float: left;
+}
+
+.review-request-actions-right-container,
+.review-request-actions-right {
+  float: right;
+}
+
+.review-request-actions {
+  box-sizing: border-box;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.review-request-action {
+  float: left;
+
+  &:hover {
+    background-color: @review-request-action-hover-bg;
+  }
+
+  &:active {
+    background-color: @review-request-action-active-bg;
+  }
+
+  a {
+    color: black;
+    cursor: pointer;
     display: block;
     margin: 0;
-    padding: 5px;
+    line-height: @review-request-action-line-height;
+    text-decoration: none;
+    padding: @review-request-action-padding-vert
+             @review-request-action-padding-horiz-text;
+
+    .on-mobile-medium-screen-720({
+      /* Give some extra room for tapping. */
+      padding: @review-request-action-mobile-padding
+               @review-request-action-padding-horiz-text;
+    });
+  }
+
+  .menu {
+    .action-menu();
+    float: none;
+  }
+}
+
+.review-request-action-icon {
+  display: inline-block;
+
+  > a:first-child {
+    line-height: inherit;
+    padding: @review-request-action-padding-vert
+             @review-request-action-padding-horiz-icon;
+
+    .on-mobile-medium-screen-720({
+      padding: @review-request-action-mobile-padding;
+    });
+  }
+}
+
+/*
+ * The main text-based actions turn into a drop-down menu on mobile.
+ *
+ * The following rules do several things:
+ * - On desktop, we don't want to have any kind of hover/active highlighting
+ *   on the review-request-actions-right-container (which is itself an "action"
+ *   due to it's menu-ness).
+ * - Hide the mobile actions menu "..." icon on desktop, show on mobile.
+ * - Turn .review-request-actions-right into a drop-down menu, but a special
+ *   one that lists its items horizontalli (with wrapping), rather than a
+ *   vertical layout.
+ */
+.review-request-actions-right-container > .review-request-action:hover {
+  background-color: inherit;
+}
+
+a.mobile-actions-menu-label {
+  display: none;
+}
+
+.on-mobile-medium-screen-720({
+  a.mobile-actions-menu-label {
+    display: inline-block;
+  }
+
+  .review-request-actions-right-container > .review-request-action:hover {
+    background-color: @review-request-action-menu-item-hover-bg;
+  }
+
+  .review-request-actions-right {
+    .popup-menu();
+    .action-menu();
+
+    background: @review-request-action-bg;
+    left: 0;
+    white-space: normal;
+    width: 100%;
+
+    > li {
+      display: inline-block;
+    }
+
+    .has-menu:hover & {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+});
+
+
+/****************************************************************************
+ * Review request tabs
+ ****************************************************************************/
+
+.review-request-tabs {
+  background-color: @review-request-action-bg;
+  border-color: @review-request-border-color;
+  border-radius: @box-border-radius @box-border-radius 0 0;
+  border-style: solid;
+  border-width: 1px 1px 0 1px;
+  float: right;
+  margin-left: 1.5rem;
+  overflow: hidden;
+
+  .review-ui-box & .active {
+    /*
+     * The active tab in review UIs has a slightly different color to match the
+     * review UI header color.
+     */
+     background-color: @review-ui-header-bg;
+  }
+
+  li {
+    border-bottom: 1px @review-request-action-border-color solid;
+    min-width: 4rem;
+    text-align: center;
+
+    &.active {
+      background: @review-request-bg-gradient-start;
+      border-color: @review-request-border-color;
+      border-bottom-color: transparent;
+      border-style: solid;
+      border-width: 0 1px 1px 1px;
+
+      &:first-child {
+        border-left: 0;
+      }
+
+      &:last-child {
+        border-right: 0;
+      }
+    }
+  }
+}
+
+
+/****************************************************************************
+ * Banners
+ ****************************************************************************/
+#discard-banner,
+#submitted-banner {
+  background: #E0E0E0;
+  border: 1px #808080 solid;
+}
+
+#draft-banner,
+#discard-banner,
+#submitted-banner {
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
+  box-shadow: @box-shadow;
+  margin-top: -@page-container-padding;
+  margin-left: -@page-container-padding;
+  margin-right: -@page-container-padding;
+  margin-bottom: @page-container-padding;
+  padding: @page-container-padding;
+
+  .on-mobile-medium-screen-720({
+    .banner-actions {
+      margin-bottom: 2em;
+    }
+  });
+
+  p label {
+    .inline-editor-label();
+    padding-top: 1em
+  }
+
+  &>p {
+    margin: 1em 0 0 0;
+  }
+}
+
+#draft-banner .interdiff-link {
+  margin-top: 1em;
+}
+
+
+/****************************************************************************
+ * Updates Bubble
+ ****************************************************************************/
+
+#updates-bubble {
+  background: #FFF1AB;
+  border-top: 1px #888866 solid;
+  border-left: 1px #888866 solid;
+  bottom: 0;
+  border-radius: 10px 0 0 0;
+  box-shadow: -1px -1px 2px rgba(0, 0, 0, 0.15);
+  font-size: 110%;
+  padding: 1em;
+  position: fixed;
+  right: 0;
+  z-index: @z-index-page-overlay;
+
+  a, a:visited {
+    color: #0000CC;
+    text-decoration: none;
+  }
+
+  #updates-bubble-buttons {
+    margin-left: 2em;
   }
 }
