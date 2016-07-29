@@ -982,7 +982,12 @@ class FileDiffTests(TestCase):
 
     def setUp(self):
         super(FileDiffTests, self).setUp()
+        repository = self.create_repository(tool_name='Test')
+        self.diffset = DiffSet.objects.create(name='test',
+                                              revision=1,
+                                              repository=repository)
 
+    def _set_up_line_count_test(self):
         diff = (
             b'diff --git a/README b/README\n'
             b'index d6613f5..5b50866 100644\n'
@@ -991,21 +996,18 @@ class FileDiffTests(TestCase):
             b'@ -1,1 +1,2 @@\n'
             b'-blah blah\n'
             b'+blah!\n'
-            b'+blah!!\n')
-
-        repository = self.create_repository(tool_name='Test')
-        diffset = DiffSet.objects.create(name='test',
-                                         revision=1,
-                                         repository=repository)
-        self.filediff = FileDiff(source_file='README',
-                                 dest_file='README',
-                                 diffset=diffset,
-                                 diff64=diff,
-                                 parent_diff64='')
+            b'+blah!!\n'
+        )
+        return FileDiff(source_file='README',
+                        dest_file='README',
+                        diffset=self.diffset,
+                        diff64=diff,
+                        parent_diff64='')
 
     def test_get_line_counts_with_defaults(self):
         """Testing FileDiff.get_line_counts with default values"""
-        counts = self.filediff.get_line_counts()
+        filediff = self._set_up_line_count_test()
+        counts = filediff.get_line_counts()
 
         self.assertIn('raw_insert_count', counts)
         self.assertIn('raw_delete_count', counts)
@@ -1022,13 +1024,14 @@ class FileDiffTests(TestCase):
         self.assertIsNone(counts['equal_count'])
         self.assertIsNone(counts['total_line_count'])
 
-        diff_hash = self.filediff.diff_hash
+        diff_hash = filediff.diff_hash
         self.assertEqual(diff_hash.insert_count, 2)
         self.assertEqual(diff_hash.delete_count, 1)
 
     def test_set_line_counts(self):
         """Testing FileDiff.set_line_counts"""
-        self.filediff.set_line_counts(
+        filediff = self._set_up_line_count_test()
+        filediff.set_line_counts(
             raw_insert_count=1,
             raw_delete_count=2,
             insert_count=3,
@@ -1037,7 +1040,7 @@ class FileDiffTests(TestCase):
             equal_count=6,
             total_line_count=7)
 
-        counts = self.filediff.get_line_counts()
+        counts = filediff.get_line_counts()
         self.assertEqual(counts['raw_insert_count'], 1)
         self.assertEqual(counts['raw_delete_count'], 2)
         self.assertEqual(counts['insert_count'], 3)
@@ -1046,9 +1049,55 @@ class FileDiffTests(TestCase):
         self.assertEqual(counts['equal_count'], 6)
         self.assertEqual(counts['total_line_count'], 7)
 
-        diff_hash = self.filediff.diff_hash
+        diff_hash = filediff.diff_hash
         self.assertEqual(diff_hash.insert_count, 1)
         self.assertEqual(diff_hash.delete_count, 2)
+
+    def test_is_equivalent_to(self):
+        """Testing FileDiff.is_equivalent_to for equivalent FileDiffs"""
+        diffs = [
+            self.create_filediff(self.diffset,
+                                 source_file='README',
+                                 dest_file='README',
+                                 source_revision='d6613f5',
+                                 dest_detail='5b50866',
+                                 diff=self.DEFAULT_COMMIT_FILEDIFF_DATA)
+            for _ in (0, 1)
+        ]
+
+        self.assertTrue(diffs[0].is_equivalent_to(diffs[1]))
+        self.assertTrue(diffs[1].is_equivalent_to(diffs[0]))
+
+    def test_is_equivalent_to_false(self):
+        """Testing FileDiff.is_equivalent_to for inequivalent FileDiffs"""
+        raw_diffs = (
+            self.DEFAULT_COMMIT_FILEDIFF_DATA,
+            b'diff --git a/readme b/readme\n'
+            b'index d6613f5..51378dc 100644\n'
+            b'--- a/readme\n'
+            b'+++ b/readme\n'
+            b'@@ -1 +1,2 @@\n'
+            b' Hello there\n'
+            b'+blah blah blah\n'
+        )
+
+        revisions = (
+            ('d6613f5', '5b50866'),
+            ('d6613f5', '51378dc'),
+        )
+
+        diffs = [
+            self.create_filediff(self.diffset,
+                                 source_file='README',
+                                 dest_file='README',
+                                 source_revision=revisions[i][0],
+                                 dest_detail=revisions[i][1],
+                                 diff=raw_diffs[i])
+            for i in (0, 1)
+        ]
+
+        self.assertFalse(diffs[0].is_equivalent_to(diffs[1]))
+        self.assertFalse(diffs[1].is_equivalent_to(diffs[0]))
 
 
 class RawFileDiffDataManagerTests(TestCase):
@@ -1529,6 +1578,131 @@ class DbTests(TestCase):
         filediff2 = FileDiff.objects.create(diff=data, diffset=diffset)
 
         self.assertEqual(filediff1.diff_hash, filediff2.diff_hash)
+
+
+class DiffCommitTests(SpyAgency, TestCase):
+    """Unit tests for the DiffCommit class."""
+
+    fixtures = ['test_scmtools']
+
+    def _setup_equivalent_test(self, diff1=None, diff2=None):
+        """Setup two DiffCommits for testing DiffCommit.is_equivalent_to.
+
+        Args:
+            diff1 (bytes, optional):
+                Either a diff or ``None``, in which case the
+                :py:attr:`default <DEFAULT_COMMIT_FILEDIFF_DATA>` filediff data
+                will be used.
+
+            diff2 (bytes, optional):
+                Either a diff or ``None``, in which case the
+                :py:attr:`default <DEFAULT_COMMIT_FILEDIFF_DATA>` filediff data
+                will be used.
+
+        Returns:
+            tuple of reviewboard.diffviewer.models.DiffCommit:
+            The commits to check for equivalency.
+        """
+        if diff1 is None:
+            diff1 = self.DEFAULT_COMMIT_FILEDIFF_DATA
+
+        if diff2 is None:
+            diff2 = self.DEFAULT_COMMIT_FILEDIFF_DATA
+
+        repository = self.create_repository(tool_name='Test')
+        self.spy_on(repository.get_file_exists,
+                    call_fake=lambda *args, **kwargs: True)
+        diffsets = [
+            DiffSet.objects.create_empty(repository=repository,
+                                         request=None,
+                                         basedir='',
+                                         revision=revision,
+                                         save=True)
+            for revision in (1, 2)
+        ]
+
+        diffs = (diff1, diff2)
+
+        return tuple(
+            DiffCommit.objects.create_from_data(
+                repository=repository,
+                diff_file_name='diff',
+                diff_file_contents=diffs[i],
+                parent_diff_file_name=None,
+                parent_diff_file_contents=None,
+                request=None,
+                diffset=diffsets[i],
+                commit_id='r1',
+                parent_id='r0',
+                merge_parent_ids=[],
+                author_name='Author Name',
+                author_email='author@example.com',
+                author_date=timezone.now(),
+                committer_name='Committer Name',
+                committer_email='committer@example.com',
+                committer_date=timezone.now(),
+                description='Description',
+                commit_type=DiffCommit.COMMIT_CHANGE_TYPE
+            )
+            for i in (0, 1)
+        )
+
+    def test_is_equivalent_to(self):
+        """Testing DiffCommit.equivalent_to for equivalent commits"""
+        diff_commits = self._setup_equivalent_test()
+
+        self.assertTrue(diff_commits[0].is_equivalent_to(diff_commits[1]))
+        self.assertTrue(diff_commits[1].is_equivalent_to(diff_commits[0]))
+
+    def test_is_equivalent_to_false(self):
+        """Testing DiffCommit.is_equivalent_to for inequivalent commits"""
+        diff_commits = self._setup_equivalent_test(
+            b'diff --git a/README b/REAMDE\n'
+            b'index 70ea760..51378dc 100644\n'
+            b'--- README\n'
+            b'+++ README\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah..\n'
+            b'+blah blah blah\n')
+
+        self.assertFalse(diff_commits[0].is_equivalent_to(diff_commits[1]))
+        self.assertFalse(diff_commits[1].is_equivalent_to(diff_commits[0]))
+
+    def test_is_equivalent_to_false_filenames(self):
+        """Testing DiffCommit.equivalent_to for commits that affect different
+        files with the same diff
+        """
+        diff_commits = self._setup_equivalent_test(
+            self.DEFAULT_COMMIT_FILEDIFF_DATA.replace('readme', 'not-readme'))
+
+        self.assertFalse(diff_commits[0].is_equivalent_to(diff_commits[1]))
+        self.assertFalse(diff_commits[1].is_equivalent_to(diff_commits[0]))
+
+    def test_is_equivalent_to_cached(self):
+        """Testing DiffCommit.is_equivalent_to caches comparison results"""
+        diff_commits = self._setup_equivalent_test()
+
+        self.assertTrue(diff_commits[0].is_equivalent_to(diff_commits[1]))
+
+        with self.assertNumQueries(0):
+            self.assertTrue(diff_commits[0].is_equivalent_to(diff_commits[1]))
+            self.assertTrue(diff_commits[1].is_equivalent_to(diff_commits[0]))
+
+    def test_is_equivalent_to_query_count(self):
+        """Testing DiffCommit.is_equivalent_to query count"""
+        diff_commits = self._setup_equivalent_test(
+            self.DEFAULT_COMMIT_FILEDIFF_DATA +
+            b'diff --git a/FOO b/FOO\n'
+            b'index 70ea760..51378dc 100644\n'
+            b'--- FOO\n'
+            b'+++ FOO\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah..\n'
+            b'+blah blah blah\n'
+        )
+
+        with self.assertNumQueries(3):
+            self.assertFalse(diff_commits[0].is_equivalent_to(diff_commits[1]))
 
 
 class DiffCommitManagerTests(SpyAgency, TestCase):

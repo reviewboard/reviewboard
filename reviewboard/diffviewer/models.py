@@ -399,6 +399,32 @@ class FileDiff(models.Model):
         if updated and self.pk:
             self.save(update_fields=['extra_data'])
 
+    def is_equivalent_to(self, other):
+        """Determine if two FileDiffs are equivalent.
+
+        Two FileDiffs are equivalent if and only if they have same diff
+        content.
+
+        This will migrate both FileDiffs if necessary.
+
+        Args:
+            other (FileDiff):
+                The FileDiff to compare against.
+
+        Returns:
+            bool:
+            Whether or not the FileDiffs are equivalent.
+        """
+        if self._needs_diff_migration():
+            self._migrate_diff_data()
+
+        if other._needs_diff_migration():
+            other._migrate_diff_data()
+
+        # Since RawFileDiffData is unique per diff contents, we only have to
+        # compare the PKs of the diff data.
+        return self.diff_hash_id == other.diff_hash_id
+
     def _needs_diff_migration(self):
         return self.diff_hash_id is None
 
@@ -975,6 +1001,75 @@ class DiffCommit(DiffLineCountsMixin, models.Model):
         """Returns a nicely formatted committer name and/or email string."""
         return self._pretty_print_name_and_email(self.committer_name,
                                                  self.commiter_email)
+
+    def is_equivalent_to(self, other):
+        """Return whether or not this commit is equivalent to the other commit.
+
+        Two commits are equivalent if and only if:
+
+        * they have the the same author, committer, and description; and
+        * they have identical diff contents.
+
+        This function will cache the result of comparisons between two commits
+        in both of their :py:attr:`extra_data` fields under the
+        ``equivalent_to`` key.
+
+        Args:
+            other (DiffCommit):
+                The commit to compare against.
+
+        Returns:
+            bool:
+            Whether or not the commits are equivalent.
+        """
+        # Ensure that the equivalent_to key exists in both commits.
+        for commit in (self, other):
+            if commit.extra_data is None:
+                commit.extra_data = {}
+
+            commit.extra_data.setdefault('equivalent_to', {})
+
+        if other.pk not in self.extra_data['equivalent_to']:
+            equivalent = (
+                self.author_name == other.author_name and
+                self.author_email == other.author_email and
+                self.committer_name == other.committer_name and
+                self.committer_email == other.committer_email and
+                self.description == other.description
+            )
+
+            if equivalent:
+                diffs = {
+                    diff_commit.pk: {}
+                    for diff_commit in (self, other)
+                }
+
+                for diff in FileDiff.objects.filter(diff_commit__in=(self,
+                                                                     other)):
+                    diffs[diff.diff_commit_id][(diff.source_file,
+                                                diff.dest_file)] = diff
+
+                if len(diffs[self.pk]) == len(diffs[other.pk]):
+                    for key, self_diff in six.iteritems(diffs[self.pk]):
+                        try:
+                            other_diff = diffs[other.pk][key]
+                        except KeyError:
+                            equivalent = False
+                        else:
+                            equivalent = self_diff.is_equivalent_to(other_diff)
+
+                        if not equivalent:
+                            break
+                else:
+                    equivalent = False
+
+            self.extra_data['equivalent_to'][other.pk] = equivalent
+            other.extra_data['equivalent_to'][self.pk] = equivalent
+
+            self.save(update_fields=('extra_data',))
+            other.save(update_fields=('extra_data',))
+
+        return self.extra_data['equivalent_to'][other.pk]
 
     def _pretty_print_name_and_email(self, name, email):
         """Returns a formatted string of a name and/or email address."""
