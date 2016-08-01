@@ -210,10 +210,8 @@ RB.IssueSummaryTableView = Backbone.View.extend({
          * the issueClicked event so the page can navigate the user to the
          * relevant issue comment.
          */
-        this.trigger('issueClicked', {
-            type: $el.data('comment-type'),
-            id: $el.data('issue-id')
-        });
+        this.trigger('issueClicked', $el.data('comment-type'),
+                     $el.data('issue-id'));
 
         window.location = $el.data('comment-href');
     },
