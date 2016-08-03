@@ -47,7 +47,7 @@ suite('rb/views/ReviewBoxListView', function() {
         view = new RB.ReviewBoxListView({
             el: $el,
             reviewRequest: reviewRequest,
-            pageEditState: editor
+            reviewRequestEditor: editor
         });
         view.render();
 

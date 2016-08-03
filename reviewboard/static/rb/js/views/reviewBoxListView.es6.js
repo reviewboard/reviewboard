@@ -27,11 +27,11 @@ RB.ReviewBoxListView = Backbone.View.extend({
      *     reviewRequestEditorView (RB.ReviewRequestEditorView):
      *         The editor view.
      *
-     *     pageEditState (RB.ReviewRequestEditor):
+     *     reviewRequestEditor (RB.ReviewRequestEditor):
      *         The editor model.
      *
-     *     editorData (object):
-     *         Options for the review reply editor.
+     *     showSendEmail (boolean):
+     *         Whether to show the "Send E-mail" box on replies.
      */
     initialize(options) {
         this.options = options;
@@ -77,8 +77,8 @@ RB.ReviewBoxListView = Backbone.View.extend({
             const box = new RB.ReviewBoxView({
                 el: $review,
                 model: review,
-                pageEditState: this.options.pageEditState,
-                editorData: this.options.editorData,
+                reviewRequestEditor: this.options.reviewRequestEditor,
+                showSendEmail: this.options.showSendEmail,
             });
             box.render();
 

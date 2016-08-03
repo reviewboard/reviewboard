@@ -7,8 +7,21 @@
 RB.ReviewBoxView = RB.CollapsableBoxView.extend({
     /**
      * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view.
+     *
+     * Option Args:
+     *     reviewRequestEditor (RB.ReviewRequestEditor):
+     *         The review request editor.
+     *
+     *     showSendEmail (boolean):
+     *         Whether to show the "Send E-mail" box on replies.
      */
-    initialize() {
+    initialize(options) {
+        RB.CollapsableBoxView.prototype.initialize.call(this, options);
+
         this._reviewReply = null;
         this._replyEditors = [];
         this._replyEditorViews = [];
@@ -19,7 +32,7 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         this._$fixItLabel = null;
         this._openIssueCount = 0;
 
-        this._setupNewReply(this.options.reviewReply);
+        this._setupNewReply();
     },
 
     /**
@@ -103,7 +116,7 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
             const view = new RB.ReviewReplyEditorView({
                 el: el,
                 model: editor,
-                pageEditState: this.options.pageEditState,
+                reviewRequestEditor: this.options.reviewRequestEditor,
             });
             view.render();
 
@@ -160,7 +173,7 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
                 model: this._reviewReply,
                 $floatContainer: this.$('.box'),
                 noFloatContainerClass: 'collapsed',
-                showSendEmail: this.options.editorData.showSendEmail,
+                showSendEmail: this.options.showSendEmail,
             });
 
             this._bannerView.render().$el.appendTo(this._$banners);

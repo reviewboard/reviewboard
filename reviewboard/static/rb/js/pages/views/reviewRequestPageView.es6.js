@@ -18,15 +18,15 @@ RB.ReviewRequestPageView = RB.ReviewablePageView.extend({
     /**
      * Initialize the page.
      */
-    initialize() {
-        RB.ReviewablePageView.prototype.initialize.call(this);
+    initialize(options) {
+        RB.ReviewablePageView.prototype.initialize.call(this, options);
 
         this._reviewBoxListView = new RB.ReviewBoxListView({
             el: $('#reviews'),
-            pageEditState: this.reviewRequestEditor,
+            reviewRequestEditor: this.reviewRequestEditor,
             reviewRequestEditorView: this.reviewRequestEditorView,
             reviewRequest: this.reviewRequest,
-            editorData: this.options.replyEditorData,
+            showSendEmail: options.replyEditorData.showSendEmail,
         });
 
         if (this.reviewRequestEditorView.issueSummaryTableView) {
