@@ -184,11 +184,14 @@ RB.ReviewRequest = RB.BaseResource.extend({
      *     reviewID (number):
      *         The ID of the review, for existing reviews.
      *
+     *     extraAttrs (object):
+     *         Additional attributes to set on new models.
+     *
      * Returns:
      *     RB.Review:
      *     The new review object.
      */
-    createReview(reviewID) {
+    createReview(reviewID, extraAttrs={}) {
         let review;
 
         if (reviewID === undefined) {
@@ -205,10 +208,10 @@ RB.ReviewRequest = RB.BaseResource.extend({
             review = this.reviews.get(reviewID);
 
             if (!review) {
-                review = new RB.Review({
+                review = new RB.Review(_.defaults({
                     parentObject: this,
                     id: reviewID
-                });
+                }, extraAttrs));
                 this.reviews.add(review);
             }
 

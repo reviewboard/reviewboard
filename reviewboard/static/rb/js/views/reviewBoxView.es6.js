@@ -132,6 +132,8 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         _.each(this.$('pre.reviewtext'), el => {
             RB.formatText($(el), { bugTrackerURL: bugTrackerURL });
         });
+
+        return this;
     },
 
     /**

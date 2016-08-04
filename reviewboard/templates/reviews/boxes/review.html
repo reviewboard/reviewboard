@@ -2,7 +2,7 @@
 {% load rb_extensions reviewtags tz %}
 
 <a name="review{{entry.review.id}}"></a>
-<div id="review{{entry.review.id}}" class="review" data-review-id="{{entry.review.id}}" data-ship-it="{{entry.review.ship_it|yesno:'true,false'}}">
+<div id="review{{entry.review.id}}" class="review">
 {% if forloop.last %}
  <a name="last-review"></a>
 {% endif %}
