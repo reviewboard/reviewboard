@@ -93,6 +93,12 @@ settings_urlpatterns = patterns(
             'template_name': 'admin/settings.html'
         },
         name='settings-support'),
+    url(r'^search/$', 'site_settings',
+        {
+            'form_class': forms.SearchSettingsForm,
+            'template_name': 'admin/search_settings.html',
+        },
+        name='settings-search'),
 )
 
 urlpatterns = patterns(
