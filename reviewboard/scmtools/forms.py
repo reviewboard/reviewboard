@@ -213,6 +213,8 @@ class RepositoryForm(forms.ModelForm):
             self.local_site = self.fields['local_site'].initial
             self.local_site_name = self.local_site.name
 
+        self.fields['users'].widget.local_site_name = self.local_site_name
+
         # Grab the entire list of HostingServiceAccounts that can be
         # used by this form. When the form is actually being used by the
         # user, the listed accounts will consist only of the ones available

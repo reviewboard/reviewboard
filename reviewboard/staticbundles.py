@@ -297,13 +297,6 @@ PIPELINE_JAVASCRIPT = dict({
         ),
         'output_filename': 'rb/js/newReviewRequest.min.js',
     },
-    'admin': {
-        'source_filenames': (
-            'rb/js/admin/views/relatedObjectSelectorView.js',
-            'rb/js/admin/views/relatedUserSelectorView.js',
-        ),
-        'output_filename': 'rb/js/admin.min.js',
-    },
     'admin-dashboard': {
         'source_filenames': (
             'lib/js/jquery.masonry.js',
@@ -324,6 +317,13 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/admin/views/webhookFormView.js',
         ),
         'output_filename': 'rb/js/webhooks-form.min.js',
+    },
+    'widgets': {
+        'source_filenames': (
+            'rb/js/admin/views/relatedObjectSelectorView.js',
+            'rb/js/admin/views/relatedUserSelectorView.js',
+        ),
+        'output_filename': 'rb/js/widgets.min.js',
     },
 }, **DJBLETS_PIPELINE_JAVASCRIPT)
 
@@ -392,6 +392,13 @@ PIPELINE_STYLESHEETS = dict({
             'rb/css/pages/admin-integrations.less',
         ),
         'output_filename': 'rb/css/admin.min.css',
+        'absolute_paths': False,
+    },
+    'widgets': {
+        'source_filenames': (
+            'rb/css/ui/related-object-selector.less',
+        ),
+        'output_filename': 'rb/css/widgets.min.css',
         'absolute_paths': False,
     },
 }, **DJBLETS_PIPELINE_STYLESHEETS)
