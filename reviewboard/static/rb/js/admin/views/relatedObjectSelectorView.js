@@ -7,12 +7,12 @@
  * table, which is super slow, or just listing PKs, which isn't usable.
  */
 RB.RelatedObjectSelectorView = Backbone.View.extend({
-    className: 'admin-related-object-select',
+    className: 'related-object-select',
 
     _template: _.template([
         '<select placeholder="<%- searchPlaceholderText %>" ',
-        '        class="admin-related-object-options"></select>',
-        '<ul class="admin-related-object-selected"></ul>'
+        '        class="related-object-options"></select>',
+        '<ul class="related-object-selected"></ul>'
     ].join('')),
 
     /**
@@ -56,7 +56,7 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
             searchPlaceholderText: gettext('Search for users...')
         }));
 
-        this._$selected = this.$('.admin-related-object-selected');
+        this._$selected = this.$('.related-object-selected');
 
         this.$('select')
             .selectize(_.defaults(this._selectizeOptions, {

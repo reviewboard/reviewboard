@@ -32,6 +32,11 @@ class RelatedUserWidget(HiddenInput):
     # correctly.
     is_hidden = False
 
+    def __init__(self, local_site_name=None):
+        super(RelatedUserWidget, self).__init__()
+
+        self.local_site_name = local_site_name
+
     def render(self, name, value, attrs=None):
         """Render the widget.
 
@@ -95,6 +100,7 @@ class RelatedUserWidget(HiddenInput):
 
         extra_html = render_to_string('admin/related_user_widget.html', {
             'input_id': final_attrs['id'],
+            'local_site_name': self.local_site_name,
             'use_gravatars': use_gravatars,
             'users': user_data,
         })
