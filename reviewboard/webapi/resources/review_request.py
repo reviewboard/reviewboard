@@ -32,6 +32,7 @@ from reviewboard.scmtools.errors import (AuthenticationError,
                                          InvalidChangeNumberError,
                                          SCMError,
                                          RepositoryNotFoundError)
+from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.ssh.errors import SSHError
 from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.base import WebAPIResource
@@ -295,6 +296,53 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         'discarded': ReviewRequest.DISCARDED,
     }
 
+    def get_related_links(self, review_request=None, request=None, *args,
+                          **kwargs):
+        """Return related links for the resource.
+
+        This will serialize the ``latest_diff`` link when called for the
+        item resource with a resource that has associated diffs.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.ReviewRequest, optional):
+                The review request.
+
+            request (django.http.HttpRequest, optional):
+                The current HTTP request.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+
+        Returns:
+            dict:
+            A dictionary of links related to the resource.
+        """
+        links = super(ReviewRequestResource, self).get_related_links(
+            review_request, request, *args, **kwargs)
+
+        if review_request:
+            # We already have the diffsets due to get_queryset(), so we aren't
+            # performing another query here.
+            diffsets = list(review_request.diffset_history.diffsets.all())
+
+            if diffsets:
+                latest_diffset = diffsets[-1]
+                links['latest_diff'] = {
+                    'href': local_site_reverse(
+                        'diff-resource',
+                        request,
+                        kwargs={
+                            'review_request_id': review_request.display_id,
+                            'diff_revision': latest_diffset.revision,
+                        }),
+                    'method': 'GET',
+                }
+
+        return links
+
     def get_queryset(self, request, is_list=False, local_site_name=None,
                      *args, **kwargs):
         """Returns a queryset for ReviewRequest models.
@@ -433,7 +481,12 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         else:
             queryset = self.model.objects.filter(local_site=local_site)
 
-        return queryset.prefetch_related('changedescs')
+        return (
+            queryset
+            .select_related('diffset_history')
+            .prefetch_related('changedescs',
+                              'diffset_history__diffsets')
+        )
 
     def has_access_permissions(self, request, review_request, *args, **kwargs):
         return review_request.is_accessible_by(request.user)

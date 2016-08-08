@@ -757,6 +757,30 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
         self.assertEqual(rsp['review_requests'][0]['commit_id'],
                          commit_id)
 
+    @add_fixtures(['test_scmtools'])
+    def test_get_num_queries(self):
+        """Testing the GET <URL> API for number of queries"""
+        repo = self.create_repository()
+
+        review_requests = [
+            self.create_review_request(repository=repo, publish=True),
+            self.create_review_request(repository=repo, publish=True),
+            self.create_review_request(repository=repo, publish=True),
+        ]
+
+        for review_request in review_requests:
+            self.create_diffset(review_request)
+            self.create_diffset(review_request)
+
+        with self.assertNumQueries(11):
+            rsp = self.api_get(get_review_request_list_url(),
+                               expected_mimetype=review_request_list_mimetype)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertIn('total_results', rsp)
+        self.assertEqual(rsp['total_results'], 3)
+
     #
     # HTTP POST tests
     #
@@ -1299,6 +1323,54 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
         self._testHttpCaching(get_review_request_item_url(review_request.id),
                               check_etags=True)
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_with_latest_diff(self):
+        """Testing the GET <URL> API and checking for the latest diff"""
+        repo = self.create_repository()
+        review_request = self.create_review_request(repository=repo,
+                                                    publish=True)
+
+        self.create_diffset(review_request)
+        latest = self.create_diffset(review_request)
+
+        rsp = self.api_get(get_review_request_item_url(review_request.pk),
+                           expected_mimetype=review_request_item_mimetype)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        self.assertIn('review_request', rsp)
+        item_rsp = rsp['review_request']
+
+        self.assertIn('links', item_rsp)
+        links = item_rsp['links']
+
+        self.assertIn('latest_diff', links)
+        diff_link = links['latest_diff']
+
+        self.assertEqual(
+            diff_link['href'],
+            'http://testserver%s' % resources.diff.get_href(latest, None))
+
+    def test_get_with_no_latest_diff(self):
+        """Testing the GET <URL> API and checking that there is no latest_diff
+        link for review requests without a repository
+        """
+        review_request = self.create_review_request(publish=True)
+        rsp = self.api_get(get_review_request_item_url(review_request.pk),
+                           expected_mimetype=review_request_item_mimetype)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        self.assertIn('review_request', rsp)
+        item_rsp = rsp['review_request']
+
+        self.assertIn('links', item_rsp)
+        links = item_rsp['links']
+
+        self.assertNotIn('latest_diff', links)
 
     #
     # HTTP PUT tests
