@@ -854,10 +854,10 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             location = this._diffRevisionSelectorView.model.get('revision');
         }
 
-        location += '/?tip-commit-id' + commits.tip.get('commitID');
+        location += '/?tip-commit-id=' + commits.tip.get('commitID');
 
         if (commits.base !== null) {
-            location += '?base-commit-id=' +  commits.base.get('commitID');
+            location += '&base-commit-id=' + commits.base.get('commitID');
         }
 
         this.router.navigate(location, {trigger: true});
