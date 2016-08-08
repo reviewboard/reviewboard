@@ -1,11 +1,27 @@
-/*
+/**
  * Displays a review with discussion on the review request page.
  *
  * Review boxes contain discussion on parts of a review request. This includes
  * comments, screenshots, and file attachments.
  */
 RB.ReviewBoxView = RB.CollapsableBoxView.extend({
-    initialize: function() {
+    /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view.
+     *
+     * Option Args:
+     *     reviewRequestEditor (RB.ReviewRequestEditor):
+     *         The review request editor.
+     *
+     *     showSendEmail (boolean):
+     *         Whether to show the "Send E-mail" box on replies.
+     */
+    initialize(options) {
+        RB.CollapsableBoxView.prototype.initialize.call(this, options);
+
         this._reviewReply = null;
         this._replyEditors = [];
         this._replyEditorViews = [];
@@ -16,29 +32,30 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         this._$fixItLabel = null;
         this._openIssueCount = 0;
 
-        this._setupNewReply(this.options.reviewReply);
+        this._setupNewReply();
     },
 
-    /*
-     * Renders the review box.
+    /**
+     * Render the review box.
      *
      * This will prepare a reply draft banner, used if the user is replying
      * to any comments on the review.
      *
      * Each comment section will be set up to allow discussion.
+     *
+     * Returns:
+     *     RB.ReviewBoxView:
+     *     This object, for chaining.
      */
-    render: function() {
-        var reviewRequest = this.model.get('parentObject'),
-            pageEditState = this.options.pageEditState,
-            bugTrackerURL = reviewRequest.get('bugTrackerURL'),
-            review = this.model,
-            loadReviewID;
+    render() {
+        const reviewRequest = this.model.get('parentObject');
 
         RB.CollapsableBoxView.prototype.render.call(this);
 
         // Expand the box if the review is current being linked to
         if (document.URL.indexOf("#review") > -1) {
-            loadReviewID = document.URL.split('#review')[1];
+            const loadReviewID = document.URL.split('#review')[1];
+
             if (parseInt(loadReviewID, 10) === this.model.id) {
                 this._$box.removeClass('collapsed');
                 this._$expandCollapseButton
@@ -51,29 +68,27 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         this._$boxStatus = this.$('.box-status');
         this._$fixItLabel = this._$boxStatus.find('.fix-it-label');
 
-        _.each(this.$('.review-comments .issue-indicator'), function(el) {
-            var $issueState = $('.issue-state', el),
-                issueStatus,
-                issueBar;
+        _.each(this.$('.review-comments .issue-indicator'), el => {
+            const $issueState = $('.issue-state', el);
 
             /*
              * Not all issue-indicator divs have an issue-state div for
              * the issue bar.
              */
             if ($issueState.length > 0) {
-                issueStatus = $issueState.data('issue-status');
+                const issueStatus = $issueState.data('issue-status');
 
                 if (issueStatus === RB.BaseComment.STATE_OPEN) {
                     this._openIssueCount++;
                 }
 
-                issueBar = new RB.CommentIssueBarView({
+                const issueBar = new RB.CommentIssueBarView({
                     el: el,
                     reviewID: this.model.id,
                     commentID: $issueState.data('comment-id'),
                     commentType: $issueState.data('comment-type'),
                     issueStatus: $issueState.data('issue-status'),
-                    interactive: $issueState.data('interactive')
+                    interactive: $issueState.data('interactive'),
                 });
 
                 issueBar.render();
@@ -81,74 +96,86 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
                 this.listenTo(issueBar, 'statusChanged',
                               this._onIssueStatusChanged);
             }
-        }, this);
+        });
 
-        _.each(this.$('.comment-section'), function(el) {
-            var $el = $(el),
-                editor = new RB.ReviewReplyEditor({
-                    contextID: $el.data('context-id'),
-                    contextType: $el.data('context-type'),
-                    review: review,
-                    reviewReply: this._reviewReply
-                }),
-                view = new RB.ReviewReplyEditorView({
-                    el: el,
-                    model: editor,
-                    pageEditState: pageEditState
-                });
+        _.each(this.$('.comment-section'), el => {
+            const $el = $(el);
+            const editor = new RB.ReviewReplyEditor({
+                contextID: $el.data('context-id'),
+                contextType: $el.data('context-type'),
+                review: this.model,
+                reviewReply: this._reviewReply,
+            });
 
-            editor.on('change:hasDraft', function(model, hasDraft) {
+            this.listenTo(editor, 'change:hasDraft', (model, hasDraft) => {
                 if (hasDraft) {
                     this._showReplyDraftBanner();
                 }
-            }, this);
+            });
 
+            const view = new RB.ReviewReplyEditorView({
+                el: el,
+                model: editor,
+                reviewRequestEditor: this.options.reviewRequestEditor,
+            });
             view.render();
 
             this._replyEditors.push(editor);
             this._replyEditorViews.push(view);
-        }, this);
+        });
 
         /*
          * Do this last, after ReviewReplyEditorView has already set up the
          * inline editors.
          */
-        this.$('pre.reviewtext').each(function() {
-            RB.formatText($(this), {
-                bugTrackerURL: bugTrackerURL
-            });
+        const bugTrackerURL = reviewRequest.get('bugTrackerURL');
+        _.each(this.$('pre.reviewtext'), el => {
+            RB.formatText($(el), { bugTrackerURL: bugTrackerURL });
         });
+
+        return this;
     },
 
-    /*
-     * Returns the ReviewReplyEditorView with the given context type and ID.
+    /**
+     * Return the ReviewReplyEditorView with the given context type and ID.
+     *
+     * Args:
+     *     contextType (string):
+     *         The type of object being replied to (such as ``body_top`` or
+     *         ``diff_comments``)
+     *
+     *     contextID (number, optional):
+     *         The ID of the comment being replied to, if appropriate.
+     *
+     * Returns:
+     *     RB.ReviewReplyEditorView:
+     *     The matching editor view.
      */
-    getReviewReplyEditorView: function(contextType, contextID) {
+    getReviewReplyEditorView(contextType, contextID) {
         if (contextID === undefined) {
             contextID = null;
         }
 
-        return _.find(this._replyEditorViews, function(view) {
-            var editor = view.model;
-
+        return _.find(this._replyEditorViews, view => {
+            const editor = view.model;
             return editor.get('contextID') === contextID &&
                    editor.get('contextType') === contextType;
         });
     },
 
-    /*
-     * Shows the reply draft banner.
+    /**
+     * Show the reply draft banner.
      *
      * This will be called in response to any new replies made on a review,
      * or if there are pending replies that already exist on the review.
      */
-    _showReplyDraftBanner: function() {
+    _showReplyDraftBanner() {
         if (!this._draftBannerShown) {
             this._bannerView = new RB.ReviewReplyDraftBannerView({
                 model: this._reviewReply,
                 $floatContainer: this.$('.box'),
                 noFloatContainerClass: 'collapsed',
-                showSendEmail: this.options.editorData.showSendEmail
+                showSendEmail: this.options.showSendEmail,
             });
 
             this._bannerView.render().$el.appendTo(this._$banners);
@@ -157,10 +184,10 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         }
     },
 
-    /*
-     * Hides the reply draft banner.
+    /**
+     * Hide the reply draft banner.
      */
-    _hideReplyDraftBanner: function() {
+    _hideReplyDraftBanner() {
         if (this._draftBannerShown) {
             this._bannerView.remove();
             this._bannerView = null;
@@ -169,8 +196,8 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         }
     },
 
-    /*
-     * Sets up a new ReviewReply for the editors.
+    /**
+     * Set up a new ReviewReply for the editors.
      *
      * The new ReviewReply will be used for any new comments made on this
      * review.
@@ -178,11 +205,13 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
      * A ReviewReply is set until it's either destroyed or published, at
      * which point a new one is set.
      *
-     * A ReviewReply can be provided to this function, and if not supplied,
-     * a new one will be created.
+     * Args:
+     *     reviewReply (RB.ReviewReply, optional):
+     *         The reply object. If this is ``null``, a new ``RB.ReviewReply``
+     *         will be created.
      */
-    _setupNewReply: function(reviewReply) {
-        var hadReviewReply = (this._reviewReply !== null);
+    _setupNewReply(reviewReply) {
+        const hadReviewReply = (this._reviewReply !== null);
 
         if (!reviewReply) {
             reviewReply = this.model.createReply();
@@ -195,27 +224,29 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
              * We had one displayed before. Now it's time to clean up and
              * reset all the editors so they're using the old one.
              */
-            _.each(this._replyEditors, function(editor) {
-                editor.set('reviewReply', reviewReply);
-            }, this);
+            this._replyEditors.forEach(
+                editor => editor.set('reviewReply', reviewReply));
 
             this._hideReplyDraftBanner();
         }
 
-        this.listenTo(reviewReply, 'destroyed published', function() {
-            this._setupNewReply();
-        });
+        this.listenTo(reviewReply, 'destroyed published',
+                      () => this._setupNewReply());
 
         this._reviewReply = reviewReply;
     },
 
-    /*
-     * Handler for when the issue status of a comment changes.
+    /**
+     * Handle when the issue status of a comment changes.
      *
      * This will update the number of open issues, and, if there's a
      * Ship It!, will update the label.
+     *
+     * Args:
+     *     issueStatus (string):
+     *         The new issue status.
      */
-    _onIssueStatusChanged: function(issueStatus) {
+    _onIssueStatusChanged(issueStatus) {
         if (issueStatus === RB.BaseComment.STATE_OPEN) {
             this._openIssueCount++;
         } else {
@@ -225,8 +256,8 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         this._updateLabels();
     },
 
-    /*
-     * Updates the Ship It and Fix It labels based on the open issue counts.
+    /**
+     * Update the "Ship It" and "Fix It" labels based on the open issue counts.
      *
      * If there are open issues, there will be a "Fix it!" label.
      *
@@ -236,11 +267,11 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
      * be shown overlaid on top of the "Ship it!" label, and will go away
      * once the issues are resolved.
      */
-    _updateLabels: function() {
+    _updateLabels() {
         if (this._openIssueCount === 0) {
             this._$fixItLabel.css({
                 opacity: 0,
-                left: '-100px'
+                left: '-100px',
             });
             this._$boxStatus.removeClass('has-issues');
         } else {
@@ -249,8 +280,8 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
                 .show()
                 .css({
                     opacity: 1,
-                    left: 0
+                    left: 0,
                 });
         }
-    }
+    },
 });

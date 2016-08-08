@@ -1,15 +1,19 @@
-/*
+/**
  * Represents a box on the page that can be collapsed.
  */
 RB.CollapsableBoxView = Backbone.View.extend({
     events: {
-        'click .collapse-button': '_onToggleCollapseClicked'
+        'click .collapse-button': '_onToggleCollapseClicked',
     },
 
-    /*
-     * Renders the box.
+    /**
+     * Render the box.
+     *
+     * Returns:
+     *     RB.CollapsableBoxView:
+     *     This object, for chaining.
      */
-    render: function() {
+    render() {
         this._$box = this.$('.box');
         this._$expandCollapseButton = this.$('.collapse-button .rb-icon');
 
@@ -22,38 +26,36 @@ RB.CollapsableBoxView = Backbone.View.extend({
         return this;
     },
 
-    /*
-     * Expands the box.
+    /**
+     * Expand the box.
      */
-    expand: function() {
+    expand() {
         this._$box.removeClass('collapsed');
         this._$expandCollapseButton
             .removeClass('rb-icon-expand-review')
             .addClass('rb-icon-collapse-review');
     },
 
-    /*
-     * Collapses the box.
+    /**
+     * Collapse the box.
      */
-    collapse: function() {
+    collapse() {
         this._$box.addClass('collapsed');
         this._$expandCollapseButton
             .removeClass('rb-icon-collapse-review')
             .addClass('rb-icon-expand-review');
     },
 
-    /*
-     * Handler for when the Expand/Collapse button is clicked.
+    /**
+     * Handle a click on the expand/collapse button.
      *
      * Toggles the collapsed state of the box.
      */
-    _onToggleCollapseClicked: function() {
+    _onToggleCollapseClicked() {
         if (this._$box.hasClass('collapsed')) {
             this.expand();
         } else {
             this.collapse();
         }
-    }
+    },
 });
-
-
