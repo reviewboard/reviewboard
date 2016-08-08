@@ -1,12 +1,15 @@
 from __future__ import unicode_literals
 
 from django.utils import six
+from django.utils.translation import ugettext as _
 
+from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.forms import UploadDiffForm
 from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
                                                 normalize_text_for_edit)
 from reviewboard.reviews.models import BaseComment
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 def comment_counts(user, all_comments, filediff, interfilediff=None):
@@ -85,7 +88,8 @@ def comment_counts(user, all_comments, filediff, interfilediff=None):
     return comments_array
 
 
-def make_review_request_context(request, review_request, extra_context={}):
+def make_review_request_context(request, review_request, extra_context={},
+                                is_diff_view=False):
     """Returns a dictionary for template contexts used for review requests.
 
     The dictionary will contain the common data that is used for all
@@ -104,14 +108,55 @@ def make_review_request_context(request, review_request, extra_context={}):
     if 'blocks' not in extra_context:
         extra_context['blocks'] = list(review_request.blocks.all())
 
-    return dict({
+    tabs = [
+        {
+            'text': _('Reviews'),
+            'url': review_request.get_absolute_url(),
+        },
+    ]
+
+    draft = review_request.get_draft(request.user)
+
+    if ((draft and draft.diffset_id) or
+        (hasattr(review_request, '_diffsets') and
+         len(review_request._diffsets) > 0)):
+        has_diffs = True
+    else:
+        # We actually have to do a query
+        has_diffs = DiffSet.objects.filter(
+            history__pk=review_request.diffset_history_id).exists()
+
+    if has_diffs:
+        tabs.append({
+            'active': is_diff_view,
+            'text': _('Diff'),
+            'url': (
+                local_site_reverse(
+                    'view-diff',
+                    args=[review_request.display_id],
+                    local_site=review_request.local_site) +
+                '#index-header'),
+        })
+
+    context = dict({
         'mutable_by_user': review_request.is_mutable_by(request.user),
         'status_mutable_by_user':
             review_request.is_status_mutable_by(request.user),
         'review_request': review_request,
         'upload_diff_form': upload_diff_form,
         'scmtool': scmtool,
+        'tabs': tabs,
     }, **extra_context)
+
+    if 'review_request_visit' not in context:
+        # The main review request view will already have populated this, but
+        # other related views (like the diffviewer) don't.
+        context['review_request_visit'] = \
+            ReviewRequestVisit.objects.get_or_create(
+                user=request.user,
+                review_request=review_request)[0]
+
+    return context
 
 
 def has_comments_in_diffsets_excluding(review, diffset_pair):

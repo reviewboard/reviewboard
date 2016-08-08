@@ -160,7 +160,7 @@ RB.ReviewablePageView = Backbone.View.extend({
             }, this.options.editorData));
 
         this.reviewRequestEditorView = new RB.ReviewRequestEditorView({
-            el: $('#review_request'),
+            el: $('#review-request'),
             model: this.reviewRequestEditor
         });
 

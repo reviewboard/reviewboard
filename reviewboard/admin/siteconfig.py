@@ -47,8 +47,9 @@ from djblets.siteconfig.models import SiteConfiguration
 from haystack import connections
 
 from reviewboard.accounts.backends import get_registered_auth_backend
+from reviewboard.search import search_backend_registry
+from reviewboard.search.search_backends.whoosh import WhooshBackend
 from reviewboard.signals import site_settings_loaded
-from reviewboard.search import search_engines
 
 
 # A mapping of our supported storage backend names to backend class paths.
@@ -154,14 +155,9 @@ defaults.update({
     'send_support_usage_stats': True,
     'site_domain_method': 'http',
 
-    # TODO: Allow relative paths for the index file later on.
-    'search_index_file': os.path.join(settings.SITE_DATA_DIR,
-                                      'search-index'),
     'search_results_per_page': 20,
-    'search_engine': search_engines.WHOOSH,
-
-    'elasticsearch_url': 'http://127.0.0.1:9200/',
-    'elasticsearch_index_name': 'reviewboard',
+    'search_backend_id': WhooshBackend.search_backend_id,
+    'search_backend_settings': {},
 
     # Overwrite this.
     'site_media_url': settings.SITE_ROOT + "media/",
@@ -208,33 +204,25 @@ def load_site_config(full_reload=False):
             setattr(settings, settings_key, default)
 
     def update_haystack_settings():
-        """Update the haystack settings with settings in site config."""
-        search_engine = (siteconfig.get('search_engine') or
-                         defaults['search_engine'])
+        """Update the haystack settings in site config."""
+        search_backend_id = (siteconfig.get('search_backend_id') or
+                             defaults['search_backend_id'])
+        search_backend = search_backend_registry.get_search_backend(
+            search_backend_id)
 
-        if search_engine == search_engines.WHOOSH:
-            search_engine_settings = {
-                'ENGINE': 'haystack.backends.whoosh_backend.WhooshEngine',
-                'PATH': (siteconfig.get('search_index_file') or
-                         defaults['search_index_file']),
-            }
-        elif search_engine == search_engines.ELASTICSEARCH:
-            search_engine_settings = {
-                'ENGINE': 'haystack.backends.elasticsearch_backend.'
-                          'ElasticsearchSearchEngine',
-                'URL': (siteconfig.get('elasticsearch_url') or
-                        defaults['search_index_file']),
-                'INDEX_NAME': (siteconfig.get('elasticsearch_index_name') or
-                               defaults['elasticsearch_index_name']),
-            }
-        else:
-            raise ImproperlyConfigured(
-                'Search engine choice ("%s") is unavailable.'
-                % (search_engine,))
+        if not search_backend:
+            raise ImproperlyConfigured(_(
+                'The search engine "%s" could not be found. If this is '
+                'provided by an extension, you will have to make sure that '
+                'extension is enabled.'
+                % search_backend_id
+            ))
 
-        apply_setting('HAYSTACK_CONNECTIONS', None, {
-            'default': search_engine_settings,
-        })
+        apply_setting(
+            'HAYSTACK_CONNECTIONS', None,
+            {
+                'default': search_backend.configuration,
+            })
 
         # Re-initialize Haystack's connection information to use the updated
         # settings.

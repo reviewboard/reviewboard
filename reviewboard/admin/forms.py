@@ -54,7 +54,7 @@ from reviewboard.admin.checks import (get_can_use_amazon_s3,
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.admin.support import get_install_key
 from reviewboard.avatars import avatar_services
-from reviewboard.search import search_engines
+from reviewboard.search import search_backend_registry
 from reviewboard.ssh.client import SSHClient
 
 
@@ -83,11 +83,6 @@ class GeneralSettingsForm(SiteSettingsForm):
         'file': 'cache_path',
         'memcached': 'cache_host',
     }
-
-    SEARCH_ENGINE_CHOICES = (
-        (search_engines.WHOOSH, _('Whoosh')),
-        (search_engines.ELASTICSEARCH, _('Elasticsearch')),
-    )
 
     company = forms.CharField(
         label=_("Company/Organization"),
@@ -131,41 +126,6 @@ class GeneralSettingsForm(SiteSettingsForm):
         label=_("Time Zone"),
         required=True,
         help_text=_("The time zone used for all dates on this server."))
-
-    search_enable = forms.BooleanField(
-        label=_("Enable search"),
-        help_text=_("Provides a search field for quickly searching through "
-                    "review requests."),
-        required=False)
-
-    search_engine = forms.ChoiceField(
-        label=_('Search engine'),
-        help_text=_('The search engine provider to use.'),
-        choices=SEARCH_ENGINE_CHOICES,
-        required=False)
-
-    elasticsearch_index_name = forms.CharField(
-        label=_('Elasticsearch index name'),
-        help_text=_('The name of the Elasticsearch index.'),
-        required=False)
-
-    elasticsearch_url = forms.URLField(
-        label=_('Elasticsearch URL'),
-        help_text=_('The URL of the Elasticsearch server.'),
-        required=False)
-
-    search_results_per_page = forms.IntegerField(
-        label=_("Search results per page"),
-        help_text=_("Number of search results to show per page."),
-        min_value=1,
-        required=False)
-
-    search_index_file = forms.CharField(
-        label=_("Search index directory"),
-        help_text=_("The directory that search index data should be stored "
-                    "in."),
-        required=False,
-        widget=forms.TextInput(attrs={'size': '50'}))
 
     cache_type = forms.ChoiceField(
         label=_("Cache Backend"),
@@ -309,59 +269,6 @@ class GeneralSettingsForm(SiteSettingsForm):
 
         return cache_path
 
-    def clean_search_engine(self):
-        """Clean the ``search_engine`` field.
-
-        This ensures that the selected search engine is valid (i.e., it is
-        specified in :py:mod:`reviewboard.search.search_engines`) and any
-        optional dependencies are installed.
-
-        Returns:
-            unicode:
-            The name of the selected search engine.
-
-        Raises:
-            django.core.exceptions.ValidationError:
-                Raised when the search engine is invalid or is missing a
-                depdency.
-        """
-        search_engine = self.cleaned_data['search_engine']
-
-        if search_engine == search_engines.ELASTICSEARCH:
-            try:
-                import elasticsearch
-            except ImportError:
-                raise ValidationError(
-                    _('The "elasticsearch" module is required.'))
-        elif search_engine != search_engines.WHOOSH:
-            raise ValidationError(
-                _('Invalid search engine: %s')
-                % search_engine)
-
-        return search_engine
-
-    def clean_search_index_file(self):
-        """Validate that the specified index file is valid.
-
-        This checks to make sure that the provided file path is an absolute
-        path, and that the directory is writable by the web server.
-        """
-        index_file = self.cleaned_data['search_index_file'].strip()
-
-        if index_file:
-            if not os.path.isabs(index_file):
-                raise ValidationError(
-                    _("The search index path must be absolute."))
-
-            if (os.path.exists(index_file) and
-                    not os.access(index_file, os.W_OK)):
-                raise ValidationError(
-                    _('The search index path is not writable. Make sure the '
-                      'web server has write access to it and its parent '
-                      'directory.'))
-
-        return index_file
-
     class Meta:
         title = _("General Settings")
         save_blacklist = ('server', 'cache_type', 'cache_host', 'cache_path')
@@ -378,13 +285,6 @@ class GeneralSettingsForm(SiteSettingsForm):
                 'classes': ('wide',),
                 'title': _('Cache Settings'),
                 'fields': ('cache_type', 'cache_path', 'cache_host'),
-            },
-            {
-                'classes': ('wide',),
-                'title': _("Search"),
-                'fields': ('search_enable', 'search_results_per_page',
-                           'search_engine', 'elasticsearch_url',
-                           'elasticsearch_index_name', 'search_index_file'),
             },
         )
 
@@ -1236,3 +1136,136 @@ class SupportSettingsForm(SiteSettingsForm):
             'fields': ('install_key', 'support_url',
                        'send_support_usage_stats'),
         },)
+
+
+class SearchSettingsForm(SiteSettingsForm):
+    """Form for search settings.
+
+    This form manages the main search settings (enabled, how many results, and
+    what backend to use), as well as displaying per-search backend forms so
+    that they may be configured.
+
+    For example, Elasticsearch requires a URL and index name, while Whoosh
+    requires a file path to store its index. These fields (and fields for any
+    other added search backend) will only be shown to the user when the
+    appropriate search backend is selected.
+    """
+
+    search_enable = forms.BooleanField(
+        label=_('Enable search'),
+        help_text=_('If enabled, provides a search field for quickly searching'
+                    'through review requests, diffs, and users.'),
+        required=False)
+
+    search_results_per_page = forms.IntegerField(
+        label=_('Search results per page'),
+        min_value=1,
+        required=False)
+
+    search_backend_id = forms.ChoiceField(
+        label=_('Search backend'),
+        required=False)
+
+    def __init__(self, siteconfig, data=None, *args, **kwargs):
+        """Initialize the search engine settings form.
+
+        This will also initialize the settings forms for each search engine
+        backend.
+
+        Args:
+            site_config (djblets.siteconfig.models.SiteConfiguration):
+                The site configuration instance.
+
+            data (dict, optional):
+                The form data.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+        """
+        super(SearchSettingsForm, self).__init__(siteconfig, data, *args,
+                                                 **kwargs)
+        form_kwargs = {
+            'files': kwargs.get('files'),
+            'request': kwargs.get('request'),
+        }
+
+        self.search_backend_forms = {
+            backend.search_backend_id: backend.get_config_form(data,
+                                                               **form_kwargs)
+            for backend in search_backend_registry
+        }
+
+        self.fields['search_backend_id'].choices = [
+            (backend.search_backend_id, backend.name)
+            for backend in search_backend_registry
+        ]
+
+    def clean_search_backend_id(self):
+        """Clean the ``search_backend_id`` field.
+
+        This will ensure the chosen search backend is valid (i.e., it is
+        available in the registry) and that its dependencies have been
+        installed.
+
+        Returns:
+            unicode:
+            The search backend ID.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                Raised if the search engine ID chosen cannot be used.
+        """
+        search_backend_id = self.cleaned_data['search_backend_id']
+        search_backend = search_backend_registry.get_search_backend(
+            search_backend_id)
+
+        if not search_backend:
+            raise ValidationError(
+                _('The search engine "%s" could not be found. If this is '
+                  'provided by an extension, you will have to make sure that '
+                  'extension is enabled..')
+                % search_backend_id
+            )
+
+        search_backend.validate()
+
+        return search_backend_id
+
+    def clean(self):
+        """Clean the form and the sub-form for the selected search backend.
+
+        Returns:
+            dict:
+            The cleaned data.
+        """
+        if self.cleaned_data['search_enable']:
+            search_backend_id = self.cleaned_data['search_backend_id']
+            backend_form = self.search_backend_forms[search_backend_id]
+
+            if not backend_form.is_valid():
+                self._errors.update(backend_form.errors)
+
+        return self.cleaned_data
+
+    def save(self):
+        """Save the form and sub-form for the selected search backend.
+
+        This forces a site configuration reload.
+        """
+        search_backend_id = self.cleaned_data['search_backend_id']
+        backend_form = self.search_backend_forms[search_backend_id]
+        backend = search_backend_registry.get_search_backend(search_backend_id)
+
+        backend.configuration = backend.get_configuration_from_form_data(
+            backend_form.cleaned_data)
+
+        super(SearchSettingsForm, self).save()
+
+        # Reload any import changes to the Django settings.
+        load_site_config()
+
+    class Meta:
+        title = _('Search Settings')

@@ -20,28 +20,10 @@
         }
     }
 
-    function updateSearchFormDisplay() {
-        var searchEnabled = $('#id_search_enable').prop('checked'),
-            searchEngine = $('#id_search_engine').find(':selected').val();
-
-        $('#row-search_results_per_page, #row-search_engine')
-           .toggle(searchEnabled);
-
-        $('#row-search_index_file')
-            .toggle(searchEnabled && searchEngine === 'whoosh');
-
-        $('#row-elasticsearch_index_name, #row-elasticsearch_url')
-            .toggle(searchEnabled && searchEngine === 'elasticsearch');
-    }
-
     $(document).ready(function() {
         $('#id_cache_type').change(updateCacheFormDisplay);
 
-        $('#id_search_engine, #id_search_enable')
-            .change(updateSearchFormDisplay);
-
         updateCacheFormDisplay();
-        updateSearchFormDisplay();
     });
 </script>
 {% endblock %}

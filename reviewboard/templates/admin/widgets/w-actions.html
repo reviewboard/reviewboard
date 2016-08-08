@@ -22,6 +22,7 @@
 {% admin_subnav "settings-ssh" _("SSH")  %}
 {% admin_subnav "settings-storage" _("File Storage") %}
 {% admin_subnav "settings-support" _("Support") %}
+{% admin_subnav "settings-search" _("Search") %}
   </ul>
  </div>
 </div>
@@ -119,7 +120,7 @@
     {{disabled_img}}
 {% endif %}
    </a></li>
-   <li><a href="{% url 'settings-general' %}">{% trans "Indexed Search" %}
+   <li><a href="{% url 'settings-search' %}">{% trans "Indexed Search" %}
 {% if siteconfig_settings.search_enable %}
     {{enabled_img}}
 {% else %}

@@ -263,6 +263,54 @@ class ReviewRequest(BaseReviewRequestDetails):
     # Set this up with the ReviewRequestManager
     objects = ReviewRequestManager()
 
+    @staticmethod
+    def status_to_string(status):
+        """Return a string representation of a review request status.
+
+        Args:
+            status (unicode):
+                A single-character string representing the status.
+
+        Returns:
+            unicode:
+            A longer string representation of the status suitable for use in
+            the API.
+        """
+        if status == ReviewRequest.PENDING_REVIEW:
+            return 'pending'
+        elif status == ReviewRequest.SUBMITTED:
+            return 'submitted'
+        elif status == ReviewRequest.DISCARDED:
+            return 'discarded'
+        elif status is None:
+            return 'all'
+        else:
+            raise ValueError('Invalid status "%s"' % status)
+
+    @staticmethod
+    def string_to_status(status):
+        """Return a review request status from an API string.
+
+        Args:
+            status (unicode):
+                A string from the API representing the status.
+
+        Returns:
+            unicode:
+            A single-character string representing the status, suitable for
+            storage in the ``status`` field.
+        """
+        if status == 'pending':
+            return ReviewRequest.PENDING_REVIEW
+        elif status == 'submitted':
+            return ReviewRequest.SUBMITTED
+        elif status == 'discarded':
+            return ReviewRequest.DISCARDED
+        elif status == 'all':
+            return None
+        else:
+            raise ValueError('Invalid status string "%s"' % status)
+
     def get_commit(self):
         if self.commit_id is not None:
             return self.commit_id
@@ -594,9 +642,9 @@ class ReviewRequest(BaseReviewRequestDetails):
         if not hasattr(self, '_diffsets'):
             self._diffsets = list(
                 DiffSet.objects
-                    .filter(history__pk=self.diffset_history_id)
-                    .annotate(file_count=Count('files'))
-                    .prefetch_related('files'))
+                .filter(history__pk=self.diffset_history_id)
+                .annotate(file_count=Count('files'))
+                .prefetch_related('files'))
 
         return self._diffsets
 

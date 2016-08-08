@@ -24,7 +24,6 @@ from reviewboard.reviews.models import Group, ReviewRequest, ReviewRequestDraft
 from reviewboard.scmtools.errors import InvalidChangeNumberError
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
-from reviewboard.webapi.encoder import status_to_string
 from reviewboard.webapi.errors import (COMMIT_ID_ALREADY_EXISTS,
                                        INVALID_CHANGE_NUMBER,
                                        NOTHING_TO_PUBLISH, PUBLISH_ERROR)
@@ -329,7 +328,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         return None
 
     def serialize_status_field(self, obj, **kwargs):
-        return status_to_string(obj.status)
+        return ReviewRequest.status_to_string(obj.status)
 
     def serialize_public_field(self, obj, **kwargs):
         return False
