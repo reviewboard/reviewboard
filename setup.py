@@ -154,6 +154,7 @@ setup(name=PACKAGE_NAME,
       entry_points = {
           'console_scripts': [
               'rb-site = reviewboard.cmdline.rbsite:main',
+              'rbext = reviewboard.cmdline.rbext:main',
               'rbssh = reviewboard.cmdline.rbssh:main',
           ],
           'reviewboard.hosting_services': [
