@@ -16,4 +16,5 @@ Writing Review Board Extensions
    static-files
    review-ui
    webapi
+   testing
    distribution
