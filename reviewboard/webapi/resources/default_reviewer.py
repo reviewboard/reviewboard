@@ -322,7 +322,8 @@ class DefaultReviewerResource(WebAPIResource):
         if local_site:
             form_data['local_site'] = local_site.pk
 
-        form = DefaultReviewerForm(form_data, instance=default_reviewer)
+        form = DefaultReviewerForm(data=form_data, instance=default_reviewer,
+                                   local_site=local_site)
 
         if not form.is_valid():
             # The form uses "people" and "repository", but we expose these

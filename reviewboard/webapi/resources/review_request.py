@@ -17,6 +17,7 @@ from djblets.webapi.decorators import (webapi_login_required,
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
 
+from reviewboard.admin.server import build_server_url
 from reviewboard.diffviewer.errors import (DiffTooBigError,
                                            DiffParserError,
                                            EmptyDiffError)
@@ -332,13 +333,13 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             if diffsets:
                 latest_diffset = diffsets[-1]
                 links['latest_diff'] = {
-                    'href': local_site_reverse(
+                    'href': build_server_url(local_site_reverse(
                         'diff-resource',
                         request,
                         kwargs={
                             'review_request_id': review_request.display_id,
                             'diff_revision': latest_diffset.revision,
-                        }),
+                        })),
                     'method': 'GET',
                 }
 
