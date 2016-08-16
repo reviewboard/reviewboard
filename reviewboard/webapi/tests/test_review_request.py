@@ -11,6 +11,7 @@ from kgb import SpyAgency
 
 from reviewboard.accounts.backends import AuthBackend
 from reviewboard.accounts.models import LocalSiteProfile
+from reviewboard.admin.server import build_server_url
 from reviewboard.reviews.models import (BaseComment, ReviewRequest,
                                         ReviewRequestDraft)
 from reviewboard.reviews.signals import (review_request_closing,
@@ -1351,7 +1352,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
         self.assertEqual(
             diff_link['href'],
-            'http://testserver%s' % resources.diff.get_href(latest, None))
+            build_server_url(resources.diff.get_href(latest, None)))
 
     def test_get_with_no_latest_diff(self):
         """Testing the GET <URL> API and checking that there is no latest_diff
