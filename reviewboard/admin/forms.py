@@ -310,7 +310,7 @@ class AuthenticationSettingsForm(SiteSettingsForm):
 
     def __init__(self, siteconfig, *args, **kwargs):
         """Initialize the form."""
-        from reviewboard.accounts.backends import get_registered_auth_backends
+        from reviewboard.accounts.backends import auth_backends
 
         super(AuthenticationSettingsForm, self).__init__(siteconfig,
                                                          *args, **kwargs)
@@ -331,7 +331,7 @@ class AuthenticationSettingsForm(SiteSettingsForm):
         backend_choices = []
         builtin_auth_choice = None
 
-        for backend in get_registered_auth_backends():
+        for backend in auth_backends:
             backend_id = backend.backend_id
 
             try:

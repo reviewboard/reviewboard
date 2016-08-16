@@ -1204,18 +1204,18 @@ class ActionTests(TestCase):
         # Test that foo_action really does render as a child of the parent
         # Close menu (and not any other menu).
         new_close_menu_html = '\n'.join([
-            '<li class="has-menu">',
+            '<li class="review-request-action has-menu">',
             ' <a class="menu-title" id="close-review-request-action"',
             '    href="#">Close &#9662;</a>',
-            ' <ul class="menu" style="display: none;">',
-            '<li>',
+            ' <ul class="menu">',
+            '<li class="review-request-action">',
             ' <a id="submit-review-request-action" href="#">Submitted</a>',
             '</li>',
-            '<li>',
+            '<li class="review-request-action">',
             (' <a id="delete-review-request-action" href="#">Delete '
              'Permanently</a>'),
             '</li>',
-            '<li>',
+            '<li class="review-request-action">',
             (' <a id="%s" href="%s">%s</a>'
              % (foo_action.action_id, foo_action.url, foo_action.label)),
             '</li>',
