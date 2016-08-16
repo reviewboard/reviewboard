@@ -239,26 +239,19 @@ class DiffViewerView(TemplateView):
                                                            new_history)
 
                 for history_entry in commit_diff:
-                    entry_type = history_entry['type']
-
-                    if entry_type in ('unmodified', 'added'):
-                        key = 'new_commit'
-                    elif entry_type == 'removed':
-                        key = 'old_commit'
+                    if history_entry.new_commit is not None:
+                        commit = history_entry.new_commit
                     else:
-                        raise ValueError('Unexpected history entry type: %r'
-                                         % entry_type)
-
-                    commit = history_entry[key]
+                        commit = history_entry.old_commit
 
                     entry = {
                         'author_name': commit.author_name,
                         'commit_id': commit.commit_id,
                         'description': commit.description,
-                        'type': entry_type,
+                        'type': history_entry.entry_type,
                     }
 
-                    entry.update(history_entry[key].get_total_line_counts())
+                    entry.update(commit.get_total_line_counts())
 
                     diff_context['diff_commits'].append(entry)
 

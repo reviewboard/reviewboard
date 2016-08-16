@@ -11,11 +11,12 @@ from django.template.loader import Context, get_template, render_to_string
 from django.utils import six
 from django.utils.html import escape, format_html, format_html_join
 from django.utils.safestring import mark_safe
-from django.utils.six.moves import map
+from django.utils.six.moves import range
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.attachments.models import FileAttachment
-from reviewboard.diffviewer.commitutils import generate_commit_history_diff
+from reviewboard.diffviewer.commitutils import (CommitHistoryDiffEntry,
+                                                generate_commit_history_diff)
 from reviewboard.diffviewer.diffutils import get_sorted_filediffs
 from reviewboard.diffviewer.models import DiffCommit, DiffSet
 from reviewboard.reviews.fields import (BaseCommaEditableField,
@@ -729,25 +730,6 @@ class DiffCommitListField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
             })
 
     def render_change_entry_html(self, info):
-        def extract_commit_info(commit_dict):
-            commit_type = commit_dict['type']
-
-            if commit_type in ('unmodified', 'added'):
-                key = 'new_commit'
-            elif commit_type == 'removed':
-                key = 'old_commit'
-            else:
-                raise ValueError('Unexpected history entry type: %r'
-                                 % commit_type)
-
-            commit = commit_dict[key]
-
-            return {
-                'type': commit_type,
-                'author_name': commit.author_name,
-                'summary': commit.summary,
-            }
-
         commit_list = list(
             DiffCommit.objects.filter(diffset__pk__in=info.values()))
 
@@ -773,12 +755,51 @@ class DiffCommitListField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
         else:
             new_commits = []
 
+        history = list(generate_commit_history_diff(old_commits, new_commits))
+
+        # We need to determine where the old and new commit history DAG starts
+        # in the list of history entries.
+        old_start = None
+        new_start = None
+
+        for i, entry in enumerate(history):
+            if (old_start is None and
+                entry.entry_type != CommitHistoryDiffEntry.COMMIT_ADDED):
+                old_start = i
+
+            if (new_start is None and
+                entry.entry_type != CommitHistoryDiffEntry.COMMIT_REMOVED):
+                new_start = i
+
+            if old_start and new_start:
+                break
+
+        # Likewise, we need to determine where they end.
+        old_end = None
+        new_end = None
+
+        for i in range(len(history) - 1, -1, -1):
+            entry = history[i]
+
+            if (old_end is None and
+                entry.entry_type != CommitHistoryDiffEntry.COMMIT_ADDED):
+                old_end = i
+
+            if (new_end is None and
+                entry.entry_type != CommitHistoryDiffEntry.COMMIT_REMOVED):
+                new_end = i
+
+            if old_end and new_end:
+                break
+
         return render_to_string(
             'reviews/boxes/commit_list_change.html',
             {
-                'commits': map(extract_commit_info,
-                               generate_commit_history_diff(old_commits,
-                                                            new_commits))
+                'history': history,
+                'old_start': old_start,
+                'old_end': old_end,
+                'new_start': new_start,
+                'new_end': new_end,
             })
 
     def serialize_change_entry(self, changedesc):

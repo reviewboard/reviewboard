@@ -56,10 +56,10 @@ RB.DiffCommitIndexView = Backbone.View.extend({
     _itemTemplate: _.template(`
         <tr class="commit-entry-<% historyEntryType %>">
          <% if (renderHistorySymbol) { %>
-          <td class="commit-entry-type"><%- historyEntrySymbol %></td>
+          <td class="history-symbol-col"><%- historyEntrySymbol %></td>
          <% } else if (renderCommitSelector) { %>
           <% if (renderBaseCommitSelector) { %>
-           <td>
+           <td class="commit-selector-col">
             <input type="radio" name="base-diff-commit-selector"
                    id="base-diff-commit-selector-<%- cid %>"
                    class="base-diff-commit-selector" value="<%- cid %>">
@@ -67,7 +67,7 @@ RB.DiffCommitIndexView = Backbone.View.extend({
           <% } else { %>
            <td></td>
           <% } %>
-          <td>
+          <td class="commit-selector-col">
            <input type="radio" name="tip-diff-commit-selector"
                   id="tip-diff-commit-selector-<%- cid %>"
                   class="tip-diff-commit-selector" value="<%- cid %>">
@@ -78,7 +78,7 @@ RB.DiffCommitIndexView = Backbone.View.extend({
              data-diff-commit-cid="<%- cid %>">
           <%- summary %>
          </td>
-         <td class="diff-commit-author"><%- authorName %></td>
+         <td class="commit-author"><%- authorName %></td>
         </tr>
     `),
 
@@ -86,18 +86,18 @@ RB.DiffCommitIndexView = Backbone.View.extend({
         <thead>
          <tr>
           <% if (renderHistorySymbol) { %>
-           <th></th>
+           <th class="history-symbol-col"></th>
           <% } else if (renderCommitSelector) { %>
-           <th>
+           <th class="commit-selector-col">
             <input type="radio" name="base-diff-commit-selector"
                    id="base-diff-commit-selector-none" value="none"
                    class="base-diff-commit-selector">
            </th>
-           <th></th>
+           <th class="commit-selector-col"></th>
           <% } %>
           <th></th>
-          <th><%- summaryText %></th>
-          <th><%- authorText %></th>
+          <th class="commit-summary"><%- summaryText %></th>
+          <th class="commit-author"><%- authorText %></th>
          </tr>
         </thead>
     `),
@@ -165,10 +165,10 @@ RB.DiffCommitIndexView = Backbone.View.extend({
             for (const [i, diffCommit] of Array.entries(this.collection.models)) {
                 const lineCounts = diffCommit.attributes.lineCounts;
                 const lastCommit = (i + 1 === itemCount);
-                const summaryClasses = ['diff-commit-summary'];
+                const summaryClasses = ['commit-summary'];
 
                 if (diffCommit.isSummarized()) {
-                    summaryClasses.push('diff-commit-expandable-summary');
+                    summaryClasses.push('commit-summary-expandable');
                 }
 
                 if ((shouldUpdate || this._tipCommit === null) && lastCommit) {
@@ -189,7 +189,6 @@ RB.DiffCommitIndexView = Backbone.View.extend({
                     numReplaces: lineCounts.replaced,
                     totalLines: diffCommit.getTotalLineCount()
                 });
-
 
                 $tbody.append(tr);
                 iconView.$el.appendTo($tbody.find('.diff-file-icon').last());
@@ -226,7 +225,7 @@ RB.DiffCommitIndexView = Backbone.View.extend({
             this._onSelectTipCommit({target: $radio}, false);
 
             $tbody
-                .find('.diff-commit-expandable-summary')
+                .find('.commit-summary-expandable')
                 .hover(this._tryExpandSummaryDelayed);
 
             this.$el.show();

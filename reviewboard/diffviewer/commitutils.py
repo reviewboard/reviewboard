@@ -1,53 +1,243 @@
+"""Various utilities for working with DiffCommits."""
+
 from __future__ import unicode_literals
 
 import itertools
-from collections import deque
+from collections import deque, namedtuple
 
 from django.utils import six
+
+
+class CommitHistoryDiffEntry(namedtuple('CommitHistoryDiffEntry',
+                                        ('entry_type', 'old_commit',
+                                         'new_commit'))):
+    """An entry in a commit history diff."""
+
+    COMMIT_ADDED = 'added'
+    COMMIT_REMOVED = 'removed'
+    COMMIT_MODIFIED = 'modified'
+    COMMIT_UNMODIFIED = 'unmodified'
+
+    entry_types = (
+        COMMIT_ADDED,
+        COMMIT_REMOVED,
+        COMMIT_MODIFIED,
+        COMMIT_UNMODIFIED
+    )
+
+    @classmethod
+    def removed(cls, old_commit):
+        """Create a CommitHistoryDiffEntry for a removed commit.
+
+        Args:
+            old_commit (reviewboard.diffviewer.models.DiffCommit):
+                The removed commit.
+
+        Returns:
+            CommitHistoryDiffEntry:
+            The history entry.
+        """
+        return cls(cls.COMMIT_REMOVED, old_commit, None)
+
+    @classmethod
+    def added(cls, new_commit):
+        """Create a CommitHistoryDiffEntry for an added commit.
+
+        Args:
+            new_commit (reviewboard.diffviewer.models.DiffCommit):
+                The added commit.
+
+        Returns:
+            CommitHistoryDiffEntry:
+            The history entry.
+        """
+        return cls(cls.COMMIT_ADDED, None, new_commit)
+
+    @classmethod
+    def modified(cls, old_commit, new_commit):
+        """Create a CommitHistoryDiffEntry for a modified commit.
+
+        Args:
+            old_commit (reviewboard.diffviewer.models.DiffCommit):
+                The old commit.
+
+            new_commit (reviewboard.diffviewer.models.DiffCommit):
+                The new commit.
+
+        Returns:
+            CommitHistoryDiffEntry:
+            The history entry.
+        """
+        return cls(cls.COMMIT_MODIFIED, old_commit, new_commit)
+
+    @classmethod
+    def unmodified(cls, old_commit, new_commit):
+        """Create a CommitHistoryDiffEntry for a removed commit.
+
+        Args:
+            old_commit (reviewboard.diffviewer.models.DiffCommit):
+                The old commit.
+
+            new_commit (reviewboard.diffviewer.models.DiffCommit):
+                The new commit.
+
+        Returns:
+            CommitHistoryDiffEntry:
+            The history entry.
+        """
+        return cls(cls.COMMIT_UNMODIFIED, old_commit, new_commit)
+
+    def __new__(cls, entry_type, old_commit, new_commit):
+        """Create a a new CommitHistoryDiffEntry object.
+
+        Args:
+            entry_type (unicode):
+                The commit type. This must be one of the values in
+                :py:data:`entry_types`.
+
+            old_commit (reviewboard.diffviewer.models.DiffCommit):
+                The old commit. This is non-``None`` if the commit type is one
+                of:
+
+                * :py:data:`COMMIT_REMOVED`,
+                * :py:data:`COMMIT_MODIFIED`, or
+                * :py:data:`COMMIT_UNMODIFIED`.
+
+            new_commit (reviewboard.diffviewer.models.DiffCommit):
+                The new commit. This is non-``None`` if the commit type is one
+                of:
+
+                * :py:data:`COMMIT_ADDED`,
+                * :py:data:`COMMIT_MODIFIED`, or
+                * :py:data:`COMMIT_UNMODIFIED`.
+
+        Returns:
+            CommitInfo:
+            The commit information object.
+
+        Raises:
+            ValueError:
+                If the value of ``entry_type`` is invalid.
+        """
+        if entry_type not in cls.entry_types:
+            raise ValueError(
+                'entry_type must be one of: CommitInfo.COMMIT_ADDED,'
+                'CommitInfo.COMMIT_REMOVED, CommitInfo.COMMIT_MODIFIED, or'
+                'CommitInfo.COMMIT_UNMODIFIED'
+            )
+
+        if not old_commit and entry_type != cls.COMMIT_ADDED:
+            raise ValueError('old_commit required for given commit type.')
+
+        if not new_commit and entry_type != cls.COMMIT_REMOVED:
+            raise ValueError('new_commit required for given commit type')
+
+        return super(CommitHistoryDiffEntry, cls).__new__(
+            cls,
+            entry_type=entry_type,
+            old_commit=old_commit,
+            new_commit=new_commit)
 
 
 def generate_commit_history_diff(old_history, new_history):
     """Generate the difference between the old and new commit histories.
 
-    Each entry in the generated diff is a dict with the following keys:
+    This assumes commit histories have not been re-ordered. If they have, the
+    generated commit history diff may not be correct.
 
-     * ``type``, which has a value of of ``unmodified``, ``added``,
-       or ``removed``;
-     * ``old_commit``, which is the old :class:`DiffCommit` instance
-       (or ``None`` if the entry is an addition); and
-     * ``new_commit``, which is the new :class:`DiffCommit` instance
-       (or ``None`` if the entry is a removal).
+    Args:
+        old_history (list of reviewboard.diffviewer.models.DiffCommit):
+            The old commit history. This must be a linear history.
 
-    This function assumes that both histories are linear (i.e., they
-    contain no merges).
+        new_history (list of reviewboard.diffviewer.models.DiffCommit):
+            The new commit history. This must be a linear history.
+
+    Yields:
+        CommitHistoryDiffEntry:
+        The commit history entries.
     """
+    base_diffset = old_history[0].diffset
+
+    def get_base_commits(commit):
+        base_commits = []
+        pending_commits = [commit]
+
+        while pending_commits:
+            commit = pending_commits.pop()
+            original_commits = commit.original_commits.all()
+
+            for base_commit in original_commits:
+                if base_commit.diffset_id == base_diffset.pk:
+                    base_commits.append(base_commit)
+                else:
+                    pending_commits.append(base_commit)
+
+        return base_commits
+
     i = 0
     j = 0
 
-    while (i < len(old_history) and
-           j < len(new_history) and
-           old_history[i].commit_id == new_history[j].commit_id):
-        yield {
-            'type': 'unmodified',
-            'old_commit': old_history[i],
-            'new_commit': new_history[j],
-        }
-        i += 1
-        j += 1
+    while True:
+        old_commit = None
+        new_commit = None
+        base_commits = None
 
-    for old_commit in old_history[i:]:
-        yield {
-            'type': 'removed',
-            'old_commit': old_commit,
-            'new_commit': None,
-        }
+        if i < len(old_history):
+            old_commit = old_history[i]
 
-    for new_commit in new_history[j:]:
-        yield {
-            'type': 'added',
-            'old_commit': None,
-            'new_commit': new_commit,
-        }
+        if j < len(new_history):
+            new_commit = new_history[j]
+            base_commits = get_base_commits(new_commit)
+
+        if new_commit and old_commit:
+            if not base_commits:
+                # This is a new commit.
+                yield CommitHistoryDiffEntry.added(new_commit)
+                j += 1
+            elif len(base_commits) == 1:
+                base_commit = base_commits[0]
+
+                if base_commit == old_commit:
+                    if new_commit.is_equivalent_to(old_commit):
+                        yield CommitHistoryDiffEntry.unmodified(old_commit,
+                                                                new_commit)
+                    else:
+                        yield CommitHistoryDiffEntry.modified(old_commit,
+                                                              new_commit)
+                    i += 1
+                    j += 1
+                else:
+                    # base_commit must occur later in old_history. This means
+                    # that old_commit was deleted.
+                    yield CommitHistoryDiffEntry.removed(old_commit)
+                    i += 1
+            else:
+                base_commit = base_commits[0]
+
+                if base_commit == old_commit:
+                    # We model a squash of n commits as 1 modification and
+                    # n - 1 deletions.
+                    yield CommitHistoryDiffEntry.modified(old_commit,
+                                                          new_commit)
+                    i += 1
+                    j += 1
+
+                    for commit in base_commits[1:]:
+                        yield CommitHistoryDiffEntry.removed(commit)
+                        i += 1
+                else:
+                    yield CommitHistoryDiffEntry.removed(old_commit)
+                    i += 1
+        elif new_commit:
+            # If there are only new commits left, they must have been added.
+            yield CommitHistoryDiffEntry.added(new_commit)
+            j += 1
+        elif old_commit:
+            # If there are only old commits left, they must have been deleted.
+            yield CommitHistoryDiffEntry.removed(old_commit)
+            i += 1
+        else:
+            break
 
 
 class DiffCommitFileExistenceChecker(object):

@@ -143,6 +143,7 @@
 @z-index-nav-menu-mask: 199;
 @z-index-nav-menu: 200;
 @z-index-dnd-overlay: 210;
+@z-index-commit: 1;
 
 // Icon dimensions
 @rb-icon-edit-width: 20px;
@@ -181,6 +182,14 @@
 @diff-error-border-color: darken(#FFF6A6, 35%);
 @diff-table-background: #FDFDFD;
 @diff-table-border-color: #DDDDDD;
+
+
+/* Commit table styles */
+@diff-commit-cell-padding: 6px;
+@diff-commit-node-bg-color: #EEE;
+@diff-commit-node-border-color: darken(@diff-commit-node-bg-color, 20%);
+@diff-commit-node-cell-size: (@diff-commit-node-size + 2px);
+@diff-commit-node-size: 15px;
 
 // Diff headers
 @diff-header-color: #e4d9cb;

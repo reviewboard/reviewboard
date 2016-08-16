@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 import bz2
-from collections import namedtuple
 
 import dateutil.parser
 import nose
@@ -22,7 +21,8 @@ import reviewboard.diffviewer.parser as diffparser
 from reviewboard.admin.import_utils import has_module
 from reviewboard.diffviewer.chunk_generator import (DiffChunkGenerator,
                                                     RawDiffChunkGenerator)
-from reviewboard.diffviewer.commitutils import (find_ancestor_commit_ids,
+from reviewboard.diffviewer.commitutils import (CommitHistoryDiffEntry,
+                                                find_ancestor_commit_ids,
                                                 find_ancestor_filediff,
                                                 generate_commit_history_diff)
 from reviewboard.diffviewer.diffutils import get_displayed_diff_line_ranges
@@ -3642,9 +3642,6 @@ class DiffSetTests(TestCase):
 class CommitUtilsTests(TestCase):
     """Unit tests for commitutils."""
 
-    # A "fake" DiffCommit class for working with generate_commit_history_diff.
-    commit_type = namedtuple('FakeCommit', ('commit_id',))
-
     def setUp(self):
         self.common_diffcommit_fields = {
             'name': 'diff',
@@ -3656,85 +3653,137 @@ class CommitUtilsTests(TestCase):
             'commit_type': DiffCommit.COMMIT_CHANGE_TYPE,
         }
 
+    @add_fixtures(['test_scmtools'])
     def test_history_diffing_added(self):
         """Testing generate_commit_history_diff with added commits"""
-        old_history = []
-        new_history = [self.commit_type('r0')]
-        expected_result = [
-            {
-                'type': 'added',
-                'old_commit': None,
-                'new_commit': new_history[0],
-            }
+        repository = self.create_repository(tool_name='Test')
+        diffsets = [
+            self.create_diffset(revision=revision, repository=repository)
+            for revision in (1, 2)
         ]
 
-        self.assertEqual(expected_result,
-                         list(generate_commit_history_diff(old_history,
-                                                           new_history)))
+        old_commit = self.create_diff_commit(diffsets[0], repository, 'r1',
+                                             'r0')
+        new_history = [
+            self.create_diff_commit(diffsets[1], repository, 'r1', 'r0'),
+            self.create_diff_commit(diffsets[1], repository, 'r2', 'r1'),
+        ]
 
+        new_history[0].original_commits.add(old_commit)
+
+        self.assertEqual(
+            [
+                CommitHistoryDiffEntry.unmodified(old_commit, new_history[0]),
+                CommitHistoryDiffEntry.added(new_history[1]),
+            ],
+            list(generate_commit_history_diff([old_commit], new_history)))
+
+    @add_fixtures(['test_scmtools'])
     def test_history_diffing_removed(self):
         """Testing generate_commit_history_diff with removed commits"""
-        old_history = [self.commit_type('r0')]
-        new_history = []
-        expected_result = [
-            {
-                'type': 'removed',
-                'old_commit': old_history[0],
-                'new_commit': None,
-            }
+        repository = self.create_repository(tool_name='Test')
+        diffset = self.create_diffset(revision=1, repository=repository)
+
+        old_commit = self.create_diff_commit(diffset, repository, 'r1', 'r0')
+
+        self.assertEqual([CommitHistoryDiffEntry.removed(old_commit)],
+                         list(generate_commit_history_diff([old_commit], [])))
+
+    @add_fixtures(['test_scmtools'])
+    def test_history_diffing_unmodified(self):
+        """Testing generate_commit_history_diff with unmodified commits"""
+        repository = self.create_repository(tool_name='Test')
+        diffsets = [
+            self.create_diffset(revision=revision, repository=repository)
+            for revision in (1, 2)
         ]
 
-        self.assertEqual(expected_result,
-                         list(generate_commit_history_diff(old_history,
-                                                           new_history)))
+        old_commit = self.create_diff_commit(diffsets[0], repository, 'r1a',
+                                             'r0')
+        new_commit = self.create_diff_commit(diffsets[1], repository, 'r1b',
+                                             'r0')
+        new_commit.original_commits.add(old_commit)
 
-    def test_history_diffing_added_and_removed(self):
-        """Testing generate_commit_history_diff with added and removed
-        commits"""
-        old_history = [self.commit_type('r0')]
-        new_history = [self.commit_type('r1')]
-        expected_result = [
-            {
-                'type': 'removed',
-                'old_commit': old_history[0],
-                'new_commit': None,
-            },
-            {
-                'type': 'added',
-                'old_commit': None,
-                'new_commit': new_history[0],
-            }
+        self.assertEqual([CommitHistoryDiffEntry.unmodified(old_commit,
+                                                            new_commit)],
+                         list(generate_commit_history_diff([old_commit],
+                                                           [new_commit])))
+
+    @add_fixtures(['test_scmtools'])
+    def test_history_diffing_modified(self):
+        """Testing generate_commit_history_diff with modified commits"""
+        repository = self.create_repository(tool_name='Test')
+        diffsets = [
+            self.create_diffset(revision=revision, repository=repository)
+            for revision in (1, 2)
         ]
 
-        self.assertEqual(expected_result,
-                         list(generate_commit_history_diff(old_history,
-                                                           new_history)))
+        old_commit = self.create_diff_commit(diffsets[0], repository, 'ra',
+                                             'r0')
 
-    def test_history_diffing_unmodified_added_and_removed(self):
-        """Testing generate_commit_history_diff with unmodified, added, and
-        removed commits"""
-        old_history = [self.commit_type('r0'), self.commit_type('r1')]
-        new_history = [self.commit_type('r0'), self.commit_type('r2')]
-        expected_result = [
-            {
-                'type': 'unmodified',
-                'old_commit': old_history[0],
-                'new_commit': new_history[0],
-            },
-            {
-                'type': 'removed',
-                'old_commit': old_history[1],
-                'new_commit': None,
-            },
-            {
-                'type': 'added',
-                'old_commit': None,
-                'new_commit': new_history[1],
-            }
+        new_diff = self.DEFAULT_COMMIT_FILEDIFF_DATA.replace('readme',
+                                                             'not-readme')
+        new_commit = self.create_diff_commit(diffsets[1], repository, 'rb',
+                                             'r0', diff_contents=new_diff)
+        new_commit.original_commits.add(old_commit)
+
+        self.assertEqual([CommitHistoryDiffEntry.modified(old_commit,
+                                                          new_commit)],
+                         list(generate_commit_history_diff([old_commit],
+                                                           [new_commit])))
+
+    @add_fixtures(['test_scmtools'])
+    def test_history_diffing_added_removed(self):
+        """Testing generate_commit_history_diff with added and removed commits
+        """
+        repository = self.create_repository(tool_name='Test')
+        diffsets = [
+            self.create_diffset(revision=revision, repository=repository)
+            for revision in (1, 2)
         ]
-        self.assertEqual(expected_result,
-                         list(generate_commit_history_diff(old_history,
-                                                           new_history)))
+
+        old_commit = self.create_diff_commit(diffsets[0], repository, 'ra',
+                                             'r0')
+        new_commit = self.create_diff_commit(diffsets[1], repository, 'rb',
+                                             'r0')
+
+        self.assertEqual(
+            [
+                CommitHistoryDiffEntry.added(new_commit),
+                CommitHistoryDiffEntry.removed(old_commit),
+            ],
+            list(generate_commit_history_diff([old_commit], [new_commit])))
+
+    @add_fixtures(['test_scmtools'])
+    def test_history_diffing_reordered(self):
+        """Testing generate_commit_history_diff with re-ordered commits"""
+        repository = self.create_repository(tool_name='Test')
+        diffsets = [
+            self.create_diffset(revision=revision, repository=repository)
+            for revision in (1, 2)
+        ]
+
+        old_history = [
+            self.create_diff_commit(diffsets[0], repository, 'r1', 'r0'),
+            self.create_diff_commit(diffsets[0], repository, 'r2', 'r1'),
+        ]
+
+        new_history = [
+            self.create_diff_commit(diffsets[1], repository, 'r2', 'r0'),
+            self.create_diff_commit(diffsets[1], repository, 'r1', 'r2'),
+        ]
+
+        new_history[0].original_commits.add(old_history[1])
+        new_history[1].original_commits.add(old_history[0])
+
+        self.assertEqual(
+            [
+                CommitHistoryDiffEntry.removed(old_history[0]),
+                CommitHistoryDiffEntry.unmodified(old_history[1],
+                                                  new_history[0]),
+                CommitHistoryDiffEntry.added(new_history[1]),
+            ],
+            list(generate_commit_history_diff(old_history, new_history)))
 
     def test_ancestor_commit_ids(self):
         """Testing finding ancestor commit IDs"""

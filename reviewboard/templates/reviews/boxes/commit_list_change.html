@@ -3,27 +3,40 @@
  <table>
   <thead>
    <tr>
-    <th></th>
-    <th class="diff-commit-summary">{% trans "Summary" %}</th>
-    <th class="diff-commit-author">{% trans "Author" %}</th>
+    <th colspan="2"></th>
+    <th class="commit-summary">Summary</th>
+    <th class="commit-author">Author</th>
    </tr>
   </thead>
   <tbody>
-{% for commit in commits %}
-   <tr class="commit-entry-{{commit.type}}">
-    <td class="commit-entry-type">
-{%  if commit.type == 'added' %}
-     +
-{%  elif commit.type == 'removed' %}
-     -
-{%  elif commit.type == 'modified' %}
-     ~
-{%  endif %}
+{%  for history_entry in history %}
+   <tr class="commit-history-entry">
+    <td class="{% if forloop.counter0 >= old_start and forloop.counter0 <= old_end %}commit-history{% endif %}{% if forloop.counter0 == old_start %} commit-history-start{% endif %}{% if forloop.counter0 == old_end %} commit-history-end{% endif %}">
+{%   if history_entry.entry_type != history_entry.COMMIT_ADDED %}
+     <span class="commit commit-{{history_entry.entry_type}}"></span>
+{%   endif %}
     </td>
-    <td class="diff-commit-summary">{{commit.summary}}</td>
-    <td class="diff-commit-author">{{commit.author_name}}</td>
+    <td class="{% if forloop.counter0 >= new_start and forloop.counter0 <= new_end %}commit-history{% endif %}{% if forloop.counter0 == new_start %} commit-history-start{% endif %}{% if forloop.counter0 == new_end %} commit-history-end{% endif %}">
+{%   if history_entry.entry_type != history_entry.COMMIT_REMOVED %}
+     <span class="commit commit-{{history_entry.entry_type}}"></span>
+{%   endif %}
+    </td>
+    <td class="commit-summary commit-summary-{{history_entry.entry_type}}">
+{%   if history_entry.entry_type == history_entry.COMMIT_REMOVED %}
+     {{history_entry.old_commit.summary}}
+{%   else %}
+     {{history_entry.new_commit.summary}}
+{%   endif %}
+    </td>
+    <td class="commit-author commit-author-{{history_entry.entry_type}}">
+{%   if history_entry.entry_type == history_entry.COMMIT_REMOVED %}
+     {{history_entry.old_commit.author}}
+{%   else %}
+     {{history_entry.new_commit.author}}
+{%   endif %}
+    </td>
    </tr>
-{% endfor %}
+{%  endfor %}
   </tbody>
  </table>
 </div>

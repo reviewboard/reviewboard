@@ -625,6 +625,7 @@ td.diff-file-icon {
   @icon-offset: 2px;
 
   padding: @icon-offset 0 0 @icon-offset;
+  width: @icon-size;
 
   div {
     position: relative;
@@ -648,6 +649,7 @@ td.diff-file-icon {
 }
 
 .diff-commits {
+  background: @diff-table-background;
   border: 1px @review-request-table-border-color solid;
   margin: 1em 0;
 
@@ -655,42 +657,98 @@ td.diff-file-icon {
     border-collapse: collapse;
     padding: 0;
     width: 100%;
+  }
 
-    tr {
-      &.commit-entry-added td {
-        background: @diff-insert-color;
-      }
+  th {
+    border-bottom: 1px @review-request-table-border-color solid;
+  }
 
-      &.commit-entry-removed td {
-        background: @diff-delete-color;
-      }
+  th, td {
+    padding: @diff-commit-cell-padding;
+    margin: 0;
 
-      td, th {
-        background: @diff-table-background;
-        margin: 0;
-        padding: 6px;
-
-        &.diff-commit-author {
-          white-space: nowrap;
-        }
-
-        &.diff-commit-summary {
-          width: 100%;
-        }
-      }
-
-      td {
-        border-top: 1px @diff-table-border-color solid;
-
-        &.commit-entry-type {
-          font-weight: bold;
-        }
-      }
-
-      th {
-        text-align: left;
-      }
+    &.commit-author {
+      text-align: right;
     }
+
+    &.commit-selector-col {
+      text-align: left;
+      width: 1em;
+    }
+
+    &.commit-summary {
+      text-align: left;
+    }
+
+    &.commit-summary-removed {
+      font-style: italic;
+      color: #aaa;
+    }
+
+    &.history-symbol-col {
+      width: 1em;
+    }
+  }
+
+  .commit::after {
+    background: @diff-commit-node-bg-color;
+    border: 1px solid @diff-commit-node-border-color;
+    border-radius: 50%;
+    content: "";
+    display: inline-block;
+    height: @diff-commit-node-size;
+    width: @diff-commit-node-size;
+    position: absolute;
+    left: @diff-commit-cell-padding;
+    top: @diff-commit-cell-padding;
+    z-index: @z-index-commit;
+  }
+
+  .commit-added::after {
+    background: @diff-insert-linenum-color;
+    border-color: darken(@diff-insert-linenum-color, 20%);
+  }
+
+  .commit-modified::after {
+    background: @diff-replace-linenum-color;
+    border-color: darken(@diff-replace-linenum-color, 20%);
+  }
+
+  .commit-removed::after {
+    background: @diff-delete-linenum-color;
+    border-color: darken(@diff-delete-linenum-color, 20%);
+  }
+
+  .commit-history {
+    position: relative;
+    text-align: center;
+    vertical-align: middle;
+    width: @diff-commit-node-size;
+    height: @diff-commit-node-size;
+
+    &::after {
+      content: "";
+      background: url("@{img_base}/commit_path_bg.png") repeat-y center;
+      position: absolute;
+      text-align: center;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+    }
+  }
+
+  .commit-history-entry td:nth-child(1),
+  .commit-history-entry td:nth-child(2) {
+    width: @diff-commit-node-cell-size;
+  }
+
+  .commit-history-end::after {
+    bottom: 50%;
+  }
+
+  .commit-history-start::after {
+    top: 50%;
   }
 }
 

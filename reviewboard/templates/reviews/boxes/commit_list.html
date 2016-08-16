@@ -3,15 +3,15 @@
  <table>
   <thead>
    <tr>
-    <th class="diff-commit-summary">{% trans "Summary" %}</th>
-    <th class="diff-commit-author">{% trans "Author" %}</th>
+    <th class="commit-summary">{% trans "Summary" %}</th>
+    <th class="commit-author">{% trans "Author" %}</th>
    </tr>
   </thead>
   <tbody>
 {% for commit in commits %}
    <tr>
-    <td class="diff-commit-summary">{{commit.summary}}</td>
-    <td class="diff-commit-author">{{commit.author_name}}</td>
+    <td class="commit-summary">{{commit.summary}}</td>
+    <td class="commit-author">{{commit.author_name}}</td>
    </tr>
 {% endfor %}
   </tbody>
