@@ -41,6 +41,8 @@ PIPELINE_JAVASCRIPT = dict({
             'lib/js/jasmine-boot-2.4.1.js',
             'lib/js/jasmine.suites-1.0.js',
             'lib/js/jasmine.hide-filtered-1.0.js',
+            'lib/js/jasmine.sourcemaps-1.0.js',
+            'lib/js/sourcemapped-stacktrace.js',
         ),
         'output_filename': 'rb/js/js-test-libs.min.js',
     },
