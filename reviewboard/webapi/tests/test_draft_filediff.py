@@ -179,9 +179,9 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
         self.assertEqual(len(filediffs), 1)
         filediff = filediffs[0]
-        self.assertEqual(filediff.source_file, 'trophy.png')
+        self.assertEqual(filediff.source_file, 'logo.png')
 
-        with open(self._getTrophyFilename(), 'r') as f:
+        with open(self.get_sample_image_filename(), 'r') as f:
             rsp = self.api_put(
                 get_draft_filediff_item_url(filediff, review_request) +
                 '?expand=dest_attachment',
@@ -197,7 +197,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
             pk=rsp['file']['dest_attachment']['id'])
 
         self.assertTrue(attachment.is_from_diff)
-        self.assertEqual(attachment.orig_filename, 'trophy.png')
+        self.assertEqual(attachment.orig_filename, 'logo.png')
         self.assertEqual(attachment.added_in_filediff, filediff)
         self.assertEqual(attachment.repo_path, None)
         self.assertEqual(attachment.repo_revision, None)
@@ -230,9 +230,9 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
         self.assertEqual(len(filediffs), 1)
         filediff = filediffs[0]
-        self.assertEqual(filediff.source_file, 'trophy.png')
+        self.assertEqual(filediff.source_file, 'logo.png')
 
-        with open(self._getTrophyFilename(), 'r') as f:
+        with open(self.get_sample_image_filename(), 'r') as f:
             rsp = self.api_put(
                 get_draft_filediff_item_url(filediff, review_request) +
                 '?expand=dest_attachment',
@@ -248,9 +248,9 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
             pk=rsp['file']['dest_attachment']['id'])
 
         self.assertTrue(attachment.is_from_diff)
-        self.assertEqual(attachment.orig_filename, 'trophy.png')
+        self.assertEqual(attachment.orig_filename, 'logo.png')
         self.assertEqual(attachment.added_in_filediff, None)
-        self.assertEqual(attachment.repo_path, 'trophy.png')
+        self.assertEqual(attachment.repo_path, 'logo.png')
         self.assertEqual(attachment.repo_revision, '86b520d')
         self.assertEqual(attachment.repository, review_request.repository)
 
@@ -278,7 +278,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         filediff = diffset.files.all()[0]
 
         url = get_draft_filediff_item_url(filediff, review_request)
-        trophy_filename = self._getTrophyFilename()
+        trophy_filename = self.get_sample_image_filename()
 
         with open(trophy_filename, 'r') as f:
             self.api_put(

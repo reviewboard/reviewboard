@@ -35,7 +35,7 @@ class BaseFileAttachmentTestCase(TestCase):
     def make_uploaded_file(self):
         """Create a return a file to use for mocking in forms."""
         filename = os.path.join(settings.STATIC_ROOT,
-                                'rb', 'images', 'trophy.png')
+                                'rb', 'images', 'logo.png')
         f = open(filename, 'r')
         uploaded_file = SimpleUploadedFile(f.name, f.read(),
                                            content_type='image/png')
@@ -90,7 +90,7 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
 
         file_attachment = form.create()
         self.assertTrue(os.path.basename(file_attachment.file.name).endswith(
-            '__trophy.png'))
+            '__logo.png'))
         self.assertEqual(file_attachment.mimetype, 'image/png')
 
     @add_fixtures(['test_users', 'test_scmtools'])

@@ -147,7 +147,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             **kwargs)
 
         filename = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
-                                'trophy.png')
+                                'logo.png')
 
         with open(filename, 'r') as f:
             file_attachment.file.save(filename, File(f), save=True)
@@ -556,7 +556,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         """
         screenshot = Screenshot(caption=caption)
         filename = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
-                                'trophy.png')
+                                'logo.png')
 
         with open(filename, 'r') as f:
             screenshot.image.save(filename, File(f), save=True)
@@ -672,7 +672,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         if has_file:
             filename = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
-                                    'trophy.png')
+                                    'logo.png')
 
             file_attachment.orig_filename = orig_filename
             file_attachment.mimetype = 'image/png'
