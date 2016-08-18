@@ -3158,7 +3158,7 @@ class DefaultReviewerTests(TestCase):
         group = Group.objects.create(name='test', display_name='Test',
                                      local_site=test_site)
 
-        form = DefaultReviewerForm({
+        form = DefaultReviewerForm(data={
             'name': 'Test',
             'file_regex': '.*',
             'local_site': test_site.pk,
@@ -3180,7 +3180,7 @@ class DefaultReviewerTests(TestCase):
         test_site = LocalSite.objects.create(name='test')
         user = User.objects.create(username='testuser', password='')
 
-        form = DefaultReviewerForm({
+        form = DefaultReviewerForm(data={
             'name': 'Test',
             'file_regex': '.*',
             'local_site': test_site.pk,
@@ -3194,7 +3194,7 @@ class DefaultReviewerTests(TestCase):
         test_site = LocalSite.objects.create(name='test')
         group = Group.objects.create(name='test', display_name='Test')
 
-        form = DefaultReviewerForm({
+        form = DefaultReviewerForm(data={
             'name': 'Test',
             'file_regex': '.*',
             'local_site': test_site.pk,
@@ -3205,7 +3205,7 @@ class DefaultReviewerTests(TestCase):
         group.local_site = test_site
         group.save()
 
-        form = DefaultReviewerForm({
+        form = DefaultReviewerForm(data={
             'name': 'Test',
             'file_regex': '.*',
             'groups': [group.pk],
@@ -3220,7 +3220,7 @@ class DefaultReviewerTests(TestCase):
         tool = Tool.objects.get(name='CVS')
         repo = Repository.objects.create(name='Test', path='path', tool=tool)
 
-        form = DefaultReviewerForm({
+        form = DefaultReviewerForm(data={
             'name': 'Test',
             'file_regex': '.*',
             'local_site': test_site.pk,
@@ -3231,7 +3231,7 @@ class DefaultReviewerTests(TestCase):
         repo.local_site = test_site
         repo.save()
 
-        form = DefaultReviewerForm({
+        form = DefaultReviewerForm(data={
             'name': 'Test',
             'file_regex': '.*',
             'repository': [repo.pk],
@@ -3247,7 +3247,7 @@ class GroupTests(TestCase):
         user = User.objects.create(username='testuser', password='')
         test_site.users.add(user)
 
-        form = GroupForm({
+        form = GroupForm(data={
             'name': 'test',
             'display_name': 'Test',
             'local_site': test_site.pk,
@@ -3265,7 +3265,7 @@ class GroupTests(TestCase):
 
         user = User.objects.create(username='testuser', password='')
 
-        form = GroupForm({
+        form = GroupForm(data={
             'name': 'test',
             'display_name': 'Test',
             'local_site': test_site.pk,

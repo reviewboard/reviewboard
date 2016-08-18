@@ -57,7 +57,7 @@ TEMPLATE_LOADERS = (
     ('djblets.template.loaders.conditional_cached.Loader', (
         'django.template.loaders.filesystem.Loader',
         'djblets.template.loaders.namespaced_app_dirs.Loader',
-        'djblets.extensions.loaders.load_template_source',
+        'djblets.extensions.loaders.Loader',
     )),
 )
 

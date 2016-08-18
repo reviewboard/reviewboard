@@ -48,14 +48,14 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
             # This is the file attachment that should be returned.
             items = [
                 self.create_file_attachment(review_request,
-                                            orig_filename='trophy1.png'),
+                                            orig_filename='logo1.png'),
             ]
 
             # This attachment shouldn't be shown in the results. It represents
             # a file to be shown in the diff viewer.
             self.create_file_attachment(review_request,
-                                        orig_filename='trophy2.png',
-                                        repo_path='/trophy.png',
+                                        orig_filename='logo2.png',
+                                        repo_path='/logo.png',
                                         repo_revision='123',
                                         repository=review_request.repository)
 
@@ -63,12 +63,12 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
             # reasons.
             diffset = self.create_diffset(review_request)
             filediff = self.create_filediff(diffset,
-                                            source_file='/trophy3.png',
-                                            dest_file='/trophy3.png',
+                                            source_file='/logo3.png',
+                                            dest_file='/logo3.png',
                                             source_revision='123',
                                             dest_detail='124')
             self.create_file_attachment(review_request,
-                                        orig_filename='trophy3.png',
+                                        orig_filename='logo3.png',
                                         added_in_filediff=filediff)
         else:
             items = []
@@ -90,7 +90,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
         return (get_file_attachment_list_url(review_request, local_site_name),
                 file_attachment_item_mimetype,
-                {'path': open(self._getTrophyFilename(), 'r')},
+                {'path': open(self.get_sample_image_filename(), 'r')},
                 [review_request])
 
     def check_post_result(self, user, rsp, review_request):
@@ -112,12 +112,12 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         review_request = self.create_review_request()
         self.assertNotEqual(review_request.submitter, self.user)
 
-        with open(self._getTrophyFilename(), "r") as f:
+        with open(self.get_sample_image_filename(), "r") as f:
             self.assertTrue(f)
             rsp = self.api_post(
                 get_file_attachment_list_url(review_request),
                 {
-                    'caption': 'Trophy',
+                    'caption': 'logo',
                     'path': f,
                 },
                 expected_status=403)
@@ -136,7 +136,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
         self.assertEqual(history.latest_revision, 0)
 
-        with open(self._getTrophyFilename(), "r") as f:
+        with open(self.get_sample_image_filename(), "r") as f:
             self.assertTrue(f)
             rsp = self.api_post(
                 get_file_attachment_list_url(review_request),
@@ -186,7 +186,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
 
         self.assertEqual(history.latest_revision, 0)
 
-        with open(self._getTrophyFilename(), "r") as f:
+        with open(self.get_sample_image_filename(), "r") as f:
             self.assertTrue(f)
             rsp = self.api_post(
                 get_file_attachment_list_url(review_request_2),

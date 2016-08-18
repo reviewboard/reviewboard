@@ -35,7 +35,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
 
 import reviewboard
 
-from github_linkcode import github_linkcode_resolve
+from beanbag_docutils.sphinx.ext.github import github_linkcode_resolve
 
 
 # If your extensions are in another directory, add it here. If the directory
@@ -57,10 +57,11 @@ extensions = [
     'sphinx.ext.linkcode',
     'sphinx.ext.napoleon',
     'sphinx.ext.todo',
-    'autodoc_utils',
+    'beanbag_docutils.sphinx.ext.autodoc_utils',
+    'beanbag_docutils.sphinx.ext.django_utils',
+    'beanbag_docutils.sphinx.ext.http_role',
+    'beanbag_docutils.sphinx.ext.retina_images',
     'webapidocs',
-    'httprole',
-    'retina_images',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -122,6 +123,9 @@ add_module_names = False
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
+
+# Disable warning of unknown referenced options.
+suppress_warnings = ['ref.option']
 
 
 # Options for HTML output
@@ -235,11 +239,10 @@ latex_show_pagerefs = True
 
 
 intersphinx_mapping = {
-    'django': ('https://docs.djangoproject.com/en/%s/'
+    'django': ('http://django.readthedocs.io/en/%s.x/'
                % reviewboard.django_major_version,
-               'https://docs.djangoproject.com/en/%s/_objects/'
-               % reviewboard.django_major_version),
-    'djblets': ('https://www.reviewboard.org/docs/djblets/0.10/', None),
+               None),
+    'djblets': ('https://www.reviewboard.org/docs/djblets/dev/', None),
     'python': ('https://docs.python.org/2.7', None),
     'rbtools': ('https://www.reviewboard.org/docs/rbtools/dev/', None),
 }
@@ -280,4 +283,20 @@ napolean_google_docstring = True
 napolean_numpy_docstring = False
 
 
-linkcode_resolve = github_linkcode_resolve
+def linkcode_resolve(domain, info):
+    version = reviewboard.VERSION
+
+    if version[4] == 'final' or version[4] > 0:
+        if reviewboard.is_release():
+            branch = 'release-%s.%s.%s' % (version[0], version[1], version[2])
+        else:
+            branch = 'release-%s.%s.x' % (version[0], version[1])
+    else:
+        branch = 'master'
+
+    return github_linkcode_resolve(domain=domain,
+                                   info=info,
+                                   allowed_module_names=['reviewboard'],
+                                   github_org_id='reviewboard',
+                                   github_repo_id='reviewboard',
+                                   branch=branch)

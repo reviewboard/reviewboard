@@ -94,6 +94,8 @@ Extensions
    reviewboard.extensions.base
    reviewboard.extensions.hooks
    reviewboard.extensions.packaging
+   reviewboard.extensions.testing
+   reviewboard.extensions.testing.testcases
 
 
 Hosting Service Integration

@@ -12,10 +12,10 @@ from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.safestring import mark_safe
+from django.utils.translation import ugettext as _
 
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
 from reviewboard.attachments.models import FileAttachment
-from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.context import make_review_request_context
 from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
                                                 normalize_text_for_edit)
@@ -106,7 +106,7 @@ class ReviewUI(object):
         close_description, close_description_rich_text = \
             self.review_request.get_close_description()
 
-        context = {
+        context = make_review_request_context(request, self.review_request, {
             'caption': self.get_caption(draft),
             'close_description': close_description,
             'close_description_rich_text': close_description_rich_text,
@@ -119,7 +119,7 @@ class ReviewUI(object):
             'review_ui_uuid': six.text_type(uuid4()),
             self.object_key: self.obj,
             self.diff_object_key: self.diff_against_obj,
-        }
+        })
 
         if inline:
             context.update({
@@ -127,18 +127,17 @@ class ReviewUI(object):
                 'review_ui_inline': True,
             })
         else:
-            if self.review_request.repository_id:
-                diffset_count = DiffSet.objects.filter(
-                    history__pk=self.review_request.diffset_history_id).count()
-            else:
-                diffset_count = 0
+            context['tabs'].append({
+                'url': request.path,
+                'text': _('File'),
+            })
 
             context.update({
                 'base_template': 'reviews/ui/base.html',
-                'has_diffs': (draft and draft.diffset) or diffset_count > 0,
                 'review': self.review_request.get_pending_review(request.user),
                 'review_ui_inline': False,
             })
+
         try:
             context.update(self.get_extra_context(request))
         except Exception as e:
@@ -148,10 +147,7 @@ class ReviewUI(object):
         try:
             return render_to_string(
                 self.template_name,
-                RequestContext(
-                    request,
-                    make_review_request_context(request, self.review_request,
-                                                context)))
+                RequestContext(request, context))
         except Exception as e:
             logging.error('Error when calling get_js_model_data or '
                           'get_js_view_data for FileAttachmentReviewUI '

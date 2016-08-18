@@ -51,9 +51,10 @@ suite('rb/views/ReviewBoxView', function() {
         view = new RB.ReviewBoxView({
             el: $el,
             model: review,
-            pageEditState: editor,
-            reviewReply: reviewReply
+            reviewRequestEditor: editor,
         });
+
+        view._setupNewReply(reviewReply);
 
         /* Don't allow the draft banner to show. */
         spyOn(view, '_showReplyDraftBanner');

@@ -6,8 +6,10 @@ import re
 import shutil
 import tempfile
 
+from django.core.exceptions import ValidationError
 from django.utils import six
 from django.utils.six.moves.urllib.parse import urlparse
+from django.utils.translation import ugettext as _
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
@@ -33,21 +35,27 @@ class CVSTool(SCMTool):
     }
 
     rev_re = re.compile(r'^.*?(\d+(\.\d+)+)\r?$')
-    repopath_re = re.compile(
-        r'^((?P<cnxmethod>:[gkp]server:)'
+
+    remote_cvsroot_re = re.compile(
+        r'^(:(?P<protocol>[gkp]?server|ext|ssh|extssh):'
         r'((?P<username>[^:@]+)(:(?P<password>[^@]+))?@)?)?'
         r'(?P<hostname>[^:]+):(?P<port>\d+)?(?P<path>.*)')
-    ext_cvsroot_re = re.compile(r':ext:([^@]+@)?(?P<hostname>[^:/]+)')
+    local_cvsroot_re = re.compile(r'^:(?P<protocol>local|fork):(?P<path>.+)')
 
     def __init__(self, repository):
         super(CVSTool, self).__init__(repository)
 
         credentials = repository.get_credentials()
 
+        # Note that we're not validating the CVSROOT here, as the path may
+        # contain a value that "worked" prior to us introducing validation.
+        # In those cases, we'd have either parsed out the invalid data or
+        # simply let CVS deal with it. We don't want to break those setups.
         self.cvsroot, self.repopath = \
             self.build_cvsroot(self.repository.path,
                                credentials['username'],
-                               credentials['password'])
+                               credentials['password'],
+                               validate=False)
 
         local_site_name = None
 
@@ -98,42 +106,143 @@ class CVSTool(SCMTool):
         return self.client.collapse_keywords(patch)
 
     @classmethod
-    def build_cvsroot(cls, path, username, password):
-        # NOTE: According to cvs, the following formats are valid.
-        #
-        #  :(gserver|kserver|pserver):[[user][:password]@]host[:[port]]/path
-        #  [:(ext|server):][[user]@]host[:]/path
-        #  :local:e:\path
-        #  :fork:/path
+    def build_cvsroot(cls, cvsroot, username, password, validate=True):
+        """Parse and construct a CVSROOT from the given arguments.
 
-        m = cls.repopath_re.match(path)
+        This will take a repository path or CVSROOT provided by the caller,
+        optionally validate it, and return both a new CVSROOT and the path
+        within it.
+
+        If a username/password are provided as arguments, but do not exist in
+        ``cvsroot``, then the resulting CVSROOT will contain the
+        username/password.
+
+        If data is provided that is not supported by the type of protocol
+        specified in ``cvsroot``, then it will raise a
+        :py:class:`~django.core.exceptions.ValidationError` (if validating)
+        or strip the data from the CVSROOT.
+
+        Args:
+            cvsroot (unicode):
+                A CVSROOT string, or a bare repository path to turn into one.
+
+            username (unicode):
+                Optional username for the CVSROOT.
+
+            password (unicode):
+                Optional password for the CVSROOT (only supported for
+                ``pserver`` types).
+
+            validate (bool, optional):
+                Whether to validate the provided CVSROOT and username/password.
+
+                If set, and the resulting CVSROOT would be invalid, then an
+                error is raised.
+
+                If not set, the resulting CVSROOT will have the invalid data
+                stripped.
+
+                This will check for ports, usernames, and passwords, depending
+                on the type of CVSROOT provided.
+
+        Returns:
+            unicode:
+            The resulting validated CVSROOT.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                The provided data had a validation error. This is only raised
+                if ``validate`` is set.
+        """
+        # CVS supports two types of CVSROOTs: Remote and local.
+        #
+        # The remote repositories share the same CVSROOT format (defined by
+        # CVSTool.remove_cvsroot_re), and the local repositories share their
+        # own format (CVSTool.local_cvsroot_re), but the two formats differ
+        # in many ways.
+        #
+        # We'll be testing both formats to see if the path matches, starting
+        # with remote repositories (the most common).
+        m = cls.remote_cvsroot_re.match(cvsroot)
 
         if m:
-            # The user either specified a valid :pserver: path (or equivalent),
-            # or a simply hostname:port/path. In either case, we'll want to
+            # The user either specified a valid remote repository path, or
+            # simply hostname:port/path. In either case, we'll want to
             # construct our own CVSROOT based on that information and the
-            # provided username and password.
+            # provided username and password, favoring the credentials in the
+            # CVSROOT and falling back on those provided in the repository
+            # configuration.
             #
-            # Note that any username/password found in the path takes
-            # precedence.
-            cvsroot = m.group('cnxmethod') or ':pserver:'
+            # There are some restrictions, depending on the type of protocol:
+            #
+            # * Only "pserver" supports passwords.
+            # * Only "pserver", "gserver", and "kserver" support ports.
+            protocol = m.group('protocol') or 'pserver'
             username = m.group('username') or username
             password = m.group('password') or password
+            port = m.group('port') or None
             path = m.group('path')
 
+            # Apply the restrictions, validating if necessary.
+            if password and protocol != 'pserver':
+                if validate:
+                    raise ValidationError(
+                        _('"%s" CVSROOTs do not support passwords.')
+                        % protocol)
+
+                password = None
+
+            if port and protocol not in ('pserver', 'gserver', 'kserver'):
+                if validate:
+                    raise ValidationError(
+                        _('"%s" CVSROOTs do not support specifying ports.')
+                        % protocol)
+
+                port = None
+
+            # Inject any credentials into the string.
             if username:
                 if password:
-                    cvsroot += '%s:%s@' % (username, password)
+                    credentials = '%s:%s@' % (username, password)
                 else:
-                    cvsroot += '%s@' % (username)
+                    credentials = '%s@' % (username)
+            else:
+                credentials = ''
 
-            cvsroot += '%s:%s%s' % (m.group('hostname'),
-                                    m.group('port') or '',
-                                    path)
+            cvsroot = ':%s:%s%s:%s%s' % (protocol,
+                                         credentials,
+                                         m.group('hostname'),
+                                         port or '',
+                                         path)
         else:
-            # We couldn't parse this as a standard CVSROOT. Assume it's a
-            # local path or another format (like :ext:) and let CVS handle it.
-            cvsroot = path
+            m = cls.local_cvsroot_re.match(cvsroot)
+
+            if m:
+                # This is a local path (either :local: or :fork). It's much
+                # easier to deal with. We're only dealing with a path.
+                path = m.group('path')
+
+                if validate:
+                    if username:
+                        raise ValidationError(
+                            _('"%s" CVSROOTs do not support usernames.')
+                            % m.group('protocol'))
+
+                    if password:
+                        raise ValidationError(
+                            _('"%s" CVSROOTs do not support passwords.')
+                            % m.group('protocol'))
+            else:
+                # We couldn't parse this as a standard CVSROOT. It might be
+                # something a lot more specific. We'll treat it as-is, but
+                # this might cause some small issues in the diff viewer (files
+                # may show up as read-only, since we can't strip the path,
+                # for example).
+                #
+                # We could in theory treat this as a validation error, but
+                # we might break special cases with specialized protocols
+                # (which do exist but are rare).
+                path = cvsroot
 
         return cvsroot, path
 
@@ -151,11 +260,16 @@ class CVSTool(SCMTool):
         If the repository is valid and can be connected to, no exception
         will be thrown.
         """
+        try:
+            cvsroot, repopath = cls.build_cvsroot(path, username, password)
+        except ValidationError as e:
+            raise SCMError('; '.join(e.messages))
+
         # CVS paths are a bit strange, so we can't actually use the
         # SSH checking in SCMTool.check_repository. Do our own.
-        m = cls.ext_cvsroot_re.match(path)
+        m = cls.remote_cvsroot_re.match(path)
 
-        if m:
+        if m and m.group('protocol') in ('ext', 'ssh', 'extssh'):
             try:
                 sshutils.check_host(m.group('hostname'), username, password,
                                     local_site_name)
@@ -168,7 +282,6 @@ class CVSTool(SCMTool):
                 # Re-raise anything else
                 raise
 
-        cvsroot, repopath = cls.build_cvsroot(path, username, password)
         client = CVSClient(cvsroot, repopath, local_site_name)
 
         try:
@@ -185,13 +298,18 @@ class CVSTool(SCMTool):
 
 
 class CVSDiffParser(DiffParser):
-    """This class is able to parse diffs created with CVS. """
+    """Diff parser for CVS diff files.
 
-    regex_small = re.compile('^RCS file: (.+)$')
+    This handles parsing diffs generated by :command:`cvs diff`, extracting
+    the diff content and normalizing filenames for proper display in the
+    diff viewer.
+    """
 
-    def __init__(self, data, repo):
-        DiffParser.__init__(self, data)
-        self.regex_full = re.compile('^RCS file: %s/(.*),v$' % re.escape(repo))
+    def __init__(self, data, rel_repo_path):
+        super(CVSDiffParser, self).__init__(data)
+
+        self.rcs_file_re = re.compile('^RCS file: (%s/)?(?P<path>.+?)(,v)?$'
+                                      % re.escape(rel_repo_path))
 
     def parse_special_header(self, linenum, info):
         linenum = super(CVSDiffParser, self).parse_special_header(
@@ -201,12 +319,10 @@ class CVSDiffParser(DiffParser):
             # We didn't find an index, so the rest is probably bogus too.
             return linenum
 
-        m = self.regex_full.match(self.lines[linenum])
-        if not m:
-            m = self.regex_small.match(self.lines[linenum])
+        m = self.rcs_file_re.match(self.lines[linenum])
 
         if m:
-            info['filename'] = m.group(1)
+            info['filename'] = m.group('path')
             linenum += 1
         else:
             raise DiffParserError('Unable to find RCS line', linenum)
@@ -226,6 +342,16 @@ class CVSDiffParser(DiffParser):
             info['origFile'] = info['newFile']
             info['origInfo'] = 'PRE-CREATION'
         elif 'filename' in info:
+            if info['newFile'] == info['origFile']:
+                # Both the old and new filenames referenced are identical, so
+                # we'll want to update both to include the filename.
+                #
+                # In practice, both of these should be consistent for any
+                # normal file changes (as CVS does not have
+                # moves/renames/copies), but we're just covering bases by
+                # checking for equality.
+                info['newFile'] = info['filename']
+
             info['origFile'] = info['filename']
 
         if info.get('newFile') == b'/dev/null':
@@ -287,7 +413,9 @@ class CVSClient(object):
         if filename.startswith(repos_path + "/"):
             filename = filename[len(repos_path) + 1:]
 
-        # Strip off the ",v" we sometimes get for CVS paths.
+        # Strip off the ",v" we sometimes get for CVS paths. This is mostly
+        # going to be an issue for older diffs, as newly-uploaded diffs should
+        # strip these.
         if filename.endswith(",v"):
             filename = filename[:-2]
 

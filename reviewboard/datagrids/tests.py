@@ -419,6 +419,36 @@ class DashboardViewTests(BaseViewTestCase):
         self.assertEqual(datagrid.rows[2]['object'].summary, 'Test 1')
 
     @add_fixtures(['test_users'])
+    def test_archived_with_null_extra_data(self):
+        """Testing dashboard view with archived review requests and null
+        extra_data
+        """
+        # We encountered a bug where the archived state in the dashboard was
+        # assuming that Profile.extra_data was always a dictionary. In modern
+        # versions of Review Board, the default value for that field is an
+        # empty dict, but old versions defaulted it to None. This test verifies
+        # that the bug is fixed.
+        archived = self.create_review_request(summary='Test 1', publish=True)
+
+        self.client.login(username='doc', password='doc')
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.extra_data = None
+        profile.save()
+
+        archived.target_people.add(user)
+
+        self.client.get(archived.get_absolute_url())
+
+        visit = ReviewRequestVisit.objects.get(user__username=user,
+                                               review_request=archived.id)
+        visit.visibility = ReviewRequestVisit.ARCHIVED
+        visit.save()
+
+        response = self.client.get('/dashboard/', {'show-archived': '0'})
+        self.assertEqual(response.status_code, 200)
+
+    @add_fixtures(['test_users'])
     def test_sidebar(self):
         """Testing dashboard sidebar"""
         self.client.login(username='doc', password='doc')

@@ -79,7 +79,6 @@
             hasDraft: {{draft|yesno:'true,false'}},
             mutableByUser: {{mutable_by_user|yesno:'true,false'}},
             statusMutableByUser: {{status_mutable_by_user|yesno:'true,false'}},
-            showSendEmail: {{send_email|yesno:'true,false'}},
             fileAttachments: [
 {% for file in file_attachments %}
 {%  has_usable_review_ui request.user review_request file as use_review_ui %}
@@ -107,7 +106,4 @@
 {%  endfor %}
 {% endif %}
             }
-        },
-        replyEditorData: {
-            showSendEmail: {{send_email|yesno:'true,false'}}
         }

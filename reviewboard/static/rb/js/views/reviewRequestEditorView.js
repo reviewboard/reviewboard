@@ -689,9 +689,9 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this._$screenshots = $('#screenshot-thumbnails');
         this._$attachments = $('#file-list');
         this._$attachmentsContainer = $(this._$attachments.parent()[0]);
-        this._$bannersContainer = $('#review_request_banners');
-        this._$main = $('#review_request_main');
-        this._$extra = $('#review_request_extra');
+        this._$bannersContainer = $('#review-request-banners');
+        this._$main = $('#review-request-main');
+        this._$extra = $('#review-request-extra');
 
         this.listenTo(reviewRequest, 'change:visibility',
                       this._updateArchiveVisibility);
@@ -1397,7 +1397,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      */
     _checkResizeLayout: function() {
         /*
-         * Not every page that uses this has a #review_request_main element
+         * Not every page that uses this has a #review-request-main element
          * (for instance, review UIs want to have the draft banners but not
          * the review request box). In this case, just skip all of this.
          */
@@ -1414,14 +1414,14 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * and prevents a bunch of wasted-looking space.
      */
     _resizeLayout: function() {
-        var $lastContent = this._$main.children('.content:last-child'),
+        var $lastContent = this._$main.children('.review-request-section:last-child'),
             $lastFieldContainer = $lastContent.children('.field-container'),
             $lastEditable = $lastFieldContainer.children('.editable'),
             lastContentTop = Math.ceil($lastContent.position().top),
             editor = $lastEditable.inlineEditor('field').data('text-editor'),
             detailsWidth = 300, // Defined as @details-width in reviews.less
             detailsPadding = 10,
-            $detailsBody = $('#review_request_details tbody'),
+            $detailsBody = $('#review-request-details tbody'),
             $detailsLabels = $detailsBody.find('th:first-child'),
             $detailsValues = $detailsBody.find('span'),
             contentHeight,

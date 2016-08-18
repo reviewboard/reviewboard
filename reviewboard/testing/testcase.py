@@ -53,6 +53,16 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         b'+Hello, everybody!\n'
     )
 
+    DEFAULT_GIT_FILEDIFF_DATA = (
+        b'diff --git a/README b/README\n'
+        b'index 94bdd3e..197009f 100644\n'
+        b'--- README\n'
+        b'+++ README\n'
+        b'@@ -2 +2 @@\n'
+        b'-blah blah\n'
+        b'+blah!\n'
+    )
+
     DEFAULT_COMMIT_FILEDIFF_DATA = (
         b'diff --git a/readme b/readme\n'
         b'index d6613f5..5b50866 100644\n'
@@ -159,7 +169,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             **kwargs)
 
         filename = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
-                                'trophy.png')
+                                'logo.png')
 
         with open(filename, 'r') as f:
             file_attachment.file.save(filename, File(f), save=True)
@@ -608,7 +618,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         """
         screenshot = Screenshot(caption=caption)
         filename = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
-                                'trophy.png')
+                                'logo.png')
 
         with open(filename, 'r') as f:
             screenshot.image.save(filename, File(f), save=True)
@@ -724,7 +734,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         if has_file:
             filename = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
-                                    'trophy.png')
+                                    'logo.png')
 
             file_attachment.orig_filename = orig_filename
             file_attachment.mimetype = 'image/png'

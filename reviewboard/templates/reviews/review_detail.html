@@ -14,43 +14,16 @@
 {% endblock css %}
 
 {% block content %}
-<div id="review_request">
- <div id="review_request_banners"></div>
+<div id="review-request">
+ <div id="review-request-banners"></div>
 {% display_review_request_trophies review_request %}
-{%  box "review-request" %}
- <div class="review-request-header">
-  <ul class="actions page-tabs">
-   <li class="active"><a href="{{review_request.get_absolute_url}}">{% trans "Reviews" %}</a></li>
-{%   if has_diffs %}
-   <li><a href="{% url 'view-diff' review_request.display_id %}#index_header">{% trans "Diff" %}</a></li>
-{%   endif %}
-  </ul>
+ <div class="review-request">
+{%   include "reviews/review_request_header.html" %}
 
-  <div class="actions-container">
-   <ul class="actions actions-left">
-{%   if request.user.is_authenticated and review_request.status == 'P' %}
-    <li>{% star review_request %}</li>
-    <li class="has-menu">
-     <a class="menu-title" id="hide-review-request-link" href="#"><span class="rb-icon rb-icon-archive-off"></span></a>
-     <ul class="menu" id="hide-review-request-menu" style="display: none;"></ul>
-    </li>
-{%   endif %}
-   </ul>
-   <ul class="actions actions-right-container">
-    <li class="has-menu">
-     <a href="#" class="mobile-actions-menu-label"><span class="fa fa-ellipsis-h fa-lg"></span></a>
-     <ul class="actions actions-right">
-{%   review_request_actions %}
-     </ul>
-    </li>
-   </ul>
+  <div class="review-request-body">
+{%   include "reviews/review_request_box.html" %}
   </div>
  </div>
-
- <div class="main">
-{%   include "reviews/review_request_box.html" %}
- </div>
-{%  endbox "review-request" %}
 </div>
 
 <div id="reviews">
@@ -73,7 +46,9 @@
 
 {%  for entry in entries %}
 {%   if entry.review %}
-{%    include "reviews/boxes/review.html" %}
+{%    with review=entry.review %}
+{%     include "reviews/boxes/review.html" %}
+{%    endwith %}
 {%   elif entry.changedesc %}
 {%    include "reviews/boxes/change.html" %}
 {%   endif %}
@@ -95,6 +70,18 @@
     RB.PageManager.beforeRender(function(page) {
 {%  for entry in entries %}
 {%   if entry.review %}
+        page.addBox(new RB.ReviewBoxView({
+            model: page.reviewRequest.createReview({{entry.review.id}}, {
+                shipIt: {{entry.review.ship_it|yesno:'true,false'}},
+                'public': true,
+                bodyTop: '{{entry.review.body_top}}',
+                bodyBottom: '{{entry.review.body_bottom}}'
+            }),
+            el: $('#review{{entry.review.id}}'),
+            reviewRequestEditor: page.reviewRequestEditor,
+            showSendEmail: {{send_email|yesno:'true,false'}}
+        }));
+
 {%    for comment in entry.comments.diff_comments %}
         page.queueLoadDiff(
             "{{comment.id}}",
@@ -105,6 +92,12 @@
 {%     endif %}
         );
 {%    endfor %}
+{%   elif entry.changedesc %}
+        page.addBox(new RB.ChangeBoxView({
+            el: $('#changedesc{{entry.changedesc.id}}'),
+            reviewRequest: page.reviewRequest,
+            reviewRequestEditorView: page.reviewRequestEditorView
+        }));
 {%   endif %}
 {%  endfor %}
     });

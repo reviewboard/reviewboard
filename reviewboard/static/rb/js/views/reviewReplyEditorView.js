@@ -117,7 +117,7 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
      * Creates a comment editor for an element.
      */
     _createCommentEditor: function($draftComment) {
-        var pageEditState = this.options.pageEditState;
+        var reviewRequestEditor = this.options.reviewRequestEditor;
 
         this._$draftComment = $draftComment;
 
@@ -139,16 +139,16 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
             .removeAttr('data-raw-value')
             .on({
                 beginEdit: function() {
-                    if (pageEditState) {
-                        pageEditState.incr('editCount');
+                    if (reviewRequestEditor) {
+                        reviewRequestEditor.incr('editCount');
                     }
                 },
                 complete: _.bind(function(e, value) {
                     var textEditor = RB.TextEditorView.getFromInlineEditor(
                         this._$editor);
 
-                    if (pageEditState) {
-                        pageEditState.decr('editCount');
+                    if (reviewRequestEditor) {
+                        reviewRequestEditor.decr('editCount');
                     }
 
                     this.model.set({
@@ -158,8 +158,8 @@ RB.ReviewReplyEditorView = Backbone.View.extend({
                     this.model.save();
                 }, this),
                 cancel: _.bind(function() {
-                    if (pageEditState) {
-                        pageEditState.decr('editCount');
+                    if (reviewRequestEditor) {
+                        reviewRequestEditor.decr('editCount');
                     }
 
                     this.model.resetStateIfEmpty();
