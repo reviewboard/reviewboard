@@ -17,6 +17,7 @@ from reviewboard.scmtools.tests.testcases import SCMTestCase
 
 class GitTests(SpyAgency, SCMTestCase):
     """Unit tests for Git."""
+
     fixtures = ['test_scmtools']
 
     def setUp(self):
@@ -162,15 +163,15 @@ class GitTests(SpyAgency, SCMTestCase):
         """Testing parsing Git diffs with tabs after the filename"""
         diff = (
             b'diff --git a/README b/README\n'
-            b"index 712544e4343bf04967eb5ea80257f6c64d6f42c7.."
-            b"f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n"
-            b"--- a/README\t\n"
-            b"+++ b/README\t\n"
-            b"@ -1,1 +1,1 @@\n"
-            b"-blah blah\n"
-            b"+blah\n"
-            b"-\n"
-            b"1.7.1\n")
+            b'index 712544e4343bf04967eb5ea80257f6c64d6f42c7..'
+            b'f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n'
+            b'--- a/README\t\n'
+            b'+++ b/README\t\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah blah\n'
+            b'+blah\n'
+            b'-\n'
+            b'1.7.1\n')
 
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(files[0].origFile, 'README')
@@ -196,8 +197,8 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertFalse(file.deleted)
         self.assertEqual(len(file.data), 123)
         self.assertEqual(file.data.splitlines()[0],
-                         "diff --git a/IAMNEW b/IAMNEW")
-        self.assertEqual(file.data.splitlines()[-1], "+Hello")
+                         'diff --git a/IAMNEW b/IAMNEW')
+        self.assertEqual(file.data.splitlines()[-1], '+Hello')
         self.assertEqual(file.insert_count, 1)
         self.assertEqual(file.delete_count, 0)
 
@@ -216,7 +217,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertFalse(file.deleted)
         lines = file.data.splitlines()
         self.assertEqual(len(lines), 3)
-        self.assertEqual(lines[0], "diff --git a/newfile b/newfile")
+        self.assertEqual(lines[0], 'diff --git a/newfile b/newfile')
         self.assertEqual(file.insert_count, 0)
         self.assertEqual(file.delete_count, 0)
 
@@ -234,7 +235,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertFalse(files[0].deleted)
         lines = files[0].data.splitlines()
         self.assertEqual(len(lines), 3)
-        self.assertEqual(lines[0], "diff --git a/newfile b/newfile")
+        self.assertEqual(lines[0], 'diff --git a/newfile b/newfile')
         self.assertEqual(files[0].insert_count, 0)
         self.assertEqual(files[0].delete_count, 0)
 
@@ -245,7 +246,7 @@ class GitTests(SpyAgency, SCMTestCase):
         lines = files[1].data.splitlines()
         self.assertEqual(len(lines), 13)
         self.assertEqual(lines[0],
-                         "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
+                         'diff --git a/cfg/testcase.ini b/cfg/testcase.ini')
         self.assertEqual(lines[-1], '+db = pyunit')
         self.assertEqual(files[1].insert_count, 2)
         self.assertEqual(files[1].delete_count, 1)
@@ -263,8 +264,8 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertTrue(file.deleted)
         self.assertEqual(len(file.data), 132)
         self.assertEqual(file.data.splitlines()[0],
-                         "diff --git a/OLDFILE b/OLDFILE")
-        self.assertEqual(file.data.splitlines()[-1], "-Goodbye")
+                         'diff --git a/OLDFILE b/OLDFILE')
+        self.assertEqual(file.data.splitlines()[-1], '-Goodbye')
         self.assertEqual(file.insert_count, 0)
         self.assertEqual(file.delete_count, 1)
 
@@ -287,13 +288,14 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertTrue(files[0].deleted)
         self.assertEqual(len(files[0].data), 141)
         self.assertEqual(files[0].data.splitlines()[0],
-                         "diff --git a/empty b/empty")
+                         'diff --git a/empty b/empty')
         self.assertEqual(files[0].insert_count, 0)
         self.assertEqual(files[0].delete_count, 0)
 
     def test_del_file_no_content_with_following_diff(self):
         """Testing parsing Git diff with deleted file, no content, with
-        following"""
+        following
+        """
         diff = (b'diff --git a/empty b/empty\n'
                 b'deleted file mode 100644\n'
                 b'index e69de29bb2d1d6434b8b29ae775ad8c2e48c5391..'
@@ -319,7 +321,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertTrue(files[0].deleted)
         self.assertEqual(len(files[0].data), 141)
         self.assertEqual(files[0].data.splitlines()[0],
-                         "diff --git a/empty b/empty")
+                         'diff --git a/empty b/empty')
         self.assertEqual(files[0].insert_count, 0)
         self.assertEqual(files[0].delete_count, 0)
 
@@ -333,8 +335,8 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertFalse(files[1].deleted)
         lines = files[1].data.splitlines()
         self.assertEqual(len(lines), 7)
-        self.assertEqual(lines[0], "diff --git a/foo/bar b/foo/bar")
-        self.assertEqual(lines[5], "+Hello!")
+        self.assertEqual(lines[0], 'diff --git a/foo/bar b/foo/bar')
+        self.assertEqual(lines[5], '+Hello!')
         self.assertEqual(files[1].insert_count, 1)
         self.assertEqual(files[1].delete_count, 0)
 
@@ -352,9 +354,9 @@ class GitTests(SpyAgency, SCMTestCase):
         lines = file.data.splitlines()
         self.assertEqual(len(lines), 4)
         self.assertEqual(
-            lines[0], "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
+            lines[0], 'diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz')
         self.assertEqual(
-            lines[3], "Binary files /dev/null and b/pysvn-1.5.1.tar.gz differ")
+            lines[3], 'Binary files /dev/null and b/pysvn-1.5.1.tar.gz differ')
         self.assertEqual(file.insert_count, 0)
         self.assertEqual(file.delete_count, 0)
 
@@ -373,9 +375,9 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[0].delete_count, 1)
         self.assertEqual(len(files[0].data), 549)
         self.assertEqual(files[0].data.splitlines()[0],
-                         "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
+                         'diff --git a/cfg/testcase.ini b/cfg/testcase.ini')
         self.assertEqual(files[0].data.splitlines()[13],
-                         "         if isinstance(value, basestring):")
+                         '         if isinstance(value, basestring):')
 
         self.assertEqual(files[1].origFile, 'tests/models.py')
         self.assertEqual(files[1].newFile, 'tests/models.py')
@@ -388,7 +390,7 @@ class GitTests(SpyAgency, SCMTestCase):
         lines = files[1].data.splitlines()
         self.assertEqual(len(lines), 3)
         self.assertEqual(lines[0],
-                         "diff --git a/tests/models.py b/tests/models.py")
+                         'diff --git a/tests/models.py b/tests/models.py')
 
         self.assertEqual(files[2].origFile, 'tests/tests.py')
         self.assertEqual(files[2].newFile, 'tests/tests.py')
@@ -401,9 +403,9 @@ class GitTests(SpyAgency, SCMTestCase):
         lines = files[2].data.splitlines()
         self.assertEqual(len(lines), 8)
         self.assertEqual(lines[0],
-                         "diff --git a/tests/tests.py b/tests/tests.py")
+                         'diff --git a/tests/tests.py b/tests/tests.py')
         self.assertEqual(lines[7],
-                         "+This is some new content")
+                         '+This is some new content')
 
         self.assertEqual(files[3].origFile, 'pysvn-1.5.1.tar.gz')
         self.assertEqual(files[3].newFile, 'pysvn-1.5.1.tar.gz')
@@ -416,7 +418,7 @@ class GitTests(SpyAgency, SCMTestCase):
         lines = files[3].data.splitlines()
         self.assertEqual(len(lines), 4)
         self.assertEqual(
-            lines[0], "diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz")
+            lines[0], 'diff --git a/pysvn-1.5.1.tar.gz b/pysvn-1.5.1.tar.gz')
         self.assertEqual(lines[3],
                          'Binary files /dev/null and b/pysvn-1.5.1.tar.gz '
                          'differ')
@@ -431,8 +433,8 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[4].delete_count, 1)
         lines = files[4].data.splitlines()
         self.assertEqual(len(lines), 7)
-        self.assertEqual(lines[0], "diff --git a/readme b/readme")
-        self.assertEqual(lines[6], "+Hello there")
+        self.assertEqual(lines[0], 'diff --git a/readme b/readme')
+        self.assertEqual(lines[6], '+Hello there')
 
         self.assertEqual(files[5].origFile, 'OLDFILE')
         self.assertEqual(files[5].newFile, 'OLDFILE')
@@ -444,8 +446,8 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[5].delete_count, 1)
         lines = files[5].data.splitlines()
         self.assertEqual(len(lines), 7)
-        self.assertEqual(lines[0], "diff --git a/OLDFILE b/OLDFILE")
-        self.assertEqual(lines[6], "-Goodbye")
+        self.assertEqual(lines[0], 'diff --git a/OLDFILE b/OLDFILE')
+        self.assertEqual(lines[6], '-Goodbye')
 
         self.assertEqual(files[6].origFile, 'readme2')
         self.assertEqual(files[6].newFile, 'readme2')
@@ -457,22 +459,22 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[6].delete_count, 1)
         lines = files[6].data.splitlines()
         self.assertEqual(len(lines), 7)
-        self.assertEqual(lines[0], "diff --git a/readme2 b/readme2")
-        self.assertEqual(lines[6], "+Hello there")
+        self.assertEqual(lines[0], 'diff --git a/readme2 b/readme2')
+        self.assertEqual(lines[6], '+Hello there')
 
     def test_parse_diff_with_index_range(self):
         """Testing Git diff parsing with an index range"""
-        diff = (b"diff --git a/foo/bar b/foo/bar2\n"
-                b"similarity index 88%\n"
-                b"rename from foo/bar\n"
-                b"rename to foo/bar2\n"
-                b"index 612544e4343bf04967eb5ea80257f6c64d6f42c7.."
-                b"e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n"
-                b"--- a/foo/bar\n"
-                b"+++ b/foo/bar2\n"
-                b"@ -1,1 +1,1 @@\n"
-                b"-blah blah\n"
-                b"+blah\n")
+        diff = (b'diff --git a/foo/bar b/foo/bar2\n'
+                b'similarity index 88%\n'
+                b'rename from foo/bar\n'
+                b'rename to foo/bar2\n'
+                b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+                b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n'
+                b'--- a/foo/bar\n'
+                b'+++ b/foo/bar2\n'
+                b'@ -1,1 +1,1 @@\n'
+                b'-blah blah\n'
+                b'+blah\n')
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
         self.assertEqual(files[0].origFile, 'foo/bar')
@@ -486,12 +488,12 @@ class GitTests(SpyAgency, SCMTestCase):
 
     def test_parse_diff_with_deleted_binary_files(self):
         """Testing Git diff parsing with deleted binary files"""
-        diff = (b"diff --git a/foo.bin b/foo.bin\n"
-                b"deleted file mode 100644\n"
-                b"Binary file foo.bin has changed\n"
-                b"diff --git a/bar.bin b/bar.bin\n"
-                b"deleted file mode 100644\n"
-                b"Binary file bar.bin has changed\n")
+        diff = (b'diff --git a/foo.bin b/foo.bin\n'
+                b'deleted file mode 100644\n'
+                b'Binary file foo.bin has changed\n'
+                b'diff --git a/bar.bin b/bar.bin\n'
+                b'deleted file mode 100644\n'
+                b'Binary file bar.bin has changed\n')
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 2)
         self.assertEqual(files[0].origFile, 'foo.bin')
@@ -510,40 +512,40 @@ class GitTests(SpyAgency, SCMTestCase):
     def test_parse_diff_with_all_headers(self):
         """Testing Git diff parsing and preserving all headers"""
         preamble = (
-            b"From 38d8fa94a9aa0c5b27943bec31d94e880165f1e0 Mon Sep "
-            b"17 00:00:00 2001\n"
-            b"From: Example Joe <joe@example.com>\n"
-            b"Date: Thu, 5 Apr 2012 00:41:12 -0700\n"
-            b"Subject: [PATCH 1/1] Sample patch.\n"
-            b"\n"
-            b"This is a test summary.\n"
-            b"\n"
-            b"With a description.\n"
-            b"---\n"
-            b" foo/bar |   2 -+n"
-            b" README  |   2 -+n"
-            b" 2 files changed, 2 insertions(+), 2 deletions(-)\n"
-            b"\n")
+            b'From 38d8fa94a9aa0c5b27943bec31d94e880165f1e0 Mon Sep '
+            b'17 00:00:00 2001\n'
+            b'From: Example Joe <joe@example.com>\n'
+            b'Date: Thu, 5 Apr 2012 00:41:12 -0700\n'
+            b'Subject: [PATCH 1/1] Sample patch.\n'
+            b'\n'
+            b'This is a test summary.\n'
+            b'\n'
+            b'With a description.\n'
+            b'---\n'
+            b' foo/bar |   2 -+n'
+            b' README  |   2 -+n'
+            b' 2 files changed, 2 insertions(+), 2 deletions(-)\n'
+            b'\n')
         diff1 = (
-            b"diff --git a/foo/bar b/foo/bar2\n"
-            b"index 612544e4343bf04967eb5ea80257f6c64d6f42c7.."
-            b"e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n"
-            b"--- a/foo/bar\n"
-            b"+++ b/foo/bar2\n"
-            b"@ -1,1 +1,1 @@\n"
-            b"-blah blah\n"
-            b"+blah\n")
+            b'diff --git a/foo/bar b/foo/bar2\n'
+            b'index 612544e4343bf04967eb5ea80257f6c64d6f42c7..'
+            b'e88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n'
+            b'--- a/foo/bar\n'
+            b'+++ b/foo/bar2\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah blah\n'
+            b'+blah\n')
         diff2 = (
-            b"diff --git a/README b/README\n"
-            b"index 712544e4343bf04967eb5ea80257f6c64d6f42c7.."
-            b"f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n"
-            b"--- a/README\n"
-            b"+++ b/README\n"
-            b"@ -1,1 +1,1 @@\n"
-            b"-blah blah\n"
-            b"+blah\n"
-            b"-\n"
-            b"1.7.1\n")
+            b'diff --git a/README b/README\n'
+            b'index 712544e4343bf04967eb5ea80257f6c64d6f42c7..'
+            b'f88b7f15c03d141d0bb38c8e49bb6c411ebfe1f1 100644\n'
+            b'--- a/README\n'
+            b'+++ b/README\n'
+            b'@ -1,1 +1,1 @@\n'
+            b'-blah blah\n'
+            b'+blah\n'
+            b'-\n'
+            b'1.7.1\n')
         diff = preamble + diff1 + diff2
 
         files = self.tool.get_parser(diff).parse()
@@ -570,7 +572,6 @@ class GitTests(SpyAgency, SCMTestCase):
 
     def test_parse_diff_revision(self):
         """Testing Git revision number parsing"""
-
         self.assertEqual(
             self.tool.parse_diff_revision('doc/readme', 'bf544ea'),
             ('doc/readme', 'bf544ea'))
@@ -771,38 +772,36 @@ class GitTests(SpyAgency, SCMTestCase):
 
     def test_file_exists(self):
         """Testing GitTool.file_exists"""
+        self.assertTrue(self.tool.file_exists('readme', 'e965047'))
+        self.assertTrue(self.tool.file_exists('readme', 'd6613f5'))
 
-        self.assertTrue(self.tool.file_exists("readme", "e965047"))
-        self.assertTrue(self.tool.file_exists("readme", "d6613f5"))
-
-        self.assertTrue(not self.tool.file_exists("readme", PRE_CREATION))
-        self.assertTrue(not self.tool.file_exists("readme", "fffffff"))
-        self.assertTrue(not self.tool.file_exists("readme2", "fffffff"))
+        self.assertTrue(not self.tool.file_exists('readme', PRE_CREATION))
+        self.assertTrue(not self.tool.file_exists('readme', 'fffffff'))
+        self.assertTrue(not self.tool.file_exists('readme2', 'fffffff'))
 
         # these sha's are valid, but commit and tree objects, not blobs
-        self.assertTrue(not self.tool.file_exists("readme", "a62df6c"))
-        self.assertTrue(not self.tool.file_exists("readme2", "ccffbb4"))
+        self.assertTrue(not self.tool.file_exists('readme', 'a62df6c'))
+        self.assertTrue(not self.tool.file_exists('readme2', 'ccffbb4'))
 
     def test_get_file(self):
         """Testing GitTool.get_file"""
-
-        self.assertEqual(self.tool.get_file("readme", PRE_CREATION), b'')
+        self.assertEqual(self.tool.get_file('readme', PRE_CREATION), b'')
         self.assertTrue(
-            isinstance(self.tool.get_file("readme", "e965047"), bytes))
-        self.assertEqual(self.tool.get_file("readme", "e965047"), b'Hello\n')
-        self.assertEqual(self.tool.get_file("readme", "d6613f5"),
+            isinstance(self.tool.get_file('readme', 'e965047'), bytes))
+        self.assertEqual(self.tool.get_file('readme', 'e965047'), b'Hello\n')
+        self.assertEqual(self.tool.get_file('readme', 'd6613f5'),
                          b'Hello there\n')
 
-        self.assertEqual(self.tool.get_file("readme"), b'Hello there\n')
+        self.assertEqual(self.tool.get_file('readme'), b'Hello there\n')
 
-        self.assertRaises(SCMError, lambda: self.tool.get_file(""))
+        self.assertRaises(SCMError, lambda: self.tool.get_file(''))
 
         self.assertRaises(FileNotFoundError,
-                          lambda: self.tool.get_file("", "0000000"))
+                          lambda: self.tool.get_file('', '0000000'))
         self.assertRaises(FileNotFoundError,
-                          lambda: self.tool.get_file("hello", "0000000"))
+                          lambda: self.tool.get_file('hello', '0000000'))
         self.assertRaises(FileNotFoundError,
-                          lambda: self.tool.get_file("readme", "0000000"))
+                          lambda: self.tool.get_file('readme', '0000000'))
 
     def test_parse_diff_revision_with_remote_and_short_SHA1_error(self):
         """Testing GitTool.parse_diff_revision with remote files and short
@@ -857,7 +856,8 @@ class GitTests(SpyAgency, SCMTestCase):
 
     def test_get_file_exists_caching_with_raw_url(self):
         """Testing Repository.get_file_exists properly checks file existence in
-        repository or cache when raw file URL changes"""
+        repository or cache when raw file URL changes
+        """
         self.spy_on(self.remote_repository._get_file_exists_uncached,
                     call_fake=lambda a, b, x, y, z: True)
         # Use spy to put key into cache

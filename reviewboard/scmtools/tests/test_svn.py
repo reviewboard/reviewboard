@@ -23,6 +23,7 @@ class CommonSVNTestCase(SpyAgency, SCMTestCase):
     This is meant to be subclassed for each backend that wants to run
     the common set of tests.
     """
+
     backend = None
     backend_name = None
     fixtures = ['test_scmtools']
@@ -207,19 +208,19 @@ class CommonSVNTestCase(SpyAgency, SCMTestCase):
         # 'svn cat' will expand special variables in svn:keywords,
         # but 'svn diff' doesn't expand anything.  This causes the
         # patch to fail if those variables appear in the patch context.
-        diff = (b"Index: Makefile\n"
-                b"==========================================================="
-                b"========\n"
-                b"--- Makefile    (revision 4)\n"
-                b"+++ Makefile    (working copy)\n"
-                b"@@ -1,6 +1,7 @@\n"
-                b" # $Id$\n"
-                b" # $Rev$\n"
-                b" # $Revision::     $\n"
-                b"+# foo\n"
-                b" include ../tools/Makefile.base-vars\n"
-                b" NAME = misc-docs\n"
-                b" OUTNAME = svn-misc-docs\n")
+        diff = (b'Index: Makefile\n'
+                b'==========================================================='
+                b'========\n'
+                b'--- Makefile    (revision 4)\n'
+                b'+++ Makefile    (working copy)\n'
+                b'@@ -1,6 +1,7 @@\n'
+                b' # $Id$\n'
+                b' # $Rev$\n'
+                b' # $Revision::     $\n'
+                b'+# foo\n'
+                b' include ../tools/Makefile.base-vars\n'
+                b' NAME = misc-docs\n'
+                b' OUTNAME = svn-misc-docs\n')
 
         filename = 'trunk/doc/misc-docs/Makefile'
         rev = Revision('4')
@@ -228,20 +229,20 @@ class CommonSVNTestCase(SpyAgency, SCMTestCase):
 
     def test_unterminated_keyword_diff(self):
         """Testing SVN (<backend>) parsing diff with unterminated keywords"""
-        diff = (b"Index: Makefile\n"
-                b"==========================================================="
-                b"========\n"
-                b"--- Makefile    (revision 4)\n"
-                b"+++ Makefile    (working copy)\n"
-                b"@@ -1,6 +1,7 @@\n"
-                b" # $Id$\n"
-                b" # $Id:\n"
-                b" # $Rev$\n"
-                b" # $Revision::     $\n"
-                b"+# foo\n"
-                b" include ../tools/Makefile.base-vars\n"
-                b" NAME = misc-docs\n"
-                b" OUTNAME = svn-misc-docs\n")
+        diff = (b'Index: Makefile\n'
+                b'==========================================================='
+                b'========\n'
+                b'--- Makefile    (revision 4)\n'
+                b'+++ Makefile    (working copy)\n'
+                b'@@ -1,6 +1,7 @@\n'
+                b' # $Id$\n'
+                b' # $Id:\n'
+                b' # $Rev$\n'
+                b' # $Revision::     $\n'
+                b'+# foo\n'
+                b' include ../tools/Makefile.base-vars\n'
+                b' NAME = misc-docs\n'
+                b' OUTNAME = svn-misc-docs\n')
 
         filename = 'trunk/doc/misc-docs/Makefile'
         rev = Revision('5')
@@ -249,27 +250,26 @@ class CommonSVNTestCase(SpyAgency, SCMTestCase):
         patch(diff, file, filename)
 
     def test_svn16_property_diff(self):
-        """Testing SVN (<backend>) parsing SVN 1.6 diff with
-        property changes
+        """Testing SVN (<backend>) parsing SVN 1.6 diff with property changes
         """
         prop_diff = (
-            b"Index:\n"
-            b"======================================================"
-            b"=============\n"
-            b"--- (revision 123)\n"
-            b"+++ (working copy)\n"
-            b"Property changes on: .\n"
-            b"______________________________________________________"
-            b"_____________\n"
-            b"Modified: reviewboard:url\n"
-            b"## -1 +1 ##\n"
-            b"-http://reviews.reviewboard.org\n"
-            b"+http://reviews.reviewboard.org\n")
+            b'Index:\n'
+            b'======================================================'
+            b'=============\n'
+            b'--- (revision 123)\n'
+            b'+++ (working copy)\n'
+            b'Property changes on: .\n'
+            b'______________________________________________________'
+            b'_____________\n'
+            b'Modified: reviewboard:url\n'
+            b'## -1 +1 ##\n'
+            b'-http://reviews.reviewboard.org\n'
+            b'+http://reviews.reviewboard.org\n')
         bin_diff = (
-            b"Index: binfile\n"
-            b"======================================================="
-            b"============\nCannot display: file marked as a "
-            b"binary type.\nsvn:mime-type = application/octet-stream\n")
+            b'Index: binfile\n'
+            b'======================================================='
+            b'============\nCannot display: file marked as a '
+            b'binary type.\nsvn:mime-type = application/octet-stream\n')
         diff = prop_diff + bin_diff
 
         files = self.tool.get_parser(diff).parse()
@@ -280,31 +280,30 @@ class CommonSVNTestCase(SpyAgency, SCMTestCase):
         self.assertEqual(files[0].delete_count, 0)
 
     def test_svn17_property_diff(self):
-        """Testing SVN (<backend>) parsing SVN 1.7+ diff with
-        property changes
+        """Testing SVN (<backend>) parsing SVN 1.7+ diff with property changes
         """
         prop_diff = (
-            b"Index .:\n"
-            b"======================================================"
-            b"=============\n"
-            b"--- .  (revision 123)\n"
-            b"+++ .  (working copy)\n"
-            b"\n"
-            b"Property changes on: .\n"
-            b"______________________________________________________"
-            b"_____________\n"
-            b"Modified: reviewboard:url\n"
-            b"## -0,0 +1,3 ##\n"
-            b"-http://reviews.reviewboard.org\n"
-            b"+http://reviews.reviewboard.org\n"
-            b"Added: myprop\n"
-            b"## -0,0 +1 ##\n"
-            b"+Property test.\n")
+            b'Index .:\n'
+            b'======================================================'
+            b'=============\n'
+            b'--- .  (revision 123)\n'
+            b'+++ .  (working copy)\n'
+            b'\n'
+            b'Property changes on: .\n'
+            b'______________________________________________________'
+            b'_____________\n'
+            b'Modified: reviewboard:url\n'
+            b'## -0,0 +1,3 ##\n'
+            b'-http://reviews.reviewboard.org\n'
+            b'+http://reviews.reviewboard.org\n'
+            b'Added: myprop\n'
+            b'## -0,0 +1 ##\n'
+            b'+Property test.\n')
         bin_diff = (
-            b"Index: binfile\n"
-            b"======================================================="
-            b"============\nCannot display: file marked as a "
-            b"binary type.\nsvn:mime-type = application/octet-stream\n")
+            b'Index: binfile\n'
+            b'======================================================='
+            b'============\nCannot display: file marked as a '
+            b'binary type.\nsvn:mime-type = application/octet-stream\n')
         diff = prop_diff + bin_diff
 
         files = self.tool.get_parser(diff).parse()
@@ -317,16 +316,16 @@ class CommonSVNTestCase(SpyAgency, SCMTestCase):
 
     def test_unicode_diff(self):
         """Testing SVN (<backend>) parsing diff with unicode characters"""
-        diff = ("Index: Filé\n"
-                "==========================================================="
-                "========\n"
-                "--- Filé    (revision 4)\n"
-                "+++ Filé    (working copy)\n"
-                "@@ -1,6 +1,7 @@\n"
-                "+# foó\n"
-                " include ../tools/Makefile.base-vars\n"
-                " NAME = misc-docs\n"
-                " OUTNAME = svn-misc-docs\n").encode('utf-8')
+        diff = ('Index: Filé\n'
+                '==========================================================='
+                '========\n'
+                '--- Filé    (revision 4)\n'
+                '+++ Filé    (working copy)\n'
+                '@@ -1,6 +1,7 @@\n'
+                '+# foó\n'
+                ' include ../tools/Makefile.base-vars\n'
+                ' NAME = misc-docs\n'
+                ' OUTNAME = svn-misc-docs\n').encode('utf-8')
 
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
@@ -337,16 +336,16 @@ class CommonSVNTestCase(SpyAgency, SCMTestCase):
 
     def test_diff_with_spaces_in_filenames(self):
         """Testing SVN (<backend>) parsing diff with spaces in filenames"""
-        diff = (b"Index: File with spaces\n"
-                b"==========================================================="
-                b"========\n"
-                b"--- File with spaces    (revision 4)\n"
-                b"+++ File with spaces    (working copy)\n"
-                b"@@ -1,6 +1,7 @@\n"
-                b"+# foo\n"
-                b" include ../tools/Makefile.base-vars\n"
-                b" NAME = misc-docs\n"
-                b" OUTNAME = svn-misc-docs\n")
+        diff = (b'Index: File with spaces\n'
+                b'==========================================================='
+                b'========\n'
+                b'--- File with spaces    (revision 4)\n'
+                b'+++ File with spaces    (working copy)\n'
+                b'@@ -1,6 +1,7 @@\n'
+                b'+# foo\n'
+                b' include ../tools/Makefile.base-vars\n'
+                b' NAME = misc-docs\n'
+                b' OUTNAME = svn-misc-docs\n')
 
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)

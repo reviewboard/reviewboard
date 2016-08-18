@@ -15,6 +15,7 @@ from reviewboard.scmtools.tests.testcases import SCMTestCase
 
 class CVSTests(SCMTestCase):
     """Unit tests for CVS."""
+
     fixtures = ['test_scmtools']
 
     def setUp(self):
@@ -326,7 +327,7 @@ class CVSTests(SCMTestCase):
 
     def test_get_file(self):
         """Testing CVSTool.get_file"""
-        expected = b"test content\n"
+        expected = b'test content\n'
         file = 'test/testfile'
         rev = Revision('1.1')
         badrev = Revision('2.1')
@@ -334,9 +335,9 @@ class CVSTests(SCMTestCase):
         value = self.tool.get_file(file, rev)
         self.assertTrue(isinstance(value, bytes))
         self.assertEqual(value, expected)
-        self.assertEqual(self.tool.get_file(file + ",v", rev), expected)
+        self.assertEqual(self.tool.get_file(file + ',v', rev), expected)
         self.assertEqual(self.tool.get_file(self.tool.repopath + '/' +
-                                            file + ",v", rev), expected)
+                                            file + ',v', rev), expected)
 
         self.assertTrue(self.tool.file_exists('test/testfile'))
         self.assertTrue(self.tool.file_exists(
@@ -386,18 +387,18 @@ class CVSTests(SCMTestCase):
 
     def test_simple_diff(self):
         """Testing parsing CVS simple diff"""
-        diff = (b"Index: testfile\n"
-                b"==========================================================="
-                b"========\n"
-                b"RCS file: %s/test/testfile,v\n"
-                b"retrieving revision 1.1.1.1\n"
-                b"diff -u -r1.1.1.1 testfile\n"
-                b"--- testfile    26 Jul 2007 08:50:30 -0000      1.1.1.1\n"
-                b"+++ testfile    26 Jul 2007 10:20:20 -0000\n"
-                b"@@ -1 +1,2 @@\n"
-                b"-test content\n"
-                b"+updated test content\n"
-                b"+added info\n")
+        diff = (b'Index: testfile\n'
+                b'==========================================================='
+                b'========\n'
+                b'RCS file: %s/test/testfile,v\n'
+                b'retrieving revision 1.1.1.1\n'
+                b'diff -u -r1.1.1.1 testfile\n'
+                b'--- testfile    26 Jul 2007 08:50:30 -0000      1.1.1.1\n'
+                b'+++ testfile    26 Jul 2007 10:20:20 -0000\n'
+                b'@@ -1 +1,2 @@\n'
+                b'-test content\n'
+                b'+updated test content\n'
+                b'+added info\n')
         diff = diff % self.cvs_repo_path
 
         file = self.tool.get_parser(diff).parse()[0]
@@ -412,14 +413,14 @@ class CVSTests(SCMTestCase):
 
     def test_new_diff_revision_format(self):
         """Testing parsing CVS diff with new revision format"""
-        diff = (b"Index: %s/test/testfile\n"
-                b"diff -u %s/test/testfile:1.5.2.1 %s/test/testfile:1.5.2.2\n"
-                b"--- test/testfile:1.5.2.1\tThu Dec 15 16:27:47 2011\n"
-                b"+++ test/testfile\tTue Jan 10 10:36:26 2012\n"
-                b"@@ -1 +1,2 @@\n"
-                b"-test content\n"
-                b"+updated test content\n"
-                b"+added info\n")
+        diff = (b'Index: %s/test/testfile\n'
+                b'diff -u %s/test/testfile:1.5.2.1 %s/test/testfile:1.5.2.2\n'
+                b'--- test/testfile:1.5.2.1\tThu Dec 15 16:27:47 2011\n'
+                b'+++ test/testfile\tTue Jan 10 10:36:26 2012\n'
+                b'@@ -1 +1,2 @@\n'
+                b'-test content\n'
+                b'+updated test content\n'
+                b'+added info\n')
         diff = diff % (self.cvs_repo_path, self.cvs_repo_path,
                        self.cvs_repo_path)
 
@@ -436,44 +437,44 @@ class CVSTests(SCMTestCase):
 
     def test_bad_diff(self):
         """Testing parsing CVS diff with bad info"""
-        diff = (b"Index: newfile\n"
-                b"==========================================================="
-                b"========\n"
-                b"diff -N newfile\n"
-                b"--- /dev/null\t1 Jan 1970 00:00:00 -0000\n"
-                b"+++ newfile\t26 Jul 2007 10:11:45 -0000\n"
-                b"@@ -0,0 +1 @@\n"
-                b"+new file content")
+        diff = (b'Index: newfile\n'
+                b'==========================================================='
+                b'========\n'
+                b'diff -N newfile\n'
+                b'--- /dev/null\t1 Jan 1970 00:00:00 -0000\n'
+                b'+++ newfile\t26 Jul 2007 10:11:45 -0000\n'
+                b'@@ -0,0 +1 @@\n'
+                b'+new file content')
 
         self.assertRaises(DiffParserError,
                           lambda: self.tool.get_parser(diff).parse())
 
     def test_bad_diff2(self):
         """Testing parsing CVS bad diff with new file"""
-        diff = (b"Index: newfile\n"
-                b"==========================================================="
-                b"========\n"
-                b"RCS file: newfile\n"
-                b"diff -N newfile\n"
-                b"--- /dev/null\n"
-                b"+++ newfile\t26 Jul 2007 10:11:45 -0000\n"
-                b"@@ -0,0 +1 @@\n"
-                b"+new file content")
+        diff = (b'Index: newfile\n'
+                b'==========================================================='
+                b'========\n'
+                b'RCS file: newfile\n'
+                b'diff -N newfile\n'
+                b'--- /dev/null\n'
+                b'+++ newfile\t26 Jul 2007 10:11:45 -0000\n'
+                b'@@ -0,0 +1 @@\n'
+                b'+new file content')
 
         self.assertRaises(DiffParserError,
                           lambda: self.tool.get_parser(diff).parse())
 
     def test_newfile_diff(self):
         """Testing parsing CVS diff with new file"""
-        diff = (b"Index: newfile\n"
-                b"==========================================================="
-                b"========\n"
-                b"RCS file: newfile\n"
-                b"diff -N newfile\n"
-                b"--- /dev/null\t1 Jan 1970 00:00:00 -0000\n"
-                b"+++ newfile\t26 Jul 2007 10:11:45 -0000\n"
-                b"@@ -0,0 +1 @@\n"
-                b"+new file content\n")
+        diff = (b'Index: newfile\n'
+                b'==========================================================='
+                b'========\n'
+                b'RCS file: newfile\n'
+                b'diff -N newfile\n'
+                b'--- /dev/null\t1 Jan 1970 00:00:00 -0000\n'
+                b'+++ newfile\t26 Jul 2007 10:11:45 -0000\n'
+                b'@@ -0,0 +1 @@\n'
+                b'+new file content\n')
 
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, 'newfile')
@@ -486,19 +487,19 @@ class CVSTests(SCMTestCase):
 
     def test_inter_revision_diff(self):
         """Testing parsing CVS inter-revision diff"""
-        diff = (b"Index: testfile\n"
-                b"==========================================================="
-                b"========\n"
-                b"RCS file: %s/test/testfile,v\n"
-                b"retrieving revision 1.1\n"
-                b"retrieving revision 1.2\n"
-                b"diff -u -p -r1.1 -r1.2\n"
-                b"--- testfile    26 Jul 2007 08:50:30 -0000      1.1\n"
-                b"+++ testfile    27 Sep 2007 22:57:16 -0000      1.2\n"
-                b"@@ -1 +1,2 @@\n"
-                b"-test content\n"
-                b"+updated test content\n"
-                b"+added info\n")
+        diff = (b'Index: testfile\n'
+                b'==========================================================='
+                b'========\n'
+                b'RCS file: %s/test/testfile,v\n'
+                b'retrieving revision 1.1\n'
+                b'retrieving revision 1.2\n'
+                b'diff -u -p -r1.1 -r1.2\n'
+                b'--- testfile    26 Jul 2007 08:50:30 -0000      1.1\n'
+                b'+++ testfile    27 Sep 2007 22:57:16 -0000      1.2\n'
+                b'@@ -1 +1,2 @@\n'
+                b'-test content\n'
+                b'+updated test content\n'
+                b'+added info\n')
         diff = diff % self.cvs_repo_path
 
         file = self.tool.get_parser(diff).parse()[0]
@@ -512,18 +513,18 @@ class CVSTests(SCMTestCase):
 
     def test_unicode_diff(self):
         """Testing parsing CVS diff with unicode filenames"""
-        diff = ("Index: téstfile\n"
-                "==========================================================="
-                "========\n"
-                "RCS file: %s/test/téstfile,v\n"
-                "retrieving revision 1.1.1.1\n"
-                "diff -u -r1.1.1.1 téstfile\n"
-                "--- téstfile    26 Jul 2007 08:50:30 -0000      1.1.1.1\n"
-                "+++ téstfile    26 Jul 2007 10:20:20 -0000\n"
-                "@@ -1 +1,2 @@\n"
-                "-tést content\n"
-                "+updated test content\n"
-                "+added info\n")
+        diff = ('Index: téstfile\n'
+                '==========================================================='
+                '========\n'
+                'RCS file: %s/test/téstfile,v\n'
+                'retrieving revision 1.1.1.1\n'
+                'diff -u -r1.1.1.1 téstfile\n'
+                '--- téstfile    26 Jul 2007 08:50:30 -0000      1.1.1.1\n'
+                '+++ téstfile    26 Jul 2007 10:20:20 -0000\n'
+                '@@ -1 +1,2 @@\n'
+                '-tést content\n'
+                '+updated test content\n'
+                '+added info\n')
         diff = diff % self.cvs_repo_path
         diff = diff.encode('utf-8')
 

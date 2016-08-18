@@ -10,6 +10,7 @@ from reviewboard.scmtools.tests.testcases import SCMTestCase
 
 class BZRTests(SCMTestCase):
     """Unit tests for bzr."""
+
     fixtures = ['test_scmtools']
 
     def setUp(self):
@@ -26,6 +27,7 @@ class BZRTests(SCMTestCase):
                                      tool=Tool.objects.get(name='Bazaar'))
 
         from reviewboard.scmtools.bzr import has_bzrlib
+
         if not has_bzrlib:
             self.tool = self.repository.get_scmtool()
             raise nose.SkipTest('bzrlib is not installed')
