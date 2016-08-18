@@ -66,7 +66,7 @@ class ResourceListTests(BaseWebAPITestCase):
                 screenshot_item_mimetype,
                 {
                     'caption': 'Trophy',
-                    'path': open(self._getTrophyFilename(), 'r'),
+                    'path': open(self.get_sample_image_filename(), 'r'),
                 },
                 [review_request])
 
@@ -85,7 +85,7 @@ class ResourceListTests(BaseWebAPITestCase):
         review_request = self.create_review_request()
         self.assertNotEqual(review_request.submitter, self.user)
 
-        f = open(self._getTrophyFilename(), "r")
+        f = open(self.get_sample_image_filename(), "r")
         rsp = self.api_post(
             get_screenshot_draft_list_url(review_request),
             {

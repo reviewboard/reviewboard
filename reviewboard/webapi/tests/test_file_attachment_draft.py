@@ -57,7 +57,7 @@ class ResourceListTests(BaseWebAPITestCase):
 
         if post_valid_data:
             post_data = {
-                'path': open(self._getTrophyFilename(), 'r'),
+                'path': open(self.get_sample_image_filename(), 'r'),
                 'caption': 'New caption',
             }
         else:
@@ -88,7 +88,7 @@ class ResourceListTests(BaseWebAPITestCase):
         review_request = self.create_review_request()
         self.assertNotEqual(review_request.submitter, self.user)
 
-        f = open(self._getTrophyFilename(), "r")
+        f = open(self.get_sample_image_filename(), "r")
         self.assertTrue(f)
         rsp = self.api_post(
             get_draft_file_attachment_list_url(review_request),

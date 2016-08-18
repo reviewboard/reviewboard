@@ -54,8 +54,12 @@ class DefaultReviewerForm(forms.ModelForm):
                     'all repositories.'),
         widget=FilteredSelectMultiple(_("Repositories"), False))
 
-    def __init__(self, local_site_name=None, *args, **kwargs):
+    def __init__(self, local_site=None, local_site_name=None, *args, **kwargs):
         super(DefaultReviewerForm, self).__init__(*args, **kwargs)
+
+        if local_site:
+            local_site_name = local_site.name
+
         self.fields['people'].widget.local_site_name = local_site_name
 
     def clean(self):

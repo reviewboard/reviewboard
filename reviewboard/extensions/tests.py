@@ -903,8 +903,8 @@ class APIExtraDataAccessHookTests(ExtensionManagerMixin, SpyAgency,
         self.extension = self.manager.enable_extension(self.extension_class.id)
         self.registered = True
 
-        self.extension_class.info = ExtensionInfo(entry_point,
-                                                  self.extension_class)
+        self.extension_class.info = ExtensionInfo.create_from_entrypoint(
+            entry_point, self.extension_class)
 
         self.url = self.resource.get_item_url(test_id=1)
         self.resource.extra_data = {
