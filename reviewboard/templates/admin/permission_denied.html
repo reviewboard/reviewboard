@@ -1,0 +1,10 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+{% block title %}{% trans "Permission Denied" %}{% endblock title %}
+{% block bodyclass %}permission-denied{% endblock bodyclass %}
+{% block content %}
+<h1 class="title">{% trans "Permission Denied" %}</h1>
+<div id="content-main">
+ <p>{% trans "You do not have the required permissions to access to this page." %}</p>
+</div>
+{% endblock content %}

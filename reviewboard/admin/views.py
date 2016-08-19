@@ -17,6 +17,7 @@ from djblets.siteconfig.views import site_settings as djblets_site_settings
 
 from reviewboard.accounts.models import Profile
 from reviewboard.admin.cache_stats import get_cache_stats
+from reviewboard.admin.decorators import superuser_required
 from reviewboard.admin.forms import SSHSettingsForm
 from reviewboard.admin.security_checks import SecurityCheckRunner
 from reviewboard.admin.support import get_support_url, serialize_support_data
@@ -130,7 +131,7 @@ def security(request, template_name="admin/security.html"):
 
 
 @csrf_protect
-@staff_member_required
+@superuser_required
 def site_settings(request, form_class,
                   template_name="siteconfig/settings.html"):
     """Render the general site settings page."""
@@ -140,7 +141,7 @@ def site_settings(request, form_class,
 
 
 @csrf_protect
-@staff_member_required
+@superuser_required
 def ssh_settings(request, template_name='admin/ssh_settings.html'):
     """Render the SSH settings page."""
     client = SSHClient()

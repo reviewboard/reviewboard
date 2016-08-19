@@ -822,7 +822,7 @@ td, th {
   }
 }
 
-.change-form, .dashboard {
+.change-form, .dashboard, .permission-denied {
   #content-main {
     border: 1px @box-border-color solid;
     .border-radius(0 0 @box-border-radius @box-border-radius);
@@ -999,6 +999,10 @@ td, th {
   .form-row {
     border: 0;
   }
+}
+
+.permission-denied #content-main p {
+  margin: 1em;
 }
 
 .public-key {
