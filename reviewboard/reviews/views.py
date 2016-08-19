@@ -52,12 +52,14 @@ from reviewboard.reviews.context import (comment_counts,
                                          has_comments_in_diffsets_excluding,
                                          interdiffs_with_comments,
                                          make_review_request_context)
-from reviewboard.reviews.fields import get_review_request_fieldsets
+from reviewboard.reviews.detail import ChangeEntry, ReviewEntry
 from reviewboard.reviews.markdown_utils import is_rich_text_default_for_user
-from reviewboard.reviews.models import (BaseComment, Comment,
+from reviewboard.reviews.models import (Comment,
                                         FileAttachmentComment,
-                                        GeneralComment, Review,
-                                        ReviewRequest, Screenshot,
+                                        GeneralComment,
+                                        Review,
+                                        ReviewRequest,
+                                        Screenshot,
                                         ScreenshotComment)
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 from reviewboard.scmtools.models import Repository
@@ -507,33 +509,16 @@ def review_detail(request,
     # before the ETag check.
     for review in public_reviews:
         if not review.is_reply():
-            state = ''
-
             # Mark as collapsed if the review is older than the latest
-            # change.
-            if latest_timestamp and review.timestamp < latest_timestamp:
-                state = 'collapsed'
-
+            # change, assuming there's no reply newer than last_visited.
             latest_reply = reply_timestamps.get(review.pk, None)
+            collapsed = (latest_timestamp and
+                         review.timestamp < latest_timestamp and
+                         not (latest_reply and
+                              last_visited and
+                              last_visited < latest_reply))
 
-            # Mark as expanded if there is a reply newer than last_visited
-            if latest_reply and last_visited and last_visited < latest_reply:
-                state = ''
-
-            entry = {
-                'review': review,
-                'comments': {
-                    'diff_comments': [],
-                    'screenshot_comments': [],
-                    'file_attachment_comments': [],
-                    'general_comments': [],
-                },
-                'timestamp': review.timestamp,
-                'class': state,
-                'collapsed': state == 'collapsed',
-                'issue_open_count': 0,
-                'has_issues': False,
-            }
+            entry = ReviewEntry(request, review_request, review, collapsed)
             reviews_entry_map[review.pk] = entry
             entries.append(entry)
 
@@ -647,12 +632,12 @@ def review_detail(request,
                     file_attachment = file_attachment_id_map[diff_against_id]
                     comment.diff_against_file_attachment = file_attachment
 
-            uncollapse = False
-
             if parent_review.is_reply():
+                base_reply_to_id = parent_review.base_reply_to_id
+
                 # This is a reply to a comment. Add it to the list of replies.
                 assert obj.review_id not in reviews_entry_map
-                assert parent_review.base_reply_to_id in reviews_entry_map
+                assert base_reply_to_id in reviews_entry_map
 
                 # If there's an entry that isn't a reply, then it's
                 # orphaned. Ignore it.
@@ -661,101 +646,32 @@ def review_detail(request,
                     replied_comment._replies.append(comment)
 
                     if not parent_review.public:
-                        uncollapse = True
+                        reviews_entry_map[base_reply_to_id].collasped = False
             elif parent_review.public:
                 # This is a comment on a public review we're going to show.
                 # Add it to the list.
                 assert obj.review_id in reviews_entry_map
                 entry = reviews_entry_map[obj.review_id]
-                entry['comments'][key].append(comment)
+                entry.add_comment(key, comment)
 
                 if comment.issue_opened:
                     status_key = \
                         comment.issue_status_to_string(comment.issue_status)
                     issues[status_key] += 1
                     issues['total'] += 1
-                    entry['has_issues'] = True
-
-                    if comment.issue_status == BaseComment.OPEN:
-                        entry['issue_open_count'] += 1
-
-                        if review_request.submitter == request.user:
-                            uncollapse = True
-
-            # If the box was collapsed, uncollapse it.
-            if uncollapse and entry['collapsed']:
-                entry['class'] = ''
-                entry['collapsed'] = False
 
     # Sort all the reviews and ChangeDescriptions into a single list, for
     # display.
     for changedesc in changedescs:
-        # Process the list of fields, in order by fieldset. These will be
-        # put into groups composed of inline vs. full-width field values,
-        # for render into the box.
-        fields_changed_groups = []
-        cur_field_changed_group = None
-
-        fieldsets = get_review_request_fieldsets(
-            include_main=True,
-            include_change_entries_only=True)
-
-        for fieldset in fieldsets:
-            for field_cls in fieldset.field_classes:
-                field_id = field_cls.field_id
-
-                if field_id not in changedesc.fields_changed:
-                    continue
-
-                inline = field_cls.change_entry_renders_inline
-
-                if (not cur_field_changed_group or
-                    cur_field_changed_group['inline'] != inline):
-                    # Begin a new group of fields.
-                    cur_field_changed_group = {
-                        'inline': inline,
-                        'fields': [],
-                    }
-                    fields_changed_groups.append(cur_field_changed_group)
-
-                if hasattr(field_cls, 'locals_vars'):
-                    field = field_cls(review_request, request=request,
-                                      locals_vars=locals())
-                else:
-                    field = field_cls(review_request, request=request)
-
-                cur_field_changed_group['fields'] += \
-                    field.get_change_entry_sections_html(
-                        changedesc.fields_changed[field_id])
-
-        # See if the review request has had a status change.
-        status_change = changedesc.fields_changed.get('status')
-
-        if status_change:
-            assert 'new' in status_change
-            new_status = ReviewRequest.status_to_string(
-                status_change['new'][0])
-        else:
-            new_status = None
-
         # Mark as collapsed if the change is older than a newer change
-        if latest_timestamp and changedesc.timestamp < latest_timestamp:
-            state = 'collapsed'
-            collapsed = True
-        else:
-            state = ''
-            collapsed = False
+        collapsed = (latest_timestamp and
+                     changedesc.timestamp < latest_timestamp)
 
-        entries.append({
-            'new_status': new_status,
-            'fields_changed_groups': fields_changed_groups,
-            'changedesc': changedesc,
-            'timestamp': changedesc.timestamp,
-            'class': state,
-            'collapsed': collapsed,
-        })
+        entry = ChangeEntry(request, review_request, changedesc, collapsed,
+                            locals())
+        entries.append(entry)
 
-    entries.sort(key=lambda item: item['timestamp'])
+    entries.sort(key=lambda item: item.timestamp)
 
     close_description, close_description_rich_text = \
         review_request.get_close_description()
