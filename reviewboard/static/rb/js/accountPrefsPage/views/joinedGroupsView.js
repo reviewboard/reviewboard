@@ -242,8 +242,23 @@ RB.JoinedGroupsView = Backbone.View.extend({
     ].join('')),
 
     events: {
+        'submit': '_onSubmit',
         'keyup .search input': '_onGroupSearchChanged',
         'change .search input': '_onGroupSearchChanged'
+    },
+
+    /**
+     * Prevent form submission.
+     *
+     * This form live updates based on the content of the <input> field and
+     * submitting it will result in a CSRF error.
+     *
+     * Args:
+     *     e (Event):
+     *         The form submission event.
+     */
+    _onSubmit: function(e) {
+        e.preventDefault();
     },
 
     /*
