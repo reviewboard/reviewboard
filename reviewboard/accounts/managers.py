@@ -3,10 +3,9 @@ from __future__ import unicode_literals
 import logging
 
 from django.db.models import Manager
-from django.utils import six
 from djblets.db.managers import ConcurrencyManager
 
-from reviewboard.accounts.trophies import get_registered_trophy_types
+from reviewboard.accounts.trophies import trophies_registry
 
 
 class ProfileManager(Manager):
@@ -67,8 +66,7 @@ class TrophyManager(Manager):
 
         calculated_trophy_types = []
 
-        registered_trophy_types = get_registered_trophy_types()
-        for registered_trophy_type in six.itervalues(registered_trophy_types):
+        for registered_trophy_type in trophies_registry:
             try:
                 instance = registered_trophy_type()
             except Exception as e:

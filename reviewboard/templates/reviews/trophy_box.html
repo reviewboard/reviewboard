@@ -1,12 +1,16 @@
-{% load djblets_deco %}
+{% load djblets_deco djblets_images %}
 
 {% if trophies %}
-{%  box 'yay' %}
+{%  box 'trophies' %}
 {%   for trophy in trophies %}
-<div>
- <img src="{{trophy.image_url}}" width="{{trophy.image_width}}" height="{{trophy.image_height}}" />
- <h1>{{trophy.text}}</h1>
+<div class="trophy-row">
+ <img src="{{trophy.image_urls.1x}}"
+      srcset="{% srcset trophy.image_urls %}"
+      width="{{trophy.image_width}}"
+      height="{{trophy.image_height}}"
+      alt="{{trophy.name}}" />
+ <h1 style="margin-left: {{trophy.image_width}}px;">{{trophy.text}}</h1>
 </div>
 {%   endfor %}
-{%  endbox 'yay' %}
+{%  endbox %}
 {% endif %}

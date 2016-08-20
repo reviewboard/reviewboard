@@ -2,7 +2,7 @@
  * The trophy appears too high on IE and the box has padding that I can't
  * get rid of. Just make the trophy inline.
  */
-.box.yay img {
+.box.trophy img {
   float: left;
   left: 0;
   top: 0;
