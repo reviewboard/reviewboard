@@ -3,6 +3,7 @@
 @import (reference) "djblets/css/mixins/markdown.less";
 
 
+@entry-padding: 12px;
 @img_base: '../../images';
 @djblets_img_base: '../../../djblets/images';
 
@@ -198,13 +199,6 @@
  ****************************************************************************/
 
 #reviews {
-  margin-left: @reviews-padding-horiz;
-  margin-right: @reviews-padding-horiz;
-
-  .on-mobile-medium-screen-720({
-    margin: 0;
-  });
-
   .box {
     margin: 2em 0;
     .left-arrow-callout(white);
@@ -212,9 +206,14 @@
     .on-mobile-medium-screen-720({
       margin-top: 1em;
     });
+
+    &:last-child {
+      margin-bottom: 0;
+    }
   }
 
   .box-container {
+    margin: 0;
     padding-left: 75px;
     width: auto;
 
@@ -374,7 +373,6 @@
 
   .box-inner {
     background: none;
-    min-height: 5em;
     overflow: hidden;
   }
 
@@ -405,6 +403,8 @@
       border-right: 0;
       border-top: 0;
       box-sizing: border-box;
+      margin: 0;
+      padding: 0 @entry-padding @entry-padding @entry-padding;
 
       &.floating {
         border-top: 0;
@@ -446,10 +446,6 @@
   .box {
     background: white;
     border: 0;
-
-    .box-main {
-      padding: 0;
-    }
   }
 
   .box-inner {
@@ -678,7 +674,7 @@
 
   .body {
     clear: both;
-    padding: @box-padding;
+    padding: @entry-padding;
 
     &>ul {
       list-style: none;
@@ -1038,7 +1034,7 @@
 
 .box .header {
   border-radius: @box-border-radius @box-border-radius 0 0;
-  padding: 9px;
+  padding: @entry-padding;
 
   a {
     color: black;
@@ -1046,6 +1042,7 @@
   }
 
   .header-details {
+    line-height: 20px;
     overflow: hidden;
   }
 
