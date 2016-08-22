@@ -23,6 +23,9 @@ from reviewboard.accounts.models import (Profile,
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.errors import NotModifiedError, PublishError
+from reviewboard.reviews.fields import (BaseEditableField,
+                                        BaseTextAreaField,
+                                        get_review_request_fieldset)
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
 from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
                                                 normalize_text_for_edit)
@@ -2157,6 +2160,63 @@ class DraftTests(TestCase):
         self.assertEqual(set(fields["bugs_closed"]["new"]), new_bugs_norm)
         self.assertEqual(set(fields["bugs_closed"]["removed"]), old_bugs_norm)
         self.assertEqual(set(fields["bugs_closed"]["added"]), new_bugs_norm)
+
+    def test_draft_changes_with_custom_fields(self):
+        """Testing ReviewRequestDraft.publish with custom fields propagating
+        from draft to review request"""
+        class RichField(BaseTextAreaField):
+            field_id = 'rich_field'
+
+        class SpecialRichField(BaseTextAreaField):
+            # Exercise special case field name 'text'
+            field_id = 'text'
+
+        class BasicField(BaseEditableField):
+            field_id = 'basic_field'
+
+        fieldset = get_review_request_fieldset('main')
+        fieldset.add_field(RichField)
+        fieldset.add_field(SpecialRichField)
+        fieldset.add_field(BasicField)
+
+        try:
+            draft = self._get_draft()
+            review_request = draft.review_request
+
+            draft.description = "New description"
+            draft.extra_data['rich_field'] = '**Rich custom text**'
+            draft.extra_data['rich_field_text_type'] = 'markdown'
+            draft.extra_data['text'] = 'Nothing special'
+            draft.extra_data['text_type'] = 'plain'
+            draft.extra_data['basic_field'] = 'Basic text'
+
+            draft.publish()
+
+            self.assertNotIn('description_text_type',
+                             review_request.extra_data)
+            self.assertIn('rich_field', review_request.extra_data)
+            self.assertIn('rich_field_text_type', review_request.extra_data)
+            self.assertIn('text', review_request.extra_data)
+            self.assertIn('text_type', review_request.extra_data)
+            self.assertIn('basic_field', review_request.extra_data)
+            self.assertNotIn('basic_field_text_type',
+                             review_request.extra_data)
+
+            self.assertEqual(review_request.description, draft.description)
+            self.assertEqual(review_request.extra_data['rich_field'],
+                             draft.extra_data['rich_field'])
+            self.assertEqual(review_request.extra_data['rich_field_text_type'],
+                             draft.extra_data['rich_field_text_type'])
+            self.assertEqual(review_request.extra_data['text'],
+                             draft.extra_data['text'])
+            self.assertEqual(review_request.extra_data['text_type'],
+                             draft.extra_data['text_type'])
+            self.assertEqual(review_request.extra_data['basic_field'],
+                             draft.extra_data['basic_field'])
+        finally:
+            fieldset.remove_field(RichField)
+            fieldset.remove_field(SpecialRichField)
+            fieldset.remove_field(BasicField)
 
     def _get_draft(self):
         """Convenience function for getting a new draft to work with."""

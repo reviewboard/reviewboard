@@ -4,6 +4,7 @@ import logging
 
 from django.utils import six
 from django.utils.datastructures import SortedDict
+from django.utils.functional import cached_property
 from django.utils.html import escape, strip_tags
 from django.utils.safestring import mark_safe
 from djblets.markdown import iter_markdown_lines
@@ -348,6 +349,29 @@ class BaseReviewRequestField(object):
         """
         self.review_request_details.extra_data[self.field_id] = value
 
+    def propagate_data(self, review_request_details):
+        """Propagate data in from source review request or draft.
+
+        By default, this loads only the field's value from a source review
+        request or draft and saves it as-is into the review request or draft
+        associated with the field. This can be overridden if you need to
+        propagate additional data elements.
+
+        This method is preferable to explictly calling :py:meth:`load_value`
+        and :py:meth:`save_value` in series to propagate data from a source
+        into a field, because it allows for copying additional data elements
+        beyond only the field's value.
+
+        This function must use the ``review_request_details`` parameter instead
+        of the :py:attr:`review_request_details` attribute on the field.
+
+        Args:
+            review_request_details (reviewboard.reviews.models.base_review_request_details):
+                The source review request or draft whose data is to be
+                propagated.
+        """
+        self.save_value(self.load_value(review_request_details))
+
     def render_value(self, value):
         """Renders the value in the field.
 
@@ -553,21 +577,46 @@ class BaseTextAreaField(BaseEditableField):
     always_render_markdown = False
     tag_name = 'pre'
 
+    @cached_property
+    def text_type_key(self):
+        """Return the text type key for the ``extra_data`` dictionary."""
+        if self.field_id == 'text':
+            return 'text_type'
+        else:
+            return '%s_text_type' % self.field_id
+
     def is_text_markdown(self, value):
         """Returns whether the text is in Markdown format.
 
         This can be overridden if the field needs to check something else
         to determine if the text is in Markdown format.
         """
-        if self.field_id == 'text':
-            text_type_key = 'text_type'
-        else:
-            text_type_key = '%s_text_type' % self.field_id
-
         text_type = self.review_request_details.extra_data.get(
-            text_type_key, 'plain')
+            self.text_type_key, 'plain')
 
         return text_type == 'markdown'
+
+    def propagate_data(self, review_request_details):
+        """Propagate data in from source review request or draft.
+
+        In addition to the value propagation handled by the base class, this
+        copies the text type details from a source review request or draft and
+        saves it as-is into the review request or draft associated with the
+        field.
+
+        Args:
+            review_request_details (reviewboard.reviews.models.base_review_request_details):
+                The source review request or draft whose data is to be
+                propagated.
+        """
+        super(BaseTextAreaField, self).propagate_data(review_request_details)
+
+        source_text_type = review_request_details.extra_data.get(
+            self.text_type_key, None)
+
+        if source_text_type is not None:
+            self.review_request_details.extra_data[self.text_type_key] = \
+                source_text_type
 
     def get_css_classes(self):
         """Returns the list of CSS classes.

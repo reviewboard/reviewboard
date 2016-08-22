@@ -107,13 +107,20 @@ suite('rb/models/ReviewRequestEditor', function() {
             });
 
             it('For custom fields', function() {
-                reviewRequest.draft.get('extraData').foo = 'Test';
+                var extraData = reviewRequest.draft.get('extraData');
 
-                value = editor.getDraftField('bar', {
-                    useExtraData: true,
-                    fieldID: 'foo'
+                extraData.foo = '**Test**';
+                extraData.fooRichText = true;
+
+                value = editor.getDraftField('foo', {
+                    useExtraData: true
                 });
-                expect(value).toBe('Test');
+                expect(value).toBe('**Test**');
+
+                value = editor.getDraftField('fooRichText', {
+                    useExtraData: true
+                });
+                expect(value).toBe(true);
             });
         });
 

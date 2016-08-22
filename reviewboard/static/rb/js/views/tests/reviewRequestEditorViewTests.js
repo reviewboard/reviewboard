@@ -43,6 +43,14 @@ suite('rb/views/ReviewRequestEditorView', function() {
             '     <pre id="field_my_custom"',
             '          data-field-id="my_custom"',
             '          class="field editable"></pre>',
+            '     <pre id="field_my_rich_text_custom"',
+            '          data-field-id="my_rich_text_custom"',
+            '          class="field field-text-area editable rich-text"',
+            '          data-allow-markdown="True"></pre>',
+            '     <pre id="field_text"',
+            '          data-field-id="text"',
+            '          class="field field-text-area editable"',
+            '          data-allow-markdown="True"></pre>',
             '    </div>',
             '   </div>',
             '  </div>',
@@ -412,7 +420,9 @@ suite('rb/views/ReviewRequestEditorView', function() {
             beforeEach(function() {
                 fieldName = options.fieldName;
                 jsonFieldName = options.jsonFieldName;
-                jsonTextTypeFieldName = jsonFieldName + '_text_type';
+                jsonTextTypeFieldName = (jsonFieldName === 'text'
+                                         ? 'text_type'
+                                         : jsonFieldName + '_text_type');
                 supportsRichText = !!options.supportsRichText;
                 useExtraData = options.useExtraData;
                 $field = view.$(options.selector);
@@ -909,6 +919,56 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
             hasEditorTest();
             savingTest();
+            editCountTests();
+            securityTests();
+        });
+
+        describe('Custom rich-text field', function() {
+            beforeEach(function() {
+                saveSpyFunc = function(options, context) {
+                    expect(options.data['extra_data.' + jsonFieldName])
+                        .toBe('My Value');
+                    options.success.call(context);
+                };
+            });
+
+            setupFieldTests({
+                supportsRichText: true,
+                fieldID: 'my_rich_text_custom',
+                jsonFieldName: 'my_rich_text_custom',
+                selector: '#field_my_rich_text_custom',
+                useExtraData: true
+            });
+
+            it('Initial rich text state', function() {
+                expect($input.data('text-editor').richText).toBe(true)
+            });
+
+            hasEditorTest();
+            richTextSavingTest();
+            editCountTests();
+            securityTests();
+        });
+
+        describe('Custom rich-text field with special name', function() {
+            beforeEach(function() {
+                saveSpyFunc = function(options, context) {
+                    expect(options.data['extra_data.' + jsonFieldName])
+                        .toBe('My Value');
+                    options.success.call(context);
+                };
+            });
+
+            setupFieldTests({
+                supportsRichText: true,
+                fieldID: 'text',
+                jsonFieldName: 'text',
+                selector: '#field_text',
+                useExtraData: true
+            });
+
+            hasEditorTest();
+            richTextSavingTest();
             editCountTests();
             securityTests();
         });
