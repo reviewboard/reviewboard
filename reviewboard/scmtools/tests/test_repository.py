@@ -13,6 +13,8 @@ from reviewboard.testing.testcase import TestCase
 
 
 class RepositoryTests(TestCase):
+    """Unit tests for Repository operations."""
+
     fixtures = ['test_scmtools']
 
     def setUp(self):

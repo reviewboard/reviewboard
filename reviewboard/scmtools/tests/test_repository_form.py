@@ -14,6 +14,8 @@ from reviewboard.testing.testcase import TestCase
 
 
 class RepositoryFormTests(TestCase):
+    """Unit tests for the repository form."""
+
     fixtures = ['test_scmtools']
 
     def setUp(self):
