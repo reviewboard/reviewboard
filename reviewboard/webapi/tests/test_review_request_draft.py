@@ -292,23 +292,76 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         fieldset = get_review_request_fieldset('info')
         fieldset.add_field(CustomField)
 
-        review_request = self.create_review_request(submitter=self.user,
-                                                    publish=True)
+        try:
+            review_request = self.create_review_request(submitter=self.user,
+                                                        publish=True)
 
-        rsp = self.api_post(
-            get_review_request_draft_url(review_request),
-            {
-                'extra_data.my-test': 123,
-                'public': True
-            },
-            expected_mimetype=review_request_draft_item_mimetype)
+            rsp = self.api_post(
+                get_review_request_draft_url(review_request),
+                {
+                    'extra_data.my-test': 123,
+                    'public': True
+                },
+                expected_mimetype=review_request_draft_item_mimetype)
 
-        self.assertEqual(rsp['stat'], 'ok')
+            self.assertEqual(rsp['stat'], 'ok')
 
-        review_request = ReviewRequest.objects.get(pk=review_request.id)
-        self.assertIn('my-test', review_request.extra_data)
-        self.assertEqual(review_request.extra_data['my-test'], 123)
-        self.assertTrue(review_request.public)
+            review_request = ReviewRequest.objects.get(pk=review_request.id)
+            self.assertIn('my-test', review_request.extra_data)
+            self.assertEqual(review_request.extra_data['my-test'], 123)
+            self.assertTrue(review_request.public)
+        finally:
+            fieldset.remove_field(CustomField)
+
+    def test_post_with_publish_and_custom_field_and_unbound_extra_data(self):
+        """Testing the POST review-requests/<id>/draft/ API with custom
+        text field and extra_data unbound to a field set in same request and
+        public=1
+        """
+        class CustomField(BaseTextAreaField):
+            field_id = 'my-test'
+
+        fieldset = get_review_request_fieldset('info')
+        fieldset.add_field(CustomField)
+
+        try:
+            review_request = self.create_review_request(submitter=self.user,
+                                                        publish=True)
+
+            rsp = self.api_post(
+                get_review_request_draft_url(review_request),
+                {
+                    'extra_data.my-test': 'foo',
+                    'extra_data.my-test_text_type': 'markdown',
+                    'extra_data.unbound': 42,
+                    'public': True
+                },
+                expected_mimetype=review_request_draft_item_mimetype)
+
+            self.assertEqual(rsp['stat'], 'ok')
+
+            # Confirm all the extra_data fields appear in the draft response.
+            draft_rsp = rsp['draft']
+            draft_extra_data = draft_rsp['extra_data']
+            self.assertIn('my-test', draft_extra_data)
+            self.assertEqual(draft_extra_data['my-test'], 'foo')
+            self.assertIn('unbound', draft_extra_data)
+            self.assertEqual(draft_extra_data['unbound'], 42)
+            self.assertIn('my-test_text_type', draft_extra_data)
+            self.assertEqual(draft_extra_data['my-test_text_type'], 'markdown')
+
+            # Further confirm only extra_data contents bound to a field were
+            # promoted to the review request upon publishing.
+            review_request = ReviewRequest.objects.get(pk=review_request.id)
+            self.assertIn('my-test', review_request.extra_data)
+            self.assertEqual(review_request.extra_data['my-test'], 'foo')
+            self.assertNotIn('unbound', review_request.extra_data)
+            self.assertIn('my-test_text_type', review_request.extra_data)
+            self.assertEqual(review_request.extra_data['my-test_text_type'],
+                             'markdown')
+            self.assertTrue(review_request.public)
+        finally:
+            fieldset.remove_field(CustomField)
 
     #
     # HTTP PUT tests

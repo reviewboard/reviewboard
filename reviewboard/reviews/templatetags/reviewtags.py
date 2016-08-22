@@ -17,6 +17,7 @@ from djblets.util.decorators import basictag, blocktag
 from djblets.util.humanize import humanize_list
 
 from reviewboard.accounts.models import Profile, Trophy
+from reviewboard.accounts.trophies import UnknownTrophy
 from reviewboard.diffviewer.diffutils import get_displayed_diff_line_ranges
 from reviewboard.reviews.actions import get_top_level_actions
 from reviewboard.reviews.fields import (get_review_request_fieldset,
@@ -44,20 +45,24 @@ def display_review_request_trophies(review_request):
         return ''
 
     trophies = []
+
     for trophy_model in trophy_models:
-        try:
-            trophy_type_cls = trophy_model.trophy_type
-            trophy_type = trophy_type_cls()
-            trophies.append({
-                'image_url': trophy_type.image_url,
-                'image_width': trophy_type.image_width,
-                'image_height': trophy_type.image_height,
-                'text': trophy_type.get_display_text(trophy_model),
-            })
-        except Exception as e:
-            logging.error('Error when rendering trophy %r (%r): %s',
-                          trophy_model.pk, trophy_type_cls, e,
-                          exc_info=1)
+        trophy_type_cls = trophy_model.trophy_type
+
+        if trophy_type_cls is not UnknownTrophy:
+            try:
+                trophy_type = trophy_type_cls()
+                trophies.append({
+                    'image_urls': trophy_type.image_urls,
+                    'image_width': trophy_type.image_width,
+                    'image_height': trophy_type.image_height,
+                    'name': trophy_type.name,
+                    'text': trophy_type.get_display_text(trophy_model),
+                })
+            except Exception as e:
+                logging.error('Error when rendering trophy %r (%r): %s',
+                              trophy_model.pk, trophy_type_cls, e,
+                              exc_info=1)
 
     return render_to_string('reviews/trophy_box.html', {'trophies': trophies})
 
