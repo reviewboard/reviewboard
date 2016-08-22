@@ -21,10 +21,11 @@ from reviewboard.testing import online_only
 class PerforceTests(SCMTestCase):
     """Unit tests for perforce.
 
-       This uses the open server at public.perforce.com to test various
-       pieces.  Because we have no control over things like pending
-       changesets, not everything can be tested.
-       """
+    This uses the open server at public.perforce.com to test various
+    pieces.  Because we have no control over things like pending
+    changesets, not everything can be tested.
+    """
+
     fixtures = ['test_scmtools']
 
     def setUp(self):
@@ -56,6 +57,7 @@ class PerforceTests(SCMTestCase):
             '//public/perforce/python/P4Client/p4.py',
             '//public/perforce/python/P4Client/review.py',
         ]
+
         for file, expected in zip_longest(desc.files, expected_files):
             self.assertEqual(file, expected)
 
@@ -70,6 +72,7 @@ class PerforceTests(SCMTestCase):
                           tool=Tool.objects.get(name='Perforce'),
                           encoding='utf8')
         tool = repo.get_scmtool()
+
         try:
             tool.get_changeset(157)
             self.fail('Expected an error about unicode-enabled servers. Did '
@@ -133,7 +136,7 @@ class PerforceTests(SCMTestCase):
 
     def test_empty_diff(self):
         """Testing Perforce empty diff parsing"""
-        diff = b"==== //depot/foo/proj/README#2 ==M== /src/proj/README ====\n"
+        diff = b'==== //depot/foo/proj/README#2 ==M== /src/proj/README ====\n'
 
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, '//depot/foo/proj/README')
@@ -149,8 +152,8 @@ class PerforceTests(SCMTestCase):
 
     def test_binary_diff(self):
         """Testing Perforce binary diff parsing"""
-        diff = (b"==== //depot/foo/proj/test.png#1 ==A== /src/proj/test.png "
-                b"====\nBinary files /tmp/foo and /src/proj/test.png differ\n")
+        diff = (b'==== //depot/foo/proj/test.png#1 ==A== /src/proj/test.png '
+                b'====\nBinary files /tmp/foo and /src/proj/test.png differ\n')
 
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, '//depot/foo/proj/test.png')
@@ -166,8 +169,8 @@ class PerforceTests(SCMTestCase):
 
     def test_deleted_diff(self):
         """Testing Perforce deleted diff parsing"""
-        diff = (b"==== //depot/foo/proj/test.png#1 ==D== /src/proj/test.png "
-                b"====\n")
+        diff = (b'==== //depot/foo/proj/test.png#1 ==D== /src/proj/test.png '
+                b'====\n')
 
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, '//depot/foo/proj/test.png')
@@ -184,14 +187,14 @@ class PerforceTests(SCMTestCase):
     def test_moved_file_diff(self):
         """Testing Perforce moved file diff parsing"""
         diff = (
-            b"Moved from: //depot/foo/proj/test.txt\n"
-            b"Moved to: //depot/foo/proj/test2.txt\n"
-            b"--- //depot/foo/proj/test.txt  //depot/foo/proj/test.txt#2\n"
-            b"+++ //depot/foo/proj/test2.txt  01-02-03 04:05:06\n"
-            b"@@ -1 +1,2 @@\n"
-            b"-test content\n"
-            b"+updated test content\n"
-            b"+added info\n"
+            b'Moved from: //depot/foo/proj/test.txt\n'
+            b'Moved to: //depot/foo/proj/test2.txt\n'
+            b'--- //depot/foo/proj/test.txt  //depot/foo/proj/test.txt#2\n'
+            b'+++ //depot/foo/proj/test2.txt  01-02-03 04:05:06\n'
+            b'@@ -1 +1,2 @@\n'
+            b'-test content\n'
+            b'+updated test content\n'
+            b'+added info\n'
         )
 
         file = self.tool.get_parser(diff).parse()[0]
@@ -209,8 +212,8 @@ class PerforceTests(SCMTestCase):
 
     def test_moved_file_diff_no_changes(self):
         """Testing Perforce moved file diff parsing without changes"""
-        diff = (b"==== //depot/foo/proj/test.png#5 ==MV== "
-                b"//depot/foo/proj/test2.png ====\n")
+        diff = (b'==== //depot/foo/proj/test.png#5 ==MV== '
+                b'//depot/foo/proj/test2.png ====\n')
 
         file = self.tool.get_parser(diff).parse()[0]
         self.assertEqual(file.origFile, '//depot/foo/proj/test.png')
@@ -226,14 +229,14 @@ class PerforceTests(SCMTestCase):
 
     def test_empty_and_normal_diffs(self):
         """Testing Perforce empty and normal diff parsing"""
-        diff1_text = (b"==== //depot/foo/proj/test.png#1 ==A== "
-                      b"/src/proj/test.png ====\n")
-        diff2_text = (b"--- test.c  //depot/foo/proj/test.c#2\n"
-                      b"+++ test.c  01-02-03 04:05:06\n"
-                      b"@@ -1 +1,2 @@\n"
-                      b"-test content\n"
-                      b"+updated test content\n"
-                      b"+added info\n")
+        diff1_text = (b'==== //depot/foo/proj/test.png#1 ==A== '
+                      b'/src/proj/test.png ====\n')
+        diff2_text = (b'--- test.c  //depot/foo/proj/test.c#2\n'
+                      b'+++ test.c  01-02-03 04:05:06\n'
+                      b'@@ -1 +1,2 @@\n'
+                      b'-test content\n'
+                      b'+updated test content\n'
+                      b'+added info\n')
         diff = diff1_text + diff2_text
 
         files = self.tool.get_parser(diff).parse()
@@ -268,12 +271,12 @@ class PerforceTests(SCMTestCase):
 
     def test_unicode_diff(self):
         """Testing Perforce diff parsing with unicode characters"""
-        diff = ("--- tést.c  //depot/foo/proj/tést.c#2\n"
-                "+++ tést.c  01-02-03 04:05:06\n"
-                "@@ -1 +1,2 @@\n"
-                "-tést content\n"
-                "+updated test content\n"
-                "+added info\n").encode('utf-8')
+        diff = ('--- tést.c  //depot/foo/proj/tést.c#2\n'
+                '+++ tést.c  01-02-03 04:05:06\n'
+                '@@ -1 +1,2 @@\n'
+                '-tést content\n'
+                '+updated test content\n'
+                '+added info\n').encode('utf-8')
 
         files = self.tool.get_parser(diff).parse()
         self.assertEqual(len(files), 1)
@@ -289,8 +292,7 @@ class PerforceTests(SCMTestCase):
 
 
 class PerforceStunnelTests(SCMTestCase):
-    """
-    Unit tests for perforce running through stunnel.
+    """Unit tests for perforce running through stunnel.
 
     Out of the box, Perforce doesn't support any kind of encryption on its
     connections. The recommended setup in this case is to run an stunnel server
@@ -302,6 +304,7 @@ class PerforceStunnelTests(SCMTestCase):
     connections and proxy (insecurely) to the public perforce server. We can
     then tell the Perforce SCMTool to connect securely to localhost.
     """
+
     fixtures = ['test_scmtools']
 
     def setUp(self):
@@ -321,6 +324,7 @@ class PerforceStunnelTests(SCMTestCase):
         self.repository = Repository(name='Perforce.com - secure',
                                      path=path,
                                      tool=Tool.objects.get(name='Perforce'))
+
         try:
             self.tool = self.repository.get_scmtool()
             self.tool.use_stunnel = True
@@ -348,6 +352,7 @@ class PerforceStunnelTests(SCMTestCase):
             '//public/perforce/python/P4Client/p4.py',
             '//public/perforce/python/P4Client/review.py',
         ]
+
         for file, expected in zip_longest(desc.files, expected_files):
             self.assertEqual(file, expected)
 
@@ -368,5 +373,6 @@ class PerforceStunnelTests(SCMTestCase):
                     'Connection to public.perforce.com failed.  No internet?')
             else:
                 raise
+
         self.assertEqual(md5(file).hexdigest(),
                          '227bdd87b052fcad9369e65c7bf23fd0')
