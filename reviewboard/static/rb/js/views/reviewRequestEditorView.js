@@ -642,9 +642,12 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      */
     registerField: function(options) {
         var fieldID = options.fieldID,
-            useExtraData = options.useExtraData === undefined
-                           ? true
-                           : options.useExtraData;
+            useExtraData = (options.useExtraData === undefined
+                            ? true
+                            : options.useExtraData),
+            jsonTextTypeFieldName = (fieldID === 'text'
+                                     ? 'text_type'
+                                     : fieldID + '_text_type');
 
         console.assert(fieldID);
 
@@ -656,7 +659,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             formatter: null,
             jsonFieldName: fieldID,
             jsonTextTypeFieldName: options.allowMarkdown ?
-                                   fieldID + '_text_type'
+                                   jsonTextTypeFieldName
                                    : null,
             useEditIconOnly: false,
             useExtraData: useExtraData
@@ -730,13 +733,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
                     if ($field.data('allow-markdown')) {
                         fieldInfo.allowMarkdown = true;
-
-                        if (fieldID === 'text') {
-                            richTextFieldID = 'rich_text';
-                        } else {
-                            richTextFieldID = fieldID + '_rich_text';
-                        }
-
+                        richTextFieldID = fieldID + 'RichText';
                         extraData[richTextFieldID] =
                             $field.hasClass('rich-text');
                     }

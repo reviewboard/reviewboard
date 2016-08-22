@@ -197,6 +197,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         *  ``screenshots``
         *  ``screenshot_captions``
         *  ``diff``
+        *  Any custom field IDs
 
         Each field in 'fields_changed' represents a changed field. This will
         save fields in the standard formats as defined by the
@@ -284,7 +285,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 new_value = field.load_value(self)
 
                 if field.has_value_changed(old_value, new_value):
-                    field.save_value(new_value)
+                    field.propagate_data(self)
 
                     if self.changedesc:
                         field.record_change_entry(self.changedesc,
