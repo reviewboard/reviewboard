@@ -12,16 +12,18 @@ from reviewboard.testing.testcase import TestCase
 
 
 class PolicyTests(TestCase):
+    """Unit tests for access policies."""
+
     fixtures = ['test_scmtools']
 
     def setUp(self):
         self.user = User.objects.create(username='testuser', password='')
         self.anonymous = AnonymousUser()
         self.repo = Repository.objects.create(
-            name="test",
-            path="example.com:/cvsroot/test",
-            username="anonymous",
-            tool=Tool.objects.get(name="CVS"))
+            name='test',
+            path='example.com:/cvsroot/test',
+            username='anonymous',
+            tool=Tool.objects.get(name='CVS'))
 
     def test_repository_public(self):
         """Testing access to a public repository"""
