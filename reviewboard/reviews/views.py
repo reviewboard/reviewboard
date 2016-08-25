@@ -52,15 +52,13 @@ from reviewboard.reviews.context import (comment_counts,
                                          has_comments_in_diffsets_excluding,
                                          interdiffs_with_comments,
                                          make_review_request_context)
-from reviewboard.reviews.detail import ChangeEntry, ReviewEntry
+from reviewboard.reviews.detail import (ChangeEntry, ReviewEntry,
+                                        ReviewRequestPageData)
 from reviewboard.reviews.markdown_utils import is_rich_text_default_for_user
 from reviewboard.reviews.models import (Comment,
-                                        FileAttachmentComment,
-                                        GeneralComment,
                                         Review,
                                         ReviewRequest,
-                                        Screenshot,
-                                        ScreenshotComment)
+                                        Screenshot)
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.decorators import check_local_site_access
@@ -116,19 +114,6 @@ def _find_review_request(request, review_request_id, local_site):
         return review_request, None
     else:
         return None, _render_permission_denied(request)
-
-
-def _build_id_map(objects):
-    """Builds an ID map out of a list of objects.
-
-    The resulting map makes it easy to quickly look up an object from an ID.
-    """
-    id_map = {}
-
-    for obj in objects:
-        id_map[obj.pk] = obj
-
-    return id_map
 
 
 def _query_for_diff(review_request, user, revision, draft):
@@ -329,98 +314,18 @@ def _get_latest_file_attachments(file_attachments):
 def review_detail(request,
                   review_request_id,
                   local_site=None,
-                  template_name="reviews/review_detail.html"):
-    """
-    Main view for review requests. This covers the review request information
-    and all the reviews on it.
-    """
-    # If there's a local_site passed in the URL, we want to look up the review
-    # request based on the local_id instead of the pk. This allows each
-    # local_site configured to have its own review request ID namespace
-    # starting from 1.
+                  template_name='reviews/review_detail.html'):
+    """Render the main review request page."""
     review_request, response = _find_review_request(
         request, review_request_id, local_site)
 
     if not review_request:
         return response
 
-    # The review request detail page needs a lot of data from the database,
-    # and going through standard model relations will result in far too many
-    # queries. So we'll be optimizing quite a bit by prefetching and
-    # re-associating data.
-    #
-    # We will start by getting the list of reviews. We'll filter this out into
-    # some other lists, build some ID maps, and later do further processing.
-    entries = []
-    public_reviews = []
-    body_top_replies = {}
-    body_bottom_replies = {}
-    replies = {}
-    reply_timestamps = {}
-    reviews_entry_map = {}
-    reviews_id_map = {}
-    review_timestamp = 0
+    data = ReviewRequestPageData(review_request, request)
+    data.query_data_pre_etag()
+
     visited = None
-
-    # Start by going through all reviews that point to this review request.
-    # This includes draft reviews. We'll be separating these into a list of
-    # public reviews and a mapping of replies.
-    #
-    # We'll also compute the latest review timestamp early, for the ETag
-    # generation below.
-    #
-    # The second pass will come after the ETag calculation.
-    all_reviews = list(review_request.reviews.select_related('user'))
-
-    for review in all_reviews:
-        review._body_top_replies = []
-        review._body_bottom_replies = []
-
-        if review.public:
-            # This is a review we'll display on the page. Keep track of it
-            # for later display and filtering.
-            public_reviews.append(review)
-            parent_id = review.base_reply_to_id
-
-            if parent_id is not None:
-                # This is a reply to a review. We'll store the reply data
-                # into a map, which associates a review ID with its list of
-                # replies, and also figures out the timestamps.
-                #
-                # Later, we'll use this to associate reviews and replies for
-                # rendering.
-                if parent_id not in replies:
-                    replies[parent_id] = [review]
-                    reply_timestamps[parent_id] = review.timestamp
-                else:
-                    replies[parent_id].append(review)
-                    reply_timestamps[parent_id] = max(
-                        reply_timestamps[parent_id],
-                        review.timestamp)
-        elif (request.user.is_authenticated() and
-              review.user_id == request.user.pk and
-              (review_timestamp == 0 or review.timestamp > review_timestamp)):
-            # This is the latest draft so far from the current user, so
-            # we'll use this timestamp in the ETag.
-            review_timestamp = review.timestamp
-
-        if review.public or (request.user.is_authenticated() and
-                             review.user_id == request.user.pk):
-            reviews_id_map[review.pk] = review
-
-            # If this review is replying to another review's body_top or
-            # body_bottom fields, store that data.
-            for reply_id, reply_list in (
-                (review.body_top_reply_to_id, body_top_replies),
-                (review.body_bottom_reply_to_id, body_bottom_replies)):
-                if reply_id is not None:
-                    if reply_id not in reply_list:
-                        reply_list[reply_id] = [review]
-                    else:
-                        reply_list[reply_id].append(review)
-
-    pending_review = review_request.get_pending_review(request.user)
-    review_ids = list(reviews_id_map.keys())
     last_visited = 0
     starred = False
 
@@ -429,7 +334,7 @@ def review_detail(request,
             visited, visited_is_new = \
                 ReviewRequestVisit.objects.get_or_create(
                     user=request.user, review_request=review_request)
-            last_visited = visited.timestamp.replace(tzinfo=utc)
+            last_visited = visited.timestamp.replace(tzinfo=utc).ctime()
         except ReviewRequestVisit.DoesNotExist:
             # Somehow, this visit was seen as created but then not
             # accessible. We need to log this and then continue on.
@@ -453,249 +358,110 @@ def review_detail(request,
         except Profile.DoesNotExist:
             pass
 
-    draft = review_request.get_draft(request.user)
-    review_request_details = draft or review_request
-
-    # Map diffset IDs to their object.
-    diffsets = review_request.get_diffsets()
-    diffsets_by_id = {}
-
-    for diffset in diffsets:
-        diffsets_by_id[diffset.pk] = diffset
-
-    # Find out if we can bail early. Generate an ETag for this.
     last_activity_time, updated_object = \
-        review_request.get_last_activity(diffsets, public_reviews)
+        review_request.get_last_activity(data.diffsets, data.reviews)
 
-    if draft:
-        draft_timestamp = draft.last_updated
+    if data.draft:
+        draft_timestamp = data.draft.last_updated
     else:
-        draft_timestamp = ""
-
-    if visited:
-        visibility = visited.visibility
-    else:
-        visibility = None
+        draft_timestamp = ''
 
     blocks = review_request.get_blocks()
 
+    # Find out if we can bail early. Generate an ETag for this.
     etag = encode_etag(
        '%s:%s:%s:%s:%s:%s:%s:%s:%s:%s' %
        (request.user, last_activity_time, draft_timestamp,
-        review_timestamp, review_request.last_review_activity_timestamp,
+        data.latest_review_timestamp,
+        review_request.last_review_activity_timestamp,
         is_rich_text_default_for_user(request.user),
         [r.pk for r in blocks],
-        starred, visibility, settings.AJAX_SERIAL))
+        starred, visited and visited.visibility, settings.AJAX_SERIAL))
 
     if etag_if_none_match(request, etag):
         return HttpResponseNotModified()
 
-    # Get the list of public ChangeDescriptions.
-    #
-    # We want to get the latest ChangeDescription along with this. This is
-    # best done here and not in a separate SQL query.
-    changedescs = list(review_request.changedescs.filter(public=True))
+    data.query_data_post_etag()
 
-    if changedescs:
-        # We sort from newest to oldest, so the latest one is the first.
-        latest_timestamp = changedescs[0].timestamp
-    else:
-        latest_timestamp = None
+    entries = []
+    reviews_entry_map = {}
 
     # Now that we have the list of public reviews and all that metadata,
     # being processing them and adding entries for display in the page.
-    #
-    # We do this here and not above because we don't want to build *too* much
-    # before the ETag check.
-    for review in public_reviews:
-        if not review.is_reply():
+    for review in data.reviews:
+        if review.public and not review.is_reply():
             # Mark as collapsed if the review is older than the latest
             # change, assuming there's no reply newer than last_visited.
-            latest_reply = reply_timestamps.get(review.pk, None)
-            collapsed = (latest_timestamp and
-                         review.timestamp < latest_timestamp and
-                         not (latest_reply and
-                              last_visited and
-                              last_visited < latest_reply))
+            latest_reply = data.latest_timestamps_by_review_id.get(review.pk)
+            collapsed = (
+                review.timestamp < data.latest_changedesc_timestamp and
+                not (latest_reply and
+                     last_visited and
+                     last_visited < latest_reply))
 
-            entry = ReviewEntry(request, review_request, review, collapsed)
+            entry = ReviewEntry(request, review_request, review, collapsed,
+                                data)
             reviews_entry_map[review.pk] = entry
             entries.append(entry)
 
-    # Link up all the review body replies.
-    for key, reply_list in (('_body_top_replies', body_top_replies),
-                            ('_body_bottom_replies', body_bottom_replies)):
-        for reply_id, replies in six.iteritems(reply_list):
-            setattr(reviews_id_map[reply_id], key, replies)
+    # Now that we have entries for all the reviews, go through all the comments
+    # and add them to those entries.
+    for comment in data.comments:
+        review = comment._review
 
-    # Get all the file attachments and screenshots and build a couple maps,
-    # so we can easily associate those objects in comments.
-    #
-    # Note that we're fetching inactive file attachments and screenshots.
-    # is because any file attachments/screenshots created after the initial
-    # creation of the review request that were later removed will still need
-    # to be rendered as an added file in a change box.
-    file_attachments = []
-    inactive_file_attachments = []
-    screenshots = []
-    inactive_screenshots = []
+        if review.is_reply():
+            # This is a reply to a comment.
+            base_reply_to_id = comment._review.base_reply_to_id
 
-    for attachment in review_request_details.get_file_attachments():
-        attachment._comments = []
-        file_attachments.append(attachment)
+            assert review.pk not in reviews_entry_map
+            assert base_reply_to_id in reviews_entry_map
 
-    for attachment in review_request_details.get_inactive_file_attachments():
-        attachment._comments = []
-        inactive_file_attachments.append(attachment)
+            # Make sure that any review boxes containing draft replies are
+            # always expanded.
+            if comment.is_reply() and not review.public:
+                reviews_entry_map[base_reply_to_id].collapsed = False
+        elif review.public:
+            # This is a comment on a public review.
+            assert review.id in reviews_entry_map
 
-    for screenshot in review_request_details.get_screenshots():
-        screenshot._comments = []
-        screenshots.append(screenshot)
+            entry = reviews_entry_map[review.id]
+            entry.add_comment(comment._type, comment)
 
-    for screenshot in review_request_details.get_inactive_screenshots():
-        screenshot._comments = []
-        inactive_screenshots.append(screenshot)
-
-    file_attachment_id_map = _build_id_map(file_attachments)
-    file_attachment_id_map.update(_build_id_map(inactive_file_attachments))
-    screenshot_id_map = _build_id_map(screenshots)
-    screenshot_id_map.update(_build_id_map(inactive_screenshots))
-
-    issues = {
-        'total': 0,
-        'open': 0,
-        'resolved': 0,
-        'dropped': 0
-    }
-
-    # Get all the comments and attach them to the reviews.
-    for model, key, ordering in (
-        (Comment, 'diff_comments',
-         ('comment__filediff', 'comment__first_line', 'comment__timestamp')),
-        (ScreenshotComment, 'screenshot_comments', None),
-        (FileAttachmentComment, 'file_attachment_comments', None),
-        (GeneralComment, 'general_comments', None)):
-        # Due to how we initially made the schema, we have a ManyToManyField
-        # inbetween comments and reviews, instead of comments having a
-        # ForeignKey to the review. This makes it difficult to easily go
-        # from a comment to a review ID.
-        #
-        # The solution to this is to not query the comment objects, but rather
-        # the through table. This will let us grab the review and comment in
-        # one go, using select_related.
-        related_field = model.review.related.field
-        comment_field_name = related_field.m2m_reverse_field_name()
-        through = related_field.rel.through
-        q = through.objects.filter(review__in=review_ids).select_related()
-
-        if ordering:
-            q = q.order_by(*ordering)
-
-        objs = list(q)
-
-        # Two passes. One to build a mapping, and one to actually process
-        # comments.
-        comment_map = {}
-
-        for obj in objs:
-            comment = getattr(obj, comment_field_name)
-            comment_map[comment.pk] = comment
-            comment._replies = []
-
-        for obj in objs:
-            comment = getattr(obj, comment_field_name)
-
-            # Short-circuit some object fetches for the comment by setting
-            # some internal state on them.
-            assert obj.review_id in reviews_id_map
-            parent_review = reviews_id_map[obj.review_id]
-            comment._review = parent_review
-            comment._review_request = review_request
-
-            # If the comment has an associated object that we've already
-            # queried, attach it to prevent a future lookup.
-            if isinstance(comment, ScreenshotComment):
-                if comment.screenshot_id in screenshot_id_map:
-                    screenshot = screenshot_id_map[comment.screenshot_id]
-                    comment.screenshot = screenshot
-                    screenshot._comments.append(comment)
-            elif isinstance(comment, FileAttachmentComment):
-                if comment.file_attachment_id in file_attachment_id_map:
-                    file_attachment = \
-                        file_attachment_id_map[comment.file_attachment_id]
-                    comment.file_attachment = file_attachment
-                    file_attachment._comments.append(comment)
-
-                diff_against_id = comment.diff_against_file_attachment_id
-
-                if diff_against_id in file_attachment_id_map:
-                    file_attachment = file_attachment_id_map[diff_against_id]
-                    comment.diff_against_file_attachment = file_attachment
-
-            if parent_review.is_reply():
-                base_reply_to_id = parent_review.base_reply_to_id
-
-                # This is a reply to a comment. Add it to the list of replies.
-                assert obj.review_id not in reviews_entry_map
-                assert base_reply_to_id in reviews_entry_map
-
-                # If there's an entry that isn't a reply, then it's
-                # orphaned. Ignore it.
-                if comment.is_reply():
-                    replied_comment = comment_map[comment.reply_to_id]
-                    replied_comment._replies.append(comment)
-
-                    if not parent_review.public:
-                        reviews_entry_map[base_reply_to_id].collasped = False
-            elif parent_review.public:
-                # This is a comment on a public review we're going to show.
-                # Add it to the list.
-                assert obj.review_id in reviews_entry_map
-                entry = reviews_entry_map[obj.review_id]
-                entry.add_comment(key, comment)
-
-                if comment.issue_opened:
-                    status_key = \
-                        comment.issue_status_to_string(comment.issue_status)
-                    issues[status_key] += 1
-                    issues['total'] += 1
-
-    # Sort all the reviews and ChangeDescriptions into a single list, for
-    # display.
-    for changedesc in changedescs:
+    # Add entries for the change descriptions.
+    for changedesc in data.changedescs:
         # Mark as collapsed if the change is older than a newer change
-        collapsed = (latest_timestamp and
-                     changedesc.timestamp < latest_timestamp)
+        collapsed = (changedesc.timestamp < data.latest_changedesc_timestamp)
 
-        entry = ChangeEntry(request, review_request, changedesc, collapsed,
-                            locals())
-        entries.append(entry)
+        entries.append(ChangeEntry(request, review_request, changedesc,
+                                   collapsed, data))
 
+    # Finally, sort all the entries (reviews and change descriptions) by their
+    # timestamp.
     entries.sort(key=lambda item: item.timestamp)
 
     close_description, close_description_rich_text = \
         review_request.get_close_description()
 
-    latest_file_attachments = _get_latest_file_attachments(file_attachments)
-
     siteconfig = SiteConfiguration.objects.get_current()
 
+    # Time to render the page!
     context_data = make_review_request_context(request, review_request, {
         'blocks': blocks,
-        'draft': draft,
-        'review_request_details': review_request_details,
+        'draft': data.draft,
+        'review_request_details': data.review_request_details,
         'review_request_visit': visited,
         'send_email': siteconfig.get('mail_send_review_mail'),
         'entries': entries,
         'last_activity_time': last_activity_time,
-        'review': pending_review,
+        'review': review_request.get_pending_review(request.user),
         'request': request,
         'close_description': close_description,
         'close_description_rich_text': close_description_rich_text,
-        'issues': issues,
-        'file_attachments': latest_file_attachments,
-        'all_file_attachments': file_attachments,
-        'screenshots': screenshots,
+        'issues': data.issues,
+        'file_attachments': _get_latest_file_attachments(
+            data.active_file_attachments),
+        'all_file_attachments': data.all_file_attachments,
+        'screenshots': data.active_screenshots,
     })
 
     response = render_to_response(template_name,

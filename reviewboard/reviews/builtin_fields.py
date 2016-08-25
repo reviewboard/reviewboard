@@ -73,29 +73,44 @@ class BuiltinTextAreaFieldMixin(BuiltinFieldMixin):
         return attrs
 
 
-class BuiltinLocalsFieldMixin(BuiltinFieldMixin):
-    """Mixin for internal fields needing access to local variables.
+class ReviewRequestPageDataMixin(BuiltinFieldMixin):
+    """Mixin for internal fields needing access to the page data.
 
-    These are used by fields that operate on state generated when
-    creating the review request page. The view handling that page has
-    a lot of cached variables, which the fields need access to for
-    performance reasons.
+    These are used by fields that operate on state generated when creating the
+    review request page. The view handling that page makes a lot of queries,
+    and stores the results. This mixin allows access to those results,
+    preventing additional queries.
 
-    This should not be used by any classes outside this file.
+    The data structure is not meant to be public API, and this mixin should not
+    be used by any classes outside this file.
 
     By default, this will not render or handle any value loading or change
     entry recording. Subclasses must implement those manually.
     """
-    #: A list of variables needed from the review_detail view's locals().
-    locals_vars = []
 
-    def __init__(self, review_request_details, locals_vars={},
-                 *args, **kwargs):
-        super(BuiltinLocalsFieldMixin, self).__init__(
+    def __init__(self, review_request_details, data=None, *args, **kwargs):
+        """Initialize the mixin.
+
+        Args:
+            review_request_details (reviewboard.reviews.models.base_review_request_details.BaseReviewRequestDetails):
+                The review request (or the active draft thereof). In practice
+                this will either be a
+                :py:class:`reviewboard.reviews.models.ReviewRequest` or a
+                :py:class:`reviewboard.reviews.models.ReviewRequestDraft`.
+
+            data (reviewboard.reviews.detail.ReviewRequestPageData):
+                The data already queried for the review request page.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+        """
+        super(ReviewRequestPageDataMixin, self).__init__(
             review_request_details, *args, **kwargs)
 
-        for var in self.locals_vars:
-            setattr(self, var, locals_vars.get(var, None))
+        self.data = data
 
     def should_render(self, value):
         return False
@@ -107,7 +122,7 @@ class BuiltinLocalsFieldMixin(BuiltinFieldMixin):
         return None
 
 
-class BaseCaptionsField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
+class BaseCaptionsField(ReviewRequestPageDataMixin, BaseReviewRequestField):
     """Base class for rendering captions for attachments.
 
     This serves as a base for FileAttachmentCaptionsField and
@@ -121,7 +136,7 @@ class BaseCaptionsField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
 
     def render_change_entry_html(self, info):
         render_item = super(BaseCaptionsField, self).render_change_entry_html
-        obj_map = getattr(self, self.obj_map_attr)
+        obj_map = getattr(self.data, self.obj_map_attr)
 
         s = ['<table class="caption-changed">']
 
@@ -459,7 +474,7 @@ class CommitField(BuiltinFieldMixin, BaseReviewRequestField):
             return escape(commit_id)
 
 
-class DiffField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
+class DiffField(ReviewRequestPageDataMixin, BaseReviewRequestField):
     """Represents a newly uploaded diff on a review request.
 
     This is not shown as an actual displayable field on the review request
@@ -468,7 +483,6 @@ class DiffField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
     """
     field_id = 'diff'
     label = _('Diff')
-    locals_vars = ['diffsets_by_id']
 
     can_record_change_entry = True
 
@@ -479,7 +493,7 @@ class DiffField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
         review_request = self.review_request_details.get_review_request()
 
         try:
-            diffset = self.diffsets_by_id[added_diff_info[2]]
+            diffset = self.data.diffsets_by_id[added_diff_info[2]]
         except KeyError:
             # If a published revision of a diff has been deleted from the
             # database, this will explode. Just return a blank string for this,
@@ -633,13 +647,12 @@ class FileAttachmentCaptionsField(BaseCaptionsField):
     """
     field_id = 'file_captions'
     label = _('File Captions')
-    obj_map_attr = 'file_attachment_id_map'
-    locals_vars = [obj_map_attr]
+    obj_map_attr = 'file_attachments_by_id'
     model = FileAttachment
     caption_object_field = 'file_attachment'
 
 
-class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
+class FileAttachmentsField(ReviewRequestPageDataMixin, BaseCommaEditableField):
     """Renders removed or added file attachments.
 
     This is not shown as an actual displayable field on the review request
@@ -649,7 +662,6 @@ class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
     """
     field_id = 'files'
     label = _('Files')
-    locals_vars = ['file_attachment_id_map']
     model = FileAttachment
 
     thumbnail_template = 'reviews/changedesc_file_attachment.html'
@@ -688,8 +700,8 @@ class FileAttachmentsField(BuiltinLocalsFieldMixin, BaseCommaEditableField):
 
         items = []
         for caption, filename, pk in values:
-            if pk in self.file_attachment_id_map:
-                attachment = self.file_attachment_id_map[pk]
+            if pk in self.data.file_attachments_by_id:
+                attachment = self.data.file_attachments_by_id[pk]
             else:
                 try:
                     attachment = FileAttachment.objects.get(pk=pk)
@@ -717,8 +729,7 @@ class ScreenshotCaptionsField(BaseCaptionsField):
     """
     field_id = 'screenshot_captions'
     label = _('Screenshot Captions')
-    obj_map_attr = 'screenshot_id_map'
-    locals_vars = [obj_map_attr]
+    obj_map_attr = 'screenshots_by_id'
     model = Screenshot
     caption_object_field = 'screenshot'
 
