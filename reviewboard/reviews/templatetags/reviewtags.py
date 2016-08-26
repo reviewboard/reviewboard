@@ -13,7 +13,7 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
-from djblets.util.decorators import basictag, blocktag
+from djblets.util.decorators import blocktag
 from djblets.util.humanize import humanize_list
 
 from reviewboard.accounts.models import Profile, Trophy
@@ -35,8 +35,7 @@ from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 register = template.Library()
 
 
-@register.tag
-@basictag(takes_context=False)
+@register.simple_tag(takes_context=False)
 def display_review_request_trophies(review_request):
     """Returns the HTML for the trophies awarded to a review request."""
     trophy_models = Trophy.objects.get_trophies(review_request)
@@ -108,8 +107,7 @@ def ifneatnumber(context, nodelist, rid):
     return s
 
 
-@register.tag
-@basictag(takes_context=True)
+@register.simple_tag(takes_context=True)
 def file_attachment_comments(context, file_attachment):
     """Returns a JSON array of current comments for a file attachment."""
     review_ui = file_attachment.review_ui
@@ -129,8 +127,7 @@ def file_attachment_comments(context, file_attachment):
         file_attachment.get_comments()))
 
 
-@register.tag
-@basictag(takes_context=True)
+@register.simple_tag(takes_context=True)
 def reply_list(context, review, comment, context_type, context_id):
     """
     Renders a list of comments of a specified type.
@@ -487,8 +484,7 @@ def bug_url(bug_id, review_request):
     return None
 
 
-@register.tag
-@basictag(takes_context=True)
+@register.simple_tag(takes_context=True)
 def star(context, obj):
     """
     Renders the code for displaying a star used for starring items.
@@ -615,8 +611,7 @@ def _render_markdown(text, is_rich_text):
         return text
 
 
-@register.tag
-@basictag(takes_context=True)
+@register.simple_tag(takes_context=True)
 def expand_fragment_link(context, expanding, tooltip,
                          expand_above, expand_below, text=None):
     """Renders a diff comment fragment expansion link.
@@ -641,8 +636,7 @@ def expand_fragment_link(context, expanding, tooltip,
     })
 
 
-@register.tag
-@basictag(takes_context=True)
+@register.simple_tag(takes_context=True)
 def expand_fragment_header_link(context, header):
     """Render a diff comment fragment header expansion link.
 
@@ -661,8 +655,7 @@ def expand_fragment_header_link(context, header):
     })
 
 
-@register.tag('normalize_text_for_edit')
-@basictag(takes_context=True)
+@register.simple_tag(name='normalize_text_for_edit', takes_context=True)
 def _normalize_text_for_edit(context, text, rich_text, escape_js=False):
     text = normalize_text_for_edit(context['request'].user, text, rich_text,
                                    escape_html=not escape_js)
@@ -673,8 +666,7 @@ def _normalize_text_for_edit(context, text, rich_text, escape_js=False):
     return text
 
 
-@register.tag
-@basictag(takes_context=True)
+@register.simple_tag(takes_context=True)
 def rich_text_classname(context, rich_text):
     if rich_text or is_rich_text_default_for_user(context['request'].user):
         return 'rich-text'
@@ -682,8 +674,7 @@ def rich_text_classname(context, rich_text):
     return ''
 
 
-@register.tag
-@basictag(takes_context=True)
+@register.simple_tag(takes_context=True)
 def diff_comment_line_numbers(context, chunks, comment):
     """Render the changed line number ranges for a diff, for use in e-mail.
 
