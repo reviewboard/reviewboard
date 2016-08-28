@@ -7,7 +7,6 @@ from django.template.loader import render_to_string
 from django.utils.html import escape
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
-from djblets.util.decorators import basictag
 
 from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
 
@@ -131,8 +130,7 @@ def _diff_expand_link(context, expandable, text, tooltip,
     })
 
 
-@register.tag
-@basictag(takes_context=True)
+@register.simple_tag(takes_context=True)
 def diff_expand_link(context, expanding, tooltip,
                      expand_pos_1=None, expand_pos_2=None, text=None):
     """Renders a diff expansion link.
@@ -155,8 +153,7 @@ def diff_expand_link(context, expanding, tooltip,
                              image_class)
 
 
-@register.tag
-@basictag(takes_context=True)
+@register.simple_tag(takes_context=True)
 def diff_chunk_header(context, header):
     """Renders a diff header as HTML.
 

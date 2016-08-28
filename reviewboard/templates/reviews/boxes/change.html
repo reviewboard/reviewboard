@@ -1,30 +1,30 @@
 {% load changedescs avatars djblets_deco djblets_utils i18n reviewtags tz %}
 
-<div class="changedesc" id="changedesc{{entry.changedesc.id}}">
- <a name="changedesc{{entry.changedesc.id}}"></a>
+{% with changedesc=entry.changedesc %}
+<div class="changedesc" id="changedesc{{changedesc.id}}">
+ <a name="changedesc{{changedesc.id}}"></a>
  <div class="box-statuses">
   <div class="box-status">
    <div class="avatar-container">
-{% if siteconfig_settings.avatars_enabled %}
-    {% changedesc_user entry.changedesc review_request as changedesc_user %}
+{%  if siteconfig_settings.avatars_enabled %}
+    {% changedesc_user changedesc review_request as changedesc_user %}
     {% avatar changedesc_user 48 %}
-{% endif %}
+{%  endif %}
    </div>
   </div>
  </div>
 
-{% definevar "boxclass" %}changedesc {{entry.class}}{% enddefinevar %}
-{% box boxclass %}
- <div class="box-main">
+{%  definevar "boxclass" %}changedesc {% if entry.collapsed %}collapsed{% endif %}{% enddefinevar %}
+{%  box boxclass %}
   <div class="header">
    <div class="collapse-button btn"><div class="rb-icon {% if entry.collapsed %}rb-icon-expand-review{% else %}rb-icon-collapse-review{% endif %}"></div></div>
    <div class="header-details">
     <div class="reviewer"><b>{% trans "Review request changed" %}</b></div>
-    <div class="posted_time">{% localtime on %}{% blocktrans with entry.changedesc.timestamp as timestamp and entry.changedesc.timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</div>
+    <div class="posted_time">{% localtime on %}{% blocktrans with changedesc.timestamp as timestamp and changedesc.timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</div>
    </div>
   </div>
   <div class="body">
-{%  if entry.new_status %}
+{%   if entry.new_status %}
    <h3 class="status">
     {% trans "Status:" %}
     <span class="value">
@@ -37,42 +37,42 @@
 {%   endif %}
     </span>
    </h3>
-{%  endif %}
+{%   endif %}
 
-{%  if entry.changedesc.text %}
+{%   if changedesc.text %}
    <h3>{% trans "Change Summary:" %}</h3>
-   <pre class="changedesc-text {% rich_text_classname entry.changedesc.rich_text %}">{{entry.changedesc.text|render_markdown:entry.changedesc.rich_text}}</pre>
-{%  endif %}
+   <pre class="changedesc-text {% rich_text_classname changedesc.rich_text %}">{{changedesc.text|render_markdown:changedesc.rich_text}}</pre>
+{%   endif %}
 
-{%  for group in entry.fields_changed_groups %}
-{%   if group.inline %}
+{%   for group in entry.fields_changed_groups %}
+{%    if group.inline %}
    <table class="secondary-fields">
-{%  for fieldinfo in group.fields %}
-{%   if fieldinfo.rendered_html %}
+{%   for fieldinfo in group.fields %}
+{%    if fieldinfo.rendered_html %}
     <tr>
      <th><h3>{{fieldinfo.title}}:</h3></th>
      <td>
       {{fieldinfo.rendered_html}}
      </td>
     </tr>
-{%   endif %}
-{%  endfor %}
+{%    endif %}
+{%   endfor %}
    </table>
-{%   else %}
+{%    else %}
    <ul class="primary-fields">
-{%    for fieldinfo in group.fields %}
-{%     if fieldinfo.rendered_html %}
+{%     for fieldinfo in group.fields %}
+{%      if fieldinfo.rendered_html %}
     <li class="clearfix">
      <h3>{{fieldinfo.title}}:</h3>
      {{fieldinfo.rendered_html}}
     </li>
-{%     endif %}
-{%    endfor %}
+{%      endif %}
+{%     endfor %}
    </ul>
-{%   endif %}
-{%  endfor %}
+{%    endif %}
+{%   endfor %}
 
   </div>
- </div>
-{% endbox %}
+{%  endbox %}
 </div>
+{% endwith %}
