@@ -1760,7 +1760,7 @@ class ViewTests(TestCase):
         entries = response.context['entries']
         self.assertEqual(len(entries), 1)
         entry = entries[0]
-        comments = entry['comments']['diff_comments']
+        comments = entry.comments['diff_comments']
         self.assertEqual(len(comments), 1)
         self.assertEqual(comments[0].text, comment_text_1)
 
@@ -1873,7 +1873,7 @@ class ViewTests(TestCase):
         self.assertEqual(len(entries), 1)
         entry = entries[0]
 
-        comments = entry['comments']['file_attachment_comments']
+        comments = entry.comments['file_attachment_comments']
         self.assertEqual(len(comments), 2)
         self.assertEqual(comments[0].text, comment_text_1)
         self.assertEqual(comments[1].text, comment_text_2)
@@ -1940,7 +1940,7 @@ class ViewTests(TestCase):
         entry = entries[0]
 
         # Make sure we loaded the reviews and all data correctly.
-        comments = entry['comments']['screenshot_comments']
+        comments = entry.comments['screenshot_comments']
         self.assertEqual(len(comments), 2)
         self.assertEqual(comments[0].text, comment_text_1)
         self.assertEqual(comments[1].text, comment_text_2)

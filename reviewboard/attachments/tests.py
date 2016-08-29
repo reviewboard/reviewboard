@@ -277,7 +277,7 @@ class UserFileAttachmentTests(BaseFileAttachmentTestCase):
         file_attachment = form.update(file_attachment)
 
         self.assertTrue(os.path.basename(file_attachment.file.name).endswith(
-            '__trophy.png'))
+            '__logo.png'))
         self.assertEqual(file_attachment.mimetype, 'image/png')
 
     def test_user_file_with_upload_file(self):
@@ -294,7 +294,7 @@ class UserFileAttachmentTests(BaseFileAttachmentTestCase):
 
         self.assertEqual(file_attachment.user, user)
         self.assertTrue(os.path.basename(file_attachment.file.name).endswith(
-            '__trophy.png'))
+            '__logo.png'))
         self.assertEqual(file_attachment.mimetype, 'image/png')
 
     @add_fixtures(['test_site'])
