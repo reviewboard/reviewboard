@@ -666,14 +666,6 @@
 /****************************************************************************
  * Change Descriptions
  ****************************************************************************/
-#field_changedescription {
-  white-space: pre-wrap;
-  background-color: @textarea-editor-background;
-  border: @textarea-border;
-  margin: @textarea-editor-margin;
-  padding: @textarea-editor-padding;
-}
-
 .changedesc {
   &.box {
     background-color: #fefadf;
@@ -817,6 +809,11 @@
     /* The "Change Summary" section. */
     .changedesc-text {
       margin-bottom: 2em;
+      overflow: hidden;
+
+      .codehilite {
+        .flush-codehilite();
+      }
 
       &:last-child {
         margin-bottom: 0;
@@ -848,6 +845,11 @@
         padding: 2px 4px;
         vertical-align: top;
         white-space: pre-wrap;
+
+	.codehilite {
+	  // Make this flush with the sides of the row.
+	  margin: 0 -4px;
+	}
       }
 
       .delete {
@@ -2269,8 +2271,9 @@
 #review-form,
 #reviews .review .body {
   .rich-text {
-    margin-left: (@textarea-editor-padding + @textarea-border-size);
-    margin-top: (@textarea-editor-margin-top + @textarea-editor-padding +
-                 @textarea-border-size);
+    margin: (@textarea-editor-margin-top + @textarea-editor-padding +
+             @textarea-border-size)
+            (@textarea-editor-padding + @textarea-border-size)
+            0;
   }
 }
