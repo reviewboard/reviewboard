@@ -10,10 +10,12 @@ from reviewboard.testing import TestCase
 
 
 class DefaultReviewerFormTests(TestCase):
+    """Unit tests for DefaultReviewerForm."""
+
     fixtures = ['test_scmtools']
 
     def test_form_with_localsite(self):
-        """Testing DefaultReviewerForm with a LocalSite."""
+        """Testing DefaultReviewerForm with a LocalSite"""
         test_site = LocalSite.objects.create(name='test')
 
         tool = Tool.objects.get(name='CVS')
@@ -42,7 +44,7 @@ class DefaultReviewerFormTests(TestCase):
         self.assertEqual(default_reviewer.groups.get(), group)
 
     def test_form_with_localsite_and_bad_user(self):
-        """Testing DefaultReviewerForm with a User not on the same LocalSite.
+        """Testing DefaultReviewerForm with a User not on the same LocalSite
         """
         test_site = LocalSite.objects.create(name='test')
         user = User.objects.create(username='testuser', password='')
@@ -56,7 +58,7 @@ class DefaultReviewerFormTests(TestCase):
         self.assertFalse(form.is_valid())
 
     def test_form_with_localsite_and_bad_group(self):
-        """Testing DefaultReviewerForm with a Group not on the same LocalSite.
+        """Testing DefaultReviewerForm with a Group not on the same LocalSite
         """
         test_site = LocalSite.objects.create(name='test')
         group = Group.objects.create(name='test', display_name='Test')
@@ -81,7 +83,7 @@ class DefaultReviewerFormTests(TestCase):
 
     def test_form_with_localsite_and_bad_repository(self):
         """Testing DefaultReviewerForm with a Repository not on the same
-        LocalSite.
+        LocalSite
         """
         test_site = LocalSite.objects.create(name='test')
         tool = Tool.objects.get(name='CVS')
@@ -108,7 +110,7 @@ class DefaultReviewerFormTests(TestCase):
 
 class GroupFormTests(TestCase):
     def test_form_with_localsite(self):
-        """Tests GroupForm with a LocalSite."""
+        """Tests GroupForm with a LocalSite"""
         test_site = LocalSite.objects.create(name='test')
 
         user = User.objects.create(username='testuser', password='')
@@ -127,7 +129,7 @@ class GroupFormTests(TestCase):
         self.assertEqual(group.users.get(), user)
 
     def test_form_with_localsite_and_bad_user(self):
-        """Tests GroupForm with a User not on the same LocalSite."""
+        """Tests GroupForm with a User not on the same LocalSite"""
         test_site = LocalSite.objects.create(name='test')
 
         user = User.objects.create(username='testuser', password='')

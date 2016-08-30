@@ -8,18 +8,20 @@ from reviewboard.testing import TestCase
 
 
 class ReviewTests(TestCase):
+    """Unit tests for reviewboard.reviews.models.Review."""
+
     fixtures = ['test_users', 'test_scmtools']
 
     def test_duplicate_reviews(self):
         """Testing consolidation of duplicate reviews"""
-        body_top = "This is the body_top."
-        body_bottom = "This is the body_bottom."
-        comment_text_1 = "Comment text 1"
-        comment_text_2 = "Comment text 2"
-        comment_text_3 = "Comment text 3"
+        body_top = 'This is the body_top.'
+        body_bottom = 'This is the body_bottom.'
+        comment_text_1 = 'Comment text 1'
+        comment_text_2 = 'Comment text 2'
+        comment_text_3 = 'Comment text 3'
 
         # Some objects we need.
-        user = User.objects.get(username="doc")
+        user = User.objects.get(username='doc')
 
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)

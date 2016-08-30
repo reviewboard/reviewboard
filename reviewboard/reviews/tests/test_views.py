@@ -18,22 +18,16 @@ from reviewboard.testing import TestCase
 
 
 class ViewTests(TestCase):
-    """Tests for views in reviewboard.reviews.views"""
+    """Tests for views in reviewboard.reviews.views."""
+
     fixtures = ['test_users', 'test_scmtools', 'test_site']
 
     def setUp(self):
         super(ViewTests, self).setUp()
 
         self.siteconfig = SiteConfiguration.objects.get_current()
-        self.siteconfig.set("auth_require_sitewide_login", False)
+        self.siteconfig.set('auth_require_sitewide_login', False)
         self.siteconfig.save()
-
-    def _get_context_var(self, response, varname):
-        for context in response.context:
-            if varname in context:
-                return context[varname]
-
-        return None
 
     def test_review_detail_redirect_no_slash(self):
         """Testing review_detail view redirecting with no trailing slash"""
@@ -80,9 +74,9 @@ class ViewTests(TestCase):
 
     def test_review_detail_diff_comment_ordering(self):
         """Testing review_detail and ordering of diff comments on a review"""
-        comment_text_1 = "Comment text 1"
-        comment_text_2 = "Comment text 2"
-        comment_text_3 = "Comment text 3"
+        comment_text_1 = 'Comment text 1'
+        comment_text_2 = 'Comment text 2'
+        comment_text_3 = 'Comment text 3'
 
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
@@ -147,12 +141,12 @@ class ViewTests(TestCase):
         self.assertEqual(replies[1].text, comment_text_2)
 
     def test_review_detail_file_attachment_visibility(self):
-        """Testing visibility of file attachments on review requests."""
+        """Testing visibility of file attachments on review requests"""
         caption_1 = 'File Attachment 1'
         caption_2 = 'File Attachment 2'
         caption_3 = 'File Attachment 3'
-        comment_text_1 = "Comment text 1"
-        comment_text_2 = "Comment text 2"
+        comment_text_1 = 'Comment text 1'
+        comment_text_2 = 'Comment text 2'
 
         user1 = User.objects.get(username='doc')
         review_request = ReviewRequest.objects.create(user1, None)
@@ -220,12 +214,12 @@ class ViewTests(TestCase):
         self.assertEqual(comments[1].text, comment_text_2)
 
     def test_review_detail_screenshot_visibility(self):
-        """Testing visibility of screenshots on review requests."""
+        """Testing visibility of screenshots on review requests"""
         caption_1 = 'Screenshot 1'
         caption_2 = 'Screenshot 2'
         caption_3 = 'Screenshot 3'
-        comment_text_1 = "Comment text 1"
-        comment_text_2 = "Comment text 2"
+        comment_text_1 = 'Comment text 1'
+        comment_text_2 = 'Comment text 2'
 
         user1 = User.objects.get(username='doc')
         review_request = ReviewRequest.objects.create(user1, None)
@@ -294,7 +288,7 @@ class ViewTests(TestCase):
 
     def test_review_detail_sitewide_login(self):
         """Testing review_detail view with site-wide login enabled"""
-        self.siteconfig.set("auth_require_sitewide_login", True)
+        self.siteconfig.set('auth_require_sitewide_login', True)
         self.siteconfig.save()
 
         self.create_review_request(publish=True)
@@ -424,7 +418,7 @@ class ViewTests(TestCase):
 
         # Useful for debugging any actual errors here.
         if response.status_code != 200:
-            print("Error: %s" % self._get_context_var(response, 'error'))
+            print('Error: %s' % self._get_context_var(response, 'error'))
             print(self._get_context_var(response, 'trace'))
 
         self.assertEqual(response.status_code, 200)
@@ -505,7 +499,7 @@ class ViewTests(TestCase):
 
         # Useful for debugging any actual errors here.
         if response.status_code != 200:
-            print("Error: %s" % self._get_context_var(response, 'error'))
+            print('Error: %s' % self._get_context_var(response, 'error'))
             print(self._get_context_var(response, 'trace'))
 
         self.assertEqual(response.status_code, 200)
@@ -526,7 +520,7 @@ class ViewTests(TestCase):
         self.client.login(username='doc', password='doc')
 
         # Some objects we need.
-        user = User.objects.get(username="doc")
+        user = User.objects.get(username='doc')
 
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
@@ -573,12 +567,12 @@ class ViewTests(TestCase):
 
     # Bug #3704
     def test_diff_raw_multiple_content_disposition(self):
-        """Testing /diff/raw/ multiple Content-Disposition issue."""
+        """Testing /diff/raw/ multiple Content-Disposition issue"""
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
 
         # Create a diffset with a comma in its name.
-        self.create_diffset(review_request=review_request, name="test, comma")
+        self.create_diffset(review_request=review_request, name='test, comma')
 
         response = self.client.get('/r/%d/diff/raw/' % review_request.pk)
         filename = response['Content-Disposition']\
@@ -1134,6 +1128,13 @@ class ViewTests(TestCase):
                     'file_attachment_diff_id': attachment2.pk,
                 }))
         self.assertEqual(response.status_code, 404)
+
+    def _get_context_var(self, response, varname):
+        for context in response.context:
+            if varname in context:
+                return context[varname]
+
+        return None
 
 
 class UserInfoboxTests(TestCase):
