@@ -10,7 +10,8 @@ from reviewboard.testing import TestCase
 
 
 class ReviewRequestManagerTests(TestCase):
-    """Tests ReviewRequestManager functions."""
+    """Unit tests for reviewboard.reviews.managers.ReviewRequestManager."""
+
     fixtures = ['test_users']
 
     @add_fixtures(['test_scmtools'])
@@ -44,8 +45,8 @@ class ReviewRequestManagerTests(TestCase):
 
     @add_fixtures(['test_scmtools'])
     def test_create_with_site_and_commit_id_conflicts_review_request(self):
-        """Testing ReviewRequest.objects.create with LocalSite and
-        commit ID that conflicts with a review request
+        """Testing ReviewRequest.objects.create with LocalSite and commit ID
+        that conflicts with a review request
         """
         user = User.objects.get(username='doc')
         local_site = LocalSite.objects.create(name='test')
@@ -57,12 +58,12 @@ class ReviewRequestManagerTests(TestCase):
         self.assertEqual(local_site.review_requests.count(), 1)
 
         # This one will yell.
-        self.assertRaises(
-            ChangeNumberInUseError,
-            lambda: ReviewRequest.objects.create(
-                user, repository,
+        with self.assertRaises(ChangeNumberInUseError):
+            ReviewRequest.objects.create(
+                user,
+                repository,
                 commit_id='123',
-                local_site=local_site))
+                local_site=local_site)
 
         # Make sure that entry doesn't exist in the database.
         self.assertEqual(local_site.review_requests.count(), 1)
@@ -86,12 +87,12 @@ class ReviewRequestManagerTests(TestCase):
         self.assertEqual(local_site.review_requests.count(), 1)
 
         # This one will yell.
-        self.assertRaises(
-            ChangeNumberInUseError,
-            lambda: ReviewRequest.objects.create(
-                user, repository,
+        with self.assertRaises(ChangeNumberInUseError):
+            ReviewRequest.objects.create(
+                user,
+                repository,
                 commit_id='123',
-                local_site=local_site))
+                local_site=local_site)
 
         # Make sure that entry doesn't exist in the database.
         self.assertEqual(local_site.review_requests.count(), 1)
@@ -549,13 +550,13 @@ class ReviewRequestManagerTests(TestCase):
         review_request.target_groups.add(group1)
 
         self.assertValidSummaries(
-            ReviewRequest.objects.to_group("privgroup", None),
+            ReviewRequest.objects.to_group('privgroup', None),
             [
                 'Test 1',
             ])
 
         self.assertValidSummaries(
-            ReviewRequest.objects.to_group("privgroup", None, status=None),
+            ReviewRequest.objects.to_group('privgroup', None, status=None),
             [
                 'Test 3',
                 'Test 1',
@@ -590,7 +591,7 @@ class ReviewRequestManagerTests(TestCase):
         review_request.target_groups.add(group2)
 
         self.assertValidSummaries(
-            ReviewRequest.objects.to_user_groups("doc", local_site=None),
+            ReviewRequest.objects.to_user_groups('doc', local_site=None),
             [
                 'Test 3',
                 'Test 1',
@@ -598,7 +599,7 @@ class ReviewRequestManagerTests(TestCase):
 
         self.assertValidSummaries(
             ReviewRequest.objects.to_user_groups(
-                "doc", status=None, local_site=None),
+                'doc', status=None, local_site=None),
             [
                 'Test 3',
                 'Test 2',
@@ -607,7 +608,7 @@ class ReviewRequestManagerTests(TestCase):
 
         self.assertValidSummaries(
             ReviewRequest.objects.to_user_groups(
-                "grumpy", user=user2, local_site=None),
+                'grumpy', user=user2, local_site=None),
             [
                 'Test 3',
             ])
@@ -650,13 +651,13 @@ class ReviewRequestManagerTests(TestCase):
         review_request.target_people.add(user1)
 
         self.assertValidSummaries(
-            ReviewRequest.objects.to_user_directly("doc", local_site=None),
+            ReviewRequest.objects.to_user_directly('doc', local_site=None),
             [
                 'Test 3',
             ])
 
         self.assertValidSummaries(
-            ReviewRequest.objects.to_user_directly("doc", status=None),
+            ReviewRequest.objects.to_user_directly('doc', status=None),
             [
                 'Test 4',
                 'Test 3',
@@ -664,7 +665,7 @@ class ReviewRequestManagerTests(TestCase):
 
         self.assertValidSummaries(
             ReviewRequest.objects.to_user_directly(
-                "doc", user2, status=None, local_site=None),
+                'doc', user2, status=None, local_site=None),
             [
                 'Test 4',
                 'Test 3',
@@ -689,13 +690,13 @@ class ReviewRequestManagerTests(TestCase):
                                    submitter=user1)
 
         self.assertValidSummaries(
-            ReviewRequest.objects.from_user("doc", local_site=None),
+            ReviewRequest.objects.from_user('doc', local_site=None),
             [
                 'Test 1',
             ])
 
         self.assertValidSummaries(
-            ReviewRequest.objects.from_user("doc", status=None,
+            ReviewRequest.objects.from_user('doc', status=None,
                                             local_site=None),
             [
                 'Test 3',
@@ -704,14 +705,14 @@ class ReviewRequestManagerTests(TestCase):
 
         self.assertValidSummaries(
             ReviewRequest.objects.from_user(
-                "doc", user=user1, status=None, local_site=None),
+                'doc', user=user1, status=None, local_site=None),
             [
                 'Test 3',
                 'Test 2',
                 'Test 1',
             ])
 
-    def to_user(self):
+    def test_to_user(self):
         """Testing ReviewRequest.objects.to_user"""
         user1 = User.objects.get(username='doc')
         user2 = User.objects.get(username='grumpy')
@@ -750,14 +751,14 @@ class ReviewRequestManagerTests(TestCase):
         review_request.target_people.add(user1)
 
         self.assertValidSummaries(
-            ReviewRequest.objects.to_user("doc", local_site=None),
+            ReviewRequest.objects.to_user('doc', local_site=None),
             [
                 'Test 3',
                 'Test 1',
             ])
 
         self.assertValidSummaries(
-            ReviewRequest.objects.to_user("doc", status=None, local_site=None),
+            ReviewRequest.objects.to_user('doc', status=None, local_site=None),
             [
                 'Test 4',
                 'Test 3',
@@ -766,7 +767,7 @@ class ReviewRequestManagerTests(TestCase):
 
         self.assertValidSummaries(
             ReviewRequest.objects.to_user(
-                "doc", user=user2, status=None, local_site=None),
+                'doc', user=user2, status=None, local_site=None),
             [
                 'Test 4',
                 'Test 3',

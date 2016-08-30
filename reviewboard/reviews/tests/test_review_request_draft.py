@@ -7,11 +7,13 @@ from reviewboard.reviews.models import ReviewRequestDraft
 from reviewboard.testing import TestCase
 
 
-class DraftTests(TestCase):
+class ReviewRequestDraftTests(TestCase):
+    """Unit tests for reviewboard.reviews.models.ReviewRequestDraft."""
+
     fixtures = ['test_users', 'test_scmtools']
 
     def test_draft_changes(self):
-        """Testing recording of draft changes."""
+        """Testing recording of draft changes"""
         draft = self._get_draft()
         review_request = draft.review_request
 
@@ -21,42 +23,43 @@ class DraftTests(TestCase):
         old_branch = review_request.branch
         old_bugs = review_request.get_bug_list()
 
-        draft.summary = "New summary"
-        draft.description = "New description"
-        draft.testing_done = "New testing done"
-        draft.branch = "New branch"
-        draft.bugs_closed = "12, 34, 56"
+        draft.summary = 'New summary'
+        draft.description = 'New description'
+        draft.testing_done = 'New testing done'
+        draft.branch = 'New branch'
+        draft.bugs_closed = '12, 34, 56'
 
         new_bugs = draft.get_bug_list()
 
         changes = draft.publish()
         fields = changes.fields_changed
 
-        self.assertIn("summary", fields)
-        self.assertIn("description", fields)
-        self.assertIn("testing_done", fields)
-        self.assertIn("branch", fields)
-        self.assertIn("bugs_closed", fields)
+        self.assertIn('summary', fields)
+        self.assertIn('description', fields)
+        self.assertIn('testing_done', fields)
+        self.assertIn('branch', fields)
+        self.assertIn('bugs_closed', fields)
 
         old_bugs_norm = set([(bug,) for bug in old_bugs])
         new_bugs_norm = set([(bug,) for bug in new_bugs])
 
-        self.assertEqual(fields["summary"]["old"][0], old_summary)
-        self.assertEqual(fields["summary"]["new"][0], draft.summary)
-        self.assertEqual(fields["description"]["old"][0], old_description)
-        self.assertEqual(fields["description"]["new"][0], draft.description)
-        self.assertEqual(fields["testing_done"]["old"][0], old_testing_done)
-        self.assertEqual(fields["testing_done"]["new"][0], draft.testing_done)
-        self.assertEqual(fields["branch"]["old"][0], old_branch)
-        self.assertEqual(fields["branch"]["new"][0], draft.branch)
-        self.assertEqual(set(fields["bugs_closed"]["old"]), old_bugs_norm)
-        self.assertEqual(set(fields["bugs_closed"]["new"]), new_bugs_norm)
-        self.assertEqual(set(fields["bugs_closed"]["removed"]), old_bugs_norm)
-        self.assertEqual(set(fields["bugs_closed"]["added"]), new_bugs_norm)
+        self.assertEqual(fields['summary']['old'][0], old_summary)
+        self.assertEqual(fields['summary']['new'][0], draft.summary)
+        self.assertEqual(fields['description']['old'][0], old_description)
+        self.assertEqual(fields['description']['new'][0], draft.description)
+        self.assertEqual(fields['testing_done']['old'][0], old_testing_done)
+        self.assertEqual(fields['testing_done']['new'][0], draft.testing_done)
+        self.assertEqual(fields['branch']['old'][0], old_branch)
+        self.assertEqual(fields['branch']['new'][0], draft.branch)
+        self.assertEqual(set(fields['bugs_closed']['old']), old_bugs_norm)
+        self.assertEqual(set(fields['bugs_closed']['new']), new_bugs_norm)
+        self.assertEqual(set(fields['bugs_closed']['removed']), old_bugs_norm)
+        self.assertEqual(set(fields['bugs_closed']['added']), new_bugs_norm)
 
     def test_draft_changes_with_custom_fields(self):
         """Testing ReviewRequestDraft.publish with custom fields propagating
-        from draft to review request"""
+        from draft to review request
+        """
         class RichField(BaseTextAreaField):
             field_id = 'rich_field'
 
@@ -76,7 +79,7 @@ class DraftTests(TestCase):
             draft = self._get_draft()
             review_request = draft.review_request
 
-            draft.description = "New description"
+            draft.description = 'New description'
             draft.extra_data['rich_field'] = '**Rich custom text**'
             draft.extra_data['rich_field_text_type'] = 'markdown'
             draft.extra_data['text'] = 'Nothing special'

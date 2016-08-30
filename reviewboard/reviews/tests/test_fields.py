@@ -8,12 +8,13 @@ from reviewboard.testing import TestCase
 
 
 class FieldTests(TestCase):
+    """Unit tests for review request fields."""
+
     # Bug #1352
     def test_long_bug_numbers(self):
         """Testing review requests with very long bug numbers"""
         review_request = ReviewRequest()
-        review_request.bugs_closed = \
-            '12006153200030304432010,4432009'
+        review_request.bugs_closed = '12006153200030304432010,4432009'
         self.assertEqual(review_request.get_bug_list(),
                          ['4432009', '12006153200030304432010'])
 
