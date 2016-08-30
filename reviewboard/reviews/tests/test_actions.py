@@ -1,321 +1,124 @@
 from __future__ import unicode_literals
 
-from django.template import Context, Template
+from django.contrib.auth.models import AnonymousUser, User
+from django.template import Context
+from django.test.client import RequestFactory
+from django.utils import six
+from djblets.testing.decorators import add_fixtures
 from mock import Mock
-from kgb import SpyAgency
 
 from reviewboard.reviews.actions import (BaseReviewRequestAction,
                                          BaseReviewRequestMenuAction,
-                                         clear_all_actions,
                                          MAX_DEPTH_LIMIT,
+                                         clear_all_actions,
+                                         get_top_level_actions,
                                          register_actions,
                                          unregister_actions)
+from reviewboard.reviews.default_actions import (AddGeneralCommentAction,
+                                                 CloseMenuAction,
+                                                 DeleteAction,
+                                                 DownloadDiffAction,
+                                                 EditReviewAction,
+                                                 ShipItAction,
+                                                 SubmitAction,
+                                                 UpdateMenuAction,
+                                                 UploadDiffAction)
 from reviewboard.reviews.errors import DepthLimitExceededError
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.testing import TestCase
 
 
-class ActionTests(TestCase):
-    """Tests the actions in reviewboard.reviews.actions."""
+class FooAction(BaseReviewRequestAction):
+    action_id = 'foo-action'
+    label = 'Foo Action'
 
-    fixtures = ['test_users']
 
-    class _FooAction(BaseReviewRequestAction):
-        action_id = 'foo-action'
-        label = 'Foo Action'
+class BarAction(BaseReviewRequestMenuAction):
+    def __init__(self, action_id, child_actions=None):
+        super(BarAction, self).__init__(child_actions)
 
-    class _BarAction(BaseReviewRequestAction):
-        action_id = 'bar-action'
-        label = 'Bar Action'
+        self.action_id = 'bar-' + action_id
 
-    class _BazAction(BaseReviewRequestMenuAction):
-        def __init__(self, action_id, child_actions=None):
-            super(ActionTests._BazAction, self).__init__(child_actions)
 
-            self.action_id = 'baz-' + action_id
+class TopLevelMenuAction(BaseReviewRequestMenuAction):
+    action_id = 'top-level-menu-action'
+    label = 'Top Level Menu Action'
 
-    class _TopLevelMenuAction(BaseReviewRequestMenuAction):
-        action_id = 'top-level-menu-action'
-        label = 'Top Level Menu Action'
 
-    class _PoorlyCodedAction(BaseReviewRequestAction):
-        def get_label(self, context):
-            raise Exception
+class PoorlyCodedAction(BaseReviewRequestAction):
+    def get_label(self, context):
+        raise Exception
 
-    def _get_content(self, user_pk='123', is_authenticated=True,
-                     url_name='review-request-detail', local_site_name=None,
-                     status=ReviewRequest.PENDING_REVIEW, submitter_id='456',
-                     is_public=True, display_id='789', has_diffs=True,
-                     can_change_status=True, can_edit_reviewrequest=True,
-                     delete_reviewrequest=True):
-        request = Mock()
-        request.resolver_match = Mock()
-        request.resolver_match.url_name = url_name
-        request.user = Mock()
-        request.user.pk = user_pk
-        request.user.is_authenticated.return_value = is_authenticated
-        request._local_site_name = local_site_name
 
-        review_request = Mock()
-        review_request.status = status
-        review_request.submitter_id = submitter_id
-        review_request.public = is_public
-        review_request.display_id = display_id
-
-        if not has_diffs:
-            review_request.get_draft.return_value = None
-            review_request.get_diffsets.return_value = None
-
-        context = Context({
-            'request': request,
-            'review_request': review_request,
-            'perms': {
-                'reviews': {
-                    'can_change_status': can_change_status,
-                    'can_edit_reviewrequest': can_edit_reviewrequest,
-                    'delete_reviewrequest': delete_reviewrequest,
-                },
-            },
-        })
-
-        template = Template(
-            '{% load reviewtags %}'
-            '{% review_request_actions %}'
-        )
-
-        return template.render(context)
-
-    def _get_long_action_list(self, length):
-        actions = [None] * length
-        actions[0] = self._BazAction('0')
-
-        for d in range(1, len(actions)):
-            actions[d] = self._BazAction(str(d), [actions[d - 1]])
-
-        return actions
+class ActionsTestCase(TestCase):
+    """Test case for unit tests dealing with actions."""
 
     def tearDown(self):
-        super(ActionTests, self).tearDown()
+        super(ActionsTestCase, self).tearDown()
 
         # This prevents registered/unregistered/modified actions from leaking
         # between different unit tests.
         clear_all_actions()
 
-    def test_register_then_unregister(self):
-        """Testing register then unregister for actions"""
-        foo_action = self._FooAction()
-        menu_action = self._TopLevelMenuAction([
-            self._BarAction(),
-        ])
+    def make_nested_actions(self, depth):
+        """Return a nested list of actions to register.
 
-        self.assertEqual(len(menu_action.child_actions), 1)
-        bar_action = menu_action.child_actions[0]
+        This returns a list of actions, each entry nested within the prior
+        entry, of the given length. The resulting list is intended to be
+        registered.
 
-        content = self._get_content()
-        self.assertEqual(content.count('id="%s"' % foo_action.action_id), 0)
-        self.assertEqual(content.count('>%s<' % foo_action.label), 0)
-        self.assertEqual(content.count('id="%s"' % menu_action.action_id), 0)
-        self.assertEqual(content.count('>%s &#9662;<' % menu_action.label), 0)
-        self.assertEqual(content.count('id="%s"' % bar_action.action_id), 0)
-        self.assertEqual(content.count('>%s<' % bar_action.label), 0)
+        Args:
+            depth (int):
+                The nested depth for the actions.
 
-        foo_action.register()
+        Returns:
+            list of reviewboard.reviews.actions.BaseReviewRequestAction:
+            The list of actions.
+        """
+        actions = [None] * depth
+        actions[0] = BarAction('0')
 
-        content = self._get_content()
-        self.assertEqual(content.count('id="%s"' % foo_action.action_id), 1)
-        self.assertEqual(content.count('>%s<' % foo_action.label), 1)
-        self.assertEqual(content.count('id="%s"' % menu_action.action_id), 0)
-        self.assertEqual(content.count('>%s &#9662;<' % menu_action.label), 0)
-        self.assertEqual(content.count('id="%s"' % bar_action.action_id), 0)
-        self.assertEqual(content.count('>%s<' % bar_action.label), 0)
+        for i in range(1, depth):
+            actions[i] = BarAction(six.text_type(i), [actions[i - 1]])
 
-        menu_action.register()
+        return actions
 
-        content = self._get_content()
-        self.assertEqual(content.count('id="%s"' % foo_action.action_id), 1)
-        self.assertEqual(content.count('>%s<' % foo_action.label), 1)
-        self.assertEqual(content.count('id="%s"' % menu_action.action_id), 1)
-        self.assertEqual(content.count('>%s &#9662;<' % menu_action.label), 1)
-        self.assertEqual(content.count('id="%s"' % bar_action.action_id), 1)
-        self.assertEqual(content.count('>%s<' % bar_action.label), 1)
 
-        foo_action.unregister()
+class ActionRegistryTests(ActionsTestCase):
+    """Unit tests for the review request actions registry."""
 
-        content = self._get_content()
-        self.assertEqual(content.count('id="%s"' % foo_action.action_id), 0)
-        self.assertEqual(content.count('>%s<' % foo_action.label), 0)
-        self.assertEqual(content.count('id="%s"' % menu_action.action_id), 1)
-        self.assertEqual(content.count('>%s &#9662;<' % menu_action.label), 1)
-        self.assertEqual(content.count('id="%s"' % bar_action.action_id), 1)
-        self.assertEqual(content.count('>%s<' % bar_action.label), 1)
+    def test_register_actions_with_invalid_parent_id(self):
+        """Testing register_actions with an invalid parent ID"""
+        foo_action = FooAction()
 
-        menu_action.unregister()
-
-        content = self._get_content()
-        self.assertEqual(content.count('id="%s"' % foo_action.action_id), 0)
-        self.assertEqual(content.count('>%s<' % foo_action.label), 0)
-        self.assertEqual(content.count('id="%s"' % menu_action.action_id), 0)
-        self.assertEqual(content.count('>%s &#9662;<' % menu_action.label), 0)
-        self.assertEqual(content.count('id="%s"' % bar_action.action_id), 0)
-        self.assertEqual(content.count('>%s<' % bar_action.label), 0)
-
-    def test_unregister_actions_with_register_actions(self):
-        """Testing unregister_actions with register_actions"""
-        foo_action = self._FooAction()
-        unregistered_ids = [
-            'discard-review-request-action',
-            'update-review-request-action',
-            'ship-it-action',
-        ]
-        removed_ids = unregistered_ids + [
-            'upload-diff-action',
-            'upload-file-action',
-        ]
-        added_ids = [
-            foo_action.action_id
-        ]
-
-        # Test that foo_action really does render as a child of the parent
-        # Close menu (and not any other menu).
-        new_close_menu_html = '\n'.join([
-            '<li class="review-request-action has-menu">',
-            ' <a class="menu-title" id="close-review-request-action"',
-            '    href="#">Close &#9662;</a>',
-            ' <ul class="menu">',
-            '<li class="review-request-action">',
-            ' <a id="submit-review-request-action" href="#">Submitted</a>',
-            '</li>',
-            '<li class="review-request-action">',
-            (' <a id="delete-review-request-action" href="#">Delete '
-             'Permanently</a>'),
-            '</li>',
-            '<li class="review-request-action">',
-            (' <a id="%s" href="%s">%s</a>'
-             % (foo_action.action_id, foo_action.url, foo_action.label)),
-            '</li>',
-        ])
-
-        content = self._get_content()
-
-        for action_id in added_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 0,
-                             '%s should not have rendered' % action_id)
-
-        for action_id in removed_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 1,
-                             '%s should\'ve rendered exactly once' % action_id)
-
-        unregister_actions(unregistered_ids)
-        content = self._get_content()
-
-        for action_id in added_ids + removed_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 0,
-                             '%s should not have rendered' % action_id)
-
-        register_actions([foo_action], 'close-review-request-action')
-        content = self._get_content()
-
-        for action_id in removed_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 0,
-                             '%s should not have rendered' % action_id)
-
-        for action_id in added_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 1,
-                             '%s should\'ve rendered exactly once' % action_id)
-
-        self.assertEqual(content.count(new_close_menu_html), 1)
-
-    def test_register_raises_key_error(self):
-        """Testing that register raises a KeyError"""
-        foo_action = self._FooAction()
-        error_message = ('%s already corresponds to a registered review '
-                         'request action') % foo_action.action_id
+        message = (
+            'bad-id does not correspond to a registered review request action'
+        )
 
         foo_action.register()
 
-        with self.assertRaisesMessage(KeyError, error_message):
-            foo_action.register()
+        with self.assertRaisesMessage(KeyError, message):
+            register_actions([foo_action], 'bad-id')
 
-    def test_register_raises_depth_limit_exceeded_error(self):
-        """Testing that register raises a DepthLimitExceededError"""
-        actions = self._get_long_action_list(MAX_DEPTH_LIMIT + 1)
-        invalid_action = self._BazAction(str(len(actions)), [actions[-1]])
-        error_message = ('%s exceeds the maximum depth limit of %d'
-                         % (invalid_action.action_id, MAX_DEPTH_LIMIT))
+    def test_register_actions_with_already_registered_action(self):
+        """Testing register_actions with an already registered action"""
+        foo_action = FooAction()
 
-        with self.assertRaisesMessage(DepthLimitExceededError, error_message):
-            invalid_action.register()
-
-    def test_unregister_raises_key_error(self):
-        """Testing that unregister raises a KeyError"""
-        foo_action = self._FooAction()
-        menu_action = self._TopLevelMenuAction([
-            self._BarAction(),
-        ])
-        foo_message = ('%s does not correspond to a registered review '
-                       'request action') % foo_action.action_id
-        menu_message = ('%s does not correspond to a registered review '
-                        'request action') % menu_action.action_id
-
-        with self.assertRaisesMessage(KeyError, foo_message):
-            foo_action.unregister()
-
-        with self.assertRaisesMessage(KeyError, menu_message):
-            menu_action.unregister()
-
-    def test_unregister_with_max_depth(self):
-        """Testing unregister with max_depth"""
-        actions = self._get_long_action_list(MAX_DEPTH_LIMIT + 1)
-        actions[0].unregister()
-        extra_action = self._BazAction(str(len(actions)), [actions[-1]])
-
-        extra_action.register()
-        self.assertEquals(extra_action.max_depth, MAX_DEPTH_LIMIT)
-
-    def test_init_raises_key_error(self):
-        """Testing that __init__ raises a KeyError"""
-        foo_action = self._FooAction()
-        error_message = ('%s already corresponds to a registered review '
-                         'request action') % foo_action.action_id
+        message = (
+            '%s already corresponds to a registered review request action'
+            % foo_action.action_id
+        )
 
         foo_action.register()
 
-        with self.assertRaisesMessage(KeyError, error_message):
-            self._TopLevelMenuAction([
-                foo_action,
-            ])
-
-    def test_register_actions_raises_key_errors(self):
-        """Testing that register_actions raises KeyErrors"""
-        foo_action = self._FooAction()
-        bar_action = self._BarAction()
-        missing_message = ('%s does not correspond to a registered review '
-                           'request action') % bar_action.action_id
-        second_message = ('%s already corresponds to a registered review '
-                          'request action') % foo_action.action_id
-        foo_action.register()
-
-        with self.assertRaisesMessage(KeyError, missing_message):
-            register_actions([foo_action], bar_action.action_id)
-
-        with self.assertRaisesMessage(KeyError, second_message):
+        with self.assertRaisesMessage(KeyError, message):
             register_actions([foo_action])
-
-    def test_register_actions_raises_depth_limit_exceeded_error(self):
-        """Testing that register_actions raises a DepthLimitExceededError"""
-        actions = self._get_long_action_list(MAX_DEPTH_LIMIT + 1)
-        invalid_action = self._BazAction(str(len(actions)), [actions[-1]])
-        error_message = ('%s exceeds the maximum depth limit of %d'
-                         % (invalid_action.action_id, MAX_DEPTH_LIMIT))
-
-        with self.assertRaisesMessage(DepthLimitExceededError, error_message):
-            register_actions([invalid_action])
 
     def test_register_actions_with_max_depth(self):
         """Testing register_actions with max_depth"""
-        actions = self._get_long_action_list(MAX_DEPTH_LIMIT)
-        extra_action = self._BazAction('extra')
-        foo_action = self._FooAction()
+        actions = self.make_nested_actions(MAX_DEPTH_LIMIT)
+        extra_action = BarAction('extra')
+        foo_action = FooAction()
 
         for d, action in enumerate(actions):
             self.assertEquals(action.max_depth, d)
@@ -329,29 +132,164 @@ class ActionTests(TestCase):
         register_actions([foo_action])
         self.assertEquals(foo_action.max_depth, 0)
 
-    def test_unregister_actions_raises_key_error(self):
-        """Testing that unregister_actions raises a KeyError"""
-        foo_action = self._FooAction()
-        error_message = ('%s does not correspond to a registered review '
-                         'request action') % foo_action.action_id
+    def test_register_actions_with_too_deep(self):
+        """Testing register_actions with exceeding max depth"""
+        actions = self.make_nested_actions(MAX_DEPTH_LIMIT + 1)
+        invalid_action = BarAction(str(len(actions)), [actions[-1]])
+
+        error_message = (
+            '%s exceeds the maximum depth limit of %d'
+            % (invalid_action.action_id, MAX_DEPTH_LIMIT)
+        )
+
+        with self.assertRaisesMessage(DepthLimitExceededError, error_message):
+            register_actions([invalid_action])
+
+    def test_unregister_actions(self):
+        """Testing unregister_actions"""
+
+        orig_action_ids = {
+            action.action_id
+            for action in get_top_level_actions()
+        }
+        self.assertIn('update-review-request-action', orig_action_ids)
+        self.assertIn('review-action', orig_action_ids)
+
+        unregister_actions(['update-review-request-action', 'review-action'])
+
+        new_action_ids = {
+            action.action_id
+            for action in get_top_level_actions()
+        }
+        self.assertEqual(len(orig_action_ids), len(new_action_ids) + 2)
+        self.assertNotIn('update-review-request-action', new_action_ids)
+        self.assertNotIn('review-action', new_action_ids)
+
+    def test_unregister_actions_with_child_action(self):
+        """Testing unregister_actions with child action"""
+        menu_action = TopLevelMenuAction([
+            FooAction()
+        ])
+
+        self.assertEqual(len(menu_action.child_actions), 1)
+        unregister_actions([FooAction.action_id])
+        self.assertEqual(len(menu_action.child_actions), 0)
+
+    def test_unregister_actions_with_unregistered_action(self):
+        """Testing unregister_actions with unregistered action"""
+        foo_action = FooAction()
+        error_message = (
+            '%s does not correspond to a registered review request action'
+            % foo_action.action_id
+        )
 
         with self.assertRaisesMessage(KeyError, error_message):
             unregister_actions([foo_action.action_id])
 
     def test_unregister_actions_with_max_depth(self):
         """Testing unregister_actions with max_depth"""
-        actions = self._get_long_action_list(MAX_DEPTH_LIMIT + 1)
+        actions = self.make_nested_actions(MAX_DEPTH_LIMIT + 1)
 
         unregister_actions([actions[0].action_id])
-        extra_action = self._BazAction(str(len(actions)), [actions[-1]])
+        extra_action = BarAction(str(len(actions)), [actions[-1]])
         extra_action.register()
         self.assertEquals(extra_action.max_depth, MAX_DEPTH_LIMIT)
 
+
+class BaseReviewRequestActionTests(ActionsTestCase):
+    """Unit tests for BaseReviewRequestAction."""
+
+    def test_register_then_unregister(self):
+        """Testing BaseReviewRequestAction.register then unregister for
+        actions
+        """
+        foo_action = FooAction()
+        foo_action.register()
+
+        self.assertIn(foo_action.action_id, (
+            action.action_id
+            for action in get_top_level_actions()
+        ))
+
+        foo_action.unregister()
+
+        self.assertNotIn(foo_action.action_id, (
+            action.action_id
+            for action in get_top_level_actions()
+        ))
+
+    def test_register_with_already_registered(self):
+        """Testing BaseReviewRequestAction.register with already registered
+        action
+        """
+        foo_action = FooAction()
+        error_message = (
+            '%s already corresponds to a registered review request action'
+            % foo_action.action_id
+        )
+
+        foo_action.register()
+
+        with self.assertRaisesMessage(KeyError, error_message):
+            foo_action.register()
+
+    def test_register_with_too_deep(self):
+        """Testing BaseReviewRequestAction.register with exceeding max depth"""
+        actions = self.make_nested_actions(MAX_DEPTH_LIMIT + 1)
+        invalid_action = BarAction(str(len(actions)), [actions[-1]])
+        error_message = (
+            '%s exceeds the maximum depth limit of %d'
+            % (invalid_action.action_id, MAX_DEPTH_LIMIT)
+        )
+
+        with self.assertRaisesMessage(DepthLimitExceededError, error_message):
+            invalid_action.register()
+
+    def test_unregister_with_unregistered_action(self):
+        """Testing BaseReviewRequestAction.unregister with unregistered
+        action
+        """
+        foo_action = FooAction()
+
+        message = (
+            '%s does not correspond to a registered review request action'
+            % foo_action.action_id
+        )
+
+        with self.assertRaisesMessage(KeyError, message):
+            foo_action.unregister()
+
+    def test_unregister_with_max_depth(self):
+        """Testing BaseReviewRequestAction.unregister with max_depth"""
+        actions = self.make_nested_actions(MAX_DEPTH_LIMIT + 1)
+        actions[0].unregister()
+        extra_action = BarAction(str(len(actions)), [actions[-1]])
+
+        extra_action.register()
+        self.assertEquals(extra_action.max_depth, MAX_DEPTH_LIMIT)
+
+    def test_init_already_registered_in_menu(self):
+        """Testing BaseReviewRequestAction.__init__ for already registered
+        action when nested in a menu action
+        """
+        foo_action = FooAction()
+        error_message = ('%s already corresponds to a registered review '
+                         'request action') % foo_action.action_id
+
+        foo_action.register()
+
+        with self.assertRaisesMessage(KeyError, error_message):
+            TopLevelMenuAction([
+                foo_action,
+            ])
+
     def test_render_pops_context_even_after_error(self):
-        """Testing that render pops the context even after an error"""
+        """Testing BaseReviewRequestAction.render pops the context after an
+        error
+        """
         context = Context({'comment': 'this is a comment'})
         old_dict_count = len(context.dicts)
-        poorly_coded_action = self._PoorlyCodedAction()
+        poorly_coded_action = PoorlyCodedAction()
 
         with self.assertRaises(Exception):
             poorly_coded_action.render(context)
@@ -360,252 +298,625 @@ class ActionTests(TestCase):
         self.assertEquals(old_dict_count, new_dict_count)
 
 
-class DefaultActionTests(SpyAgency, TestCase):
-    """Tests for default actions in reviewboard.reviews.default_actions"""
+class AddGeneralCommentActionTests(ActionsTestCase):
+    """Unit tests for AddGeneralCommentAction."""
 
     fixtures = ['test_users']
 
-    def _get_content(self, user_pk='123', is_authenticated=True,
-                     url_name='review-request-detail', local_site_name=None,
-                     status=ReviewRequest.PENDING_REVIEW, submitter_id='456',
-                     is_public=True, display_id='789', has_diffs=True,
-                     can_change_status=True, can_edit_reviewrequest=True,
-                     delete_reviewrequest=True):
-        request = Mock()
-        request.resolver_match = Mock()
-        request.resolver_match.url_name = url_name
-        request.user = Mock()
-        request.user.pk = user_pk
-        request.user.is_authenticated.return_value = is_authenticated
-        request._local_site_name = local_site_name
+    def setUp(self):
+        super(AddGeneralCommentActionTests, self).setUp()
 
-        review_request = Mock()
-        review_request.status = status
-        review_request.submitter_id = submitter_id
-        review_request.public = is_public
-        review_request.display_id = display_id
+        self.action = AddGeneralCommentAction()
 
-        if not has_diffs:
-            review_request.repository_id = None
+    def test_should_render_with_authenticated(self):
+        """Testing AddGeneralCommentAction.should_render with authenticated
+        user
+        """
+        request = RequestFactory().request()
+        request.user = User.objects.get(username='doc')
 
-        context = Context({
-            'request': request,
+        self.assertTrue(self.action.should_render({'request': request}))
+
+    def test_should_render_with_anonymous(self):
+        """Testing AddGeneralCommentAction.should_render with authenticated
+        user
+        """
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        self.assertFalse(self.action.should_render({'request': request}))
+
+
+class CloseMenuActionTests(ActionsTestCase):
+    """Unit tests for CloseMenuAction."""
+
+    fixtures = ['test_users']
+
+    def setUp(self):
+        super(CloseMenuActionTests, self).setUp()
+
+        self.action = CloseMenuAction()
+
+    def test_should_render_for_owner(self):
+        """Testing CloseMenuAction.should_render for owner of review request"""
+        review_request = self.create_review_request(publish=True)
+
+        request = RequestFactory().request()
+        request.user = review_request.submitter
+
+        self.assertTrue(self.action.should_render({
             'review_request': review_request,
+            'request': request,
             'perms': {
                 'reviews': {
-                    'can_change_status': can_change_status,
-                    'can_edit_reviewrequest': can_edit_reviewrequest,
-                    'delete_reviewrequest': delete_reviewrequest,
+                    'can_change_status': False,
                 },
             },
-        })
+        }))
 
-        template = Template(
-            '{% load reviewtags %}'
-            '{% review_request_actions %}'
-        )
+    def test_should_render_for_owner_unpublished(self):
+        """Testing CloseMenuAction.should_render for owner of review
+        unpublished review request
+        """
+        review_request = self.create_review_request(public=False)
 
-        return template.render(context)
+        request = RequestFactory().request()
+        request.user = review_request.submitter
 
-    def test_should_render_when_user_is_submitter(self):
-        """Testing should_render when user is the submitter"""
-        same_user = '1234'
-        other_user = '5678'
-        user_is_submitter_action_ids = [
-            'close-review-request-action',
-            'submit-review-request-action',
-            'discard-review-request-action',
-            'delete-review-request-action',
-            'update-review-request-action',
-            'upload-diff-action',
-            'upload-file-action',
-        ]
+        self.assertTrue(self.action.should_render({
+            'review_request': review_request,
+            'request': request,
+            'perms': {
+                'reviews': {
+                    'can_change_status': False,
+                },
+            },
+        }))
 
-        content = self._get_content(user_pk=same_user, submitter_id=same_user,
-                                    can_change_status=False,
-                                    can_edit_reviewrequest=False)
+    def test_should_render_for_user(self):
+        """Testing CloseMenuAction.should_render for normal user"""
+        review_request = self.create_review_request(publish=True)
 
-        for action_id in user_is_submitter_action_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 1,
-                             '%s should\'ve rendered exactly once' % action_id)
+        request = RequestFactory().request()
+        request.user = User.objects.create(username='test-user')
 
-        content = self._get_content(user_pk=same_user, submitter_id=other_user,
-                                    can_change_status=False,
-                                    can_edit_reviewrequest=False)
+        self.assertFalse(self.action.should_render({
+            'review_request': review_request,
+            'request': request,
+            'perms': {
+                'reviews': {
+                    'can_change_status': False,
+                },
+            },
+        }))
 
-        for action_id in user_is_submitter_action_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 0,
-                             '%s should not have rendered' % action_id)
+    def test_should_render_user_with_can_change_status(self):
+        """Testing CloseMenuAction.should_render for user with
+        can_change_status permission
+        """
+        review_request = self.create_review_request(publish=True)
 
-    def test_should_render_when_user_is_authenticated(self):
-        """Testing should_render when user is authenticated"""
-        authenticated_only_action_ids = [
-            'review-action',
-            'ship-it-action',
-        ]
+        request = RequestFactory().request()
+        request.user = User.objects.create(username='test-user')
 
-        content = self._get_content(is_authenticated=True)
+        self.assertTrue(self.action.should_render({
+            'review_request': review_request,
+            'request': request,
+            'perms': {
+                'reviews': {
+                    'can_change_status': True,
+                },
+            },
+        }))
 
-        for action_id in authenticated_only_action_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 1,
-                             '%s should\'ve rendered exactly once' % action_id)
+    def test_should_render_user_with_can_change_status_and_unpublished(self):
+        """Testing CloseMenuAction.should_render for user with
+        can_change_status permission and unpublished review request
+        """
+        review_request = self.create_review_request(public=False)
 
-        content = self._get_content(is_authenticated=False)
+        request = RequestFactory().request()
+        request.user = User.objects.create(username='test-user')
 
-        for action_id in authenticated_only_action_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 0,
-                             '%s should not have rendered' % action_id)
+        self.assertFalse(self.action.should_render({
+            'review_request': review_request,
+            'request': request,
+            'perms': {
+                'reviews': {
+                    'can_change_status': True,
+                },
+            },
+        }))
 
-    def test_should_render_when_pending_review(self):
-        """Testing should_render when the review request is pending review"""
-        same_user = '1234'
-        pending_review_action_ids = [
-            'close-review-request-action',
-            'submit-review-request-action',
-            'discard-review-request-action',
-            'delete-review-request-action',
-            'update-review-request-action',
-            'upload-diff-action',
-            'upload-file-action',
-        ]
+    def test_should_render_with_discarded(self):
+        """Testing CloseMenuAction.should_render with discarded review request
+        """
+        review_request = \
+            self.create_review_request(status=ReviewRequest.DISCARDED)
 
-        content = self._get_content(status=ReviewRequest.PENDING_REVIEW,
-                                    user_pk=same_user, submitter_id=same_user)
+        request = RequestFactory().request()
+        request.user = review_request.submitter
 
-        for action_id in pending_review_action_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 1,
-                             '%s should\'ve rendered exactly once' % action_id)
+        self.assertFalse(self.action.should_render({
+            'review_request': review_request,
+            'request': request,
+            'perms': {
+                'reviews': {
+                    'can_change_status': False,
+                },
+            },
+        }))
 
-        content = self._get_content(status=ReviewRequest.SUBMITTED,
-                                    user_pk=same_user, submitter_id=same_user)
+    def test_should_render_with_submitted(self):
+        """Testing CloseMenuAction.should_render with submitted review request
+        """
+        review_request = \
+            self.create_review_request(status=ReviewRequest.SUBMITTED)
 
-        for action_id in pending_review_action_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 0,
-                             '%s should not have rendered' % action_id)
+        request = RequestFactory().request()
+        request.user = review_request.submitter
 
-    def test_should_render_with_public_review_requests(self):
-        """Testing should_render with public review requests"""
-        same_user = '1234'
-        public_only_action_ids = [
-            'submit-review-request-action',
-        ]
-        always_render_action_ids = [
-            'close-review-request-action',
-            'discard-review-request-action',
-            'delete-review-request-action',
-        ]
+        self.assertFalse(self.action.should_render({
+            'review_request': review_request,
+            'request': request,
+            'perms': {
+                'reviews': {
+                    'can_change_status': False,
+                },
+            },
+        }))
 
-        content = self._get_content(is_public=True, user_pk=same_user,
-                                    submitter_id=same_user)
 
-        for action_id in public_only_action_ids + always_render_action_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 1,
-                             '%s should\'ve rendered exactly once' % action_id)
+class DeleteActionTests(ActionsTestCase):
+    """Unit tests for DeleteAction."""
 
-        content = self._get_content(is_public=False, user_pk=same_user,
-                                    submitter_id=same_user)
+    def setUp(self):
+        super(DeleteActionTests, self).setUp()
 
-        for action_id in public_only_action_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 0,
-                             '%s should not have rendered' % action_id)
+        self.action = DeleteAction()
 
-        for action_id in always_render_action_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 1,
-                             '%s should\'ve rendered exactly once' % action_id)
+    def test_should_render_with_published(self):
+        """Testing DeleteAction.should_render with standard user"""
+        self.assertFalse(self.action.should_render({
+            'perms': {
+                'reviews': {
+                    'delete_reviewrequest': False,
+                },
+            },
+        }))
 
-    def test_get_label_and_should_render_when_review_request_has_diffs(self):
-        """Testing get_label and should_ render when diffs exist"""
-        update_diff_label = 'Update Diff'
-        upload_diff_label = 'Upload Diff'
-        download_diff_action_id = 'download-diff-action'
+    def test_should_render_with_permission(self):
+        """Testing SubmitAction.should_render with delete_reviewrequest
+        permission
+        """
+        self.assertTrue(self.action.should_render({
+            'perms': {
+                'reviews': {
+                    'delete_reviewrequest': True,
+                },
+            },
+        }))
 
-        content = self._get_content(has_diffs=True)
-        self.assertEqual(content.count('>%s<' % update_diff_label), 1)
-        self.assertEqual(content.count('>%s<' % upload_diff_label), 0)
-        self.assertEqual(content.count('id="%s"' % download_diff_action_id), 1)
 
-        content = self._get_content(has_diffs=False)
-        self.assertEqual(content.count('>%s<' % update_diff_label), 0)
-        self.assertEqual(content.count('>%s<' % upload_diff_label), 0)
-        self.assertEqual(content.count('id="%s"' % download_diff_action_id), 0)
+class DownloadDiffActionTests(ActionsTestCase):
+    """Unit tests for DownloadDiffAction."""
 
-    def test_get_hidden_when_viewing_interdiff(self):
-        """Testing get_hidden when viewing an interdiff"""
-        hidden_download_diff = 'style="display: none;">Download Diff<'
-        hidden_url_names = [
-            'view-interdiff',
-        ]
-        visible_url_names = [
-            'view-diff',
-            'file-attachment',
-            'review-request-detail',
-        ]
+    fixtures = ['test_users']
 
-        for url_name in hidden_url_names:
-            content = self._get_content(url_name=url_name)
-            self.assertEqual(content.count(hidden_download_diff), 1,
-                             '%s should\'ve been hidden' % url_name)
+    def setUp(self):
+        super(DownloadDiffActionTests, self).setUp()
 
-        for url_name in visible_url_names:
-            content = self._get_content(url_name=url_name)
-            self.assertEqual(content.count(hidden_download_diff), 0,
-                             '%s should\'ve been visible' % url_name)
+        self.action = DownloadDiffAction()
 
-    def test_should_render_with_can_change_status(self):
-        """Testing should_render with reviews.can_change_status"""
-        can_change_action_ids = [
-            'close-review-request-action',
-            'submit-review-request-action',
-            'discard-review-request-action',
-            'delete-review-request-action',
-        ]
+    def test_get_url_on_diff_viewer(self):
+        """Testing DownloadDiffAction.get_url on diff viewer page"""
+        request = RequestFactory().request()
+        request.resolver_match = Mock()
+        request.resolver_match.url_name = 'view-diff'
 
-        content = self._get_content(can_change_status=True)
+        self.assertEqual(self.action.get_url({'request': request}),
+                         'raw/')
 
-        for action_id in can_change_action_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 1,
-                             '%s should\'ve rendered exactly once' % action_id)
+    def test_get_url_on_interdiff(self):
+        """Testing DownloadDiffAction.get_url on diff viewer interdiff page"""
+        request = RequestFactory().request()
+        request.resolver_match = Mock()
+        request.resolver_match.url_name = 'view-interdiff'
 
-        content = self._get_content(can_change_status=False)
+        self.assertEqual(self.action.get_url({'request': request}),
+                         'raw/')
 
-        for action_id in can_change_action_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 0,
-                             '%s should not have rendered' % action_id)
+    def test_get_url_on_diff_viewer_revision(self):
+        """Testing DownloadDiffAction.get_url on diff viewer revision page"""
+        request = RequestFactory().request()
+        request.resolver_match = Mock()
+        request.resolver_match.url_name = 'view-diff-revision'
 
-    def test_should_render_with_can_edit_reviewrequest(self):
-        """Testing should_render with reviews.can_edit_reviewrequest"""
-        can_edit_action_ids = [
-            'update-review-request-action',
-            'upload-diff-action',
-            'upload-file-action',
-        ]
+        self.assertEqual(self.action.get_url({'request': request}),
+                         'raw/')
 
-        content = self._get_content(can_edit_reviewrequest=True)
+    def test_get_url_on_review_request(self):
+        """Testing DownloadDiffAction.get_url on review request page"""
+        request = RequestFactory().request()
+        request.resolver_match = Mock()
+        request.resolver_match.url_name = 'review-request-detail'
 
-        for action_id in can_edit_action_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 1,
-                             '%s should\'ve rendered exactly once' % action_id)
+        review_request = self.create_review_request()
 
-        content = self._get_content(can_edit_reviewrequest=False)
+        self.assertEqual(
+            self.action.get_url({
+                'request': request,
+                'review_request': review_request,
+            }),
+            '/r/%s/diff/raw/' % review_request.display_id)
 
-        for action_id in can_edit_action_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 0,
-                             '%s should not have rendered' % action_id)
+    @add_fixtures(['test_site'])
+    def test_get_url_on_review_request_with_local_site(self):
+        """Testing DownloadDiffAction.get_url on review request page with
+        LocalSite
+        """
+        request = RequestFactory().request()
+        request.resolver_match = Mock()
+        request.resolver_match.url_name = 'review-request-detail'
+        request._local_site_name = self.local_site_name
 
-    def test_should_render_with_delete_reviewrequest(self):
-        """Testing should_render with reviews.delete_reviewrequest"""
-        can_delete_action_ids = [
-            'delete-review-request-action',
-        ]
+        review_request = self.create_review_request(id=123,
+                                                    with_local_site=True)
 
-        content = self._get_content(delete_reviewrequest=True)
+        self.assertEqual(
+            self.action.get_url({
+                'request': request,
+                'review_request': review_request,
+            }),
+            '/s/%s/r/%s/diff/raw/' % (self.local_site_name,
+                                      review_request.display_id))
 
-        for action_id in can_delete_action_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 1,
-                             '%s should\'ve rendered exactly once' % action_id)
+    def test_get_hidden_on_diff_viewer(self):
+        """Testing DownloadDiffAction.get_hidden on diff viewer page"""
+        request = RequestFactory().request()
+        request.resolver_match = Mock()
+        request.resolver_match.url_name = 'view-diff'
 
-        content = self._get_content(delete_reviewrequest=False)
+        self.assertFalse(self.action.get_hidden({'request': request}))
 
-        for action_id in can_delete_action_ids:
-            self.assertEqual(content.count('id="%s"' % action_id), 0,
-                             '%s should not have rendered' % action_id)
+    def test_get_hidden_on_interdiff(self):
+        """Testing DownloadDiffAction.get_hidden on diff viewer interdiff page
+        """
+        request = RequestFactory().request()
+        request.resolver_match = Mock()
+        request.resolver_match.url_name = 'view-interdiff'
+
+        self.assertTrue(self.action.get_hidden({'request': request}))
+
+    def test_get_hidden_on_diff_viewer_revision(self):
+        """Testing DownloadDiffAction.get_hdiden on diff viewer revision page
+        """
+        request = RequestFactory().request()
+        request.resolver_match = Mock()
+        request.resolver_match.url_name = 'view-diff-revision'
+
+        self.assertFalse(self.action.get_hidden({'request': request}))
+
+    def test_get_hidden_on_review_request(self):
+        """Testing DownloadDiffAction.get_hdiden on diff viewer revision page
+        """
+        request = RequestFactory().request()
+        request.resolver_match = Mock()
+        request.resolver_match.url_name = 'review-request-detail'
+
+        review_request = self.create_review_request()
+
+        self.assertFalse(self.action.get_hidden({
+            'request': request,
+            'review_request': review_request,
+        }))
+
+    def test_should_render_on_diff_viewer(self):
+        """Testing DownloadDiffAction.should_render on diff viewer page"""
+        request = RequestFactory().request()
+        request.resolver_match = Mock()
+        request.resolver_match.url_name = 'view-diff'
+
+        review_request = self.create_review_request()
+
+        self.assertTrue(self.action.should_render({
+            'request': request,
+            'review_request': review_request,
+        }))
+
+    def test_should_render_on_interdiff(self):
+        """Testing DownloadDiffAction.should_render on diff viewer interdiff
+        page
+        """
+        request = RequestFactory().request()
+        request.resolver_match = Mock()
+        request.resolver_match.url_name = 'view-interdiff'
+
+        review_request = self.create_review_request()
+
+        self.assertTrue(self.action.should_render({
+            'request': request,
+            'review_request': review_request,
+        }))
+
+    def test_should_render_on_diff_viewer_revision(self):
+        """Testing DownloadDiffAction.should_render on diff viewer revision
+        page
+        """
+        request = RequestFactory().request()
+        request.resolver_match = Mock()
+        request.resolver_match.url_name = 'view-diff-revision'
+
+        review_request = self.create_review_request()
+
+        self.assertTrue(self.action.should_render({
+            'request': request,
+            'review_request': review_request,
+        }))
+
+    @add_fixtures(['test_scmtools'])
+    def test_should_render_on_review_request_with_repository(self):
+        """Testing DownloadDiffAction.should_render on review request page
+        with repository
+        """
+        request = RequestFactory().request()
+        request.resolver_match = Mock()
+        request.resolver_match.url_name = 'review-request-detail'
+
+        review_request = self.create_review_request(create_repository=True)
+
+        self.assertTrue(self.action.should_render({
+            'request': request,
+            'review_request': review_request,
+        }))
+
+    @add_fixtures(['test_scmtools'])
+    def test_should_render_on_review_request_without_repository(self):
+        """Testing DownloadDiffAction.should_render on review request page
+        without repository
+        """
+        request = RequestFactory().request()
+        request.resolver_match = Mock()
+        request.resolver_match.url_name = 'review-request-detail'
+
+        review_request = self.create_review_request()
+
+        self.assertFalse(self.action.should_render({
+            'request': request,
+            'review_request': review_request,
+        }))
+
+
+class EditReviewActionTests(ActionsTestCase):
+    """Unit tests for EditReviewAction."""
+
+    fixtures = ['test_users']
+
+    def setUp(self):
+        super(EditReviewActionTests, self).setUp()
+
+        self.action = EditReviewAction()
+
+    def test_should_render_with_authenticated(self):
+        """Testing EditReviewAction.should_render with authenticated user"""
+        request = RequestFactory().request()
+        request.user = User.objects.get(username='doc')
+
+        self.assertTrue(self.action.should_render({'request': request}))
+
+    def test_should_render_with_anonymous(self):
+        """Testing EditReviewAction.should_render with authenticated user"""
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        self.assertFalse(self.action.should_render({'request': request}))
+
+
+class ShipItActionTests(ActionsTestCase):
+    """Unit tests for ShipItAction."""
+
+    fixtures = ['test_users']
+
+    def setUp(self):
+        super(ShipItActionTests, self).setUp()
+
+        self.action = ShipItAction()
+
+    def test_should_render_with_authenticated(self):
+        """Testing ShipItAction.should_render with authenticated user"""
+        request = RequestFactory().request()
+        request.user = User.objects.get(username='doc')
+
+        self.assertTrue(self.action.should_render({'request': request}))
+
+    def test_should_render_with_anonymous(self):
+        """Testing ShipItAction.should_render with authenticated user"""
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        self.assertFalse(self.action.should_render({'request': request}))
+
+
+class SubmitActionTests(ActionsTestCase):
+    """Unit tests for SubmitAction."""
+
+    fixtures = ['test_users']
+
+    def setUp(self):
+        super(SubmitActionTests, self).setUp()
+
+        self.action = SubmitAction()
+
+    def test_should_render_with_published(self):
+        """Testing SubmitAction.should_render with published review request"""
+        self.assertTrue(self.action.should_render({
+            'review_request': self.create_review_request(public=True),
+        }))
+
+    def test_should_render_with_unpublished(self):
+        """Testing SubmitAction.should_render with unpublished review request
+        """
+        self.assertFalse(self.action.should_render({
+            'review_request': self.create_review_request(public=False),
+        }))
+
+
+class UpdateMenuActionTests(ActionsTestCase):
+    """Unit tests for UpdateMenuAction."""
+
+    fixtures = ['test_users']
+
+    def setUp(self):
+        super(UpdateMenuActionTests, self).setUp()
+
+        self.action = UpdateMenuAction()
+
+    def test_should_render_for_owner(self):
+        """Testing UpdateMenuAction.should_render for owner of review request
+        """
+        review_request = self.create_review_request(publish=True)
+
+        request = RequestFactory().request()
+        request.user = review_request.submitter
+
+        self.assertTrue(self.action.should_render({
+            'review_request': review_request,
+            'request': request,
+            'perms': {
+                'reviews': {
+                    'can_edit_reviewrequest': False,
+                },
+            },
+        }))
+
+    def test_should_render_for_user(self):
+        """Testing UpdateMenuAction.should_render for normal user"""
+        review_request = self.create_review_request(publish=True)
+
+        request = RequestFactory().request()
+        request.user = User.objects.create(username='test-user')
+
+        self.assertFalse(self.action.should_render({
+            'review_request': review_request,
+            'request': request,
+            'perms': {
+                'reviews': {
+                    'can_edit_reviewrequest': False,
+                },
+            },
+        }))
+
+    def test_should_render_user_with_can_edit_reviewrequest(self):
+        """Testing UpdateMenuAction.should_render for user with
+        can_edit_reviewrequest permission
+        """
+        review_request = self.create_review_request(publish=True)
+
+        request = RequestFactory().request()
+        request.user = User.objects.create(username='test-user')
+
+        self.assertTrue(self.action.should_render({
+            'review_request': review_request,
+            'request': request,
+            'perms': {
+                'reviews': {
+                    'can_edit_reviewrequest': True,
+                },
+            },
+        }))
+
+    def test_should_render_with_discarded(self):
+        """Testing UpdateMenuAction.should_render with discarded review request
+        """
+        review_request = \
+            self.create_review_request(status=ReviewRequest.DISCARDED)
+
+        request = RequestFactory().request()
+        request.user = review_request.submitter
+
+        self.assertFalse(self.action.should_render({
+            'review_request': review_request,
+            'request': request,
+            'perms': {
+                'reviews': {
+                    'can_edit_reviewrequest': False,
+                },
+            },
+        }))
+
+    def test_should_render_with_submitted(self):
+        """Testing UpdateMenuAction.should_render with submitted review request
+        """
+        review_request = \
+            self.create_review_request(status=ReviewRequest.SUBMITTED)
+
+        request = RequestFactory().request()
+        request.user = review_request.submitter
+
+        self.assertFalse(self.action.should_render({
+            'review_request': review_request,
+            'request': request,
+            'perms': {
+                'reviews': {
+                    'can_edit_reviewrequest': False,
+                },
+            },
+        }))
+
+
+class UploadDiffActionTests(ActionsTestCase):
+    """Unit tests for UploadDiffAction."""
+
+    fixtures = ['test_users']
+
+    def setUp(self):
+        super(UploadDiffActionTests, self).setUp()
+
+        self.action = UploadDiffAction()
+
+    def test_get_label_with_no_diffs(self):
+        """Testing UploadDiffAction.get_label with no diffs"""
+        review_request = self.create_review_request()
+
+        request = RequestFactory().request()
+        request.user = review_request.submitter
+
+        self.assertEqual(
+            self.action.get_label({
+                'review_request': review_request,
+                'request': request,
+            }),
+            'Upload Diff')
+
+    @add_fixtures(['test_scmtools'])
+    def test_get_label_with_diffs(self):
+        """Testing UploadDiffAction.get_label with diffs"""
+        review_request = self.create_review_request(create_repository=True)
+        self.create_diffset(review_request)
+
+        request = RequestFactory().request()
+        request.user = review_request.submitter
+
+        self.assertEqual(
+            self.action.get_label({
+                'review_request': review_request,
+                'request': request,
+            }),
+            'Update Diff')
+
+    @add_fixtures(['test_scmtools'])
+    def test_should_render_with_repository(self):
+        """Testing UploadDiffAction.should_render with repository"""
+        review_request = self.create_review_request(create_repository=True)
+
+        self.assertTrue(self.action.should_render({
+            'review_request': review_request,
+        }))
+
+    def test_should_render_without_repository(self):
+        """Testing UploadDiffAction.should_render without repository"""
+        review_request = self.create_review_request()
+
+        self.assertFalse(self.action.should_render({
+            'review_request': review_request,
+        }))
