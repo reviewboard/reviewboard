@@ -58,26 +58,29 @@
 
   .field-container {
     position: relative;
-
-    > pre {
-      background-color: #FFFFFF;
-      border: @textarea-border;
-      margin: @textarea-editor-margin;
-      padding: @textarea-editor-padding;
-      white-space: pre-wrap;
-
-      .codehilite {
-        .flush-codehilite();
-
-        @codehilite-margin: -(@code-block-border-size +
-                              @code-block-padding-horiz -
-                              @textarea-border-size);
-        margin-left: @codehilite-margin;
-        margin-right: @codehilite-margin;
-      }
-    }
   }
 }
+
+#field_changedescription,
+.review-request-body pre.field {
+  background-color: @textarea-editor-background;
+  border: @textarea-border;
+  margin: @textarea-editor-margin;
+  padding: @textarea-editor-padding;
+  white-space: pre-wrap;
+
+  .codehilite {
+    .flush-codehilite();
+
+    @codehilite-margin-horiz: -(@code-block-border-size +
+                                @code-block-padding-horiz -
+                                @textarea-border-size);
+    @codehilite-margin-vert: -(@code-block-border-size +
+                               @code-block-padding-vert);
+    margin: @codehilite-margin-vert @codehilite-margin-horiz;
+  }
+}
+
 
 .review-request-section {
   padding: @box-padding;
