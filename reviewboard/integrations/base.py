@@ -40,16 +40,14 @@ class Integration(DjbletsIntegration):
     the application.
     """
 
-    def get_configs(self, local_site, **filter_kwargs):
+    def get_configs(self, local_site):
         """Return configurations matching the given filters.
 
-        By default, all enabled configurations will be returned for this
-        integration. This can be filtered down by specifying a
-        :py:class:`~reviewboard.site.models.LocalSite`, along with fields in
-        the model and their values through keyword arguments.
+        This will return all enabled configurations for this integration
+        matching the provided ``local_site``.
 
-        Each set of results for a unique combination of integration class and
-        filter arguments will be cached locally, to speed up further lookups.
+        The configurations can be filtered down further by the caller, based
+        on the settings.
 
         Args:
             local_site (reviewboard.site.models.LocalSite):
@@ -58,16 +56,11 @@ class Integration(DjbletsIntegration):
                 requests, reviews, etc. being used to trigger an operation,
                 and should be set based on those objects.
 
-            **filter_kwargs (dict, optional):
-                Keyword arguments to filter by. Each must match a field and
-                value on the model.
-
         Returns:
             list of reviewboard.integrations.models.IntegrationConfig:
             A list of enabled integration configurations matching the query.
         """
-        return super(Integration, self).get_configs(
-            local_site=local_site, **filter_kwargs)
+        return super(Integration, self).get_configs(local_site=local_site)
 
 
 class GetIntegrationManagerMixin(object):
