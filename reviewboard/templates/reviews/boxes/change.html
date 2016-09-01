@@ -1,7 +1,7 @@
 {% load changedescs avatars djblets_deco djblets_utils i18n reviewtags tz %}
 
 {% with changedesc=entry.changedesc %}
-<div class="changedesc" id="changedesc{{changedesc.id}}">
+<div class="changedesc review-request-page-entry has-avatar" id="changedesc{{changedesc.id}}">
  <a name="changedesc{{changedesc.id}}"></a>
  <div class="box-statuses">
   <div class="box-status">
@@ -14,13 +14,13 @@
   </div>
  </div>
 
-{%  definevar "boxclass" %}changedesc {% if entry.collapsed %}collapsed{% endif %}{% enddefinevar %}
-{%  box boxclass %}
+ <div class="review-request-page-entry-contents
+             {{entry.collapsed|yesno:'collapsed,'}}">
   <div class="header">
    <div class="collapse-button btn"><div class="rb-icon {% if entry.collapsed %}rb-icon-expand-review{% else %}rb-icon-collapse-review{% endif %}"></div></div>
    <div class="header-details">
-    <div class="reviewer"><b>{% trans "Review request changed" %}</b></div>
-    <div class="posted_time">{% localtime on %}{% blocktrans with changedesc.timestamp as timestamp and changedesc.timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</div>
+    <div class="summary"><b>{% trans "Review request changed" %}</b></div>
+    <div class="timestamp">{% localtime on %}{% blocktrans with changedesc.timestamp as timestamp and changedesc.timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</div>
    </div>
   </div>
   <div class="body">
@@ -73,6 +73,6 @@
 {%   endfor %}
 
   </div>
-{%  endbox %}
+ </div>
 </div>
 {% endwith %}

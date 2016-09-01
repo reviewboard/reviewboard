@@ -14,7 +14,7 @@ RB.CollapsableBoxView = Backbone.View.extend({
      *     This object, for chaining.
      */
     render() {
-        this._$box = this.$('.box');
+        this._$box = this.$('.review-request-page-entry-contents');
         this._$expandCollapseButton = this.$('.collapse-button .rb-icon');
 
         if (this._$box.hasClass('collapsed')) {

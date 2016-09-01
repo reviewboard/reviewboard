@@ -7,6 +7,10 @@
 @img_base: '../../images';
 @djblets_img_base: '../../../djblets/images';
 
+@base-entry-bg: #ffffff;
+@collapsed-entry-bg: #ececee;
+@changedesc-bg: lighten(@review-request-bg, 5%);
+
 
 /****************************************************************************
  * Review-specific macros
@@ -18,8 +22,8 @@
 
   &:before, &:after {
     position: absolute;
-    left: -19px;
-    top: 17px;
+    left: -20px;
+    top: 12px;
     right: 100%;
     border: 1px transparent solid;
     content: " ";
@@ -195,33 +199,118 @@
 
 
 /****************************************************************************
- * Reviews
+ * Entries (status updates, reviews, change descriptions)
  ****************************************************************************/
 
-#reviews {
-  .box {
-    margin: 2em 0;
-    .left-arrow-callout(white);
+.review-request-page-entry {
+  margin: 2rem 0;
 
-    .on-mobile-medium-screen-720({
-      margin-top: 1em;
-    });
+  .on-mobile-medium-screen-720({
+    margin-top: 1rem;
+  });
 
-    &:last-child {
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .collapse-button {
+    border: 1px #333333 solid;
+    cursor: pointer;
+    float: left;
+    margin-right: 0.5rem;
+    margin-top: -1px;
+    padding: 0;
+  }
+}
+
+.review-request-page-entry-contents {
+  background-color: @base-entry-bg;
+  border: 1px @box-border-color solid;
+  border-radius: @box-border-radius;
+  box-shadow: @box-shadow;
+
+  &.collapsed {
+    background-color: @collapsed-entry-bg !important;
+    background-image: none !important; // Override any gradients used.
+
+    .banner {
+      border-bottom: 0;
       margin-bottom: 0;
+    }
+
+    .body {
+      display: none;
     }
   }
 
-  .box-container {
-    margin: 0;
-    padding-left: 75px;
+  .has-avatar & {
+    margin-left: 75px;
     width: auto;
 
+    .left-arrow-callout(@base-entry-bg);
+
     .on-mobile-medium-screen-720({
-      padding-left: 0;
+      margin-left: 0;
     });
+
+    &.collapsed {
+      .left-arrow-callout-color(@collapsed-entry-bg);
+    }
   }
 
+  .header {
+    border-radius: @box-border-radius @box-border-radius 0 0;
+    padding: @entry-padding;
+
+    a {
+      color: black;
+      text-decoration: none;
+    }
+
+    .header-details {
+      line-height: 20px;
+      overflow: hidden;
+    }
+
+    .summary {
+      float: left;
+      font-size: 110%;
+      font-weight: bold;
+
+      .on-mobile-medium-screen-720({
+        float: none;
+      });
+    }
+
+    .timestamp {
+      color: #555;
+      text-align: right;
+
+      .on-mobile-medium-screen-720({
+        margin-top: 0.5rem;
+        text-align: left;
+      });
+    }
+  }
+}
+
+
+/****************************************************************************
+ * Reviews
+ ****************************************************************************/
+
+.review.has-draft {
+  // Reviews with draft replies have a green header.
+  .review-request-page-entry-contents {
+    .left-arrow-callout-color(@draft-bg-color);
+  }
+
+  .header {
+    background: @draft-bg-color;
+  }
+}
+
+#reviews {
   .box-statuses {
     float: left;
     text-align: center;
@@ -345,58 +434,7 @@
   }
 }
 
-#reviews .box {
-  border: 0;
-
-  .on-mobile-medium-screen-720({
-    &:after, &:before {
-      content: none
-    }
-  });
-
-  &.collapsed {
-    .left-arrow-callout-color(#ECECEE);
-
-    .body {
-      display: none;
-    }
-
-    .box-inner {
-      background: #ECECEE;
-    }
-
-    .banner {
-      border-bottom: 0;
-      margin-bottom: 0;
-    }
-  }
-
-  .box-inner {
-    background: none;
-    overflow: hidden;
-  }
-
-  .collapse-button {
-    border: 1px #333333 solid;
-    cursor: pointer;
-    float: left;
-    margin-right: 0.5em;
-    margin-top: -1px;
-    padding: 0;
-  }
-}
-
 #reviews .review {
-  &.has-draft {
-    .box {
-      .left-arrow-callout-color(@draft-bg-color);
-    }
-
-    .header {
-      background: @draft-bg-color;
-    }
-  }
-
   .banners {
     .banner {
       border-left: 0;
@@ -441,16 +479,6 @@
     &:last-child {
       margin-bottom: 2em;
     }
-  }
-
-  .box {
-    background: white;
-    border: 0;
-  }
-
-  .box-inner {
-    background: white;
-    border: 1px @review-box-border-color solid;
   }
 
   .controls {
@@ -613,8 +641,7 @@
 
 #view_controls {
   list-style: none;
-  margin: 1em 0;
-  padding: 1em;
+  margin: 2em 0;
   text-align: center;
 
   a {
@@ -663,13 +690,12 @@
  * Change Descriptions
  ****************************************************************************/
 .changedesc {
-  &.box {
-    background-color: #fefadf;
-    #gradient > .vertical(lighten(@review-request-bg, 5%), @review-request-bg);
+  .review-request-page-entry-contents {
 
-    .box-inner {
-      border: 1px @review-request-border-color solid;
-    }
+    background-color: @changedesc-bg;
+    #gradient > .vertical(@changedesc-bg, @review-request-bg);
+
+    .left-arrow-callout-color(@changedesc-bg);
   }
 
   .body {
@@ -703,7 +729,7 @@
     h3 {
       color: @review-request-label-color;
       font-size: 110%;
-      margin: 1em 0 0.5em 0;
+      margin: 0;
       padding: 0;
 
       &.status {
@@ -972,7 +998,7 @@
       });
 
       h3 {
-        margin: 2px 1em 0 0;
+        margin: 0 1em 0 0;
         padding: 0;
         text-align: right;
 
@@ -1030,48 +1056,6 @@
       }
     }
   }
-}
-
-.box .header {
-  border-radius: @box-border-radius @box-border-radius 0 0;
-  padding: @entry-padding;
-
-  a {
-    color: black;
-    text-decoration: none;
-  }
-
-  .header-details {
-    line-height: 20px;
-    overflow: hidden;
-  }
-
-  .reviewer {
-    float: left;
-    font-size: 110%;
-    font-weight: bold;
-    padding-top: 1px;
-
-    .on-mobile-medium-screen-720({
-      float: none;
-    });
-
-    a {
-      position: relative;
-    }
-  }
-
-  .posted_time {
-    color: #555;
-    text-align: right;
-    padding-top: 2px;
-
-    .on-mobile-medium-screen-720({
-      margin-top: 0.5em;
-      text-align: left;
-    });
-  }
-
 }
 
 

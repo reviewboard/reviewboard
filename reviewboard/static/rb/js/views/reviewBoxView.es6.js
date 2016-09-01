@@ -173,7 +173,7 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         if (!this._draftBannerShown) {
             this._bannerView = new RB.ReviewReplyDraftBannerView({
                 model: this._reviewReply,
-                $floatContainer: this.$('.box'),
+                $floatContainer: this._$box,
                 noFloatContainerClass: 'collapsed',
                 showSendEmail: this.options.showSendEmail,
             });

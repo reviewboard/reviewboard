@@ -3,7 +3,7 @@
 
 {% with review=entry.review %}
 <a name="review{{review.id}}"></a>
-<div id="review{{review.id}}" class="review">
+<div id="review{{review.id}}" class="review review-request-page-entry has-avatar">
 {%  if forloop.last %}
  <a name="last-review"></a>
 {%  endif %}
@@ -24,14 +24,15 @@
    </div>
   </div>
  </div>
-{%  definevar "boxclass" %}{% if entry.collapsed %}collapsed{% endif %}{% enddefinevar %}
-{%  box boxclass %}
+
+ <div class="review-request-page-entry-contents
+             {{entry.collapsed|yesno:'collapsed,'}}">
   <div class="header">
 {%   template_hook_point "review-summary-header-pre" %}
    <div class="collapse-button btn"><div class="rb-icon {% if entry.collapsed %}rb-icon-expand-review{% else %}rb-icon-collapse-review{% endif %}"></div></div>
    <div class="header-details">
-    <div class="reviewer"><a href="{% url 'user' review.user %}" class="user">{{review.user|user_displayname}}</a></div>
-    <div class="posted_time">{% localtime on %}{% blocktrans with review.timestamp as timestamp and review.timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</div>
+    <div class="summary"><a href="{% url 'user' review.user %}" class="user">{{review.user|user_displayname}}</a></div>
+    <div class="timestamp">{% localtime on %}{% blocktrans with review.timestamp as timestamp and review.timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</div>
    </div>
 {%   template_hook_point "review-summary-header-post" %}
   </div>
@@ -183,7 +184,7 @@
    </div>
 {%   endif %}
   </div>
-{%  endbox %}
+ </div>
 </div>
 
 {% endwith %}
