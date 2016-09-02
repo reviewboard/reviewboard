@@ -412,7 +412,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                               summary='Test Summary',
                               description='Test Description',
                               testing_done='Testing',
-                              submitter='doc', local_id=1001,
+                              submitter='doc',
+                              branch='my-branch',
+                              local_id=1001,
                               bugs_closed='', status='P', public=False,
                               publish=False, commit_id=None, changenum=None,
                               repository=None, id=None,
@@ -450,6 +452,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         review_request = ReviewRequest(
             summary=summary,
             description=description,
+            branch=branch,
             testing_done=testing_done,
             local_site=local_site,
             local_id=local_id,
