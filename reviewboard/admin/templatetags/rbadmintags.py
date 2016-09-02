@@ -5,6 +5,7 @@ from django.contrib.sites.models import Site
 from django.contrib.auth.models import User
 from django.template.context import RequestContext
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.util.decorators import basictag
 
 from reviewboard import get_version_string
 from reviewboard.admin.cache_stats import get_has_cache_stats
@@ -33,7 +34,8 @@ def admin_subnav(context, url_name, name, icon=""):
         })
 
 
-@register.simple_tag(takes_context=True)
+@register.tag
+@basictag(takes_context=True)
 def admin_widget(context, widget):
     """Render a widget with the given information.
 

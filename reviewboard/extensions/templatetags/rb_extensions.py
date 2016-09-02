@@ -4,6 +4,7 @@ import logging
 
 from django import template
 from django.template.loader import render_to_string
+from djblets.util.decorators import basictag
 
 from reviewboard.extensions.hooks import (CommentDetailDisplayHook,
                                           HeaderActionHook,
@@ -45,7 +46,8 @@ def action_hooks(context, hook_cls, action_key="action",
     return s
 
 
-@register.simple_tag(takes_context=True)
+@register.tag
+@basictag(takes_context=True)
 def navigation_bar_hooks(context):
     """Displays all registered navigation bar entries."""
     s = ""
@@ -73,13 +75,15 @@ def navigation_bar_hooks(context):
     return s
 
 
-@register.simple_tag(takes_context=True)
+@register.tag
+@basictag(takes_context=True)
 def header_action_hooks(context):
     """Displays all single-entry action hooks for the header bar."""
     return action_hooks(context, HeaderActionHook)
 
 
-@register.simple_tag(takes_context=True)
+@register.tag
+@basictag(takes_context=True)
 def header_dropdown_action_hooks(context):
     """Displays all multi-entry action hooks for the header bar."""
     return action_hooks(context,
@@ -88,7 +92,8 @@ def header_dropdown_action_hooks(context):
                         "extensions/header_action_dropdown.html")
 
 
-@register.simple_tag(takes_context=True)
+@register.tag
+@basictag(takes_context=True)
 def comment_detail_display_hook(context, comment, render_mode):
     """Displays all additional detail from CommentDetailDisplayHooks."""
     assert render_mode in ('review', 'text-email', 'html-email')
