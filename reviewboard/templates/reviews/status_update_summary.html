@@ -1,0 +1,7 @@
+<div class="status-update-summary-entry {{header_class}}">
+ <span class="summary">{{summary}}</span>
+ {{description}}
+{% if url %}
+ <a href="{{url}}">{{url_text|default_if_none:url}}</a>
+{% endif %}
+</div>

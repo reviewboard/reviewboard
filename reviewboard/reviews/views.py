@@ -52,8 +52,11 @@ from reviewboard.reviews.context import (comment_counts,
                                          has_comments_in_diffsets_excluding,
                                          interdiffs_with_comments,
                                          make_review_request_context)
-from reviewboard.reviews.detail import (ChangeEntry, ReviewEntry,
+from reviewboard.reviews.detail import (ChangeEntry,
+                                        InitialStatusUpdatesEntry,
+                                        ReviewEntry,
                                         ReviewRequestPageData)
+from reviewboard.reviews.features import status_updates_feature
 from reviewboard.reviews.markdown_utils import is_rich_text_default_for_user
 from reviewboard.reviews.models import (Comment,
                                         Review,
@@ -342,6 +345,8 @@ def review_detail(request,
     review_request, response = _find_review_request(
         request, review_request_id, local_site)
 
+    status_updates_enabled = status_updates_feature.is_enabled()
+
     if not review_request:
         return response
 
@@ -408,11 +413,15 @@ def review_detail(request,
 
     entries = []
     reviews_entry_map = {}
+    changedescs_entry_map = {}
 
     # Now that we have the list of public reviews and all that metadata,
     # being processing them and adding entries for display in the page.
     for review in data.reviews:
-        if review.public and not review.is_reply():
+        if (review.public and
+            not review.is_reply() and
+            not (status_updates_enabled and
+                 hasattr(review, 'status_update'))):
             # Mark as collapsed if the review is older than the latest
             # change, assuming there's no reply newer than last_visited.
             latest_reply = data.latest_timestamps_by_review_id.get(review.pk)
@@ -426,6 +435,34 @@ def review_detail(request,
                                 data)
             reviews_entry_map[review.pk] = entry
             entries.append(entry)
+
+    # Add entries for the change descriptions.
+    for changedesc in data.changedescs:
+        # Mark as collapsed if the change is older than a newer change.
+        collapsed = (changedesc.timestamp < data.latest_changedesc_timestamp)
+
+        entry = ChangeEntry(request, review_request, changedesc, collapsed,
+                            data)
+        changedescs_entry_map[changedesc.id] = entry
+        entries.append(entry)
+
+    if status_updates_enabled:
+        initial_status_entry = InitialStatusUpdatesEntry(
+            review_request, collapsed=(len(data.changedescs) > 0),
+            data=data)
+
+        for update in data.status_updates:
+            if update.change_description_id is not None:
+                entry = changedescs_entry_map[update.change_description_id]
+            else:
+                entry = initial_status_entry
+
+            entry.add_update(update)
+
+            if update.review_id is not None:
+                reviews_entry_map[update.review_id] = entry
+    else:
+        initial_status_entry = None
 
     # Now that we have entries for all the reviews, go through all the comments
     # and add them to those entries.
@@ -450,13 +487,11 @@ def review_detail(request,
             entry = reviews_entry_map[review.id]
             entry.add_comment(comment._type, comment)
 
-    # Add entries for the change descriptions.
-    for changedesc in data.changedescs:
-        # Mark as collapsed if the change is older than a newer change
-        collapsed = (changedesc.timestamp < data.latest_changedesc_timestamp)
+    if status_updates_enabled:
+        initial_status_entry.finalize()
 
-        entries.append(ChangeEntry(request, review_request, changedesc,
-                                   collapsed, data))
+        for entry in entries:
+            entry.finalize()
 
     # Finally, sort all the entries (reviews and change descriptions) by their
     # timestamp.
@@ -479,6 +514,7 @@ def review_detail(request,
         'review_request_details': data.review_request_details,
         'review_request_visit': visited,
         'send_email': siteconfig.get('mail_send_review_mail'),
+        'initial_status_entry': initial_status_entry,
         'entries': entries,
         'last_activity_time': last_activity_time,
         'review': review_request.get_pending_review(request.user),

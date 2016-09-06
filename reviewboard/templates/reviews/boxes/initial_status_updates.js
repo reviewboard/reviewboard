@@ -1,13 +1,12 @@
 {% comment %}
-This is very similar to templates/reviews/boxes/initial_status_updates.js. If
-you're making a change in here, you may want to check to see if a similar
-change is needed there.
+This is very similar to templates/reviews/boxes/change.js. If you're making a
+change in here, you may want to check to see if a similar change is needed
+there.
 {% endcomment %}
 
-page.addBox(new RB.ChangeBoxView({
-    el: $('#changedesc{{entry.changedesc.id}}'),
-    reviewRequest: page.reviewRequest,
-    reviewRequestEditorView: page.reviewRequestEditorView,
+page.addBox(new RB.InitialStatusUpdatesBoxView({
+    el: $('#initial-status-updates'),
+    reviewRequestEditor: page.reviewRequestEditor,
     reviews: [
 {% for update in entry.status_updates %}
 {%  if update.review_id %}

@@ -122,6 +122,17 @@ RB.ReviewView = Backbone.View.extend({
     },
 
     /**
+     * Return the number of open issues in the review.
+     *
+     * Returns:
+     *     number:
+     *     The number of open issues.
+     */
+    getOpenIssueCount() {
+        return this._openIssueCount;
+    },
+
+    /**
      * Return the ReviewReplyEditorView with the given context type and ID.
      *
      * Args:
