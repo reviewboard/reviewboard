@@ -470,9 +470,6 @@
     }
   }
 
-  .body-top-comment-section,
-  .body-bottom-comment-section,
-  .comments > dd,
   .review-comments > dd {
     margin: 0 2em 4em 2em;
 
@@ -510,7 +507,7 @@
     }
   }
 
-  .comments, .review-comments {
+  .review-comments {
     border: 0;
     margin: 0;
     padding: 0;
@@ -531,9 +528,12 @@
       }
     }
 
-    .comment_container {
-      border-top: 1px #C0C0C0 solid;
-      border-bottom: 1px #C0C0C0 solid;
+    .comment_container,
+    .file-attachment,
+    .screenshot {
+      border-color: #C0C0C0;
+      border-width: 1px 0;
+      border-style: solid;
     }
 
     .filename a {
@@ -543,7 +543,6 @@
 
     .file-attachment {
       background: #F0F0F0;
-      border-bottom: 1px #C0C0C0 solid;
       padding: 5px;
 
       .file-attachment-comment-header {
@@ -579,7 +578,6 @@
 
     .screenshot {
       background: #F0F0F0;
-      border: 1px #C0C0C0 solid;
       font-size: 120%;
 
       img {
@@ -1136,7 +1134,7 @@
       font-size: 20px;
     }
 
-    .comments {
+    .review-comments {
       list-style: none;
       margin: 0;
       padding: 0;
