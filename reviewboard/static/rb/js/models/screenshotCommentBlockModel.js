@@ -14,6 +14,20 @@ RB.ScreenshotCommentBlock = RB.AbstractCommentBlock.extend({
     }, RB.AbstractCommentBlock.prototype.defaults),
 
     /*
+     * Return whether the bounds of this region can be updated.
+     *
+     * If there are any existing published comments on this region, it
+     * cannot be updated.
+     *
+     * Returns:
+     *     boolean:
+     *     A value indicating whether new bounds can be set for this region.
+     */
+    canUpdateBounds: function() {
+        return false;
+    },
+
+    /*
      * Creates a ScreenshotComment for the given comment ID and this block's
      * region.
      */
