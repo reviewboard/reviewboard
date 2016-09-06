@@ -898,10 +898,16 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
          */
         const filename = this.model.get('filename');
 
-        if (filename.includes('@2x.')) {
-            this.$('#image-resolution-zoom-2x').click();
-        } else if (filename.includes('@3x.')) {
-            this.$('#image-resolution-zoom-3x').click();
+        /*
+         * The `filename` attribute doesn't exist for screenshots, so we need
+         * to check it.
+         */
+        if (filename) {
+            if (filename.includes('@2x.')) {
+                this.$('#image-resolution-zoom-2x').click();
+            } else if (filename.includes('@3x.')) {
+                this.$('#image-resolution-zoom-3x').click();
+            }
         }
 
         return this;
