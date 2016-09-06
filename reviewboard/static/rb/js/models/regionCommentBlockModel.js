@@ -30,13 +30,13 @@ RB.RegionCommentBlock = RB.FileAttachmentCommentBlock.extend({
     },
 
     /*
-     * Return whether the bounds of htis region can be updated.
+     * Return whether the bounds of this region can be updated.
      *
      * If there are any existing published comments on this region, it
      * cannot be updated.
      *
      * Returns:
-     *     Boolean:
+     *     boolean:
      *     A value indicating whether new bounds can be set for this region.
      */
     canUpdateBounds: function() {
