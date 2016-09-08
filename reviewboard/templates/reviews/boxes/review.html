@@ -40,26 +40,34 @@
   <div class="banners"></div>
 
   <div class="body">
-   <dl class="review-comments">
-    <dt></dt>
-    <dd>
-     <pre class="reviewtext body_top {% rich_text_classname review.body_top_rich_text %}">{{review.body_top|render_markdown:review.body_top_rich_text}}</pre>
-     {% reply_section review '' 'body_top' 'rcbt' review.body_top %}
-    </dd>
+   <ol class="review-comments">
+    <li>
+     <div class="review-comment-thread">
+      <div class="review-comment">
+       <pre class="reviewtext body_top {% rich_text_classname review.body_top_rich_text %}">{{review.body_top|render_markdown:review.body_top_rich_text}}</pre>
+      </div>
+
+      {% reply_section review '' 'body_top' 'rcbt' review.body_top %}
+     </div>
+    </li>
 
 {%   with diff_comments=entry.comments.diff_comments file_attachment_comments=entry.comments.file_attachment_comments general_comments=entry.comments.general_comments screenshot_comments=entry.comments.screenshot_comments %}
 {%    include "reviews/boxes/review_body.html" %}
 {%   endwith %}
 
 {%   if review.body_bottom %}
-    <dt></dt>
-    <dd>
-     <pre class="reviewtext body_bottom {% rich_text_classname review.body_bottom_rich_text %}">{{review.body_bottom|render_markdown:review.body_bottom_rich_text}}</pre>
-     {% reply_section review '' 'body_bottom' 'rcbb' review.body_bottom %}
-    </dd>
+    <li>
+     <div class="review-comment-thread">
+      <div class="review-comment">
+       <pre class="reviewtext body_bottom {% rich_text_classname review.body_bottom_rich_text %}">{{review.body_bottom|render_markdown:review.body_bottom_rich_text}}</pre>
+      </div>
+
+      {% reply_section review '' 'body_bottom' 'rcbb' review.body_bottom %}
+     </div>
+    </li>
 {%   endif %}
 
-   </dl>
+   </ol>
   </div>
  </div>
 </div>

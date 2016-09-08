@@ -53,51 +53,70 @@
 }
 
 .review-comments-inline() {
-  &.draft {
-    dt label a {
-      color: #4e9a06;
+  .comment-author {
+    margin-bottom: 1em;
+
+    label {
+      .inline-editor-label();
+
+      a {
+        color: @review-comment-author-color;
+        font-size: 1.1em;
+        font-weight: bold;
+        text-decoration: none;
+      }
+
+      .avatar-container {
+        background: white;
+        border-radius: 50%;
+        display: inline-block;
+        overflow: hidden;
+        width: 32px;
+        height: 32px;
+      }
+
+      .user-reply-info {
+        display: inline-block;
+        overflow: hidden;
+
+        time {
+          display: block;
+        }
+      }
+    }
+
+    span {
+      color: #487858;
+      font-weight: normal;
+
+      &.fa {
+        color: #000000;
+      }
     }
   }
 
-  dl {
-    dt {
-      label {
-        .inline-editor-label();
+  /*
+   * When there's a draft present, modify some colors so that it's apparent
+   * that the comments are drafts, and modify margins so that the inline editor
+   * opens without any jumps.
+   */
+  &.draft {
+    @textarea-offset-vert: (@textarea-editor-margin-top +
+                            @textarea-editor-padding +
+                            @textarea-border-size);
+    @textarea-offset-horiz: (@textarea-editor-padding +
+                             @textarea-border-size);
 
-        a {
-          color: #AB5603;
-          font-size: 1.1em;
-          font-weight: bold;
-          text-decoration: none;
-        }
+    .comment-author {
+      margin-bottom: @textarea-offset-vert + 1em;
 
-        .avatar-container {
-          background: white;
-          border-radius: 50%;
-          display: inline-block;
-          overflow: hidden;
-          width: 32px;
-          height: 32px;
-        }
-
-        .user-reply-info {
-          display: inline-block;
-          overflow: hidden;
-
-          time {
-            display: block;
-          }
-        }
+      label a {
+        color: @review-comment-author-color-draft;
       }
+    }
 
-      span {
-        color: #487858;
-        font-weight: normal;
-
-        &.fa {
-          color: #000;
-        }
-      }
+    .text-editor {
+      margin: -(@textarea-offset-vert - 10px) -@textarea-offset-horiz 0;
     }
   }
 }
@@ -203,6 +222,7 @@
  ****************************************************************************/
 
 .review-request-page-entry {
+  clear: both;
   margin: 2rem 0;
 
   .on-mobile-medium-screen-720({
@@ -307,6 +327,120 @@
 
   .header {
     background: @draft-bg-color;
+  }
+}
+
+.review-comments {
+  border: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.review-comment-screenshot,
+.review-comment-file-attachment,
+.review-comment-diff {
+  background-color: #F0F0F0;
+  border-color: #C0C0C0;
+  border-width: 1px 0;
+  border-style: solid;
+
+  .diffrevision {
+    font-weight: normal;
+  }
+
+  li:not(:first-child) > & {
+    margin-top: 2em;
+  }
+}
+
+.review-comment-screenshot,
+.review-comment-file-attachment{
+  padding: 5px;
+
+  .filename {
+    color: black;
+    font-size: 120%;
+    font-weight: bold;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .thumbnail {
+    margin-top: 0.5em;
+  }
+}
+
+.review-comment-diff {
+  th {
+    /*
+     * The line numbers aren't clickable in the comment fragments in reviews,
+     * so show a standard cursor instead of a pointer.
+     */
+    cursor: initial;
+  }
+
+  /*
+   * XXX: This selector could be simpler but there's a complex selector in
+   * diffviewer.less (.sidebyside thead .filename-row th) which takes
+   * precedence.
+   */
+  .sidebyside .filename-row th {
+    background: #F0F0F0;
+  }
+
+  .diff-error tbody {
+    border: 1px @diff-error-border-color solid;
+  }
+}
+
+.review-comment-thread {
+  padding: 2em;
+
+  .controls {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    text-align: left;
+
+    a {
+      color: black;
+      display: inline-block;
+      text-decoration: none;
+      background: #ECECEC;
+      border: 1px #C3C3C3 solid;
+      margin-top: 2em;
+      padding: 0.6em 1em;
+      border-radius: @box-border-radius;
+
+      &:hover {
+        background: #F3F3F3;
+      }
+
+      .fa {
+        margin-right: 5px;
+      }
+    }
+
+    li {
+      display: inline;
+    }
+  }
+
+  .review-comment {
+    margin-bottom: 2em;
+  }
+
+  .reply-comments {
+    margin: 0;
+    padding: 0;
+
+    > li {
+      list-style: none;
+      padding: 2em;
+
+      .review-comments-inline();
+    }
   }
 }
 
@@ -427,11 +561,6 @@
       }
     }
   }
-
-  > .changedesc,
-  > .review {
-    clear: both;
-  }
 }
 
 #reviews .review {
@@ -455,7 +584,6 @@
     clear: both;
 
     pre {
-      margin-bottom: 0;
       white-space: pre-wrap;
     }
 
@@ -463,176 +591,6 @@
       background-color: #E7EDF3;
       border: 1px solid @dark-blue;
       padding: 1em;
-    }
-
-    .body_top, .body_bottom {
-      margin: 2em;
-    }
-  }
-
-  .review-comments > dd {
-    margin: 0 2em 4em 2em;
-
-    &:last-child {
-      margin-bottom: 2em;
-    }
-  }
-
-  .controls {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    text-align: left;
-
-    a {
-      color: black;
-      display: inline-block;
-      text-decoration: none;
-      background: #ECECEC;
-      border: 1px #C3C3C3 solid;
-      padding: 0.6em 1em;
-      border-radius: @box-border-radius;
-
-      &:hover {
-        background: #F3F3F3;
-      }
-
-      .fa {
-        margin-right: 5px;
-      }
-    }
-
-    li {
-      display: inline;
-    }
-  }
-
-  .review-comments {
-    border: 0;
-    margin: 0;
-    padding: 0;
-
-    /*
-     * Cover up the left and right borders we add for <dt> to get a clean
-     * rounded border. We don't want them sticking out of the box.
-     */
-    overflow: hidden;
-
-    & > dd {
-      margin-top: 2em;
-    }
-
-    & > dt {
-      thead th {
-        font-weight: normal;
-      }
-    }
-
-    .comment_container,
-    .file-attachment,
-    .screenshot {
-      border-color: #C0C0C0;
-      border-width: 1px 0;
-      border-style: solid;
-    }
-
-    .filename a {
-      color: black;
-      font-weight: bold;
-    }
-
-    .file-attachment {
-      background: #F0F0F0;
-      padding: 5px;
-
-      .file-attachment-comment-header {
-        font-size: 120%;
-        white-space: nowrap;
-
-        a {
-          text-decoration: none;
-        }
-
-        img {
-          padding-right: 10px;
-          vertical-align: middle;
-        }
-
-        .caption {
-          color: black;
-          margin: 5px 0 0 32px;
-        }
-
-        .filename {
-          color: black;
-          font-weight: bold;
-          margin: 0;
-          vertical-align: middle;
-        }
-      }
-
-      .thumbnail {
-        margin-top: 0.5em;
-      }
-    }
-
-    .screenshot {
-      background: #F0F0F0;
-      font-size: 120%;
-
-      img {
-        padding: 5px;
-      }
-
-      .filename {
-        display: block;
-        margin: 0;
-        padding: 5px 10px;
-      }
-    }
-
-    .sidebyside {
-      th {
-        /*
-         * The line numbers aren't clickable in the comment fragments in
-         * reviews, so show a standard cursor instead of a pointer cursor.
-         */
-        cursor: initial;
-      }
-
-      .filename-row th {
-        background: #F0F0F0;
-      }
-    }
-  }
-
-  .diff-error tbody {
-    border: 1px @diff-error-border-color solid;
-  }
-
-  .reply-comments {
-    margin: 2.5em 0 2em 0;
-    padding: 0;
-
-    &>li {
-      display: inline;
-
-      .review-comments-inline();
-
-      dl {
-        /*
-         * Set a border-bottom to prevent a bug in IE where, without a
-         * border-bottom, the content of the dl will shift left by the
-         * border-left size for every following item.
-         */
-        border-bottom: 1px transparent solid;
-        margin: 4em 0 2em 0;
-        padding: 0;
-
-        dd {
-          margin-left: 0;
-        }
-      }
     }
   }
 }
@@ -2215,6 +2173,9 @@
  ****************************************************************************/
 
 .rich-text {
+  margin: 0;
+  padding: 0;
+
   .markdown-wysiwyg();
 }
 
@@ -2240,19 +2201,4 @@
   }
 
   .upload-diff-ui();
-}
-
-
-/****************************************************************************
- * Markdown Additions
- ****************************************************************************/
-
-#review-form,
-#reviews .review .body {
-  .rich-text {
-    margin: (@textarea-editor-margin-top + @textarea-editor-padding +
-             @textarea-border-size)
-            (@textarea-editor-padding + @textarea-border-size)
-            0;
-  }
 }

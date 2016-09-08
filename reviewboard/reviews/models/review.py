@@ -183,7 +183,7 @@ class Review(models.Model):
             if user:
                 q = q | Q(user=user)
 
-            return self.body_top_replies.filter(q)
+            return self.body_top_replies.filter(q).order_by('timestamp')
 
     def public_body_bottom_replies(self, user=None):
         """Returns a list of public replies to this review's body bottom."""
@@ -195,7 +195,7 @@ class Review(models.Model):
             if user:
                 q = q | Q(user=user)
 
-            return self.body_bottom_replies.filter(q)
+            return self.body_bottom_replies.filter(q).order_by('timestamp')
 
     def get_pending_reply(self, user):
         """Returns the pending reply owned by the specified user."""
