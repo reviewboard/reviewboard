@@ -100,7 +100,7 @@ class BaseFileAttachmentResource(WebAPIResource):
         if not is_list:
             q = q | Q(inactive_review_request=review_request)
 
-        if request.user == review_request.submitter:
+        if review_request.is_mutable_by(request.user):
             try:
                 draft = resources.review_request_draft.get_object(
                     request, *args, **kwargs)

@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.utils import six
+from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.attachments.models import FileAttachment
@@ -44,6 +45,50 @@ class ResourceListTests(BaseWebAPITestCase):
                                                    local_site_name),
                 draft_file_attachment_list_mimetype,
                 items)
+
+    def test_get_with_non_owner_superuser(self):
+        """Testing the GET review-requests/<id>/draft/file-attachments/ API
+        with non-owner as superuser
+        """
+        review_request = self.create_review_request(submitter=self.user,
+                                                    publish=True)
+        attachment = self.create_file_attachment(review_request, draft=True)
+
+        user = self._login_user(admin=True)
+        self.assertNotEqual(user, review_request.submitter)
+
+        rsp = self.api_get(
+            get_draft_file_attachment_list_url(review_request),
+            expected_mimetype=draft_file_attachment_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        attachments = rsp['draft_file_attachments']
+        self.assertEqual(len(attachments), 1)
+        self.assertEqual(attachments[0]['id'], attachment.pk)
+
+    @add_fixtures(['test_site'])
+    def test_get_with_non_owner_local_site_admin(self):
+        """Testing the GET review-requests/<id>/draft/file-attachments/ API
+        with non-owner as LocalSite admin
+        """
+        review_request = self.create_review_request(submitter=self.user,
+                                                    with_local_site=True,
+                                                    publish=True)
+        attachment = self.create_file_attachment(review_request, draft=True)
+
+        user = self._login_user(local_site=True, admin=True)
+        self.assertNotEqual(user, review_request.submitter)
+        self.assertFalse(user.is_superuser)
+
+        rsp = self.api_get(
+            get_draft_file_attachment_list_url(review_request,
+                                               self.local_site_name),
+            expected_mimetype=draft_file_attachment_list_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        attachments = rsp['draft_file_attachments']
+        self.assertEqual(len(attachments), 1)
+        self.assertEqual(attachments[0]['id'], attachment.pk)
 
     #
     # HTTP POST tests
@@ -140,18 +185,55 @@ class ResourceItemTests(BaseWebAPITestCase):
                          review_request.file_attachments.all())
         self.assertNotIn(file_attachment,
                          review_request.inactive_file_attachments.all())
+
         with self.assertRaises(FileAttachment.DoesNotExist):
             FileAttachment.objects.get(pk=file_attachment.pk)
 
+    def test_delete_file_with_non_owner_superuser(self):
+        """Testing the DELETE review-requests/<id>/draft/file-attachments/<id>/
+        API with non-owner as superuser
+        """
+        review_request = self.create_review_request(submitter=self.user)
+        file_attachment = self.create_file_attachment(review_request,
+                                                      draft=True)
+
+        user = self._login_user(admin=True)
+        self.api_delete(get_draft_file_attachment_item_url(review_request,
+                                                           file_attachment.pk))
+
+        self.check_delete_result(user, review_request, file_attachment)
+
+    @add_fixtures(['test_site'])
+    def test_delete_file_with_non_owner_local_site_admin(self):
+        """Testing the DELETE review-requests/<id>/draft/file-attachments/<id>/
+        API with non-owner as LocalSite admin
+        """
+        review_request = self.create_review_request(submitter=self.user,
+                                                    with_local_site=True,
+                                                    publish=True)
+        file_attachment = self.create_file_attachment(review_request,
+                                                      draft=True)
+
+        user = self._login_user(local_site=True, admin=True)
+        self.assertNotEqual(user, self.user)
+
+        self.api_delete(get_draft_file_attachment_item_url(
+            review_request, file_attachment.pk, self.local_site_name))
+
+        self.check_delete_result(user, review_request, file_attachment)
+
     def test_delete_file_with_publish(self):
-        """Testing delete the published DraftFileAttachment"""
-        review_request = self.create_review_request()
-        self._login_user(admin=True)
+        """Testing the DELETE review-requests/<id>/draft/file-attachments/<id>/
+        API with published file attachment
+        """
+        review_request = self.create_review_request(submitter=self.user)
         file_attachment = self.create_file_attachment(review_request,
                                                       draft=True)
         review_request.get_draft().publish()
+
         self.api_delete(get_draft_file_attachment_item_url(review_request,
                                                            file_attachment.pk))
+
         draft = review_request.get_draft()
         file_attachment = FileAttachment.objects.get(pk=file_attachment.pk)
 
@@ -203,4 +285,55 @@ class ResourceItemTests(BaseWebAPITestCase):
     def check_put_result(self, user, item_rsp, file_attachment):
         file_attachment = FileAttachment.objects.get(pk=file_attachment.pk)
         self.assertEqual(item_rsp['id'], file_attachment.pk)
+        self.assertEqual(item_rsp['caption'], 'My new caption')
         self.assertEqual(file_attachment.draft_caption, 'My new caption')
+
+    def test_put_with_non_owner_superuser(self):
+        """Testing the PUT review-requests/<id>/draft/file-attachments/<id>/
+        API with non-owner as superuser
+        """
+        review_request = self.create_review_request(submitter=self.user)
+        file_attachment = self.create_file_attachment(review_request,
+                                                      draft=True)
+
+        user = self._login_user(admin=True)
+        self.assertNotEqual(user, self.user)
+
+        rsp = self.api_put(
+            get_draft_file_attachment_item_url(review_request,
+                                               file_attachment.pk),
+            {
+                'caption': 'My new caption',
+            },
+            expected_mimetype=draft_file_attachment_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.check_put_result(user, rsp['draft_file_attachment'],
+                              file_attachment)
+
+    @add_fixtures(['test_site'])
+    def test_put_file_with_non_owner_local_site_admin(self):
+        """Testing the PUT review-requests/<id>/draft/file-attachments/<id>/
+        API with non-owner as LocalSite admin
+        """
+        review_request = self.create_review_request(submitter=self.user,
+                                                    with_local_site=True,
+                                                    publish=True)
+        file_attachment = self.create_file_attachment(review_request,
+                                                      draft=True)
+
+        user = self._login_user(local_site=True, admin=True)
+        self.assertNotEqual(user, self.user)
+
+        rsp = self.api_put(
+            get_draft_file_attachment_item_url(review_request,
+                                               file_attachment.pk,
+                                               self.local_site_name),
+            {
+                'caption': 'My new caption',
+            },
+            expected_mimetype=draft_file_attachment_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.check_put_result(user, rsp['draft_file_attachment'],
+                              file_attachment)
