@@ -32,14 +32,13 @@ def superuser_required(view):
     def decorated(request, *args, **kwargs):
         if not request.user.is_authenticated():
             return login(
-                request, {
-                    'template': 'admin/login.html',
-                    'authentication_form': AdminAuthenticationForm,
-                    'extra_context': {
-                        'title': _('Log in'),
-                        'app_path': request.get_full_path(),
-                        REDIRECT_FIELD_NAME: request.get_full_path(),
-                    },
+                request,
+                template_name='admin/login.html',
+                authentication_form=AdminAuthenticationForm,
+                extra_context={
+                    'title': _('Log in'),
+                    'app_path': request.get_full_path(),
+                    REDIRECT_FIELD_NAME: request.get_full_path(),
                 })
 
         if not (request.user.is_active and request.user.is_superuser):
