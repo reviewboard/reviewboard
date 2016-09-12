@@ -411,7 +411,9 @@ class FileDiffResource(WebAPIResource):
 
         highlighting = request.GET.get('syntax-highlighting', False)
 
-        files = get_diff_files(filediff.diffset, filediff, request=request)
+        files = get_diff_files(diffset=filediff.diffset,
+                               filediff=filediff,
+                               request=request)
         populate_diff_chunks(files, highlighting, request=request)
 
         if not files:

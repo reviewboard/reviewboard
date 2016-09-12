@@ -653,7 +653,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
     },
 
     modeItemTemplate: _.template(
-        '<li class="image-diff-mode"><a href="#" data-mode="<%- mode %>"><%- name %></a></li>'
+        '<li><a class="image-diff-mode" href="#" data-mode="<%- mode %>"><%- name %></a></li>'
     ),
 
     captionTableTemplate: _.template(
