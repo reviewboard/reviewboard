@@ -73,7 +73,10 @@ class ReviewRequestPageData(object):
             A mapping from ID to
             :py:class:`reviewboard.attachments.models.FileAttachment`
 
-        issues (dict):
+        issues (list of reviewboard.reviews.models.BaseComment):
+            A list of all the comments (of all types) which are marked as issues.
+
+        issue_counts (dict):
             A dictionary storing counts of the various issue states throughout
             the page.
 
@@ -242,7 +245,8 @@ class ReviewRequestPageData(object):
         review_ids = self.reviews_by_id.keys()
 
         self.comments = []
-        self.issues = {
+        self.issues = []
+        self.issue_counts = {
             'total': 0,
             'open': 0,
             'resolved': 0,
@@ -293,7 +297,7 @@ class ReviewRequestPageData(object):
                 # some internal state on them.
                 assert obj.review_id in self.reviews_by_id
                 review = self.reviews_by_id[obj.review_id]
-                comment._review = review
+                comment.review_obj = review
                 comment._review_request = self.review_request
 
                 # If the comment has an associated object (such as a file
@@ -324,8 +328,9 @@ class ReviewRequestPageData(object):
                 if review.public and comment.issue_opened:
                     status_key = \
                         comment.issue_status_to_string(comment.issue_status)
-                    self.issues[status_key] += 1
-                    self.issues['total'] += 1
+                    self.issue_counts[status_key] += 1
+                    self.issue_counts['total'] += 1
+                    self.issues.append(comment)
 
     def _build_id_map(self, objects):
         """Return an ID map from a list of objects.

@@ -407,11 +407,11 @@ def review_detail(request,
     # Now that we have entries for all the reviews, go through all the comments
     # and add them to those entries.
     for comment in data.comments:
-        review = comment._review
+        review = comment.review_obj
 
         if review.is_reply():
             # This is a reply to a comment.
-            base_reply_to_id = comment._review.base_reply_to_id
+            base_reply_to_id = comment.review_obj.base_reply_to_id
 
             assert review.pk not in reviews_entry_map
             assert base_reply_to_id in reviews_entry_map
@@ -457,6 +457,7 @@ def review_detail(request,
         'request': request,
         'close_description': close_description,
         'close_description_rich_text': close_description_rich_text,
+        'issue_counts': data.issue_counts,
         'issues': data.issues,
         'file_attachments': _get_latest_file_attachments(
             data.active_file_attachments),
@@ -578,7 +579,7 @@ class ReviewsDiffViewerView(DiffViewerView):
 
         for obj in q:
             comment = obj.comment
-            comment._review = obj.review
+            comment.review_obj = obj.review
             key = (comment.filediff_id, comment.interfilediff_id)
             comments.setdefault(key, []).append(comment)
 

@@ -1,6 +1,6 @@
 {% load avatars djblets_utils i18n reviewtags %}
 
-{% if issues.total > 0 %}
+{% if issue_counts.total > 0 %}
 <div class="review-request-section" id="issue-summary">
  <a name="issue-summary"></a>
  <label class="review-request-section-label">{% trans "Issues" %}</label>
@@ -14,23 +14,23 @@
    <li class="issue-summary-tab active" title="{% trans 'Open issues' %}"
        data-issue-state="open">
     <label><span class="rb-icon rb-icon-issue-open"></span></label>
-    <span id="open-counter" class="issue-counter-value">{{issues.open}}</span>
+    <span id="open-counter" class="issue-counter-value">{{issue_counts.open}}</span>
    </li>
    <li class="issue-summary-tab" title="{% trans 'Resolved issues' %}"
        data-issue-state="resolved">
     <label><span class="rb-icon rb-icon-issue-resolved"></span></label>
-    <span id="resolved-counter" class="issue-counter-value">{{issues.resolved}}</span>
+    <span id="resolved-counter" class="issue-counter-value">{{issue_counts.resolved}}</span>
    </li>
    <li class="issue-summary-tab" title="{% trans 'Dropped issues' %}"
        data-issue-state="dropped">
     <label><span class="rb-icon rb-icon-issue-dropped"></span></label>
-    <span id="dropped-counter" class="issue-counter-value">{{issues.dropped}}</span>
+    <span id="dropped-counter" class="issue-counter-value">{{issue_counts.dropped}}</span>
    </li>
    <li class="issue-summary-tab issue-summary-total"
        title="{% trans 'All issues' %}"
        data-issue-state="all">
     <label>{% trans "All Issues" %}:</label>
-    <span id="total-counter" class="issue-counter-value">{{issues.total}}</span>
+    <span id="total-counter" class="issue-counter-value">{{issue_counts.total}}</span>
    </li>
   </ul>
  </div>
@@ -44,16 +44,13 @@
     </tr>
    </thead>
    <tbody>
-{% for entry in entries %}
-{%  if entry.review %}
-{%   for comment_type, comments in entry.comments.items %}
-{%    for comment in comments %}
-{%     if comment.issue_opened %}
-{%      definevar "issue_link_attrs" %}class="issue-link {% rich_text_classname comment.rich_text %}" comment-type="{{comment.comment_type}}" issue-id="{{comment.id}}" href="#{{comment.anchor_prefix}}{{comment.id}}"{% enddefinevar %}
+{% for comment in issues %}
+{%  definevar 'issue_link_attrs' %}class="issue-link {% rich_text_classname comment.rich_text %}" comment-type="{{comment.comment_type}}" issue-id="{{comment.id}}" href="#{{comment.anchor_prefix}}{{comment.id}}"{% enddefinevar %}
+{%  definevar 'reviewer_name' %}{{comment.review_obj.user|user_displayname}}{% enddefinevar %}
     <tr id="summary-table-entry-{{comment.id}}"
         class="issue {{comment.issue_status|pretty_print_issue_status}}{% if comment.issue_status != 'O' %} hidden{% endif %}"
         data-issue-id="{{comment.pk}}"
-        data-reviewer="{{entry.review.user|user_displayname}}"
+	data-reviewer="{{reviewer_name}}"
         data-comment-type="{{comment.comment_type}}"
         data-comment-href="#{{comment.anchor_prefix}}{{comment.pk}}">
      <td class="summary-table-description">
@@ -61,21 +58,17 @@
       <span class="issue-text">{{comment.text|render_markdown:comment.rich_text|striptags|truncatewords:20}}</span></a>
      </td>
      <td class="reviewer">
-      <a href="{% url 'user' entry.review.user %}" class="user">
-{% if siteconfig_settings.avatars_enabled %}
-       {% avatar entry.review.user 24 %}
-{% endif %}
-       {{entry.review.user|user_displayname}}</a>
+      <a href="{% url 'user' comment.review_obj.user %}" class="user">
+{%  if siteconfig_settings.avatars_enabled %}
+       {% avatar comment.review_obj.user 24 %}
+{%  endif %}
+       {{reviewer_name}}
       </a>
      </td>
      <td class="last-updated">
       <time class="timesince" datetime="{{comment.timestamp|date:'c'}}">{{comment.timestamp}}</time>
      </td>
     </tr>
-{%     endif %}
-{%    endfor %}
-{%   endfor %}
-{%  endif %}
 {% endfor %}
    </tbody>
   </table>
