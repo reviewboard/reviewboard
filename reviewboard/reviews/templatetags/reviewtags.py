@@ -200,8 +200,8 @@ def reply_list(context, review, comment, context_type, context_id):
                                      reply_comment.rich_text,
                                      use_avatars,
                                      reply_comment.pk)
-    elif context_type == "body_top" or context_type == "body_bottom":
-        replies = getattr(review, "public_%s_replies" % context_type)()
+    elif context_type == 'body_top' or context_type == 'body_bottom':
+        replies = getattr(review, 'public_%s_replies' % context_type)()
 
         for reply in replies:
             s += generate_reply_html(

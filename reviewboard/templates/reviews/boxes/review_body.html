@@ -1,0 +1,126 @@
+{% load djblets_utils i18n rb_extensions reviewtags %}
+
+{% for comment in general_comments %}
+<li>
+ <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"</a>
+ <div class="review-comment-thread">
+  <div class="review-comment">
+   {% comment_detail_display_hook comment 'review' %}
+   {% comment_issue review_request_details comment 'general_comments' %}
+
+   <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}"
+        id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text}}</pre>
+  </div>
+
+  {% reply_section review comment 'general_comments' 'rc' comment.text %}
+ </div>
+</li>
+{% endfor %}
+
+{% for comment in screenshot_comments %}
+<li>
+ <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
+ <div class="review-comment-screenshot">
+  <a class="filename" href="{{comment.screenshot.get_absolute_url}}">
+   {{comment.screenshot.caption|default_if_none:comment.screenshot.filename}}
+  </a>
+  <div class="thumbnail">{{comment.image|safe}}</div>
+ </div>
+ <div class="review-comment-thread">
+  <div class="review-comment">
+   {% comment_detail_display_hook comment 'review' %}
+   {% comment_issue review_request_details comment 'screenshot_comments' %}
+
+   <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}"
+        id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text}}</pre>
+  </div>
+
+  {% reply_section review comment 'screenshot_comments' 'rc' comment.text %}
+ </div>
+</li>
+{% endfor %}
+
+{% for comment in file_attachment_comments %}
+<li>
+ <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
+ <div class="review-comment-file-attachment">
+  <a class="filename" href="{{comment.get_absolute_url}}">
+   {{comment.get_link_text}}
+{%  if comment.file_attachment.attachment_revision %}
+   <span class="diffrevision">
+{%   if comment.diff_against_file_attachment %}
+{%    blocktrans with revision1=comment.diff_against_file_attachment.attachment_revision revision2=comment.file_attachment.attachment_revision %}
+    (Revisions {{revision1}} - {{revision2}})
+{%    endblocktrans %}
+{%   else %}
+{%    blocktrans with revision=comment.file_attachment.attachment_revision %}
+    (Revision {{revision}})
+{%    endblocktrans %}
+{%   endif %}
+   </span>
+{%  endif %}
+  </a>
+{%  with comment.thumbnail as thumbnail %}
+{%   if thumbnail %}
+  <div class="thumbnail">{{thumbnail|default:''|safe}}</div>
+{%   endif %}
+{%  endwith %}
+ </div>
+ <div class="review-comment-thread">
+  <div class="review-comment">
+   {% comment_detail_display_hook comment 'review' %}
+   {% comment_issue review_request_details comment 'file_attachment_comments' %}
+
+   <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}"
+        id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text}}</pre>
+  </div>
+
+  {% reply_section review comment 'file_attachment_comments' 'rc' comment.text %}
+ </div>
+</li>
+{% endfor %}
+
+{% for comment in diff_comments %}
+<li>
+ <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
+ <div class="review-comment-diff" id="comment_container_{{comment.id}}">
+  <table class="sidebyside loading">
+   <thead>
+    <tr class="filename-row">
+     <th class="filename">
+      <a href="{{comment.get_absolute_url}}">{{comment.filediff.dest_file_display}}</a>
+      <span class="diffrevision">
+{%  if comment.interfilediff %}
+{%   blocktrans with revision1=comment.filediff.diffset.revision revision2=comment.interfilediff.diffset.revision %}
+       (Diff revisions {{revision1}} - {{revision2}})
+{%   endblocktrans %}
+{%  else %}
+{%   blocktrans with revision=comment.filediff.diffset.revision %}
+       (Diff revision {{revision}})
+{%   endblocktrans %}
+{%  endif %}
+      </span>
+     </th>
+    </tr>
+   </thead>
+   <tbody>
+    <tr><td><pre>&nbsp;</pre></td></tr>{# header #}
+{%  for i in comment.num_lines|default_if_none:1|range %}
+    <tr><td><pre>&nbsp;</pre></td></tr>
+{%  endfor %}
+   </tbody>
+  </table>
+ </div>
+ <div class="review-comment-thread">
+  <div class="review-comment">
+   {% comment_detail_display_hook comment 'review' %}
+   {% comment_issue review_request_details comment 'diff_comments' %}
+
+   <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}"
+        id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text}}</pre>
+  </div>
+
+  {% reply_section review comment 'diff_comments' 'rc' comment.text %}
+ </div>
+</li>
+{% endfor %}

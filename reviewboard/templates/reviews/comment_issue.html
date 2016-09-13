@@ -1,20 +1,24 @@
 {% load i18n reviewtags staticfiles %}
 
-<div class="issue-state"
-     data-comment-id="{{comment.pk}}"
-     data-comment-type="{{comment_type}}"
-     data-issue-status="{{issue_status}}"
-     data-interactive="{{interactive|yesno:"true,false"}}">
- <div class="issue-container">
-  <span class="rb-icon"></span>
-  <span class="issue-details">
-   <span class="issue-message"></span>
-   <span class="issue-actions">
-    <input type="button" value="Fixed" class="issue-button resolve" style="display:none;"/>
-    <input type="button" value="Drop" class="issue-button drop" style="display:none;"/>
-    <input type="button" value="Re-open" class="issue-button reopen" style="display:none;"/>
+{% if comment.issue_opened %}
+<div class="issue-indicator">
+ <div class="issue-state"
+      data-comment-id="{{comment.pk}}"
+      data-comment-type="{{comment_type}}"
+      data-issue-status="{{issue_status}}"
+      data-interactive="{{interactive|yesno:"true,false"}}">
+  <div class="issue-container">
+   <span class="rb-icon"></span>
+   <span class="issue-details">
+    <span class="issue-message"></span>
+    <span class="issue-actions">
+     <input type="button" value="Fixed" class="issue-button resolve" style="display:none;"/>
+     <input type="button" value="Drop" class="issue-button drop" style="display:none;"/>
+     <input type="button" value="Re-open" class="issue-button reopen" style="display:none;"/>
+    </span>
+    <a class="back-to-issue-summary" href="#issue-summary">{% trans "Show all issues" %}</a>
    </span>
-   <a class="back-to-issue-summary" href="#issue-summary">{% trans "Show all issues" %}</a>
-  </span>
+  </div>
  </div>
 </div>
+{% endif %}

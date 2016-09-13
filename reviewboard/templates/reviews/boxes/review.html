@@ -3,7 +3,7 @@
 
 {% with review=entry.review %}
 <a name="review{{review.id}}"></a>
-<div id="review{{review.id}}" class="review">
+<div id="review{{review.id}}" class="review review-request-page-entry has-avatar">
 {%  if forloop.last %}
  <a name="last-review"></a>
 {%  endif %}
@@ -24,14 +24,15 @@
    </div>
   </div>
  </div>
-{%  definevar "boxclass" %}{% if entry.collapsed %}collapsed{% endif %}{% enddefinevar %}
-{%  box boxclass %}
+
+ <div class="review-request-page-entry-contents
+             {{entry.collapsed|yesno:'collapsed,'}}">
   <div class="header">
 {%   template_hook_point "review-summary-header-pre" %}
    <div class="collapse-button btn"><div class="rb-icon {% if entry.collapsed %}rb-icon-expand-review{% else %}rb-icon-collapse-review{% endif %}"></div></div>
    <div class="header-details">
-    <div class="reviewer"><a href="{% url 'user' review.user %}" class="user">{{review.user|user_displayname}}</a></div>
-    <div class="posted_time">{% localtime on %}{% blocktrans with review.timestamp as timestamp and review.timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</div>
+    <div class="summary"><a href="{% url 'user' review.user %}" class="user">{{review.user|user_displayname}}</a></div>
+    <div class="timestamp">{% localtime on %}{% blocktrans with review.timestamp as timestamp and review.timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</div>
    </div>
 {%   template_hook_point "review-summary-header-post" %}
   </div>
@@ -39,151 +40,36 @@
   <div class="banners"></div>
 
   <div class="body">
-   <pre class="body_top reviewtext {% rich_text_classname review.body_top_rich_text %}">{{review.body_top|render_markdown:review.body_top_rich_text}}</pre>
-   <div class="body-top-comment-section">
-{%   reply_section review "" "body_top" "rcbt" review.body_top %}
-   </div>
-
-{%   if entry.comments.diff_comments or entry.comments.screenshot_comments or entry.comments.file_attachment_comments or entry.comments.general_comments %}
-   <dl class="review-comments">
-
-{%    for comment in entry.comments.screenshot_comments %}
-    <dt>
-     <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
-     <div class="screenshot">
-      <span class="filename">
-       <a href="{{comment.screenshot.get_absolute_url}}">{% spaceless %}
-{% if draft and comment.screenshot.draft_caption %}
-{{comment.screenshot.draft_caption}}
-{% else %}
-{{comment.screenshot.caption|default_if_none:comment.screenshot.image.name|basename}}
-{% endif %}
-{% endspaceless %}</a>
-      </span>
-      {{comment.image|safe}}
-     </div>
-    </dt>
-    <dd>
-{%     comment_detail_display_hook comment "review" %}
-{%     if comment.issue_opened %}
-     <div class="issue-indicator">
-       {% comment_issue review_request_details comment "screenshot_comments" %}
-     </div>
-{%     endif %}
-     <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text}}</pre>
-{%    reply_section review comment "screenshot_comments" "rc" comment.text %}
-    </dd>
-{%    endfor %}
-
-{%    for comment in entry.comments.file_attachment_comments %}
-    <dt>
-     <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
-     <div class="file-attachment">
-      <div class="file-attachment-comment-header">
-       <a href="{{comment.get_absolute_url}}">
-        <span class="filename">{{comment.get_link_text}}</span>
-       </a>
-{%     if comment.file_attachment.attachment_revision %}
-        <span class="diffrevision">
-{%      if comment.diff_against_file_attachment %}
-{%       blocktrans with revision1=comment.diff_against_file_attachment.attachment_revision revision2=comment.file_attachment.attachment_revision %}
-         (Revisions {{revision1}} - {{revision2}})
-{%       endblocktrans %}
-{%      else %}
-{%       blocktrans with revision=comment.file_attachment.attachment_revision %}
-          (Revision {{revision}})
-{%       endblocktrans %}
-{%      endif %}
-        </span>
-{%     endif %}
+   <ol class="review-comments">
+    <li>
+     <div class="review-comment-thread">
+      <div class="review-comment">
+       <pre class="reviewtext body_top {% rich_text_classname review.body_top_rich_text %}">{{review.body_top|render_markdown:review.body_top_rich_text}}</pre>
       </div>
-{%     with comment.thumbnail as thumbnail %}
-{%      if thumbnail %}
-      <div class="thumbnail">{{thumbnail|default:''|safe}}</div>
-{%      endif %}
-{%     endwith %}
-     </div>
-    </dt>
-    <dd>
-{%     comment_detail_display_hook comment "review" %}
-{%     if comment.issue_opened %}
-     <div class="issue-indicator">
-{%      comment_issue review_request_details comment "file_attachment_comments" %}
-     </div>
-{%     endif %}
-     <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text}}</pre>
-{%     reply_section review comment "file_attachment_comments" "rc" comment.text %}
-    </dd>
-{%    endfor %}
 
-{%    for comment in entry.comments.general_comments %}
-    <dt>
-     <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
-     <div class="general-comment-header">
-      <a href="{{comment.get_absolute_url}}"></a>
+      {% reply_section review '' 'body_top' 'rcbt' review.body_top %}
      </div>
-    </dt>
-    <dd>
-{%     comment_detail_display_hook comment "review" %}
-{%     if comment.issue_opened %}
-     <div class="issue-indicator">
-{%      comment_issue review_request_details comment "general_comments" %}
-     </div>
-{%     endif %}
-     <pre class="reviewtext comment-text rich-text" id="{{comment.anchor_prefix}}{{comment.id}}" data-rich-text="true">{{comment.text|render_markdown:comment.rich_text}}</pre>
-{%     reply_section review comment "general_comments" "rc" %}
-    </dd>
-{%    endfor %}
+    </li>
 
-{%    for comment in entry.comments.diff_comments %}
-    <dt>
-     <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
-     <div id="comment_container_{{comment.id}}" class="comment_container">
-      <table class="sidebyside loading">
-       <thead>
-        <tr class="filename-row">
-         <th class="filename">
-          <a name="{{comment.get_absolute_url}}">{{comment.filediff.dest_file_display}}</a>
-          <span class="diffrevision">
-{%     if comment.interfilediff %}
-           (Diff revisions {{comment.filediff.diffset.revision}} - {{comment.interfilediff.diffset.revision}})
-{%     else %}
-           (Diff revision {{comment.filediff.diffset.revision}})
-{%     endif %}
-          </span>
-         </th>
-        </tr>
-       </thead>
-       <tbody>
-        <tr><td><pre>&nbsp;</pre></td></tr>{# header entry #}
-{%     for i in comment.num_lines|default_if_none:1|range %}
-        <tr><td><pre>&nbsp;</pre></td></tr>
-{%     endfor %}
-       </tbody>
-      </table>
-     </div>
-    </dt>
-    <dd>
-{%     comment_detail_display_hook comment "review" %}
-{%     if comment.issue_opened %}
-     <div class="issue-indicator">
-{%      comment_issue review_request_details comment "diff_comments" %}
-     </div>
-{%     endif %}
-     <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}" id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text}}</pre>
-{%    reply_section review comment "diff_comments" "rc" comment.text %}
-    </dd>
-{%    endfor %}
-   </dl>
-{%   endif %}
+{%   with diff_comments=entry.comments.diff_comments file_attachment_comments=entry.comments.file_attachment_comments general_comments=entry.comments.general_comments screenshot_comments=entry.comments.screenshot_comments %}
+{%    include "reviews/boxes/review_body.html" %}
+{%   endwith %}
+
 {%   if review.body_bottom %}
-   <pre class="body_bottom reviewtext {% rich_text_classname review.body_bottom_rich_text %}">{{review.body_bottom|render_markdown:review.body_bottom_rich_text}}</pre>
-   <div class="body-top-comment-section">
-{%    reply_section review "" "body_bottom" "rcbb" review.body_bottom %}
-   </div>
+    <li>
+     <div class="review-comment-thread">
+      <div class="review-comment">
+       <pre class="reviewtext body_bottom {% rich_text_classname review.body_bottom_rich_text %}">{{review.body_bottom|render_markdown:review.body_bottom_rich_text}}</pre>
+      </div>
+
+      {% reply_section review '' 'body_bottom' 'rcbb' review.body_bottom %}
+     </div>
+    </li>
 {%   endif %}
+
+   </ol>
   </div>
-{%  endbox %}
+ </div>
 </div>
 
 {% endwith %}

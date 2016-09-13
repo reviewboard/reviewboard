@@ -3,8 +3,13 @@
 @import (reference) "djblets/css/mixins/markdown.less";
 
 
+@entry-padding: 12px;
 @img_base: '../../images';
 @djblets_img_base: '../../../djblets/images';
+
+@base-entry-bg: #ffffff;
+@collapsed-entry-bg: #ececee;
+@changedesc-bg: lighten(@review-request-bg, 5%);
 
 
 /****************************************************************************
@@ -17,8 +22,8 @@
 
   &:before, &:after {
     position: absolute;
-    left: -19px;
-    top: 17px;
+    left: -20px;
+    top: 12px;
     right: 100%;
     border: 1px transparent solid;
     content: " ";
@@ -48,51 +53,70 @@
 }
 
 .review-comments-inline() {
-  &.draft {
-    dt label a {
-      color: #4e9a06;
+  .comment-author {
+    margin-bottom: 1em;
+
+    label {
+      .inline-editor-label();
+
+      a {
+        color: @review-comment-author-color;
+        font-size: 1.1em;
+        font-weight: bold;
+        text-decoration: none;
+      }
+
+      .avatar-container {
+        background: white;
+        border-radius: 50%;
+        display: inline-block;
+        overflow: hidden;
+        width: 32px;
+        height: 32px;
+      }
+
+      .user-reply-info {
+        display: inline-block;
+        overflow: hidden;
+
+        time {
+          display: block;
+        }
+      }
+    }
+
+    span {
+      color: #487858;
+      font-weight: normal;
+
+      &.fa {
+        color: #000000;
+      }
     }
   }
 
-  dl {
-    dt {
-      label {
-        .inline-editor-label();
+  /*
+   * When there's a draft present, modify some colors so that it's apparent
+   * that the comments are drafts, and modify margins so that the inline editor
+   * opens without any jumps.
+   */
+  &.draft {
+    @textarea-offset-vert: (@textarea-editor-margin-top +
+                            @textarea-editor-padding +
+                            @textarea-border-size);
+    @textarea-offset-horiz: (@textarea-editor-padding +
+                             @textarea-border-size);
 
-        a {
-          color: #AB5603;
-          font-size: 1.1em;
-          font-weight: bold;
-          text-decoration: none;
-        }
+    .comment-author {
+      margin-bottom: @textarea-offset-vert + 1em;
 
-        .avatar-container {
-          background: white;
-          border-radius: 50%;
-          display: inline-block;
-          overflow: hidden;
-          width: 32px;
-          height: 32px;
-        }
-
-        .user-reply-info {
-          display: inline-block;
-          overflow: hidden;
-
-          time {
-            display: block;
-          }
-        }
+      label a {
+        color: @review-comment-author-color-draft;
       }
+    }
 
-      span {
-        color: #487858;
-        font-weight: normal;
-
-        &.fa {
-          color: #000;
-        }
-      }
+    .text-editor {
+      margin: -(@textarea-offset-vert - 10px) -@textarea-offset-horiz 0;
     }
   }
 }
@@ -194,35 +218,233 @@
 
 
 /****************************************************************************
+ * Entries (status updates, reviews, change descriptions)
+ ****************************************************************************/
+
+.review-request-page-entry {
+  clear: both;
+  margin: 2rem 0;
+
+  .on-mobile-medium-screen-720({
+    margin-top: 1rem;
+  });
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .collapse-button {
+    border: 1px #333333 solid;
+    cursor: pointer;
+    float: left;
+    margin-right: 0.5rem;
+    margin-top: -1px;
+    padding: 0;
+  }
+}
+
+.review-request-page-entry-contents {
+  background-color: @base-entry-bg;
+  border: 1px @box-border-color solid;
+  border-radius: @box-border-radius;
+  box-shadow: @box-shadow;
+
+  &.collapsed {
+    background-color: @collapsed-entry-bg !important;
+    background-image: none !important; // Override any gradients used.
+
+    .banner {
+      border-bottom: 0;
+      margin-bottom: 0;
+    }
+
+    .body {
+      display: none;
+    }
+  }
+
+  .has-avatar & {
+    margin-left: 75px;
+    width: auto;
+
+    .left-arrow-callout(@base-entry-bg);
+
+    .on-mobile-medium-screen-720({
+      margin-left: 0;
+    });
+
+    &.collapsed {
+      .left-arrow-callout-color(@collapsed-entry-bg);
+    }
+  }
+
+  .header {
+    border-radius: @box-border-radius @box-border-radius 0 0;
+    padding: @entry-padding;
+
+    a {
+      color: black;
+      text-decoration: none;
+    }
+
+    .header-details {
+      line-height: 20px;
+      overflow: hidden;
+    }
+
+    .summary {
+      float: left;
+      font-size: 110%;
+      font-weight: bold;
+
+      .on-mobile-medium-screen-720({
+        float: none;
+      });
+    }
+
+    .timestamp {
+      color: #555;
+      text-align: right;
+
+      .on-mobile-medium-screen-720({
+        margin-top: 0.5rem;
+        text-align: left;
+      });
+    }
+  }
+}
+
+
+/****************************************************************************
  * Reviews
  ****************************************************************************/
 
-#reviews {
-  margin-left: @reviews-padding-horiz;
-  margin-right: @reviews-padding-horiz;
+.review.has-draft {
+  // Reviews with draft replies have a green header.
+  .review-request-page-entry-contents {
+    .left-arrow-callout-color(@draft-bg-color);
+  }
 
-  .on-mobile-medium-screen-720({
+  .header {
+    background: @draft-bg-color;
+  }
+}
+
+.review-comments {
+  border: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.review-comment-screenshot,
+.review-comment-file-attachment,
+.review-comment-diff {
+  background-color: #F0F0F0;
+  border-color: #C0C0C0;
+  border-width: 1px 0;
+  border-style: solid;
+
+  .diffrevision {
+    font-weight: normal;
+  }
+
+  li:not(:first-child) > & {
+    margin-top: 2em;
+  }
+}
+
+.review-comment-screenshot,
+.review-comment-file-attachment{
+  padding: 5px;
+
+  .filename {
+    color: black;
+    font-size: 120%;
+    font-weight: bold;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .thumbnail {
+    margin-top: 0.5em;
+  }
+}
+
+.review-comment-diff {
+  th {
+    /*
+     * The line numbers aren't clickable in the comment fragments in reviews,
+     * so show a standard cursor instead of a pointer.
+     */
+    cursor: initial;
+  }
+
+  /*
+   * XXX: This selector could be simpler but there's a complex selector in
+   * diffviewer.less (.sidebyside thead .filename-row th) which takes
+   * precedence.
+   */
+  .sidebyside .filename-row th {
+    background: #F0F0F0;
+  }
+
+  .diff-error tbody {
+    border: 1px @diff-error-border-color solid;
+  }
+}
+
+.review-comment-thread {
+  padding: 2em;
+
+  .controls {
+    list-style: none;
     margin: 0;
-  });
+    padding: 0;
+    text-align: left;
 
-  .box {
-    margin: 2em 0;
-    .left-arrow-callout(white);
+    a {
+      color: black;
+      display: inline-block;
+      text-decoration: none;
+      background: #ECECEC;
+      border: 1px #C3C3C3 solid;
+      margin-top: 2em;
+      padding: 0.6em 1em;
+      border-radius: @box-border-radius;
 
-    .on-mobile-medium-screen-720({
-      margin-top: 1em;
-    });
+      &:hover {
+        background: #F3F3F3;
+      }
+
+      .fa {
+        margin-right: 5px;
+      }
+    }
+
+    li {
+      display: inline;
+    }
   }
 
-  .box-container {
-    padding-left: 75px;
-    width: auto;
-
-    .on-mobile-medium-screen-720({
-      padding-left: 0;
-    });
+  .review-comment {
+    margin-bottom: 2em;
   }
 
+  .reply-comments {
+    margin: 0;
+    padding: 0;
+
+    > li {
+      list-style: none;
+      padding: 2em;
+
+      .review-comments-inline();
+    }
+  }
+}
+
+#reviews {
   .box-statuses {
     float: left;
     text-align: center;
@@ -339,72 +561,17 @@
       }
     }
   }
-
-  > .changedesc,
-  > .review {
-    clear: both;
-  }
-}
-
-#reviews .box {
-  border: 0;
-
-  .on-mobile-medium-screen-720({
-    &:after, &:before {
-      content: none
-    }
-  });
-
-  &.collapsed {
-    .left-arrow-callout-color(#ECECEE);
-
-    .body {
-      display: none;
-    }
-
-    .box-inner {
-      background: #ECECEE;
-    }
-
-    .banner {
-      border-bottom: 0;
-      margin-bottom: 0;
-    }
-  }
-
-  .box-inner {
-    background: none;
-    min-height: 5em;
-    overflow: hidden;
-  }
-
-  .collapse-button {
-    border: 1px #333333 solid;
-    cursor: pointer;
-    float: left;
-    margin-right: 0.5em;
-    margin-top: -1px;
-    padding: 0;
-  }
 }
 
 #reviews .review {
-  &.has-draft {
-    .box {
-      .left-arrow-callout-color(@draft-bg-color);
-    }
-
-    .header {
-      background: @draft-bg-color;
-    }
-  }
-
   .banners {
     .banner {
       border-left: 0;
       border-right: 0;
       border-top: 0;
       box-sizing: border-box;
+      margin: 0;
+      padding: 0 @entry-padding @entry-padding @entry-padding;
 
       &.floating {
         border-top: 0;
@@ -417,7 +584,6 @@
     clear: both;
 
     pre {
-      margin-bottom: 0;
       white-space: pre-wrap;
     }
 
@@ -426,199 +592,12 @@
       border: 1px solid @dark-blue;
       padding: 1em;
     }
-
-    .body_top, .body_bottom {
-      margin: 2em;
-    }
-  }
-
-  .body-top-comment-section,
-  .body-bottom-comment-section,
-  .comments > dd,
-  .review-comments > dd {
-    margin: 0 2em 4em 2em;
-
-    &:last-child {
-      margin-bottom: 2em;
-    }
-  }
-
-  .box {
-    background: white;
-    border: 0;
-
-    .box-main {
-      padding: 0;
-    }
-  }
-
-  .box-inner {
-    background: white;
-    border: 1px @review-box-border-color solid;
-  }
-
-  .controls {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    text-align: left;
-
-    a {
-      color: black;
-      display: inline-block;
-      text-decoration: none;
-      background: #ECECEC;
-      border: 1px #C3C3C3 solid;
-      padding: 0.6em 1em;
-      border-radius: @box-border-radius;
-
-      &:hover {
-        background: #F3F3F3;
-      }
-
-      .fa {
-        margin-right: 5px;
-      }
-    }
-
-    li {
-      display: inline;
-    }
-  }
-
-  .comments, .review-comments {
-    border: 0;
-    margin: 0;
-    padding: 0;
-
-    /*
-     * Cover up the left and right borders we add for <dt> to get a clean
-     * rounded border. We don't want them sticking out of the box.
-     */
-    overflow: hidden;
-
-    & > dd {
-      margin-top: 2em;
-    }
-
-    & > dt {
-      thead th {
-        font-weight: normal;
-      }
-    }
-
-    .comment_container {
-      border-top: 1px #C0C0C0 solid;
-      border-bottom: 1px #C0C0C0 solid;
-    }
-
-    .filename a {
-      color: black;
-      font-weight: bold;
-    }
-
-    .file-attachment {
-      background: #F0F0F0;
-      border-bottom: 1px #C0C0C0 solid;
-      padding: 5px;
-
-      .file-attachment-comment-header {
-        font-size: 120%;
-        white-space: nowrap;
-
-        a {
-          text-decoration: none;
-        }
-
-        img {
-          padding-right: 10px;
-          vertical-align: middle;
-        }
-
-        .caption {
-          color: black;
-          margin: 5px 0 0 32px;
-        }
-
-        .filename {
-          color: black;
-          font-weight: bold;
-          margin: 0;
-          vertical-align: middle;
-        }
-      }
-
-      .thumbnail {
-        margin-top: 0.5em;
-      }
-    }
-
-    .screenshot {
-      background: #F0F0F0;
-      border: 1px #C0C0C0 solid;
-      font-size: 120%;
-
-      img {
-        padding: 5px;
-      }
-
-      .filename {
-        display: block;
-        margin: 0;
-        padding: 5px 10px;
-      }
-    }
-
-    .sidebyside {
-      th {
-        /*
-         * The line numbers aren't clickable in the comment fragments in
-         * reviews, so show a standard cursor instead of a pointer cursor.
-         */
-        cursor: initial;
-      }
-
-      .filename-row th {
-        background: #F0F0F0;
-      }
-    }
-  }
-
-  .diff-error tbody {
-    border: 1px @diff-error-border-color solid;
-  }
-
-  .reply-comments {
-    margin: 2.5em 0 2em 0;
-    padding: 0;
-
-    &>li {
-      display: inline;
-
-      .review-comments-inline();
-
-      dl {
-        /*
-         * Set a border-bottom to prevent a bug in IE where, without a
-         * border-bottom, the content of the dl will shift left by the
-         * border-left size for every following item.
-         */
-        border-bottom: 1px transparent solid;
-        margin: 4em 0 2em 0;
-        padding: 0;
-
-        dd {
-          margin-left: 0;
-        }
-      }
-    }
   }
 }
 
 #view_controls {
   list-style: none;
-  margin: 1em 0;
-  padding: 1em;
+  margin: 2em 0;
   text-align: center;
 
   a {
@@ -667,18 +646,17 @@
  * Change Descriptions
  ****************************************************************************/
 .changedesc {
-  &.box {
-    background-color: #fefadf;
-    #gradient > .vertical(lighten(@review-request-bg, 5%), @review-request-bg);
+  .review-request-page-entry-contents {
 
-    .box-inner {
-      border: 1px @review-request-border-color solid;
-    }
+    background-color: @changedesc-bg;
+    #gradient > .vertical(@changedesc-bg, @review-request-bg);
+
+    .left-arrow-callout-color(@changedesc-bg);
   }
 
   .body {
     clear: both;
-    padding: @box-padding;
+    padding: @entry-padding;
 
     &>ul {
       list-style: none;
@@ -707,7 +685,7 @@
     h3 {
       color: @review-request-label-color;
       font-size: 110%;
-      margin: 1em 0 0.5em 0;
+      margin: 0;
       padding: 0;
 
       &.status {
@@ -976,7 +954,7 @@
       });
 
       h3 {
-        margin: 2px 1em 0 0;
+        margin: 0 1em 0 0;
         padding: 0;
         text-align: right;
 
@@ -1034,47 +1012,6 @@
       }
     }
   }
-}
-
-.box .header {
-  border-radius: @box-border-radius @box-border-radius 0 0;
-  padding: 9px;
-
-  a {
-    color: black;
-    text-decoration: none;
-  }
-
-  .header-details {
-    overflow: hidden;
-  }
-
-  .reviewer {
-    float: left;
-    font-size: 110%;
-    font-weight: bold;
-    padding-top: 1px;
-
-    .on-mobile-medium-screen-720({
-      float: none;
-    });
-
-    a {
-      position: relative;
-    }
-  }
-
-  .posted_time {
-    color: #555;
-    text-align: right;
-    padding-top: 2px;
-
-    .on-mobile-medium-screen-720({
-      margin-top: 0.5em;
-      text-align: left;
-    });
-  }
-
 }
 
 
@@ -1155,7 +1092,7 @@
       font-size: 20px;
     }
 
-    .comments {
+    .review-comments {
       list-style: none;
       margin: 0;
       padding: 0;
@@ -2236,6 +2173,9 @@
  ****************************************************************************/
 
 .rich-text {
+  margin: 0;
+  padding: 0;
+
   .markdown-wysiwyg();
 }
 
@@ -2261,19 +2201,4 @@
   }
 
   .upload-diff-ui();
-}
-
-
-/****************************************************************************
- * Markdown Additions
- ****************************************************************************/
-
-#review-form,
-#reviews .review .body {
-  .rich-text {
-    margin: (@textarea-editor-margin-top + @textarea-editor-padding +
-             @textarea-border-size)
-            (@textarea-editor-padding + @textarea-border-size)
-            0;
-  }
 }
