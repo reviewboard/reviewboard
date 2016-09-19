@@ -786,7 +786,9 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                         !this.commentDlg) {
                         this._$selectionArea.hide();
                     }
-                })
+                });
+
+        const $wrapper = $('<div class="image-content" />')
             .append(this._$selectionArea);
 
         if (this.model.get('diffTypeMismatch')) {
@@ -804,7 +806,9 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             this._addDiffMode(ImageSplitDiffView);
             this._addDiffMode(ImageOnionDiffView);
 
-            this.$el.append(this._$imageDiffs);
+            $wrapper
+                .append(this._$imageDiffs)
+                .appendTo(this.$el);
 
             this._setDiffMode(ImageTwoUpDiffView.prototype.mode);
         } else {
@@ -812,7 +816,10 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                 model: this.model
             });
 
-            this._imageView.$el.appendTo(this.$el);
+            $wrapper
+                .append(this._imageView.$el)
+                .appendTo(this.$el);
+
             this._imageView.render();
         }
 
