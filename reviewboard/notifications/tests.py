@@ -8,6 +8,9 @@ from django.core import mail
 from django.template import TemplateSyntaxError
 from django.utils.datastructures import MultiValueDict
 from django.utils.six.moves.urllib.request import urlopen
+from djblets.mail.testing import DmarcDnsTestsMixin
+from djblets.mail.utils import (build_email_address,
+                                build_email_address_for_user)
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
@@ -15,9 +18,7 @@ from kgb import SpyAgency
 from reviewboard.accounts.models import Profile, ReviewRequestVisit
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.diffviewer.models import FileDiff
-from reviewboard.notifications.email import (build_email_address,
-                                             build_recipients,
-                                             get_email_address_for_user,
+from reviewboard.notifications.email import (build_recipients,
                                              get_email_addresses_for_group,
                                              recipients_to_addresses,
                                              send_review_mail)
@@ -38,19 +39,27 @@ from reviewboard.webapi.models import WebAPIToken
 _CONSOLE_EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 
-class EmailTestHelper(object):
+class EmailTestHelper(DmarcDnsTestsMixin):
     def setUp(self):
         super(EmailTestHelper, self).setUp()
 
         mail.outbox = []
         self.sender = 'noreply@example.com'
 
+        self._old_enable_smart_spoofing = settings.EMAIL_ENABLE_SMART_SPOOFING
+        settings.EMAIL_ENABLE_SMART_SPOOFING = True
+
+    def tearDown(self):
+        super(EmailTestHelper, self).tearDown()
+
+        settings.EMAIL_ENABLE_SMART_SPOOFING = self._old_enable_smart_spoofing
+
     def assertValidRecipients(self, user_list, group_list=[]):
         recipient_list = mail.outbox[0].to + mail.outbox[0].cc
         self.assertEqual(len(recipient_list), len(user_list) + len(group_list))
 
         for user in user_list:
-            self.assertTrue(get_email_address_for_user(
+            self.assertTrue(build_email_address_for_user(
                 User.objects.get(username=user)) in recipient_list,
                 "user %s was not found in the recipient list" % user)
 
@@ -101,11 +110,12 @@ class UserEmailTests(EmailTestHelper, TestCase):
 
         self.assertEqual(email.from_email, self.sender)
         self.assertEqual(email.extra_headers['From'], settings.SERVER_EMAIL)
-        self.assertEqual(email.to[0], build_email_address(admin_name,
-                                                          admin_email_addr))
+        self.assertEqual(email.to[0],
+                         build_email_address(full_name=admin_name,
+                                             email=admin_email_addr))
 
 
-class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
+class ReviewRequestEmailTests(EmailTestHelper, TestCase):
     """Tests the e-mail support."""
 
     fixtures = ['test_users']
@@ -127,11 +137,36 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
         review_request.target_people.add(User.objects.get(username='doc'))
         review_request.publish(review_request.submitter)
 
-        from_email = get_email_address_for_user(review_request.submitter)
+        from_email = build_email_address_for_user(review_request.submitter)
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
         self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].subject,
+                         'Review Request %s: My test review request'
+                         % review_request.pk)
+        self.assertValidRecipients(['grumpy', 'doc'])
+
+        message = mail.outbox[0].message()
+        self.assertEqual(message['Sender'],
+                         self._get_sender(review_request.submitter))
+
+    def test_new_review_request_email_with_dmarc_deny(self):
+        """Testing sending an e-mail when creating a new review request with
+        From spoofing blocked by DMARC
+        """
+        self.dmarc_txt_records['_dmarc.example.com'] = 'v=DMARC1; p=reject;'
+
+        review_request = self.create_review_request(
+            summary='My test review request')
+        review_request.target_people.add(User.objects.get(username='grumpy'))
+        review_request.target_people.add(User.objects.get(username='doc'))
+        review_request.publish(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].from_email, self.sender)
+        self.assertEqual(mail.outbox[0].extra_headers['From'],
+                         'Doc Dwarf via Review Board <noreply@example.com>')
         self.assertEqual(mail.outbox[0].subject,
                          'Review Request %s: My test review request'
                          % review_request.pk)
@@ -176,12 +211,52 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
         review = self.create_review(review_request=review_request)
         review.publish()
 
-        from_email = get_email_address_for_user(review.user)
+        from_email = build_email_address_for_user(review.user)
 
         self.assertEqual(len(mail.outbox), 1)
         email = mail.outbox[0]
         self.assertEqual(email.from_email, self.sender)
         self.assertEqual(email.extra_headers['From'], from_email)
+        self.assertEqual(email._headers['X-ReviewBoard-URL'],
+                         'http://example.com/')
+        self.assertEqual(email._headers['X-ReviewRequest-URL'],
+                         'http://example.com/r/%s/'
+                         % review_request.display_id)
+        self.assertEqual(email.subject,
+                         'Re: Review Request %s: My test review request'
+                         % review_request.display_id)
+        self.assertValidRecipients([
+            review_request.submitter.username,
+            'grumpy',
+            'doc',
+        ])
+
+        message = email.message()
+        self.assertEqual(message['Sender'], self._get_sender(review.user))
+
+    def test_review_email_with_dmarc_deny(self):
+        """Testing sending an e-mail when replying to a review request with
+        From spoofing blocked by DMARC
+        """
+        self.dmarc_txt_records['_dmarc.example.com'] = 'v=DMARC1; p=reject;'
+
+        review_request = self.create_review_request(
+            summary='My test review request')
+        review_request.target_people.add(User.objects.get(username='grumpy'))
+        review_request.target_people.add(User.objects.get(username='doc'))
+        review_request.publish(review_request.submitter)
+
+        # Clear the outbox.
+        mail.outbox = []
+
+        review = self.create_review(review_request=review_request)
+        review.publish()
+
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        self.assertEqual(email.from_email, self.sender)
+        self.assertEqual(email.extra_headers['From'],
+                         'Dopey Dwarf via Review Board <noreply@example.com>')
         self.assertEqual(email._headers['X-ReviewBoard-URL'],
                          'http://example.com/')
         self.assertEqual(email._headers['X-ReviewRequest-URL'],
@@ -221,7 +296,7 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
         review = self.create_review(review_request=review_request)
         review.publish()
 
-        from_email = get_email_address_for_user(review.user)
+        from_email = build_email_address_for_user(review.user)
 
         self.assertEqual(len(mail.outbox), 1)
         email = mail.outbox[0]
@@ -260,9 +335,9 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertValidRecipients(['doc'])
 
-    def test_review_close_no_email(self):
-        """Tests e-mail is not generated when a review is closed and e-mail
-        setting is False
+    def test_review_request_closed_no_email(self):
+        """Tests e-mail is not generated when a review request is closed and
+        e-mail setting is False
         """
         review_request = self.create_review_request()
         review_request.publish(review_request.submitter)
@@ -275,32 +350,77 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
         # Verify that no email is generated as option is false by default
         self.assertEqual(len(mail.outbox), 0)
 
-    def test_review_close_with_email(self):
-        """Tests e-mail is generated when a review is closed and e-mail setting
-        is True
+    def test_review_request_closed_with_email(self):
+        """Tests e-mail is generated when a review request is closed and
+        e-mail setting is True
         """
         siteconfig = SiteConfiguration.objects.get_current()
-        siteconfig.set("mail_send_review_close_mail", True)
+        siteconfig.set('mail_send_review_close_mail', True)
         siteconfig.save()
         load_site_config()
 
-        review_request = self.create_review_request()
-        review_request.publish(review_request.submitter)
+        try:
+            review_request = self.create_review_request()
+            review_request.publish(review_request.submitter)
 
-        # Clear the outbox.
-        mail.outbox = []
+            # Clear the outbox.
+            mail.outbox = []
 
-        review_request.close(ReviewRequest.SUBMITTED, review_request.submitter)
+            review_request.close(ReviewRequest.SUBMITTED,
+                                 review_request.submitter)
 
-        self.assertEqual(len(mail.outbox), 1)
-        message = mail.outbox[0].message()
-        self.assertTrue("This change has been marked as submitted"
-                        in message.as_string())
+            from_email = build_email_address_for_user(review_request.submitter)
 
-        # Reset settings for review close requests
-        siteconfig.set("mail_send_review_close_mail", False)
+            self.assertEqual(len(mail.outbox), 1)
+            self.assertEqual(mail.outbox[0].from_email, self.sender)
+            self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+
+            message = mail.outbox[0].message()
+            self.assertTrue('This change has been marked as submitted'
+                            in message.as_string())
+        finally:
+            # Reset settings for review close requests
+            siteconfig.set('mail_send_review_close_mail', False)
+            siteconfig.save()
+            load_site_config()
+
+    def test_review_request_close_with_email_and_dmarc_deny(self):
+        """Tests e-mail is generated when a review request is closed and
+        e-mail setting is True and From spoofing blocked by DMARC
+        """
+        self.dmarc_txt_records['_dmarc.example.com'] = 'v=DMARC1; p=reject;'
+
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('mail_send_review_close_mail', True)
         siteconfig.save()
         load_site_config()
+
+        try:
+            review_request = self.create_review_request()
+            review_request.publish(review_request.submitter)
+
+            # Clear the outbox.
+            mail.outbox = []
+
+            review_request.close(ReviewRequest.SUBMITTED,
+                                 review_request.submitter)
+
+            from_email = build_email_address_for_user(review_request.submitter)
+
+            self.assertEqual(len(mail.outbox), 1)
+            self.assertEqual(mail.outbox[0].from_email, self.sender)
+            self.assertEqual(mail.outbox[0].extra_headers['From'],
+                             'Doc Dwarf via Review Board '
+                             '<noreply@example.com>')
+
+            message = mail.outbox[0].message()
+            self.assertTrue('This change has been marked as submitted'
+                            in message.as_string())
+        finally:
+            # Reset settings for review close requests
+            siteconfig.set('mail_send_review_close_mail', False)
+            siteconfig.save()
+            load_site_config()
 
     def test_review_reply_email(self):
         """Testing sending an e-mail when replying to a review"""
@@ -317,11 +437,46 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
         reply = self.create_reply(base_review)
         reply.publish()
 
-        from_email = get_email_address_for_user(reply.user)
+        from_email = build_email_address_for_user(reply.user)
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
         self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].subject,
+                         'Re: Review Request %s: My test review request'
+                         % review_request.pk)
+        self.assertValidRecipients([
+            review_request.submitter.username,
+            base_review.user.username,
+            reply.user.username,
+        ])
+
+        message = mail.outbox[0].message()
+        self.assertEqual(message['Sender'], self._get_sender(reply.user))
+
+    def test_review_reply_email_with_dmarc_deny(self):
+        """Testing sending an e-mail when replying to a review with From
+        spoofing blocked by DMARC
+        """
+        self.dmarc_txt_records['_dmarc.example.com'] = 'v=DMARC1; p=reject;'
+
+        review_request = self.create_review_request(
+            summary='My test review request')
+        review_request.publish(review_request.submitter)
+
+        base_review = self.create_review(review_request=review_request)
+        base_review.publish()
+
+        # Clear the outbox.
+        mail.outbox = []
+
+        reply = self.create_reply(base_review)
+        reply.publish()
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].from_email, self.sender)
+        self.assertEqual(mail.outbox[0].extra_headers['From'],
+                         'Grumpy Dwarf via Review Board <noreply@example.com>')
         self.assertEqual(mail.outbox[0].subject,
                          'Re: Review Request %s: My test review request'
                          % review_request.pk)
@@ -345,11 +500,40 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
         review_request.email_message_id = "junk"
         review_request.publish(review_request.submitter)
 
-        from_email = get_email_address_for_user(review_request.submitter)
+        from_email = build_email_address_for_user(review_request.submitter)
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
         self.assertEqual(mail.outbox[0].extra_headers['From'], from_email)
+        self.assertEqual(mail.outbox[0].subject,
+                         'Re: Review Request %s: My test review request'
+                         % review_request.pk)
+        self.assertValidRecipients([review_request.submitter.username],
+                                   ['devgroup'])
+
+        message = mail.outbox[0].message()
+        self.assertEqual(message['Sender'],
+                         self._get_sender(review_request.submitter))
+
+    def test_update_review_request_email_with_dmarc_deny(self):
+        """Testing sending an e-mail when updating a review request with
+        From spoofing blocked by DMARC
+        """
+        self.dmarc_txt_records['_dmarc.example.com'] = 'v=DMARC1; p=reject;'
+
+        group = Group.objects.create(name='devgroup',
+                                     mailing_list='devgroup@example.com')
+
+        review_request = self.create_review_request(
+            summary='My test review request')
+        review_request.target_groups.add(group)
+        review_request.email_message_id = "junk"
+        review_request.publish(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].from_email, self.sender)
+        self.assertEqual(mail.outbox[0].extra_headers['From'],
+                         'Doc Dwarf via Review Board <noreply@example.com>')
         self.assertEqual(mail.outbox[0].subject,
                          'Re: Review Request %s: My test review request'
                          % review_request.pk)
@@ -375,7 +559,7 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
         draft.target_people.add(User.objects.get(username='grumpy'))
         draft.publish(user=review_request.submitter)
 
-        from_email = get_email_address_for_user(review_request.submitter)
+        from_email = build_email_address_for_user(review_request.submitter)
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
@@ -412,7 +596,7 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
         draft.target_groups.add(new_group)
         draft.publish(user=review_request.submitter)
 
-        from_email = get_email_address_for_user(review_request.submitter)
+        from_email = build_email_address_for_user(review_request.submitter)
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
@@ -445,7 +629,7 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
         draft.target_people.add(User.objects.get(username='grumpy'))
         draft.publish(user=review_request.submitter)
 
-        from_email = get_email_address_for_user(review_request.submitter)
+        from_email = build_email_address_for_user(review_request.submitter)
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].from_email, self.sender)
@@ -542,7 +726,7 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
 
         self.assertListEqual(
             msg.to,
-            [get_email_address_for_user(reviewer)])
+            [build_email_address_for_user(reviewer)])
 
         self.assertListEqual(msg.cc, [])
 
@@ -603,7 +787,7 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
                                        user=non_site_user2)
         review.publish()
 
-        from_email = get_email_address_for_user(review_request.submitter)
+        from_email = build_email_address_for_user(review_request.submitter)
 
         # Now that we're set up, send another e-mail.
         mail.outbox = []
@@ -996,7 +1180,8 @@ class ReviewRequestEmailTests(EmailTestHelper, SpyAgency, TestCase):
         self.assertNotIn('X-ReviewBoard-ShipIt-Only', message._headers)
 
     def _get_sender(self, user):
-        return build_email_address(user.get_full_name(), self.sender)
+        return build_email_address(full_name=user.get_full_name(),
+                                   email=self.sender)
 
 
 class WebAPITokenEmailTests(EmailTestHelper, TestCase):
@@ -1030,9 +1215,7 @@ class WebAPITokenEmailTests(EmailTestHelper, TestCase):
         self.assertEqual(email.subject, 'New Review Board API token created')
         self.assertEqual(email.from_email, self.sender)
         self.assertEqual(email.extra_headers['From'], settings.SERVER_EMAIL)
-        self.assertEqual(email.to[0],
-                         build_email_address(self.user.get_full_name(),
-                                             self.user.email))
+        self.assertEqual(email.to[0], build_email_address_for_user(self.user))
         self.assertNotIn(webapi_token.token, email.body)
         self.assertNotIn(webapi_token.token, html_body)
         self.assertIn(partial_token, email.body)
@@ -1057,9 +1240,7 @@ class WebAPITokenEmailTests(EmailTestHelper, TestCase):
         self.assertEqual(email.subject, 'Review Board API token updated')
         self.assertEqual(email.from_email, self.sender)
         self.assertEqual(email.extra_headers['From'], settings.SERVER_EMAIL)
-        self.assertEqual(email.to[0],
-                         build_email_address(self.user.get_full_name(),
-                                             self.user.email))
+        self.assertEqual(email.to[0], build_email_address_for_user(self.user))
         self.assertNotIn(webapi_token.token, email.body)
         self.assertNotIn(webapi_token.token, html_body)
         self.assertIn(partial_token, email.body)
@@ -1083,9 +1264,7 @@ class WebAPITokenEmailTests(EmailTestHelper, TestCase):
         self.assertEqual(email.subject, 'Review Board API token deleted')
         self.assertEqual(email.from_email, self.sender)
         self.assertEqual(email.extra_headers['From'], settings.SERVER_EMAIL)
-        self.assertEqual(email.to[0],
-                         build_email_address(self.user.get_full_name(),
-                                             self.user.email))
+        self.assertEqual(email.to[0], build_email_address_for_user(self.user))
         self.assertIn(webapi_token.token, email.body)
         self.assertIn(webapi_token.token, html_body)
         self.assertIn('One of your API tokens has been deleted', email.body)
@@ -1892,7 +2071,7 @@ class EmailUtilsTests(TestCase):
         self.assertEqual(len(addresses), 2)
 
         expected_addresses = set(
-            get_email_address_for_user(u)
+            build_email_address_for_user(u)
             for u in users
         )
 
@@ -1962,7 +2141,7 @@ class EmailUtilsTests(TestCase):
         self.assertEqual(len(addresses), 4)
 
         user_addresses = [
-            get_email_address_for_user(u)
+            build_email_address_for_user(u)
             for u in users
         ]
 
@@ -1994,8 +2173,8 @@ class EmailUtilsTests(TestCase):
         addresses = recipients_to_addresses([group1, group2])
 
         expected_addresses = set([
-            get_email_address_for_user(user1),
-            get_email_address_for_user(user2),
+            build_email_address_for_user(user1),
+            build_email_address_for_user(user2),
         ])
 
         self.assertEqual(addresses, expected_addresses)
@@ -2022,7 +2201,7 @@ class EmailUtilsTests(TestCase):
 
         addresses = recipients_to_addresses([group1, group2])
         self.assertEqual(len(addresses), 1)
-        self.assertEqual(addresses, set([get_email_address_for_user(user1)]))
+        self.assertEqual(addresses, set([build_email_address_for_user(user1)]))
 
     def test_recipients_to_addresses_with_groups_inactive_members(self):
         """Testing generating addresses form recipients that are groups with
@@ -2041,7 +2220,7 @@ class EmailUtilsTests(TestCase):
 
         addresses = recipients_to_addresses([group1, group2])
         self.assertEqual(len(addresses), 1)
-        self.assertEqual(addresses, set([get_email_address_for_user(user1)]))
+        self.assertEqual(addresses, set([build_email_address_for_user(user1)]))
 
     def test_recipients_to_addresses_groups_local_site_inactive_members(self):
         """Testing generating addresses from recipients that are groups in
@@ -2066,7 +2245,7 @@ class EmailUtilsTests(TestCase):
 
         addresses = recipients_to_addresses([group1, group2])
         self.assertEqual(len(addresses), 1)
-        self.assertEqual(addresses, set([get_email_address_for_user(user1)]))
+        self.assertEqual(addresses, set([build_email_address_for_user(user1)]))
 
     @add_fixtures(['test_users'])
     def test_build_recipients_user_receive_email(self):

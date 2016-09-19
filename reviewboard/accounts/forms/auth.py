@@ -94,6 +94,22 @@ class ActiveDirectorySettingsForm(SiteSettingsForm):
 
     class Meta:
         title = _('Active Directory Authentication Settings')
+        fieldsets = (
+            (None, {
+                'fields': ('auth_ad_domain_name',
+                           'auth_ad_use_tls',
+                           'auth_ad_find_dc_from_dns',
+                           'auth_ad_domain_controller'),
+            }),
+            (_('Access Control Settings'), {
+                'fields': ('auth_ad_ou_name',
+                           'auth_ad_group_name'),
+            }),
+            (_('Advanced Settings'), {
+                'fields': ('auth_ad_search_root',
+                           'auth_ad_recursion_depth'),
+            }),
+        )
 
 
 class StandardAuthSettingsForm(SiteSettingsForm):
@@ -147,7 +163,17 @@ class StandardAuthSettingsForm(SiteSettingsForm):
         return key
 
     class Meta:
-        title = _('Basic Authentication Settings')
+        title = _('Registration Settings')
+        fieldsets = (
+            (None, {
+                'fields': ('auth_enable_registration',),
+            }),
+            (_('reCAPTCHA Settings'), {
+                'fields': ('auth_registration_show_captcha',
+                           'recaptcha_public_key',
+                           'recaptcha_private_key'),
+            }),
+        )
 
 
 class HTTPBasicSettingsForm(SiteSettingsForm):
@@ -282,6 +308,24 @@ class LDAPSettingsForm(SiteSettingsForm):
 
     class Meta:
         title = _('LDAP Authentication Settings')
+        fieldsets = (
+            (None, {
+                'fields': ('auth_ldap_uri',
+                           'auth_ldap_tls',
+                           'auth_ldap_anon_bind_uid',
+                           'auth_ldap_anon_bind_passwd',
+                           'auth_ldap_base_dn'),
+            }),
+            (_('User Lookups'), {
+                'fields': ('auth_ldap_uid',
+                           'auth_ldap_given_name_attribute',
+                           'auth_ldap_surname_attribute',
+                           'auth_ldap_full_name_attribute',
+                           'auth_ldap_email_attribute',
+                           'auth_ldap_email_domain',
+                           'auth_ldap_uid_mask'),
+            }),
+        )
 
 
 class LegacyAuthModuleSettingsForm(SiteSettingsForm):

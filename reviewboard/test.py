@@ -67,6 +67,11 @@ class RBTestRunner(DjangoTestSuiteRunner):
         settings.RUNNING_TEST = True
         os.environ[b'RB_RUNNING_TESTS'] = b'1'
 
+        # By default, don't look up DMARC records when generating From
+        # addresses for e-mails. Just assume we can, since we're not
+        # sending anything out. Some unit tests will override this.
+        settings.EMAIL_ENABLE_SMART_SPOOFING = False
+
         self._setup_media_dirs()
 
     def teardown_test_environment(self, *args, **kwargs):
