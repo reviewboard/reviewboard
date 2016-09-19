@@ -6,8 +6,10 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import RequestFactory
+from djblets.util.templatetags.djblets_images import crop_image
 from kgb import SpyAgency
 
+from reviewboard.admin.server import build_server_url
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.models import (ReviewRequest,
                                         ReviewRequestDraft,
@@ -15,6 +17,7 @@ from reviewboard.reviews.models import (ReviewRequest,
 from reviewboard.reviews.ui.base import (FileAttachmentReviewUI,
                                          register_ui,
                                          unregister_ui)
+from reviewboard.reviews.ui.image import ImageReviewUI
 from reviewboard.testing import TestCase
 
 
@@ -246,3 +249,71 @@ class SandboxTests(SpyAgency, TestCase):
         self.assertEqual(len(serial_comments), 0)
 
         self.assertTrue(review_ui.serialize_comment.called)
+
+
+class ImageReviewUITests(TestCase):
+    """Tests for the ImageReviewUI."""
+
+    fixtures = ['test_users']
+
+    def setUp(self):
+        self.review_request = self.create_review_request()
+        self.attachment = self.create_file_attachment(
+            self.review_request)
+        self.review = self.create_review(self.review_request)
+
+    def test_get_comment_thumbnail(self):
+        """Testing ImageReviewUI.get_comment_thumbnail for an image comment"""
+        ui = ImageReviewUI(self.review_request, self.attachment)
+        comment = self.create_file_attachment_comment(
+            self.review,
+            self.attachment,
+            extra_fields={
+                'x': 0,
+                'y': 0,
+                'width': 1,
+                'height': 1,
+            })
+        thumbnail = ui.get_comment_thumbnail(comment)
+
+        self.assertEqual(
+            thumbnail,
+            '<img class="modified-image" src="%s" width="1" height="1"'
+            ' alt="%s" />'
+            % (build_server_url(crop_image(self.attachment.file, 0, 0, 1, 1)),
+               comment.text)
+        )
+
+    def test_get_comment_thumbnail_diff(self):
+        """Testing ImageReviewUI.get_comment_thumbnail for an image diff
+        comment
+        """
+        diff_attachment = self.create_file_attachment(self.review_request)
+
+        ui = ImageReviewUI(self.review_request, self.attachment)
+        ui.set_diff_against(diff_attachment)
+
+        comment = self.create_file_attachment_comment(
+            self.review,
+            self.attachment,
+            diff_attachment,
+            extra_fields={
+                'x': 0,
+                'y': 0,
+                'width': 1,
+                'height': 1,
+            })
+        thumbnail = ui.get_comment_thumbnail(comment)
+
+        self.assertEqual(
+            thumbnail,
+            '<div class="image-review-ui-diff-thumbnail">'
+            '<img class="orig-image" src="%s" width="1" height="1" alt="%s" />'
+            '<img class="modified-image" src="%s" width="1" height="1"'
+            ' alt="%s" />'
+            '</div>'
+            % (build_server_url(crop_image(diff_attachment.file, 0, 0, 1, 1)),
+               comment.text,
+               build_server_url(crop_image(self.attachment.file, 0, 0, 1, 1)),
+               comment.text)
+        )
