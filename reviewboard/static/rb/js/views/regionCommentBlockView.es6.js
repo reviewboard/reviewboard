@@ -327,7 +327,7 @@ RB.RegionCommentBlockView = RB.AbstractCommentBlockView.extend({
      *
      * Args:
      *     scale (number):
-     *         A scale multiplier. 1.0 is a 1:1 pixel ratio, 0.5 is displayed
+     *         A scaling factor. 1.0 is a 1:1 pixel ratio, 0.5 is displayed
      *         at half size, etc.
      */
     setScale(scale) {
