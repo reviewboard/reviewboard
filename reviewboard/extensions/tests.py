@@ -9,6 +9,7 @@ from django.test.client import RequestFactory
 from django.utils import six
 from djblets.extensions.manager import ExtensionManager
 from djblets.extensions.models import RegisteredExtension
+from djblets.mail.utils import build_email_address_for_user
 from djblets.siteconfig.models import SiteConfiguration
 from kgb import SpyAgency
 
@@ -36,7 +37,6 @@ from reviewboard.extensions.hooks import (AdminWidgetHook,
                                           WebAPICapabilitiesHook)
 from reviewboard.hostingsvcs.service import (get_hosting_service,
                                              HostingService)
-from reviewboard.notifications.email import get_email_address_for_user
 from reviewboard.testing.testcase import TestCase
 from reviewboard.reviews.models.review_request import ReviewRequest
 from reviewboard.reviews.fields import (BaseReviewRequestField,
@@ -938,7 +938,7 @@ class EmailHookTests(SpyAgency, TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to,
-                         [get_email_address_for_user(admin)])
+                         [build_email_address_for_user(admin)])
         self.assertTrue(hook.get_to_field.spy.called)
         self.assertEqual(hook.get_to_field.spy.calls[0].kwargs, call_kwargs)
         self.assertTrue(hook.get_cc_field.spy.called)
@@ -973,7 +973,7 @@ class EmailHookTests(SpyAgency, TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to,
-                         [get_email_address_for_user(admin)])
+                         [build_email_address_for_user(admin)])
         self.assertTrue(hook.get_to_field.spy.called)
         self.assertEqual(hook.get_to_field.spy.calls[0].kwargs, call_kwargs)
         self.assertTrue(hook.get_cc_field.spy.called)

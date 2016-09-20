@@ -39,7 +39,7 @@ from reviewboard.webapi.models import WebAPIToken
 _CONSOLE_EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 
-class EmailTestHelper(DmarcDnsTestsMixin):
+class EmailTestHelper(object):
     def setUp(self):
         super(EmailTestHelper, self).setUp()
 
@@ -115,7 +115,8 @@ class UserEmailTests(EmailTestHelper, TestCase):
                                              email=admin_email_addr))
 
 
-class ReviewRequestEmailTests(EmailTestHelper, TestCase):
+class ReviewRequestEmailTests(EmailTestHelper, DmarcDnsTestsMixin, SpyAgency,
+                              TestCase):
     """Tests the e-mail support."""
 
     fixtures = ['test_users']
