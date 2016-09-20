@@ -46,9 +46,9 @@ from reviewboard.hostingsvcs.service import (get_hosting_service,
 from reviewboard.reviews.actions import (BaseReviewRequestAction,
                                          BaseReviewRequestMenuAction,
                                          clear_all_actions)
+from reviewboard.reviews.models.review_request import ReviewRequest
 from reviewboard.reviews.fields import (BaseReviewRequestField,
                                         BaseReviewRequestFieldSet)
-from reviewboard.reviews.models import ReviewRequest
 from reviewboard.reviews.signals import (review_request_published,
                                          review_published, reply_published,
                                          review_request_closed)
