@@ -42,7 +42,9 @@
  </div>
 {%   endif %}
 {%   with auth_form as form %}
-{%    include "siteconfig/settings_fieldsets.html" %}
+{%    for field in auth_form %}
+{%     include "siteconfig/settings_field.html" %}
+{%    endfor %}
 {%   endwith %}
 </fieldset>
 {%  endfor %}

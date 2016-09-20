@@ -16,8 +16,6 @@ from django.utils import six, timezone
 from django.utils.datastructures import MultiValueDict
 from django.utils.six.moves.urllib.parse import urljoin
 from djblets.mail.message import EmailMessage as DjbletsEmailMessage
-from djblets.mail.utils import (build_email_address,
-                                build_email_address_for_user)
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.auth.signals import user_registered
 
@@ -215,6 +213,35 @@ def connect_signals():
     post_delete.connect(webapi_token_deleted_cb, sender=WebAPIToken)
 
 
+def build_email_address(fullname, email):
+    """Build an e-mail address for the name and e-mail address.
+
+    Args:
+        fullname (unicode):
+            The full name associated with the e-mail address (or ``None``).
+
+        email (unicode):
+            The e-mail address.
+
+    Returns:
+        unicode: A properly formatted e-mail address.
+    """
+    return formataddr((fullname, email))
+
+
+def get_email_address_for_user(user):
+    """Build an e-mail address for the given user.
+
+    Args:
+        user (django.contrib.auth.models.User):
+            The user.
+
+    Returns:
+        unicode: A properly formatted e-mail address for the user.
+    """
+    return build_email_address(user.get_full_name(), user.email)
+
+
 def get_email_addresses_for_group(group, review_request_id=None):
     """Build a list of e-mail addresses for the group.
 
@@ -232,8 +259,8 @@ def get_email_addresses_for_group(group, review_request_id=None):
         if ',' not in group.mailing_list:
             # The mailing list field has only one e-mail address in it,
             # so we can just use that and the group's display name.
-            addresses =  [build_email_address(full_name=group.display_name,
-                                              email=group.mailing_list)]
+            addresses =  [build_email_address(group.display_name,
+                                              group.mailing_list)]
         else:
             # The mailing list field has multiple e-mail addresses in it.
             # We don't know which one should have the group's display name
@@ -264,7 +291,7 @@ def get_email_addresses_for_group(group, review_request_id=None):
             })
 
         addresses.extend([
-            build_email_address_for_user(u)
+            get_email_address_for_user(u)
             for u in users
             if (u.should_send_email() and
                 (not review_request_id or
@@ -460,7 +487,7 @@ def recipients_to_addresses(recipients, review_request_id=None):
         assert isinstance(recipient, User) or isinstance(recipient, Group)
 
         if isinstance(recipient, User):
-            addresses.add(build_email_address_for_user(recipient))
+            addresses.add(get_email_address_for_user(recipient))
         else:
             addresses.update(get_email_addresses_for_group(recipient,
                                                            review_request_id))
@@ -515,13 +542,13 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     """
     current_site = Site.objects.get_current()
     local_site = review_request.local_site
-    from_email = build_email_address_for_user(user)
+    from_email = get_email_address_for_user(user)
 
     to_field = recipients_to_addresses(to_field, review_request.id)
     cc_field = recipients_to_addresses(cc_field, review_request.id) - to_field
 
     if not user.should_send_own_updates():
-        user_email = build_email_address_for_user(user)
+        user_email = get_email_address_for_user(user)
         to_field.discard(user_email)
         cc_field.discard(user_email)
 
@@ -583,34 +610,34 @@ def send_review_mail(user, review_request, subject, in_reply_to,
         for filename in modified_files:
             headers.appendlist('X-ReviewBoard-Diff-For', filename)
 
-    subject = subject.strip()
-    to_field = list(to_field)
-    cc_field = list(cc_field)
+    sender = None
 
     if settings.DEFAULT_FROM_EMAIL:
-        sender = build_email_address(full_name=user.get_full_name(),
-                                     email=settings.DEFAULT_FROM_EMAIL)
-    else:
-        sender = None
+        sender = build_email_address(user.get_full_name(),
+                                     settings.DEFAULT_FROM_EMAIL)
 
-    message = EmailMessage(subject=subject,
+        if sender == from_email:
+            # RFC 2822 states that we should only include Sender if the
+            # two are not equal.
+            sender = None
+
+    message = EmailMessage(subject=subject.strip(),
                            text_body=text_body.encode('utf-8'),
                            html_body=html_body.encode('utf-8'),
                            from_email=from_email,
                            sender=sender,
-                           to=to_field,
-                           cc=cc_field,
+                           to=list(to_field),
+                           cc=list(cc_field),
                            in_reply_to=in_reply_to,
                            headers=headers)
-
     try:
         message.send()
     except Exception:
         logging.exception("Error sending e-mail notification with subject "
                           "'%s' on behalf of '%s' to '%s'",
-                          subject,
+                          subject.strip(),
                           from_email,
-                          ','.join(to_field + cc_field))
+                          ','.join(list(to_field) + list(cc_field)))
 
     return message.message_id
 
@@ -859,7 +886,7 @@ def mail_new_user(user):
     siteconfig = SiteConfiguration.objects.get_current()
     domain_method = siteconfig.get("site_domain_method")
     subject = "New Review Board user registration for %s" % user.username
-    from_email = build_email_address_for_user(user)
+    from_email = get_email_address_for_user(user)
 
     context = {
         'domain': current_site.domain,
@@ -879,11 +906,7 @@ def mail_new_user(user):
         html_body=html_message,
         from_email=settings.SERVER_EMAIL,
         sender=settings.SERVER_EMAIL,
-        to=[
-            build_email_address(full_name=admin[0],
-                                email=admin[1])
-            for admin in settings.ADMINS
-        ])
+        to=[build_email_address(*a) for a in settings.ADMINS])
 
     try:
         message.send()
@@ -928,7 +951,7 @@ def mail_webapi_token(webapi_token, op):
     siteconfig = SiteConfiguration.objects.get_current()
     domain_method = siteconfig.get('site_domain_method')
     user = webapi_token.user
-    user_email = build_email_address_for_user(user)
+    user_email = get_email_address_for_user(user)
 
     context = {
         'api_token': webapi_token,
