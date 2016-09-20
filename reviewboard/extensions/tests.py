@@ -10,6 +10,7 @@ from django.utils import six
 from djblets.extensions.extension import ExtensionInfo
 from djblets.extensions.manager import ExtensionManager
 from djblets.extensions.models import RegisteredExtension
+from djblets.mail.utils import build_email_address_for_user
 from djblets.registries.errors import AlreadyRegisteredError, RegistrationError
 from djblets.siteconfig.models import SiteConfiguration
 from kgb import SpyAgency
@@ -42,13 +43,12 @@ from reviewboard.extensions.hooks import (AdminWidgetHook,
                                           WebAPICapabilitiesHook)
 from reviewboard.hostingsvcs.service import (get_hosting_service,
                                              HostingService)
-from reviewboard.notifications.email import get_email_address_for_user
 from reviewboard.reviews.actions import (BaseReviewRequestAction,
                                          BaseReviewRequestMenuAction,
                                          clear_all_actions)
+from reviewboard.reviews.models.review_request import ReviewRequest
 from reviewboard.reviews.fields import (BaseReviewRequestField,
                                         BaseReviewRequestFieldSet)
-from reviewboard.reviews.models import ReviewRequest
 from reviewboard.reviews.signals import (review_request_published,
                                          review_published, reply_published,
                                          review_request_closed)
@@ -1505,7 +1505,7 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to,
-                         [get_email_address_for_user(admin)])
+                         [build_email_address_for_user(admin)])
         self.assertTrue(hook.get_to_field.spy.called)
         self.assertEqual(hook.get_to_field.spy.calls[0].kwargs, call_kwargs)
         self.assertTrue(hook.get_cc_field.spy.called)
@@ -1540,7 +1540,7 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
 
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to,
-                         [get_email_address_for_user(admin)])
+                         [build_email_address_for_user(admin)])
         self.assertTrue(hook.get_to_field.spy.called)
         self.assertEqual(hook.get_to_field.spy.calls[0].kwargs, call_kwargs)
         self.assertTrue(hook.get_cc_field.spy.called)

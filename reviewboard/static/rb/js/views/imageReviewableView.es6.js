@@ -134,10 +134,51 @@ const BaseImageView = Backbone.View.extend({
     /**
      * Callback handler for when the images on the view are loaded.
      *
-     * By default, this doesn't do anything. Subclasses can override this
-     * to provide logic dependent on loaded images.
+     * Subclasses that override this method must call the base method so that
+     * images can be scaled appropriately.
      */
     onImagesLoaded() {
+        let scale = null;
+
+        /*
+         * If the image is obviously a 2x or 3x pixel ratio, pre-select the
+         * right scaling factor.
+         *
+         * Otherwise, we select the largest scaling factor that allows the
+         * entire image to be shown (or the smallest scaling factor if the
+         * scaled image is still too large).
+         */
+        const filename = this.model.get('filename');
+
+        /*
+         * The `filename` attribute does not exist for screenshots, so we need
+         * to check it.
+         */
+        if (filename) {
+            if (filename.includes('@2x.')) {
+                scale = 0.5;
+            } else if (filename.includes('@3x.')) {
+                scale = 0.33;
+            }
+        }
+
+        if (scale === null) {
+            const {width} = this.getInitialSize();
+            const maxWidth = this.$el.closest('.image-content').width();
+            const scales = Array
+                .from(scalingFactors.keys())
+                .filter(f => (f <= 1));
+
+            for (let i = scales.length - 1; i >= 0; i--) {
+                scale = scales[i];
+
+                if (width * scale <= maxWidth) {
+                    break;
+                }
+            }
+        }
+
+        this.model.set('scale', scale);
     },
 
     /**
@@ -157,6 +198,20 @@ const BaseImageView = Backbone.View.extend({
                 height: $image.data('initial-height') * scale,
             });
         });
+    },
+
+    /**
+     * Return the initial size of the image.
+     *
+     * Subclasses must override this.
+     *
+     * Returns:
+     *     object:
+     *     An object containing the initial height and width of the image.
+     */
+    getInitialSize() {
+        console.assert(
+            false, 'subclass of BaseImageView must implement getInitialSize');
     },
 });
 
@@ -180,7 +235,7 @@ const ImageAttachmentView = BaseImageView.extend({
      */
     render() {
         this.$el.attr({
-            caption: this.model.get('caption'),
+            title: this.model.get('caption'),
             src: this.model.get('imageURL')
         });
 
@@ -189,7 +244,25 @@ const ImageAttachmentView = BaseImageView.extend({
         this.loadImages(this.$el);
 
         return this;
-    }
+    },
+
+    /**
+     * Return the initial size of the image.
+     *
+     * Subclasses must override this.
+     *
+     * Returns:
+     *     object:
+     *     An object containing the initial height and width of the image.
+     */
+    getInitialSize() {
+        const $img = this._$images.eq(0);
+
+        return {
+            width: $img.data('initial-width'),
+            height: $img.height('initial-height'),
+        }
+    },
 });
 
 
@@ -261,6 +334,9 @@ const ImageDifferenceDiffView = BaseImageView.extend({
 
         this._maxWidth = Math.max(origImage.width, modifiedImage.width);
         this._maxHeight = Math.max(origImage.height, modifiedImage.height);
+
+        _super(this).onImagesLoaded.call(this);
+
         this._$canvas
             .attr({
                 width: this._maxWidth,
@@ -318,7 +394,21 @@ const ImageDifferenceDiffView = BaseImageView.extend({
             width: this._maxWidth * scale + 'px',
             height: this._maxHeight * scale + 'px',
         });
-    }
+    },
+
+    /**
+     * Return the initial size of the image.
+     *
+     * Returns:
+     *     object:
+     *     An object containing the initial height and width of the image.
+     */
+    getInitialSize() {
+        return {
+            width: this._maxWidth,
+            height: this._maxHeight,
+        };
+    },
 });
 
 
@@ -337,10 +427,10 @@ const ImageOnionDiffView = BaseImageView.extend({
     template: _.template([
         '<div class="image-containers">',
         ' <div class="orig-image">',
-        '  <img caption="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
+        '  <img title="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
         ' </div>',
         ' <div class="modified-image">',
-        '  <img caption="<%- caption %>" src="<%- imageURL %>" />',
+        '  <img title="<%- caption %>" src="<%- imageURL %>" />',
         ' </div>',
         '</div>',
         '<div class="image-slider"></div>'
@@ -407,6 +497,7 @@ const ImageOnionDiffView = BaseImageView.extend({
      * same width and height.
      */
     onImagesLoaded() {
+        _super(this).onImagesLoaded.call(this);
         this._resize();
     },
 
@@ -444,7 +535,23 @@ const ImageOnionDiffView = BaseImageView.extend({
         this.$('.image-containers')
             .width(Math.max(origW, newW))
             .height(Math.max(origH, newH));
-    }
+    },
+
+    /**
+     * Return the initial size of the image.
+     *
+     * Returns:
+     *     object:
+     *     An object containing the initial height and width of the image.
+     */
+    getInitialSize() {
+        return {
+            width: Math.max(this._$origImage.data('initial-width'),
+                            this._$modifiedImage.data('initial-width')),
+            height: Math.max(this._$originalImage.data('initial-height'),
+                             this._$modifiedImage.data('initial-height')),
+        };
+    },
 });
 
 
@@ -463,12 +570,12 @@ const ImageSplitDiffView = BaseImageView.extend({
         '<div class="image-containers">',
         ' <div class="image-diff-split-container-orig">',
         '  <div class="orig-image">',
-        '   <img caption="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
+        '   <img title="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
         '  </div>',
         ' </div>',
         ' <div class="image-diff-split-container-modified">',
         '  <div class="modified-image">',
-        '   <img caption="<%- caption %>" src="<%- imageURL %>" />',
+        '   <img title="<%- caption %>" src="<%- imageURL %>" />',
         '  </div>',
         ' </div>',
         '</div>',
@@ -543,6 +650,7 @@ const ImageSplitDiffView = BaseImageView.extend({
      * position the slider's handle with the divider between images.
      */
     onImagesLoaded() {
+        _super(this).onImagesLoaded.call(this);
         this._resize();
     },
 
@@ -573,6 +681,7 @@ const ImageSplitDiffView = BaseImageView.extend({
         const maxOuterH = maxH + $origImageContainer.getExtents('b', 'tb');
 
         this._maxWidth = Math.max(origW, newW);
+        this._maxHeight = Math.max(origH, newH);
 
         $origImageContainer
             .outerWidth(origW)
@@ -598,7 +707,21 @@ const ImageSplitDiffView = BaseImageView.extend({
 
         /* Now that these are loaded, set the default for the split. */
         this.setSplitPercentage(this.DEFAULT_SPLIT_PCT);
-    }
+    },
+
+    /**
+     * Return the initial size of the image.
+     *
+     * Returns:
+     *     object:
+     *     An object containing the initial height and width of the image.
+     */
+    getInitialSize() {
+        return {
+            width: this._maxWidth,
+            height: this._maxHeight,
+        };
+    },
 });
 
 
@@ -615,12 +738,12 @@ const ImageTwoUpDiffView = BaseImageView.extend({
     template: _.template([
         '<div class="image-container image-container-orig">',
         ' <div class="orig-image">',
-        '  <img caption="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
+        '  <img title="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
         ' </div>',
         '</div>',
         '<div class="image-container image-container-modified">',
         ' <div class="modified-image">',
-        '  <img caption="<%- caption %>" src="<%- imageURL %>" />',
+        '  <img title="<%- caption %>" src="<%- imageURL %>" />',
         ' </div>',
         '</div>'
     ].join('')),
@@ -636,10 +759,29 @@ const ImageTwoUpDiffView = BaseImageView.extend({
         this.$el.html(this.template(this.model.attributes));
         this.$commentRegion = this.$('.modified-image img');
 
+        this._$origImage = this.$('.orig-image img');
+        this._$modifiedImage = this.$('.modified-image img');
+
         this.loadImages(this.$('img'));
 
         return this;
-    }
+    },
+
+    /**
+     * Return the initial size of the image.
+     *
+     * Returns:
+     *     object:
+     *     An object containing the initial height and width of the image.
+     */
+    getInitialSize() {
+        return {
+            width: Math.max(this._$origImage.data('initial-width'),
+                            this._$modifiedImage.data('initial-width')),
+            height: Math.max(this._$origImage.data('initial-height'),
+                             this._$modifiedImage.data('initial-height')),
+        };
+    },
 });
 
 
@@ -929,26 +1071,6 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         } else {
             this.$('.caption').after($resolutionMenu);
         }
-
-        /*
-         * If the image is obviously a 2x or 3x pixel ratio, pre-select the
-         * right zoom level.
-         */
-        const filename = this.model.get('filename');
-
-        /*
-         * The `filename` attribute doesn't exist for screenshots, so we need
-         * to check it.
-         */
-        if (filename) {
-            if (filename.includes('@2x.')) {
-                this.$('#image-resolution-zoom-2x').click();
-            } else if (filename.includes('@3x.')) {
-                this.$('#image-resolution-zoom-3x').click();
-            }
-        }
-
-        return this;
     },
 
     /**
