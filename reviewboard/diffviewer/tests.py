@@ -3806,6 +3806,115 @@ class DiffUtilsTests(TestCase):
             ])
 
     @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_matched_interdiff_files_with_added_left_only(self):
+        """Testing get_matched_interdiff_files with file added in left only"""
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=PRE_CREATION,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        filediff2 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            diff='diff2')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        interfilediff1 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='interdiff1')
+
+        interfilediff2 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo2.txt',
+            source_revision=PRE_CREATION,
+            dest_file='foo3.txt',
+            diff='interdiff2')
+
+        matched_files = get_matched_interdiff_files(
+            tool=repository.get_scmtool(),
+            filediffs=[filediff1, filediff2],
+            interfilediffs=[interfilediff1, interfilediff2])
+
+        self.assertEqual(
+            list(matched_files),
+            [
+                (filediff1, interfilediff1),
+                (filediff2, None),
+                (None, interfilediff2),
+            ])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_matched_interdiff_files_with_deleted_right_only(self):
+        """Testing get_matched_interdiff_files with file deleted in right only
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision='123',
+            dest_file='foo.txt',
+            diff='diff1')
+
+        filediff2 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            status=FileDiff.DELETED,
+            diff='diff2')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        interfilediff1 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            status=FileDiff.DELETED,
+            diff='interdiff1')
+
+        interfilediff2 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo3.txt',
+            diff='interdiff2')
+
+        matched_files = get_matched_interdiff_files(
+            tool=repository.get_scmtool(),
+            filediffs=[filediff1, filediff2],
+            interfilediffs=[interfilediff1, interfilediff2])
+
+        self.assertEqual(
+            list(matched_files),
+            [
+                (filediff1, interfilediff1),
+                (filediff2, None),
+                (None, interfilediff2),
+            ])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
     def test_get_matched_interdiff_files_with_same_names_multiple_ops(self):
         """Testing get_matched_interdiff_files with same names and multiple
         operation (pathological case)

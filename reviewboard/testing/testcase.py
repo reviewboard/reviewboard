@@ -322,6 +322,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             **kwargs)
 
     def create_file_attachment_comment(self, review, file_attachment,
+                                       diff_against_file_attachment=None,
                                        text='My comment', issue_opened=False,
                                        extra_fields=None, reply_to=None):
         """Creates a FileAttachmentComment for testing.
@@ -336,6 +337,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         comment = FileAttachmentComment(
             file_attachment=file_attachment,
+            diff_against_file_attachment=diff_against_file_attachment,
             text=text,
             issue_opened=issue_opened,
             issue_status=issue_status,

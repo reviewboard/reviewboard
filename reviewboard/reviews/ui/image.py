@@ -74,6 +74,10 @@ class ImageReviewUI(FileAttachmentReviewUI):
                 comment.diff_against_file_attachment.file,
                 x, y, width, height)
 
+            if not urlparse(diff_against_image_url).netloc:
+                diff_against_image_url = build_server_url(
+                    diff_against_image_url)
+
             diff_against_image_html = (
                 '<img class="orig-image" src="%s" width="%s" '
                 'height="%s" alt="%s" />'

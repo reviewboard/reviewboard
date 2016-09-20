@@ -235,7 +235,7 @@ const ImageAttachmentView = BaseImageView.extend({
      */
     render() {
         this.$el.attr({
-            caption: this.model.get('caption'),
+            title: this.model.get('caption'),
             src: this.model.get('imageURL')
         });
 
@@ -427,10 +427,10 @@ const ImageOnionDiffView = BaseImageView.extend({
     template: _.template([
         '<div class="image-containers">',
         ' <div class="orig-image">',
-        '  <img caption="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
+        '  <img title="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
         ' </div>',
         ' <div class="modified-image">',
-        '  <img caption="<%- caption %>" src="<%- imageURL %>" />',
+        '  <img title="<%- caption %>" src="<%- imageURL %>" />',
         ' </div>',
         '</div>',
         '<div class="image-slider"></div>'
@@ -570,12 +570,12 @@ const ImageSplitDiffView = BaseImageView.extend({
         '<div class="image-containers">',
         ' <div class="image-diff-split-container-orig">',
         '  <div class="orig-image">',
-        '   <img caption="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
+        '   <img title="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
         '  </div>',
         ' </div>',
         ' <div class="image-diff-split-container-modified">',
         '  <div class="modified-image">',
-        '   <img caption="<%- caption %>" src="<%- imageURL %>" />',
+        '   <img title="<%- caption %>" src="<%- imageURL %>" />',
         '  </div>',
         ' </div>',
         '</div>',
@@ -738,12 +738,12 @@ const ImageTwoUpDiffView = BaseImageView.extend({
     template: _.template([
         '<div class="image-container image-container-orig">',
         ' <div class="orig-image">',
-        '  <img caption="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
+        '  <img title="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
         ' </div>',
         '</div>',
         '<div class="image-container image-container-modified">',
         ' <div class="modified-image">',
-        '  <img caption="<%- caption %>" src="<%- imageURL %>" />',
+        '  <img title="<%- caption %>" src="<%- imageURL %>" />',
         ' </div>',
         '</div>'
     ].join('')),
