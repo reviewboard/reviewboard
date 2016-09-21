@@ -548,7 +548,7 @@ const ImageOnionDiffView = BaseImageView.extend({
         return {
             width: Math.max(this._$origImage.data('initial-width'),
                             this._$modifiedImage.data('initial-width')),
-            height: Math.max(this._$originalImage.data('initial-height'),
+            height: Math.max(this._$origImage.data('initial-height'),
                              this._$modifiedImage.data('initial-height')),
         };
     },
