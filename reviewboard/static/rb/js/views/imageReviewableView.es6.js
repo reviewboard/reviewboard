@@ -1060,7 +1060,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         ].join(''));
         const $menu = $resolutionMenu.find('.menu');
 
-        scalingFactors.forEach((scale, text) => {
+        scalingFactors.forEach((text, scale) => {
             $(`<li class="menu-item" data-image-scale="${scale}" />`)
                 .text(text)
                 .appendTo($menu);
