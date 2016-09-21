@@ -15,6 +15,7 @@ from reviewboard.reviews.fields import (BaseEditableField,
                                         BaseReviewRequestField,
                                         get_review_request_fieldset)
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
+from reviewboard.reviews.signals import review_request_published
 from reviewboard.webapi.errors import NOTHING_TO_PUBLISH
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -940,6 +941,80 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.assertTrue(review_request.public)
 
         self.assertEqual(len(mail.outbox), 0)
+
+    @add_fixtures(['test_scmtools'])
+    def test_put_with_publish_and_signal_handler_with_queries(self):
+        """Testing the PUT review-requests/<id>/draft/?public=1 API with
+        review_request_published signal handlers needing to fetch latest
+        changedescs/diffsets
+        """
+        # We had a bug where diffset and changedesc information was cached
+        # prior to publishing through the API, and was then stale when handled
+        # by signal handlers. This change checks to ensure that state is
+        # always fresh.
+
+        def _on_published(review_request, *args, **kwargs):
+            # Note that we're explicitly checking all() and not count() here
+            # and below, because this is what was impacted by the bug before.
+            self.assertEqual(len(review_request.changedescs.all()),
+                             expected_changedesc_count)
+            self.assertEqual(
+                len(review_request.diffset_history.diffsets.all()),
+                expected_diffset_count)
+
+        expected_changedesc_count = 0
+        expected_diffset_count = 0
+
+        review_request_published.connect(_on_published, weak=True)
+        self.spy_on(_on_published)
+
+        review_request = self.create_review_request(submitter=self.user,
+                                                    create_repository=True)
+        draft_url = get_review_request_draft_url(review_request)
+
+        # First, we're going to try publishing an initial draft. There should
+        # be 1 diffset upon publish, and 0 changedescs.
+        draft = ReviewRequestDraft.create(review_request)
+        draft.summary = 'My Summary'
+        draft.description = 'My Description'
+        draft.testing_done = 'My Testing Done'
+        draft.branch = 'My Branch'
+        draft.target_people.add(User.objects.get(username='doc'))
+        draft.save()
+        diffset = self.create_diffset(review_request, draft=True)
+        self.create_filediff(diffset)
+
+        self.assertEqual(len(review_request.changedescs.all()),
+                         expected_changedesc_count)
+        self.assertEqual(len(review_request.diffset_history.diffsets.all()),
+                         expected_diffset_count)
+
+        expected_diffset_count += 1
+
+        rsp = self.api_put(
+            draft_url,
+            {'public': True},
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue(_on_published.spy.called)
+
+        _on_published.spy.reset_calls()
+
+        # Now try posting an update. There should be 1 changedesc, 2 diffsets.
+        diffset = self.create_diffset(review_request, draft=True)
+        self.create_filediff(diffset)
+
+        expected_changedesc_count += 1
+        expected_diffset_count += 1
+
+        rsp = self.api_put(
+            draft_url,
+            {'public': True},
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertTrue(_on_published.spy.called)
 
     def test_put_with_numeric_extra_data(self):
         """Testing the PUT review-requests/<id>/draft/ API with numeric
