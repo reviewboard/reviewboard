@@ -479,15 +479,35 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 local_site=local_site,
                 extra_query=q,
                 show_all_unpublished=show_all_unpublished)
+
+            # Only select/prefetch these for list resources, since we want to
+            # reduce the number of queries. We don't want to do this when
+            # retrieving individual items, as they'd end up stuck with
+            # prefetched state, which could impact things when handling
+            # PUT/DELETE operations.
+            #
+            # Here's a real-world example (which is interesting enough to
+            # talk about): We had a bug before when the prefetching was done
+            # for item resources where a publish on the draft resource would
+            # fetch the review request from this resource (going through this
+            # function and therefore prefetching), and then the publish
+            # operation would associate the new diffset and then emit the
+            # review_request_published signal. Handlers listening to this that
+            # tried to fetch diffsets (Review Bot, in our case) would not see
+            # the new diffset.
+            #
+            # By having this only in the list condition, we get the perforamnce
+            # benefits we wanted without triggering that sort of bug.
+            queryset = (
+                queryset
+                .select_related('diffset_history')
+                .prefetch_related('changedescs',
+                                  'diffset_history__diffsets')
+            )
         else:
             queryset = self.model.objects.filter(local_site=local_site)
 
-        return (
-            queryset
-            .select_related('diffset_history')
-            .prefetch_related('changedescs',
-                              'diffset_history__diffsets')
-        )
+        return queryset
 
     def has_access_permissions(self, request, review_request, *args, **kwargs):
         return review_request.is_accessible_by(request.user)

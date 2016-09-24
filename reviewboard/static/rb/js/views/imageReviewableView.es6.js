@@ -548,7 +548,7 @@ const ImageOnionDiffView = BaseImageView.extend({
         return {
             width: Math.max(this._$origImage.data('initial-width'),
                             this._$modifiedImage.data('initial-width')),
-            height: Math.max(this._$originalImage.data('initial-height'),
+            height: Math.max(this._$origImage.data('initial-height'),
                              this._$modifiedImage.data('initial-height')),
         };
     },
@@ -1060,7 +1060,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         ].join(''));
         const $menu = $resolutionMenu.find('.menu');
 
-        scalingFactors.forEach((scale, text) => {
+        scalingFactors.forEach((text, scale) => {
             $(`<li class="menu-item" data-image-scale="${scale}" />`)
                 .text(text)
                 .appendTo($menu);

@@ -54,8 +54,11 @@ class DefaultReviewerForm(forms.ModelForm):
                     'all repositories.'),
         widget=FilteredSelectMultiple(_("Repositories"), False))
 
-    def __init__(self, local_site=None, local_site_name=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(DefaultReviewerForm, self).__init__(*args, **kwargs)
+
+        local_site_name = kwargs.get('local_site_name')
+        local_site = kwargs.get('local_site')
 
         if local_site:
             local_site_name = local_site.name
@@ -85,7 +88,7 @@ class DefaultReviewerForm(forms.ModelForm):
                 ])
                 break
 
-        return self.cleaned_data
+        return super(DefaultReviewerForm, self).clean()
 
     class Meta:
         model = DefaultReviewer
@@ -98,14 +101,16 @@ class GroupForm(forms.ModelForm):
         required=False,
         widget=RelatedUserWidget())
 
-    def __init__(self, local_site_name=None, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(GroupForm, self).__init__(*args, **kwargs)
-        self.fields['users'].widget.local_site_name = local_site_name
+        self.fields['users'].widget.local_site_name = \
+            kwargs.get('local_site_name')
 
     def clean(self):
         validate_users(self)
 
-        return self.cleaned_data
+        return super(GroupForm, self).clean()
+
 
     class Meta:
         model = Group

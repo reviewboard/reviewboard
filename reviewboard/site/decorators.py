@@ -57,8 +57,12 @@ def check_localsite_admin(view_func):
                                               RequestContext(request))
                 response.status_code = 403
                 return response
+        else:
+            local_site = None
 
-        return view_func(request, local_site_name=local_site_name,
+        return view_func(request,
+                         local_site_name=local_site_name,
+                         local_site=local_site,
                          *args, **kwargs)
 
     return _check
