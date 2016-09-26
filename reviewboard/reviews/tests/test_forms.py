@@ -34,7 +34,7 @@ class DefaultReviewerFormTests(TestCase):
             'repository': [repo.pk],
             'people': [user.pk],
             'groups': [group.pk],
-        })
+        }, local_site=test_site)
         self.assertTrue(form.is_valid())
         default_reviewer = form.save()
 
@@ -134,7 +134,7 @@ class GroupFormTests(TestCase):
             'display_name': 'Test',
             'local_site': test_site.pk,
             'users': [user.pk],
-        })
+        }, local_site_name=test_site.name)
         self.assertTrue(form.is_valid())
         group = form.save()
 
