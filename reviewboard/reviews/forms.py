@@ -55,10 +55,10 @@ class DefaultReviewerForm(forms.ModelForm):
         widget=FilteredSelectMultiple(_("Repositories"), False))
 
     def __init__(self, *args, **kwargs):
-        super(DefaultReviewerForm, self).__init__(*args, **kwargs)
+        local_site_name = kwargs.pop('local_site_name', None)
+        local_site = kwargs.pop('local_site', None)
 
-        local_site_name = kwargs.get('local_site_name')
-        local_site = kwargs.get('local_site')
+        super(DefaultReviewerForm, self).__init__(*args, **kwargs)
 
         if local_site:
             local_site_name = local_site.name
@@ -102,9 +102,10 @@ class GroupForm(forms.ModelForm):
         widget=RelatedUserWidget())
 
     def __init__(self, *args, **kwargs):
+        local_site_name = kwargs.pop('local_site_name', None)
+
         super(GroupForm, self).__init__(*args, **kwargs)
-        self.fields['users'].widget.local_site_name = \
-            kwargs.get('local_site_name')
+        self.fields['users'].widget.local_site_name = local_site_name
 
     def clean(self):
         validate_users(self)
