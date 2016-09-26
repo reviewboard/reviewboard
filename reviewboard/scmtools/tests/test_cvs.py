@@ -382,8 +382,7 @@ class CVSTests(SCMTestCase):
 
     def test_interface(self):
         """Testing basic CVSTool API"""
-        self.assertEqual(self.tool.get_diffs_use_absolute_paths(), True)
-        self.assertEqual(self.tool.get_fields(), ['diff_path'])
+        self.assertTrue(self.tool.diffs_use_absolute_paths)
 
     def test_simple_diff(self):
         """Testing parsing CVS simple diff"""

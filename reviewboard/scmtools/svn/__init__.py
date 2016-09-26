@@ -323,9 +323,6 @@ class SVNTool(SCMTool):
     def get_repository_info(self):
         return self.client.repository_info
 
-    def get_fields(self):
-        return ['basedir', 'diff_path']
-
     def get_parser(self, data):
         return SVNDiffParser(data)
 

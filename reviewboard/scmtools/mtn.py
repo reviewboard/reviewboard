@@ -13,6 +13,7 @@ from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 
 class MonotoneTool(SCMTool):
     name = "Monotone"
+    diffs_use_absolute_paths = True
     dependencies = {
         'executables': ['mtn'],
     }
@@ -47,12 +48,6 @@ class MonotoneTool(SCMTool):
 
     def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
         return file_str, revision_str
-
-    def get_diffs_use_absolute_paths(self):
-        return True
-
-    def get_fields(self):
-        return ['diff_path', 'parent_diff_path']
 
     def get_parser(self, data):
         return MonotoneDiffParser(data)

@@ -28,6 +28,3 @@ class LocalFileTool(SCMTool):
 
     def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
         return file_str, HEAD
-
-    def get_fields(self):
-        return ['diff_path']

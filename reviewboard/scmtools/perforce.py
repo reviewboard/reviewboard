@@ -324,6 +324,7 @@ class PerforceClient(object):
 
 class PerforceTool(SCMTool):
     name = "Perforce"
+    diffs_use_absolute_paths = True
     supports_ticket_auth = True
     supports_pending_changesets = True
     field_help_text = {
@@ -435,9 +436,6 @@ class PerforceTool(SCMTool):
         else:
             return None
 
-    def get_diffs_use_absolute_paths(self):
-        return True
-
     def get_file(self, path, revision=HEAD, **kwargs):
         return self.client.get_file(path, revision)
 
@@ -506,9 +504,6 @@ class PerforceTool(SCMTool):
             changeset.summary = changeset.description.split('\n', 1)[0]
 
         return changeset
-
-    def get_fields(self):
-        return ['changenum', 'diff_path']
 
     def get_parser(self, data):
         return PerforceDiffParser(data)

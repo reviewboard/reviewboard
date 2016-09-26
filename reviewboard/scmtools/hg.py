@@ -15,6 +15,7 @@ from reviewboard.scmtools.git import GitDiffParser
 
 class HgTool(SCMTool):
     name = "Mercurial"
+    diffs_use_absolute_paths = True
     dependencies = {
         'modules': ['mercurial'],
     }
@@ -52,12 +53,6 @@ class HgTool(SCMTool):
         if not revision_str:
             revision = UNKNOWN
         return file_str, revision
-
-    def get_diffs_use_absolute_paths(self):
-        return True
-
-    def get_fields(self):
-        return ['diff_path', 'parent_diff_path']
 
     def get_parser(self, data):
         hg_position = data.find(b'diff -r')

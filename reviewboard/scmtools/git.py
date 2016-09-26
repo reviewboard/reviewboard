@@ -60,6 +60,7 @@ class GitTool(SCMTool):
     you do not have a bare repositry).
     """
     name = "Git"
+    diffs_use_absolute_paths = True
     supports_raw_file_urls = True
     field_help_text = {
         'path': _('For local Git repositories, this should be the path to a '
@@ -113,12 +114,6 @@ class GitTool(SCMTool):
             self.client.validate_sha1_format(file_str, revision)
 
         return file_str, revision
-
-    def get_diffs_use_absolute_paths(self):
-        return True
-
-    def get_fields(self):
-        return ['diff_path', 'parent_diff_path']
 
     def get_parser(self, data):
         return GitDiffParser(data)

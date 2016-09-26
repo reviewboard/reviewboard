@@ -272,7 +272,7 @@ def new_review_request(request,
                 'local_site_name': local_site_name,
                 'files_only': False,
                 'requires_change_number': scmtool.supports_pending_changesets,
-                'requires_basedir': not scmtool.get_diffs_use_absolute_paths(),
+                'requires_basedir': not scmtool.diffs_use_absolute_paths,
             })
         except Exception:
             logging.exception('Error loading SCMTool for repository "%s" '

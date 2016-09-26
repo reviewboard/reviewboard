@@ -9,6 +9,7 @@ from reviewboard.scmtools.git import GitTool
 
 class TestTool(GitTool):
     name = 'Test'
+    diffs_use_absolute_paths = False
     supports_post_commit = True
 
     def get_repository_info(self):
@@ -16,12 +17,6 @@ class TestTool(GitTool):
             'key1': 'value1',
             'key2': 'value2',
         }
-
-    def get_fields(self):
-        return ['basedir', 'diff_path']
-
-    def get_diffs_use_absolute_paths(self):
-        return False
 
     def get_branches(self):
         return [
