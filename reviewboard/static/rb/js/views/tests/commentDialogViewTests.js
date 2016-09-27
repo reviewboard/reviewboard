@@ -125,6 +125,24 @@ suite('rb/views/CommentDialogView', function() {
                     expect(dlg.close).toHaveBeenCalled();
                 });
 
+                it('Confirms before cancelling unsaved comment', function() {
+                    spyOn(editor, 'cancel');
+                    spyOn(dlg, 'close');
+                    spyOn(window, 'confirm').andReturn(true);
+                    editor.set('dirty', true);
+                    $button.click();
+                    expect(dlg.close).toHaveBeenCalled();
+                });
+
+                it('Cancel close when unsaved comment', function() {
+                    spyOn(editor, 'cancel');
+                    spyOn(dlg, 'close');
+                    spyOn(window, 'confirm').andReturn(false);
+                    editor.set('dirty', true);
+                    $button.click();
+                    expect(dlg.close).not.toHaveBeenCalled();
+                });
+
                 describe('Visibility', function() {
                     it('Shown when canEdit=true', function() {
                         editor.set('canEdit', true);
@@ -724,10 +742,12 @@ suite('rb/views/CommentDialogView', function() {
                     });
 
                     it('If Markdown', function() {
+                        spyOn(window, 'confirm').andReturn(true);
                         setupForRichText(true);
 
                         simulateKeyPress($.ui.keyCode.ESCAPE, false, false);
                         expect(editor.cancel).toHaveBeenCalled();
+                        expect(window.confirm).toHaveBeenCalled();
                         expect(dlg.close).toHaveBeenCalled();
                     });
 
@@ -737,6 +757,26 @@ suite('rb/views/CommentDialogView', function() {
                         simulateKeyPress($.ui.keyCode.ESCAPE, false, false);
                         expect(editor.cancel).toHaveBeenCalled();
                         expect(dlg.close).toHaveBeenCalled();
+                    });
+
+                    it('If unsaved comment', function() {
+                        spyOn(window, 'confirm').andReturn(true);
+                        editor.set('dirty', true);
+
+                        simulateKeyPress($.ui.keyCode.ESCAPE, false, false);
+                        expect(editor.cancel).toHaveBeenCalled();
+                        expect(window.confirm).toHaveBeenCalled();
+                        expect(dlg.close).toHaveBeenCalled();
+                    });
+
+                    it('If unsaved comment, do not close', function() {
+                        spyOn(window, 'confirm').andReturn(false);
+                        editor.set('dirty', true);
+
+                        simulateKeyPress($.ui.keyCode.ESCAPE, false, false);
+                        expect(editor.cancel).not.toHaveBeenCalled();
+                        expect(window.confirm).toHaveBeenCalled();
+                        expect(dlg.close).not.toHaveBeenCalled();
                     });
                 });
             });
