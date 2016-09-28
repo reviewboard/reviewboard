@@ -52,16 +52,6 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
 
         this.reviewRequestEditorView.formatText(this.$('.changedesc-text'));
 
-        // Expand the box if the review is currently being linked to.
-        if (document.URL.includes('#review')) {
-            const expandReviewID =
-                parseInt(document.url.split('#review')[1], 10);
-
-            if (this._reviews.some(review => (review.id === expandReviewID))) {
-                this.expand();
-            }
-        }
-
         this._reviewViews.forEach(view => {
             this.listenTo(view, 'openIssuesChanged', this._updateLabels);
             view.render();

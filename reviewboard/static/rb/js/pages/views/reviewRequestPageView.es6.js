@@ -51,7 +51,22 @@ RB.ReviewRequestPageView = RB.ReviewablePageView.extend({
     render() {
         RB.ReviewablePageView.prototype.render.call(this);
         this.diffFragmentQueue.loadFragments();
-        this._boxes.forEach(box => box.render());
+
+        /*
+         * If trying to link to a review, find the box which contains that
+         * review and expand it.
+         */
+        this._boxes.forEach(box => {
+            box.render();
+
+            // If the box contains something we're linking to, expand it.
+            const selector = window.location.hash.match(/^#[A-Za-z0-9_\.-]+$/);
+
+            if (selector && box.$(selector[0]).length > 0) {
+                box.expand();
+            }
+        });
+
         this._rendered = true;
 
         return this;

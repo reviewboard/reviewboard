@@ -42,16 +42,6 @@ RB.InitialStatusUpdatesBoxView = RB.CollapsableBoxView.extend({
     render() {
         RB.CollapsableBoxView.prototype.render.call(this);
 
-        // Expand the box if the review is currently being linked to.
-        if (document.URL.includes('#review')) {
-            const expandReviewID =
-                parseInt(document.url.split('#review')[1], 10);
-
-            if (this._reviews.some(review => (review.id === expandReviewID))) {
-                this.expand();
-            }
-        }
-
         this._reviewViews.forEach(view => view.render());
 
         return this;
