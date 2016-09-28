@@ -3,7 +3,30 @@
 
 {% block extrahead %}
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-{% endblock %}
+
+{# NOTE: These are intentionally not localized. #}
+<meta property="og:title" content="{{social_page_title}}" />
+<meta property="og:description" content="{{social_page_description}}" />
+<meta property="og:url" content="{{social_page_url}}" />
+<meta name="twitter:title" content="{{social_page_title}}" />
+<meta name="twitter:description" content="{{social_page_description}}" />
+<meta name="twitter:url" content="{{social_page_url}}" />
+
+{%  if social_page_image_url %}
+<meta property="og:image" content="{{social_page_image_url}}" />
+<meta name="twitter:image" content="{{social_page_image_url}}" />
+{%  endif %}
+
+{%  if review_request.repository %}
+<meta name="twitter:label1" content="Repository" />
+<meta name="twitter:data1" content="{{review_request.repository.name}}" />
+{%  endif %}
+
+{%  if review_request_details.branch %}
+<meta name="twitter:label2" content="Branch" />
+<meta name="twitter:data2" content="{{review_request_details.branch}}" />
+{%  endif %}
+{% endblock extrahead %}
 
 {% block ie6_csshacks %}
    #review-banner .banner { position: absolute; }

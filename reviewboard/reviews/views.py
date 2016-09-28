@@ -145,6 +145,29 @@ def _query_for_diff(review_request, user, revision, draft):
         raise Http404
 
 
+def _get_social_page_image_url(file_attachments):
+    """Return the URL to an image used for social media sharing.
+
+    This will look for the first attachment in a list of attachments that can
+    be used to represent the review request on social media sites and chat
+    services. If a suitable attachment is found, its URL will be returned.
+
+    Args:
+        file_attachments (list of reviewboard.attachments.models.FileAttachment):
+            A list of file attachments used on a review request.
+
+    Returns:
+        unicode:
+        The URL to the first image file attachment, if found, or ``None``
+        if no suitable attachments were found.
+    """
+    for file_attachment in file_attachments:
+        if file_attachment.mimetype.startswith('image/'):
+            return file_attachment.get_absolute_url()
+
+    return None
+
+
 def build_diff_comment_fragments(
     comments, context,
     comment_template_name='reviews/diff_comment_fragment.html',
@@ -445,6 +468,11 @@ def review_detail(request,
     siteconfig = SiteConfiguration.objects.get_current()
 
     # Time to render the page!
+    file_attachments = \
+        _get_latest_file_attachments(data.active_file_attachments)
+    social_page_image_url = _get_social_page_image_url(
+        file_attachments)
+
     context_data = make_review_request_context(request, review_request, {
         'blocks': blocks,
         'draft': data.draft,
@@ -459,10 +487,14 @@ def review_detail(request,
         'close_description_rich_text': close_description_rich_text,
         'issue_counts': data.issue_counts,
         'issues': data.issues,
-        'file_attachments': _get_latest_file_attachments(
-            data.active_file_attachments),
+        'file_attachments': file_attachments,
         'all_file_attachments': data.all_file_attachments,
         'screenshots': data.active_screenshots,
+        'social_page_image_url': social_page_image_url,
+        'social_page_title': (
+            'Review Request #%s: %s'
+            % (review_request.display_id, review_request.summary)
+        ),
     })
 
     response = render_to_response(template_name,
@@ -563,11 +595,15 @@ class ReviewsDiffViewerView(DiffViewerView):
         last_activity_time, updated_object = \
             self.review_request.get_last_activity(diffsets)
 
-        file_attachments = list(self.review_request.get_file_attachments())
-        screenshots = list(self.review_request.get_screenshots())
+        review_request_details = self.draft or self.review_request
+
+        file_attachments = list(review_request_details.get_file_attachments())
+        screenshots = list(review_request_details.get_screenshots())
 
         latest_file_attachments = \
             _get_latest_file_attachments(file_attachments)
+        social_page_image_url = _get_social_page_image_url(
+            latest_file_attachments)
 
         # Compute the lists of comments based on filediffs and interfilediffs.
         # We do this using the 'through' table so that we can select_related
@@ -597,7 +633,7 @@ class ReviewsDiffViewerView(DiffViewerView):
             'diffsets': diffsets,
             'latest_diffset': latest_diffset,
             'review': pending_review,
-            'review_request_details': self.draft or self.review_request,
+            'review_request_details': review_request_details,
             'draft': self.draft,
             'last_activity_time': last_activity_time,
             'file_attachments': latest_file_attachments,
@@ -605,6 +641,12 @@ class ReviewsDiffViewerView(DiffViewerView):
             'screenshots': screenshots,
             'comments': comments,
             'send_email': siteconfig.get('mail_send_review_mail'),
+            'social_page_image_url': social_page_image_url,
+            'social_page_title': (
+                'Diff for Review Request #%s: %s'
+                % (self.review_request.display_id,
+                   review_request_details.summary)
+            ),
         })
 
         context.update(

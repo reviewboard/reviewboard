@@ -2,8 +2,10 @@ from __future__ import unicode_literals
 
 from django.utils import six
 from django.utils.translation import ugettext as _
+from django.template.defaultfilters import truncatechars
 
 from reviewboard.accounts.models import ReviewRequestVisit
+from reviewboard.admin.server import build_server_url
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.forms import UploadDiffForm
 from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
@@ -138,6 +140,12 @@ def make_review_request_context(request, review_request, extra_context={},
                 '#index-header'),
         })
 
+    review_request_details = extra_context.get('review_request_details',
+                                               review_request)
+    social_page_description = truncatechars(
+        review_request_details.description.replace('\n', ' '),
+        300)
+
     context = dict({
         'mutable_by_user': review_request.is_mutable_by(request.user),
         'status_mutable_by_user':
@@ -146,6 +154,8 @@ def make_review_request_context(request, review_request, extra_context={},
         'upload_diff_form': upload_diff_form,
         'scmtool': scmtool,
         'tabs': tabs,
+        'social_page_description': social_page_description,
+        'social_page_url': build_server_url(request.path, request=request),
     }, **extra_context)
 
     if ('review_request_visit' not in context and
