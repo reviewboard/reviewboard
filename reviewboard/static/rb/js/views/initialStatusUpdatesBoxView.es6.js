@@ -25,11 +25,18 @@ RB.InitialStatusUpdatesBoxView = RB.CollapsableBoxView.extend({
         RB.CollapsableBoxView.prototype.initialize.call(this, options);
 
         this._reviews = options.reviews;
-        this._reviewViews = this._reviews.map(
-            review => new RB.ReviewView({
-                el: this.$(`#review${review.id}`),
+        this._reviewViews = this._reviews.map(review => {
+            const $reviewEl = this.$(`#review${review.id}`);
+
+            return new RB.ReviewView({
+                el: $reviewEl,
                 model: review,
-            }));
+                $bannerFloatContainer: $reviewEl,
+                $bannerParent: $reviewEl.children('.banners'),
+                bannerNoFloatContainerClass: 'collapsed',
+                showSendEmail: this.options.showSendEmail,
+            });
+        });
     },
 
     /**

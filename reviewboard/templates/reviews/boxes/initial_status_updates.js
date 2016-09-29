@@ -7,6 +7,7 @@ there.
 page.addBox(new RB.InitialStatusUpdatesBoxView({
     el: $('#initial-status-updates'),
     reviewRequestEditor: page.reviewRequestEditor,
+    showSendEmail: {{send_email|yesno:'true,false'}},
     reviews: [
 {% for update in entry.status_updates %}
 {%  if update.review_id %}

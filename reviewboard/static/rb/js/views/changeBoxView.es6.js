@@ -26,11 +26,18 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
         this.reviewRequest = options.reviewRequest;
         this.reviewRequestEditorView = options.reviewRequestEditorView;
         this._reviews = options.reviews;
-        this._reviewViews = this._reviews.map(
-            review => new RB.ReviewView({
-                el: this.$(`#review${review.id}`),
+        this._reviewViews = this._reviews.map(review => {
+            const $reviewEl = this.$(`#review${review.id}`);
+
+            return new RB.ReviewView({
+                el: $reviewEl,
                 model: review,
-            }));
+                $bannerFloatContainer: $reviewEl,
+                $bannerParent: $reviewEl.children('.banners'),
+                bannerNoFloatContainerClass: 'collapsed',
+                showSendEmail: this.options.showSendEmail,
+            });
+        });
         this._$boxStatus = null;
         this._$fixItLabel = null;
     },
