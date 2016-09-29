@@ -473,6 +473,33 @@ class SCMTool(object):
         """
         self.repository = repository
 
+    @property
+    def diffs_use_absolute_paths(self):
+        """Whether filenames in diffs are stored using absolute paths.
+
+        This is used when uploading and validating diffs to determine if the
+        user must supply the base path for a diff. Some types of SCMs
+        (such as Subversion) store relative paths in diffs, requiring
+        additional information in order to generate an absolute path for
+        lookups.
+
+        By default, this is ``False``. Subclasses must override this if their
+        diff formats list absolute paths.
+        """
+        if hasattr(self, 'get_diffs_use_absolute_paths'):
+            warnings.warn('%(class_name)s.get_diffs_use_absolute_paths() is '
+                          'deprecated. Set the '
+                          '%(class_name)s.diffs_use_absolute_paths boolean '
+                          'instead.'
+                          % {
+                              'class_name': self.__class__.__name__,
+                          },
+                          DeprecationWarning)
+
+            return self.get_diffs_use_absolute_paths()
+        else:
+            return False
+
     def get_file(self, path, revision=HEAD, base_commit_id=None, **kwargs):
         """Return the contents of a file from a repository.
 
@@ -598,26 +625,6 @@ class SCMTool(object):
                 invalid format.
         """
         raise NotImplementedError
-
-    # TODO: This really should become an attribute, rather than a function.
-    def get_diffs_use_absolute_paths(self):
-        """Return whether filenames in diffs are stored using absolute paths.
-
-        This is used when uploading and validating diffs to determine if the
-        user must supply the base path for a diff. Some types of SCMs
-        (such as Subversion) store relative paths in diffs, requiring
-        additional information in order to generate an absolute path for
-        lookups.
-
-        Subclasses must override this if their diff formats list absolute
-        paths.
-
-        Returns:
-            bool:
-            ``True`` if the diffs store filenames as absolute paths.
-            ``False`` if the filenames are stored using relative paths.
-        """
-        return False
 
     def get_changeset(self, changesetid, allow_empty=False):
         """Return information on a server-side changeset with the given ID.
@@ -762,18 +769,6 @@ class SCMTool(object):
             reviewboard.scmtools.errors.SCMError:
                 Error retrieving information on this commit.
         """
-        raise NotImplementedError
-
-    def get_fields(self):
-        """Return fields to show in diff uploading forms.
-
-        .. deprecated:: 2.0
-
-           This is no longer used as of Review Board 2.0.
-        """
-        # This is kind of a crappy mess in terms of OO design.  Oh well.
-        # Return a list of fields which are valid for this tool in the "new
-        # review request" page.
         raise NotImplementedError
 
     def get_parser(self, data):

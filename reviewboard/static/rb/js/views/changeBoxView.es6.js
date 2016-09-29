@@ -18,10 +18,21 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
      *
      *     reviewRequestEditorView (RB.ReviewRequestEditorView):
      *         The review request editor.
+     *
+     *     reviews (array of RB.Review):
+     *         Models for each review.
      */
     initialize(options) {
         this.reviewRequest = options.reviewRequest;
         this.reviewRequestEditorView = options.reviewRequestEditorView;
+        this._reviews = options.reviews;
+        this._reviewViews = this._reviews.map(
+            review => new RB.ReviewView({
+                el: this.$(`#review${review.id}`),
+                model: review,
+            }));
+        this._$boxStatus = null;
+        this._$fixItLabel = null;
     },
 
     /**
@@ -34,7 +45,29 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
     render() {
         RB.CollapsableBoxView.prototype.render.call(this);
 
+        this._$boxStatus = this.$('.box-status');
+        this._$fixItLabel = $('<label class="fix-it-label">')
+            .hide()
+            .appendTo(this.$('.labels-container'));
+
         this.reviewRequestEditorView.formatText(this.$('.changedesc-text'));
+
+        // Expand the box if the review is currently being linked to.
+        if (document.URL.includes('#review')) {
+            const expandReviewID =
+                parseInt(document.url.split('#review')[1], 10);
+
+            if (this._reviews.some(review => (review.id === expandReviewID))) {
+                this.expand();
+            }
+        }
+
+        this._reviewViews.forEach(view => {
+            this.listenTo(view, 'openIssuesChanged', this._updateLabels);
+            view.render();
+        });
+
+        this._updateLabels();
 
         _.each(this.$('.diff-index tr'), rowEl => {
             const $row = $(rowEl);
@@ -73,4 +106,38 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
 
         return this;
     },
+
+    /**
+     * Update the "Fix It" label based on the open issue counts.
+     *
+     * If there are open issues, there will be a "Fix it!" label.
+     */
+    _updateLabels() {
+        if (this._reviewViews.some(view => view.hasOpenIssues())) {
+            const openIssueCount = this._reviewViews.reduce(
+                (sum, view) => sum + view.getOpenIssueCount(),
+                0);
+
+            this._$boxStatus.addClass('has-issues');
+            this._$fixItLabel
+                .empty()
+                .append(
+                    $('<span class="open-issue-count">')
+                        .text(interpolate(gettext('%s failed'),
+                                          [openIssueCount]))
+                )
+                .append(gettext('Fix it!'))
+                .show()
+                .css({
+                    opacity: 1,
+                    left: 0,
+                });
+        } else {
+            this._$fixItLabel.css({
+                opacity: 0,
+                left: '-100px',
+            });
+            this._$boxStatus.removeClass('has-issues');
+        }
+    }
 });

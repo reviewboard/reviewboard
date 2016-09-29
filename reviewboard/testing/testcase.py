@@ -19,10 +19,16 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.notifications.models import WebHookTarget
-from reviewboard.reviews.models import (Comment, FileAttachmentComment,
-                                        GeneralComment, Group, Review,
-                                        ReviewRequest, ReviewRequestDraft,
-                                        Screenshot, ScreenshotComment)
+from reviewboard.reviews.models import (Comment,
+                                        FileAttachmentComment,
+                                        GeneralComment,
+                                        Group,
+                                        Review,
+                                        ReviewRequest,
+                                        ReviewRequestDraft,
+                                        Screenshot,
+                                        ScreenshotComment,
+                                        StatusUpdate)
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.models import WebAPIToken
@@ -725,6 +731,45 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         review.general_comments.add(comment)
 
         return comment
+
+    def create_status_update(self, review_request, user='dopey',
+                             service_id='service', summary='Status Update',
+                             state=StatusUpdate.PENDING):
+        """Create a status update for testing.
+
+        It is populated with default data that can be overridden by the caller.
+
+        Args:
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request to associate with the new status update.
+
+            user (django.contrib.auth.models.User or unicode):
+                Either the user model or the username of the user who should
+                own the status update.
+
+            service_id (unicode):
+                The ID to fill in for the new model.
+
+            summary (unicode):
+                The summary to fill in for the new model.
+
+            state (unicode):
+                The state for the new model. This must be one of the valid
+                choices for the state field.
+
+        Returns:
+            reviewboard.reviews.models.StatusUpdate:
+            The new status update.
+        """
+        if not isinstance(user, User):
+            user = User.objects.get(username=user)
+
+        return StatusUpdate.objects.create(
+            review_request=review_request,
+            service_id=service_id,
+            summary=summary,
+            state=state,
+            user=user)
 
     def create_webhook(self, enabled=False, events=WebHookTarget.ALL_EVENTS,
                        url='http://example.com',

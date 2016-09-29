@@ -133,7 +133,7 @@ class ValidateDiffResource(DiffResource):
                 'repository': repository,
             }
 
-        if (not repository.get_scmtool().get_diffs_use_absolute_paths() and
+        if (not repository.get_scmtool().diffs_use_absolute_paths and
             basedir is None):
 
             return INVALID_FORM_DATA, {

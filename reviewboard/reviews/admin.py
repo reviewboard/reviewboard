@@ -5,12 +5,17 @@ from django.template.defaultfilters import truncatechars
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
-from reviewboard.reviews.models import (Comment, DefaultReviewer,
+from reviewboard.reviews.models import (Comment,
+                                        DefaultReviewer,
                                         FileAttachmentComment,
                                         GeneralComment,
-                                        Group, Review, ReviewRequest,
-                                        ReviewRequestDraft, Screenshot,
-                                        ScreenshotComment)
+                                        Group,
+                                        Review,
+                                        ReviewRequest,
+                                        ReviewRequestDraft,
+                                        Screenshot,
+                                        ScreenshotComment,
+                                        StatusUpdate)
 
 
 class CommentAdmin(admin.ModelAdmin):
@@ -270,6 +275,14 @@ class GeneralCommentAdmin(admin.ModelAdmin):
     review_request_id.short_description = _('Review request ID')
 
 
+class StatusUpdateAdmin(admin.ModelAdmin):
+    list_display = ('review_request_id', 'summary', 'description')
+
+    def review_request_id(self, obj):
+        return obj.review_request.id
+    review_request_id.short_description = _('Review request ID')
+
+
 admin.site.register(Comment, CommentAdmin)
 admin.site.register(DefaultReviewer, DefaultReviewerAdmin)
 admin.site.register(FileAttachmentComment, FileAttachmentCommentAdmin)
@@ -280,3 +293,4 @@ admin.site.register(ReviewRequest, ReviewRequestAdmin)
 admin.site.register(ReviewRequestDraft, ReviewRequestDraftAdmin)
 admin.site.register(Screenshot, ScreenshotAdmin)
 admin.site.register(ScreenshotComment, ScreenshotCommentAdmin)
+admin.site.register(StatusUpdate, StatusUpdateAdmin)

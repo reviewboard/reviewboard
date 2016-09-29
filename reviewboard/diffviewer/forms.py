@@ -38,7 +38,7 @@ class UploadDiffForm(forms.Form):
         self.repository = repository
         self.request = request
 
-        if self.repository.get_scmtool().get_diffs_use_absolute_paths():
+        if self.repository.get_scmtool().diffs_use_absolute_paths:
             # This SCMTool uses absolute paths, so there's no need to ask
             # the user for the base directory.
             del(self.fields['basedir'])
@@ -50,7 +50,7 @@ class UploadDiffForm(forms.Form):
         tool = self.repository.get_scmtool()
 
         # Grab the base directory if there is one.
-        if not tool.get_diffs_use_absolute_paths():
+        if not tool.diffs_use_absolute_paths:
             try:
                 basedir = smart_unicode(self.cleaned_data['basedir'].strip())
             except AttributeError:

@@ -1,5 +1,17 @@
 {% load djblets_utils i18n rb_extensions reviewtags %}
 
+{% if review.body_top or always_show_body_top %}
+<li>
+ <div class="review-comment-thread">
+  <div class="review-comment">
+   <pre class="reviewtext body_top {% rich_text_classname review.body_top_rich_text %}">{{review.body_top|render_markdown:review.body_top_rich_text}}</pre>
+  </div>
+
+  {% reply_section review '' 'body_top' 'rcbt' review.body_top %}
+ </div>
+</li>
+{% endif %}
+
 {% for comment in general_comments %}
 <li>
  <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"</a>
@@ -124,3 +136,15 @@
  </div>
 </li>
 {% endfor %}
+
+{% if review.body_bottom %}
+<li>
+ <div class="review-comment-thread">
+  <div class="review-comment">
+   <pre class="reviewtext body_bottom {% rich_text_classname review.body_bottom_rich_text %}">{{review.body_bottom|render_markdown:review.body_bottom_rich_text}}</pre>
+  </div>
+
+  {% reply_section review '' 'body_bottom' 'rcbb' review.body_bottom %}
+ </div>
+</li>
+{% endif %}

@@ -52,8 +52,11 @@ from reviewboard.reviews.context import (comment_counts,
                                          has_comments_in_diffsets_excluding,
                                          interdiffs_with_comments,
                                          make_review_request_context)
-from reviewboard.reviews.detail import (ChangeEntry, ReviewEntry,
+from reviewboard.reviews.detail import (ChangeEntry,
+                                        InitialStatusUpdatesEntry,
+                                        ReviewEntry,
                                         ReviewRequestPageData)
+from reviewboard.reviews.features import status_updates_feature
 from reviewboard.reviews.markdown_utils import is_rich_text_default_for_user
 from reviewboard.reviews.models import (Comment,
                                         Review,
@@ -143,6 +146,29 @@ def _query_for_diff(review_request, user, revision, draft):
         return DiffSet.objects.filter(query).latest()
     except DiffSet.DoesNotExist:
         raise Http404
+
+
+def _get_social_page_image_url(file_attachments):
+    """Return the URL to an image used for social media sharing.
+
+    This will look for the first attachment in a list of attachments that can
+    be used to represent the review request on social media sites and chat
+    services. If a suitable attachment is found, its URL will be returned.
+
+    Args:
+        file_attachments (list of reviewboard.attachments.models.FileAttachment):
+            A list of file attachments used on a review request.
+
+    Returns:
+        unicode:
+        The URL to the first image file attachment, if found, or ``None``
+        if no suitable attachments were found.
+    """
+    for file_attachment in file_attachments:
+        if file_attachment.mimetype.startswith('image/'):
+            return file_attachment.get_absolute_url()
+
+    return None
 
 
 def build_diff_comment_fragments(
@@ -272,7 +298,7 @@ def new_review_request(request,
                 'local_site_name': local_site_name,
                 'files_only': False,
                 'requires_change_number': scmtool.supports_pending_changesets,
-                'requires_basedir': not scmtool.get_diffs_use_absolute_paths(),
+                'requires_basedir': not scmtool.diffs_use_absolute_paths,
             })
         except Exception:
             logging.exception('Error loading SCMTool for repository "%s" '
@@ -318,6 +344,8 @@ def review_detail(request,
     """Render the main review request page."""
     review_request, response = _find_review_request(
         request, review_request_id, local_site)
+
+    status_updates_enabled = status_updates_feature.is_enabled()
 
     if not review_request:
         return response
@@ -385,11 +413,15 @@ def review_detail(request,
 
     entries = []
     reviews_entry_map = {}
+    changedescs_entry_map = {}
 
     # Now that we have the list of public reviews and all that metadata,
     # being processing them and adding entries for display in the page.
     for review in data.reviews:
-        if review.public and not review.is_reply():
+        if (review.public and
+            not review.is_reply() and
+            not (status_updates_enabled and
+                 hasattr(review, 'status_update'))):
             # Mark as collapsed if the review is older than the latest
             # change, assuming there's no reply newer than last_visited.
             latest_reply = data.latest_timestamps_by_review_id.get(review.pk)
@@ -403,6 +435,34 @@ def review_detail(request,
                                 data)
             reviews_entry_map[review.pk] = entry
             entries.append(entry)
+
+    # Add entries for the change descriptions.
+    for changedesc in data.changedescs:
+        # Mark as collapsed if the change is older than a newer change.
+        collapsed = (changedesc.timestamp < data.latest_changedesc_timestamp)
+
+        entry = ChangeEntry(request, review_request, changedesc, collapsed,
+                            data)
+        changedescs_entry_map[changedesc.id] = entry
+        entries.append(entry)
+
+    if status_updates_enabled:
+        initial_status_entry = InitialStatusUpdatesEntry(
+            review_request, collapsed=(len(data.changedescs) > 0),
+            data=data)
+
+        for update in data.status_updates:
+            if update.change_description_id is not None:
+                entry = changedescs_entry_map[update.change_description_id]
+            else:
+                entry = initial_status_entry
+
+            entry.add_update(update)
+
+            if update.review_id is not None:
+                reviews_entry_map[update.review_id] = entry
+    else:
+        initial_status_entry = None
 
     # Now that we have entries for all the reviews, go through all the comments
     # and add them to those entries.
@@ -427,13 +487,11 @@ def review_detail(request,
             entry = reviews_entry_map[review.id]
             entry.add_comment(comment._type, comment)
 
-    # Add entries for the change descriptions.
-    for changedesc in data.changedescs:
-        # Mark as collapsed if the change is older than a newer change
-        collapsed = (changedesc.timestamp < data.latest_changedesc_timestamp)
+    if status_updates_enabled:
+        initial_status_entry.finalize()
 
-        entries.append(ChangeEntry(request, review_request, changedesc,
-                                   collapsed, data))
+        for entry in entries:
+            entry.finalize()
 
     # Finally, sort all the entries (reviews and change descriptions) by their
     # timestamp.
@@ -445,12 +503,18 @@ def review_detail(request,
     siteconfig = SiteConfiguration.objects.get_current()
 
     # Time to render the page!
+    file_attachments = \
+        _get_latest_file_attachments(data.active_file_attachments)
+    social_page_image_url = _get_social_page_image_url(
+        file_attachments)
+
     context_data = make_review_request_context(request, review_request, {
         'blocks': blocks,
         'draft': data.draft,
         'review_request_details': data.review_request_details,
         'review_request_visit': visited,
         'send_email': siteconfig.get('mail_send_review_mail'),
+        'initial_status_entry': initial_status_entry,
         'entries': entries,
         'last_activity_time': last_activity_time,
         'review': review_request.get_pending_review(request.user),
@@ -459,10 +523,14 @@ def review_detail(request,
         'close_description_rich_text': close_description_rich_text,
         'issue_counts': data.issue_counts,
         'issues': data.issues,
-        'file_attachments': _get_latest_file_attachments(
-            data.active_file_attachments),
+        'file_attachments': file_attachments,
         'all_file_attachments': data.all_file_attachments,
         'screenshots': data.active_screenshots,
+        'social_page_image_url': social_page_image_url,
+        'social_page_title': (
+            'Review Request #%s: %s'
+            % (review_request.display_id, review_request.summary)
+        ),
     })
 
     response = render_to_response(template_name,
@@ -563,11 +631,15 @@ class ReviewsDiffViewerView(DiffViewerView):
         last_activity_time, updated_object = \
             self.review_request.get_last_activity(diffsets)
 
-        file_attachments = list(self.review_request.get_file_attachments())
-        screenshots = list(self.review_request.get_screenshots())
+        review_request_details = self.draft or self.review_request
+
+        file_attachments = list(review_request_details.get_file_attachments())
+        screenshots = list(review_request_details.get_screenshots())
 
         latest_file_attachments = \
             _get_latest_file_attachments(file_attachments)
+        social_page_image_url = _get_social_page_image_url(
+            latest_file_attachments)
 
         # Compute the lists of comments based on filediffs and interfilediffs.
         # We do this using the 'through' table so that we can select_related
@@ -597,7 +669,7 @@ class ReviewsDiffViewerView(DiffViewerView):
             'diffsets': diffsets,
             'latest_diffset': latest_diffset,
             'review': pending_review,
-            'review_request_details': self.draft or self.review_request,
+            'review_request_details': review_request_details,
             'draft': self.draft,
             'last_activity_time': last_activity_time,
             'file_attachments': latest_file_attachments,
@@ -605,6 +677,12 @@ class ReviewsDiffViewerView(DiffViewerView):
             'screenshots': screenshots,
             'comments': comments,
             'send_email': siteconfig.get('mail_send_review_mail'),
+            'social_page_image_url': social_page_image_url,
+            'social_page_title': (
+                'Diff for Review Request #%s: %s'
+                % (self.review_request.display_id,
+                   review_request_details.summary)
+            ),
         })
 
         context.update(

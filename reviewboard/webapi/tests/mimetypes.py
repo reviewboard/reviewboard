@@ -156,6 +156,10 @@ server_info_mimetype = _build_mimetype('server-info')
 session_mimetype = _build_mimetype('session')
 
 
+status_update_list_mimetype = _build_mimetype('status-updates')
+status_update_item_mimetype = _build_mimetype('status-update')
+
+
 user_list_mimetype = _build_mimetype('users')
 user_item_mimetype = _build_mimetype('user')
 

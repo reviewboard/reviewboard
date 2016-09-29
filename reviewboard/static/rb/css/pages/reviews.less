@@ -557,6 +557,11 @@
 
           transition: left 0.5s ease-in-out,
                       opacity 0.8s ease;
+
+          .open-issue-count {
+            color: darkred;
+            display: block;
+          }
         }
       }
     }
@@ -645,6 +650,7 @@
 /****************************************************************************
  * Change Descriptions
  ****************************************************************************/
+
 .changedesc {
   .review-request-page-entry-contents {
 
@@ -654,7 +660,7 @@
     .left-arrow-callout-color(@changedesc-bg);
   }
 
-  .body {
+  .changed-fields {
     clear: both;
     padding: @entry-padding;
 
@@ -824,10 +830,10 @@
         vertical-align: top;
         white-space: pre-wrap;
 
-	.codehilite {
-	  // Make this flush with the sides of the row.
-	  margin: 0 -4px;
-	}
+        .codehilite {
+          // Make this flush with the sides of the row.
+          margin: 0 -4px;
+        }
       }
 
       .delete {
@@ -1012,6 +1018,11 @@
       }
     }
   }
+}
+
+.changedesc-status-updates {
+  background-color: white;
+  border-radius: 0 0 @box-border-radius @box-border-radius;
 }
 
 
@@ -2201,4 +2212,112 @@
   }
 
   .upload-diff-ui();
+}
+
+
+/****************************************************************************
+ * Status Updates
+ ****************************************************************************/
+
+.status-update-header(@color, @border-color) {
+  background-color: @color;
+  border-color: @border-color;
+  border-style: solid;
+}
+
+#initial-status-updates {
+  .header {
+    border-width: 0 0 1px 0;
+
+    &.status-update-state-failure {
+      .status-update-header(@diff-delete-color, @diff-delete-border-color);
+    }
+
+    &.status-update-state-pending {
+      .status-update-header(@diff-replace-color, @diff-replace-border-color);
+    }
+
+    &.status-update-state-success {
+      .status-update-header(@diff-insert-color, @diff-insert-border-color);
+    }
+  }
+
+  .review-request-page-entry-contents {
+    overflow: hidden;
+
+    &.collapsed .header {
+      background-color: @collapsed-entry-bg;
+      border-width: 0;
+    }
+  }
+}
+
+.status-update-review-header {
+  border-width: 1px 0;
+  margin: 0.75rem 0 -1px;
+  padding: (@entry-padding / 2) @entry-padding;
+
+  &.status-update-state-failure {
+    .status-update-header(@diff-delete-color, @diff-delete-border-color);
+  }
+
+  &.status-update-state-pending {
+    .status-update-header(@diff-replace-color, @diff-replace-border-color);
+  }
+
+  &.status-update-state-success {
+    .status-update-header(@diff-insert-color, @diff-insert-border-color);
+  }
+}
+
+.status-update-summary-entry {
+  line-height: 14px;
+  vertical-align: middle;
+
+  &::before {
+    font-size: 14px/1;
+    font-family: FontAwesome;
+    margin-right: 5px;
+  }
+
+  .status-update-state(@color) {
+    color: @color;
+    padding: @entry-padding;
+
+    .fa {
+      margin-right: 0.5em;
+    }
+  }
+
+  &.status-update-state-failure {
+    .status-update-state(darkred);
+
+    &::before {
+      content: '\f00d';
+    }
+  }
+
+  &.status-update-state-pending {
+    .status-update-state(goldenrod);
+
+    &::before {
+      content: '\f021';
+    }
+  }
+
+  &.status-update-state-success {
+    .status-update-state(darkgreen);
+
+    &::before {
+      content: '\f00c';
+    }
+  }
+
+  .summary {
+    font-weight: bold;
+  }
+
+  a {
+    float: right;
+  }
 }

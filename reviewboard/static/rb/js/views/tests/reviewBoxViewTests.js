@@ -1,5 +1,6 @@
 suite('rb/views/ReviewBoxView', function() {
     var view,
+        reviewView,
         reviewReply,
         template = _.template([
             '<div class="review review-request-page-entry">',
@@ -54,10 +55,13 @@ suite('rb/views/ReviewBoxView', function() {
             reviewRequestEditor: editor,
         });
 
-        view._setupNewReply(reviewReply);
+        reviewView = view._reviewView;
+
+        reviewView._setupNewReply(reviewReply);
 
         /* Don't allow the draft banner to show. */
         spyOn(view, '_showReplyDraftBanner');
+        spyOn(reviewView, 'trigger').and.callThrough();
 
         view.render();
     });
@@ -74,103 +78,10 @@ suite('rb/views/ReviewBoxView', function() {
         });
     });
 
-    describe('Reply editors', function() {
-        it('Views created', function() {
-            expect(view._replyEditorViews.length).toBe(3);
-        });
-
-        it('Initial state populated', function() {
-            var model = view._replyEditorViews[0].model;
-
-            expect(model.get('contextID')).toBe(null);
-            expect(model.get('contextType')).toBe('body_top');
-
-            model = view._replyEditorViews[1].model;
-            expect(model.get('contextID')).toBe(123);
-            expect(model.get('contextType')).toBe('diff_comments');
-
-            model = view._replyEditorViews[2].model;
-            expect(model.get('contextID')).toBe(null);
-            expect(model.get('contextType')).toBe('body_bottom');
-        });
-
-        it('Draft banner when draft comment exists', function() {
-            expect(view._showReplyDraftBanner).toHaveBeenCalled();
-        });
-
-        describe('reviewReply changes on', function() {
-            it('Discard', function() {
-                spyOn(view, '_setupNewReply');
-
-                spyOn(reviewReply, 'discardIfEmpty')
-                    .and.callFake(function(options, context) {
-                        options.success.call(context);
-                    });
-
-                reviewReply.trigger('destroyed');
-                expect(view._setupNewReply).toHaveBeenCalled();
-            });
-
-            it('Publish', function() {
-                spyOn(view, '_setupNewReply');
-
-                /*
-                 * Don't let these do their thing. Otherwise they'll try to
-                 * discard and it'll end up performing ajax operations.
-                 */
-                _.each(view._replyEditors, function(editor) {
-                    spyOn(editor, '_resetState');
-                });
-
-                reviewReply.trigger('published');
-                expect(view._setupNewReply).toHaveBeenCalled();
-            });
-        });
-
-        describe('When reviewReply changes', function() {
-            it('Signals connected', function() {
-                var reviewReply = new RB.ReviewReply();
-
-                spyOn(view, 'listenTo').and.callThrough();
-
-                view._setupNewReply(reviewReply);
-
-                expect(view.listenTo.calls.argsFor(0)[1])
-                    .toBe('destroyed published');
-            });
-
-            it('Signals disconnected from old reviewReply', function() {
-                spyOn(view, 'stopListening').and.callThrough();
-
-                view._setupNewReply();
-
-                expect(view.stopListening).toHaveBeenCalledWith(reviewReply);
-            });
-
-            it('Draft banner hidden', function() {
-                spyOn(view, '_hideReplyDraftBanner');
-
-                view._setupNewReply();
-
-                expect(view._hideReplyDraftBanner).toHaveBeenCalled();
-            });
-
-            it('Editors updated', function() {
-                spyOn(view, '_hideReplyDraftBanner');
-
-                view._setupNewReply();
-
-                _.each(view._replyEditors, function(editor) {
-                    expect(editor.get('reviewReply')).toBe(view._reviewReply);
-                });
-            });
-        });
-    });
-
     describe('Draft banner', function() {
         describe('Visibility', function() {
             it('Shown on hasDraft', function() {
-                var editor = view._replyEditorViews[1].model;
+                var editor = reviewView._replyEditorViews[1].model;
 
                 view._showReplyDraftBanner.calls.reset();
 
@@ -193,7 +104,7 @@ suite('rb/views/ReviewBoxView', function() {
         });
 
         it('expand', function() {
-            var $box = view.$('.box');
+            var $box = view.$('.review-request-page-entry-contents');
 
             $box.addClass('collapsed');
             view.expand();
@@ -205,14 +116,14 @@ suite('rb/views/ReviewBoxView', function() {
                 var editorView = view.getReviewReplyEditorView('body_top');
 
                 expect(editorView).not.toBe(undefined);
-                expect(editorView).toBe(view._replyEditorViews[0]);
+                expect(editorView).toBe(reviewView._replyEditorViews[0]);
             });
 
             it('With body_bottom', function() {
                 var editorView = view.getReviewReplyEditorView('body_bottom');
 
                 expect(editorView).not.toBe(undefined);
-                expect(editorView).toBe(view._replyEditorViews[2]);
+                expect(editorView).toBe(reviewView._replyEditorViews[2]);
             });
 
             it('With comments', function() {
@@ -220,7 +131,7 @@ suite('rb/views/ReviewBoxView', function() {
                                                                123);
 
                 expect(editorView).not.toBe(undefined);
-                expect(editorView).toBe(view._replyEditorViews[1]);
+                expect(editorView).toBe(reviewView._replyEditorViews[1]);
             });
         });
     });

@@ -34,7 +34,7 @@ class DefaultReviewerFormTests(TestCase):
             'repository': [repo.pk],
             'people': [user.pk],
             'groups': [group.pk],
-        })
+        }, local_site=test_site)
         self.assertTrue(form.is_valid())
         default_reviewer = form.save()
 
@@ -107,10 +107,23 @@ class DefaultReviewerFormTests(TestCase):
         })
         self.assertFalse(form.is_valid())
 
+    def test_form_with_positional_argument(self):
+        """Testing DefaultReviewerForm when passing data as a positional
+        argument
+        """
+        # This was a regression caused by the change to add the new related
+        # user selector.
+        form = DefaultReviewerForm({
+            'name': 'test',
+            'file_regex': '.*',
+        })
+
+        self.assertTrue(form.is_valid())
+
 
 class GroupFormTests(TestCase):
     def test_form_with_localsite(self):
-        """Tests GroupForm with a LocalSite"""
+        """Testing GroupForm with a LocalSite"""
         test_site = LocalSite.objects.create(name='test')
 
         user = User.objects.create(username='testuser', password='')
@@ -121,7 +134,7 @@ class GroupFormTests(TestCase):
             'display_name': 'Test',
             'local_site': test_site.pk,
             'users': [user.pk],
-        })
+        }, local_site_name=test_site.name)
         self.assertTrue(form.is_valid())
         group = form.save()
 
@@ -129,7 +142,7 @@ class GroupFormTests(TestCase):
         self.assertEqual(group.users.get(), user)
 
     def test_form_with_localsite_and_bad_user(self):
-        """Tests GroupForm with a User not on the same LocalSite"""
+        """Testing GroupForm with a User not on the same LocalSite"""
         test_site = LocalSite.objects.create(name='test')
 
         user = User.objects.create(username='testuser', password='')
@@ -141,3 +154,14 @@ class GroupFormTests(TestCase):
             'users': [user.pk],
         })
         self.assertFalse(form.is_valid())
+
+    def test_form_with_positional_argument(self):
+        """Testing GroupForm when passing data as a positional argument"""
+        # This was a regression caused by the change to add the new related
+        # user selector.
+        form = GroupForm({
+            'name': 'test',
+            'display_name': 'Test',
+        })
+
+        self.assertTrue(form.is_valid())

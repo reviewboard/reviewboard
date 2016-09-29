@@ -19,6 +19,7 @@ from reviewboard.diffviewer.parser import DiffParser
 
 class PlasticTool(SCMTool):
     name = "Plastic SCM"
+    diffs_use_absolute_paths = True
     supports_pending_changesets = True
     field_help_text = {
         'path': _('The Plastic repository spec in the form of '
@@ -87,9 +88,6 @@ class PlasticTool(SCMTool):
 
         return changeset
 
-    def get_diffs_use_absolute_paths(self):
-        return True
-
     def get_file(self, path, revision=HEAD, **kwargs):
         logging.debug('Plastic: get_file %s revision %s' % (path, revision))
 
@@ -125,12 +123,6 @@ class PlasticTool(SCMTool):
             return file_str, PRE_CREATION
 
         return file_str, revision_str
-
-    def get_fields(self):
-        # without diff_path, the form doesn't submit.  Otherwise the user
-        # should be able to input just the changenum and have the reviewboard
-        # server figure out the diff.
-        return ['changenum', 'diff_path']
 
     def get_parser(self, data):
         return PlasticDiffParser(data)

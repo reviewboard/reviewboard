@@ -12,6 +12,7 @@ from reviewboard.reviews.models.review_request import ReviewRequest
 from reviewboard.reviews.models.review_request_draft import ReviewRequestDraft
 from reviewboard.reviews.models.screenshot import Screenshot
 from reviewboard.reviews.models.screenshot_comment import ScreenshotComment
+from reviewboard.reviews.models.status_update import StatusUpdate
 
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     'ReviewRequestDraft',
     'Screenshot',
     'ScreenshotComment',
+    'StatusUpdate',
 ]
