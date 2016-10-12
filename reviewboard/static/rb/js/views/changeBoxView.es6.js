@@ -26,11 +26,18 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
         this.reviewRequest = options.reviewRequest;
         this.reviewRequestEditorView = options.reviewRequestEditorView;
         this._reviews = options.reviews;
-        this._reviewViews = this._reviews.map(
-            review => new RB.ReviewView({
-                el: this.$(`#review${review.id}`),
+        this._reviewViews = this._reviews.map(review => {
+            const $reviewEl = this.$(`#review${review.id}`);
+
+            return new RB.ReviewView({
+                el: $reviewEl,
                 model: review,
-            }));
+                $bannerFloatContainer: $reviewEl,
+                $bannerParent: $reviewEl.children('.banners'),
+                bannerNoFloatContainerClass: 'collapsed',
+                showSendEmail: this.options.showSendEmail,
+            });
+        });
         this._$boxStatus = null;
         this._$fixItLabel = null;
     },
@@ -51,16 +58,6 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
             .appendTo(this.$('.labels-container'));
 
         this.reviewRequestEditorView.formatText(this.$('.changedesc-text'));
-
-        // Expand the box if the review is currently being linked to.
-        if (document.URL.includes('#review')) {
-            const expandReviewID =
-                parseInt(document.url.split('#review')[1], 10);
-
-            if (this._reviews.some(review => (review.id === expandReviewID))) {
-                this.expand();
-            }
-        }
 
         this._reviewViews.forEach(view => {
             this.listenTo(view, 'openIssuesChanged', this._updateLabels);

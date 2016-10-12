@@ -25,11 +25,18 @@ RB.InitialStatusUpdatesBoxView = RB.CollapsableBoxView.extend({
         RB.CollapsableBoxView.prototype.initialize.call(this, options);
 
         this._reviews = options.reviews;
-        this._reviewViews = this._reviews.map(
-            review => new RB.ReviewView({
-                el: this.$(`#review${review.id}`),
+        this._reviewViews = this._reviews.map(review => {
+            const $reviewEl = this.$(`#review${review.id}`);
+
+            return new RB.ReviewView({
+                el: $reviewEl,
                 model: review,
-            }));
+                $bannerFloatContainer: $reviewEl,
+                $bannerParent: $reviewEl.children('.banners'),
+                bannerNoFloatContainerClass: 'collapsed',
+                showSendEmail: this.options.showSendEmail,
+            });
+        });
     },
 
     /**
@@ -41,16 +48,6 @@ RB.InitialStatusUpdatesBoxView = RB.CollapsableBoxView.extend({
      */
     render() {
         RB.CollapsableBoxView.prototype.render.call(this);
-
-        // Expand the box if the review is currently being linked to.
-        if (document.URL.includes('#review')) {
-            const expandReviewID =
-                parseInt(document.url.split('#review')[1], 10);
-
-            if (this._reviews.some(review => (review.id === expandReviewID))) {
-                this.expand();
-            }
-        }
 
         this._reviewViews.forEach(view => view.render());
 

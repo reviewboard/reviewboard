@@ -88,10 +88,6 @@
     span {
       color: #487858;
       font-weight: normal;
-
-      &.fa {
-        color: #000000;
-      }
     }
   }
 
@@ -253,13 +249,13 @@
     background-color: @collapsed-entry-bg !important;
     background-image: none !important; // Override any gradients used.
 
-    .banner {
-      border-bottom: 0;
-      margin-bottom: 0;
+    .body,
+    .banners {
+      display: none;
     }
 
-    .body {
-      display: none;
+    .header {
+      border-radius: @box-border-radius;
     }
   }
 
@@ -312,6 +308,18 @@
       });
     }
   }
+
+  .banner {
+    border-width: 0 0 1px 0;
+    box-sizing: border-box;
+    margin: 0;
+    padding: @entry-padding;
+
+    &.floating {
+      border-top: 0;
+      margin-top: 0;
+    }
+  }
 }
 
 
@@ -327,6 +335,16 @@
 
   .header {
     background: @draft-bg-color;
+  }
+
+  .review-request-page-entry-contents:not(.collapsed) .header {
+    /*
+     * When the box is expanded, there's @entry-padding space between the
+     * header and the banner. We take that space out of the header instead
+     * of the banner to ensure that nothing jumps when the banner is
+     * switching between fixed and floating modes.
+     */
+    padding-bottom: 0;
   }
 }
 
@@ -569,22 +587,6 @@
 }
 
 #reviews .review {
-  .banners {
-    .banner {
-      border-left: 0;
-      border-right: 0;
-      border-top: 0;
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0 @entry-padding @entry-padding @entry-padding;
-
-      &.floating {
-        border-top: 0;
-        margin-top: 0;
-      }
-    }
-  }
-
   .body {
     clear: both;
 
@@ -1067,6 +1069,10 @@
     &:visited {
       color: @link-color;
     }
+  }
+
+  .delete-comment {
+    color: #000000;
   }
 
   label {
@@ -2267,6 +2273,15 @@
 
   &.status-update-state-success {
     .status-update-header(@diff-insert-color, @diff-insert-border-color);
+  }
+}
+
+.status-update-review .banner {
+  border-bottom-width: 0;
+  margin-top: 1px;
+
+  &.floating {
+    border-bottom-width: 1px;
   }
 }
 

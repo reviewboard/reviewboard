@@ -42,8 +42,6 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     initialize: function() {
         _super(this).initialize.call(this);
 
-        _.bindAll(this, '_updateCollapseButtonPos', '_onWindowResize');
-
         this._selector = new RB.TextCommentRowSelector({
             el: this.el,
             reviewableView: this
@@ -51,7 +49,6 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         this._hiddenCommentBlockViews = [];
         this._visibleCommentBlockViews = [];
-        this._$collapseButtons = $();
 
         /* State for keeping consistent column widths for diff content. */
         this._$filenameRow = null;
@@ -79,9 +76,6 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     remove: function() {
         RB.AbstractReviewableView.prototype.remove.call(this);
 
-        this._$window.off('scroll', this._updateCollapseButtonPos);
-        this._$window.off('resize', this._onWindowResize);
-
         this._selector.remove();
     },
 
@@ -92,6 +86,8 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         var $thead;
 
         _super(this).render.call(this);
+
+        this._centered = new RB.CenteredElementManager();
 
         $thead = this.$('thead');
 
@@ -117,9 +113,6 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         this._precalculateContentWidths();
         this._updateColumnSizes();
-
-        this._$window.on('scroll', this._updateCollapseButtonPos);
-        this._$window.on('resize', this._onWindowResize);
 
         return this;
     },
@@ -254,83 +247,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * chunk.
      */
     _updateCollapseButtonPos: function() {
-        var windowTop,
-            windowHeight,
-            len = this._$collapseButtons.length,
-            $button,
-            $tbody,
-            parentOffset,
-            parentTop,
-            parentHeight,
-            i,
-            y1,
-            y2;
-
-        if (len === 0) {
-            return;
-        }
-
-        windowTop = this._$window.scrollTop();
-        windowHeight = this._$window.height();
-
-        for (i = 0; i < len; i++) {
-            $button = $(this._$collapseButtons[i]);
-            $tbody = $button.parents('tbody');
-            parentOffset = $tbody.offset();
-            parentTop = parentOffset.top;
-            parentHeight = $tbody.height();
-
-            /*
-             * We're going to first try to limit our processing to expanded
-             * chunks that are currently on the screen. We'll skip over any
-             * before those chunks, and stop once we're sure we have no further
-             * ones we can show.
-             */
-            if (parentTop >= windowTop + windowHeight) {
-                /* We hit the last one, so we're done. */
-                break;
-            } else if (parentTop + parentHeight <= windowTop) {
-                /* We're not there yet. */
-            } else {
-                /* Center the button in the view. */
-                if (   windowTop >= parentTop
-                    && windowTop + windowHeight <= parentTop + parentHeight) {
-                    if ($button.css('position') !== 'fixed') {
-                        /*
-                         * Position this fixed in the center of the screen.
-                         * It'll be less jumpy.
-                         */
-                        $button.css({
-                            position: 'fixed',
-                            left: $button.offset().left,
-                            top: Math.round((windowHeight -
-                                             $button.outerHeight()) / 2)
-                        });
-                    }
-
-                    /*
-                     * Since the expanded chunk is taking up the whole screen,
-                     * we have nothing else to process, so break.
-                     */
-                    break;
-                } else {
-                    y1 = Math.max(windowTop, parentTop);
-                    y2 = Math.min(windowTop + windowHeight,
-                                  parentTop + parentHeight);
-
-                    /*
-                     * The area doesn't take up the entire height of the
-                     * view. Switch back to an absolute position.
-                     */
-                    $button.css({
-                        position: 'absolute',
-                        left: '',
-                        top: y1 - parentTop +
-                             Math.round((y2 - y1 - $button.outerHeight()) / 2)
-                    });
-                }
-            }
-        }
+        this._centered.updatePosition();
     },
 
     /*
@@ -421,8 +338,12 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
                     }
                 }
 
-                /* Recompute the list of buttons for later use. */
-                this._$collapseButtons = this.$('.diff-collapse-btn');
+                /* Recompute the set of buttons for later use. */
+                this._centered.setElements(new Map(
+                    Array.prototype.map.call(
+                        this.$('.diff-collapse-btn'),
+                        el => [el, $(el).closest('tbody')])
+                ));
                 this._updateCollapseButtonPos();
 
                 /*
@@ -529,17 +450,6 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             this._prevContentWidth = contentWidth;
             this._prevFilenameWidth = filenameWidth;
         }
-    },
-
-    /*
-     * Handler for when the window resizes.
-     *
-     * Updates the sizes of the diff columns, and the location of the
-     * collapse buttons (if one or more are visible).
-     */
-    _onWindowResize: function() {
-        this._updateColumnSizes();
-        this._updateCollapseButtonPos();
     },
 
     /*
