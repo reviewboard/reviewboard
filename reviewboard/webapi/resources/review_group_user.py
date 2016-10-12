@@ -20,6 +20,19 @@ from reviewboard.webapi.resources.user import UserResource
 
 class ReviewGroupUserResource(UserResource):
     """Provides information on users that are members of a review group."""
+
+    name = 'review_group_user'
+    item_result_key = 'user'
+    list_result_key = 'users'
+    model_parent_key = 'review_groups'
+    uri_name = 'users'
+
+    # We do not want the watched resource to be available under this resource
+    # as it will have the wrong URL and does not make sense as a sub-resource;
+    # we will be serializing a link to the user resource and it can be found
+    # from there.
+    item_child_resources = []
+
     allowed_methods = ('GET', 'POST', 'DELETE')
 
     policy_id = 'review_group_user'
@@ -29,6 +42,62 @@ class ReviewGroupUserResource(UserResource):
         group = Group.objects.get(name=group_name,
                                   local_site__name=local_site_name)
         return group.users.all()
+
+    def get_related_links(self, obj=None, request=None, *args, **kwargs):
+        """Return the related links for the resource.
+
+        Args:
+            obj (django.contrib.auth.models.User, optional):
+                The user for which links are being generated.
+
+            request (django.http.HttpRequest):
+                The current HTTP request.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+
+        Returns:
+            dict:
+            The related links for the resource.
+        """
+        links = super(ReviewGroupUserResource, self).get_related_links(
+            obj, request, *args, **kwargs)
+
+        # We only want the 'user' link when this is an item resource.
+        if self.uri_object_key in kwargs:
+            username = kwargs[self.uri_object_key]
+            links['user'] = {
+                'href': resources.user.get_item_url(username=username),
+                'method': 'GET',
+            }
+
+        return links
+
+    def get_serializer_for_object(self, obj):
+        """Return the serializer for an object.
+
+        If the object is a :py:class:`~django.contrib.auth.models.User`
+        instance, we will serialize it (instead of the
+        :py:class:`~reviewboard.webapi.resources.user.UserResource` resource
+        so that the links will be correct. Otherwise, the POST and DELETE links
+        will be for the actual user instead of for this resource.
+
+        Args:
+            obj (django.db.models.base.Model):
+                The model being serialized.
+
+        Returns:
+            djblets.webapi.resources.base.WebAPIResource:
+            The resource that should be used to serialize the object.
+        """
+        if isinstance(obj, User):
+            return self
+
+        return super(ReviewGroupUserResource, self).get_serializer_for_object(
+            obj)
 
     def has_access_permissions(self, request, user, *args, **kwargs):
         group = resources.review_group.get_object(request, *args, **kwargs)

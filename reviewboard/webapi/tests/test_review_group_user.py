@@ -5,14 +5,16 @@ from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
+from reviewboard.site.models import LocalSite
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.errors import INVALID_USER
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
-from reviewboard.webapi.tests.mimetypes import (user_item_mimetype,
-                                                user_list_mimetype)
+from reviewboard.webapi.tests.mimetypes import (
+    review_group_user_item_mimetype, review_group_user_list_mimetype)
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import (get_review_group_user_item_url,
-                                           get_review_group_user_list_url)
+                                           get_review_group_user_list_url,
+                                           get_user_item_url)
 
 
 @six.add_metaclass(BasicTestsMetaclass)
@@ -47,7 +49,7 @@ class ResourceListTests(BaseWebAPITestCase):
             items = []
 
         return (get_review_group_user_list_url(group.name, local_site_name),
-                user_list_mimetype,
+                review_group_user_list_mimetype,
                 items)
 
     def test_get_with_no_access(self):
@@ -76,7 +78,7 @@ class ResourceListTests(BaseWebAPITestCase):
             post_data = {}
 
         return (get_review_group_user_list_url(group.name, local_site_name),
-                user_item_mimetype,
+                review_group_user_item_mimetype,
                 post_data,
                 [group])
 
@@ -123,7 +125,7 @@ class ResourceListTests(BaseWebAPITestCase):
         rsp = self.api_post(
             get_review_group_user_list_url(group.name),
             {'username': self.user.username},
-            expected_mimetype=user_item_mimetype)
+            expected_mimetype=review_group_user_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         self.assertEqual(group.users.count(), 1)
@@ -160,7 +162,7 @@ class ResourceListTests(BaseWebAPITestCase):
         rsp = self.api_post(
             get_review_group_user_list_url(group.name, self.local_site_name),
             {'username': self.user.username},
-            expected_mimetype=user_item_mimetype)
+            expected_mimetype=review_group_user_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         self.assertEqual(group.users.count(), 1)
@@ -265,5 +267,55 @@ class ResourceItemTests(BaseWebAPITestCase):
 
         return (get_review_group_user_item_url(group.name, doc.username,
                                                local_site_name),
-                user_item_mimetype,
+                review_group_user_item_mimetype,
                 doc)
+
+    def test_get_delete_link(self):
+        """Testing GET groups/<name>/users/<username>/ API contains the correct
+        DELETE link
+        """
+        doc = User.objects.get(username='doc')
+        group = self.create_review_group()
+        group.users.add(doc)
+
+        rsp = self.api_get(
+            get_review_group_user_item_url(group.name, doc.username),
+            expected_mimetype=review_group_user_item_mimetype)
+
+        delete_href = \
+            rsp['user']['links']['delete']['href'][len(self.base_url):]
+
+        self.assertEqual(
+            delete_href,
+            get_review_group_user_item_url(group.name, doc.username))
+
+        self.assertNotEqual(delete_href, get_user_item_url(doc.username))
+
+    def test_get_delete_link_local_site(self):
+        """Testing GET groups/<name>/users/<username>/ API contains the correct
+        DELETE link with a local site
+        """
+        doc = User.objects.get(username='doc')
+
+        local_site = LocalSite.objects.create(name='local-site-1')
+        local_site.users.add(self.user)
+        local_site.users.add(doc)
+
+        group = self.create_review_group(local_site=local_site)
+        group.users.add(doc)
+
+        rsp = self.api_get(
+            get_review_group_user_item_url(group.name, doc.username,
+                                           local_site.name),
+            expected_mimetype=review_group_user_item_mimetype)
+
+        delete_href = \
+            rsp['user']['links']['delete']['href'][len(self.base_url):]
+
+        self.assertEqual(
+            delete_href,
+            get_review_group_user_item_url(group.name, doc.username,
+                                           local_site.name))
+
+        self.assertNotEqual(delete_href, get_user_item_url(doc.username,
+                                                           local_site.name))

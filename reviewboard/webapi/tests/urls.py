@@ -460,13 +460,13 @@ def get_review_group_item_url(group_name, local_site_name=None):
 # ReviewGroupUserResource
 #
 def get_review_group_user_list_url(group_name, local_site_name=None):
-    return resources.user.get_list_url(
+    return resources.review_group_user.get_list_url(
         local_site_name=local_site_name,
         group_name=group_name)
 
 
 def get_review_group_user_item_url(group_name, username, local_site_name=None):
-    return resources.user.get_item_url(
+    return resources.review_group_user.get_item_url(
         local_site_name=local_site_name,
         group_name=group_name,
         username=username)
