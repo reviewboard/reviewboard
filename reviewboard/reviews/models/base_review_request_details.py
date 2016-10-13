@@ -281,7 +281,7 @@ class BaseReviewRequestDetails(models.Model):
             diffset_history=self.get_review_request().diffset_history,
             basedir='/',
             request=None,
-            base_commit_id=commit.base_commit_id)
+            base_commit_id=commit.parent)
 
     def save(self, **kwargs):
         self.bugs_closed = self.bugs_closed.strip()

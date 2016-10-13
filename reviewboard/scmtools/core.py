@@ -245,14 +245,14 @@ class Commit(object):
             on how the commit is fetched.
 
         base_commit_id (unicode):
-            Equivalent to :py:attr:`id`.
+            Equivalent to :py:attr:`parent`.
 
-            This is equivalent to ``id``, but can be left unset.
+            This is equivalent to ``parent``, but can be left unset.
 
             .. deprecated:: 2.5.7
 
                This will be removed in the future. Callers should use
-               :py:attr:`id` instead.
+               :py:attr:`parent` instead.
     """
 
     def __init__(self, author_name='', id='', date='', message='', parent='',
@@ -283,7 +283,7 @@ class Commit(object):
                 The contents of the commit's diff.
 
             base_commit_id (unicode, optional):
-                This is equivalent to ``id``, but can be left unset.
+                This is equivalent to ``parent``, but can be left unset.
 
                 .. deprecated:: 2.5.7
 
