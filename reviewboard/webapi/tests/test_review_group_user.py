@@ -62,6 +62,26 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
+    def test_get_multiple_groups(self):
+        """Testing GET groups/<name>/users/ with a user in multiple groups"""
+        doc = User.objects.get(username='doc')
+
+        groups = [
+            self.create_review_group('group1'),
+            self.create_review_group('group2'),
+        ]
+
+        for group in groups:
+            group.users.add(doc)
+
+        rsp = self.api_get(
+            get_review_group_user_list_url(groups[0].name),
+            expected_mimetype=review_group_user_list_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['total_results'], 1)
+        self.compare_item(rsp['users'][0], doc)
+
     #
     # HTTP POST tests
     #
