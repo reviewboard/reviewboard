@@ -24,7 +24,6 @@ class ReviewGroupUserResource(UserResource):
     name = 'review_group_user'
     item_result_key = 'user'
     list_result_key = 'users'
-    model_parent_key = 'review_groups'
     uri_name = 'users'
 
     # We do not want the watched resource to be available under this resource
@@ -40,6 +39,29 @@ class ReviewGroupUserResource(UserResource):
         group = Group.objects.get(name=group_name,
                                   local_site__name=local_site_name)
         return group.users.all()
+
+    def get_href_parent_ids(self, obj, **kwargs):
+        """Return the href parent IDs for the object.
+
+        Args:
+            obj (django.contrib.auth.models.User):
+                The user.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+
+        Returns:
+            dict:
+            The parent IDs to be used to determine the href of the resource.
+        """
+        # Since we do not have a direct link to the model parent (the
+        # Group.users field is a many-to-many field so we cannot use it because
+        # the reverse relation is not unique), we have to manually generate the
+        # parent IDs from the parent resource.
+        parent_id_key = self._parent_resource.uri_object_key
+        return {
+            parent_id_key: kwargs[parent_id_key],
+        }
 
     def get_related_links(self, obj=None, request=None, *args, **kwargs):
         """Return the related links for the resource.
