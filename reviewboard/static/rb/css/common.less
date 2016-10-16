@@ -221,6 +221,7 @@
 
   input[type="text"],
   input[type="password"],
+  input[type="number"],
   input[type="email"] {
     border: 1px #aaa solid;
     font-size: inherit;
@@ -234,7 +235,7 @@
   .auth-button-container {
     width: 16em;
 
-    input {
+    button, input {
       font-size: 120%;
       margin: 0;
       padding: 0.6em;
@@ -335,13 +336,23 @@
           text-align: left;
           width: auto;
         }
+
+        .errorlist {
+          margin-left: 0;
+        }
       }
+    }
+
+    .auth-header p {
+      margin-left: @page-container-padding;
+      margin-right: @page-container-padding;
     }
 
     .auth-section {
       &.main-auth-section {
         /* Reset the margin that was providing room for the side labels. */
         margin-left: 0;
+        margin-right: 0;
       }
     }
   });
