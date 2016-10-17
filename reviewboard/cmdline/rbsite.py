@@ -451,13 +451,28 @@ class Site(object):
         """Perform a database migration."""
         self.run_manage_command("evolve", ["--noinput", "--execute"])
 
-    def encrypt_passwords(self):
+    def harden_passwords(self):
         """Harden any password storage.
 
-        Any legacy plain-text passwords will be encrypted.
+        Any legacy plain-text passwords will be encrypted, and any
+        repositories with stored credentials that are also associated with
+        a hosting service will have those credentials removed.
         """
         from reviewboard.scmtools.models import Repository
 
+        # Due to a bug in Review Board 2.0.x < 2.0.25 and 2.5.x < 2.5.7,
+        # the browser could end up filling in the hidden "password" field
+        # on repositories that were set up to use a hosting service. For
+        # these, we want to make sure those credentials are safely removed.
+        repositories = (
+            Repository.objects
+            .filter(hosting_account__isnull=False)
+            .exclude(username='', encrypted_password='')
+        )
+        repositories.update(username='', encrypted_password='')
+
+        # Any remaining passwords should be encrypted (if coming from an older
+        # version before encryption was added).
         Repository.objects.encrypt_plain_text_passwords()
 
     def get_static_media_upgrade_needed(self):
@@ -1728,7 +1743,7 @@ class UpgradeCommand(Command):
                   "Resetting in-database caches.")
             site.run_manage_command("fixreviewcounts")
 
-        site.encrypt_passwords()
+        site.harden_passwords()
 
         from djblets.siteconfig.models import SiteConfiguration
 
