@@ -4,15 +4,17 @@ from django.contrib.auth.models import User
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
+from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.errors import INVALID_USER
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
-from reviewboard.webapi.tests.mimetypes import (user_item_mimetype,
-                                                user_list_mimetype)
+from reviewboard.webapi.tests.mimetypes import (
+    review_group_user_item_mimetype, review_group_user_list_mimetype)
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import (get_review_group_user_item_url,
-                                           get_review_group_user_list_url)
+                                           get_review_group_user_list_url,
+                                           get_user_item_url)
 
 
 @six.add_metaclass(BasicTestsMetaclass)
@@ -47,18 +49,37 @@ class ResourceListTests(BaseWebAPITestCase):
             items = []
 
         return (get_review_group_user_list_url(group.name, local_site_name),
-                user_list_mimetype,
+                review_group_user_list_mimetype,
                 items)
 
+    @webapi_test_template
     def test_get_with_no_access(self):
-        """Testing the GET groups/<name>/users/ API
-        without access to invite-only group
-        """
+        """Testing the GET <URL> API  without access to invite-only group"""
         group = self.create_review_group(name='priv-group', invite_only=True)
         rsp = self.api_get(get_review_group_user_list_url(group.name),
                            expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    def test_get_multiple_groups(self):
+        """Testing GET <URL> API with a user in multiple groups"""
+        doc = User.objects.get(username='doc')
+
+        groups = [
+            self.create_review_group('group1'),
+            self.create_review_group('group2'),
+        ]
+
+        for group in groups:
+            group.users.add(doc)
+
+        rsp = self.api_get(
+            get_review_group_user_list_url(groups[0].name),
+            expected_mimetype=review_group_user_list_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['total_results'], 1)
+        self.compare_item(rsp['users'][0], doc)
 
     #
     # HTTP POST tests
@@ -76,7 +97,7 @@ class ResourceListTests(BaseWebAPITestCase):
             post_data = {}
 
         return (get_review_group_user_list_url(group.name, local_site_name),
-                user_item_mimetype,
+                review_group_user_item_mimetype,
                 post_data,
                 [group])
 
@@ -86,8 +107,9 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(users[0].username, 'doc')
         self.compare_item(rsp['user'], users[0])
 
+    @webapi_test_template
     def test_post_with_no_access(self, local_site=None):
-        """Testing the POST groups/<name>/users/ API with Permission Denied"""
+        """Testing the POST <URL> API with Permission Denied"""
         group = self.create_review_group()
         user = User.objects.get(pk=1)
 
@@ -97,8 +119,9 @@ class ResourceListTests(BaseWebAPITestCase):
             expected_status=403)
         self.assertEqual(rsp['stat'], 'fail')
 
+    @webapi_test_template
     def test_post_with_invalid_user(self):
-        """Testing the POST groups/<name>/users/ API with invalid user"""
+        """Testing the POST <URL> API with invalid user"""
         self._login_user(admin=True)
 
         group = self.create_review_group()
@@ -112,10 +135,9 @@ class ResourceListTests(BaseWebAPITestCase):
 
         self.assertEqual(group.users.count(), 0)
 
+    @webapi_test_template
     def test_post_with_self(self):
-        """Testing the POST groups/<name>/users/ API
-        with the requesting user
-        """
+        """Testing the POST <URL> API with the requesting user"""
         group = self.create_review_group()
 
         self.assertFalse(self.user.is_superuser)
@@ -123,14 +145,15 @@ class ResourceListTests(BaseWebAPITestCase):
         rsp = self.api_post(
             get_review_group_user_list_url(group.name),
             {'username': self.user.username},
-            expected_mimetype=user_item_mimetype)
+            expected_mimetype=review_group_user_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         self.assertEqual(group.users.count(), 1)
 
+    @webapi_test_template
     def test_post_with_self_and_private_group(self):
-        """Testing the POST groups/<name>/users/ API
-        with the requesting user and private group
+        """Testing the POST <URL> API with the requesting user and private
+        group
         """
         group = self.create_review_group(invite_only=True)
         self.assertFalse(group.is_accessible_by(self.user))
@@ -144,9 +167,9 @@ class ResourceListTests(BaseWebAPITestCase):
         self.assertEqual(group.users.count(), 0)
 
     @add_fixtures(['test_site'])
+    @webapi_test_template
     def test_post_with_self_and_site(self):
-        """Testing the POST groups/<name>/users/ API
-        with the requesting user on a local site
+        """Testing the POST <URL> API with the requesting user on a local site
         """
         self.assertFalse(self.user.is_superuser)
 
@@ -160,15 +183,16 @@ class ResourceListTests(BaseWebAPITestCase):
         rsp = self.api_post(
             get_review_group_user_list_url(group.name, self.local_site_name),
             {'username': self.user.username},
-            expected_mimetype=user_item_mimetype)
+            expected_mimetype=review_group_user_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
 
         self.assertEqual(group.users.count(), 1)
 
     @add_fixtures(['test_site'])
+    @webapi_test_template
     def test_post_with_self_and_unjoined_site(self):
-        """Testing the POST groups/<name>/users/ API
-        with the requesting user on an unjoined local site
+        """Testing the POST <URL> API with the requesting user on an unjoined
+        local site
         """
         self.assertFalse(self.user.is_superuser)
 
@@ -219,9 +243,9 @@ class ResourceItemTests(BaseWebAPITestCase):
     def check_delete_result(self, user, group, doc):
         self.assertNotIn(doc, group.users.all())
 
+    @webapi_test_template
     def test_delete_with_self(self):
-        """Testing the DELETE groups/<name>/users/<username>/ API
-        with the requesting user
+        """Testing the DELETE <URL> API with the requesting user
         """
         group = self.create_review_group()
         group.users.add(self.user)
@@ -234,9 +258,9 @@ class ResourceItemTests(BaseWebAPITestCase):
         self.assertEqual(group.users.count(), 0)
 
     @add_fixtures(['test_site'])
+    @webapi_test_template
     def test_delete_with_self_with_site(self):
-        """Testing the DELETE groups/<name>/users/<username>/ API
-        with the requesting user on local site
+        """Testing the DELETE <URL> API with the requesting user on local site
         """
         self.assertFalse(self.user.is_superuser)
 
@@ -265,5 +289,56 @@ class ResourceItemTests(BaseWebAPITestCase):
 
         return (get_review_group_user_item_url(group.name, doc.username,
                                                local_site_name),
-                user_item_mimetype,
+                review_group_user_item_mimetype,
                 doc)
+
+    @webapi_test_template
+    def test_get_delete_link(self):
+        """Testing GET <URL> API contains the correct DELETE link"""
+        doc = User.objects.get(username='doc')
+        group = self.create_review_group()
+        group.users.add(doc)
+
+        rsp = self.api_get(
+            get_review_group_user_item_url(group.name, doc.username),
+            expected_mimetype=review_group_user_item_mimetype)
+
+        delete_href = \
+            rsp['user']['links']['delete']['href'][len(self.base_url):]
+
+        self.assertEqual(
+            delete_href,
+            get_review_group_user_item_url(group.name, doc.username))
+
+        self.assertNotEqual(delete_href, get_user_item_url(doc.username))
+
+    @add_fixtures(['test_site'])
+    @webapi_test_template
+    def test_get_delete_link_local_site(self):
+        """Testing GET <URL> API contains the correct DELETE link with a local
+        site
+        """
+        doc = User.objects.get(username='doc')
+
+        local_site = self.get_local_site(name=self.local_site_name)
+        local_site.users.add(self.user)
+        local_site.users.add(doc)
+
+        group = self.create_review_group(local_site=local_site)
+        group.users.add(doc)
+
+        rsp = self.api_get(
+            get_review_group_user_item_url(group.name, doc.username,
+                                           local_site.name),
+            expected_mimetype=review_group_user_item_mimetype)
+
+        delete_href = \
+            rsp['user']['links']['delete']['href'][len(self.base_url):]
+
+        self.assertEqual(
+            delete_href,
+            get_review_group_user_item_url(group.name, doc.username,
+                                           local_site.name))
+
+        self.assertNotEqual(delete_href, get_user_item_url(doc.username,
+                                                           local_site.name))
