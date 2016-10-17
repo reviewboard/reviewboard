@@ -137,10 +137,10 @@ class TestCommand(BaseCommand):
             for module_name in options.module_names
         )
 
-        from reviewboard.test import RBTestRunner
-
         os.chdir(options.tree_root)
         os.environ[b'RB_RUNNING_TESTS'] = b'1'
+
+        from reviewboard.test import RBTestRunner
 
         test_runner = RBTestRunner(test_packages=options.module_names,
                                    cover_packages=options.module_names,
