@@ -256,7 +256,9 @@ class GeneralSettingsForm(SiteSettingsForm):
         load_site_config()
 
     def full_clean(self):
-        cache_type = self['cache_type'].data or self['cache_type'].initial
+        """Clean and validate all form fields."""
+        cache_type = (self['cache_type'].data or
+                      self.fields['cache_type'].initial)
 
         for iter_cache_type, field in six.iteritems(
                 self.CACHE_LOCATION_FIELD_MAP):
