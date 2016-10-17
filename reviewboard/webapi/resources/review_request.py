@@ -298,7 +298,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         'discarded': ReviewRequest.DISCARDED,
     }
 
-    def get_related_links(self, review_request=None, request=None, *args,
+    def get_related_links(self, obj=None, request=None, *args,
                           **kwargs):
         """Return related links for the resource.
 
@@ -306,7 +306,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         item resource with a resource that has associated diffs.
 
         Args:
-            review_request (reviewboard.reviews.models.review_request.ReviewRequest, optional):
+            obj (reviewboard.reviews.models.review_request.ReviewRequest, optional):
                 The review request.
 
             request (django.http.HttpRequest, optional):
@@ -323,12 +323,12 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             A dictionary of links related to the resource.
         """
         links = super(ReviewRequestResource, self).get_related_links(
-            review_request, request, *args, **kwargs)
+            obj=obj, request=request, *args, **kwargs)
 
-        if review_request:
+        if obj:
             # We already have the diffsets due to get_queryset(), so we aren't
             # performing another query here.
-            diffsets = list(review_request.diffset_history.diffsets.all())
+            diffsets = list(obj.diffset_history.diffsets.all())
 
             if diffsets:
                 latest_diffset = diffsets[-1]
@@ -337,7 +337,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                         'diff-resource',
                         request,
                         kwargs={
-                            'review_request_id': review_request.display_id,
+                            'review_request_id': obj.display_id,
                             'diff_revision': latest_diffset.revision,
                         })),
                     'method': 'GET',
