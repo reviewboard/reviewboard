@@ -1010,7 +1010,6 @@ class RepositoryForm(forms.ModelForm):
         """
         repository = super(RepositoryForm, self).save(commit=False,
                                                       *args, **kwargs)
-        repository.password = self.cleaned_data['password'] or None
         repository.extra_data = {}
 
         bug_tracker_use_hosting = self.cleaned_data['bug_tracker_use_hosting']
@@ -1019,6 +1018,9 @@ class RepositoryForm(forms.ModelForm):
         service = get_hosting_service(hosting_type)
 
         if service:
+            repository.username = ''
+            repository.password = ''
+
             repository.extra_data.update({
                 'repository_plan': self.cleaned_data['repository_plan'],
                 'bug_tracker_use_hosting': bug_tracker_use_hosting,
@@ -1027,6 +1029,9 @@ class RepositoryForm(forms.ModelForm):
             if service.self_hosted:
                 repository.extra_data['hosting_url'] = \
                     repository.hosting_account.hosting_url
+        else:
+            repository.username = self.cleaned_data['username'] or ''
+            repository.password = self.cleaned_data['password'] or ''
 
         if self.cert:
             repository.extra_data['cert'] = self.cert
