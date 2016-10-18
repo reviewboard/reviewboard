@@ -30,6 +30,7 @@ class RepositoryAdmin(admin.ModelAdmin):
             'fields': (
                 'hosting_type',
                 'hosting_account',
+                'force_authorize',
             ),
             'classes': ('wide',),
         }),

@@ -242,7 +242,8 @@ class HostingServiceAuthForm(forms.Form):
 
         return credentials
 
-    def save(self, allow_authorize=True, extra_authorize_kwargs={}):
+    def save(self, allow_authorize=True, force_authorize=False,
+             extra_authorize_kwargs={}):
         """Save the hosting account and authorize against the service.
 
         This will create or update a hosting account, based on the information
@@ -255,6 +256,9 @@ class HostingServiceAuthForm(forms.Form):
                 If ``True`` (the default), the account will be authorized
                 against the hosting service. If ``False``, only the database
                 entry for the account will be affected.
+
+            force_authorize (bool, optional):
+                Force the account to be re-authorized, if already authorized.
 
             extra_authorize_kwargs (dict, optional):
                 Additional keyword arguments to provide for the
@@ -323,7 +327,7 @@ class HostingServiceAuthForm(forms.Form):
 
         if (allow_authorize and
             self.hosting_service_cls.needs_authorization and
-            not hosting_account.is_authorized):
+            (not hosting_account.is_authorized or force_authorize)):
             # Attempt to authorize the account.
             if self.local_site:
                 local_site_name = self.local_site.name

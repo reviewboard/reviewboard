@@ -7,9 +7,11 @@ from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.forms.widgets import Select
 from djblets.db.query import get_object_or_none
 from django.utils import six
 from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
@@ -35,6 +37,37 @@ from reviewboard.site.validation import validate_review_groups, validate_users
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.errors import (BadHostKeyError,
                                     UnknownHostKeyError)
+
+
+class HostingAccountWidget(Select):
+    """A widget for selecting and modifying an assigned hosting account.
+
+    This presents a list of available hosting service accounts as a drop-down,
+    and provides a link for editing the credentials of the selected account.
+    """
+
+    def render(self, *args, **kwargs):
+        """Render the widget.
+
+        Args:
+            *args (tuple):
+                Arguments for the render.
+
+            **kwargs (dict):
+                Keyword arguments for the render.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The HTML for the widget.
+        """
+        html = super(HostingAccountWidget, self).render(*args, **kwargs)
+
+        return mark_safe(html + (
+            '<a href="#" id="repo-edit-hosting-credentials">'
+            '<span class="rb-icon rb-icon-edit"></span> '
+            '<span id="repo-edit-hosting-credentials-label">%s</span></a>'
+            % _('Edit credentials')
+        ))
 
 
 class RepositoryForm(forms.ModelForm):
@@ -87,7 +120,13 @@ class RepositoryForm(forms.ModelForm):
                     "service. This username may be used as part of the "
                     "repository URL, depending on the hosting service and "
                     "plan."),
-        queryset=HostingServiceAccount.objects.none())
+        queryset=HostingServiceAccount.objects.none(),
+        widget=HostingAccountWidget())
+
+    force_authorize = forms.BooleanField(
+        label=_('Force reauthorization'),
+        required=False,
+        widget=forms.HiddenInput())
 
     # Repository Information fields
     tool = forms.ChoiceField(
@@ -600,8 +639,12 @@ class RepositoryForm(forms.ModelForm):
         # If we don't yet have an account, or we have one but it needs to
         # be re-authorized, then we need to go through the entire account
         # updating and authorization process.
+        force_authorize = self.cleaned_data['force_authorize']
+
         if (self.data and
-            (not hosting_account or not hosting_account.is_authorized)):
+            (not hosting_account or
+             not hosting_account.is_authorized or force_authorize)):
+
             # Rebuild the authentication form, but with data provided to
             # this form, so that we can link or re-authorize an account.
             auth_form = self.hosting_auth_forms[hosting_type]
@@ -625,7 +668,8 @@ class RepositoryForm(forms.ModelForm):
 
             try:
                 hosting_account = auth_form.save(
-                    extra_authorize_kwargs=repository_extra_data)
+                    extra_authorize_kwargs=repository_extra_data,
+                    force_authorize=force_authorize)
             except ValueError as e:
                 # There was an error with a value provided to the form from
                 # The user. Bubble this up.
@@ -1115,7 +1159,6 @@ class RepositoryForm(forms.ModelForm):
         """
         repository = super(RepositoryForm, self).save(commit=False,
                                                       *args, **kwargs)
-        repository.password = self.cleaned_data['password'] or None
         repository.extra_data = {}
 
         bug_tracker_use_hosting = self.cleaned_data['bug_tracker_use_hosting']
@@ -1124,6 +1167,9 @@ class RepositoryForm(forms.ModelForm):
         service = get_hosting_service(hosting_type)
 
         if service:
+            repository.username = ''
+            repository.password = ''
+
             repository.extra_data.update({
                 'repository_plan': self.cleaned_data['repository_plan'],
                 'bug_tracker_use_hosting': bug_tracker_use_hosting,
@@ -1132,6 +1178,9 @@ class RepositoryForm(forms.ModelForm):
             if service.self_hosted:
                 repository.extra_data['hosting_url'] = \
                     repository.hosting_account.hosting_url
+        else:
+            repository.username = self.cleaned_data['username'] or ''
+            repository.password = self.cleaned_data['password'] or ''
 
         if self.cert:
             repository.extra_data['cert'] = self.cert
