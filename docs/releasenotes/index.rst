@@ -10,6 +10,7 @@ Review Board Release Notes
 .. toctree::
    :maxdepth: 1
 
+   2.5.7
    2.5.6.1
    2.5.6
    2.5.5
@@ -30,6 +31,7 @@ Review Board Release Notes
 .. toctree::
    :maxdepth: 1
 
+   2.0.25
    2.0.24
    2.0.23
    2.0.22

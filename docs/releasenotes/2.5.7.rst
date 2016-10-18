@@ -1,0 +1,517 @@
+================================
+Review Board 2.5.7 Release Notes
+================================
+
+**Release date**: TBD
+
+
+Packaging
+=========
+
+* We now require django-haystack_ 2.3.1 through 2.4.x.
+
+  Newer versions of django-haystack are incompatible with Django 1.6.x,
+  and therefore with Review Board.
+
+
+.. _django-haystack: https://github.com/django-haystack/django-haystack
+
+
+New Features
+============
+
+E-Mail
+------
+
+* Added DMARC-compatibility when sending e-mails. (:bug:`4458`)
+
+  Review Board tries to send e-mail on behalf of users, in order to allow
+  e-mail threads to more closely mirror the discussions happening in Review
+  Board. While this generally works (particularly inside of organizations
+  with their own e-mail infrastructure), it can cause problems when using
+  Sender Verification through `Sender Policy Framework`_ and DMARC_.
+
+  Now, Review Board looks up whether a DMARC rule may prevent our e-mails
+  from being received by a user (when sending on behalf of the user), and
+  switches instead to sending e-mail from the server's address, formatting
+  the name to be clear it's sent on behalf of a user.
+
+  This should solve most e-mail sending problems that some organizations
+  have hit.
+
+* Added a "Show Changes" link to review request e-mails. (:bug:`4160`)
+
+  This link points to the interdiff showing what changed since the previous
+  update, making it easier for reviewers paying attention to e-mails to
+  quickly see what changed.
+
+  Patch by Griffin Myers.
+
+
+.. _Sender Policy Framework:
+   https://en.wikipedia.org/wiki/Sender_Policy_Framework
+.. _DMARC: https://en.wikipedia.org/wiki/DMARC
+
+
+Diff Viewer
+-----------
+
+* Improved matching of files in interdiffs.
+
+  Depending on the type of repository, complex changes to files in interdiffs
+  could result in those files appearing mismatched in some way. For example,
+  if a file is deleted in one revision, and a different revision shows the
+  same file as deleted alongside a new file added with the same name (which
+  is permitted by Subversion). Or if several files were moved/copied
+  from the same source file. These cases would appear incorrectly, with
+  files being shown as new file entries. This made reviews more difficult.
+
+  The algorithm has been greatly improved in this release. It now does a
+  better job of handling these more specialized cases, resulting in a far
+  more useful and informative interdiff view.
+
+
+Administration
+--------------
+
+* Added a new user selector for administration pages.
+
+  On very large installs with thousands of users, any administration page that
+  allows for user selection (such as the group or repository configuration
+  pages) could stall when trying to load and render all the users.
+
+  We now use a new user selector widget, which provides a smarter, faster
+  way of finding and adding users. It shows the list of currently selected
+  users, and offers search for quickly finding new users to add, along with
+  showing detailed information and avatars for those users.
+
+  In the future, we will be including variations on this widget for other
+  lists of items, such as review groups and repositories.
+
+* Added helpful information when failing to set up a GitHub
+  organization-backed repository.
+
+  GitHub organizations can be set up (and usually are, these days) to require
+  confirmation from an organization administrator before linking up a service.
+  On these setups, adding the repository would just fail, claiming the
+  repository didn't exist. We now include some helpful information in this
+  case, along with a link to a guide on linking the repository.
+
+  This is more of a problem on RBCommons_ than standalone Review Board
+  servers.
+
+* Added the ability to edit hosting service account credentials for
+  repositories.
+
+  Credentails for repositories tied to hosting services can now be modified
+  by clicking :guilabel:`Edit Credentials` next to the configured account.
+  This is useful when your password or token has changed on the service, and
+  you need to update Review Board to use it.
+
+* Review Board settings can now only be modified by full administrators, not
+  "staff" users.
+
+  While not commonly done, it's possible to grant non-administrative users
+  certain privileges in the administration UI, so that they can manage (for
+  example) review groups or default reviewers. These are known in the Django
+  world as "staff" users.
+
+  Those users ended up having access to the Review Board settings. Now,
+  those settings can only be viewed and modified by full administrators
+  ("superusers").
+
+* Added organization of the settings forms for Active Directory, LDAP,
+  and standard registration.
+
+  This should help guide people toward configuring these authentication
+  methods, instead of lumping all standard and advanced settings together.
+
+
+.. _RBCommons: https://rbcommons.com/
+
+
+Extensions
+----------
+
+* Added a new command line tool for running unit tests for custom extensions.
+
+  We've added a brand new command line tool, :command:`rbext`, which
+  extension authors can use to easily run unit tests shipped with their
+  extensions, helping ensure their extensions run as expected.
+
+  See the guide on :ref:`testing-extensions` for information on how to write
+  and run unit tests for your extension.
+
+
+Usability Improvements
+======================
+
+* Comment dialogs can now be saved and closed by using :kbd:`Command-Enter`
+  on macOS.
+
+  This is more natural for macOS users than :kbd:`Control-Enter` (which is
+  what we support for other platforms).
+
+  Patch by David Walsh.
+
+* Attempting to close the comment dialog while there are unsaved changes
+  now prompts for confirmation. (:bug:`4373`)
+
+  Patch by Michael Stensby.
+
+* The search field at the top of the page is now marked as a "search" input
+  type.
+
+  This allows mobile clients to be smarter about the handling for this
+  field. Often, this impacts the buttons on the mobile keyboard, adding a
+  nice "Search" button instead of "Enter."
+
+  Patch by David Walsh.
+
+
+Web API
+=======
+
+* Added an API for creating new users.
+
+  Users can now be manually created through the
+  :ref:`webapi2.0-user-list-resource` API. Callers can provide the username,
+  e-mail address, and password, along with an optional first and last name for
+  the user.
+
+  This cannot be called on Local Sites, and the authenticated user calling
+  this API must either be a superuser or must have the ``auth.add_user``
+  permission set.
+
+* Fixed bugs where ``?include-text-types=`` didn't properly serialize custom
+  field data.
+
+  Custom fields with Markdown-capable text stored in ``extra_data`` weren't
+  being serialized when specifying the text types to include, preventing
+  the caller from being able to retrieve that content in the desired type.
+
+  Patch by Griffin Myers.
+
+* Floating point numbers can now be set in ``extra_data`` fields.
+
+  These used to be turned into strings, but are now correctly recognized
+  as floating point numbers.
+
+  Patch by Griffin Myers.
+
+* Add a link to the latest diff revision from review request payloads.
+
+  The :ref:`webapi2.0-review-request-resource` now includes a ``latest_diff``
+  link, pointing to the latest revision of the diff. This can save several
+  queries in the API.
+
+* Hosting service errors now return a suitable error message in the
+  :ref:`webapi2.0-repository-branches-resource` API.
+
+  Previously, a hosting service error would result in an HTTP 500 page without
+  a payload. It now returns a :ref:`webapi2.0-error-210`.
+
+* Floating point values are now serialized without crashing when using an XML
+  response payload.
+
+  Patch by Griffin Myers.
+
+* Fixed the links generated in the :ref:`webapi2.0-review-group-user-resource`
+  (:bug:`4382`).
+
+  The links were pointing to the :ref:`webapi2.0-user-resource`, breaking
+  actions like deletion of users from a group.
+
+
+Performance Improvements
+========================
+
+* Reduced the amount of data that needed to be fetched when looking up
+  details on Bugzilla bugs.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Removed deprecation warnings in the log files relating to the Extensions
+  template loader.
+
+* Fixed the display of some high-DPI (Retina) images in the UI when serving
+  up media from a CDN.
+
+
+Accounts
+--------
+
+* Fixed crashes based on a user profile's ``extra_data`` being null.
+
+  Review Board and third-party extensions can store data in a user profile's
+  ``extra_data`` field, but for many users this field can be null (as opposed
+  to just empty). This led to crashes. Now, it's guaranteed to be non-null.
+
+* Hitting enter in the search field for groups in the My Account page no
+  longer incorrectly submits the form. (:bug:`4452`)
+
+* Fixed some small styling issues for login/registration pages on mobile.
+
+
+Dashboard
+---------
+
+* Fixed the link on the Submitter column entries on Local Sites.
+
+  This regressed in 2.5, and was linking to the main (non-Local Site) page
+  for a user.
+
+* Fixed starring review requests on the dashboard immediately after adding
+  the Starred column. (:bug:`4460`)
+
+* Fixed a breakage in the columns menu when attempting to toggle it opened
+  and closed really fast.
+
+* Fixed a breakage in opening the columns menu after reordering columns or
+  waiting for the dashboard to reload. (:bug:`4461`)
+
+
+Review Requests
+---------------
+
+* Review requests created from existing commits now correctly store
+  information on the draft.
+
+  Previously, creating a new review request from an existing commit in the
+  New Review Request page would cause the review request to be created with
+  all the information populated but without a draft. This forced the user
+  to make a change before it could be published, in some cases.
+
+* Fixed several issues with custom Markdown-enabled text fields provided by
+  extensions. (:bug:`3963`, :bug:`4110`)
+
+  A custom text field's Markdown/plain text state wasn't transferring from a
+  draft to a review request when publishing the draft. There was also a
+  related problem where the "Enable Markdown" checkbox wasn't always being
+  set correctly.
+
+  These issues have all been fixed.
+
+  Many users hit these issues when using the `Note to Reviewers`_ extension.
+  You will not need to upgrade the extension in order to get these fixes.
+
+  Patch by Griffin Myers.
+
+* Fixed issues displaying and linking to bugs in the Bugs field on a review
+  request when using Local Sites.
+
+* Fixed the cursor when hovering over part of a text field not containing
+  text.
+
+  Hovering over a section of Markdown-capable text fields without text
+  would show the standard arrow cursor. Now it shows the text cursor.
+
+* Fixed display of a Bugzilla bug's summary and status when hovering over
+  the bug ID. (:bug:`4420`)
+
+  Previously, the summary and status were being shown as Python tuples (in the
+  form of ``("my summary",)``.
+
+* Removed excess whitespace below the Reply buttons on reviews.
+
+* Fixed stale information needed by Review Bot (and possibly other extensions)
+  when publishing a review request.
+
+  Review Bot, and other extensions listening to publish events, could end up
+  seeing some older information when a review request is published (such as
+  an older diff revision), causing them to fail or behave incorrectly.
+
+
+.. _Note to Reviewers: https://www.reviewboard.org/store/products/rbnotefield/
+
+
+File Attachments
+----------------
+
+* Removed unwanted padding around lines in rendered Markdown files.
+
+* Fixed issues displaying some thumbnails in the "Review request changed"
+  boxes.
+
+  PDF thumbnails (when using `Power Pack`_) would fail to display correctly,
+  due to a missing variable.
+
+  There were also issues providing the right data for older file attachments
+  that didn't have revision history set up.
+
+* Fixed administrators not being able to edit draft file attachments from
+  other users.
+
+  While not intended for normal use, administrators have the ability to make
+  changes to another user's review requests. This change fixes their ability
+  to edit the draft of an uploaded file attachment.
+
+  Note that administrators still won't see those changes or see a draft
+  banner after reloading the review request.
+
+* Fixed displaying the titles/captions on images when hovering over them
+  for image reviews.
+
+* Fixed breakages with commenting on legacy (Review Board 1.0.x-1.5.x)
+  screenshots.
+
+  Screenshots were a feature that pre-dated file attachments, and were
+  specific to image files. File attachments replaced these in Review Board
+  1.6. However, older review requests may still have screenshots attached,
+  and commenting on these have been broken until now.
+
+
+.. _Power Pack: https://www.reviewboard.org/powerpack/
+
+
+E-Mail
+------
+
+* Fixed the line range indicators in text-only e-mails.
+
+  The line range indicators introduced in 2.5, designed to show what lines
+  of a file a comment applied to, only took into account the patched/modified
+  lines (not the original lines), which wasn't always useful. It also
+  sometimes displayed the wrong lines, and sometimes crashed the page.
+
+  This feature has been completely reworked to be consistent with what
+  reviews would show.
+
+* The "Diff" section in review request e-mails are no longer shown for
+  review requests without diffs.
+
+  Patch by Griffin Myers.
+
+* The "View Diff" link in e-mails now points to the specific version of the
+  diff posted, rather than the latest.
+
+  Patch by Griffin Myers.
+
+* Thumbnails shown for image diffs in e-mails will now load properly.
+
+
+Extensions
+----------
+
+* Fixed an error when attempting to package extension static media.
+
+
+Administration
+--------------
+
+* Fixed a bug that could cause bad passwords to be associated with
+  repositories when configuring using a hosting service.
+
+  Some browsers would try auto-filling the hidden password field, causing a
+  bad password to be saved. This was still saved as encrypted with the same
+  security as other repository passwords, but its presence would interfere
+  with the hosting service's configured password. These passwords are no
+  longer saved. On site upgrade, these passwords will be removed from
+  repositories.
+
+* Fixed storing repository passwords containing non-ASCII characters.
+
+* The General Settings page no longer crashes if cache server information
+  is missing from settings.
+
+
+WebHooks
+--------
+
+* Fixed the signatures generated for WebHook payloads to use SHA-1.
+  (:bug:`4412`)
+
+  Our documentation states that the payloads are signed using SHA-1 hashes
+  for HMAC, but the implementation was actually using MD5. It's now properly
+  using SHA-1.
+
+  This may affect some endpoints that were verifying using MD5.
+
+* Fixed dispatching WebHooks configured on Local Sites.
+
+* Fixed UI issues in the WebHook configuration form.
+
+  Repositories are now shown in a standard side-by-side view, and the
+  main information for a WebHook is now shown in a "General Information"
+  section.
+
+* Fixed display issues when listing configured WebHooks.
+
+  The displayed name of the WebHook was overly verbose. We now show the URL
+  instead.
+
+* Fixed page breakages when WebHooks failed to send or when using a custom
+  payload with bad content.
+
+  A configured WebHook that was in some way problematic could end up breaking
+  the page when, for example, publishing a review request or a review.
+  Breakages are now logged, and no longer result in crashing.
+
+
+API Tokens
+----------
+
+* Fixed display issues with line numbers in the API Token policy editor.
+
+
+Diff Storage
+------------
+
+* Fixed failures with race conditions when migrating diffs.
+
+  When attempting to migrate diffs to the new compressed storage method
+  (using the ``condensediffs`` command, for example, or when viewing an
+  unmigrated diff), it was possible to hit a race condition where that
+  particular diff had just been migrated by another caller.
+
+  In these cases, the migration process will now recover and finish any
+  migration tasks that still need to be done.
+
+
+Bitbucket
+---------
+
+* Fixed breakages when posting existing commits for review in the New Review
+  Request page.
+
+* Fixed the error shown when Bitbucket repositories couldn't be added.
+
+  Previously, we would end up showing a File Not Found error when adding an
+  invalid repository. Now we properly say that the repository couldn't be
+  found.
+
+
+CVS
+---
+
+* Fixed issues with certain variations of CVSROOTs. (:bug:`4022`)
+
+  We supported common types of CVSROOTs, such as ``:pserver:`` or
+  similar, but had issues with ``:ext:``, ``:local:``, ``:fork:``, and other
+  less common variants. Diff filenames wouldn't parse correctly, breaking
+  syntax highlighting and causing the files to show up as moved.
+
+
+GitLab
+------
+
+* Fixed a crash when attempting to log data for GitLab repositories.
+
+  Patch by Mariusz Dubielecki.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* David Walsh
+* Griffin Myers
+* Mariusz Dubielecki
+* Michael Stensby
