@@ -441,3 +441,5 @@ TEST_PACKAGES = ['reviewboard']
 ABSOLUTE_URL_OVERRIDES = {
     'auth.user': lambda u: reverse('user', kwargs={'username': u.username})
 }
+
+FEATURE_CHECKER = 'reviewboard.features.checkers.RBFeatureChecker'

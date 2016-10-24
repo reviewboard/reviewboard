@@ -345,7 +345,8 @@ def review_detail(request,
     review_request, response = _find_review_request(
         request, review_request_id, local_site)
 
-    status_updates_enabled = status_updates_feature.is_enabled()
+    status_updates_enabled = status_updates_feature.is_enabled(
+        local_site=local_site)
 
     if not review_request:
         return response
