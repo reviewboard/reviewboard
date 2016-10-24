@@ -4,6 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.reviews.actions import (BaseReviewRequestAction,
                                          BaseReviewRequestMenuAction)
+from reviewboard.reviews.features import general_comments_feature
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.urls import diffviewer_url_names
@@ -199,7 +200,9 @@ class AddGeneralCommentAction(BaseReviewRequestAction):
     label = _('Add Comment')
 
     def should_render(self, context):
-        return context['request'].user.is_authenticated()
+        request = context['request']
+        return (request.user.is_authenticated() and
+                general_comments_feature.is_enabled(request=request))
 
 
 class ShipItAction(BaseReviewRequestAction):
