@@ -12,6 +12,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST,
                                    PERMISSION_DENIED)
 
 from reviewboard.changedescs.models import ChangeDescription
+from reviewboard.reviews.features import status_updates_feature
 from reviewboard.reviews.models import Review, StatusUpdate
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
@@ -31,6 +32,10 @@ class StatusUpdateResource(WebAPIResource):
     Otherwise, the status update will be shown in a box immediately below the
     review request details.
     """
+
+    required_features = [
+        status_updates_feature,
+    ]
 
     model = StatusUpdate
     name = 'status_update'
