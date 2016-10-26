@@ -948,7 +948,31 @@ RB.ReviewDialogView = Backbone.View.extend({
      * this view's element as the child.
      */
     _renderDialog: function() {
-        var reviewRequest = this.model.get('parentObject');
+        var reviewRequest = this.model.get('parentObject'),
+            buttons = [];
+
+        if (this.options.generalCommentsEnabled) {
+            buttons.push(
+                $('<input type="button" />')
+                    .val(gettext('Add Comment'))
+                    .click(this._onAddCommentClicked)
+            );
+        }
+
+        buttons.push(
+            $('<div id="review-form-publish-split-btn-container" />'),
+
+            $('<input type="button"/>')
+                .val(gettext('Discard Review'))
+                .click(_.bind(this._onDiscardClicked, this)),
+
+            $('<input type="button"/>')
+                .val(gettext('Close'))
+                .click(_.bind(function() {
+                    this._saveReview(false);
+                    return false;
+                }, this))
+        );
 
         this._$dlg = $('<div/>')
             .attr('id', 'review-form')
@@ -959,24 +983,7 @@ RB.ReviewDialogView = Backbone.View.extend({
                 title: gettext('Review for: ') + reviewRequest.get('summary'),
                 stretchX: true,
                 stretchY: true,
-                buttons: [
-                    $('<input type="button"/>')
-                        .val(gettext('Add Comment'))
-                        .click(this._onAddCommentClicked),
-
-                    $('<div id="review-form-publish-split-btn-container" />'),
-
-                    $('<input type="button"/>')
-                        .val(gettext('Discard Review'))
-                        .click(_.bind(this._onDiscardClicked, this)),
-
-                    $('<input type="button"/>')
-                        .val(gettext('Close'))
-                        .click(_.bind(function() {
-                            this._saveReview(false);
-                            return false;
-                        }, this))
-                ]
+                buttons: buttons
             })
             .keypress(function(e) { e.stopPropagation(); })
             .attr('scrollTop', 0)
@@ -1189,7 +1196,8 @@ RB.ReviewDialogView = Backbone.View.extend({
         dlg = new RB.ReviewDialogView({
             container: options.container,
             model: options.review,
-            reviewRequestEditor: reviewRequestEditor
+            reviewRequestEditor: reviewRequestEditor,
+            generalCommentsEnabled: options.generalCommentsEnabled
         });
         RB.ReviewDialogView._instance = dlg;
 

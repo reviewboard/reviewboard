@@ -15,7 +15,8 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext as _
 
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
-from reviewboard.attachments.models import FileAttachment
+from reviewboard.attachments.models import (FileAttachment,
+                                            get_latest_file_attachments)
 from reviewboard.reviews.context import make_review_request_context
 from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
                                                 normalize_text_for_edit)
@@ -142,6 +143,14 @@ class ReviewUI(object):
                 'base_template': 'reviews/ui/base.html',
                 'review': self.review_request.get_pending_review(request.user),
                 'review_ui_inline': False,
+            })
+
+            prev_file_attachment, next_file_attachment = \
+                self._get_adjacent_file_attachments(review_request_details)
+
+            context.update({
+                'next_file_attachment': next_file_attachment,
+                'prev_file_attachment': prev_file_attachment,
             })
 
         try:
@@ -313,6 +322,43 @@ class ReviewUI(object):
             'issue_status': comment.issue_status_to_string(
                 comment.issue_status),
         }
+
+    def _get_adjacent_file_attachments(self, review_request_details):
+        """Return the next and previous file attachments.
+
+        The next and previous file attachments are the file attachments that
+        occur before and after this one in the review request details view.
+
+        Args:
+            review_request_details (reviewboard.reviews.models.base_review_request_details.BaseReviewRequestDetails):
+                The review request or draft.
+
+        Returns:
+            tuple:
+            A 2-tuple of the previous and next file attachments, which will
+            either be ``None`` (if there isn't a previous or next file
+            attachment) or
+            :py:class:`~reviewboard.attachments.models.FileAttachment`
+            instances.
+        """
+        file_attachments = iter(get_latest_file_attachments(
+            review_request_details.get_file_attachments()))
+
+        prev_obj = None
+        next_obj = None
+
+        for obj in file_attachments:
+            if obj.pk == self.obj.pk:
+                break
+
+            prev_obj = obj
+
+        try:
+            next_obj = next(file_attachments)
+        except StopIteration:
+            pass
+
+        return prev_obj, next_obj
 
 
 class FileAttachmentReviewUI(ReviewUI):

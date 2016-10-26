@@ -31,6 +31,7 @@ from django.db.models.signals import m2m_changed
 from django.dispatch import receiver
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
+from djblets.db.fields import JSONField
 
 from reviewboard.site.signals import local_site_user_added
 
@@ -60,6 +61,8 @@ class LocalSite(models.Model):
                                    related_name='local_site')
     admins = models.ManyToManyField(User, blank=True,
                                     related_name='local_site_admins')
+
+    extra_data = JSONField(null=True)
 
     def is_accessible_by(self, user):
         """Returns whether or not the user has access to this LocalSite.

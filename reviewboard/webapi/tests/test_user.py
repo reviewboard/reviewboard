@@ -255,8 +255,7 @@ class ResourceItemTests(AvatarServicesTestMixin, BaseWebAPITestCase):
     def setUp(self):
         super(ResourceItemTests, self).setUp()
 
-        avatar_services.enable_service(GravatarService.avatar_service_id,
-                                       save=False)
+        avatar_services.enable_service(GravatarService, save=False)
 
     def setup_http_not_allowed_item_test(self, user):
         return get_user_item_url(user.username)

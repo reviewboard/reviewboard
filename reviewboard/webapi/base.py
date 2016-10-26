@@ -11,6 +11,7 @@ from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (SPECIAL_PARAMS,
                                        webapi_login_required,
                                        webapi_request_fields)
+from djblets.webapi.errors import PERMISSION_DENIED
 from djblets.webapi.resources.base import \
     WebAPIResource as DjbletsWebAPIResource
 from djblets.webapi.resources.mixins.api_tokens import ResourceAPITokenMixin
@@ -89,6 +90,13 @@ class WebAPIResource(ResourceAPITokenMixin, APIQueryUtilsMixin,
     autogenerate_etags = True
     mimetype_vendor = 'reviewboard.org'
     api_token_model = WebAPIToken
+
+    #: An optional set of required features to communicate with this resource.
+    #:
+    #: If no features are listed here, the resource will behave normally.
+    #: However, if one or more features are listed here and are **not**
+    #: enabled, the resource will return a 403 Forbidden error.
+    required_features = []
 
     def __init__(self, *args, **kwargs):
         super(WebAPIResource, self).__init__(*args, **kwargs)
@@ -186,6 +194,53 @@ class WebAPIResource(ResourceAPITokenMixin, APIQueryUtilsMixin,
         import_extra_data. By default, all fields can be imported.
         """
         return True
+
+    def call_method_view(self, request, method, view, *args, **kwargs):
+        """Call the given method view.
+
+        The default behaviour is to call the given ``view`` passing in all
+        ``args`` and ``kwargs``. However, Review Board allows certain resources
+        to be disabled by setting the :py:attr:`~required_features` attribute.
+        If a feature specified in that list is disabled, this method will
+        return a 403 Forbidden response instead of calling the method view.
+
+        In addition, Review Board has token access policies. If the client is
+        authenticated with an API token, the token's access policies will be
+        checked before calling the view. If the operation is disallowed, a 403
+        Forbidden response will be returned.
+
+        Only if those two conditions are met will the view actually be called.
+
+        Args:
+            request (django.http.HttpRequest):
+                The current HTTP request.
+
+            method (unicode):
+                The HTTP method.
+
+            view (callable):
+                The view.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+
+        Returns:
+            WebAPIError or tuple:
+            Either a 403 Forbidden error or the result of calling the method
+            view, which will either be a
+            :py:class:`~djblets.webapi.errors.WebAPIError` or a 2-tuple of the
+            HTTP status code and a dict indicating the JSON response from the
+            view.
+        """
+        for feature in self.required_features:
+            if not feature.is_enabled(request=request):
+                return PERMISSION_DENIED
+
+        return super(WebAPIResource, self).call_method_view(
+            request, method, view, *args, **kwargs)
 
     def build_resource_url(self, name, local_site_name=None, request=None,
                            **kwargs):

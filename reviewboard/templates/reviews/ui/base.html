@@ -13,6 +13,42 @@
 {% block content %}
 {%  definevar "review_ui_box_content" %}{% block review_ui_box_content %}{% endblock %}{% enddefinevar %}
 
+{%  if prev_file_attachment %}
+<div class="review-ui-prev-attachment">
+ <a href="{% url 'file-attachment' review_request_id=review_request.display_id file_attachment_id=prev_file_attachment.pk %}">
+  <div class="file-container">
+   <div class="file">
+    <div class="file-thumbnail-container">
+     <div class="file-thumbnail">{{prev_file_attachment.thumbnail}}</div>
+    </div>
+    <div class="file-caption-container">
+     <div class="file-caption">{{prev_file_attachment}}</div>
+    </div>
+   </div>
+  </div>
+  <span class="fa fa-chevron-left" aria-hidden="true"></span>
+ </a>
+</div>
+{%  endif %}
+
+{%  if next_file_attachment %}
+<div class="review-ui-next-attachment">
+ <a href="{% url 'file-attachment' review_request_id=review_request.display_id file_attachment_id=next_file_attachment.pk %}">
+  <span class="fa fa-chevron-right" aria-hidden="true"></span>
+  <div class="file-container">
+   <div class="file">
+    <div class="file-thumbnail-container">
+     <div class="file-thumbnail">{{next_file_attachment.thumbnail}}</div>
+    </div>
+    <div class="file-caption-container">
+     <div class="file-caption">{{next_file_attachment}}</div>
+    </div>
+   </div>
+  </div>
+ </a>
+</div>
+{%  endif %}
+
 <div id="review-request" class="review-ui-box{% if review_ui_box_content %} has-review-ui-box-content{% endif %}">
 {%  include "reviews/trophy_box.html" %}
  <div id="review-request-banners"></div>

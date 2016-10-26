@@ -125,6 +125,7 @@
   border: @textarea-border;
   height: auto;
   margin: @textarea-editor-margin;
+  cursor: text;
 
   .CodeMirror-lines {
     padding: @textarea-editor-padding;
@@ -212,6 +213,59 @@
   }
 }
 
+.review-ui-next-attachment,
+.review-ui-prev-attachment {
+  background: @box-bg;
+  border: 1px solid @box-border-color;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+  padding: 2px;
+  position: fixed;
+  top: 50%;
+  transition: transform 0.3s, background 0.3s, margin 0.3s;
+  z-index: @z-index-base;
+
+  &:hover {
+    background: darken(@box-bg, 10%);
+    transform: translateY(-50%);
+  }
+
+  a {
+    color: black;
+    font-size: 1.5em;
+    text-decoration: none;
+  }
+
+  .file-container {
+    display: inline-block;
+    float: none;
+    vertical-align: middle;
+  }
+}
+
+
+.review-ui-next-attachment {
+  border-right-width: 0;
+  border-radius: @box-border-radius 0 0 @box-border-radius;
+  margin-right: @page-container-padding;
+  right: -2px;
+  transform: translateY(-50%) translateX(100%);
+
+  &:hover {
+    margin-right: 0;
+  }
+}
+
+.review-ui-prev-attachment {
+  border-left-width: 0;
+  border-radius: 0 @box-border-radius @box-border-radius 0;
+  margin-left: @page-container-padding;
+  left: -2px;
+  transform: translateY(-50%) translateX(-100%);
+
+  &:hover {
+    margin-left: 0;
+  }
+}
 
 /****************************************************************************
  * Entries (status updates, reviews, change descriptions)

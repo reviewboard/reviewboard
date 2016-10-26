@@ -248,7 +248,7 @@ class ReviewRequestPageData(object):
         review_ids = self.reviews_by_id.keys()
 
         # Get all status updates.
-        if status_updates_feature.is_enabled():
+        if status_updates_feature.is_enabled(request=self.request):
             self.status_updates = list(
                 self.review_request.status_updates.all()
                 .select_related('review'))
@@ -535,11 +535,9 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
             data (ReviewRequestPageData):
                 Pre-queried data for the review request page.
         """
+        StatusUpdatesEntryMixin.__init__(self)
         BaseReviewRequestPageEntry.__init__(self, review_request.time_added,
                                             collapsed)
-
-        if status_updates_feature.is_enabled():
-            StatusUpdatesEntryMixin.__init__(self)
 
     @property
     def has_content(self):
@@ -662,7 +660,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
         BaseReviewRequestPageEntry.__init__(self, changedesc.timestamp,
                                             collapsed)
 
-        if status_updates_feature.is_enabled():
+        if status_updates_feature.is_enabled(request=request):
             StatusUpdatesEntryMixin.__init__(self)
 
         self.changedesc = changedesc

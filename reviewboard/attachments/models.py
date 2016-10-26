@@ -275,3 +275,31 @@ class FileAttachment(models.Model):
 
     class Meta:
         get_latest_by = 'attachment_revision'
+
+
+def get_latest_file_attachments(file_attachments):
+    """Filter the list of file attachments to only return the latest revisions.
+
+    Args:
+        file_attachments (list of
+        reviewboard.attachments.models.FileAttachment):
+            The file attachments to filter.
+
+    Returns:
+        list of reviewboard.attachments.models.FileAttachment:
+        The list of file attachments that are the latest revisions in their
+        respective histories.
+    """
+    file_attachment_histories = FileAttachmentHistory.objects.filter(
+        file_attachments__in=file_attachments)
+    latest = {
+        data['id']: data['latest_revision']
+        for data in file_attachment_histories.values('id', 'latest_revision')
+    }
+
+    return [
+        f
+        for f in file_attachments
+        if (not f.is_from_diff and
+            f.attachment_revision == latest[f.attachment_history_id])
+    ]

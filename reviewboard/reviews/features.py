@@ -6,6 +6,21 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.features import Feature
 
 
+class GeneralCommentsFeature(Feature):
+    """A feature for general comments.
+
+    General comments allow comments to be created directly on a review request
+    without accompanying file attachment or diff. These can be used to raise
+    issues with the review request itself, such as its summary or description,
+    or general implementation issues.
+    """
+
+    feature_id = 'reviews.general_comments'
+    name = _('General Comments')
+    summary = _('Allow comments on review requests without an associated file '
+                'attachment or diff.')
+
+
 class StatusUpdatesFeature(Feature):
     """A feature for status updates.
 
@@ -22,4 +37,5 @@ class StatusUpdatesFeature(Feature):
                 'and report the results of those checks.')
 
 
+general_comments_feature = GeneralCommentsFeature()
 status_updates_feature = StatusUpdatesFeature()
