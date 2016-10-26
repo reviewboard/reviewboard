@@ -11,7 +11,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
     },
 
     // The timeout for a mouseout event to fire after it actually occurs.
-    _timeout: 500,
+    _timeout: 250,
 
     initialize: function() {
         this._queue = {};
@@ -137,20 +137,10 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
      * Show the controls on the specified comment container.
      */
     _showControls: function($container) {
-        /*
-         * Monitor mousemove events for a bit to see if the cursor stays over
-         * the comment container instead of passing over it.
-         */
-        _.delay(
-            _.bind(function() {
-                if (this._isMouseOverTargetContainer($container)) {
-                    $container
-                        .find('td > div')
-                        .not('.collapse-floater')
-                        .slideDown('slow');
-                }
-            }, this),
-            this._timeout);
+        $container
+            .find('td > div')
+            .not('.collapse-floater')
+            .slideDown('slow');
     },
 
     /*
@@ -184,13 +174,6 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
         }
 
         document.body.appendChild(e);
-    },
-
-    /*
-     * Determine if the mouse is currently over the target comment container.
-     */
-    _isMouseOverTargetContainer: function($target) {
-        return $target.is(':hover');
     },
 
     /*

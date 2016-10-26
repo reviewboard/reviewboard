@@ -59,6 +59,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/models/tests/extraDataTests.js',
             'rb/js/models/tests/reviewReplyEditorModelTests.js',
             'rb/js/models/tests/reviewRequestEditorModelTests.js',
+            'rb/js/models/tests/uploadDiffModelTests.js',
             'rb/js/models/tests/userSessionModelTests.js',
             'rb/js/newReviewRequest/views/tests/branchesViewTests.js',
             'rb/js/newReviewRequest/views/tests/postCommitViewTests.js',

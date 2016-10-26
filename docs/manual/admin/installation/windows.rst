@@ -2,31 +2,20 @@
 Installing on Windows
 =====================
 
-We have stopped providing official support for Windows starting in
-Review Board 1.7. The last supported version for Windows was Review Board 1.6.
+Windows is a difficult environment for Python-based projects like ours. We do
+not provide our own packages for Windows. Instead, we partner with Bitnami_,
+who provides builds containing Review Board with `Power Pack`_. These are
+available as standalone installers and virtual machines.
 
-Windows has proven to be a considerable challenge to support. It is easy
-to end up with a subtly broken setup, due to so many different and
-incompatible implementations of Python and various Python modules.
+See the `Review Board + Power Pack`_ Bitnami page to get started.
 
-These problems were beyond our control, and led too many users to
-believe Review Board was just too hard to install.
-
-Linux is your best bet for a working, maintainable, and fast Review Board
-installation.
-
-You can run Review Board inside a Linux virtual machine running on top
-of `VMware ESXi`_ or `VMware Workstation Server`_.
-
-If you want to try installing on Windows, you can try following our
-`old installation instructions`_ for Windows. We won't be able to guarantee
-support, however.
+For production servers, we recommend using Linux (which you can run in a VM on
+Windows).
 
 Alternatively, we can host your Review Board server at RBCommons_.
 
-.. _`VMware ESXi`:
-   http://www.vmware.com/products/vsphere-hypervisor/overview.html
-.. _`VMware Workstation Server`: http://www.vmware.com/products/workstation/overview.html
-.. _`old installation instructions`:
-   http://www.reviewboard.org/docs/manual/1.6/admin/installation/windows/
+.. _Bitnami: https://bitnami.com/
+.. _Power Pack: https://www.reviewboard.org/powerpack/
+.. _Review Board + Power Pack:
+   https://bitnami.com/stack/reviewboard-plus-powerpack
 .. _RBCommons: http://www.rbcommons.com/
