@@ -35,7 +35,7 @@ from reviewboard.accounts.decorators import (check_login_required,
                                              valid_prefs_required)
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
 from reviewboard.attachments.models import (FileAttachment,
-                                            FileAttachmentHistory)
+                                            get_latest_file_attachments)
 from reviewboard.diffviewer.diffutils import (convert_to_unicode,
                                               get_file_chunks_in_range,
                                               get_last_header_before_line,
@@ -319,22 +319,6 @@ def new_review_request(request,
     }))
 
 
-def _get_latest_file_attachments(file_attachments):
-    file_attachment_histories = FileAttachmentHistory.objects.filter(
-        file_attachments__in=file_attachments)
-    latest = dict([
-        (data['id'], data['latest_revision'])
-        for data in file_attachment_histories.values('id', 'latest_revision')
-    ])
-
-    return [
-        f
-        for f in file_attachments
-        if (not f.is_from_diff and
-            f.attachment_revision == latest[f.attachment_history_id])
-    ]
-
-
 @check_login_required
 @check_local_site_access
 def review_detail(request,
@@ -505,7 +489,7 @@ def review_detail(request,
 
     # Time to render the page!
     file_attachments = \
-        _get_latest_file_attachments(data.active_file_attachments)
+        get_latest_file_attachments(data.active_file_attachments)
     social_page_image_url = _get_social_page_image_url(
         file_attachments)
 
@@ -637,8 +621,7 @@ class ReviewsDiffViewerView(DiffViewerView):
         file_attachments = list(review_request_details.get_file_attachments())
         screenshots = list(review_request_details.get_screenshots())
 
-        latest_file_attachments = \
-            _get_latest_file_attachments(file_attachments)
+        latest_file_attachments = get_latest_file_attachments(file_attachments)
         social_page_image_url = _get_social_page_image_url(
             latest_file_attachments)
 
