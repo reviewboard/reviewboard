@@ -128,6 +128,7 @@ class ReviewRequestDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
     submitted review requests to be filtered out or displayed.
     """
 
+    new_updates = NewUpdatesColumn()
     my_comments = MyCommentsColumn()
     star = ReviewRequestStarColumn()
     ship_it = ShipItColumn()
