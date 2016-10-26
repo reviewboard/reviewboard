@@ -73,7 +73,7 @@ class BaseSubmitterColumn(Column):
         avatar_html = ''
 
         if siteconfig.get(avatar_services.AVATARS_ENABLED_KEY):
-            avatar_service = avatar_services.default_service
+            avatar_service = avatar_services.for_user(user)
 
             if avatar_service:
                 avatar_html = avatar_service.render(
