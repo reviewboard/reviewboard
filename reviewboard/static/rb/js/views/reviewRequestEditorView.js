@@ -815,7 +815,12 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 this.buildFileAttachmentThumbnail(
                     fileAttachment, fileAttachments, { noAnimation: true });
             }, this);
-            fileAttachments.on('add', this.buildFileAttachmentThumbnail, this);
+            this.listenTo(fileAttachments, 'add', this.buildFileAttachmentThumbnail);
+            this.listenTo(fileAttachments, 'destroy', function() {
+                if (fileAttachments.length === 0) {
+                    this._$attachmentsContainer.hide();
+                }
+            });
 
             /*
              * Import all the screenshots and file attachments rendered onto
