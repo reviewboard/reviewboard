@@ -367,6 +367,12 @@ LOGIN_REDIRECT_URL = SITE_ROOT + 'dashboard/'
 # Static media setup
 from reviewboard.staticbundles import PIPELINE_CSS, PIPELINE_JS
 
+NODE_PATH = os.path.join(REVIEWBOARD_ROOT, '..', 'node_modules')
+
+PIPELINE_LESS_BINARY = os.path.join(NODE_PATH, 'less', 'bin', 'lessc')
+PIPELINE_UGLIFYJS_BINARY = os.path.join(NODE_PATH, 'uglifyjs', 'bin',
+                                        'uglifyjs')
+
 PIPELINE_CSS_COMPRESSOR = None
 PIPELINE_JS_COMPRESSOR = 'pipeline.compressors.uglifyjs.UglifyJSCompressor'
 

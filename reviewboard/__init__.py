@@ -10,10 +10,6 @@ from __future__ import unicode_literals
 VERSION = (2, 0, 26, 0, 'alpha', 0, False)
 
 
-# Required version of Django
-django_version = 'Django>=1.6.11,<1.7'
-
-
 def get_version_string():
     version = '%s.%s' % (VERSION[0], VERSION[1])
 
