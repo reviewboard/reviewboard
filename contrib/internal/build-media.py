@@ -13,10 +13,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(scripts_dir, '..', '..')))
 # Script config directory
 sys.path.insert(0, os.path.join(scripts_dir, 'conf'))
 
-from reviewboard import django_version
+from reviewboard.dependencies import django_version
 
 import __main__
-__main__.__requires__ = [django_version]
+__main__.__requires__ = ['Django' + django_version]
 import pkg_resources
 
 from django.core.management import call_command
