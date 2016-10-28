@@ -86,6 +86,8 @@ RB.ReviewView = Backbone.View.extend({
                 if (hasDraft) {
                     this._showReplyDraftBanner();
                     this.trigger('hasDraftChanged', true);
+                } else {
+                    this._hideReplyDraftBanner();
                 }
             });
 
