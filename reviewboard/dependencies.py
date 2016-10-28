@@ -59,7 +59,9 @@ def build_dependency_list(deps, version_prefix=''):
         list of unicode:
         A list of dependency specifiers.
     """
-    return [
-        '%s%s%s' % (dep_name, version_prefix, dep_version)
-        for dep_name, dep_version in deps.items()
-    ]
+    return sorted(
+        [
+            '%s%s%s' % (dep_name, version_prefix, dep_version)
+            for dep_name, dep_version in deps.items()
+        ],
+        key=lambda s: s.lower())

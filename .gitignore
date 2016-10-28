@@ -36,6 +36,7 @@ _build
 build
 dist
 django_cache
+node_modules
 pickle
 search-index/
 temp
