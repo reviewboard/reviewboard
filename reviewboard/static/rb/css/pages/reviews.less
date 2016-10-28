@@ -1158,6 +1158,11 @@
 
     pre {
       white-space: pre-wrap;
+
+      &.rich-text {
+        margin: @textarea-editor-margin;
+        padding: @textarea-editor-padding + @textarea-border-size;
+      }
     }
 
     .spinner {
