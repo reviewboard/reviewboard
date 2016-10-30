@@ -382,7 +382,6 @@ setup(
                 ('rbgateway', 'rbgateway:ReviewBoardGateway'),
                 ('redmine', 'redmine:Redmine'),
                 ('sourceforge', 'sourceforge:SourceForge'),
-                ('splat', 'splat:Splat'),
                 ('trac', 'trac:Trac'),
                 ('unfuddle', 'unfuddle:Unfuddle'),
                 ('versionone', 'versionone:VersionOne'),
