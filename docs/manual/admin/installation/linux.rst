@@ -13,11 +13,18 @@ Installing on Linux
    You can run Review Board inside a Linux virtual machine running on top
    of `VMware ESXi`_ or `VMware Workstation Server`_.
 
+   If you just want to get started with a simple install for evaluation
+   purposes, we recommend installing `Review Board from Bitnami`_. They
+   provide installers and virtual machines that you can start using
+   immediately.
+
    Alternatively, we can host your Review Board server at RBCommons_.
 
-.. _`VMware ESXi`:
+.. _VMware ESXi:
    http://www.vmware.com/products/vsphere-hypervisor/overview.html
-.. _`VMware Workstation Server`: http://www.vmware.com/products/workstation/overview.html
+.. _VMware Workstation Server: http://www.vmware.com/products/workstation/overview.html
+.. _Review Board from Bitnami:
+   https://bitnami.com/stack/reviewboard-plus-powerpack
 .. _RBCommons: http://www.rbcommons.com/
 
 
