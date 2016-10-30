@@ -79,6 +79,7 @@
             closeDescriptionRenderedText: '{{close_description|render_markdown:close_description_rich_text|escapejs}}',
             hasDraft: {{draft|yesno:'true,false'}},
             mutableByUser: {{mutable_by_user|yesno:'true,false'}},
+            showSendEmail: {{send_email|yesno:'true,false'}},
             statusMutableByUser: {{status_mutable_by_user|yesno:'true,false'}},
             fileAttachments: [
 {% for file in file_attachments %}

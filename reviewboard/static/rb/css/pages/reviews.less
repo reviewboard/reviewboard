@@ -848,7 +848,8 @@
 
     /* The "Change Summary" section. */
     .changedesc-text {
-      margin-bottom: 2em;
+      margin: @textarea-editor-margin-top 0 1.5rem;
+      padding: @textarea-editor-padding;
       overflow: hidden;
 
       .codehilite {
@@ -1157,6 +1158,11 @@
 
     pre {
       white-space: pre-wrap;
+
+      &.rich-text {
+        margin: @textarea-editor-margin;
+        padding: @textarea-editor-padding + @textarea-border-size;
+      }
     }
 
     .spinner {

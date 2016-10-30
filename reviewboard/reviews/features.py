@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 
 from django.utils.translation import ugettext_lazy as _
-from djblets.features import Feature
+from djblets.features import Feature, FeatureLevel
 
 
 class GeneralCommentsFeature(Feature):
@@ -17,6 +17,7 @@ class GeneralCommentsFeature(Feature):
 
     feature_id = 'reviews.general_comments'
     name = _('General Comments')
+    level = FeatureLevel.STABLE
     summary = _('Allow comments on review requests without an associated file '
                 'attachment or diff.')
 
