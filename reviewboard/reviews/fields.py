@@ -7,6 +7,7 @@ from django.utils.datastructures import SortedDict
 from django.utils.functional import cached_property
 from django.utils.html import escape, strip_tags
 from django.utils.safestring import mark_safe
+from django.utils.six.moves.html_parser import HTMLParser
 from djblets.markdown import iter_markdown_lines
 
 from reviewboard.diffviewer.diffutils import get_line_changed_regions
@@ -738,9 +739,11 @@ class BaseTextAreaField(BaseEditableField):
             old_line = old_lines[i]
             new_line = new_lines[j]
 
+            parser = HTMLParser()
+
             old_regions, new_regions = \
-                get_line_changed_regions(strip_tags(old_line),
-                                         strip_tags(new_line))
+                get_line_changed_regions(parser.unescape(strip_tags(old_line)),
+                                         parser.unescape(strip_tags(new_line)))
 
             old_line = highlightregion(old_line, old_regions)
             new_line = highlightregion(new_line, new_regions)

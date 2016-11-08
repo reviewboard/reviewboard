@@ -3,8 +3,78 @@ from __future__ import unicode_literals
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.reviews.fields import BaseTextAreaField
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.testing import TestCase
+
+
+class BaseTextAreaFieldTests(TestCase):
+    """Unit tests for reviewboard.reviews.fields.BaseTextAreaField."""
+
+    def test_render_change_entry_html(self):
+        """Testing BaseTextAreaField.render_change_entry_html"""
+        field = BaseTextAreaField(ReviewRequest())
+        html = field.render_change_entry_html({
+            'old': ['This is a test\n\nWith two lines'],
+            'new': ['This is a test with one line'],
+        })
+
+        self.assertHTMLEqual(
+            html,
+            '<table class="diffed-text-area">'
+            ' <tr class="replace-old">'
+            '  <td class="marker">~</td>'
+            '  <td class="marker">&nbsp;</td>'
+            '  <td class="line rich-text"><p>This is a test</p></td>'
+            ' </tr>'
+            ' <tr class="replace-new">'
+            '  <td class="marker">&nbsp;</td>'
+            '  <td class="marker">~</td>'
+            '  <td class="line rich-text">'
+            '   <p>This is a test<span class="hl"> with one line</span></p>'
+            '  </td>'
+            ' </tr>'
+            ' <tr class="delete">'
+            '  <td class="marker">-</td>'
+            '  <td class="marker">&nbsp;</td>'
+            '  <td class="line rich-text">\n</td>'
+            ' </tr>'
+            ' <tr class="delete">'
+            '  <td class="marker">-</td>'
+            '  <td class="marker">&nbsp;</td>'
+            '  <td class="line rich-text"><p>With two lines</p></td>'
+            ' </tr>'
+            '</table>')
+
+    def test_render_change_entry_html_with_entities(self):
+        """Testing BaseTextAreaField.render_change_entry_html with string
+        containing entities
+        """
+        field = BaseTextAreaField(ReviewRequest())
+        html = field.render_change_entry_html({
+            'old': ['This "is" a <test>'],
+            'new': ['This "is" a <test> with more stuff here'],
+        })
+
+        self.assertHTMLEqual(
+            html,
+            '<table class="diffed-text-area">'
+            ' <tr class="replace-old">'
+            '  <td class="marker">~</td>'
+            '  <td class="marker">&nbsp;</td>'
+            '  <td class="line rich-text">'
+            '   <p>This &quot;is&quot; a &lt;test&gt;</p>'
+            '  </td>'
+            ' </tr>'
+            ' <tr class="replace-new">'
+            '  <td class="marker">&nbsp;</td>'
+            '  <td class="marker">~</td>'
+            '  <td class="line rich-text">'
+            '   <p>This &quot;is&quot; a &lt;test&gt;<span class="hl"> with '
+            '      more stuff here</span></p>'
+            '  </td>'
+            ' </tr>'
+            '</table>')
 
 
 class FieldTests(TestCase):
