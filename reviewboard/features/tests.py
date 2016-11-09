@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 from djblets.features import Feature, get_features_registry
 
-from reviewboard.features.checkers import LocalSiteFeatureChecker
+from reviewboard.features.checkers import RBFeatureChecker
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
@@ -17,7 +17,7 @@ class DummyFeature(Feature):
     summary = 'A dummy feature for testing.'
 
 
-class LocalSiteFeatureCheckerTests(TestCase):
+class RBFeatureCheckerTests(TestCase):
     """Tests for the LocalSiteFeatureChecker."""
 
     fixtures = ['test_site']
@@ -31,12 +31,12 @@ class LocalSiteFeatureCheckerTests(TestCase):
     }
 
     def setUp(self):
-        super(LocalSiteFeatureCheckerTests, self).setUp()
+        super(RBFeatureCheckerTests, self).setUp()
         self.feature = DummyFeature()
         self.local_site = LocalSite.objects.get(name='local-site-1')
 
     def tearDown(self):
-        super(LocalSiteFeatureCheckerTests, self).tearDown()
+        super(RBFeatureCheckerTests, self).tearDown()
         registry = get_features_registry()
         registry.unregister(self.feature)
 
@@ -45,12 +45,12 @@ class LocalSiteFeatureCheckerTests(TestCase):
         enabled on a local site
         """
         self.local_site.extra_data = {
-            LocalSiteFeatureChecker.EXTRA_DATA_KEY:
+            RBFeatureChecker.EXTRA_DATA_KEY:
                 self.FEATURE_ENABLED_FEATURES,
         }
 
         with self.settings(ENABLED_FEATURES=self.FEATURE_DISABLED_SETTINGS):
-            self.assertTrue(LocalSiteFeatureChecker().is_feature_enabled(
+            self.assertTrue(RBFeatureChecker().is_feature_enabled(
                 DummyFeature.feature_id, local_site=self.local_site))
 
     def test_local_site_feature_disabled(self):
@@ -58,12 +58,12 @@ class LocalSiteFeatureCheckerTests(TestCase):
         disabled on a local site
         """
         self.local_site.extra_data = {
-            LocalSiteFeatureChecker.EXTRA_DATA_KEY:
+            RBFeatureChecker.EXTRA_DATA_KEY:
                 self.FEATURE_DISABLED_SETTINGS,
         }
 
         with self.settings(ENABLED_FEATURES=self.FEATURE_ENABLED_FEATURES):
-            self.assertFalse(LocalSiteFeatureChecker().is_feature_enabled(
+            self.assertFalse(RBFeatureChecker().is_feature_enabled(
                 DummyFeature.feature_id, local_site=self.local_site))
 
     def test_local_site_feature_fallback_enabled(self):
@@ -71,11 +71,11 @@ class LocalSiteFeatureCheckerTests(TestCase):
         unconfigured feature on a LocalSite that is enabled globally
         """
         self.local_site.extra_data = {
-            LocalSiteFeatureChecker.EXTRA_DATA_KEY: {},
+            RBFeatureChecker.EXTRA_DATA_KEY: {},
         }
 
         with self.settings(ENABLED_FEATURES=self.FEATURE_ENABLED_FEATURES):
-            self.assertTrue(LocalSiteFeatureChecker().is_feature_enabled(
+            self.assertTrue(RBFeatureChecker().is_feature_enabled(
                 DummyFeature.feature_id, local_site=self.local_site))
 
     def test_local_site_feature_fallback_disabled(self):
@@ -83,9 +83,9 @@ class LocalSiteFeatureCheckerTests(TestCase):
         unconfigured feature on a LocalSite that is disabled globally
         """
         self.local_site.extra_data = {
-            LocalSiteFeatureChecker.EXTRA_DATA_KEY: {},
+            RBFeatureChecker.EXTRA_DATA_KEY: {},
         }
 
         with self.settings(ENABLED_FEATURES=self.FEATURE_DISABLED_SETTINGS):
-            self.assertFalse(LocalSiteFeatureChecker().is_feature_enabled(
+            self.assertFalse(RBFeatureChecker().is_feature_enabled(
                 DummyFeature.feature_id, local_site=self.local_site))
