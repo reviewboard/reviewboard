@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.utils import six
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA
+from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.reviews.models.status_update import StatusUpdate
 from reviewboard.webapi.resources import resources
@@ -25,6 +26,8 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
 
     fixtures = ['test_users']
     resource = resources.status_update
+
+    sample_api_url = '/review-requests/<id>/status-updates/'
 
     def setup_review_request_child_test(self, review_request):
         return (get_status_update_list_url(review_request),
@@ -87,6 +90,7 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         status_update = StatusUpdate.objects.get(pk=rsp['status_update']['id'])
         self.compare_item(rsp['status_update'], status_update)
 
+    @webapi_test_template
     def test_post_with_invalid_state(self):
         """Testing the POST <URL> API with an invalid state"""
         review_request = self.create_review_request(publish=True)
@@ -104,6 +108,7 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assertTrue('state' in rsp['fields'])
 
+    @webapi_test_template
     def test_post_with_invalid_change_id(self):
         """Testing the POST <URL> API with an change_id state"""
         review_request = self.create_review_request(publish=True)
@@ -121,6 +126,7 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
         self.assertTrue('change_id' in rsp['fields'])
 
+    @webapi_test_template
     def test_post_with_invalid_review_id(self):
         """Testing the POST <URL> API with an invalid review_id"""
         review_request = self.create_review_request(publish=True)
@@ -185,8 +191,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin, ExtraDataItemMixin,
     def check_delete_result(self, user, status_update, review_request):
         self.assertNotIn(status_update, review_request.status_updates.all())
 
+    @webapi_test_template
     def test_delete_with_does_not_exist(self):
-        """Testing the DELETE review-requests/<id>/status-updates/<id>/ API
+        """Testing the DELETE <URL> API
         with Does Not Exist error
         """
         review_request = self.create_review_request(publish=True)
@@ -213,8 +220,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin, ExtraDataItemMixin,
                 status_update_item_mimetype,
                 status_update)
 
+    @webapi_test_template
     def test_get_not_modified(self):
-        """Testing the GET review-requests/<id>/status-updates/<id>/ API
+        """Testing the GET <URL> API
         with Not Modified response
         """
         review_request = self.create_review_request(publish=True)
