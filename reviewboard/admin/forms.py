@@ -512,9 +512,9 @@ class AvatarServicesForm(SiteSettingsForm):
             avatar_services.get('avatar_service_id', service_id)
             for service_id in self.cleaned_data['enabled_services']
         ]
+
         avatar_services.set_default_service(
-            avatar_services.get('avatar_service_id',
-                                self.cleaned_data['default_service']),
+            self.cleaned_data['default_service'],
             save=False)
 
         avatars_enabled_changed = (avatar_services.avatars_enabled !=

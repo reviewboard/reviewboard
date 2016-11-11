@@ -2,6 +2,8 @@
 
 from __future__ import unicode_literals
 
+import datetime
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
@@ -36,11 +38,15 @@ class StatusUpdate(models.Model):
     #: The error state.
     ERROR = 'E'
 
+    #: Timeout state.
+    TIMEOUT = 'T'
+
     STATUSES = (
         (PENDING, _('Pending')),
         (DONE_SUCCESS, _('Done (Success)')),
         (DONE_FAILURE, _('Done (Failure)')),
         (ERROR, _('Error')),
+        (TIMEOUT, _('Timed Out')),
     )
 
     #: An identifier for the service posting this status update.
@@ -120,6 +126,12 @@ class StatusUpdate(models.Model):
     #: Any extra data that the service wants to store for this status update.
     extra_data = JSONField(null=True)
 
+    #: An (optional) timeout, in seconds. If this is non-None and the state has
+    #: been ``PENDING`` for longer than this period (computed from the
+    #: :py:attr:`timestamp` field), :py:attr:`effective_state` will be
+    #: ``TIMEOUT``.
+    timeout = models.IntegerField(null=True, blank=True)
+
     @staticmethod
     def state_to_string(state):
         """Return a string representation of a status update state.
@@ -141,6 +153,8 @@ class StatusUpdate(models.Model):
             return 'done-failure'
         elif state is StatusUpdate.ERROR:
             return 'error'
+        elif state is StatusUpdate.TIMEOUT:
+            return 'timed-out'
         else:
             raise ValueError('Invalid state "%s"' % state)
 
@@ -165,6 +179,8 @@ class StatusUpdate(models.Model):
             return StatusUpdate.DONE_FAILURE
         elif state == 'error':
             return StatusUpdate.ERROR
+        elif state == 'timed-out':
+            return StatusUpdate.TIMEOUT
         else:
             raise ValueError('Invalid state string "%s"' % state)
 
@@ -182,6 +198,17 @@ class StatusUpdate(models.Model):
         return (self.user == user or
                 user.has_perm('reviews.can_edit_status',
                               self.review_request.local_site))
+
+    @property
+    def effective_state(self):
+        """The state of the status update, taking into account timeouts."""
+        if self.state == self.PENDING and self.timeout is not None:
+            timeout = self.timestamp + datetime.timedelta(seconds=self.timeout)
+
+            if timezone.now() > timeout:
+                return self.TIMEOUT
+
+        return self.state
 
     class Meta:
         app_label = 'reviews'

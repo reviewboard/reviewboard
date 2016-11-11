@@ -433,19 +433,28 @@ class StatusUpdatesEntryMixin(object):
             'general_comments': [],
         }
 
-        if update.state == StatusUpdate.PENDING:
-            update.header_class = 'status-update-state-pending'
-        elif update.state == StatusUpdate.DONE_SUCCESS:
-            update.header_class = 'status-update-state-success'
-        elif update.state in (StatusUpdate.DONE_FAILURE, StatusUpdate.ERROR):
+        state = update.effective_state
+
+        if state in (StatusUpdate.DONE_FAILURE,
+                     StatusUpdate.ERROR,
+                     StatusUpdate.TIMEOUT):
             update.header_class = 'status-update-state-failure'
+        elif state == StatusUpdate.PENDING:
+            update.header_class = 'status-update-state-pending'
+        elif state == StatusUpdate.DONE_SUCCESS:
+            update.header_class = 'status-update-state-success'
         else:
-            raise ValueError('Unexpected state "%s"' % update.state)
+            raise ValueError('Unexpected state "%s"' % state)
+
+        if state == StatusUpdate.TIMEOUT:
+            description = _('timed out.')
+        else:
+            description = update.description
 
         update.summary_html = render_to_string(
             'reviews/status_update_summary.html',
             {
-                'description': update.description,
+                'description': description,
                 'header_class': update.header_class,
                 'summary': update.summary,
                 'url': update.url,
@@ -473,7 +482,7 @@ class StatusUpdatesEntryMixin(object):
         self.state_counts = Counter()
 
         for update in self.status_updates:
-            self.state_counts[update.state] += 1
+            self.state_counts[update.effective_state] += 1
 
         summary_parts = []
 
@@ -495,8 +504,14 @@ class StatusUpdatesEntryMixin(object):
                 _('%s failed with error')
                 % self.state_counts[StatusUpdate.PENDING])
 
+        if self.state_counts[StatusUpdate.TIMEOUT] > 0:
+            summary_parts.append(
+                _('%s timed out')
+                % self.state_counts[StatusUpdate.TIMEOUT])
+
         if (self.state_counts[StatusUpdate.DONE_FAILURE] > 0 or
-            self.state_counts[StatusUpdate.ERROR] > 0):
+            self.state_counts[StatusUpdate.ERROR] > 0 or
+            self.state_counts[StatusUpdate.TIMEOUT] > 0):
             self.state_summary_class = 'status-update-state-failure'
         elif self.state_counts[StatusUpdate.PENDING]:
             self.state_summary_class = 'status-update-state-pending'
