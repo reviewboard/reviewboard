@@ -189,7 +189,7 @@ class ReviewRequestPageData(object):
 
         self.body_top_replies = defaultdict(list)
         self.body_bottom_replies = defaultdict(list)
-        self.latest_timestamps_by_review_id = defaultdict(lambda: 0)
+        self.latest_timestamps_by_review_id = {}
 
         for r in self.reviews:
             r._body_top_replies = []
@@ -205,9 +205,18 @@ class ReviewRequestPageData(object):
             parent_id = r.base_reply_to_id
 
             if parent_id is not None:
-                self.latest_timestamps_by_review_id[parent_id] = max(
-                    r.timestamp.replace(tzinfo=utc).ctime(),
-                    self.latest_timestamps_by_review_id[parent_id])
+                new_timestamp = r.timestamp.replace(tzinfo=utc)
+
+                if parent_id in self.latest_timestamps_by_review_id:
+                    old_timestamp = \
+                        self.latest_timestamps_by_review_id[parent_id]
+
+                    if old_timestamp < new_timestamp:
+                        self.latest_timestamps_by_review_id[parent_id] = \
+                            new_timestamp
+                else:
+                    self.latest_timestamps_by_review_id[parent_id] = \
+                        new_timestamp
 
         # Link up all the review body replies.
         for reply_id, replies in six.iteritems(self.body_top_replies):
