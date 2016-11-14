@@ -690,7 +690,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                     expect($($tbodies[1]).hasClass('tests-new-chunk'))
                         .toBe(true);
                     expect($($tbodies[2]).hasClass('delete')).toBe(true);
-                    expect(view._$collapseButtons.length).toBe(1);
+                    expect(view._centered._elements.size).toBe(1);
 
                     expect(view.trigger).toHaveBeenCalledWith(
                         'chunkExpansionChanged');
@@ -743,7 +743,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                     expect($($tbodies[1]).hasClass('tests-new-chunk'))
                         .toBe(true);
                     expect($($tbodies[2]).hasClass('delete')).toBe(true);
-                    expect(view._$collapseButtons.length).toBe(1);
+                    expect(view._centered._elements.size).toBe(1);
 
                     expect(view.trigger).toHaveBeenCalledWith(
                         'chunkExpansionChanged');
@@ -827,7 +827,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                     expect($($tbodies[1]).hasClass('tests-new-chunk'))
                         .toBe(true);
                     expect($($tbodies[2]).hasClass('delete')).toBe(true);
-                    expect(view._$collapseButtons.length).toBe(0);
+                    expect(view._centered._elements.size).toBe(0);
 
                     expect(view.trigger).toHaveBeenCalledWith(
                         'chunkExpansionChanged');
@@ -872,7 +872,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                     expect($($tbodies[1]).hasClass('tests-new-chunk'))
                         .toBe(true);
                     expect($($tbodies[2]).hasClass('delete')).toBe(true);
-                    expect(view._$collapseButtons.length).toBe(0);
+                    expect(view._centered._elements.size).toBe(0);
 
                     expect(view.trigger).toHaveBeenCalledWith(
                         'chunkExpansionChanged');

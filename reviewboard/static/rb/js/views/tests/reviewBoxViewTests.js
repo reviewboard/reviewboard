@@ -55,15 +55,15 @@ suite('rb/views/ReviewBoxView', function() {
             reviewRequestEditor: editor,
         });
 
+        view.render();
+
         reviewView = view._reviewView;
 
-        reviewView._setupNewReply(reviewReply);
-
         /* Don't allow the draft banner to show. */
-        spyOn(view, '_showReplyDraftBanner');
+        spyOn(reviewView, '_showReplyDraftBanner');
         spyOn(reviewView, 'trigger').and.callThrough();
 
-        view.render();
+        reviewView._setupNewReply(reviewReply);
     });
 
     describe('Actions', function() {
@@ -83,13 +83,13 @@ suite('rb/views/ReviewBoxView', function() {
             it('Shown on hasDraft', function() {
                 var editor = reviewView._replyEditorViews[1].model;
 
-                view._showReplyDraftBanner.calls.reset();
+                reviewView._showReplyDraftBanner.calls.reset();
 
                 expect(editor.get('hasDraft')).toBe(false);
-                expect(view._showReplyDraftBanner).not.toHaveBeenCalled();
+                expect(reviewView._showReplyDraftBanner).not.toHaveBeenCalled();
 
                 editor.set('hasDraft', true);
-                expect(view._showReplyDraftBanner).toHaveBeenCalled();
+                expect(reviewView._showReplyDraftBanner).toHaveBeenCalled();
             });
         });
     });
