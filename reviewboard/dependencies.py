@@ -16,6 +16,9 @@ from __future__ import unicode_literals
 #: The major version of Django we're using for documentation.
 django_doc_major_version = '1.6'
 
+#: The major version of Djblets we're using for documentation.
+djblets_doc_major_version = '0.9'
+
 #: The version range required for Django.
 django_version = '>=1.6.11,<1.6.999'
 

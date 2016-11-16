@@ -210,13 +210,20 @@ latex_documents = [
 #latex_use_modindex = True
 
 
+# Check whether reviewboard.org intersphinx lookups should use the local
+# server.
+if os.getenv('DOCS_USE_LOCAL_RBWEBSITE') == '1':
+    rbwebsite_url = 'http://localhost:8081'
+else:
+    rbwebsite_url = 'https://www.reviewboard.org'
+
+
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    'django': ('https://docs.djangoproject.com/en/%s/'
+    'django': ('http://django.readthedocs.io/en/%s.x/'
                % django_doc_major_version,
-               'https://docs.djangoproject.com/en/%s/_objects/'
-               % django_doc_major_version),
+               None),
     'python': ('https://docs.python.org/2.7', None),
-    'rbtools': ('https://www.reviewboard.org/docs/rbtools/dev/', None),
-    'reviewboard': ('https://www.reviewboard.org/docs/manual/dev/', None),
+    'rbtools': ('%s/docs/rbtools/latest/' % rbwebsite_url, None),
+    'reviewboard': ('%s/docs/manual/latest/' % rbwebsite_url, None),
 }
