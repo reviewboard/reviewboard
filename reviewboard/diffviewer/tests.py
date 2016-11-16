@@ -25,7 +25,8 @@ from reviewboard.diffviewer.commitutils import (CommitHistoryDiffEntry,
                                                 find_ancestor_commit_ids,
                                                 find_ancestor_filediff,
                                                 generate_commit_history_diff)
-from reviewboard.diffviewer.diffutils import get_displayed_diff_line_ranges
+from reviewboard.diffviewer.diffutils import (get_displayed_diff_line_ranges,
+                                              get_matched_interdiff_files)
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.forms import UploadDiffCommitForm, UploadDiffForm
 from reviewboard.diffviewer.models import (DiffCommit, DiffSet, FileDiff,
@@ -3979,7 +3980,7 @@ class DiffUtilsTests(TestCase):
     """Unit tests for diffutils."""
 
     @add_fixtures(['test_users', 'test_scmtools'])
-    def test_interdiff_when_renaming_twice(self):
+    def test_get_diff_files_with_interdiff_when_renaming_twice(self):
         """Testing interdiff when renaming twice"""
         repository = self.create_repository(tool_name='Git')
         review_request = self.create_review_request(repository=repository)
@@ -4027,11 +4028,1048 @@ class DiffUtilsTests(TestCase):
                              dest_file='foo3.txt', status=FileDiff.MODIFIED,
                              diff=one_to_three)
 
-        diff_files = diffutils.get_diff_files(diffset, None, interdiffset)
+        diff_files = diffutils.get_diff_files(diffset=diffset,
+                                              interdiffset=interdiffset)
         two_to_three = diff_files[0]
 
         self.assertEqual(two_to_three['depot_filename'], 'foo2.txt')
         self.assertEqual(two_to_three['dest_filename'], 'foo3.txt')
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_diff_files_with_interdiff_and_files_same_source(self):
+        """Testing get_diff_files with interdiff and multiple files using the
+        same source_file
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        # This one should be reverted, as it has no counterpart in the
+        # interdiff.
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        # This one should match up with interfilediff1.
+        filediff2 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            status=FileDiff.COPIED,
+            diff='diff2')
+
+        # This one should be reverted, as it has no counterpart in the
+        # interdiff.
+        filediff3 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo3.txt',
+            status=FileDiff.COPIED,
+            diff='diff3')
+
+        # This one should match up with interfilediff3 and interfilediff4.
+        filediff4 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo4.txt',
+            source_revision=123,
+            dest_file='foo4.txt',
+            diff='diff4')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        # This one should match up with filediff2.
+        interfilediff1 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            status=FileDiff.COPIED,
+            diff='interdiff1')
+
+        # This one should show up as a new file.
+        interfilediff2 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=PRE_CREATION,
+            dest_file='foo.txt',
+            diff='interdiff2')
+
+        # This one should match up with filediff4.
+        interfilediff3 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo4.txt',
+            source_revision=123,
+            dest_file='foo5.txt',
+            diff='interdiff2')
+
+        # This one should match up with filediff4 as well.
+        interfilediff4 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo4.txt',
+            source_revision=123,
+            dest_file='foo6.txt',
+            diff='interdiff3')
+
+        diff_files = diffutils.get_diff_files(diffset=diffset,
+                                              interdiffset=interdiffset)
+        self.assertEqual(len(diff_files), 6)
+
+        diff_file = diff_files[0]
+        self.assertEqual(diff_file['depot_filename'], 'foo.txt')
+        self.assertEqual(diff_file['dest_filename'], 'foo.txt')
+        self.assertEqual(diff_file['filediff'], filediff1)
+        self.assertEqual(diff_file['interfilediff'], None)
+        self.assertEqual(diff_file['revision'], 'Diff Revision 1')
+        self.assertEqual(diff_file['dest_revision'],
+                         'Diff Revision 2 - File Reverted')
+        self.assertFalse(diff_file['is_new_file'])
+        self.assertTrue(diff_file['force_interdiff'])
+
+        diff_file = diff_files[1]
+        self.assertEqual(diff_file['depot_filename'], 'foo.txt')
+        self.assertEqual(diff_file['dest_filename'], 'foo.txt')
+        self.assertEqual(diff_file['filediff'], interfilediff2)
+        self.assertEqual(diff_file['interfilediff'], None)
+        self.assertEqual(diff_file['revision'], 'Diff Revision 1')
+        self.assertEqual(diff_file['dest_revision'], 'New File')
+        self.assertTrue(diff_file['is_new_file'])
+        self.assertFalse(diff_file['force_interdiff'])
+
+        diff_file = diff_files[2]
+        self.assertEqual(diff_file['depot_filename'], 'foo2.txt')
+        self.assertEqual(diff_file['dest_filename'], 'foo2.txt')
+        self.assertEqual(diff_file['filediff'], filediff2)
+        self.assertEqual(diff_file['interfilediff'], interfilediff1)
+        self.assertEqual(diff_file['revision'], 'Diff Revision 1')
+        self.assertEqual(diff_file['dest_revision'], 'Diff Revision 2')
+        self.assertFalse(diff_file['is_new_file'])
+        self.assertTrue(diff_file['force_interdiff'])
+
+        diff_file = diff_files[3]
+        self.assertEqual(diff_file['depot_filename'], 'foo.txt')
+        self.assertEqual(diff_file['dest_filename'], 'foo3.txt')
+        self.assertEqual(diff_file['filediff'], filediff3)
+        self.assertEqual(diff_file['interfilediff'], None)
+        self.assertEqual(diff_file['revision'], 'Diff Revision 1')
+        self.assertEqual(diff_file['dest_revision'],
+                         'Diff Revision 2 - File Reverted')
+        self.assertFalse(diff_file['is_new_file'])
+        self.assertTrue(diff_file['force_interdiff'])
+
+        diff_file = diff_files[4]
+        self.assertEqual(diff_file['depot_filename'], 'foo4.txt')
+        self.assertEqual(diff_file['dest_filename'], 'foo5.txt')
+        self.assertEqual(diff_file['filediff'], filediff4)
+        self.assertEqual(diff_file['interfilediff'], interfilediff3)
+        self.assertEqual(diff_file['revision'], 'Diff Revision 1')
+        self.assertEqual(diff_file['dest_revision'], 'Diff Revision 2')
+        self.assertFalse(diff_file['is_new_file'])
+        self.assertTrue(diff_file['force_interdiff'])
+
+        diff_file = diff_files[5]
+        self.assertEqual(diff_file['depot_filename'], 'foo4.txt')
+        self.assertEqual(diff_file['dest_filename'], 'foo6.txt')
+        self.assertEqual(diff_file['filediff'], filediff4)
+        self.assertEqual(diff_file['interfilediff'], interfilediff4)
+        self.assertEqual(diff_file['revision'], 'Diff Revision 1')
+        self.assertEqual(diff_file['dest_revision'], 'Diff Revision 2')
+        self.assertFalse(diff_file['is_new_file'])
+        self.assertTrue(diff_file['force_interdiff'])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_diff_files_with_interdiff_using_filediff_only(self):
+        """Testing get_diff_files with interdiff using filediff but no
+        interfilediff
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            status=FileDiff.COPIED,
+            diff='diff2')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            status=FileDiff.COPIED,
+            diff='interdiff1')
+
+        self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            status=FileDiff.COPIED,
+            diff='interdiff2')
+
+        diff_files = diffutils.get_diff_files(diffset=diffset,
+                                              interdiffset=interdiffset,
+                                              filediff=filediff)
+        self.assertEqual(len(diff_files), 1)
+
+        diff_file = diff_files[0]
+        self.assertEqual(diff_file['depot_filename'], 'foo.txt')
+        self.assertEqual(diff_file['dest_filename'], 'foo.txt')
+        self.assertEqual(diff_file['filediff'], filediff)
+        self.assertEqual(diff_file['interfilediff'], None)
+        self.assertEqual(diff_file['revision'], 'Diff Revision 1')
+        self.assertEqual(diff_file['dest_revision'],
+                         'Diff Revision 2 - File Reverted')
+        self.assertFalse(diff_file['is_new_file'])
+        self.assertTrue(diff_file['force_interdiff'])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_diff_files_with_interdiff_using_both_filediffs(self):
+        """Testing get_diff_files with interdiff using filediff and
+        interfilediff
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            status=FileDiff.COPIED,
+            diff='diff2')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        interfilediff = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            status=FileDiff.COPIED,
+            diff='interdiff1')
+
+        self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            status=FileDiff.COPIED,
+            diff='interdiff2')
+
+        diff_files = diffutils.get_diff_files(diffset=diffset,
+                                              interdiffset=interdiffset,
+                                              filediff=filediff,
+                                              interfilediff=interfilediff)
+        self.assertEqual(len(diff_files), 1)
+
+        diff_file = diff_files[0]
+        self.assertEqual(diff_file['depot_filename'], 'foo.txt')
+        self.assertEqual(diff_file['dest_filename'], 'foo.txt')
+        self.assertEqual(diff_file['filediff'], filediff)
+        self.assertEqual(diff_file['interfilediff'], interfilediff)
+        self.assertEqual(diff_file['revision'], 'Diff Revision 1')
+        self.assertEqual(diff_file['dest_revision'], 'Diff Revision 2')
+        self.assertFalse(diff_file['is_new_file'])
+        self.assertTrue(diff_file['force_interdiff'])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_matched_interdiff_files_simple(self):
+        """Testing get_matched_interdiff_files with simple source file matches
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        filediff2 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            diff='diff2')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        interfilediff1 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='interdiff1')
+
+        interfilediff2 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            diff='interdiff2')
+
+        matched_files = get_matched_interdiff_files(
+            tool=repository.get_scmtool(),
+            filediffs=[filediff1, filediff2],
+            interfilediffs=[interfilediff1, interfilediff2])
+
+        self.assertEqual(
+            list(matched_files),
+            [
+                (filediff1, interfilediff1),
+                (filediff2, interfilediff2),
+            ])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_matched_interdiff_files_with_new_added_file_left(self):
+        """Testing get_matched_interdiff_files with new added file on left
+        side only
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        filediff2 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo2.txt',
+            source_revision=PRE_CREATION,
+            dest_file='foo2.txt',
+            diff='diff2')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        interfilediff1 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='interdiff1')
+
+        matched_files = get_matched_interdiff_files(
+            tool=repository.get_scmtool(),
+            filediffs=[filediff1, filediff2],
+            interfilediffs=[interfilediff1])
+
+        self.assertEqual(
+            list(matched_files),
+            [
+                (filediff1, interfilediff1),
+                (filediff2, None),
+            ])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_matched_interdiff_files_with_new_added_file_right(self):
+        """Testing get_matched_interdiff_files with new added file on right
+        side only
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        interfilediff1 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='interdiff1')
+
+        interfilediff2 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo2.txt',
+            source_revision=PRE_CREATION,
+            dest_file='foo2.txt',
+            diff='interdiff2')
+
+        matched_files = get_matched_interdiff_files(
+            tool=repository.get_scmtool(),
+            filediffs=[filediff1],
+            interfilediffs=[interfilediff1, interfilediff2])
+
+        self.assertEqual(
+            list(matched_files),
+            [
+                (filediff1, interfilediff1),
+                (None, interfilediff2),
+            ])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_matched_interdiff_files_with_new_added_file_both(self):
+        """Testing get_matched_interdiff_files with new added file on both
+        sides
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        filediff2 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo2.txt',
+            source_revision=PRE_CREATION,
+            dest_file='foo2.txt',
+            diff='diff2')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        interfilediff1 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='interdiff1')
+
+        interfilediff2 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo2.txt',
+            source_revision=PRE_CREATION,
+            dest_file='foo2.txt',
+            diff='interdiff2')
+
+        matched_files = get_matched_interdiff_files(
+            tool=repository.get_scmtool(),
+            filediffs=[filediff1, filediff2],
+            interfilediffs=[interfilediff1, interfilediff2])
+
+        self.assertEqual(
+            list(matched_files),
+            [
+                (filediff1, interfilediff1),
+                (filediff2, interfilediff2),
+            ])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_matched_interdiff_files_with_new_deleted_file_left(self):
+        """Testing get_matched_interdiff_files with new deleted file on left
+        side only
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        filediff2 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            status=FileDiff.DELETED,
+            diff='diff2')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        interfilediff1 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='interdiff1')
+
+        matched_files = get_matched_interdiff_files(
+            tool=repository.get_scmtool(),
+            filediffs=[filediff1, filediff2],
+            interfilediffs=[interfilediff1])
+
+        self.assertEqual(
+            list(matched_files),
+            [
+                (filediff1, interfilediff1),
+                (filediff2, None),
+            ])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_matched_interdiff_files_with_new_deleted_file_right(self):
+        """Testing get_matched_interdiff_files with new deleted file on right
+        side only
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        interfilediff1 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='interdiff1')
+
+        interfilediff2 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            status=FileDiff.DELETED,
+            diff='interdiff2')
+
+        matched_files = get_matched_interdiff_files(
+            tool=repository.get_scmtool(),
+            filediffs=[filediff1],
+            interfilediffs=[interfilediff1, interfilediff2])
+
+        self.assertEqual(
+            list(matched_files),
+            [
+                (filediff1, interfilediff1),
+                (None, interfilediff2),
+            ])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_matched_interdiff_files_with_new_deleted_file_both(self):
+        """Testing get_matched_interdiff_files with new deleted file on both
+        sides
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        filediff2 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            status=FileDiff.DELETED,
+            diff='diff2')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        interfilediff1 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='interdiff1')
+
+        interfilediff2 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            status=FileDiff.DELETED,
+            diff='interdiff2')
+
+        matched_files = get_matched_interdiff_files(
+            tool=repository.get_scmtool(),
+            filediffs=[filediff1, filediff2],
+            interfilediffs=[interfilediff1, interfilediff2])
+
+        self.assertEqual(
+            list(matched_files),
+            [
+                (filediff1, interfilediff1),
+                (filediff2, interfilediff2),
+            ])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_matched_interdiff_files_with_new_modified_file_right(self):
+        """Testing get_matched_interdiff_files with new modified file on
+        right side
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        interfilediff1 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='interdiff1')
+
+        interfilediff2 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            diff='interdiff2')
+
+        matched_files = get_matched_interdiff_files(
+            tool=repository.get_scmtool(),
+            filediffs=[filediff1],
+            interfilediffs=[interfilediff1, interfilediff2])
+
+        self.assertEqual(
+            list(matched_files),
+            [
+                (filediff1, interfilediff1),
+                (None, interfilediff2),
+            ])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_matched_interdiff_files_with_reverted_file(self):
+        """Testing get_matched_interdiff_files with reverted file"""
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        filediff2 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            diff='diff2')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        interfilediff1 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='interdiff1')
+
+        matched_files = get_matched_interdiff_files(
+            tool=repository.get_scmtool(),
+            filediffs=[filediff1, filediff2],
+            interfilediffs=[interfilediff1])
+
+        self.assertEqual(
+            list(matched_files),
+            [
+                (filediff1, interfilediff1),
+                (filediff2, None),
+            ])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_matched_interdiff_files_with_both_renames(self):
+        """Testing get_matched_interdiff_files with matching renames on both
+        sides
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        filediff2 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            diff='diff2')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        interfilediff1 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='interdiff1')
+
+        interfilediff2 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            diff='interdiff2')
+
+        matched_files = get_matched_interdiff_files(
+            tool=repository.get_scmtool(),
+            filediffs=[filediff1, filediff2],
+            interfilediffs=[interfilediff1, interfilediff2])
+
+        self.assertEqual(
+            list(matched_files),
+            [
+                (filediff1, interfilediff1),
+                (filediff2, interfilediff2),
+            ])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_matched_interdiff_files_with_new_renames(self):
+        """Testing get_matched_interdiff_files with modified on left side,
+        modified + renamed on right
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        filediff2 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            diff='diff2')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        interfilediff1 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='interdiff1')
+
+        interfilediff2 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo3.txt',
+            diff='interdiff2')
+
+        matched_files = get_matched_interdiff_files(
+            tool=repository.get_scmtool(),
+            filediffs=[filediff1, filediff2],
+            interfilediffs=[interfilediff1, interfilediff2])
+
+        self.assertEqual(
+            list(matched_files),
+            [
+                (filediff1, interfilediff1),
+                (filediff2, interfilediff2),
+            ])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_matched_interdiff_files_with_multiple_copies(self):
+        """Testing get_matched_interdiff_files with multiple copies of file
+        from left on right
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        filediff2 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            diff='diff2')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        interfilediff1 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='interdiff1')
+
+        interfilediff2 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo3.txt',
+            diff='interdiff2')
+
+        interfilediff3 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo4.txt',
+            diff='interdiff3')
+
+        matched_files = get_matched_interdiff_files(
+            tool=repository.get_scmtool(),
+            filediffs=[filediff1, filediff2],
+            interfilediffs=[interfilediff1, interfilediff2, interfilediff3])
+
+        self.assertEqual(
+            list(matched_files),
+            [
+                (filediff1, interfilediff1),
+                (filediff2, interfilediff2),
+                (filediff2, interfilediff3),
+            ])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_matched_interdiff_files_with_same_names_multiple_ops(self):
+        """Testing get_matched_interdiff_files with same names and multiple
+        operation (pathological case)
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=PRE_CREATION,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        filediff2 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='diff2')
+
+        filediff3 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            diff='diff3')
+
+        filediff4 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            status=FileDiff.DELETED,
+            diff='diff1')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        interfilediff1 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo3.txt',
+            diff='interdiff1')
+
+        interfilediff2 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            diff='interdiff2')
+
+        interfilediff3 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo3.txt',
+            diff='interdiff3')
+
+        interfilediff4 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            status=FileDiff.DELETED,
+            diff='interdiff4')
+
+        interfilediff5 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=PRE_CREATION,
+            dest_file='foo.txt',
+            diff='interdiff5')
+
+        matched_files = get_matched_interdiff_files(
+            tool=repository.get_scmtool(),
+            filediffs=[filediff1, filediff2, filediff3, filediff4],
+            interfilediffs=[interfilediff1, interfilediff2, interfilediff3,
+                            interfilediff4, interfilediff5])
+
+        self.assertEqual(
+            list(matched_files),
+            [
+                (filediff1, interfilediff5),
+                (filediff3, interfilediff2),
+                (filediff4, interfilediff4),
+                (filediff2, interfilediff1),
+                (filediff2, interfilediff3),
+            ])
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_matched_interdiff_files_with_new_file_same_name(self):
+        """Testing get_matched_interdiff_files with new file on right with
+        same name from left
+        """
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request,
+                                      revision=1)
+
+        filediff1 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='diff1')
+
+        filediff2 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            diff='diff2')
+
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
+
+        interfilediff1 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo.txt',
+            source_revision=123,
+            dest_file='foo.txt',
+            diff='interdiff1')
+
+        interfilediff2 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo2.txt',
+            source_revision=PRE_CREATION,
+            dest_file='foo2.txt',
+            diff='interdiff2')
+
+        matched_files = get_matched_interdiff_files(
+            tool=repository.get_scmtool(),
+            filediffs=[filediff1, filediff2],
+            interfilediffs=[interfilediff1, interfilediff2])
+
+        self.assertEqual(
+            list(matched_files),
+            [
+                (filediff1, interfilediff1),
+                (filediff2, None),
+                (None, interfilediff2),
+            ])
 
     def test_get_line_changed_regions(self):
         """Testing DiffChunkGenerator._get_line_changed_regions"""

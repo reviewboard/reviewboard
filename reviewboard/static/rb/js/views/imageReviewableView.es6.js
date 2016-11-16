@@ -653,7 +653,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
     },
 
     modeItemTemplate: _.template(
-        '<li class="image-diff-mode"><a href="#" data-mode="<%- mode %>"><%- name %></a></li>'
+        '<li><a class="image-diff-mode" href="#" data-mode="<%- mode %>"><%- name %></a></li>'
     ),
 
     captionTableTemplate: _.template(
@@ -898,10 +898,16 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
          */
         const filename = this.model.get('filename');
 
-        if (filename.includes('@2x.')) {
-            this.$('#image-resolution-zoom-2x').click();
-        } else if (filename.includes('@3x.')) {
-            this.$('#image-resolution-zoom-3x').click();
+        /*
+         * The `filename` attribute doesn't exist for screenshots, so we need
+         * to check it.
+         */
+        if (filename) {
+            if (filename.includes('@2x.')) {
+                this.$('#image-resolution-zoom-2x').click();
+            } else if (filename.includes('@3x.')) {
+                this.$('#image-resolution-zoom-3x').click();
+            }
         }
 
         return this;

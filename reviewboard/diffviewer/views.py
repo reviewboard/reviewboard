@@ -148,7 +148,8 @@ class DiffViewerView(TemplateView):
         base_commit_id = self.request.GET.get('base-commit-id')
         tip_commit_id = self.request.GET.get('tip-commit-id')
 
-        files = get_diff_files(diffset, None, interdiffset,
+        files = get_diff_files(diffset=diffset,
+                               interdiffset=interdiffset,
                                base_commit_id=base_commit_id,
                                tip_commit_id=tip_commit_id,
                                request=self.request)
@@ -430,7 +431,8 @@ class DiffFragmentView(View):
         return encode_etag(etag)
 
     def process_diffset_info(self, diffset_or_id, filediff_id,
-                             interdiffset_or_id=None, **kwargs):
+                             interfilediff_id=None, interdiffset_or_id=None,
+                             **kwargs):
         """Process and return information on the desired diff.
 
         The diff IDs and other data passed to the view can be processed and
@@ -477,12 +479,18 @@ class DiffFragmentView(View):
 
         filediff = get_object_or_404(FileDiff, pk=filediff_id, diffset=diffset)
 
+        if interfilediff_id:
+            interfilediff = get_object_or_404(FileDiff, pk=interfilediff_id,
+                                              diffset=interdiffset)
+        else:
+            interfilediff = None
+
         # Store this so we don't end up causing an SQL query later when looking
         # this up.
         filediff.diffset = diffset
 
         diff_file = self._get_requested_diff_file(diffset, filediff,
-                                                  interdiffset)
+                                                  interdiffset, interfilediff)
 
         if not diff_file:
             raise UserVisibleError(
@@ -567,7 +575,8 @@ class DiffFragmentView(View):
             'show_deleted': show_deleted,
         }
 
-    def _get_requested_diff_file(self, diffset, filediff, interdiffset):
+    def _get_requested_diff_file(self, diffset, filediff, interdiffset,
+                                 interfilediff):
         """Fetches information on the requested diff.
 
         This will look up information on the diff that's to be rendered
@@ -577,11 +586,13 @@ class DiffFragmentView(View):
         The file will not contain chunk information. That must be specifically
         populated later.
         """
-        files = get_diff_files(diffset, filediff, interdiffset,
+        files = get_diff_files(diffset=diffset,
+                               interdiffset=interdiffset,
+                               filediff=filediff,
+                               interfilediff=interfilediff,
                                request=self.request)
 
         if files:
-            assert len(files) == 1
             file = files[0]
 
             if 'index' in self.request.GET:

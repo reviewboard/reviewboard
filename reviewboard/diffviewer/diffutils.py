@@ -314,10 +314,159 @@ def get_revision_str(revision):
     else:
         return _("Revision %s") % revision
 
+def get_matched_interdiff_files(tool, filediffs, interfilediffs):
+    """Generate pairs of matched files for display in interdiffs.
+
+    This compares a list of filediffs and a list of interfilediffs, attempting
+    to best match up the files in both for display in the diff viewer.
+
+    This will prioritize matches that share a common source filename,
+    destination filename, and new/deleted state. Failing that, matches that
+    share a common source filename are paired off.
+
+    Any entries in ``interfilediffs` that don't have any match in ``filediffs``
+    are considered new changes in the interdiff, and any entries in
+    ``filediffs`` that don't have entries in ``interfilediffs`` are considered
+    reverted changes.
+
+    Args:
+        tool (reviewboard.scmtools.core.SCMTool)
+            The tool used for all these diffs.
+
+        filediffs (list of reviewboard.diffviewer.models.FileDiff):
+            The list of filediffs on the left-hand side of the diff range.
+
+        interfilediffs (list of reviewboard.diffviewer.models.FileDiff):
+            The list of filediffs on the right-hand side of the diff range.
+
+    Yields:
+        tuple:
+        A paired off filediff match. This is a tuple containing two entries,
+        each a :py:class:`~reviewboard.diffviewer.models.FileDiff` or ``None``.
+    """
+    parser = tool.get_parser('')
+    _normfile = parser.normalize_diff_filename
+
+    def _make_detail_key(filediff):
+        return (_normfile(filediff.source_file),
+                _normfile(filediff.dest_file),
+                filediff.is_new,
+                filediff.deleted)
+
+    # In order to support interdiffs properly, we need to display diffs on
+    # every file in the union of both diffsets. Iterating over one diffset
+    # or the other doesn't suffice. We also need to be careful to handle
+    # things like renamed/moved files, particularly when there are multiple
+    # of them with the same source filename.
+    #
+    # This is done in four stages:
+    #
+    # 1. Build up maps and a set for keeping track of possible
+    #    interfilediff candidates for future stages.
+    #
+    # 2. Look for any files that are common between the two diff revisions
+    #    that have the same source filename, same destination filename, and
+    #    the same new/deleted states.
+    #
+    #    Unless a diff is hand-crafted, there should never be more than one
+    #    match here.
+    #
+    # 3. Look for any files that are common between the two diff revisions
+    #    that have the same source filename and new/deleted state. These will
+    #    ignore the destination filename, helping to match cases where diff 1
+    #    modifies a file and diff 2 modifies + renames/moves it.
+    #
+    # 4. Add any remaining files from diff 2 that weren't found in diff 1.
+    #
+    # We don't have to worry about things like the order of matched diffs.
+    # That will be taken care of at the end of the function.
+    detail_interdiff_map = {}
+    simple_interdiff_map = {}
+    remaining_interfilediffs = set()
+
+    # Stage 1: Build up the maps/set of interfilediffs.
+    for interfilediff in interfilediffs:
+        source_file = _normfile(interfilediff.source_file)
+        detail_key = _make_detail_key(interfilediff)
+
+        # We'll store this interfilediff in three spots: The set of
+        # all interfilediffs, the detail map (for source + dest +
+        # is_new file comparisons), and the simple map (for direct
+        # source_file comparisons). These will be used for the
+        # different matching stages.
+        remaining_interfilediffs.add(interfilediff)
+        detail_interdiff_map[detail_key] = interfilediff
+        simple_interdiff_map.setdefault(source_file, set()).add(interfilediff)
+
+    # Stage 2: Look for common files with the same source/destination
+    #          filenames and new/deleted states.
+    #
+    # There will only be one match per filediff, at most. Any filediff or
+    # interfilediff that we find will be excluded from future stages.
+    remaining_filediffs = []
+
+    for filediff in filediffs:
+        source_file = _normfile(filediff.source_file)
+
+        try:
+            interfilediff = detail_interdiff_map.pop(
+                _make_detail_key(filediff))
+        except KeyError:
+            remaining_filediffs.append(filediff)
+            continue
+
+        yield filediff, interfilediff
+
+        if interfilediff:
+            remaining_interfilediffs.discard(interfilediff)
+
+            try:
+                simple_interdiff_map.get(source_file, []).remove(interfilediff)
+            except ValueError:
+                pass
+
+    # Stage 3: Look for common files with the same source filenames and
+    #          new/deleted states.
+    #
+    # Any filediff from diff 1 not already processed in stage 1 will be
+    # processed here. We'll look for any filediffs from diff 2 that match
+    # the source filename and the new/deleted state. Any that we find will
+    # be matched up.
+    for filediff in remaining_filediffs:
+        source_file = _normfile(filediff.source_file)
+        found_interfilediffs = [
+            temp_interfilediff
+            for temp_interfilediff in simple_interdiff_map.get(source_file, [])
+            if (temp_interfilediff.is_new == filediff.is_new and
+                temp_interfilediff.deleted == filediff.deleted)
+        ]
+
+        if found_interfilediffs:
+            remaining_interfilediffs.difference_update(found_interfilediffs)
+
+            for interfilediff in found_interfilediffs:
+                yield filediff, interfilediff
+        else:
+            yield filediff, None
+
+    # Stage 4: Add any remaining files from the interdiff.
+    #
+    # We've removed everything that we've already found.  What's left are
+    # interdiff files that are new. They have no file to diff against.
+    #
+    # The end result is going to be a view that's the same as when you're
+    # viewing a standard diff. As such, we can pretend the interdiff is
+    # the source filediff and not specify an interdiff. Keeps things
+    # simple, code-wise, since we really have no need to special-case
+    # this.
+    for interfilediff in remaining_interfilediffs:
+        yield None, interfilediff
+
 
 def get_diff_files(diffset, filediff=None, interdiffset=None,
-                   base_commit_id=None, tip_commit_id=None, request=None):
-    """Generates a list of files that will be displayed in a diff.
+                   interfilediff=None, base_commit_id=None, tip_commit_id=None,
+                   request=None):
+    """Return a list of files that will be displayed in a diff
 
     This will go through the given diffset/interdiffset, or a given filediff
     within that diffset, and generate the list of files that will be
@@ -325,8 +474,32 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
     such as the index, original/modified names, revisions, associated
     filediffs/diffsets, and so on.
 
-    This can be used along with populate_diff_chunks to build a full list
-    containing all diff chunks used for rendering a side-by-side diff.
+    This can be used along with :py:func:`populate_diff_chunks` to build a full
+    list containing all diff chunks used for rendering a side-by-side diff.
+
+    Args:
+        diffset (reviewboard.diffviewer.models.DiffSet):
+            The diffset containing the files to return.
+
+        filediff (reviewboard.diffviewer.models.FileDiff, optional):
+            A specific file in the diff to return information for.
+
+        interdiffset (reviewboard.diffviewer.models.DiffSet, optional):
+            A second diffset used for an interdiff range.
+
+        interfilediff (reviewboard.diffviewer.models.FileDiff, optional):
+            A second specific file in ``interdiffset`` used to return
+            information for. This should be provided if ``filediff`` and
+            ``interdiffset`` are both provided. If it's ``None`` in this
+            case, then the diff will be shown as reverted for this file.
+
+        request (django.http.HttpRequest):
+            The current HTTP request.
+
+    Returns:
+        list of dict:
+        A list of dictionaries containing information on the files to show
+        in the diff, in the order in which they would be shown.
     """
     assert not interdiffset or (not base_commit_id and not tip_commit_id)
 
@@ -358,6 +531,8 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             else:
                 filediffs = diffset.files.select_related().all()
 
+            filediffs = list(filediffs)
+
             filediffs = exclude_filediff_ancestors(filediffs, diffset,
                                                    diffset_file_graph)
         else:
@@ -373,10 +548,6 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
                                   "diffset id %s" % diffset.id,
                                   request=request)
 
-    # A map used to quickly look up the equivalent interfilediff given a
-    # source file.
-    interdiff_map = {}
-
     # Filediffs that were created with leading slashes stripped won't match
     # those created with them present, so we need to compare them without in
     # order for the filenames to match up properly.
@@ -387,48 +558,48 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
         return parser.normalize_diff_filename(filename)
 
     if interdiffset:
-        interdiffset_files = exclude_filediff_ancestors(
-            interdiffset.files.all(), interdiffset)
+        if not filediff:
+            interfilediffs = exclude_filediff_ancestors(
+                interdiffset.files.all(), interdiffset)
+        elif interfilediff:
+            interfilediffs = [interfilediff]
+        else:
+            interfilediffs = []
 
-        for interfilediff in interdiffset_files:
-            interfilediff_source_file = _normfile(interfilediff.source_file)
+        filediff_parts = []
+        matched_filediffs = get_matched_interdiff_files(
+            tool=tool,
+            filediffs=filediffs,
+            interfilediffs=interfilediffs)
 
-            if (not filediff or
-                _normfile(filediff.source_file) == interfilediff_source_file):
-                interdiff_map[interfilediff_source_file] = interfilediff
+        for temp_filediff, temp_interfilediff in matched_filediffs:
+            if temp_filediff:
+                filediff_parts.append((temp_filediff, temp_interfilediff,
+                                       True))
+            elif temp_interfilediff:
+                filediff_parts.append((temp_interfilediff, None, False))
+            else:
+                logging.error(
+                    'get_matched_interdiff_files returned an entry with an '
+                    'empty filediff and interfilediff for diffset=%r, '
+                    'interdiffset=%r, filediffs=%r, interfilediffs=%r',
+                    diffset, interdiffset, filediffs, interfilediffs)
 
-    # In order to support interdiffs properly, we need to display diffs
-    # on every file in the union of both diffsets. Iterating over one diffset
-    # or the other doesn't suffice.
-    #
-    # We build a list of parts containing the source filediff, the interdiff
-    # filediff (if specified), and whether to force showing an interdiff
-    # (in the case where a file existed in the source filediff but was
-    # reverted in the interdiff).
-    has_interdiffset = interdiffset is not None
-
-    filediff_parts = [
-        (temp_filediff,
-         interdiff_map.pop(_normfile(temp_filediff.source_file), None),
-         has_interdiffset)
-        for temp_filediff in filediffs
-    ]
-
-    if interdiffset:
-        # We've removed everything in the map that we've already found.
-        # What's left are interdiff files that are new. They have no file
-        # to diff against.
-        #
-        # The end result is going to be a view that's the same as when you're
-        # viewing a standard diff. As such, we can pretend the interdiff is
-        # the source filediff and not specify an interdiff. Keeps things
-        # simple, code-wise, since we really have no need to special-case
-        # this.
-        filediff_parts += [
-            (interdiff, None, False)
-            for interdiff in six.itervalues(interdiff_map)
+                raise ValueError(
+                    'Internal error: get_matched_interdiff_files returned an '
+                    'entry with an empty filediff and interfilediff! Please '
+                    'report this along with information from the server '
+                    'error log.')
+    else:
+        # We're not working with interdiffs. We can easily create the
+        # filediff_parts directly.
+        filediff_parts = [
+            (temp_filediff, None, False)
+            for temp_filediff in filediffs
         ]
 
+    # Now that we have all the bits and pieces we care about for the filediffs,
+    # we can start building information about each entry on the diff viewer.
     files = []
 
     for parts in filediff_parts:
@@ -451,11 +622,6 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
 
             source_revision = _("Diff Revision %s") % diffset.revision
 
-            if not interfilediff and force_interdiff:
-                dest_revision = (_("Diff Revision %s - File Reverted") %
-                                 interdiffset.revision)
-            else:
-                dest_revision = _("Diff Revision %s") % interdiffset.revision
         else:
             source_revision = filediff.source_revision
 
@@ -469,10 +635,16 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
 
             source_revision = get_revision_str(source_revision)
 
-            if newfile:
-                dest_revision = _("New File")
+        if interfilediff:
+            dest_revision = _('Diff Revision %s') % interdiffset.revision
+        else:
+            if force_interdiff:
+                dest_revision = (_('Diff Revision %s - File Reverted') %
+                                 interdiffset.revision)
+            elif newfile:
+                dest_revision = _('New File')
             else:
-                dest_revision = _("New Change")
+                dest_revision = _('New Change')
 
         if interfilediff:
             raw_depot_filename = filediff.dest_file
@@ -514,7 +686,9 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
     if len(files) == 1:
         return files
     else:
-        return get_sorted_filediffs(files, key=lambda f: f['filediff'])
+        return get_sorted_filediffs(
+            files,
+            key=lambda f: f['interfilediff'] or f['filediff'])
 
 
 def populate_diff_chunks(files, enable_syntax_highlighting=True,
@@ -586,6 +760,7 @@ def get_file_from_filediff(context, filediff, interfilediff):
 
         request = context.get('request', None)
         files = get_diff_files(filediff.diffset, filediff, interdiffset,
+                               interfilediff=interfilediff,
                                request=request)
         populate_diff_chunks(files, get_enable_highlighting(context['user']),
                              request=request)
@@ -902,7 +1077,7 @@ def get_sorted_filediffs(filediffs, key=None):
         if key:
             filediff = key(filediff)
 
-        filename = filediff.source_file
+        filename = filediff.dest_file
         i = filename.rfind('/')
 
         if i == -1:
