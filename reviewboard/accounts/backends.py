@@ -963,7 +963,7 @@ def set_enabled_auth_backend(backend_id):
 class AuthBackendRegistry(EntryPointRegistry):
     """A registry for managing authentication backends."""
 
-    entry_point = 'reviewboard.auth.backends'
+    entry_point = 'reviewboard.auth_backends'
     lookup_attrs = ('backend_id',)
 
     errors = {
@@ -1072,14 +1072,14 @@ def get_registered_auth_backends():
 
     Yields:
         type:
-        The :py:class:`~reviewboard.accounts.backends.AuthBackend`
-        subclasses.
+        The :py:class:`~reviewboard.accounts.backends.AuthBackend` subclasses.
 
     .. deprecated:: 3.0
-       Iterate over :py:data:`~reviewboard.accounts.auth_backends` instead.
+       Iterate over :py:data:`auth_backends` instead.
     """
-    warn('reviewboard.accounts.get_registered_auth_backends is deprecated. '
-         'Iterate over reviewboard.accounts.auth_backends instead.',
+    warn('reviewboard.accounts.backends.get_registered_auth_backends() is '
+         'deprecated. Iterate over '
+         'reviewboard.accounts.backends.auth_backends instead.',
          DeprecationWarning)
 
     for backend in auth_backends:
@@ -1093,10 +1093,11 @@ def get_registered_auth_backend(backend_id):
 
     .. deprecated:: 3.0
        Use the :py:func:`~AuthBackendRegistry.get_auth_backend` method of
-       :py:data:`~reviewboard.accounts.auth_backends` instead.
+       :py:data:`auth_backends` instead.
     """
-    warn('reviewboard.accounts.get_registered_auth_backend is deprecated. Use'
-         'reviewboard.accounts.auth_backends.register instead.',
+    warn('reviewboard.accounts.backends.get_registered_auth_backend() is '
+         'deprecated. Use '
+         'reviewboard.accounts.backends.auth_backends.register() instead.',
          DeprecationWarning)
     return auth_backends.get('backend_id', backend_id)
 
@@ -1112,10 +1113,11 @@ def register_auth_backend(backend_cls):
 
     .. deprecated:: 3.0
        Use the :py:func:`~AuthBackendRegistry.register` method of
-       :py:data:`~reviewboard.accounts.auth_backends` instead.
+       :py:data.`auth_backends` instead.
     """
-    warn('reviewboard.accounts.register_auth_backend is deprecated. Use'
-         'reviewboard.accounts.auth_backends.register instead.',
+    warn('reviewboard.accounts.backends.register_auth_backend() is '
+         'deprecated. Use '
+         'reviewboard.accounts.backends.auth_backends.register() instead.',
          DeprecationWarning)
     auth_backends.register(backend_cls)
 
@@ -1125,9 +1127,10 @@ def unregister_auth_backend(backend_cls):
 
     .. deprecated:: 3.0
        Use the :py:func:`~AuthBackendRegistry.unregister` method of
-       :py:data:`~reviewboard.accounts.auth_backends` instead.
+       :py:data:`auth_backends` instead.
     """
-    warn('reviewboard.accounts.unregister_auth_backend is deprecated. Use '
-         'reviewboard.accounts.auth_backends.unregister instead.',
+    warn('reviewboard.accounts.backends.unregister_auth_backend() is '
+         'deprecated. Use '
+         'reviewboard.accounts.backends.auth_backends.unregister() instead.',
          DeprecationWarning)
     auth_backends.unregister(backend_cls)

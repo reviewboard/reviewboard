@@ -108,17 +108,18 @@ class AuthBackendRegistryTests(TestCase):
 
     def test_register_auth_backend(self):
         """Testing register_auth_backend"""
-        self.assertEqual(set(auth_backends), {StandardAuthBackend})
+        starting_set = set(auth_backends)
         register_auth_backend(DummyAuthBackend)
 
         self.assertSetEqual(set(auth_backends),
-                            {StandardAuthBackend, DummyAuthBackend})
+                            starting_set | {DummyAuthBackend})
 
     def test_unregister_auth_backend(self):
         """Testing unregister_auth_backend"""
+        starting_set = set(auth_backends)
         register_auth_backend(DummyAuthBackend)
         unregister_auth_backend(DummyAuthBackend)
-        self.assertSetEqual(set(auth_backends), {StandardAuthBackend})
+        self.assertSetEqual(set(auth_backends), starting_set)
 
 
 class ReviewRequestVisitTests(TestCase):

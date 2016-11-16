@@ -45,12 +45,8 @@
  </ul>
 
 {%  for entry in entries %}
-{%   if entry.review %}
-{%    with review=entry.review %}
-{%     include "reviews/boxes/review.html" %}
-{%    endwith %}
-{%   elif entry.changedesc %}
-{%    include "reviews/boxes/change.html" %}
+{%   if entry.template_name %}
+{%    include entry.template_name %}
 {%   endif %}
 {%  endfor %}
 {% endblock content %}
@@ -69,35 +65,8 @@
 
     RB.PageManager.beforeRender(function(page) {
 {%  for entry in entries %}
-{%   if entry.review %}
-        page.addBox(new RB.ReviewBoxView({
-            model: page.reviewRequest.createReview({{entry.review.id}}, {
-                shipIt: {{entry.review.ship_it|yesno:'true,false'}},
-                'public': true,
-                bodyTop: '{{entry.review.body_top}}',
-                bodyBottom: '{{entry.review.body_bottom}}'
-            }),
-            el: $('#review{{entry.review.id}}'),
-            reviewRequestEditor: page.reviewRequestEditor,
-            showSendEmail: {{send_email|yesno:'true,false'}}
-        }));
-
-{%    for comment in entry.comments.diff_comments %}
-        page.queueLoadDiff(
-            "{{comment.id}}",
-{%     if comment.interfilediff %}
-            "{{comment.filediff.id}}-{{comment.interfilediff.id}}"
-{%     else %}
-            "{{comment.filediff.id}}"
-{%     endif %}
-        );
-{%    endfor %}
-{%   elif entry.changedesc %}
-        page.addBox(new RB.ChangeBoxView({
-            el: $('#changedesc{{entry.changedesc.id}}'),
-            reviewRequest: page.reviewRequest,
-            reviewRequestEditorView: page.reviewRequestEditorView
-        }));
+{%   if entry.js_template_name %}
+{%    include entry.js_template_name %}
 {%   endif %}
 {%  endfor %}
     });

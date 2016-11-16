@@ -1158,18 +1158,6 @@ class FileDiffMigrationTests(TestCase):
     def setUp(self):
         super(FileDiffMigrationTests, self).setUp()
 
-        self.parent_diff = (
-            b'diff --git a/README b/README\n'
-            b'index 94bdd3e..3d2b777 100644\n'
-            b'--- README\n'
-            b'+++ README\n'
-            b'@@ -2 +2 @@\n'
-            b'-blah..\n'
-            b'+blah blah\n')
-
-    def setUp(self):
-        super(FileDiffMigrationTests, self).setUp()
-
         self.repository = self.create_repository(tool_name='Test')
         diffset = DiffSet.objects.create(name='test',
                                          revision=1,
@@ -1179,6 +1167,15 @@ class FileDiffMigrationTests(TestCase):
                                  diffset=diffset,
                                  diff64='',
                                  parent_diff64='')
+
+        self.parent_diff = (
+            b'diff --git a/README b/README\n'
+            b'index 94bdd3e..3d2b777 100644\n'
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -2 +2 @@\n'
+            b'-blah..\n'
+            b'+blah blah\n')
 
     def test_migration_by_diff(self):
         """Testing RawFileDiffData migration accessing FileDiff.diff"""
@@ -1270,7 +1267,7 @@ class FileDiffMigrationTests(TestCase):
         """
         legacy = LegacyFileDiffData.objects.create(
             binary_hash='abc123',
-            binary=Base64DecodedValue(self.diff))
+            binary=Base64DecodedValue(self.DEFAULT_GIT_FILEDIFF_DATA))
 
         self.filediff.legacy_diff_hash = legacy
         self.filediff.save()
@@ -1283,9 +1280,10 @@ class FileDiffMigrationTests(TestCase):
         self.assertIsNone(self.filediff.legacy_diff_hash)
         self.assertEqual(LegacyFileDiffData.objects.count(), 0)
 
-        self.assertEqual(diff, self.diff)
+        self.assertEqual(diff, self.DEFAULT_GIT_FILEDIFF_DATA)
         self.assertEqual(self.filediff.diff64, '')
-        self.assertEqual(self.filediff.diff_hash.content, self.diff)
+        self.assertEqual(self.filediff.diff_hash.content,
+                         self.DEFAULT_GIT_FILEDIFF_DATA)
         self.assertEqual(self.filediff.diff, diff)
         self.assertIsNone(self.filediff.parent_diff)
         self.assertIsNone(self.filediff.parent_diff_hash)
@@ -1296,7 +1294,7 @@ class FileDiffMigrationTests(TestCase):
         """
         legacy = LegacyFileDiffData.objects.create(
             binary_hash='abc123',
-            binary=Base64DecodedValue(self.diff))
+            binary=Base64DecodedValue(self.DEFAULT_GIT_FILEDIFF_DATA))
 
         self.filediff.legacy_diff_hash = legacy
         self.filediff.save()
@@ -1320,9 +1318,10 @@ class FileDiffMigrationTests(TestCase):
         self.assertIsNone(self.filediff.legacy_diff_hash)
         self.assertEqual(LegacyFileDiffData.objects.count(), 1)
 
-        self.assertEqual(diff, self.diff)
+        self.assertEqual(diff, self.DEFAULT_GIT_FILEDIFF_DATA)
         self.assertEqual(self.filediff.diff64, '')
-        self.assertEqual(self.filediff.diff_hash.content, self.diff)
+        self.assertEqual(self.filediff.diff_hash.content,
+                         self.DEFAULT_GIT_FILEDIFF_DATA)
         self.assertEqual(self.filediff.diff, diff)
         self.assertIsNone(self.filediff.parent_diff)
         self.assertIsNone(self.filediff.parent_diff_hash)
@@ -1391,7 +1390,7 @@ class FileDiffMigrationTests(TestCase):
         """
         legacy = LegacyFileDiffData.objects.create(
             binary_hash='abc123',
-            binary=Base64DecodedValue(self.diff))
+            binary=Base64DecodedValue(self.DEFAULT_GIT_FILEDIFF_DATA))
         parent_legacy = LegacyFileDiffData.objects.create(
             binary_hash='def456',
             binary=Base64DecodedValue(self.parent_diff))
@@ -1421,7 +1420,7 @@ class FileDiffMigrationTests(TestCase):
 
         # At this point, we should have valid diffs, and neither call
         # above should have raised an exception due to a dangling hash ID.
-        self.assertEqual(diff1, self.diff)
+        self.assertEqual(diff1, self.DEFAULT_GIT_FILEDIFF_DATA)
         self.assertEqual(diff1, diff2)
         self.assertEqual(parent_diff1, self.parent_diff)
         self.assertEqual(parent_diff1, parent_diff2)
@@ -1445,8 +1444,10 @@ class FileDiffMigrationTests(TestCase):
         # Check the diff content.
         self.assertEqual(filediff1.diff64, '')
         self.assertEqual(filediff2.diff64, '')
-        self.assertEqual(filediff1.diff_hash.content, self.diff)
-        self.assertEqual(filediff2.diff_hash.content, self.diff)
+        self.assertEqual(filediff1.diff_hash.content,
+                         self.DEFAULT_GIT_FILEDIFF_DATA)
+        self.assertEqual(filediff2.diff_hash.content,
+                         self.DEFAULT_GIT_FILEDIFF_DATA)
 
         # Check the parent_diff content.
         self.assertEqual(filediff1.parent_diff64, '')

@@ -15,7 +15,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from reviewboard.accounts.managers import (ProfileManager,
                                            ReviewRequestVisitManager,
                                            TrophyManager)
-from reviewboard.accounts.trophies import TrophyType
+from reviewboard.accounts.trophies import trophies_registry
 from reviewboard.avatars import avatar_services
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.signals import (reply_published,
@@ -361,8 +361,8 @@ class Trophy(models.Model):
 
     @cached_property
     def trophy_type(self):
-        """Get the TrophyType instance for this trophy."""
-        return TrophyType.for_category(self.category)
+        """The TrophyType instance for this trophy."""
+        return trophies_registry.get_for_category(self.category)
 
     def get_display_text(self):
         """Get the display text for this trophy."""

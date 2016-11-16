@@ -29,6 +29,9 @@ from reviewboard.reviews.actions import (BaseReviewRequestAction,
 from reviewboard.reviews.errors import (DepthLimitExceededError,
                                         NotModifiedError,
                                         PublishError)
+from reviewboard.reviews.fields import (BaseEditableField,
+                                        BaseTextAreaField,
+                                        get_review_request_fieldset)
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
 from reviewboard.reviews.markdown_utils import (markdown_render_conditional,
                                                 normalize_text_for_edit)
@@ -1228,18 +1231,18 @@ class ActionTests(TestCase):
         # Test that foo_action really does render as a child of the parent
         # Close menu (and not any other menu).
         new_close_menu_html = '\n'.join([
-            '<li class="has-menu">',
+            '<li class="review-request-action has-menu">',
             ' <a class="menu-title" id="close-review-request-action"',
             '    href="#">Close &#9662;</a>',
-            ' <ul class="menu" style="display: none;">',
-            '<li>',
+            ' <ul class="menu">',
+            '<li class="review-request-action">',
             ' <a id="submit-review-request-action" href="#">Submitted</a>',
             '</li>',
-            '<li>',
+            '<li class="review-request-action">',
             (' <a id="delete-review-request-action" href="#">Delete '
              'Permanently</a>'),
             '</li>',
-            '<li>',
+            '<li class="review-request-action">',
             (' <a id="%s" href="%s">%s</a>'
              % (foo_action.action_id, foo_action.url, foo_action.label)),
             '</li>',
@@ -2856,6 +2859,63 @@ class DraftTests(TestCase):
         self.assertEqual(set(fields["bugs_closed"]["new"]), new_bugs_norm)
         self.assertEqual(set(fields["bugs_closed"]["removed"]), old_bugs_norm)
         self.assertEqual(set(fields["bugs_closed"]["added"]), new_bugs_norm)
+
+    def test_draft_changes_with_custom_fields(self):
+        """Testing ReviewRequestDraft.publish with custom fields propagating
+        from draft to review request"""
+        class RichField(BaseTextAreaField):
+            field_id = 'rich_field'
+
+        class SpecialRichField(BaseTextAreaField):
+            # Exercise special case field name 'text'
+            field_id = 'text'
+
+        class BasicField(BaseEditableField):
+            field_id = 'basic_field'
+
+        fieldset = get_review_request_fieldset('main')
+        fieldset.add_field(RichField)
+        fieldset.add_field(SpecialRichField)
+        fieldset.add_field(BasicField)
+
+        try:
+            draft = self._get_draft()
+            review_request = draft.review_request
+
+            draft.description = "New description"
+            draft.extra_data['rich_field'] = '**Rich custom text**'
+            draft.extra_data['rich_field_text_type'] = 'markdown'
+            draft.extra_data['text'] = 'Nothing special'
+            draft.extra_data['text_type'] = 'plain'
+            draft.extra_data['basic_field'] = 'Basic text'
+
+            draft.publish()
+
+            self.assertNotIn('description_text_type',
+                             review_request.extra_data)
+            self.assertIn('rich_field', review_request.extra_data)
+            self.assertIn('rich_field_text_type', review_request.extra_data)
+            self.assertIn('text', review_request.extra_data)
+            self.assertIn('text_type', review_request.extra_data)
+            self.assertIn('basic_field', review_request.extra_data)
+            self.assertNotIn('basic_field_text_type',
+                             review_request.extra_data)
+
+            self.assertEqual(review_request.description, draft.description)
+            self.assertEqual(review_request.extra_data['rich_field'],
+                             draft.extra_data['rich_field'])
+            self.assertEqual(review_request.extra_data['rich_field_text_type'],
+                             draft.extra_data['rich_field_text_type'])
+            self.assertEqual(review_request.extra_data['text'],
+                             draft.extra_data['text'])
+            self.assertEqual(review_request.extra_data['text_type'],
+                             draft.extra_data['text_type'])
+            self.assertEqual(review_request.extra_data['basic_field'],
+                             draft.extra_data['basic_field'])
+        finally:
+            fieldset.remove_field(RichField)
+            fieldset.remove_field(SpecialRichField)
+            fieldset.remove_field(BasicField)
 
     def _get_draft(self):
         """Convenience function for getting a new draft to work with."""

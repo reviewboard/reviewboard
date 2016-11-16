@@ -92,7 +92,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
             draft = reviewRequest.draft;
 
         if (options.useExtraData) {
-            return draft.get('extraData')[options.fieldID];
+            return draft.get('extraData')[fieldName];
         } else if (fieldName === 'closeDescription' ||
                    fieldName === 'closeDescriptionRichText') {
             return reviewRequest.get(fieldName);

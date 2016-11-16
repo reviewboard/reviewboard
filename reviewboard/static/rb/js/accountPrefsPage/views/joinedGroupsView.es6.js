@@ -247,11 +247,12 @@ RB.JoinedGroupsView = Backbone.View.extend({
     ].join('')),
 
     events: {
+        'submit': '_onSubmit',
         'keyup .search input': '_onGroupSearchChanged',
         'change .search input': '_onGroupSearchChanged'
     },
 
-    /**
+    /*
      * Initialize the view.
      *
      * Args:
@@ -316,6 +317,20 @@ RB.JoinedGroupsView = Backbone.View.extend({
             this._searchText = text;
             this._groupViews.forEach(view => view.filterBy(this._searchText));
         }
+    },
+
+    /**
+     * Prevent form submission.
+     *
+     * This form live updates based on the content of the <input> field and
+     * submitting it will result in a CSRF error.
+     *
+     * Args:
+     *     e (Event):
+     *         The form submission event.
+     */
+    _onSubmit(e) {
+        e.preventDefault();
     }
 });
 

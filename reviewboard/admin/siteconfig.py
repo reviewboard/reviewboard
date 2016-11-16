@@ -38,6 +38,7 @@ import re
 from django.conf import settings, global_settings
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import six
+from django.utils.translation import ugettext as _
 from djblets.log import restart_logging, siteconfig as log_siteconfig
 from djblets.recaptcha import siteconfig as recaptcha_siteconfig
 from djblets.siteconfig.django_settings import (apply_django_settings,
@@ -46,7 +47,7 @@ from djblets.siteconfig.django_settings import (apply_django_settings,
 from djblets.siteconfig.models import SiteConfiguration
 from haystack import connections
 
-from reviewboard.accounts.backends import get_registered_auth_backend
+from reviewboard.accounts.backends import auth_backends
 from reviewboard.search import search_backend_registry
 from reviewboard.search.search_backends.whoosh import WhooshBackend
 from reviewboard.signals import site_settings_loaded
@@ -298,7 +299,7 @@ def load_site_config(full_reload=False):
 
     # Set the auth backends
     auth_backend_id = siteconfig.settings.get("auth_backend", "builtin")
-    builtin_backend_obj = get_registered_auth_backend('builtin')
+    builtin_backend_obj = auth_backends.get('backend_id', 'builtin')
     builtin_backend = "%s.%s" % (builtin_backend_obj.__module__,
                                  builtin_backend_obj.__name__)
 
@@ -315,7 +316,7 @@ def load_site_config(full_reload=False):
         if builtin_backend not in custom_backends:
             settings.AUTHENTICATION_BACKENDS += (builtin_backend,)
     else:
-        backend = get_registered_auth_backend(auth_backend_id)
+        backend = auth_backends.get('backend_id', auth_backend_id)
 
         if backend and backend is not builtin_backend_obj:
             settings.AUTHENTICATION_BACKENDS = \
