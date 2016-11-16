@@ -59,8 +59,8 @@ New Features
 Web API
 =======
 
-* :ref:`webapi2.0-review-request-list-resource` now allows admin users to
-  list all users' unpublished review requests. (:bug:`2766`)
+* :ref:`rb2.0:webapi2.0-review-request-list-resource` now allows admin users
+  to list all users' unpublished review requests. (:bug:`2766`)
 
   When querying this resource, pass ``?show-all-unpublished=`` to specify
   that all review requests, published or unpublished, should be shown.

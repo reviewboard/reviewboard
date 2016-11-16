@@ -44,16 +44,16 @@ Usability Improvements
 Web API
 =======
 
-* :ref:`webapi2.0-validate-diff-resource` now supports specifying a
+* :ref:`rb2.0:webapi2.0-validate-diff-resource` now supports specifying a
   ``base_commit_id`` field, needed for certain Git hosting services.
 
-* :ref:`webapi2.0-validate-diff-resource` no longer inadvertently stores
+* :ref:`rb2.0:webapi2.0-validate-diff-resource` no longer inadvertently stores
   validated diff data in the database.
 
-* :ref:`webapi2.0-session-resource` now includes a "delete" link when
+* :ref:`rb2.0:webapi2.0-session-resource` now includes a "delete" link when
   authenticated, for clearing the session.
 
-* :ref:`webapi2.0-change-resource` no longer fails displaying changes that
+* :ref:`rb2.0:webapi2.0-change-resource` no longer fails displaying changes that
   update the review request status.
 
 * Fixed numerous API caching issues.
@@ -135,12 +135,13 @@ Documentation Changes
 =====================
 
 * Added a note about fully-qualified domains in the
-  :ref:`active-directory-authentication-settings` documentation. (:bug:`3636`)
+  :ref:`rb2.0:active-directory-authentication-settings` documentation.
+  (:bug:`3636`)
 
   Patch by Sihang Chen.
 
 * Added Fedora/RHEL instructions for Apache configuration in the
-  :ref:`creating-sites` guide.
+  :ref:`rb2.0:creating-sites` guide.
 
   Patch by Stephen Gallagher.
 

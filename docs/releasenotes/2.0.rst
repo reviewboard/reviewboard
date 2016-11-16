@@ -312,7 +312,7 @@ Most notably, it's now possible to embed syntax-highlighted code samples or
 images into your comments. See the user manual for more information on how to
 use Markdown.
 
-See :ref:`using-markdown` for a primer on the supported syntax.
+See :ref:`rb2.0:using-markdown` for a primer on the supported syntax.
 
 Based on work by Greg Wang. (:bug:`2093`, :bug:`2098`)
 
@@ -576,7 +576,7 @@ sections, in order to provide user customization of an extension.
 Other User Features
 -------------------
 
-.. _approval:
+.. _2.0-approval:
 
 * Review request "approval" state.
 
@@ -815,23 +815,23 @@ Web API Changes
 ``visible`` Attribute For Repository Resources
 ----------------------------------------------
 
-The :ref:`Repository resource <webapi2.0-repository-resource>` now allows you
-to get and set the ``visible`` attribute on repositories, which controls
-whether or not the repository is listed in the "New Review Request" page.
-Additionally, the :ref:`Repository List resource
-<webapi2.0-repository-list-resource>` has a new parameter, ``show-invisible``,
-which can be set to ``1`` to get a list of all repositories, including those
-which are not visible.
+The :ref:`Repository resource <rb2.0:webapi2.0-repository-resource>` now
+allows you to get and set the ``visible`` attribute on repositories, which
+controls whether or not the repository is listed in the "New Review Request"
+page.  Additionally, the :ref:`Repository List resource
+<rb2.0:webapi2.0-repository-list-resource>` has a new parameter,
+``show-invisible``, which can be set to ``1`` to get a list of all
+repositories, including those which are not visible.
 
 
 New ``Repository Branches`` and ``Repository Commits`` Resources
 ----------------------------------------------------------------
 
-The :ref:`Repository Branches <webapi2.0-repository-branches-resource>` and
-:ref:`Repository Commits <webapi2.0-repository-commits-resource>` resources are
-special list resources that allow you to fetch a list of branches or a commit
-log for supported repositories. These are used for the post-commit review
-request UI.
+The :ref:`Repository Branches <rb2.0:webapi2.0-repository-branches-resource>`
+and :ref:`Repository Commits <rb2.0:webapi2.0-repository-commits-resource>`
+resources are special list resources that allow you to fetch a list of
+branches or a commit log for supported repositories. These are used for the
+post-commit review request UI.
 
 
 Draft Diff Resources
@@ -855,11 +855,11 @@ Diff Validation Resource
 
 A new resource has been added to verify diff files before creating review
 requests. The new :ref:`Diff Validation resource
-<webapi2.0-validate-diff-resource>` allows you to POST the same data that you
-would to the :ref:`Review Request List resource
-<webapi2.0-review-request-list-resource>`, but instead of creating a new
-object, it will either return an OK or a detailed error message explaining what
-is wrong with the posted diff.
+<rb2.0:webapi2.0-validate-diff-resource>` allows you to POST the same data
+that you would to the :ref:`Review Request List resource
+<rb2.0:webapi2.0-review-request-list-resource>`, but instead of creating a new
+object, it will either return an OK or a detailed error message explaining
+what is wrong with the posted diff.
 
 
 Support for Markdown Fields
@@ -889,12 +889,12 @@ Support for Markdown Fields
 
 * Added a ``text.markdown`` capability.
 
-  :ref:`webapi2.0-server-info-resource` now lists ``text.markdown: true``
+  :ref:`rb2.0:webapi2.0-server-info-resource` now lists ``text.markdown: true``
   in the capabilities list, allowing clients to make smart decisions
   up-front about Markdown support.
 
 
-.. _resource-extra-data:
+.. _2.0-resource-extra-data:
 
 Extra Data for Resources
 ------------------------
@@ -910,19 +910,19 @@ Extensions can also make use of this data.
 
 The following resources support attaching extra data:
 
-* :ref:`webapi2.0-diff-resource`
-* :ref:`webapi2.0-review-diff-comment-resource`
-* :ref:`webapi2.0-draft-file-diff-resource`
-* :ref:`webapi2.0-review-file-attachment-comment-resource`
-* :ref:`webapi2.0-review-group-resource`
-* :ref:`webapi2.0-review-resource`
-* :ref:`webapi2.0-review-reply-resource`
-* :ref:`webapi2.0-review-reply-diff-comment-resource`
-* :ref:`webapi2.0-review-reply-file-attachment-comment-resource`
-* :ref:`webapi2.0-review-reply-screenshot-comment-resource`
-* :ref:`webapi2.0-review-request-resource`
-* :ref:`webapi2.0-review-request-draft-resource`
-* :ref:`webapi2.0-review-screenshot-comment-resource`
+* :ref:`rb2.0:webapi2.0-diff-resource`
+* :ref:`rb2.0:webapi2.0-review-diff-comment-resource`
+* :ref:`rb2.0:webapi2.0-draft-file-diff-resource`
+* :ref:`rb2.0:webapi2.0-review-file-attachment-comment-resource`
+* :ref:`rb2.0:webapi2.0-review-group-resource`
+* :ref:`rb2.0:webapi2.0-review-resource`
+* :ref:`rb2.0:webapi2.0-review-reply-resource`
+* :ref:`rb2.0:webapi2.0-review-reply-diff-comment-resource`
+* :ref:`rb2.0:webapi2.0-review-reply-file-attachment-comment-resource`
+* :ref:`rb2.0:webapi2.0-review-reply-screenshot-comment-resource`
+* :ref:`rb2.0:webapi2.0-review-request-resource`
+* :ref:`rb2.0:webapi2.0-review-request-draft-resource`
+* :ref:`rb2.0:webapi2.0-review-screenshot-comment-resource`
 
 
 Other Web API Changes
@@ -934,14 +934,14 @@ Other Web API Changes
   content represents.
 
   This is available for the various file attachment and screenshot resources,
-  :ref:`webapi2.0-review-group-resource`, and
-  :ref:`webapi2.0-review-request-resource`.
+  :ref:`rb2.0:webapi2.0-review-group-resource`, and
+  :ref:`rb2.0:webapi2.0-review-request-resource`.
 
   Patch by Edward Lee.
 
 * Added fields for indicating approval on a review request.
 
-  :ref:`webapi2.0-review-request-resource` now has ``approved`` and
+  :ref:`rb2.0:webapi2.0-review-request-resource` now has ``approved`` and
   ``approval_failure`` fields that indicate whether the review request has been
   approved and, if not, what the failure was, respectively.
 
@@ -949,14 +949,15 @@ Other Web API Changes
   list of changes that can be committed, or to prevent committing a change if
   it isn't approved.
 
-  See the description on approval_ above for more information.
+  See the description on :ref:`approval <2.0-approval>` above for more
+  information.
 
 * Added fields for getting the issue counts and number of Ship Its on a
   review request.
 
   This provides ``issue_open_count``, ``issue_dropped_count``,
   ``issue_resolved_count``, and ``ship_it_count`` fields on
-  :ref:`webapi2.0-review-request-resource`.
+  :ref:`rb2.0:webapi2.0-review-request-resource`.
 
 * Added querying for review requests based on issue counts and Ship Its.
 
@@ -974,22 +975,22 @@ Other Web API Changes
 
 * The root resource now provides the server information and capabilities.
 
-  Clients can now check the :ref:`webapi2.0-root-resource` for this
+  Clients can now check the :ref:`rb2.0:webapi2.0-root-resource` for this
   information, instead of having to access the
-  :ref:`webapi2.0-server-info-resource`. Both resources provide the same
+  :ref:`rb2.0:webapi2.0-server-info-resource`. Both resources provide the same
   data.
 
 * Users can now add or remove themselves to or from review groups through the
   API.
 
   A user can POST or DELETE their own username to
-  :ref:`webapi2.0-review-group-user-resource` in order to change their
+  :ref:`rb2.0:webapi2.0-review-group-user-resource` in order to change their
   membership in the group. Previously, this ability was limited to
   administrators.
 
-* :ref:`webapi2.0-file-diff-resource` now provides information on various
-  stats for the diff, if the diff has been rendered at least once. These
-  will appear in ``extra_data``.
+* :ref:`rb2.0:webapi2.0-file-diff-resource` now provides information on
+  various stats for the diff, if the diff has been rendered at least once.
+  These will appear in ``extra_data``.
 
   These include the raw insert/delete line counts from the patch file
   (``raw_insert_count``, ``raw_delete_count``), the processed
@@ -999,8 +1000,8 @@ Other Web API Changes
 
   The raw insert/delete counts will be there for any uploaded patch.
 
-* :ref:`webapi2.0-diff-list-resource` no longer thinks it can create diffs
-  on review request without a repository.
+* :ref:`rb2.0:webapi2.0-diff-list-resource` no longer thinks it can create
+  diffs on review request without a repository.
 
   Attempting to create a diff on an attachments-only review request would
   result in an HTTP 500. It now returns an Invalid Attribute error.
@@ -1128,9 +1129,9 @@ Sandboxing
 
   Many of the hook points Review Board offers now protect the rest of the
   application from crashing if an extension raises an exception. Currently,
-  :ref:`review-request-approval-hook`, :ref:`navigation-bar-hook`,
-  :ref:`comment-detail-display-hook`, :ref:`template-hook`, and the
-  :ref:`action-hooks` are sandboxed.
+  :ref:`rb2.0:review-request-approval-hook`, :ref:`rb2.0:navigation-bar-hook`,
+  :ref:`rb2.0:comment-detail-display-hook`, :ref:`rb2.0:template-hook`, and
+  the :ref:`rb2.0:action-hooks` are sandboxed.
 
   Patches by Edwin Zhang.
 
@@ -1142,15 +1143,16 @@ AccountPagesHook and AccountPageFormsHook
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Extensions can add to the new My Account page through the new
-:ref:`account-pages-hook` and :ref:`account-page-forms-hook`.  These create
-new page sections in the My Account page and add to existing page sections,
-respectively. See the documentation for more information on using these.
+:ref:`rb2.0:account-pages-hook` and :ref:`rb2.0:account-page-forms-hook`.
+These create new page sections in the My Account page and add to existing page
+sections, respectively. See the documentation for more information on using
+these.
 
 
 AuthBackendHook
 ~~~~~~~~~~~~~~~
 
-The new :ref:`auth-backend-hook` allows extensions to provide new
+The new :ref:`rb2.0:auth-backend-hook` allows extensions to provide new
 authentication backends. These will be available in the list of authentication
 backends that the administrator can choose from. This is now the preferred way
 of adding custom authentication backends, rather than using Python
@@ -1159,7 +1161,7 @@ entrypoints.
 The auth backend will be registered when the extension is enabled, and
 unregistered when disabled.
 
-See the :ref:`documentation <auth-backend-hook>` for information on using
+See the :ref:`documentation <rb2.0:auth-backend-hook>` for information on using
 this.
 
 
@@ -1167,7 +1169,7 @@ DashboardColumnsHook
 ~~~~~~~~~~~~~~~~~~~~
 
 Extensions can add new columns to the dashboard and to other datagrids
-using the new :ref:`dashboard-columns-hook`. These can be used to display
+using the new :ref:`rb2.0:dashboard-columns-hook`. These can be used to display
 custom information on each row of the dashboard, using, for example, custom
 data stored on a review request by the extension.
 
@@ -1176,24 +1178,24 @@ DashboardSidebarItemsHook
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The old :py:class:`DashboardHook` has been replaced by
-:ref:`dashboard-sidebar-items-hook`, which offers an improved way of adding
-content to the dashboard's sidebar.
+:ref:`rb2.0:dashboard-sidebar-items-hook`, which offers an improved way of
+adding content to the dashboard's sidebar.
 
 Instead of only supporting links to URLs, this can support content of any type
 by making use of extensible subclasses of
-:py:class:`reviewboard.datagrids.sidebar.BaseSidebarItem`. We provide
+:py:class:`rb2.0:reviewboard.datagrids.sidebar.BaseSidebarItem`. We provide
 built-in classes for named sections
-(:py:class:`reviewboard.datagrids.sidebar.BaseSidebarSection`) and links
-(:py:class:`reviewboard.datagrids.sidebar.SidebarNavItem`). New subclasses
-can be written for rendering any custom template.
+(:py:class:`rb2.0:reviewboard.datagrids.sidebar.BaseSidebarSection`) and links
+(:py:class:`rb2.0:reviewboard.datagrids.sidebar.SidebarNavItem`). New
+subclasses can be written for rendering any custom template.
 
 
 Field and FieldSets
 ~~~~~~~~~~~~~~~~~~~
 
 Extensions can now add additional fields and groups of fields to review
-requests through :ref:`review-request-fields-hook`
-and :ref:`review-request-fieldsets-hook`.
+requests through :ref:`rb2.0:review-request-fields-hook`
+and :ref:`rb2.0:review-request-fieldsets-hook`.
 See the documentation for more information on using these.
 
 Custom fields will have their contents saved and published along with
@@ -1205,17 +1207,17 @@ if they need to.
 ReviewRequestApprovalHook
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Companies that need to define their own approval_ logic can subclass
-:ref:`review-request-approval-hook` and implement the :py:meth:`is_approved`
-method to calculate if the provided review request is approved. This
-value will be reflected in the API, and will be accessible to any extensions
-that want to operate on approval.
+Companies that need to define their own :ref:`approval <2.0-approval>` logic
+can subclass :ref:`rb2.0:review-request-approval-hook` and implement the
+:py:meth:`is_approved` method to calculate if the provided review request is
+approved. This value will be reflected in the API, and will be accessible to
+any extensions that want to operate on approval.
 
 
 SignalHook
 ~~~~~~~~~~
 
-Extensions that need to listen to signals can now use :ref:`signal-hook`
+Extensions that need to listen to signals can now use :ref:`rb2.0:signal-hook`
 instead of managing their own signal connections.
 
 :py:class:`SignalHook` takes the signal and a callback as arguments, and
@@ -1236,9 +1238,9 @@ UserPageSidebarItemsHook
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 A new extension hook has been added for adding links to the sidebar on the user
-page (``/users/<username>/``). :ref:`user-page-sidebar-items-hook` is just like
-the new dashboard sidebar hooks listed above, but targeted for the user page
-instead.
+page (``/users/<username>/``). :ref:`rb2.0:user-page-sidebar-items-hook` is
+just like the new dashboard sidebar hooks listed above, but targeted for the
+user page instead.
 
 
 Authentication Backend Changes
@@ -1259,12 +1261,13 @@ Populating Users on API Lookup
 An :py:meth:`AuthBackend.query_users` method was added, which can populate the
 database based on a user lookup query.
 
-This is called when querying :ref:`webapi2.0-user-list-resource` before any
-results are returned from the database. This can be used to query a backend
-server or database to fetch any matching users and store them in the database.
+This is called when querying :ref:`rb2.0:webapi2.0-user-list-resource` before
+any results are returned from the database. This can be used to query a
+backend server or database to fetch any matching users and store them in the
+database.
 
 Extensions can raise a :py:class:`UserQueryError` if this fails, which will be
-reflected in the web API through :ref:`webapi2.0-error-226`.
+reflected in the web API through :ref:`rb2.0:webapi2.0-error-226`.
 
 Patches by Mark Côté.
 
@@ -1327,7 +1330,7 @@ They accompany the existing ``extra_data`` fields on
 
 Extensions can now store state on any of these objects for later use.
 The values can also be accessed and manipulated through the API. See
-:ref:`resource-extra-data`.
+:ref:`2.0-resource-extra-data`.
 
 
 New Signals
@@ -1336,11 +1339,13 @@ New Signals
 * There are two new signals that can be used by extensions to operate when
   settings have been changed.
 
-  * ``site_settings_loaded signal`` (provided by :py:mod:`reviewboard.signals`)
-    is emitted after Review Board loads its settings.
+  * ``site_settings_loaded signal`` (provided by
+    :py:mod:`rb2.0:reviewboard.signals`) is emitted after Review Board loads
+    its settings.
 
-  * ``settings_saved`` (provided by :py:mod:`djblets.extensions.signals`)
-    is emitted for an extension when its settings have been saved.
+  * ``settings_saved`` (provided by
+    :py:mod:`djblets.extensions.signals`) is emitted for an extension
+    when its settings have been saved.
 
 * Added ``review_request_publishing``, ``review_publishing``, and
   ``reply_publishing`` signals.
@@ -1388,8 +1393,8 @@ data to pages not directly rendered by an extension, such as the login page.
 Extra Context for TemplateHook
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:ref:`template-hook` now accepts an :py:data:`extra_context` argument that can
-be used to populate the template with custom variables.
+:ref:`rb2.0:template-hook` now accepts an :py:data:`extra_context` argument
+that can be used to populate the template with custom variables.
 
 :py:class:`TemplateHook` subclasses can also implement
 :py:meth:`get_extra_data` to dynamically generate data for the template.
