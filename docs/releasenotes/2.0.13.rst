@@ -52,7 +52,7 @@ Web API
 
 * All API resources now support HTTP caching via ETags.
 
-* :ref:`webapi2.0-change-resource` now shows all changes from all
+* :ref:`rb2.0:webapi2.0-change-resource` now shows all changes from all
   extension-provided custom fields.
 
 * The review request's change number can now be changed in a PUT request.

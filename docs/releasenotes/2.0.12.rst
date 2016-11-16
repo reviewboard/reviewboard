@@ -71,9 +71,9 @@ Extensions
 
 * Added a new hook for registering hosting services.
 
-  The new :ref:`hosting-service-hook` allows an extension to register a new
-  hosting service. It will handle registering when the extension is enabled
-  and unregistering when disabled.
+  The new :ref:`rb2.0:hosting-service-hook` allows an extension to register a
+  new hosting service. It will handle registering when the extension is
+  enabled and unregistering when disabled.
 
   Patch by Justin Maillet.
 
@@ -83,7 +83,7 @@ Extensions
   Previously, Review Board was using LessCSS 1.5.1. We now ship 1.7.5, which
   provides a number of enhancements.
 
-* Callbacks attached by a :ref:`signal-hook` are now provided with an
+* Callbacks attached by a :ref:`rb2.0:signal-hook` are now provided with an
   ``extension`` parameter pointing to the extension instance.
 
   Patch by Justin Maillet.
@@ -102,10 +102,10 @@ Web API
 * Added support for fine-grained text types for text fields on several
   models.
 
-  :ref:`webapi2.0-review-request-resource`,
-  :ref:`webapi2.0-review-request-draft-resource`,
-  :ref:`webapi2.0-review-resource`, and
-  :ref:`webapi2.0-review-reply-resource` all have new fields associated
+  :ref:`rb2.0:webapi2.0-review-request-resource`,
+  :ref:`rb2.0:webapi2.0-review-request-draft-resource`,
+  :ref:`rb2.0:webapi2.0-review-resource`, and
+  :ref:`rb2.0:webapi2.0-review-reply-resource` all have new fields associated
   with text fields that indicate the text type of that field. For example,
   ``body_top_text_type`` indicates the text type of the ``body_top`` field.
 

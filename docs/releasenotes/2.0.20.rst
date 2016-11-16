@@ -32,8 +32,8 @@ Please see our `security announcement`_ for instructions.
 Extensions
 ==========
 
-* The ``is_enabled_for`` callback for :ref:`navigation-hook` now takes
-  additional arguments.
+* The ``is_enabled_for`` callback for
+  :ref:`rb2.0:extension-navigation-bar-hook` now takes additional arguments.
 
   This will be given ``user``, ``request`` and ``local_site_name`` arguments
   for the current page, allowing the extension to be smarter about which pages

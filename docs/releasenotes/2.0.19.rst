@@ -52,27 +52,28 @@ Extensions
 
 * The :guilabel:`Ship It!` button and :guilabel:`Publish Review` button in the
   review dialog will now show any
-  :py:class:`PublishErrors <reviewboard.reviews.errors.PublishError>` sent
-  by an extension.
+  :py:class:`PublishErrors <rb2.0:reviewboard.reviews.errors.PublishError>`
+  sent by an extension.
 
   Patch by Mark Côté.
 
 * Added new extension hooks for manipulating the recipient list for review
   and review request e-mails.
 
-  The new :ref:`email-hook` allows an extension to designate new lists of
-  recipients for all the review/review request e-mails that Review Board
+  The new :ref:`rb2.0:email-hook` allows an extension to designate new lists
+  of recipients for all the review/review request e-mails that Review Board
   sends. They can update both the To and CC lists for any e-mail.
 
   These take lists of signals the hook should listen to for the various events
-  (such as :py:data:`~reviewboard.reviews.signals.review_request_published`).
-  As a convenience, callers can make use of one of the subclasses for specific
+  (such as
+  :py:data:`~rb2.0:reviewboard.reviews.signals.review_request_published`).  As
+  a convenience, callers can make use of one of the subclasses for specific
   events:
 
-  * :ref:`review-request-published-email-hook`
-  * :ref:`review-request-closed-email-hook`
-  * :ref:`review-published-email-hook`
-  * :ref:`review-reply-published-email-hook`
+  * :ref:`rb2.0:review-request-published-email-hook`
+  * :ref:`rb2.0:review-request-closed-email-hook`
+  * :ref:`rb2.0:review-published-email-hook`
+  * :ref:`rb2.0:review-reply-published-email-hook`
 
 
 Bug Fixes

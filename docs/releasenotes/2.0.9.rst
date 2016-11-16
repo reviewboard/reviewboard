@@ -97,10 +97,10 @@ Web API
 
 * Fixed the user resource with public Local Sites. (:bug:`3582`)
 
-  The Local Site specific :ref:`webapi2.0-user-resource` would return a 404
-  for any users who were not members of the Local Site, which caused problems
-  with :command:`rbt patch` and public Local Sites. This bug was fixed in the
-  1.7.x series, but it never made it across to 2.0.x or master.
+  The Local Site specific :ref:`rb2.0:webapi2.0-user-resource` would return a
+  404 for any users who were not members of the Local Site, which caused
+  problems with :command:`rbt patch` and public Local Sites. This bug was
+  fixed in the 1.7.x series, but it never made it across to 2.0.x or master.
 
 * Preserve query arguments when redirecting from Review/Reply draft resources.
 

@@ -54,15 +54,15 @@ Extensions
   JSExtension classes aren't initialized automatically on this page. Test
   suites are responsible for initializing them if needed.
 
-* The :py:data:`~reviewboard.reviews.signals.review_request_closed` signal
-  now sends the closed description and whether it's in rich text.
+* The :py:data:`~rb2.5:reviewboard.reviews.signals.review_request_closed`
+  signal now sends the closed description and whether it's in rich text.
 
 
 Web API
 =======
 
-* :ref:`webapi2.0-webhook-list-resource` now allows or creating webhooks
-  without repositories.
+* :ref:`rb2.5:webapi2.0-web-hook-list-resource` now allows or creating
+  webhooks without repositories.
 
 
 Bug Fixes

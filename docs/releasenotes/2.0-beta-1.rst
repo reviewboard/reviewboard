@@ -272,23 +272,23 @@ Web API Changes
 ``visible`` Attribute For Repository Resources
 ----------------------------------------------
 
-The :ref:`Repository resource <webapi2.0-repository-resource>` now allows you
-to get and set the ``visible`` attribute on repositories, which controls
+The :ref:`Repository resource <rb2.0:webapi2.0-repository-resource>` now allows
+you to get and set the ``visible`` attribute on repositories, which controls
 whether or not the repository is listed in the "New Review Request" page.
 Additionally, the :ref:`Repository List resource
-<webapi2.0-repository-list-resource>` has a new parameter, ``show-invisible``,
-which can be set to ``1`` to get a list of all repositories, including those
-which are not visible.
+<rb2.0:webapi2.0-repository-list-resource>` has a new parameter,
+``show-invisible``, which can be set to ``1`` to get a list of all
+repositories, including those which are not visible.
 
 
 New ``Repository Branches`` and ``Repository Commits`` Resources
 ----------------------------------------------------------------
 
-The :ref:`Repository Branches <webapi2.0-repository-branches-resource>` and
-:ref:`Repository Commits <webapi2.0-repository-commits-resource>` resources are
-special list resources that allow you to fetch a list of branches or a commit
-log for supported repositories. These are used for the post-commit review
-request UI.
+The :ref:`Repository Branches <rb2.0:webapi2.0-repository-branches-resource>`
+and :ref:`Repository Commits <rb2.0:webapi2.0-repository-commits-resource>`
+resources are special list resources that allow you to fetch a list of
+branches or a commit log for supported repositories. These are used for the
+post-commit review request UI.
 
 
 Draft Diff Resources
@@ -312,11 +312,11 @@ Diff Validation Resource
 
 A new resource has been added to verify diff files before creating review
 requests. The new :ref:`Diff Validation resource
-<webapi2.0-validate-diff-resource>` allows you to POST the same data that you
-would to the :ref:`Review Request List resource
-<webapi2.0-review-request-list-resource>`, but instead of creating a new
-object, it will either return an OK or a detailed error message explaining what
-is wrong with the posted diff.
+<rb2.0:webapi2.0-validate-diff-resource>` allows you to POST the same data
+that you would to the :ref:`Review Request List resource
+<rb2.0:webapi2.0-review-request-list-resource>`, but instead of creating a new
+object, it will either return an OK or a detailed error message explaining
+what is wrong with the posted diff.
 
 
 Internationalization
