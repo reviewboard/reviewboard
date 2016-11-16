@@ -18,12 +18,10 @@ class CloseMenuAction(BaseReviewRequestMenuAction):
     def should_render(self, context):
         review_request = context['review_request']
 
-        if review_request.status != ReviewRequest.PENDING_REVIEW:
-            return False
-
-        return (context['request'].user.pk == review_request.submitter_id or
-                context['perms']['reviews']['can_change_status'] and
-                review_request.public)
+        return (review_request.status == ReviewRequest.PENDING_REVIEW and
+                (context['request'].user.pk == review_request.submitter_id or
+                 (context['perms']['reviews']['can_change_status'] and
+                  review_request.public)))
 
 
 class SubmitAction(BaseReviewRequestAction):
@@ -62,11 +60,9 @@ class UpdateMenuAction(BaseReviewRequestMenuAction):
     def should_render(self, context):
         review_request = context['review_request']
 
-        if review_request.status != ReviewRequest.PENDING_REVIEW:
-            return False
-
-        return (context['request'].user.pk == review_request.submitter_id or
-                context['perms']['reviews']['can_edit_reviewrequest'])
+        return (review_request.status == ReviewRequest.PENDING_REVIEW and
+                (context['request'].user.pk == review_request.submitter_id or
+                 context['perms']['reviews']['can_edit_reviewrequest']))
 
 
 class UploadDiffAction(BaseReviewRequestAction):
