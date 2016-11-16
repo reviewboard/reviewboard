@@ -56,7 +56,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     /*
      * Initializes the diff viewer page.
      */
-    initialize: function() {
+    initialize: function(options) {
         var revisionInfo = this.model.get('revision'),
             curRevision = revisionInfo.get('revision'),
             curInterdiffRevision = revisionInfo.get('interdiffRevision'),
@@ -65,7 +65,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             search = document.location.search || '',
             revisionRange;
 
-        _super(this).initialize.call(this);
+        _super(this).initialize.call(this, options);
 
         this._selectedAnchorIndex = -1;
         this._$anchors = $();
