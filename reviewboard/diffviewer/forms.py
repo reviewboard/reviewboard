@@ -102,10 +102,6 @@ class UploadDiffForm(BasedirMixin, forms.Form):
         self.request = request
 
         self._check_basedir_field()
-        if self.repository.get_scmtool().diffs_use_absolute_paths:
-            # This SCMTool uses absolute paths, so there's no need to ask
-            # the user for the base directory.
-            del(self.fields['basedir'])
 
     def clean_base_commit_id(self):
         """Clean the base_commit_id.
