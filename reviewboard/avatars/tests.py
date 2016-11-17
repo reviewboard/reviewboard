@@ -4,8 +4,9 @@ from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.template import Context, Template
 from django.utils.html import escape
-from djblets.avatars.services.file_upload import FileUploadService
-from djblets.avatars.services.gravatar import GravatarService
+from djblets.avatars.services import (FileUploadService,
+                                      GravatarService,
+                                      URLAvatarService)
 from djblets.avatars.tests import DummyAvatarService
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -35,19 +36,22 @@ class AvatarServiceRegistryTests(AvatarServicesTestMixin, TestCase):
 
         registry = AvatarServiceRegistry()
 
-        # Verify that the Gravatar service is enabled.
-        gravatar_service = registry.get_avatar_service(
-            GravatarService.avatar_service_id)
+        self.assertSetEqual(
+            set(registry),
+            {
+                FileUploadService,
+                GravatarService,
+                URLAvatarService,
+            })
 
-        upload_service = registry.get_avatar_service(
-            FileUploadService.avatar_service_id)
-        self.assertIsNotNone(gravatar_service)
-        self.assertIs(type(gravatar_service), GravatarService)
-        self.assertSetEqual(set(registry), {upload_service, gravatar_service})
-
-        self.assertIs(registry.default_service, gravatar_service)
-        self.assertSetEqual(set(registry.enabled_services),
-                            {gravatar_service, upload_service})
+        self.assertIs(registry.default_service, GravatarService)
+        self.assertSetEqual(
+            set(registry.enabled_services),
+            {
+                FileUploadService,
+                GravatarService,
+                URLAvatarService,
+            })
 
         # Verify that the settings were saved correctly to the database.
         self.assertTrue(
@@ -56,8 +60,11 @@ class AvatarServiceRegistryTests(AvatarServicesTestMixin, TestCase):
             siteconfig.get(AvatarServiceRegistry.AVATARS_ENABLED_KEY))
         self.assertListEqual(
             siteconfig.get(AvatarServiceRegistry.ENABLED_SERVICES_KEY),
-            [GravatarService.avatar_service_id,
-             FileUploadService.avatar_service_id])
+            [
+                GravatarService.avatar_service_id,
+                FileUploadService.avatar_service_id,
+                URLAvatarService.avatar_service_id,
+            ])
         self.assertEqual(
             siteconfig.get(AvatarServiceRegistry.DEFAULT_SERVICE_KEY),
             GravatarService.avatar_service_id)
@@ -79,15 +86,13 @@ class AvatarServiceRegistryTests(AvatarServicesTestMixin, TestCase):
         registry = AvatarServiceRegistry()
 
         # Verify all services are disabled.
-        gravatar_service = registry.get_avatar_service(
-            GravatarService.avatar_service_id)
-        upload_service = registry.get_avatar_service(
-            FileUploadService.avatar_service_id)
-        self.assertIsNotNone(gravatar_service)
-        self.assertIs(type(gravatar_service), GravatarService)
-        self.assertIs(type(upload_service), FileUploadService)
-        self.assertSetEqual(set(registry), {upload_service, gravatar_service})
-
+        self.assertSetEqual(
+            set(registry),
+            {
+                FileUploadService,
+                GravatarService,
+                URLAvatarService,
+            })
         self.assertIsNone(registry.default_service)
         self.assertSetEqual(set(registry.enabled_services), set())
 
@@ -128,7 +133,7 @@ class TemplateTagTests(TestCase):
 
         default_service = avatar_services.default_service
 
-        self.assertEqual(
+        self.assertHTMLEqual(
             default_avatar_template.render(Context({
                 'user': self.user,
                 'request': self.request,
@@ -141,13 +146,13 @@ class TemplateTagTests(TestCase):
 
     def test_custom_avatar_service(self):
         """Test avatar template tag rendering a specific avatar service"""
-        avatar_services.register(DummyAvatarService())
-        avatar_services.enable_service(DummyAvatarService.avatar_service_id)
+        avatar_services.register(DummyAvatarService)
+        avatar_services.enable_service(DummyAvatarService)
 
         t = Template('{% load avatars %}'
                      '{% avatar user 32 avatar_service_id %}')
 
-        self.assertEqual(
+        self.assertHTMLEqual(
             t.render(Context({
                 'user': self.user,
                 'avatar_service_id': DummyAvatarService.avatar_service_id,
@@ -190,10 +195,10 @@ class TemplateTagTests(TestCase):
 
         escaped_user = escape(user.get_full_name())
 
-        avatar_services.register(DummyAvatarService())
-        avatar_services.enable_service(DummyAvatarService.avatar_service_id)
+        avatar_services.register(DummyAvatarService)
+        avatar_services.enable_service(DummyAvatarService)
 
-        self.assertEqual(
+        self.assertHTMLEqual(
             t.render(Context({
                 'user': user,
                 'request': self.request,

@@ -241,7 +241,8 @@ class GeneralSettingsForm(SiteSettingsForm):
 
     def full_clean(self):
         """Clean and validate all form fields."""
-        cache_type = self['cache_type'].data or self['cache_type'].initial
+        cache_type = (self['cache_type'].data or
+                      self.fields['cache_type'].initial)
 
         for iter_cache_type, field in six.iteritems(
                 self.CACHE_LOCATION_FIELD_MAP):
@@ -511,6 +512,7 @@ class AvatarServicesForm(SiteSettingsForm):
             avatar_services.get('avatar_service_id', service_id)
             for service_id in self.cleaned_data['enabled_services']
         ]
+
         avatar_services.set_default_service(
             self.cleaned_data['default_service'],
             save=False)

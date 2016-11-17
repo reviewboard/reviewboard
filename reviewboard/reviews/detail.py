@@ -248,7 +248,7 @@ class ReviewRequestPageData(object):
         review_ids = self.reviews_by_id.keys()
 
         # Get all status updates.
-        if status_updates_feature.is_enabled():
+        if status_updates_feature.is_enabled(request=self.request):
             self.status_updates = list(
                 self.review_request.status_updates.all()
                 .select_related('review'))
@@ -433,19 +433,28 @@ class StatusUpdatesEntryMixin(object):
             'general_comments': [],
         }
 
-        if update.state == StatusUpdate.PENDING:
-            update.header_class = 'status-update-state-pending'
-        elif update.state == StatusUpdate.DONE_SUCCESS:
-            update.header_class = 'status-update-state-success'
-        elif update.state in (StatusUpdate.DONE_FAILURE, StatusUpdate.ERROR):
+        state = update.effective_state
+
+        if state in (StatusUpdate.DONE_FAILURE,
+                     StatusUpdate.ERROR,
+                     StatusUpdate.TIMEOUT):
             update.header_class = 'status-update-state-failure'
+        elif state == StatusUpdate.PENDING:
+            update.header_class = 'status-update-state-pending'
+        elif state == StatusUpdate.DONE_SUCCESS:
+            update.header_class = 'status-update-state-success'
         else:
-            raise ValueError('Unexpected state "%s"' % update.state)
+            raise ValueError('Unexpected state "%s"' % state)
+
+        if state == StatusUpdate.TIMEOUT:
+            description = _('timed out.')
+        else:
+            description = update.description
 
         update.summary_html = render_to_string(
             'reviews/status_update_summary.html',
             {
-                'description': update.description,
+                'description': description,
                 'header_class': update.header_class,
                 'summary': update.summary,
                 'url': update.url,
@@ -473,7 +482,7 @@ class StatusUpdatesEntryMixin(object):
         self.state_counts = Counter()
 
         for update in self.status_updates:
-            self.state_counts[update.state] += 1
+            self.state_counts[update.effective_state] += 1
 
         summary_parts = []
 
@@ -495,8 +504,14 @@ class StatusUpdatesEntryMixin(object):
                 _('%s failed with error')
                 % self.state_counts[StatusUpdate.PENDING])
 
+        if self.state_counts[StatusUpdate.TIMEOUT] > 0:
+            summary_parts.append(
+                _('%s timed out')
+                % self.state_counts[StatusUpdate.TIMEOUT])
+
         if (self.state_counts[StatusUpdate.DONE_FAILURE] > 0 or
-            self.state_counts[StatusUpdate.ERROR] > 0):
+            self.state_counts[StatusUpdate.ERROR] > 0 or
+            self.state_counts[StatusUpdate.TIMEOUT] > 0):
             self.state_summary_class = 'status-update-state-failure'
         elif self.state_counts[StatusUpdate.PENDING]:
             self.state_summary_class = 'status-update-state-pending'
@@ -535,11 +550,9 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
             data (ReviewRequestPageData):
                 Pre-queried data for the review request page.
         """
+        StatusUpdatesEntryMixin.__init__(self)
         BaseReviewRequestPageEntry.__init__(self, review_request.time_added,
                                             collapsed)
-
-        if status_updates_feature.is_enabled():
-            StatusUpdatesEntryMixin.__init__(self)
 
     @property
     def has_content(self):
@@ -662,7 +675,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
         BaseReviewRequestPageEntry.__init__(self, changedesc.timestamp,
                                             collapsed)
 
-        if status_updates_feature.is_enabled():
+        if status_updates_feature.is_enabled(request=request):
             StatusUpdatesEntryMixin.__init__(self)
 
         self.changedesc = changedesc

@@ -88,10 +88,6 @@
     span {
       color: #487858;
       font-weight: normal;
-
-      &.fa {
-        color: #000000;
-      }
     }
   }
 
@@ -129,6 +125,7 @@
   border: @textarea-border;
   height: auto;
   margin: @textarea-editor-margin;
+  cursor: text;
 
   .CodeMirror-lines {
     padding: @textarea-editor-padding;
@@ -216,6 +213,59 @@
   }
 }
 
+.review-ui-next-attachment,
+.review-ui-prev-attachment {
+  background: @box-bg;
+  border: 1px solid @box-border-color;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+  padding: 2px;
+  position: fixed;
+  top: 50%;
+  transition: transform 0.3s, background 0.3s, margin 0.3s;
+  z-index: @z-index-base;
+
+  &:hover {
+    background: darken(@box-bg, 10%);
+    transform: translateY(-50%);
+  }
+
+  a {
+    color: black;
+    font-size: 1.5em;
+    text-decoration: none;
+  }
+
+  .file-container {
+    display: inline-block;
+    float: none;
+    vertical-align: middle;
+  }
+}
+
+
+.review-ui-next-attachment {
+  border-right-width: 0;
+  border-radius: @box-border-radius 0 0 @box-border-radius;
+  margin-right: @page-container-padding;
+  right: -2px;
+  transform: translateY(-50%) translateX(100%);
+
+  &:hover {
+    margin-right: 0;
+  }
+}
+
+.review-ui-prev-attachment {
+  border-left-width: 0;
+  border-radius: 0 @box-border-radius @box-border-radius 0;
+  margin-left: @page-container-padding;
+  left: -2px;
+  transform: translateY(-50%) translateX(-100%);
+
+  &:hover {
+    margin-left: 0;
+  }
+}
 
 /****************************************************************************
  * Entries (status updates, reviews, change descriptions)
@@ -253,13 +303,13 @@
     background-color: @collapsed-entry-bg !important;
     background-image: none !important; // Override any gradients used.
 
-    .banner {
-      border-bottom: 0;
-      margin-bottom: 0;
+    .body,
+    .banners {
+      display: none;
     }
 
-    .body {
-      display: none;
+    .header {
+      border-radius: @box-border-radius;
     }
   }
 
@@ -312,6 +362,18 @@
       });
     }
   }
+
+  .banner {
+    border-width: 0 0 1px 0;
+    box-sizing: border-box;
+    margin: 0;
+    padding: @entry-padding;
+
+    &.floating {
+      border-top: 0;
+      margin-top: 0;
+    }
+  }
 }
 
 
@@ -327,6 +389,16 @@
 
   .header {
     background: @draft-bg-color;
+  }
+
+  .review-request-page-entry-contents:not(.collapsed) .header {
+    /*
+     * When the box is expanded, there's @entry-padding space between the
+     * header and the banner. We take that space out of the header instead
+     * of the banner to ensure that nothing jumps when the banner is
+     * switching between fixed and floating modes.
+     */
+    padding-bottom: 0;
   }
 }
 
@@ -569,22 +641,6 @@
 }
 
 #reviews .review {
-  .banners {
-    .banner {
-      border-left: 0;
-      border-right: 0;
-      border-top: 0;
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0 @entry-padding @entry-padding @entry-padding;
-
-      &.floating {
-        border-top: 0;
-        margin-top: 0;
-      }
-    }
-  }
-
   .body {
     clear: both;
 
@@ -792,7 +848,8 @@
 
     /* The "Change Summary" section. */
     .changedesc-text {
-      margin-bottom: 2em;
+      margin: @textarea-editor-margin-top 0 1.5rem;
+      padding: @textarea-editor-padding;
       overflow: hidden;
 
       .codehilite {
@@ -1069,6 +1126,10 @@
     }
   }
 
+  .delete-comment {
+    color: #000000;
+  }
+
   label {
     color: black;
     font-weight: bold;
@@ -1097,6 +1158,11 @@
 
     pre {
       white-space: pre-wrap;
+
+      &.rich-text {
+        margin: @textarea-editor-margin;
+        padding: @textarea-editor-padding + @textarea-border-size;
+      }
     }
 
     .spinner {
@@ -2267,6 +2333,15 @@
 
   &.status-update-state-success {
     .status-update-header(@diff-insert-color, @diff-insert-border-color);
+  }
+}
+
+.status-update-review .banner {
+  border-bottom-width: 0;
+  margin-top: 1px;
+
+  &.floating {
+    border-bottom-width: 1px;
   }
 }
 

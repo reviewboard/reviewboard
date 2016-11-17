@@ -104,6 +104,10 @@ review_group_list_mimetype = _build_mimetype('review-groups')
 review_group_item_mimetype = _build_mimetype('review-group')
 
 
+review_group_user_list_mimetype = _build_mimetype('review-group-users')
+review_group_user_item_mimetype = _build_mimetype('review-group-user')
+
+
 review_reply_list_mimetype = _build_mimetype('review-replies')
 review_reply_item_mimetype = _build_mimetype('review-reply')
 

@@ -1,0 +1,123 @@
+=================================
+Review Board 2.0.25 Release Notes
+=================================
+
+**Release date**: October 17, 2016
+
+
+Upgrade Instructions
+====================
+
+To upgrade to Review Board 2.0.25, run::
+
+    pip install ReviewBoard==2.0.25
+
+or::
+
+    easy_install ReviewBoard==2.0.25
+
+
+Packaging
+=========
+
+* We now require django-haystack_ 2.3.1 through 2.4.x.
+
+  Newer versions of django-haystack are incompatible with Django 1.6.x,
+  and therefore with Review Board.
+
+
+.. _django-haystack: https://github.com/django-haystack/django-haystack
+
+
+New Features
+============
+
+* Added a new command line tool for running unit tests for custom extensions.
+
+  We've added a brand new command line tool, :command:`rbext`, which
+  extension authors can use to easily run unit tests shipped with their
+  extensions, helping ensure their extensions run as expected.
+
+  See the guide on :ref:`testing-extensions` for information on how to write
+  and run unit tests for your extension.
+
+
+Web API
+=======
+
+* Hosting service errors now return a suitable error message in the
+  :ref:`webapi2.0-repository-branches-resource` API.
+
+  Previously, a hosting service error would result in an HTTP 500 page without
+  a payload. It now returns a :ref:`webapi2.0-error-210`.
+
+* Fixed breakages when working with the
+  :ref:`webapi2.0-review-group-user-resource` when users belong to multiple
+  groups. (:bug:`4382`)
+
+* Fixed the links generated in the :ref:`webapi2.0-review-group-user-resource`
+  (:bug:`4382`).
+
+  The links were pointing to the :ref:`webapi2.0-user-resource`, breaking
+  actions like deletion of users from a group.
+
+
+Bug Fixes
+=========
+
+Accounts
+--------
+
+* Hitting enter in the search field for groups in the My Account page no
+  longer incorrectly submits the form. (:bug:`4452`)
+
+
+File Attachments
+----------------
+
+* Fixed displaying the titles/captions on images when hovering over them
+  for image reviews.
+
+
+Extensions
+----------
+
+* Fixed an error when attempting to package extension static media.
+
+
+Administration
+--------------
+
+* Fixed a bug that could cause bad passwords to be associated with
+  repositories when configuring using a hosting service.
+
+  Some browsers would try auto-filling the hidden password field, causing a
+  bad password to be saved. This was still saved as encrypted with the same
+  security as other repository passwords, but its presence would interfere
+  with the hosting service's configured password. These passwords are no
+  longer saved. On site upgrade, these passwords will be removed from
+  repositories.
+
+* Fixed storing repository passwords containing non-ASCII characters.
+
+* The General Settings page no longer crashes if cache server information
+  is missing from settings.
+
+
+CVS
+---
+
+* Fixed issues with certain variations of CVSROOTs. (:bug:`4022`)
+
+  We supported common types of CVSROOTs, such as ``:pserver:`` or
+  similar, but had issues with ``:ext:``, ``:local:``, ``:fork:``, and other
+  less common variants. Diff filenames wouldn't parse correctly, breaking
+  syntax highlighting and causing the files to show up as moved.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge

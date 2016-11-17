@@ -22,15 +22,8 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
     initialize(options) {
         RB.CollapsableBoxView.prototype.initialize.call(this, options);
 
-        this._reviewView = new RB.ReviewView({
-            el: this.el,
-            model: this.model,
-            reviewRequestEditor: options.reviewRequestEditor,
-        });
-
+        this._reviewView = null;
         this._draftBannerShown = false;
-        this._$banners = null;
-        this._bannerView = null;
         this._$boxStatus = null;
         this._$fixItLabel = null;
     },
@@ -50,27 +43,25 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
     render() {
         RB.CollapsableBoxView.prototype.render.call(this);
 
-        // Expand the box if the review is currently being linked to.
-        if (document.URL.includes("#review")) {
-            const loadReviewID = document.URL.split('#review')[1];
+        this._reviewView = new RB.ReviewView({
+            el: this.el,
+            model: this.model,
+            reviewRequestEditor: this.options.reviewRequestEditor,
+            $bannerFloatContainer: this._$box,
+            $bannerParent: this.$('.banners'),
+            bannerNoFloatContainerClass: 'collapsed',
+            showSendEmail: this.options.showSendEmail,
+        });
 
-            if (parseInt(loadReviewID, 10) === this.model.id) {
-                this.expand();
-            }
-        }
-
-        this._$banners = this.$('.banners');
         this._$boxStatus = this.$('.box-status');
         this._$fixItLabel = this._$boxStatus.find('.fix-it-label');
 
-        this._reviewView.render();
-
-        this.listenTo(this._reviewView, 'showReplyDraftBanner',
-                      this._showReplyDraftBanner);
-        this.listenTo(this._reviewView, 'hideReplyDraftBanner',
-                      this._hideReplyDraftBanner);
+        this.listenTo(this._reviewView, 'hasDraftChanged',
+                      hasDraft => this.$el.toggleClass('has-draft', hasDraft));
         this.listenTo(this._reviewView, 'openIssuesChanged',
                       this._updateLabels);
+
+        this._reviewView.render();
         this._updateLabels();
 
         return this;
@@ -94,39 +85,6 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
     getReviewReplyEditorView(contextType, contextID) {
         return this._reviewView.getReviewReplyEditorView(contextType,
                                                          contextID);
-    },
-
-    /**
-     * Show the reply draft banner.
-     *
-     * This will be called in response to any new replies made on a review,
-     * or if there are pending replies that already exist on the review.
-     */
-    _showReplyDraftBanner() {
-        if (!this._draftBannerShown) {
-            this._bannerView = new RB.ReviewReplyDraftBannerView({
-                model: this._reviewView.getReviewReply(),
-                $floatContainer: this._$box,
-                noFloatContainerClass: 'collapsed',
-                showSendEmail: this.options.showSendEmail,
-            });
-
-            this._bannerView.render().$el.appendTo(this._$banners);
-            this._draftBannerShown = true;
-            this.$el.addClass('has-draft');
-        }
-    },
-
-    /**
-     * Hide the reply draft banner.
-     */
-    _hideReplyDraftBanner() {
-        if (this._draftBannerShown) {
-            this._bannerView.remove();
-            this._bannerView = null;
-            this._draftBannerShown = false;
-            this.$el.removeClass('has-draft');
-        }
     },
 
     /**

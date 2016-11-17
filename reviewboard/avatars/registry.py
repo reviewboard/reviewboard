@@ -2,8 +2,9 @@ from __future__ import unicode_literals
 
 from djblets.avatars.registry import (
     AvatarServiceRegistry as DjbletsAvatarServiceRegistry)
-from djblets.avatars.services.file_upload import FileUploadService
-from djblets.avatars.services.gravatar import GravatarService
+from djblets.avatars.services import (FileUploadService,
+                                      GravatarService,
+                                      URLAvatarService)
 from djblets.registries.mixins import ExceptionFreeGetterMixin
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -31,6 +32,7 @@ class AvatarServiceRegistry(ExceptionFreeGetterMixin,
     default_avatar_service_classes = [
         GravatarService,
         FileUploadService,
+        URLAvatarService,
     ]
 
     settings_manager_class = UserProfileAvatarSettingsManager

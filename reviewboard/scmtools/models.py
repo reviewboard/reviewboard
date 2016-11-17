@@ -189,7 +189,7 @@ class Repository(models.Model):
         """
         if value:
             value = '%s%s' % (self.ENCRYPTED_PASSWORD_PREFIX,
-                              encrypt_password(value))
+                              encrypt_password(value.encode('utf-8')))
         else:
             value = ''
 
@@ -214,7 +214,7 @@ class Repository(models.Model):
             password = password[len(self.ENCRYPTED_PASSWORD_PREFIX):]
 
             if password:
-                password = decrypt_password(password)
+                password = decrypt_password(password).decode('utf-8')
             else:
                 password = None
         else:

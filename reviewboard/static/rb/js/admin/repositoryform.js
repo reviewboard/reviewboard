@@ -198,6 +198,10 @@ $(document).ready(function() {
         $repoForms = $('.repo-form'),
         $bugTrackerForms = $('.bug-tracker-form'),
         $submitButtons = $('input[type="submit"]'),
+        $editHostingCredentials = $('#repo-edit-hosting-credentials'),
+        $editHostingCredentialsLabel =
+            $('#repo-edit-hosting-credentials-label'),
+        $forceAuth = $('#id_force_authorize'),
         $powerPackAdvert = $('<div class="powerpack-advert" />')
             .html(powerPackTemplate)
             .hide()
@@ -329,6 +333,10 @@ $(document).ready(function() {
 
             $hostingAuthForms.hide();
             $hostingAccountRelink.hide();
+            $editHostingCredentials
+                .hide()
+                .val(gettext('Edit credentials'));
+            $forceAuth.val('false');
 
             if (hostingType === 'custom') {
                 $hostingAccountRow.hide();
@@ -352,6 +360,14 @@ $(document).ready(function() {
                     if ($hostingAccount.val() === '') {
                         /* Present fields for linking a new account. */
                         $authForm.show();
+                    } else if (hostingInfo.needs_two_factor_auth_code) {
+                        /*
+                         * The user needs to enter a 2FA code. We need to
+                         * show the auth form, and ensure we will be forcing
+                         * authentication.
+                         */
+                        $forceAuth.val('true');
+                        $authForm.show();
                     } else {
                         /* An existing linked account has been selected. */
                         selectedIndex = $hostingAccount[0].selectedIndex;
@@ -359,7 +375,9 @@ $(document).ready(function() {
                             .options[selectedIndex]);
                         account = $selectedOption.data('account');
 
-                        if (!account.is_authorized) {
+                        if (account.is_authorized) {
+                            $editHostingCredentials.show();
+                        } else {
                             $authForm.show();
                             $hostingAccountRelink.show();
                         }
@@ -421,6 +439,24 @@ $(document).ready(function() {
     }, function() {
         $(this).text(gettext('Show SSH Public Key'));
         $publicKeyPopup.hide();
+        return false;
+    });
+
+    $editHostingCredentials.click(function() {
+        var $authForm = $('#hosting-auth-form-' + $hostingType.val());
+
+        if ($forceAuth.val() === 'true') {
+            $editHostingCredentialsLabel.text(gettext('Edit credentials'));
+            $authForm.hide();
+            $forceAuth.val('false');
+        } else {
+            $editHostingCredentialsLabel.text(
+                gettext('Cancel editing credentials'));
+            $authForm = $('#hosting-auth-form-' + $hostingType.val()).show();
+            $authForm.show();
+            $forceAuth.val('true');
+        }
+
         return false;
     });
 });

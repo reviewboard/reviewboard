@@ -18,6 +18,8 @@ RB.ReviewView = Backbone.View.extend({
     initialize(options) {
         this.options = options;
 
+        this._bannerView = null;
+        this._draftBannerShown = false;
         this._openIssueCount = 0;
         this._reviewReply = null;
         this._replyEditors = [];
@@ -82,7 +84,10 @@ RB.ReviewView = Backbone.View.extend({
 
             this.listenTo(editor, 'change:hasDraft', (model, hasDraft) => {
                 if (hasDraft) {
-                    this.trigger('showReplyDraftBanner');
+                    this._showReplyDraftBanner();
+                    this.trigger('hasDraftChanged', true);
+                } else {
+                    this._hideReplyDraftBanner();
                 }
             });
 
@@ -197,12 +202,44 @@ RB.ReviewView = Backbone.View.extend({
             this._replyEditors.forEach(
                 editor => editor.set('reviewReply', reviewReply));
 
-            this.trigger('hideReplyDraftBanner');
+            this.trigger('hasDraftChanged', false);
         }
 
         this.listenTo(reviewReply, 'destroyed published',
                       () => this._setupNewReply());
 
         this._reviewReply = reviewReply;
+    },
+
+    /**
+     * Show the reply draft banner.
+     *
+     * This will be called in response to any new replies made on a review,
+     * or if there are pending replies that already exist on the review.
+     */
+    _showReplyDraftBanner() {
+        if (!this._draftBannerShown) {
+            this._bannerView = new RB.ReviewReplyDraftBannerView({
+                model: this._reviewReply,
+                $floatContainer: this.options.$bannerFloatContainer,
+                noFloatContainerClass: this.options.bannerNoFloatContainerClass,
+                showSendEmail: this.options.showSendEmail,
+            });
+
+            this._bannerView.render();
+            this._bannerView.$el.appendTo(this.options.$bannerParent);
+            this._draftBannerShown = true;
+        }
+    },
+
+    /**
+     * Hide the reply draft banner.
+     */
+    _hideReplyDraftBanner() {
+        if (this._draftBannerShown) {
+            this._bannerView.remove();
+            this._bannerView = null;
+            this._draftBannerShown = false;
+        }
     },
 });

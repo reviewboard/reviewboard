@@ -130,18 +130,20 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                                   kwargs={'username': user.username})
 
     def serialize_avatar_url_field(self, user, request=None, **kwargs):
-        service = avatar_services.default_service
+        if avatar_services.avatars_enabled:
+            service = avatar_services.for_user(user)
 
-        if service:
-            return service.get_avatar_urls(request, user, 48)['1x']
+            if service:
+                return service.get_avatar_urls(request, user, 48)['1x']
 
         return None
 
     def serialize_avatar_urls_field(self, user, request=None, **kwargs):
-        service = avatar_services.default_service
+        if avatar_services.avatars_enabled:
+            service = avatar_services.for_user(user)
 
-        if service:
-            return service.get_avatar_urls(request, user, 48)
+            if service:
+                return service.get_avatar_urls(request, user, 48)
 
         return None
 

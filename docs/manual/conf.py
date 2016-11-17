@@ -34,6 +34,7 @@ sys.path = os.getenv('PYTHONPATH_PREPEND', '').split(':') + sys.path
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
 
 import reviewboard
+from reviewboard.dependencies import django_doc_major_version
 
 from beanbag_docutils.sphinx.ext.github import github_linkcode_resolve
 
@@ -240,7 +241,7 @@ latex_show_pagerefs = True
 
 intersphinx_mapping = {
     'django': ('http://django.readthedocs.io/en/%s.x/'
-               % reviewboard.django_major_version,
+               % django_doc_major_version,
                None),
     'djblets': ('https://www.reviewboard.org/docs/djblets/dev/', None),
     'python': ('https://docs.python.org/2.7', None),

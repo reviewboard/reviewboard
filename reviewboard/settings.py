@@ -172,6 +172,7 @@ RB_BUILTIN_APPS = [
     'djblets.configforms',
     'djblets.datagrid',
     'djblets.extensions',
+    'djblets.features',
     'djblets.feedview',
     'djblets.forms',
     'djblets.gravatars',
@@ -418,7 +419,8 @@ PIPELINE = {
     'JS_COMPRESSOR': 'pipeline.compressors.uglifyjs.UglifyJSCompressor',
     'CSS_COMPRESSOR': None,
     'BABEL_BINARY': os.path.join(NODE_PATH, 'babel-cli', 'bin', 'babel.js'),
-    'BABEL_ARGUMENTS': '--presets es2015 -s true',
+    'BABEL_ARGUMENTS': ['--presets', 'es2015', '--plugins', 'dedent',
+                        '-s', 'true'],
     'LESS_BINARY': os.path.join(NODE_PATH, 'less', 'bin', 'lessc'),
     'LESS_ARGUMENTS': [
         '--include-path=%s' % STATIC_ROOT,
@@ -441,3 +443,5 @@ TEST_PACKAGES = ['reviewboard']
 ABSOLUTE_URL_OVERRIDES = {
     'auth.user': lambda u: reverse('user', kwargs={'username': u.username})
 }
+
+FEATURE_CHECKER = 'reviewboard.features.checkers.RBFeatureChecker'

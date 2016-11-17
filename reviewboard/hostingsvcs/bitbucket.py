@@ -305,8 +305,7 @@ class Bitbucket(HostingService):
                 author_name=changeset['author'],
                 id=changeset['raw_node'],
                 date=self._parse_timestamp(changeset['utctimestamp']),
-                message=changeset['message'],
-                base_commit_id=changeset['raw_node'])
+                message=changeset['message'])
 
             if changeset['parents']:
                 commit.parent = changeset['parents'][0]
@@ -339,7 +338,7 @@ class Bitbucket(HostingService):
                       date=commit.date,
                       message=commit.message,
                       diff=diff,
-                      base_commit_id=commit.base_commit_id)
+                      parent=commit.parent)
 
     def _build_repository_api_url(self, repository, url='', version='1.0'):
         """Build an API URL for the given repository.

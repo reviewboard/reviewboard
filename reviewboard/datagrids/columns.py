@@ -73,7 +73,7 @@ class BaseSubmitterColumn(Column):
         avatar_html = ''
 
         if siteconfig.get(avatar_services.AVATARS_ENABLED_KEY):
-            avatar_service = avatar_services.default_service
+            avatar_service = avatar_services.for_user(user)
 
             if avatar_service:
                 avatar_html = avatar_service.render(
@@ -365,7 +365,12 @@ class NewUpdatesColumn(Column):
 
     def render_data(self, state, review_request):
         """Return the rendered contents of the column."""
-        if review_request.new_review_count > 0:
+
+        # Review requests for un-authenticated users will not contain the
+        # new_review_count attribute, so confirm its existence before
+        # attempting to access.
+        if (hasattr(review_request, 'new_review_count') and
+            review_request.new_review_count > 0):
             return '<div class="%s" title="%s" />' % \
                    (self.image_class, self.image_alt)
 

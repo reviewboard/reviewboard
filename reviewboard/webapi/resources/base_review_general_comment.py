@@ -4,6 +4,7 @@ from django.db.models import Q
 from django.template.defaultfilters import timesince
 from djblets.util.decorators import augment_method_from
 
+from reviewboard.reviews.features import general_comments_feature
 from reviewboard.reviews.models import GeneralComment
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
@@ -25,6 +26,10 @@ class BaseReviewGeneralCommentResource(BaseCommentResource):
     uri_object_key = 'comment_id'
 
     allowed_methods = ('GET',)
+
+    required_features = [
+        general_comments_feature,
+    ]
 
     def get_queryset(self, request, *args, **kwargs):
         review_request = \

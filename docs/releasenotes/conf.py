@@ -33,6 +33,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(__file__, '..', '..', '..',
 sys.path.insert(0, os.path.dirname(__file__))
 
 import reviewboard
+from reviewboard.dependencies import django_doc_major_version
 
 
 # General configuration
@@ -112,7 +113,7 @@ html_theme = 'classic'
 # The style sheet to use for HTML and HTML Help pages. A file of that name
 # must exist either in Sphinx' static/ path, or in one of the custom paths
 # given in html_static_path.
-html_style = 'default.css'
+html_style = 'classic.css'
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -212,9 +213,9 @@ latex_documents = [
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
     'django': ('https://docs.djangoproject.com/en/%s/'
-               % reviewboard.django_major_version,
+               % django_doc_major_version,
                'https://docs.djangoproject.com/en/%s/_objects/'
-               % reviewboard.django_major_version),
+               % django_doc_major_version),
     'python': ('https://docs.python.org/2.7', None),
     'rbtools': ('https://www.reviewboard.org/docs/rbtools/dev/', None),
     'reviewboard': ('https://www.reviewboard.org/docs/manual/dev/', None),

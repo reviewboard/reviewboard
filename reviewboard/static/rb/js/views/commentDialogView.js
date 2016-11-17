@@ -504,8 +504,16 @@ RB.CommentDialogView = Backbone.View.extend({
      * and closes the dialog.
      */
     _onCancelClicked: function() {
-        this.model.cancel();
-        this.close();
+        var shouldExit = true;
+
+        if (this.model.get('dirty')) {
+            shouldExit = confirm(gettext('You have unsaved changes, are you sure you want to exit?'));
+        }
+
+        if (shouldExit) {
+            this.model.cancel();
+            this.close();
+        }
     },
 
     /*

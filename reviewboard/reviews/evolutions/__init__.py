@@ -34,4 +34,5 @@ SEQUENCE = [
     'is_default_group',
     'general_comments',
     'add_owner_to_draft',
+    'status_update_timeout',
 ]

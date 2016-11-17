@@ -74,10 +74,7 @@ def install_media(site):
 
 
 def install_dependencies():
-    os.system('%s setup.py egg_info' % sys.executable)
-    os.system('pip%s.%s install -r dev-requirements.txt'
-              % sys.version_info[:2])
-    os.system('npm install')
+    os.system('%s setup.py develop' % sys.executable)
 
 
 def parse_options(args):

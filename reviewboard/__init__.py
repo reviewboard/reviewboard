@@ -16,13 +16,6 @@ from __future__ import unicode_literals
 VERSION = (4, 0, 0, 0, 'alpha', 0, False)
 
 
-#: The major version of Django we're using.
-django_major_version = '1.6'
-
-#: The required version of Django.
-django_version = 'Django>=1.6.11,<1.7'
-
-
 def get_version_string():
     """Return the Review Board version as a human-readable string."""
     version = '%s.%s' % (VERSION[0], VERSION[1])

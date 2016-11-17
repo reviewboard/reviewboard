@@ -50,7 +50,6 @@ RB.UploadDiffModel = Backbone.Model.extend({
             diffValid: false,
             error: null,
             parentDiffFile: null,
-            reviewRequest: null,
             state: this.State.PROMPT_FOR_DIFF
         });
     },
