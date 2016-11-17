@@ -1,13 +1,23 @@
 {% load i18n reviewtags %}
 
-  <div id="{{context_id}}-{{review.id}}" class="comment-section" data-context-type="{{context_type}}"{% if comment %} data-context-id="{{comment.id}}"{% endif %}>
-   <div class="issue-indicator"></div>
-   <ol class="reply-comments">
-    {% reply_list review comment context_type context_id %}
-   </ol>
+<div id="{{context_id}}-{{review.id}}" class="comment-section"
+     data-context-type="{{context_type}}"
+     {% if comment %}data-context-id="{{comment.id}}"{% endif %}>
+ <div class="issue-indicator"></div>
+ <ol class="reply-comments">
+  {% reply_list review comment context_type context_id %}
+ </ol>
 {% if user.is_authenticated %}
-   <ul class="controls">
-    <li><a href="#" class="add_comment_link">{% if reply_to_is_empty %}<span class="fa fa-comment"></span> {% trans "Comment" %}{% else %}<span class="fa fa-reply"></span> {% trans "Reply" %}{% endif %}</a></li>
-   </ul>
+ <ul class="controls">
+  <li>
+   <a href="#" class="add_comment_link">
+{%  if reply_to_is_empty %}
+    <span class="fa fa-comment"></span> {% trans "Comment" %}
+{%  else %}
+    <span class="fa fa-reply"></span> {% trans "Reply" %}
+{%  endif %}
+   </a>
+  </li>
+ </ul>
 {% endif %}
-  </div>
+</div>

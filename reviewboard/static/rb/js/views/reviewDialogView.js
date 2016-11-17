@@ -614,14 +614,12 @@ RB.ReviewDialogView = Backbone.View.extend({
 
     template: _.template([
         '<div class="edit-field">',
-        ' <a class="markdown-info" href="<%- markdownDocsURL %>"',
-        '    target="_blank"><%- markdownText %></a>',
         ' <input id="id_shipit" type="checkbox" />',
         ' <label for="id_shipit"><%- shipItText %></label>',
         '</div>',
         '<div class="review-dialog-hooks-container"></div>',
         '<div class="edit-field body-top"></div>',
-        '<ul class="comments"></ul>',
+        '<ul class="review-comments"></ul>',
         '<div class="spinner"><span class="fa fa-spinner fa-pulse"></span></div>',
         '<div class="edit-field body-bottom"></div>'
     ].join('')),
@@ -771,7 +769,7 @@ RB.ReviewDialogView = Backbone.View.extend({
             markdownText: gettext('Markdown Reference')
         }));
 
-        this._$comments = this.$('.comments');
+        this._$comments = this.$('.review-comments');
         this._$spinner = this.$('.spinner');
         this._$shipIt = this.$('#id_shipit');
 

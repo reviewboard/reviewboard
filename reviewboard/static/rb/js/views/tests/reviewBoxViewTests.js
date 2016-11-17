@@ -2,8 +2,8 @@ suite('rb/views/ReviewBoxView', function() {
     var view,
         reviewReply,
         template = _.template([
-            '<div>',
-            ' <div class="box">',
+            '<div class="review review-request-page-entry">',
+            ' <div class="review-request-page-entry-contents">',
             '  <div class="collapse-button"></div>',
             '  <div class="banners">',
             '   <input type="button" value="Publish" />',
@@ -64,7 +64,7 @@ suite('rb/views/ReviewBoxView', function() {
 
     describe('Actions', function() {
         it('Toggle collapse', function() {
-            var $box = view.$('.box'),
+            var $box = view.$('.review-request-page-entry-contents'),
                 $collapseButton = view.$('.collapse-button');
 
             $collapseButton.click();
@@ -186,7 +186,10 @@ suite('rb/views/ReviewBoxView', function() {
     describe('Methods', function() {
         it('collapse', function() {
             view.collapse();
-            expect(view.$('.box').hasClass('collapsed')).toBe(true);
+            expect(
+                view.$('.review-request-page-entry-contents')
+                    .hasClass('collapsed'))
+                .toBe(true);
         });
 
         it('expand', function() {

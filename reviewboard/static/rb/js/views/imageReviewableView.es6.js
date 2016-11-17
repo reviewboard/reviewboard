@@ -2,6 +2,17 @@
 
 
 /**
+ * A mapping of available image scaling factors to the associated label.
+ */
+const scalingFactors = new Map([
+    [0.33, '33%'],
+    [0.5, '50%'],
+    [1.0, '100%'],
+    [2.0, '200%'],
+]);
+
+
+/**
  * Base class for providing a view onto an image or diff of images.
  *
  * This handles the common functionality, such as loading images, determining
@@ -21,7 +32,10 @@ const BaseImageView = Backbone.View.extend({
      */
     initialize() {
         this.$commentRegion = null;
-        this._scale = 1.0;
+
+        this.listenTo(this.model,
+                      'change:scale',
+                      (model, scale) => this._onScaleChanged(scale));
     },
 
     /**
@@ -47,6 +61,8 @@ const BaseImageView = Backbone.View.extend({
      *         The image elements to load.
      */
     loadImages($images) {
+        const scale = this.model.get('scale');
+
         let loadsRemaining = $images.length;
 
         this._$images = $images;
@@ -62,11 +78,11 @@ const BaseImageView = Backbone.View.extend({
                     $image
                         .data({
                             'initial-width': image.width,
-                            'initial-height': image.height
+                            'initial-height': image.height,
                         })
                         .css({
-                            width: image.width * this._scale,
-                            height: image.height * this._scale
+                            width: image.width * scale,
+                            height: image.height * scale,
                         });
 
                     if (loadsRemaining === 0) {
@@ -118,33 +134,85 @@ const BaseImageView = Backbone.View.extend({
     /**
      * Callback handler for when the images on the view are loaded.
      *
-     * By default, this doesn't do anything. Subclasses can override this
-     * to provide logic dependent on loaded images.
+     * Subclasses that override this method must call the base method so that
+     * images can be scaled appropriately.
      */
     onImagesLoaded() {
+        let scale = null;
+
+        /*
+         * If the image is obviously a 2x or 3x pixel ratio, pre-select the
+         * right scaling factor.
+         *
+         * Otherwise, we select the largest scaling factor that allows the
+         * entire image to be shown (or the smallest scaling factor if the
+         * scaled image is still too large).
+         */
+        const filename = this.model.get('filename');
+
+        /*
+         * The `filename` attribute does not exist for screenshots, so we need
+         * to check it.
+         */
+        if (filename) {
+            if (filename.includes('@2x.')) {
+                scale = 0.5;
+            } else if (filename.includes('@3x.')) {
+                scale = 0.33;
+            }
+        }
+
+        if (scale === null) {
+            const {width} = this.getInitialSize();
+            const maxWidth = this.$el.closest('.image-content').width();
+            const scales = Array
+                .from(scalingFactors.keys())
+                .filter(f => (f <= 1));
+
+            for (let i = scales.length - 1; i >= 0; i--) {
+                scale = scales[i];
+
+                if (width * scale <= maxWidth) {
+                    break;
+                }
+            }
+        }
+
+        this.model.set('scale', scale);
     },
 
     /**
-     * Set the zoom level for the view.
-     *
-     * Subclasses can override this to provide specific zooming behavior.
+     * Handle the image scale being changed.
      *
      * Args:
      *     scale (number):
-     *         A zoom multiplier (where 1.0 is 100%, 0.5 is 50%, etc).
+     *         The new image scaling factor (where 1.0 is 100%, 0.5 is 50%,
+     *         etc).
      */
-    setScale(scale) {
-        this._scale = scale;
-
-        this._$images.each((ix, el) => {
+    _onScaleChanged(scale) {
+        this._$images.each((index, el) => {
             const $image = $(el);
 
             $image.css({
                 width: $image.data('initial-width') * scale,
-                height: $image.data('initial-height') * scale
+                height: $image.data('initial-height') * scale,
             });
         });
-    }
+    },
+
+    /**
+     * Return the initial size of the image.
+     *
+     * Subclasses must override this.
+     *
+     * Returns:
+     *     object:
+     *     An object containing the initial height and width of the image.
+     */
+    getInitialSize() {
+        console.assert(
+            false, 'subclass of BaseImageView must implement getInitialSize');
+    },
 });
 
 
@@ -167,7 +235,7 @@ const ImageAttachmentView = BaseImageView.extend({
      */
     render() {
         this.$el.attr({
-            caption: this.model.get('caption'),
+            title: this.model.get('caption'),
             src: this.model.get('imageURL')
         });
 
@@ -176,7 +244,25 @@ const ImageAttachmentView = BaseImageView.extend({
         this.loadImages(this.$el);
 
         return this;
-    }
+    },
+
+    /**
+     * Return the initial size of the image.
+     *
+     * Subclasses must override this.
+     *
+     * Returns:
+     *     object:
+     *     An object containing the initial height and width of the image.
+     */
+    getInitialSize() {
+        const $img = this._$images.eq(0);
+
+        return {
+            width: $img.data('initial-width'),
+            height: $img.height('initial-height'),
+        }
+    },
 });
 
 
@@ -244,8 +330,12 @@ const ImageDifferenceDiffView = BaseImageView.extend({
     onImagesLoaded() {
         const origImage = this._origImage;
         const modifiedImage = this._modifiedImage;
+        const scale = this.model.get('scale');
+
         this._maxWidth = Math.max(origImage.width, modifiedImage.width);
         this._maxHeight = Math.max(origImage.height, modifiedImage.height);
+
+        _super(this).onImagesLoaded.call(this);
 
         this._$canvas
             .attr({
@@ -253,8 +343,8 @@ const ImageDifferenceDiffView = BaseImageView.extend({
                 height: this._maxHeight
             })
             .css({
-                width: this._maxWidth * this._scale + 'px',
-                height: this._maxHeight * this._scale + 'px'
+                width: this._maxWidth * scale + 'px',
+                height: this._maxHeight * scale + 'px'
             });
 
         const $modifiedCanvas = $('<canvas/>')
@@ -292,19 +382,33 @@ const ImageDifferenceDiffView = BaseImageView.extend({
     },
 
     /**
-     * Set the zoom level for the view.
+     * Handle the image scale being changed.
      *
      * Args:
      *     scale (number):
-     *         A zoom multiplier (where 1.0 is 100%, 0.5 is 50%, etc).
+     *         The new image scaling factor (where 1.0 is 100%, 0.5 is 50%,
+     *         etc).
      */
-    setScale(scale) {
-        this._scale = scale;
+    _onScaleChanged(scale) {
         this._$canvas.css({
-            width: this._maxWidth * this._scale + 'px',
-            height: this._maxHeight * this._scale + 'px'
+            width: this._maxWidth * scale + 'px',
+            height: this._maxHeight * scale + 'px',
         });
-    }
+    },
+
+    /**
+     * Return the initial size of the image.
+     *
+     * Returns:
+     *     object:
+     *     An object containing the initial height and width of the image.
+     */
+    getInitialSize() {
+        return {
+            width: this._maxWidth,
+            height: this._maxHeight,
+        };
+    },
 });
 
 
@@ -323,10 +427,10 @@ const ImageOnionDiffView = BaseImageView.extend({
     template: _.template([
         '<div class="image-containers">',
         ' <div class="orig-image">',
-        '  <img caption="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
+        '  <img title="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
         ' </div>',
         ' <div class="modified-image">',
-        '  <img caption="<%- caption %>" src="<%- imageURL %>" />',
+        '  <img title="<%- caption %>" src="<%- imageURL %>" />',
         ' </div>',
         '</div>',
         '<div class="image-slider"></div>'
@@ -393,18 +497,20 @@ const ImageOnionDiffView = BaseImageView.extend({
      * same width and height.
      */
     onImagesLoaded() {
+        _super(this).onImagesLoaded.call(this);
         this._resize();
     },
 
     /**
-     * Set the zoom level for the view.
+     * Handle the image scale being changed.
      *
      * Args:
      *     scale (number):
-     *         A zoom multiplier (where 1.0 is 100%, 0.5 is 50%, etc).
+     *         The new image scaling factor (where 1.0 is 100%, 0.5 is 50%,
+     *         etc).
      */
-    setScale(scale) {
-        _super(this).setScale.call(this, scale);
+    _onScaleChanged(scale) {
+        _super(this)._onScaleChanged.call(this, scale);
         this._resize();
     },
 
@@ -412,10 +518,11 @@ const ImageOnionDiffView = BaseImageView.extend({
      * Resize the image containers.
      */
     _resize() {
-        const origW = this._$origImage.data('initial-width') * this._scale;
-        const origH = this._$origImage.data('initial-height') * this._scale;
-        const newW = this._$modifiedImage.data('initial-width') * this._scale;
-        const newH = this._$modifiedImage.data('initial-height') * this._scale;
+        const scale = this.model.get('scale');
+        const origW = this._$origImage.data('initial-width') * scale;
+        const origH = this._$origImage.data('initial-height') * scale;
+        const newW = this._$modifiedImage.data('initial-width') * scale;
+        const newH = this._$modifiedImage.data('initial-height') * scale;
 
         this._$origImage.parent()
             .width(origW)
@@ -428,7 +535,23 @@ const ImageOnionDiffView = BaseImageView.extend({
         this.$('.image-containers')
             .width(Math.max(origW, newW))
             .height(Math.max(origH, newH));
-    }
+    },
+
+    /**
+     * Return the initial size of the image.
+     *
+     * Returns:
+     *     object:
+     *     An object containing the initial height and width of the image.
+     */
+    getInitialSize() {
+        return {
+            width: Math.max(this._$origImage.data('initial-width'),
+                            this._$modifiedImage.data('initial-width')),
+            height: Math.max(this._$origImage.data('initial-height'),
+                             this._$modifiedImage.data('initial-height')),
+        };
+    },
 });
 
 
@@ -447,12 +570,12 @@ const ImageSplitDiffView = BaseImageView.extend({
         '<div class="image-containers">',
         ' <div class="image-diff-split-container-orig">',
         '  <div class="orig-image">',
-        '   <img caption="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
+        '   <img title="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
         '  </div>',
         ' </div>',
         ' <div class="image-diff-split-container-modified">',
         '  <div class="modified-image">',
-        '   <img caption="<%- caption %>" src="<%- imageURL %>" />',
+        '   <img title="<%- caption %>" src="<%- imageURL %>" />',
         '  </div>',
         ' </div>',
         '</div>',
@@ -527,18 +650,20 @@ const ImageSplitDiffView = BaseImageView.extend({
      * position the slider's handle with the divider between images.
      */
     onImagesLoaded() {
+        _super(this).onImagesLoaded.call(this);
         this._resize();
     },
 
     /**
-     * Set the zoom level for the view.
+     * Handle the image scale being changed.
      *
      * Args:
      *     scale (number):
-     *         A zoom multiplier (where 1.0 is 100%, 0.5 is 50%, etc).
+     *         The new image scaling factor (where 1.0 is 100%, 0.5 is 50%,
+     *         etc).
      */
-    setScale(scale) {
-        _super(this).setScale.call(this, scale);
+    _onScaleChanged(scale) {
+        _super(this)._onScaleChanged.call(this, scale);
         this._resize();
     },
 
@@ -547,14 +672,16 @@ const ImageSplitDiffView = BaseImageView.extend({
      */
     _resize() {
         const $origImageContainer = this._$origImage.parent();
-        const origW = this._$origImage.data('initial-width') * this._scale;
-        const origH = this._$origImage.data('initial-height') * this._scale;
-        const newW = this._$modifiedImage.data('initial-width') * this._scale;
-        const newH = this._$modifiedImage.data('initial-height') * this._scale;
+        const scale = this.model.get('scale');
+        const origW = this._$origImage.data('initial-width') * scale;
+        const origH = this._$origImage.data('initial-height') * scale;
+        const newW = this._$modifiedImage.data('initial-width') * scale;
+        const newH = this._$modifiedImage.data('initial-height') * scale;
         const maxH = Math.max(origH, newH);
         const maxOuterH = maxH + $origImageContainer.getExtents('b', 'tb');
 
         this._maxWidth = Math.max(origW, newW);
+        this._maxHeight = Math.max(origH, newH);
 
         $origImageContainer
             .outerWidth(origW)
@@ -580,7 +707,21 @@ const ImageSplitDiffView = BaseImageView.extend({
 
         /* Now that these are loaded, set the default for the split. */
         this.setSplitPercentage(this.DEFAULT_SPLIT_PCT);
-    }
+    },
+
+    /**
+     * Return the initial size of the image.
+     *
+     * Returns:
+     *     object:
+     *     An object containing the initial height and width of the image.
+     */
+    getInitialSize() {
+        return {
+            width: this._maxWidth,
+            height: this._maxHeight,
+        };
+    },
 });
 
 
@@ -597,12 +738,12 @@ const ImageTwoUpDiffView = BaseImageView.extend({
     template: _.template([
         '<div class="image-container image-container-orig">',
         ' <div class="orig-image">',
-        '  <img caption="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
+        '  <img title="<%- caption %>" src="<%- diffAgainstImageURL %>" />',
         ' </div>',
         '</div>',
         '<div class="image-container image-container-modified">',
         ' <div class="modified-image">',
-        '  <img caption="<%- caption %>" src="<%- imageURL %>" />',
+        '  <img title="<%- caption %>" src="<%- imageURL %>" />',
         ' </div>',
         '</div>'
     ].join('')),
@@ -618,10 +759,29 @@ const ImageTwoUpDiffView = BaseImageView.extend({
         this.$el.html(this.template(this.model.attributes));
         this.$commentRegion = this.$('.modified-image img');
 
+        this._$origImage = this.$('.orig-image img');
+        this._$modifiedImage = this.$('.modified-image img');
+
         this.loadImages(this.$('img'));
 
         return this;
-    }
+    },
+
+    /**
+     * Return the initial size of the image.
+     *
+     * Returns:
+     *     object:
+     *     An object containing the initial height and width of the image.
+     */
+    getInitialSize() {
+        return {
+            width: Math.max(this._$origImage.data('initial-width'),
+                            this._$modifiedImage.data('initial-width')),
+            height: Math.max(this._$origImage.data('initial-height'),
+                             this._$modifiedImage.data('initial-height')),
+        };
+    },
 });
 
 
@@ -675,24 +835,6 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
         '</div>'
         ].join('')),
 
-    resolutionMenuTemplate: [
-        '<li class="image-resolution-menu has-menu">',
-        ' <a href="#" class="menu-header">',
-        '  <span class="fa fa-search-plus"></span>',
-        '  <span class="image-resolution-menu-current">100%</span>',
-        '  &#9662;',
-        ' </a>',
-        ' <ul class="menu">',
-        '  <li class="menu-item" data-image-scale="0.33"',
-        '      id="image-resolution-zoom-3x">33%</li>',
-        '  <li class="menu-item" data-image-scale="0.5"',
-        '      id="image-resolution-zoom-2x">50%</li>',
-        '  <li class="menu-item" data-image-scale="1.0">100%</li>',
-        '  <li class="menu-item" data-image-scale="2.0">200%</li>',
-        ' </ul>',
-        '</li>',
-    ].join(''),
-
     ANIM_SPEED_MS: 200,
 
     /**
@@ -704,7 +846,8 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
 
         _.bindAll(this, '_adjustPos');
 
-        this._scale = 1.0;
+        const scale = this.model.get('scale');
+
         this._activeSelection = {};
         this._diffModeSelectors = {};
         this._diffModeViews = {};
@@ -718,7 +861,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             commentBlockView.setSelectionRegionSizeFunc(
                 () => _.pick(this._imageView.getSelectionRegion(),
                              'width', 'height'));
-            commentBlockView.setScale(this._scale);
+            commentBlockView.setScale(this.model.get('scale'));
 
             this._$selectionArea.append(commentBlockView.$el);
 
@@ -728,6 +871,19 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                     this._commentBlockViews =
                         _.without(this._commentBlockViews, commentBlockView);
                 });
+        });
+
+        this.listenTo(this.model, 'change:scale', (model, scale) => {
+            this._commentBlockViews.forEach(view => view.setScale(scale));
+
+            this.$('.image-resolution-menu-current')
+                .text(scalingFactors.get(scale));
+
+            /*
+             * We must wait for the image views to finish scaling themselves,
+             * otherwise the comment blocks will be in incorrect places.
+             */
+            _.defer(this._adjustPos);
         });
     },
 
@@ -772,7 +928,9 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                         !this.commentDlg) {
                         this._$selectionArea.hide();
                     }
-                })
+                });
+
+        const $wrapper = $('<div class="image-content" />')
             .append(this._$selectionArea);
 
         if (this.model.get('diffTypeMismatch')) {
@@ -790,7 +948,9 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             this._addDiffMode(ImageSplitDiffView);
             this._addDiffMode(ImageOnionDiffView);
 
-            this.$el.append(this._$imageDiffs);
+            $wrapper
+                .append(this._$imageDiffs)
+                .appendTo(this.$el);
 
             this._setDiffMode(ImageTwoUpDiffView.prototype.mode);
         } else {
@@ -798,7 +958,10 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
                 model: this.model
             });
 
-            this._imageView.$el.appendTo(this.$el);
+            $wrapper
+                .append(this._imageView.$el)
+                .appendTo(this.$el);
+
             this._imageView.render();
         }
 
@@ -886,31 +1049,28 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             }
         }
 
+        const $resolutionMenu = $([
+          '<li class="image-resolution-menu has-menu">',
+          ' <a href="#" class="menu-header">',
+          '  <span class="fa fa-search-plus"></span>',
+          '  <span class="image-resolution-menu-current">100%</span> &#9662;',
+          ' </a>',
+          ' <ul class="menu" />',
+          '</li>',
+        ].join(''));
+        const $menu = $resolutionMenu.find('.menu');
+
+        scalingFactors.forEach((text, scale) => {
+            $(`<li class="menu-item" data-image-scale="${scale}" />`)
+                .text(text)
+                .appendTo($menu);
+        });
+
         if (hasDiff) {
-            this._$modeBar.append(this.resolutionMenuTemplate);
+            this._$modeBar.append($resolutionMenu);
         } else {
-            this.$('.caption').after(this.resolutionMenuTemplate);
+            this.$('.caption').after($resolutionMenu);
         }
-
-        /*
-         * If the image is obviously a 2x or 3x pixel ratio, pre-select the
-         * right zoom level.
-         */
-        const filename = this.model.get('filename');
-
-        /*
-         * The `filename` attribute doesn't exist for screenshots, so we need
-         * to check it.
-         */
-        if (filename) {
-            if (filename.includes('@2x.')) {
-                this.$('#image-resolution-zoom-2x').click();
-            } else if (filename.includes('@3x.')) {
-                this.$('#image-resolution-zoom-3x').click();
-            }
-        }
-
-        return this;
     },
 
     /**
@@ -1014,7 +1174,6 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
             this._diffModeSelectors[this._imageView.mode]
                 .removeClass('selected');
 
-            newView.setScale(this._scale);
             newView.$el.show();
             const height = newView.$el.height();
             newView.$el.hide();
@@ -1073,20 +1232,6 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
     },
 
     /**
-     * Set the zoom level for the view.
-     *
-     * Args:
-     *     scale (number):
-     *         A zoom multiplier (where 1.0 is 100%, 0.5 is 50%, etc).
-     */
-    _setScale(scale) {
-        this._scale = scale;
-        this._imageView.setScale(scale);
-        this._adjustPos();
-        this._commentBlockViews.forEach(view => view.setScale(scale));
-    },
-
-    /**
      * Handler for when a mode in the diff mode bar is clicked.
      *
      * Sets the diff view to the given mode.
@@ -1112,13 +1257,7 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
     _onImageZoomLevelClicked(e) {
         e.preventDefault();
         e.stopPropagation();
-
-        const $target = $(e.target);
-        const scale = $target.data('image-scale');
-        const text = $target.text();
-
-        this.$('.image-resolution-menu-current').text(text);
-        this._setScale(scale);
+        this.model.set('scale', $(e.target).data('image-scale'));
     },
 
     /**
@@ -1185,13 +1324,14 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
              * if they accidentally click on the image.
              */
             const position = this._$selectionRect.data();
+            const scale = this.model.get('scale');
 
             if (position.width > 5 && position.height > 5) {
                 this.createAndEditCommentBlock({
-                    x: Math.floor(position.left / this._scale),
-                    y: Math.floor(position.top / this._scale),
-                    width: Math.floor(position.width / this._scale),
-                    height: Math.floor(position.height / this._scale)
+                    x: Math.floor(position.left / scale),
+                    y: Math.floor(position.top / scale),
+                    width: Math.floor(position.width / scale),
+                    height: Math.floor(position.height / scale),
                 });
             }
         }

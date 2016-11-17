@@ -425,13 +425,44 @@ def get_matched_interdiff_files(tool, filediffs, interfilediffs):
             except ValueError:
                 pass
 
-    # Stage 3: Look for common files with the same source filenames and
+    # Stage 3: Look for common files with the same source/destination
+    #          filenames (when they differ).
+    #
+    # Any filediff from diff 1 not already processed in stage 2 will be
+    # processed here. We'll look for any filediffs from diff 2 that were
+    # moved/copied from the same source to the same destination. This is one
+    # half of the detailed file state we checked in stage 2.
+    new_remaining_filediffs = []
+
+    for filediff in remaining_filediffs:
+        source_file = _normfile(filediff.source_file)
+        found_interfilediffs = [
+            temp_interfilediff
+            for temp_interfilediff in simple_interdiff_map.get(source_file, [])
+            if (temp_interfilediff.dest_file == filediff.dest_file and
+                filediff.source_file != filediff.dest_file)
+        ]
+
+        if found_interfilediffs:
+            remaining_interfilediffs.difference_update(found_interfilediffs)
+
+            for interfilediff in found_interfilediffs:
+                simple_interdiff_map[source_file].remove(interfilediff)
+                yield filediff, interfilediff
+        else:
+            new_remaining_filediffs.append(filediff)
+
+    remaining_filediffs = new_remaining_filediffs
+
+    # Stage 4: Look for common files with the same source filenames and
     #          new/deleted states.
     #
-    # Any filediff from diff 1 not already processed in stage 1 will be
+    # Any filediff from diff 1 not already processed in stage 3 will be
     # processed here. We'll look for any filediffs from diff 2 that match
     # the source filename and the new/deleted state. Any that we find will
     # be matched up.
+    new_remaining_filediffs = []
+
     for filediff in remaining_filediffs:
         source_file = _normfile(filediff.source_file)
         found_interfilediffs = [
@@ -445,11 +476,49 @@ def get_matched_interdiff_files(tool, filediffs, interfilediffs):
             remaining_interfilediffs.difference_update(found_interfilediffs)
 
             for interfilediff in found_interfilediffs:
+                simple_interdiff_map[source_file].remove(interfilediff)
+                yield filediff, interfilediff
+        else:
+            new_remaining_filediffs.append(filediff)
+
+    remaining_filediffs = new_remaining_filediffs
+
+    # Stage 5: Look for common files with the same source filenames and
+    #          compatible new/deleted states.
+    #
+    # This will help catch files that were marked as new in diff 1 but not in
+    # diff 2, or deleted in diff 2 but not in diff 1. (The inverse for either
+    # is NOT matched!). This is important because if a file is introduced in a
+    # parent diff, the file can end up showing up as new itself (which is a
+    # separate bug).
+    #
+    # Even if that bug did not exist, it's still possible for a file to be new
+    # in one revision but committed separately (by that user or another), so we
+    # need these matched.
+    #
+    # Any files not found with a matching interdiff will simply be yielded.
+    # This is the last stage dealing with the filediffs in the first revision.
+    for filediff in remaining_filediffs:
+        source_file = _normfile(filediff.source_file)
+        found_interfilediffs = [
+            temp_interfilediff
+            for temp_interfilediff in simple_interdiff_map.get(source_file, [])
+            if ((filediff.is_new or not temp_interfilediff.is_new) and
+                (temp_interfilediff.deleted or not filediff.deleted))
+        ]
+
+        if found_interfilediffs:
+            remaining_interfilediffs.difference_update(found_interfilediffs)
+
+            for interfilediff in found_interfilediffs:
+                # NOTE: If more stages are ever added that deal with
+                #       simple_interdiff_map, then we'll need to remove
+                #       interfilediff from that map here.
                 yield filediff, interfilediff
         else:
             yield filediff, None
 
-    # Stage 4: Add any remaining files from the interdiff.
+    # Stage 6: Add any remaining files from the interdiff.
     #
     # We've removed everything that we've already found.  What's left are
     # interdiff files that are new. They have no file to diff against.

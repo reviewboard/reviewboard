@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import re
 import warnings
 
-from django.contrib.staticfiles.templatetags.staticfiles import static
 from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from djblets.registries.registry import (ALREADY_REGISTERED,
@@ -14,6 +13,7 @@ from djblets.registries.registry import (ALREADY_REGISTERED,
                                          NOT_REGISTERED,
                                          Registry,
                                          UNREGISTER)
+from djblets.urls.staticfiles import static_lazy
 from djblets.util.decorators import augment_method_from
 
 
@@ -167,8 +167,8 @@ class MilestoneTrophy(TrophyType):
     title = _('Milestone Trophy')
 
     image_urls = {
-        '1x': static('rb/images/trophies/sparkly.png'),
-        '2x': static('rb/images/trophies/sparkly@2x.png'),
+        '1x': static_lazy('rb/images/trophies/sparkly.png'),
+        '2x': static_lazy('rb/images/trophies/sparkly@2x.png'),
     }
 
     image_width = 33
@@ -215,8 +215,8 @@ class FishTrophy(TrophyType):
     name = _('Fish Trophy')
 
     image_urls = {
-        '1x': static('rb/images/trophies/fish.png'),
-        '2x': static('rb/images/trophies/fish@2x.png'),
+        '1x': static_lazy('rb/images/trophies/fish.png'),
+        '2x': static_lazy('rb/images/trophies/fish@2x.png'),
     }
 
     image_width = 33

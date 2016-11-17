@@ -7,8 +7,8 @@ suite('rb/pages/views/ReviewRequestPageView', () => {
         '<a id="collapse-all"></a>',
         '<a id="expand-all"></a>',
         '<div>',
-        ' <div class="review" id="review123">',
-        '  <div class="box">',
+        ' <div class="review review-request-page-entry" id="review123">',
+        '  <div class="review-request-page-entry-contents">',
         '   <div class="body">',
         '    <pre class="body_top">Body Top</pre>',
         '    <div class="comment-section" data-context-type="body_top">',
@@ -21,8 +21,8 @@ suite('rb/pages/views/ReviewRequestPageView', () => {
         '    </div>',
         '   </div>',
         ' </div>',
-        ' <div class="review" id="review124">',
-        '  <div class="box">',
+        ' <div class="review review-request-page-entry" id="review124">',
+        '  <div class="review-request-page-entry-contents">',
         '   <div class="body">',
         '    <pre class="body_top">Body Top</pre>',
         '    <div class="comment-section" data-context-type="body_top">',
@@ -88,8 +88,8 @@ suite('rb/pages/views/ReviewRequestPageView', () => {
 
     describe('Actions', () => {
         it('Collapse all', () => {
-            const $el1 = box1.$el.find('.box');
-            const $el2 = box2.$el.find('.box');
+            const $el1 = box1.$el.find('.review-request-page-entry-contents');
+            const $el2 = box2.$el.find('.review-request-page-entry-contents');
 
             expect($el1.hasClass('collapsed')).toBe(false);
             expect($el2.hasClass('collapsed')).toBe(false);
@@ -101,8 +101,8 @@ suite('rb/pages/views/ReviewRequestPageView', () => {
         });
 
         it('Expand all', () => {
-            const $el1 = box1.$el.find('.box');
-            const $el2 = box2.$el.find('.box');
+            const $el1 = box1.$el.find('.review-request-page-entry-contents');
+            const $el2 = box2.$el.find('.review-request-page-entry-contents');
 
             $el1.addClass('collapsed');
             $el2.addClass('collapsed');
