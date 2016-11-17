@@ -272,6 +272,7 @@ intersphinx_mapping = {
                 None),
     'python': ('https://docs.python.org/2.7', None),
     'rbtools': ('%s/docs/rbtools/latest/' % rbwebsite_url, None),
+    'rbcontributing': ('%s/docs/codebase/dev/' % rbwebsite_url, None),
 }
 
 
