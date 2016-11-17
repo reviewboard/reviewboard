@@ -19,7 +19,7 @@ suite('rb/models/uploadDiffModel', function() {
 
     describe('Updating Review Requests', function() {
         it('"Start Over" doesn\'t change reviewRequest attribute', function() {
-            spyOn(updateDiffView.model, 'startOver').andCallThrough();
+            spyOn(updateDiffView.model, 'startOver').and.callThrough();
             updateDiffView.model.startOver();
 
             expect(updateDiffView.model.attributes.reviewRequest).toBe(reviewRequest);

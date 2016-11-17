@@ -82,7 +82,7 @@ suite('rb/views/ReviewView', function() {
 
         it('Draft banner when draft comment exists', function() {
             expect(view.trigger)
-                .toHaveBeenCalledWith('showReplyDraftBanner');
+                .toHaveBeenCalledWith('hasDraftChanged', true);
         });
 
         describe('reviewReply changes on', function() {
@@ -133,7 +133,7 @@ suite('rb/views/ReviewView', function() {
 
             it('Hide draft banner signal emitted', function() {
                 view._setupNewReply();
-                expect(view.trigger).toHaveBeenCalledWith('hideReplyDraftBanner');
+                expect(view.trigger).toHaveBeenCalledWith('hasDraftChanged', false);
             });
 
             it('Editors updated', function() {

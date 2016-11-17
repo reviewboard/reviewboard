@@ -75,14 +75,17 @@ suite('rb/pages/views/ReviewablePageView', function() {
 
     describe('Actions', function() {
         it('Edit Review', function() {
+            var options;
+
             spyOn(RB.ReviewDialogView, 'create');
 
             $editReview.click();
 
-            expect(RB.ReviewDialogView.create).toHaveBeenCalledWith({
-                review: pageView.pendingReview,
-                reviewRequestEditor: pageView.reviewRequestEditor
-            });
+            expect(RB.ReviewDialogView.create).toHaveBeenCalled();
+
+            options = RB.ReviewDialogView.create.calls.argsFor(0)[0];
+            expect(options.review).toBe(pageView.pendingReview);
+            expect(options.reviewRequestEditor).toBe(pageView.reviewRequestEditor);
         });
 
         describe('Ship It', function() {
