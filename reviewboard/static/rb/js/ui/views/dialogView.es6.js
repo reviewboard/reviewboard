@@ -141,7 +141,6 @@ RB.DialogView = Backbone.View.extend({
      */
     _getButtons() {
         return this.buttons.map(buttonInfo => {
-            console.log(buttonInfo);
             const $button = $('<input type="button" />')
                 .val(buttonInfo.label)
                 .toggleClass('primary', !!buttonInfo.primary)

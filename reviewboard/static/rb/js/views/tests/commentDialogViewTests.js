@@ -128,7 +128,7 @@ suite('rb/views/CommentDialogView', function() {
                 it('Confirms before cancelling unsaved comment', function() {
                     spyOn(editor, 'cancel');
                     spyOn(dlg, 'close');
-                    spyOn(window, 'confirm').andReturn(true);
+                    spyOn(window, 'confirm').and.returnValue(true);
                     editor.set('dirty', true);
                     $button.click();
                     expect(dlg.close).toHaveBeenCalled();
@@ -137,7 +137,7 @@ suite('rb/views/CommentDialogView', function() {
                 it('Cancel close when unsaved comment', function() {
                     spyOn(editor, 'cancel');
                     spyOn(dlg, 'close');
-                    spyOn(window, 'confirm').andReturn(false);
+                    spyOn(window, 'confirm').and.returnValue(false);
                     editor.set('dirty', true);
                     $button.click();
                     expect(dlg.close).not.toHaveBeenCalled();
@@ -742,7 +742,7 @@ suite('rb/views/CommentDialogView', function() {
                     });
 
                     it('If Markdown', function() {
-                        spyOn(window, 'confirm').andReturn(true);
+                        spyOn(window, 'confirm').and.returnValue(true);
                         setupForRichText(true);
 
                         simulateKeyPress($.ui.keyCode.ESCAPE, false, false);
@@ -760,7 +760,7 @@ suite('rb/views/CommentDialogView', function() {
                     });
 
                     it('If unsaved comment', function() {
-                        spyOn(window, 'confirm').andReturn(true);
+                        spyOn(window, 'confirm').and.returnValue(true);
                         editor.set('dirty', true);
 
                         simulateKeyPress($.ui.keyCode.ESCAPE, false, false);
@@ -770,7 +770,7 @@ suite('rb/views/CommentDialogView', function() {
                     });
 
                     it('If unsaved comment, do not close', function() {
-                        spyOn(window, 'confirm').andReturn(false);
+                        spyOn(window, 'confirm').and.returnValue(false);
                         editor.set('dirty', true);
 
                         simulateKeyPress($.ui.keyCode.ESCAPE, false, false);

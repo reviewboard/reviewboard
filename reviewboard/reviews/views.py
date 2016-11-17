@@ -347,7 +347,7 @@ def review_detail(request,
             visited, visited_is_new = \
                 ReviewRequestVisit.objects.get_or_create(
                     user=request.user, review_request=review_request)
-            last_visited = visited.timestamp.replace(tzinfo=utc).ctime()
+            last_visited = visited.timestamp.replace(tzinfo=utc)
         except ReviewRequestVisit.DoesNotExist:
             # Somehow, this visit was seen as created but then not
             # accessible. We need to log this and then continue on.

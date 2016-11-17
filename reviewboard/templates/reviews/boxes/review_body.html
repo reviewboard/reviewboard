@@ -14,7 +14,7 @@
 
 {% for comment in general_comments %}
 <li>
- <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"</a>
+ <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
  <div class="review-comment-thread">
   <div class="review-comment">
    {% comment_detail_display_hook comment 'review' %}
