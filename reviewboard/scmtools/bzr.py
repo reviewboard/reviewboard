@@ -149,12 +149,6 @@ class BZRTool(SCMTool):
 
         return file_str, revision_str
 
-    def get_fields(self):
-        return ['basedir', 'diff_path', 'parent_diff_path']
-
-    def get_diffs_use_absolute_paths(self):
-        return False
-
     def _get_full_path(self, path, basedir=None):
         """Returns the full path to a file."""
         parts = [self.repository.path.rstrip("/")]

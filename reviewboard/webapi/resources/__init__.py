@@ -12,12 +12,17 @@ from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.notifications.models import WebHookTarget
-from reviewboard.reviews.models import (Comment, DefaultReviewer,
+from reviewboard.reviews.models import (Comment,
+                                        DefaultReviewer,
                                         FileAttachmentComment,
-                                        GeneralComment, Group,
-                                        ReviewRequest, ReviewRequestDraft,
-                                        Review, ScreenshotComment,
-                                        Screenshot)
+                                        GeneralComment,
+                                        Group,
+                                        Review,
+                                        ReviewRequest,
+                                        ReviewRequestDraft,
+                                        Screenshot,
+                                        ScreenshotComment,
+                                        StatusUpdate)
 from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.models import WebAPIToken
@@ -97,6 +102,7 @@ class Resources(ResourcesRegistry):
             lambda obj: (obj.review.get().is_reply() and
                          self.review_reply_general_comment or
                          self.review_general_comment))
+        register_resource_for_model(StatusUpdate, self.status_update)
         register_resource_for_model(User, self.user)
         register_resource_for_model(WebAPIToken, self.api_token)
         register_resource_for_model(WebHookTarget, self.webhook)

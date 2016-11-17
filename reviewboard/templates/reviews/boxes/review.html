@@ -41,32 +41,7 @@
 
   <div class="body">
    <ol class="review-comments">
-    <li>
-     <div class="review-comment-thread">
-      <div class="review-comment">
-       <pre class="reviewtext body_top {% rich_text_classname review.body_top_rich_text %}">{{review.body_top|render_markdown:review.body_top_rich_text}}</pre>
-      </div>
-
-      {% reply_section review '' 'body_top' 'rcbt' review.body_top %}
-     </div>
-    </li>
-
-{%   with diff_comments=entry.comments.diff_comments file_attachment_comments=entry.comments.file_attachment_comments general_comments=entry.comments.general_comments screenshot_comments=entry.comments.screenshot_comments %}
-{%    include "reviews/boxes/review_body.html" %}
-{%   endwith %}
-
-{%   if review.body_bottom %}
-    <li>
-     <div class="review-comment-thread">
-      <div class="review-comment">
-       <pre class="reviewtext body_bottom {% rich_text_classname review.body_bottom_rich_text %}">{{review.body_bottom|render_markdown:review.body_bottom_rich_text}}</pre>
-      </div>
-
-      {% reply_section review '' 'body_bottom' 'rcbb' review.body_bottom %}
-     </div>
-    </li>
-{%   endif %}
-
+{%   include "reviews/boxes/review_body.html" with diff_comments=entry.comments.diff_comments file_attachment_comments=entry.comments.file_attachment_comments general_comments=entry.comments.general_comments screenshot_comments=entry.comments.screenshot_comments always_show_body_top=True %}
    </ol>
   </div>
  </div>

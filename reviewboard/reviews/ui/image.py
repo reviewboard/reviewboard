@@ -18,6 +18,18 @@ class ImageReviewUI(FileAttachmentReviewUI):
     js_model_class = 'RB.ImageReviewable'
     js_view_class = 'RB.ImageReviewableView'
 
+    def get_page_cover_image_url(self):
+        """Return the URL to an image used to depict this on other sites.
+
+        The returned image URL will be used for services like Facebook, Slack,
+        Twitter, etc. when linking to this file attachment.
+
+        Returns:
+            unicode:
+            The absolute URL to an image used to depict this file attachment.
+        """
+        return self.obj.get_absolute_url()
+
     def get_js_model_data(self):
         data = super(ImageReviewUI, self).get_js_model_data()
         data['imageURL'] = self.obj.file.url

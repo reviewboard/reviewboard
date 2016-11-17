@@ -982,55 +982,61 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         expected_diffset_count = 0
 
         review_request_published.connect(_on_published, weak=True)
-        self.spy_on(_on_published)
 
-        review_request = self.create_review_request(submitter=self.user,
-                                                    create_repository=True)
-        draft_url = get_review_request_draft_url(review_request)
+        try:
+            self.spy_on(_on_published)
 
-        # First, we're going to try publishing an initial draft. There should
-        # be 1 diffset upon publish, and 0 changedescs.
-        draft = ReviewRequestDraft.create(review_request)
-        draft.summary = 'My Summary'
-        draft.description = 'My Description'
-        draft.testing_done = 'My Testing Done'
-        draft.branch = 'My Branch'
-        draft.target_people.add(User.objects.get(username='doc'))
-        draft.save()
-        diffset = self.create_diffset(review_request, draft=True)
-        self.create_filediff(diffset)
+            review_request = self.create_review_request(submitter=self.user,
+                                                        create_repository=True)
+            draft_url = get_review_request_draft_url(review_request)
 
-        self.assertEqual(len(review_request.changedescs.all()),
-                         expected_changedesc_count)
-        self.assertEqual(len(review_request.diffset_history.diffsets.all()),
-                         expected_diffset_count)
+            # First, we're going to try publishing an initial draft. There
+            # should be 1 diffset upon publish, and 0 changedescs.
+            draft = ReviewRequestDraft.create(review_request)
+            draft.summary = 'My Summary'
+            draft.description = 'My Description'
+            draft.testing_done = 'My Testing Done'
+            draft.branch = 'My Branch'
+            draft.target_people.add(User.objects.get(username='doc'))
+            draft.save()
+            diffset = self.create_diffset(review_request, draft=True)
+            self.create_filediff(diffset)
 
-        expected_diffset_count += 1
+            self.assertEqual(len(review_request.changedescs.all()),
+                             expected_changedesc_count)
+            self.assertEqual(
+                len(review_request.diffset_history.diffsets.all()),
+                expected_diffset_count)
 
-        rsp = self.api_put(
-            draft_url,
-            {'public': True},
-            expected_mimetype=review_request_draft_item_mimetype)
+            expected_diffset_count += 1
 
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(_on_published.spy.called)
+            rsp = self.api_put(
+                draft_url,
+                {'public': True},
+                expected_mimetype=review_request_draft_item_mimetype)
 
-        _on_published.spy.reset_calls()
+            self.assertEqual(rsp['stat'], 'ok')
+            self.assertTrue(_on_published.spy.called)
 
-        # Now try posting an update. There should be 1 changedesc, 2 diffsets.
-        diffset = self.create_diffset(review_request, draft=True)
-        self.create_filediff(diffset)
+            _on_published.spy.reset_calls()
 
-        expected_changedesc_count += 1
-        expected_diffset_count += 1
+            # Now try posting an update. There should be 1 changedesc, 2
+            # diffsets.
+            diffset = self.create_diffset(review_request, draft=True)
+            self.create_filediff(diffset)
 
-        rsp = self.api_put(
-            draft_url,
-            {'public': True},
-            expected_mimetype=review_request_draft_item_mimetype)
+            expected_changedesc_count += 1
+            expected_diffset_count += 1
 
-        self.assertEqual(rsp['stat'], 'ok')
-        self.assertTrue(_on_published.spy.called)
+            rsp = self.api_put(
+                draft_url,
+                {'public': True},
+                expected_mimetype=review_request_draft_item_mimetype)
+
+            self.assertEqual(rsp['stat'], 'ok')
+            self.assertTrue(_on_published.spy.called)
+        finally:
+            review_request_published.disconnect(_on_published)
 
     def test_put_with_numeric_extra_data(self):
         """Testing the PUT review-requests/<id>/draft/ API with numeric

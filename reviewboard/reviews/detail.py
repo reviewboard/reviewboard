@@ -2,21 +2,25 @@
 
 from __future__ import unicode_literals
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import datetime
 
 from django.db.models import Q
+from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.timezone import utc
+from django.utils.translation import ugettext as _
 
 from reviewboard.reviews.builtin_fields import ReviewRequestPageDataMixin
+from reviewboard.reviews.features import status_updates_feature
 from reviewboard.reviews.fields import get_review_request_fieldsets
 from reviewboard.reviews.models import (BaseComment,
                                         Comment,
                                         FileAttachmentComment,
                                         GeneralComment,
                                         ReviewRequest,
-                                        ScreenshotComment)
+                                        ScreenshotComment,
+                                        StatusUpdate)
 
 
 class ReviewRequestPageData(object):
@@ -38,12 +42,12 @@ class ReviewRequestPageData(object):
     Attributes:
         body_bottom_replies (dict):
             A mapping from a top-level review ID to a list of the
-            :py:class:`reviewboard.reviews.models.Review` objects which reply
+            :py:class:`~reviewboard.reviews.models.Review` objects which reply
             to it.
 
         body_top_replies (dict):
             A mapping from a top-level review ID to a list of the
-            :py:class:`reviewboard.reviews.models.Review` objects which reply
+            :py:class:`~reviewboard.reviews.models.Review` objects which reply
             to it.
 
         comments (list):
@@ -58,7 +62,7 @@ class ReviewRequestPageData(object):
 
         diffsets_by_id (dict):
             A mapping from ID to
-            :py:class:`reviewboard.diffviewer.models.DiffSet`.
+            :py:class:`~reviewboard.diffviewer.models.DiffSet`.
 
         draft (reviewboard.reviews.models.ReviewRequestDraft):
             The active draft of the review request, if any. May be ``None``.
@@ -71,7 +75,7 @@ class ReviewRequestPageData(object):
 
         file_attachments_by_id (dict):
             A mapping from ID to
-            :py:class:`reviewboard.attachments.models.FileAttachment`
+            :py:class:`~reviewboard.attachments.models.FileAttachment`
 
         issues (list of reviewboard.reviews.models.BaseComment):
             A list of all the comments (of all types) which are marked as issues.
@@ -96,8 +100,8 @@ class ReviewRequestPageData(object):
         review_request_details (reviewboard.reviews.models.base_review_request_details.BaseReviewRequestDetails):
             The review request (or the active draft thereof). In practice this
             will either be a
-            :py:class:`reviewboard.reviews.models.ReviewRequest` or a
-            :py:class:`reviewboard.reviews.models.ReviewRequestDraft`.
+            :py:class:`~reviewboard.reviews.models.ReviewRequest` or a
+            :py:class:`~reviewboard.reviews.models.ReviewRequestDraft`.
 
         reviews (list of reviewboard.reviews.models.Review):
             All the reviews to be shown on the page. This includes any draft
@@ -105,7 +109,7 @@ class ReviewRequestPageData(object):
             others.
 
         reviews_by_id (dict):
-            A mapping from ID to :py:class:`reviewboard.reviews.models.Review`.
+            A mapping from ID to :py:class:`~reviewboard.reviews.models.Review`.
 
         active_screenshots (list of reviewboard.reviews.models.Screenshot):
             All the active screenshots associated with the review request.
@@ -115,7 +119,7 @@ class ReviewRequestPageData(object):
 
         screenshots_by_id (dict):
             A mapping from ID to
-            :py:class:`reviewboard.reviews.models.Screenshot`.
+            :py:class:`~reviewboard.reviews.models.Screenshot`.
     """  # noqa
 
     def __init__(self, review_request, request):
@@ -241,8 +245,13 @@ class ReviewRequestPageData(object):
         for screenshot in self.all_screenshots:
             screenshot._comments = []
 
-        # Get all the comments and attach them to the reviews
         review_ids = self.reviews_by_id.keys()
+
+        # Get all status updates.
+        if status_updates_feature.is_enabled():
+            self.status_updates = list(
+                self.review_request.status_updates.all()
+                .select_related('review'))
 
         self.comments = []
         self.issues = []
@@ -383,6 +392,165 @@ class BaseReviewRequestPageEntry(object):
         self.timestamp = timestamp
         self.collapsed = collapsed
 
+    def finalize(self):
+        """Perform final computations after all comments have been added."""
+        pass
+
+
+class StatusUpdatesEntryMixin(object):
+    """A mixin for any entries which can include status updates.
+
+    This provides common functionality for the two entries that include status
+    updates (the initial status updates entry and change description entries).
+
+    Attributes:
+        status_updates (list of reviewboard.reviews.models.StatusUpdate):
+            The status updates in this entry.
+
+        status_updates_by_review (dict):
+            A mapping from review ID to the matching status update.
+    """
+
+    def __init__(self):
+        """Initialize the entry."""
+        self.status_updates = []
+        self.status_updates_by_review = {}
+
+    def add_update(self, update):
+        """Add a status update to the entry.
+
+        Args:
+            update (reviewboard.reviews.models.StatusUpdate):
+                The status update to add.
+        """
+        self.status_updates.append(update)
+        self.status_updates_by_review[update.review_id] = update
+
+        update.comments = {
+            'diff_comments': [],
+            'screenshot_comments': [],
+            'file_attachment_comments': [],
+            'general_comments': [],
+        }
+
+        if update.state == StatusUpdate.PENDING:
+            update.header_class = 'status-update-state-pending'
+        elif update.state == StatusUpdate.DONE_SUCCESS:
+            update.header_class = 'status-update-state-success'
+        elif update.state in (StatusUpdate.DONE_FAILURE, StatusUpdate.ERROR):
+            update.header_class = 'status-update-state-failure'
+        else:
+            raise ValueError('Unexpected state "%s"' % update.state)
+
+        update.summary_html = render_to_string(
+            'reviews/status_update_summary.html',
+            {
+                'description': update.description,
+                'header_class': update.header_class,
+                'summary': update.summary,
+                'url': update.url,
+                'url_text': update.url_text,
+            })
+
+    def add_comment(self, comment_type, comment):
+        """Add a comment to the entry.
+
+        This will associate the comment with the correct status update.
+
+        Args:
+            comment_type (unicode):
+                The type of comment (an index into the :py:attr:`comments`
+                dictionary).
+
+            comment (reviewboard.reviews.models.BaseComment):
+                The comment to add.
+        """
+        update = self.status_updates_by_review[comment.review_obj.pk]
+        update.comments[comment_type].append(comment)
+
+    def finalize(self):
+        """Perform final computations after all comments have been added."""
+        self.state_counts = Counter()
+
+        for update in self.status_updates:
+            self.state_counts[update.state] += 1
+
+        summary_parts = []
+
+        if self.state_counts[StatusUpdate.DONE_FAILURE] > 0:
+            summary_parts.append(
+                _('%s failed') % self.state_counts[StatusUpdate.DONE_FAILURE])
+
+        if self.state_counts[StatusUpdate.DONE_SUCCESS] > 0:
+            summary_parts.append(
+                _('%s succeeded')
+                % self.state_counts[StatusUpdate.DONE_SUCCESS])
+
+        if self.state_counts[StatusUpdate.PENDING] > 0:
+            summary_parts.append(
+                _('%s pending') % self.state_counts[StatusUpdate.PENDING])
+
+        if self.state_counts[StatusUpdate.ERROR] > 0:
+            summary_parts.append(
+                _('%s failed with error')
+                % self.state_counts[StatusUpdate.PENDING])
+
+        if (self.state_counts[StatusUpdate.DONE_FAILURE] > 0 or
+            self.state_counts[StatusUpdate.ERROR] > 0):
+            self.state_summary_class = 'status-update-state-failure'
+        elif self.state_counts[StatusUpdate.PENDING]:
+            self.state_summary_class = 'status-update-state-pending'
+        elif self.state_counts[StatusUpdate.DONE_SUCCESS]:
+            self.state_summary_class = 'status-update-state-success'
+
+        self.state_summary = ', '.join(summary_parts)
+
+
+class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
+                                BaseReviewRequestPageEntry):
+    """An entry for any status updates posted against the initial state.
+
+    :py:class:`~reviewboard.reviews.models.StatusUpdate` reviews (those created
+    by automated tools like static analysis checkers or CI systems) are shown
+    separately from ordinary reviews. When status updates are related to a
+    :py:class:`~reviewboard.changedescs.models.ChangeDescription`, they're
+    displayed within the change description box. Otherwise, they're shown in
+    their own box (immediately under the review request box), which is handled
+    by this class.
+    """
+
+    template_name = 'reviews/boxes/initial_status_updates.html'
+    js_template_name = 'reviews/boxes/initial_status_updates.js'
+
+    def __init__(self, review_request, collapsed, data):
+        """Initialize the entry.
+
+        Args:
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that the change is for.
+
+            collapsed (bool):
+                Whether the entry is collapsed by default.
+
+            data (ReviewRequestPageData):
+                Pre-queried data for the review request page.
+        """
+        BaseReviewRequestPageEntry.__init__(self, review_request.time_added,
+                                            collapsed)
+
+        if status_updates_feature.is_enabled():
+            StatusUpdatesEntryMixin.__init__(self)
+
+    @property
+    def has_content(self):
+        """Whether there are any items to display in the entry.
+
+        Returns:
+            bool:
+            True if there are any initial status updates to display.
+        """
+        return len(self.status_updates) > 0
+
 
 class ReviewEntry(BaseReviewRequestPageEntry):
     """A review box.
@@ -461,7 +629,7 @@ class ReviewEntry(BaseReviewRequestPageEntry):
                     self.collapsed = False
 
 
-class ChangeEntry(BaseReviewRequestPageEntry):
+class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
     """A change description box.
 
     Attributes:
@@ -490,8 +658,12 @@ class ChangeEntry(BaseReviewRequestPageEntry):
 
             data (ReviewRequestPageData):
                 Pre-queried data for the review request page.
-            """
-        super(ChangeEntry, self).__init__(changedesc.timestamp, collapsed)
+        """
+        BaseReviewRequestPageEntry.__init__(self, changedesc.timestamp,
+                                            collapsed)
+
+        if status_updates_feature.is_enabled():
+            StatusUpdatesEntryMixin.__init__(self)
 
         self.changedesc = changedesc
         self.fields_changed_groups = []

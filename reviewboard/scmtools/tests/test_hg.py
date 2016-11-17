@@ -269,13 +269,10 @@ class MercurialTests(SCMTestCase):
 
     def test_interface(self):
         """Testing basic HgTool API"""
-        self.assertTrue(self.tool.get_diffs_use_absolute_paths())
+        self.assertTrue(self.tool.diffs_use_absolute_paths)
 
         self.assertRaises(NotImplementedError,
                           lambda: self.tool.get_changeset(1))
-
-        self.assertEqual(self.tool.get_fields(),
-                         ['diff_path', 'parent_diff_path'])
 
     @online_only
     def test_https_repo(self):

@@ -770,6 +770,23 @@ def get_session_url(local_site_name=None):
 
 
 #
+# StatusResource
+#
+def get_status_update_list_url(review_request, local_site_name=None):
+    return resources.status_update.get_list_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id)
+
+
+def get_status_update_item_url(review_request, status_update_id,
+                               local_site_name=None):
+    return resources.status_update.get_item_url(
+        local_site_name=local_site_name,
+        review_request_id=review_request.display_id,
+        status_update_id=status_update_id)
+
+
+#
 # UserResource
 #
 def get_user_list_url(local_site_name=None):

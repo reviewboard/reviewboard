@@ -27,6 +27,7 @@ sshutils.register_rbssh('CVS_RSH')
 
 class CVSTool(SCMTool):
     name = "CVS"
+    diffs_use_absolute_paths = True
     field_help_text = {
         'path': 'The CVSROOT used to access the repository.',
     }
@@ -86,12 +87,6 @@ class CVSTool(SCMTool):
                                "(file_str='%s', revision_str='%s')"
                                % (file_str, revision_str))
             return file_str[:colon_idx], file_str[colon_idx + 1:]
-
-    def get_diffs_use_absolute_paths(self):
-        return True
-
-    def get_fields(self):
-        return ['diff_path']
 
     def get_parser(self, data):
         return CVSDiffParser(data, self.repopath)

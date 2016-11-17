@@ -274,9 +274,6 @@ class ClearCaseTool(SCMTool):
 
         return extended_path, revision
 
-    def get_fields(self):
-        return ['basedir', 'diff_path']
-
     def get_parser(self, data):
         return ClearCaseDiffParser(data,
                                    self.repopath,

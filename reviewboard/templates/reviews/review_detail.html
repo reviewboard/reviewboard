@@ -27,6 +27,10 @@
 </div>
 
 <div id="reviews">
+{%  if initial_status_entry and initial_status_entry.has_content %}
+{%   include initial_status_entry.template_name with entry=initial_status_entry %}
+{%  endif %}
+
  <ul id="view_controls">
 {%  if entries %}
   <li>
@@ -64,6 +68,10 @@
     }));
 
     RB.PageManager.beforeRender(function(page) {
+{%  if initial_status_entry and initial_status_entry.has_content %}
+{%   include initial_status_entry.js_template_name with entry=initial_status_entry %}
+{%  endif %}
+
 {%  for entry in entries %}
 {%   if entry.js_template_name %}
 {%    include entry.js_template_name %}

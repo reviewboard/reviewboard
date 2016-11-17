@@ -186,7 +186,7 @@ class CommonSVNTestCase(SpyAgency, SCMTestCase):
 
     def test_interface(self):
         """Testing SVN (<backend>) with basic SVNTool API"""
-        self.assertEqual(self.tool.get_diffs_use_absolute_paths(), False)
+        self.assertFalse(self.tool.diffs_use_absolute_paths)
 
         self.assertRaises(NotImplementedError,
                           lambda: self.tool.get_changeset(1))

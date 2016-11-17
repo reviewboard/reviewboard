@@ -41,6 +41,7 @@ class BasedirMixin(object):
 
 class EmptyDiffForm(BasedirMixin, forms.Form):
     """A form for creating empty DiffSets."""
+
     basedir = forms.CharField(
         label=_('Base directory'),
         help_text=_('The absolute path in the repository the diff was '
@@ -75,7 +76,10 @@ class EmptyDiffForm(BasedirMixin, forms.Form):
 
 
 class UploadDiffForm(BasedirMixin, forms.Form):
-    """A form for uploading diffs as DiffSets."""
+    basedir = forms.CharField(
+        label=_("Base Directory"),
+        help_text=_("The absolute path in the repository the diff was "
+                    "generated in."))
     path = forms.FileField(
         label=_('Diff'),
         help_text=_('The new diff to upload.'))
@@ -90,11 +94,6 @@ class UploadDiffForm(BasedirMixin, forms.Form):
         help_text=_('The ID/revision this change is built upon.'),
         required=False)
 
-    basedir = forms.CharField(
-        label=_('Base directory'),
-        help_text=_('The absolute path in the repository the diff was '
-                    'generated in.'))
-
     def __init__(self, repository, data=None, files=None, request=None, *args,
                  **kwargs):
         super(UploadDiffForm, self).__init__(*args, data=data, files=files,
@@ -103,6 +102,10 @@ class UploadDiffForm(BasedirMixin, forms.Form):
         self.request = request
 
         self._check_basedir_field()
+        if self.repository.get_scmtool().diffs_use_absolute_paths:
+            # This SCMTool uses absolute paths, so there's no need to ask
+            # the user for the base directory.
+            del(self.fields['basedir'])
 
     def clean_base_commit_id(self):
         """Clean the base_commit_id.

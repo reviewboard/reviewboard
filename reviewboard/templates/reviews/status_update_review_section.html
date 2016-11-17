@@ -1,0 +1,11 @@
+{% if update.review_id and update.review.public %}
+{%  if update.comments.diff_comments or update.comments.file_attachment_comments or update.comments.general_comments or update.comments.screenshot_comments %}
+<section id="review{{update.review_id}}" class="status-update-review" data-review-id="{{update.review_id}}">
+ <h3 class="status-update-review-header {{update.header_class}}">{{update.summary}}</h3>
+
+ <ul class="review-comments">
+{%   include "reviews/boxes/review_body.html" with diff_comments=update.comments.diff_comments file_attachment_comments=update.comments.file_attachment_comments general_comments=update.comments.general_comments screenshot_comments=update.comments.screenshot_comments review=update.review always_show_body_top=False %}
+ </ul>
+</section>
+{%  endif %}
+{% endif %}

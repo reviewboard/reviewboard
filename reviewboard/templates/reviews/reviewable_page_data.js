@@ -26,7 +26,7 @@
                 id: {{repo.id}},
                 localSitePrefix: '{% if review_request.local_site %}s/{{review_request.local_site.name}}/{% endif %}',
                 name: '{{repo.name|escapejs}}',
-                requiresBasedir: {{scmtool.get_diffs_use_absolute_paths|yesno:'false,true'}},
+                requiresBasedir: {{scmtool.diffs_use_absolute_paths|yesno:'false,true'}},
                 requiresChangeNumber: {{scmtool.supports_pending_changesets|yesno:'true,false'}},
                 scmtoolName: '{{scmtool.name|escapejs}}',
                 supportsPostCommit: {{repo.supports_post_commit|yesno:'true,false'}}

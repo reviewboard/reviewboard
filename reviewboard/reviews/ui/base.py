@@ -105,14 +105,20 @@ class ReviewUI(object):
 
         close_description, close_description_rich_text = \
             self.review_request.get_close_description()
+        caption = self.get_caption(draft)
 
         context = make_review_request_context(request, self.review_request, {
-            'caption': self.get_caption(draft),
+            'caption': caption,
             'close_description': close_description,
             'close_description_rich_text': close_description_rich_text,
             'comments': self.get_comments(),
             'draft': draft,
             'last_activity_time': last_activity_time,
+            'social_page_image_url': self.get_page_cover_image_url(),
+            'social_page_title': (
+                'Attachment for Review Request #%s: %s'
+                % (self.review_request.display_id, caption)
+            ),
             'review_request_details': review_request_details,
             'review_request': self.review_request,
             'review_ui': self,
@@ -153,6 +159,21 @@ class ReviewUI(object):
                           'get_js_view_data for FileAttachmentReviewUI '
                           '%r: %s',
                           self, e, exc_info=1)
+
+    def get_page_cover_image_url(self):
+        """Return the URL to an image used to depict this on other sites.
+
+        The returned image URL will be used for services like Facebook, Slack,
+        Twitter, etc. when linking to this file attachment. This may be
+        anything from a standard thumbnail to a full-size image.
+
+        By default, no image URL is returned.
+
+        Returns:
+            unicode:
+            The absolute URL to an image used to depict this file attachment.
+        """
+        return None
 
     def get_comments(self):
         return self.obj.get_comments()
