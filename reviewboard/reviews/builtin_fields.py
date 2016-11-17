@@ -631,7 +631,7 @@ class DiffField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
         }
 
 
-class DiffCommitListField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
+class DiffCommitListField(BaseReviewRequestField):
     """Renders the list of commits with the author and the summary.
 
     This field only renders on review requests that contain commit history.
@@ -639,8 +639,6 @@ class DiffCommitListField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
 
     field_id = 'diff_commits'
     label = _('Commits')
-
-    locals_vars = ['diff_commits_by_id']
 
     is_editable = False
     can_record_change_entry = True
@@ -683,8 +681,6 @@ class DiffCommitListField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
             if old_value is not None:
                 q |= Q(diffset__pk=old_value)
 
-                # TODO: it would be great to use the locals_var here instead
-                #       of rebuilding it.
                 diff_commits_by_diffset_id = defaultdict(list)
                 diff_commits = DiffCommit.objects.filter(q).values(
                     'diffset_id', 'commit_id')
@@ -721,12 +717,10 @@ class DiffCommitListField(BuiltinLocalsFieldMixin, BaseReviewRequestField):
         changedesc.fields_changed[self.field_id] = change_entry
 
     def render_value(self, value):
-        # TODO: This ideally would pull the list of commits from
-        #       self.diff_commits_by_id via the locals_vars.
         return render_to_string(
             'reviews/boxes/commit_list.html',
             {
-                'commits': DiffCommit.objects.filter(diffset__pk=value)
+                'commits': DiffCommit.objects.filter(diffset__pk=value),
             })
 
     def render_change_entry_html(self, info):
