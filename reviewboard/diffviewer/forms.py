@@ -21,13 +21,13 @@ class BasedirMixin(object):
     UploadDiffForm, however the two forms require different initialization.
     """
     def _check_basedir_field(self):
-        if self.repository.get_scmtool().get_diffs_use_absolute_paths():
+        if self.repository.get_scmtool().diffs_use_absolute_paths:
             # This SCMTool uses absolute paths, so there's no need to ask
             # the user for the base directory.
             del(self.fields['basedir'])
 
     def _get_basedir(self):
-        if not self.repository.get_scmtool().get_diffs_use_absolute_paths():
+        if not self.repository.get_scmtool().diffs_use_absolute_paths:
             try:
                 basedir = smart_unicode(self.cleaned_data['basedir']).strip()
             except AttributeError:
