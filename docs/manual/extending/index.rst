@@ -36,6 +36,7 @@ writing.
    Configuration <extensions/configuration>
    Providing database models <extensions/models>
    Working with static media files <extensions/static-files>
+   Writing JavaScript extensions <extensions/js-extensions>
    Writing extension unit tests <extensions/testing>
    Packaging and distributing extensions <extensions/distribution>
 
@@ -173,6 +174,29 @@ extension hooks available to you.
         Adds support for new source code or bug tracker hosting services.
 
 
+.. _js-extensions-hooks:
+
+JavaScript Extension Hooks
+==========================
+
+When writing a :ref:`JavaScript extension <js-extensions>`, you can make use
+of some special hooks to augment behavior in Review Board's UI. These work
+just like Python hooks.
+
+.. If you add to this list, make sure to also add to
+   extensions/js-hooks/index.rst.
+
+**Review-related Hooks:**
+    :ref:`js-comment-dialog-hook`:
+        Adds new fields or content to the comment dialog.
+
+    :ref:`js-review-dialog-comment-hook`:
+        Adds new fields or content to comments shown in the review dialog.
+
+    :ref:`js-review-dialog-hook`:
+        Adds new fields or content to the top of the review dialog.
+
+
 Guides to Extending Review Board
 ================================
 
@@ -212,6 +236,7 @@ Djblets
 
    extensions/index
    extensions/hooks/index
+   extensions/js-hooks/index
    extensions/review-ui
    auth-backends
    legacy-auth-backends
