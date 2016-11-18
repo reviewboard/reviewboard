@@ -741,17 +741,7 @@ RB.ReviewDialogView = Backbone.View.extend({
 
                     this._handleEmptyReview();
                 } else {
-                    this._$shipIt
-                        .prop('checked', this.model.get('shipIt'))
-                        .change(_.bind(function() {
-                            this.model.set('shipIt',
-                                           this._$shipIt.prop('checked'));
-                            this.model.save({
-                                attrs: ['forceTextType', 'includeTextTypes',
-                                        'shipIt']
-                            });
-                        }, this));
-
+                    this._$shipIt.prop('checked', this.model.get('shipIt'));
                     this._loadComments();
                 }
 
