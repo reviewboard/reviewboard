@@ -17,20 +17,16 @@ const BaseCommentView = Backbone.View.extend({
         <div class="edit-fields">
          <div class="edit-field">
           <div class="comment-text-field">
-           <dl>
-            <dt>
-             <label for="<%= id %>">
-              <%- commentText %>
-              <a href="#" role="button" class="delete-comment"
-                 aria-label="<%- deleteCommentText %>"
-                 title="<%- deleteCommentText %>"
-                 ><span class="fa fa-trash-o delete-comment"
-                        aria-hidden="true"></span></a>
-             </label>
-            </dt>
-            <dd><pre id="<%= id %>" class="reviewtext rich-text"
-                     data-rich-text="true"><%- text %></pre></dd>
-           </dl>
+           <label class="comment-label" for="<%= id %>">
+            <%- commentText %>
+            <a href="#" role="button" class="delete-comment"
+               aria-label="<%- deleteCommentText %>"
+               title="<%- deleteCommentText %>"
+               ><span class="fa fa-trash-o delete-comment"
+                      aria-hidden="true"></span></a>
+           </label>
+           <pre id="<%= id %>" class="reviewtext rich-text"
+                data-rich-text="true"><%- text %></pre>
           </div>
          </div>
          <div class="edit-field">
@@ -293,7 +289,8 @@ const BaseCommentView = Backbone.View.extend({
  */
 const DiffCommentView = BaseCommentView.extend({
     thumbnailTemplate: _.template(dedent`
-        <div id="review_draft_comment_container_<%= id %>">
+        <div class="review-dialog-comment-diff"
+             id="review_draft_comment_container_<%= id %>">
          <table class="sidebyside loading">
           <thead>
            <tr>
@@ -468,18 +465,22 @@ const ScreenshotCommentView = BaseCommentView.extend({
  * The header or footer for a review.
  */
 const HeaderFooterCommentView = Backbone.View.extend({
+    tagName: 'li',
+
     editorTemplate: _.template(dedent`
-        <div class="add-link-container">
-         <a href="#" class="add-link"><%- linkText %></a>
-        </div>
-        <div class="comment-text-field">
-         <dl>
-          <dt>
-           <label for="<%= id %>"><%- commentText %></label>
-          </dt>
-          <dd><pre id="<%= id %>" class="reviewtext rich-text"
-                   data-rich-text="true"><%- text %></pre></dd>
-         </dl>
+        <div class="edit-fields">
+         <div class="edit-field">
+          <div class="add-link-container">
+           <a href="#" class="add-link"><%- linkText %></a>
+          </div>
+          <div class="comment-text-field">
+           <label for="<%= id %>" class="comment-label">
+            <%- commentText %>
+           </label>
+           <pre id="<%= id %>" class="reviewtext rich-text"
+                data-rich-text="true"><%- text %></pre>
+          </div>
+         </div>
         </div>
     `),
 
@@ -732,7 +733,7 @@ RB.ReviewDialogView = Backbone.View.extend({
         </div>
         <div class="review-dialog-hooks-container"></div>
         <div class="edit-field body-top"></div>
-        <ul class="review-comments"></ul>
+        <ol class="review-comments"></ol>
         <div class="spinner"><span class="fa fa-spinner fa-pulse"></span></div>
         <div class="edit-field body-bottom"></div>
     `),
@@ -897,7 +898,6 @@ RB.ReviewDialogView = Backbone.View.extend({
 
         this._bodyTopView = new HeaderFooterCommentView({
             model: this.model,
-            el: this.$('.body-top'),
             propertyName: 'bodyTop',
             richTextPropertyName: 'bodyTopRichText',
             linkText: gettext('Add header'),
@@ -906,12 +906,14 @@ RB.ReviewDialogView = Backbone.View.extend({
 
         this._bodyBottomView = new HeaderFooterCommentView({
             model: this.model,
-            el: this.$('.body-bottom'),
             propertyName: 'bodyBottom',
             richTextPropertyName: 'bodyBottomRichText',
             linkText: gettext('Add footer'),
             commentText: gettext('Footer'),
         });
+
+        this._bodyTopView.$el.appendTo(this._$comments);
+        this._bodyBottomView.$el.appendTo(this._$comments);
 
         /*
          * Even if the model is already loaded, we may not have the right text
@@ -1046,7 +1048,7 @@ RB.ReviewDialogView = Backbone.View.extend({
             this._commentViews = _.without(this._commentViews, view);
         });
 
-        view.$el.appendTo(this._$comments);
+        view.$el.insertBefore(this._bodyBottomView.$el);
         view.render();
     },
 
