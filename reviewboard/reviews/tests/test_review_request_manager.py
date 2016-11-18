@@ -3,7 +3,8 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
+from reviewboard.reviews.models import (DefaultReviewer, ReviewRequest,
+                                        ReviewRequestDraft)
 from reviewboard.scmtools.errors import ChangeNumberInUseError
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
@@ -119,6 +120,56 @@ class ReviewRequestManagerTests(TestCase):
         review_request = local_site.review_requests.get()
         self.assertEqual(review_request.local_id, 1)
         self.assertEqual(review_request.commit_id, '123')
+
+    @add_fixtures(['test_scmtools'])
+    def test_create_with_create_from_commit_id(self):
+        """Testing ReviewRequest.objects.create with commit ID and
+        create_from_commit_id
+        """
+        user = User.objects.get(username='doc')
+        repository = self.create_repository(tool_name='Test')
+
+        review_request = ReviewRequest.objects.create(
+            user,
+            repository,
+            commit_id='123',
+            create_from_commit_id=True)
+        self.assertEqual(review_request.repository, repository)
+        self.assertEqual(review_request.diffset_history.diffsets.count(), 0)
+        self.assertIsNone(review_request.commit_id)
+
+        draft = review_request.get_draft()
+        self.assertIsNotNone(draft)
+        self.assertIsNotNone(draft.diffset)
+        self.assertEqual(draft.commit_id, '123')
+
+    @add_fixtures(['test_scmtools'])
+    def test_create_with_create_from_commit_id_and_default_reviewers(self):
+        """Testing ReviewRequest.objects.create with commit ID,
+        create_from_commit_id, and default reviewers
+        """
+        user = User.objects.get(username='doc')
+        repository = self.create_repository(tool_name='Test')
+
+        default_reviewer = DefaultReviewer.objects.create(
+            name='Default Reviewer',
+            file_regex='.')
+        default_reviewer.repository.add(repository)
+        default_reviewer.people.add(user)
+        default_reviewer.groups.add(self.create_review_group())
+
+        review_request = ReviewRequest.objects.create(
+            user,
+            repository,
+            commit_id='123',
+            create_from_commit_id=True)
+        self.assertEqual(review_request.target_people.count(), 0)
+        self.assertEqual(review_request.target_groups.count(), 0)
+
+        draft = review_request.get_draft()
+        self.assertIsNotNone(draft)
+        self.assertEqual(draft.target_people.count(), 1)
+        self.assertEqual(draft.target_groups.count(), 1)
 
     def test_public(self):
         """Testing ReviewRequest.objects.public"""

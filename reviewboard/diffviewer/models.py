@@ -583,22 +583,46 @@ class DiffSet(models.Model):
 
         return counts
 
-    def save(self, **kwargs):
+    def update_revision_from_history(self, diffset_history):
+        """Update the revision of this diffset based on a diffset history.
+
+        This will determine the appropriate revision to use for the diffset,
+        based on how many other diffsets there are in the history. If there
+        aren't any, the revision will be set to 1.
+
+        Args:
+            diffset_history (reviewboard.diffviewer.models.DiffSetHistory):
+                The diffset history used to compute the new revision.
+
+        Raises:
+            ValueError:
+                The revision already has a valid value set, and cannot be
+                updated.
         """
-        Saves this diffset.
+        if self.revision not in (0, None):
+            raise ValueError('The diffset already has a valid revision set.')
+
+        try:
+            latest_diffset = diffset_history.diffsets.only('revision').latest()
+            self.revision = latest_diffset.revision + 1
+        except DiffSet.DoesNotExist:
+            self.revision = 1
+
+    def save(self, **kwargs):
+        """Save this diffset.
 
         This will set an initial revision of 1 if this is the first diffset
         in the history, and will set it to on more than the most recent
         diffset otherwise.
-        """
-        if self.revision == 0 and self.history is not None:
-            if self.history.diffsets.count() == 0:
-                # Start on revision 1. It's more human-grokable.
-                self.revision = 1
-            else:
-                self.revision = self.history.diffsets.latest().revision + 1
 
-        if self.history:
+        Args:
+            **kwargs (dict):
+                Extra arguments for the save call.
+        """
+        if self.history is not None:
+            if self.revision == 0:
+                self.update_revision_from_history(self.history)
+
             self.history.last_diff_updated = self.timestamp
             self.history.save()
 

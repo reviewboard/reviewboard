@@ -1,9 +1,16 @@
 from __future__ import unicode_literals
 
+import os
+
+from django.contrib.auth.models import User
+from kgb import SpyAgency
+
+from reviewboard.accounts.models import Profile
 from reviewboard.reviews.fields import (BaseEditableField,
                                         BaseTextAreaField,
                                         get_review_request_fieldset)
-from reviewboard.reviews.models import ReviewRequestDraft
+from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
+from reviewboard.scmtools.core import ChangeSet, Commit
 from reviewboard.testing import TestCase
 
 
@@ -118,3 +125,137 @@ class ReviewRequestDraftTests(TestCase):
         """Convenience function for getting a new draft to work with."""
         review_request = self.create_review_request(publish=True)
         return ReviewRequestDraft.create(review_request)
+
+
+class PostCommitTests(SpyAgency, TestCase):
+    """Unit tests for post-commit support in ReviewRequestDraft."""
+
+    fixtures = ['test_users', 'test_scmtools']
+
+    def setUp(self):
+        super(PostCommitTests, self).setUp()
+
+        self.user = User.objects.create(username='testuser', password='')
+        self.profile, is_new = Profile.objects.get_or_create(user=self.user)
+        self.profile.save()
+
+        self.testdata_dir = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            '..', 'scmtools', 'testdata')
+
+        self.repository = self.create_repository(tool_name='Test')
+
+    def test_update_from_committed_change(self):
+        """Testing ReviewRequestDraft.update_from_commit_id with committed
+        change
+        """
+        commit_id = '4'
+
+        def get_change(repository, commit_to_get):
+            self.assertEqual(commit_id, commit_to_get)
+
+            commit = Commit()
+            commit.message = \
+                'This is my commit message\n\nWith a summary line too.'
+            diff_filename = os.path.join(self.testdata_dir, 'git_readme.diff')
+
+            with open(diff_filename, 'r') as f:
+                commit.diff = f.read()
+
+            return commit
+
+        def get_file_exists(repository, path, revision, base_commit_id=None,
+                            request=None):
+            return (path, revision) in [('/readme', 'd6613f5')]
+
+        self.spy_on(self.repository.get_change, call_fake=get_change)
+        self.spy_on(self.repository.get_file_exists, call_fake=get_file_exists)
+
+        review_request = ReviewRequest.objects.create(self.user,
+                                                      self.repository)
+        draft = ReviewRequestDraft.create(review_request)
+        draft.update_from_commit_id(commit_id)
+
+        self.assertEqual(review_request.summary, '')
+        self.assertEqual(review_request.description, '')
+        self.assertEqual(draft.summary, 'This is my commit message')
+        self.assertEqual(draft.description, 'With a summary line too.')
+
+        self.assertEqual(review_request.diffset_history.diffsets.count(), 0)
+        self.assertIsNotNone(draft.diffset)
+
+        self.assertEqual(draft.diffset.files.count(), 1)
+
+        filediff = draft.diffset.files.get()
+        self.assertEqual(filediff.source_file, 'readme')
+        self.assertEqual(filediff.source_revision, 'd6613f5')
+
+    def test_update_from_committed_change_with_rich_text_reset(self):
+        """Testing ReviewRequestDraft.update_from_commit_id resets rich text
+        fields
+        """
+        def get_change(repository, commit_to_get):
+            commit = Commit()
+            commit.message = '* This is a summary\n\n* This is a description.'
+            diff_filename = os.path.join(self.testdata_dir, 'git_readme.diff')
+
+            with open(diff_filename, 'r') as f:
+                commit.diff = f.read()
+
+            return commit
+
+        def get_file_exists(repository, path, revision, base_commit_id=None,
+                            request=None):
+            return (path, revision) in [('/readme', 'd6613f5')]
+
+        self.spy_on(self.repository.get_change, call_fake=get_change)
+        self.spy_on(self.repository.get_file_exists, call_fake=get_file_exists)
+
+        review_request = ReviewRequest.objects.create(self.user,
+                                                      self.repository)
+        draft = ReviewRequestDraft.create(review_request)
+
+        draft.description_rich_text = True
+        draft.update_from_commit_id('4')
+
+        self.assertEqual(draft.summary, '* This is a summary')
+        self.assertEqual(draft.description, '* This is a description.')
+        self.assertFalse(draft.description_rich_text)
+        self.assertFalse(review_request.description_rich_text)
+
+    def test_update_from_pending_change_with_rich_text_reset(self):
+        """Testing ReviewRequestDraft.update_from_pending_change resets rich
+        text fields
+        """
+        review_request = ReviewRequest.objects.create(self.user,
+                                                      self.repository)
+        draft = ReviewRequestDraft.create(review_request)
+
+        draft.description_rich_text = True
+        draft.testing_done_rich_text = True
+
+        changeset = ChangeSet()
+        changeset.changenum = 4
+        changeset.summary = '* This is a summary'
+        changeset.description = '* This is a description.'
+        changeset.testing_done = '* This is some testing.'
+        draft.update_from_pending_change(4, changeset)
+
+        self.assertEqual(draft.summary, '* This is a summary')
+        self.assertEqual(draft.description, '* This is a description.')
+        self.assertFalse(draft.description_rich_text)
+        self.assertEqual(draft.testing_done, '* This is some testing.')
+        self.assertFalse(draft.testing_done_rich_text)
+
+    def test_update_from_committed_change_without_repository_support(self):
+        """Testing ReviewRequestDraft.update_from_commit_id without
+        supports_post_commmit for repository
+        """
+        self.spy_on(self.repository.__class__.supports_post_commit.fget,
+                    call_fake=lambda self: False)
+        review_request = ReviewRequest.objects.create(self.user,
+                                                      self.repository)
+        draft = ReviewRequestDraft.create(review_request)
+
+        with self.assertRaises(NotImplementedError):
+            draft.update_from_commit_id('4')

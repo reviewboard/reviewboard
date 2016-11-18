@@ -150,17 +150,8 @@ class UploadDiffForm(diffviewer_forms.UploadDiffForm):
         if not attach_to_history:
             # Set the initial revision to be one newer than the most recent
             # public revision, so we can reference it in the diff viewer.
-            #
-            # TODO: It would be nice to later consolidate this with the logic
-            #       in DiffSet.save.
-            public_diffsets = self.review_request.diffset_history.diffsets
-
-            try:
-                latest_diffset = public_diffsets.latest()
-                diffset.revision = latest_diffset.revision + 1
-            except DiffSet.DoesNotExist:
-                diffset.revision = 1
-
+            diffset.update_revision_from_history(
+                self.review_request.diffset_history)
             diffset.save()
 
         return diffset
