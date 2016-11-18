@@ -39,8 +39,8 @@ Bug Fixes
   :bug:`3427`)
 
 * Administrators (or those with the
-  :ref:`"Can Change Status" permission <can-change-status-permission>`) can
-  now re-open discarded review requests. (:bug:`2989`)
+  :ref:`"Can Change Status" permission <rb1.7:can-change-status-permission>`)
+  can now re-open discarded review requests. (:bug:`2989`)
 
 
 Contributors

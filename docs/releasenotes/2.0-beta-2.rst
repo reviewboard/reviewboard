@@ -221,8 +221,8 @@ Field and FieldSets
 ~~~~~~~~~~~~~~~~~~~
 
 Extensions can now add additional fields and groups of fields to review
-requests through :ref:`review-request-fields-hook`
-and :ref:`review-request-fieldsets-hook`.
+requests through :ref:`rb2.0:review-request-fields-hook`
+and :ref:`rb2.0:review-request-fieldsets-hook`.
 See the documentation for more information on using these.
 
 Custom fields will have their contents saved and published along with
@@ -301,7 +301,8 @@ Signals for Loading Site and Extension Settings
 There are two new signals that can be used by extensions to operate when
 settings have been changed.
 
-* ``site_settings_loaded signal`` (provided by :py:mod:`reviewboard.signals`)
+* ``site_settings_loaded signal`` (provided by
+  :py:mod:`rb2.0:reviewboard.signals`)
   is emitted after Review Board loads its settings.
 
 * ``settings_saved`` (provided by :py:mod:`djblets.extensions.signals`)
@@ -370,8 +371,8 @@ Improved Markdown Support
 
 * Added a ``text.markdown`` capability.
 
-  :ref:`webapi2.0-server-info-resource` now lists ``text.markdown: true``
-  in the capabilities list, allowing clients to make smart decisions
+  :ref:`rb2.0:webapi2.0-server-info-resource` now lists ``text.markdown:
+  true`` in the capabilities list, allowing clients to make smart decisions
   up-front about Markdown support.
 
 
@@ -389,19 +390,19 @@ Extensions can also make use of this data.
 
 The following resources support attaching extra data:
 
-* :ref:`webapi2.0-diff-resource`
-* :ref:`webapi2.0-review-diff-comment-resource`
-* :ref:`webapi2.0-draft-file-diff-resource`
-* :ref:`webapi2.0-review-file-attachment-comment-resource`
-* :ref:`webapi2.0-review-group-resource`
-* :ref:`webapi2.0-review-resource`
-* :ref:`webapi2.0-review-reply-resource`
-* :ref:`webapi2.0-review-reply-diff-comment-resource`
-* :ref:`webapi2.0-review-reply-file-attachment-comment-resource`
-* :ref:`webapi2.0-review-reply-screenshot-comment-resource`
-* :ref:`webapi2.0-review-request-resource`
-* :ref:`webapi2.0-review-request-draft-resource`
-* :ref:`webapi2.0-review-screenshot-comment-resource`
+* :ref:`rb2.0:webapi2.0-diff-resource`
+* :ref:`rb2.0:webapi2.0-review-diff-comment-resource`
+* :ref:`rb2.0:webapi2.0-draft-file-diff-resource`
+* :ref:`rb2.0:webapi2.0-review-file-attachment-comment-resource`
+* :ref:`rb2.0:webapi2.0-review-group-resource`
+* :ref:`rb2.0:webapi2.0-review-resource`
+* :ref:`rb2.0:webapi2.0-review-reply-resource`
+* :ref:`rb2.0:webapi2.0-review-reply-diff-comment-resource`
+* :ref:`rb2.0:webapi2.0-review-reply-file-attachment-comment-resource`
+* :ref:`rb2.0:webapi2.0-review-reply-screenshot-comment-resource`
+* :ref:`rb2.0:webapi2.0-review-request-resource`
+* :ref:`rb2.0:webapi2.0-review-request-draft-resource`
+* :ref:`rb2.0:webapi2.0-review-screenshot-comment-resource`
 
 
 Other Changes
@@ -413,8 +414,8 @@ Other Changes
   content represents.
 
   This is available for the various file attachment and screenshot resources,
-  :ref:`webapi2.0-review-group-resource`, and
-  :ref:`webapi2.0-review-request-resource`.
+  :ref:`rb2.0:webapi2.0-review-group-resource`, and
+  :ref:`rb2.0:webapi2.0-review-request-resource`.
 
   Patch by Edward Lee.
 

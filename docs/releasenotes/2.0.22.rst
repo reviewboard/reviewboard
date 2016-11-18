@@ -62,11 +62,12 @@ Extensions
 * Added the ability to set custom settings data for JavaScript extensions.
 
   JavaScript extensions (those using
-  :py:class:`~djblets.extensions.extension.JSExtension`) used to output all of
-  an extension's stored settings into the page. Extensions that want to limit
-  that data, or provide a custom set of extension settings data, can override
-  this using :py:meth:`JSExtension.get_settings
-  <djblets.extensions.extension.JSExtension.get_settings>`.
+  :py:class:`JSExtension
+  <djblets0.8:djblets.extensions.extension.JSExtension>`) used to output all
+  of an extension's stored settings into the page. Extensions that want to
+  limit that data, or provide a custom set of extension settings data, can
+  override this using :py:meth:`JSExtension.get_settings
+  <djblets0.8:djblets.extensions.extension.JSExtension.get_settings>`.
 
 
 Web API
@@ -76,8 +77,8 @@ Web API
 
   If a diff fails to validate due to an error communicating with the
   repository, the reported error would be that the diff could not be parsed.
-  The :ref:`webapi2.0-validate-diff-resource` now reports a much more detailed
-  error that actually explains what went wrong.
+  The :ref:`rb2.0:webapi2.0-validate-diff-resource` now reports a much more
+  detailed error that actually explains what went wrong.
 
 
 Bug Fixes

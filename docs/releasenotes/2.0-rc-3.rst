@@ -147,9 +147,9 @@ Sandboxing
 
   Many of the hook points Review Board offers now protect the rest of the
   application from crashing if an extension raises an exception. Currently,
-  :ref:`review-request-approval-hook`, :ref:`navigation-bar-hook`,
-  :ref:`comment-detail-display-hook`, :ref:`template-hook`, and the
-  :ref:`action-hooks` are sandboxed.
+  :ref:`rb2.0:review-request-approval-hook`, :ref:`rb2.0:navigation-bar-hook`,
+  :ref:`rb2.0:comment-detail-display-hook`, :ref:`rb2.0:template-hook`, and
+  the :ref:`rb2.0:action-hooks` are sandboxed.
 
   Patches by Edwin Zhang.
 
@@ -178,7 +178,7 @@ Authentication Backends
   looking up errors.
 
   These errors will be represented in the web API though
-  :ref:`webapi2.0-error-226`.
+  :ref:`rb2.0:webapi2.0-error-226`.
 
 
 Bug Fixes

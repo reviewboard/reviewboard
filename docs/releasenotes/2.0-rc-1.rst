@@ -84,8 +84,8 @@ Performance Improvements
 Web API
 =======
 
-* :ref:`webapi2.0-diff-list-resource` no longer thinks it can create diffs
-  on review request without a repository.
+* :ref:`rb2.0:webapi2.0-diff-list-resource` no longer thinks it can create
+  diffs on review request without a repository.
 
   Attempting to create a diff on an attachments-only review request would
   result in an HTTP 500. It now returns an Invalid Attribute error.
@@ -103,9 +103,10 @@ Populating Users on API Lookup
 An :py:meth:`AuthBackend.query_users` method was added, which can populate the
 database based on a user lookup query.
 
-This is called when querying :ref:`webapi2.0-user-list-resource` before any
-results are returned from the database. This can be used to query a backend
-server or database to fetch any matching users and store them in the database.
+This is called when querying :ref:`rb2.0:webapi2.0-user-list-resource` before
+any results are returned from the database. This can be used to query a
+backend server or database to fetch any matching users and store them in the
+database.
 
 Patch by Mark Côté.
 
@@ -137,7 +138,7 @@ settings in some way.
 AuthBackendHook
 ~~~~~~~~~~~~~~~
 
-The new :ref:`auth-backend-hook` allows extensions to provide new
+The new :ref:`rb2.0:auth-backend-hook` allows extensions to provide new
 authentication backends. These will be available in the list of authentication
 backends that the administrator can choose from. This is now the preferred way
 of adding custom authentication backends, rather than using Python
@@ -146,15 +147,15 @@ entrypoints.
 The auth backend will be registered when the extension is enabled, and
 unregistered when disabled.
 
-See the :ref:`documentation <auth-backend-hook>` for information on using
-this.
+See the :ref:`documentation <rb2.0:auth-backend-hook>` for information on
+using this.
 
 
 Extra Context for TemplateHook
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-:ref:`template-hook` now accepts an :py:data:`extra_context` argument that can
-be used to populate the template with custom variables.
+:ref:`rb2.0:template-hook` now accepts an :py:data:`extra_context` argument
+that can be used to populate the template with custom variables.
 
 :py:class:`TemplateHook` subclasses can also implement
 :py:meth:`get_extra_data` to dynamically generate data for the template.

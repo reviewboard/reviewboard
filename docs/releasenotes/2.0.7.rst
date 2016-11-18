@@ -16,7 +16,7 @@ Backwards-Incompatibility
   have all changed. See below for more information on setting these new hooks.
 
 * The ``interdiff_revision`` query field on
-  :ref:`webapi2.0-diff-context-resource` has been renamed to
+  :ref:`rb2.0:webapi2.0-diff-context-resource` has been renamed to
   ``interdiff-revision``.
 
   See the information in the Web API section below.
@@ -65,11 +65,12 @@ Usability Improvements
 Web API
 =======
 
-* The ``?to-groups=`` query on :ref:`webapi2.0-review-request-list-resource`
-  now works with Local Sites. (:bug:`3539`)
+* The ``?to-groups=`` query on
+  :ref:`rb2.0:webapi2.0-review-request-list-resource` now works with Local
+  Sites. (:bug:`3539`)
 
 * The ``interdiff_revision`` query field on
-  :ref:`webapi2.0-diff-context-resource` has been renamed to
+  :ref:`rb2.0:webapi2.0-diff-context-resource` has been renamed to
   ``interdiff-revision``.
 
   The old name was unintentional, and caused some breakages when being used
@@ -81,7 +82,7 @@ Web API
 * Authenticating with a garbage "Authorization" header now properly logs
   the failure and returns an Unauthorized code, instead of crashing.
 
-* Issuing a PUT request on :ref:`webapi2.0-review-request-resource` and
+* Issuing a PUT request on :ref:`rb2.0:webapi2.0-review-request-resource` and
   specifying a change number for a review request without a repository no
   longer results in an error.
 

@@ -127,19 +127,19 @@ Administration UI
 Web API
 -------
 
-* The :ref:`webapi2.0-file-attachment-resource` now contains a ``revision``
-  field.
+* The :ref:`rb2.5:webapi2.0-file-attachment-resource` now contains a
+  ``revision`` field.
 
-* The :ref:`webapi2.0-repository-resource` now contains a ``bug_tracker``
-  field.
+* The :ref:`rb2.5:webapi2.0-repository-resource` now contains a
+  ``bug_tracker`` field.
 
   Patch by Halvor Lund.
 
-* In the :ref:`webapi2.0-review-request-resource`, the ``depends_on`` and
-  ``blocks`` fields now include the ID of the review requests being linked to.
-  (:bug:`3863`).
+* In the :ref:`rb2.5:webapi2.0-review-request-resource`, the ``depends_on``
+  and ``blocks`` fields now include the ID of the review requests being linked
+  to.  (:bug:`3863`).
 
-* Added a :ref:`webapi2.0-web-hook-resource` for managing webhooks.
+* Added a :ref:`rb2.5:webapi2.0-web-hook-resource` for managing webhooks.
 
 
 Bug Fixes
@@ -178,8 +178,8 @@ File Attachments
 Web API
 -------
 
-* Fixed links in the :ref:`webapi2.0-hosting-service-account-resource` when
-  using local sites.
+* Fixed links in the :ref:`rb2.5:webapi2.0-hosting-service-account-resource`
+  when using local sites.
 
 
 Contributors

@@ -45,8 +45,8 @@ New Features
 API Changes
 ===========
 
-* The documentation for :ref:`webapi2.0-review-group-resource` no longer says
-  that review groups cannot be created through the API.
+* The documentation for :ref:`rb1.7:webapi2.0-review-group-resource` no longer
+  says that review groups cannot be created through the API.
 
 
 Bug Fixes

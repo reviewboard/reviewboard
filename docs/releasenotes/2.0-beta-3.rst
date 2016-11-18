@@ -196,7 +196,7 @@ you're looking at.
 .. image:: _static/images/2.0/2.0-dashboard-sidebar.png
 
 
-.. _approval:
+.. _2.0-beta-3-approval:
 
 Determining Approval for Review Requests
 ----------------------------------------
@@ -342,7 +342,7 @@ Web API
 
 * Added fields for indicating approval on a review request.
 
-  :ref:`webapi2.0-review-request-resource` now has ``approved`` and
+  :ref:`rb2.0:webapi2.0-review-request-resource` now has ``approved`` and
   ``approval_failure`` fields that indicate whether the review request
   has been approved and, if not, what the failure was, respectively.
 
@@ -350,14 +350,15 @@ Web API
   display a list of changes that can be committed, or to prevent
   committing a change if it isn't approved.
 
-  See the description on approval_ above for more information.
+  See the description on :ref:`approval <2.0-beta-3-approval>` above for more
+  information.
 
 * Added fields for getting the issue counts and number of Ship Its on a
   review request.
 
   This provides ``issue_open_count``, ``issue_dropped_count``,
   ``issue_resolved_count``, and ``ship_it_count`` fields on
-  :ref:`webapi2.0-review-request-resource`.
+  :ref:`rb2.0:webapi2.0-review-request-resource`.
 
 * Added querying for review requests based on issue counts and Ship Its.
 
@@ -375,16 +376,16 @@ Web API
 
 * The root resource now provides the server information and capabilities.
 
-  Clients can now check the :ref:`webapi2.0-root-resource` for this
+  Clients can now check the :ref:`rb2.0:webapi2.0-root-resource` for this
   information, instead of having to access the
-  :ref:`webapi2.0-server-info-resource`. Both resources provide the same
+  :ref:`rb2.0:webapi2.0-server-info-resource`. Both resources provide the same
   data.
 
 * Users can now add or remove themselves to or from review groups through the
   API.
 
   A user can POST or DELETE their own username to
-  :ref:`webapi2.0-review-group-user-resource` in order to change their
+  :ref:`rb2.0:webapi2.0-review-group-user-resource` in order to change their
   membership in the group. Previously, this ability was limited to
   administrators.
 
@@ -399,7 +400,7 @@ Web API
   change over time.
 
   To get the old behavior, set ``commit_id`` and ``create_from_commit_id=1``
-  on :ref:`webapi2.0-review-request-resource`. To update an existing
+  on :ref:`rb2.0:webapi2.0-review-request-resource`. To update an existing
   review request, set ``commit_id`` and ``update_from_commit_id=1`` on the
   draft.
 
@@ -407,9 +408,9 @@ Web API
   now contain all the query parameters used for filtering that list.
   (:bug:`3199`)
 
-* :ref:`webapi2.0-file-diff-resource` now provides information on various
-  stats for the diff, if the diff has been rendered at least once. These
-  will appear in ``extra_data``.
+* :ref:`rb2.0:webapi2.0-file-diff-resource` now provides information on
+  various stats for the diff, if the diff has been rendered at least once.
+  These will appear in ``extra_data``.
 
   These include the raw insert/delete line counts from the patch file
   (``raw_insert_count``, ``raw_delete_count``), the processed
@@ -495,7 +496,7 @@ New Hooks
 SignalHook
 ~~~~~~~~~~
 
-Extensions that need to listen to signals can now use :ref:`signal-hook`
+Extensions that need to listen to signals can now use :ref:`rb2.0:signal-hook`
 instead of managing their own signal connections.
 
 :py:class:`SignalHook` takes the signal and a callback as arguments, and
@@ -507,51 +508,52 @@ AccountPagesHook and AccountPageFormsHook
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Extensions can add to the new My Account page through the new
-:ref:`account-pages-hook` and :ref:`account-page-forms-hook`.  These create
-new page sections in the My Account page and add to existing page sections,
-respectively. See the documentation for more information on using these.
+:ref:`rb2.0:account-pages-hook` and :ref:`rb2.0:account-page-forms-hook`.
+These create new page sections in the My Account page and add to existing page
+sections, respectively. See the documentation for more information on using
+these.
 
 
 DashboardColumnsHook
 ~~~~~~~~~~~~~~~~~~~~
 
 Extensions can add new columns to the dashboard and to other datagrids
-using the new :ref:`dashboard-columns-hook`. These can be used to display
-custom information on each row of the dashboard, using, for example, custom
-data stored on a review request by the extension.
+using the new :ref:`rb2.0:dashboard-columns-hook`. These can be used to
+display custom information on each row of the dashboard, using, for example,
+custom data stored on a review request by the extension.
 
 
 DashboardSidebarItemsHook
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The old :py:class:`DashboardHook` has been replaced by
-:ref:`dashboard-sidebar-items-hook`, which offers an improved way of adding
-content to the dashboard's sidebar.
+:ref:`rb2.0:dashboard-sidebar-items-hook`, which offers an improved way of
+adding content to the dashboard's sidebar.
 
 Instead of only supporting links to URLs, this can support content of any type
 by making use of extensible subclasses of
-:py:class:`reviewboard.datagrids.sidebar.BaseSidebarItem`. We provide
+:py:class:`rb2.0:reviewboard.datagrids.sidebar.BaseSidebarItem`. We provide
 built-in classes for named sections
-(:py:class:`reviewboard.datagrids.sidebar.BaseSidebarSection`) and links
-(:py:class:`reviewboard.datagrids.sidebar.SidebarNavItem`). New subclasses
-can be written for rendering any custom template.
+(:py:class:`rb2.0:reviewboard.datagrids.sidebar.BaseSidebarSection`) and links
+(:py:class:`rb2.0:reviewboard.datagrids.sidebar.SidebarNavItem`). New
+subclasses can be written for rendering any custom template.
 
 
 ReviewRequestApprovalHook
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Companies that need to define their own approval_ logic can subclass
-:ref:`review-request-approval-hook` and implement the :py:meth:`is_approved`
-method to calculate if the provided review request is approved. This
-value will be reflected in the API, and will be accessible to any extensions
-that want to operate on approval.
+Companies that need to define their own :ref:`approval <2.0-beta-3-approval>`
+logic can subclass :ref:`rb2.0:review-request-approval-hook` and implement the
+:py:meth:`is_approved` method to calculate if the provided review request is
+approved. This value will be reflected in the API, and will be accessible to
+any extensions that want to operate on approval.
 
 
 UserPageSidebarItemsHook
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 The old :py:class:`UserPageSidebarHook` has been replaced by
-:ref:`user-page-sidebar-items-hook`. This is just like the new dashboard
+:ref:`rb2.0:user-page-sidebar-items-hook`. This is just like the new dashboard
 sidebar hooks listed above, but targeted for the user page instead.
 
 

@@ -1,204 +1,301 @@
 .. _extension-class:
 
-===============
-Extension Class
-===============
+===========================
+Creating an Extension Class
+===========================
 
-The main component of an extension is a class inheriting from
-:py:class:`reviewboard.extensions.base.Extension`. It can optionally set
-the following attributes on the class:
+Your extension will live in :file:`extension.py` and inherit from
+:py:class:`~reviewboard.extensions.base.Extension`. There's a lot you can do
+with this file, but it can start out very simple:
 
-* :py:attr:`apps`
-* :py:attr:`context_processors`
-* :py:attr:`css_bundles`
-* :py:attr:`default_settings`
-* :py:attr:`has_admin_site`
-* :py:attr:`is_configurable`
-* :py:attr:`js_bundles`
-* :py:attr:`js_extensions`
-* :py:attr:`metadata`
-* :py:attr:`middleware`
-* :py:attr:`requirements`
-* :py:attr:`resources`
+.. code-block:: python
 
-The following are also available on an extension instance:
-
-* :py:attr:`settings`
+   from reviewboard.extensions.base import Extension
 
 
-.. py:class:: reviewboard.extensions.base.Extension
-   :noindex:
-
-   .. py:attribute:: apps
-      :noindex:
-
-      A list of `Django apps`_ that the extension either provides or depends
-      upon.
-
-      Each "app" is a Python module path that Django will use when looking for
-      models, template tags, and more.
-
-      This does not need to include the app for the extension itself, but
-      if the extension is grouped into separate Django apps, it can list
-      those.
-
-      This setting is equivalent to modifying ``settings.INSTALLED_APPS``
-      in Django.
-
-   .. py:attribute:: context_processors
-      :noindex:
-
-      A list of `Django context processors`_, which inject variables into
-      every rendered template. Certain third-party apps depend on context
-      processors.
-
-      This setting is equivalent to modifying
-      ``settings.TEMPLATE_CONTEXT_PROCESSORS`` in Django.
-
-   .. py:attribute:: css_bundles
-      :noindex:
-
-      A list of custom CSS media bundles that can be used when rendering
-      pages.
-
-      See :ref:`extension-static-files` for more information.
-
-   .. py:attribute:: default_settings
-      :noindex:
-
-      A dictionary of default settings for the extension. These defaults
-      are used when accessing :py:attr:`settings`, if the user hasn't
-      provided a custom value. By default, this is empty.
-
-      See :ref:`extension-settings-defaults` for more information.
-
-   .. py:attribute:: has_admin_site
-      :noindex:
-
-      A boolean that indicates whether a Django admin site should be generated
-      for the extension.
-
-      If ``True``, a :guilabel:`Database` link will be shown for the
-      extension, allowing the user to inspect and modify the extension's
-      database entries. The default is ``False``.
-
-      See :ref:`extension-admin-site` for more information.
-
-   .. py:attribute:: is_configurable
-      :noindex:
-
-      A boolean indicating whether the extension supports global
-      configuration by a system administrator.
-
-      If ``True``, a :guilabel:`Configure` link will be shown for the
-      extension when enabled, taking them to the configuration page provided
-      by the extension. The default is ``False``.
-
-      See :ref:`extension-configuration` for more information.
-
-   .. py:attribute:: js_bundles
-      :noindex:
-
-      A list of custom JavaScript media bundles that can be used when
-      rendering pages.
-
-      See :ref:`extension-static-files` for more information.
-
-   .. py:attribute:: js_extensions
-      :noindex:
-
-      A list of :py:class:`reviewboard.extensions.base.JSExtension`
-      subclasses used for providing JavaScript-side extensions.
-
-      See :ref:`js-extensions` for more information.
-
-   .. py:attribute:: metadata
-      :noindex:
-
-      A dictionary providing additional information on the extension,
-      such as the name or a description.
-
-      By default, the metadata from :file:`setup.py` is used when displaying
-      information about the extension inside the administration UI. Extensions
-      can override what the user sees by setting the values in this
-      dictionary.
-
-      The following metadata keys are supported:
-
-      ``Name``
-         The human-readable name of the extension, shown in the extension
-         list.
-
-      ``Version``
-         The version of the extension. Usually, the version specified in
-         :file:`setup.py` suffices.
-
-      ``Summary``
-         A brief summary of the extension, shown in the extension list.
-
-      ``Description``
-         A longer description of the extension. As of Review Board 2.0, this
-         is not shown to the user, but it may be used in a future release.
-
-      ``Author``
-         The individual or company that authored the extension.
-
-      ``Author-email``
-         The contact e-mail address for the author of the extension.
-
-      ``Author-home-page``
-         The URL to the author's public site.
-
-      ``Home-page``
-         The URL to the extension's public site.
-
-      We generally recommend setting ``Name``, ``Summary``, and the
-      author information. ``Version`` is usually best left to the package,
-      unless there's a special way it should be presented.
-
-   .. py:attribute:: middleware
-      :noindex:
-
-      A list of `Django middleware`_ classes, which hook into various levels
-      of the HTTP request/response and page render process.
-
-      This is an advanced feature, and is generally not needed by most
-      extensions. Certain third-party apps may depend on middleware,
-      though.
-
-      This setting is equivalent to modifying
-      ``settings.MIDDLEWARE_CLASSES`` in Django.
-
-   .. py:attribute:: requirements
-      :noindex:
-
-      A list of strings providing the names of other extensions the
-      extension requires. Enabling the extension will in turn enable
-      all required extensions, and can only be enabled if the required
-      extensions can also be enabled.
-
-      See :ref:`extension-egg-dependencies` for more information.
-
-   .. py:attribute:: settings
-      :noindex:
-
-      An instance of :py:class:`djblets.extensions.settings.Settings`. This
-      attribute gives each extension an easy-to-use and persistent data store
-      for settings.
-
-      See :ref:`extension-settings` for more information.
-
-   .. py:attribute:: resources
-      :noindex:
-
-      A list of :py:class:`reviewboard.webapi.resources.WebAPIResource`
-      subclasses. This is used to extend the Web API.
-
-      See :ref:`extension-resources` for more information.
+   class SampleExtension(Extension):
+       def initialize(self):
+           # Your extension initialization code belongs here.
 
 
-.. _`Django apps`: https://docs.djangoproject.com/en/dev/intro/reusable-apps/
-.. _`Django context processors`:
-   https://docs.djangoproject.com/en/dev/ref/templates/api/#subclassing-context-requestcontext
-.. _`Django middleware`:
-   https://docs.djangoproject.com/en/dev/topics/http/middleware/
+That's a pretty simplistic extension. You probably want to do a lot more with
+it. This section will cover some of the attributes and methods you can define.
+
+
+.. _extension-metadata:
+
+Defining Extension Metadata
+===========================
+
+By default, your extension's basic information (name, description, author,
+etc.) will be taken from the package's metadata. You may want to override some
+or all of this. You can do so using the
+:py:attr:`~djblets.extensions.extension.Extension.metadata` attribute:
+
+.. code-block:: python
+
+   class SampleExtension(Extension):
+       metadata = {
+           'Name': 'My extension name',
+           'Version': '1.0',
+           'Summary': 'My summary.',
+           'Description': 'A longer description.',
+           'Author': 'My Name',
+           'Author-email': 'me@example.com',
+           'Author-home-page': 'https://me.example.com/',
+           'License': 'MIT',
+           'Home-page': 'https://myextension.example.com/',
+       }
+
+These are used primarily for display purposes in the administration UI. The
+version, however, is also used for some state tracking, so whether you're
+leaving it up to the package or defining it here, you'll want to make sure to
+increase the version when you have a new release going into production.
+
+.. note::
+
+   As a best practice, we recommend *not* overriding the version here, and
+   instead using the Python package version, unless your package is shipping
+   more than one extension and you want to keep their versions separate.
+
+
+Handling Initialization and Shutdown
+====================================
+
+When your extension is enabled, its
+:py:meth:`~djblets.extensions.extension.Extension.initialize` method will be
+called. This is where you'll put code to set up :ref:`extension hooks
+<extension-hooks>` or perform any other initialization.
+
+When your extension is disabled (or Review Board is shutting down in a web
+server process), the
+:py:meth:`~djblets.extensions.extension.Extension.shutdown` method will be
+called.  You can use this to perform any cleanup you may need to do.
+
+Note that hooks do not need to be cleaned up by your extension. This will
+happen automatically.
+
+.. code-block:: python
+
+   class SampleExtension(Extension):
+       def initialize(self):
+           logging.info('My extension is enabled!')
+
+       def shutdown(self):
+           logging.info('My extension is disabled!')
+
+
+Requiring Other Extensions
+==========================
+
+Extensions can be written to extend or depend on other extensions. This is far
+less common, but if you need it, you'll want to know about the
+:py:attr:`~djblets.extensions.extension.Extension.requirements` attribute.
+This is a list of extension IDs that will be enabled when enabling your
+extension.
+
+.. code-block:: python
+
+   class SampleExtension(Extension):
+       requirements = [
+           'some_other_extension.extension.SomeOtherExtension',
+       ]
+
+
+Adding Django Apps
+==================
+
+Your extension may ship with several sub-modules that work as Django_ "app"
+modules, with their own :file:`models.py` or similar. It might require
+third-party Django apps to be in :django:setting:`INSTALLED_APPS`. In either
+case, you can list these apps in the
+:py:attr:`~djblets.extensions.extension.Extension.apps` attribute.
+
+.. code-block:: python
+
+   class SampleExtension(Extension):
+       apps = [
+           'sample_extension.some_app1',
+           'sample_extension.some_app2',
+           'third_party_app',
+       ]
+
+When enabled, these apps will be added (if not already) to
+:django:setting:`INSTALLED_APPS` and initialized. When disabled, they'll be
+removed (if nothing else is using them).
+
+
+.. _Django: https://www.djangoproject.com/
+
+
+Adding Django Context Processors
+================================
+
+Context processors are a Django_ feature that provides additional variables to
+all templates. If your extension needs to inject variables into most pages, or
+you're using a third-party Django app that expectes a context processor to be
+loaded in :django:setting:`TEMPLATE_CONTEXT_PROCESSORS`, then you can add them
+in the :py:attr:`~djblets.extensions.extension.Extension.context_processors`
+attribute.
+
+.. code-block:: python
+
+   class SampleExtension(Extension):
+       context_processors = [
+           'sample_extension.context_processors.my_processor',
+           'third_party_app.context_processors.some_processor',
+       ]
+
+
+Adding Django Middleware
+========================
+
+Middleware is another Django_ feature that's used to inject logic into the
+HTTP request/response process. They can be used to
+:ref:`process HTTP requests <django:request-middleware>`,
+:ref:`invoke views <django:view-middleware>`,
+:ref:`process responses <django:response-middleware>`,
+:ref:`process template responses <django:template-response-middleware>`, or
+:ref:`handle exceptions <django:exception-middleware>` raised by views. These
+can be added through the
+:py:attr:`~djblets.extensions.extension.Extension.middleware` attribute.
+
+.. code-block:: python
+
+   class SampleExtension(Extension):
+       middleware = [
+           'sample_extension.middleware.MyMiddleware',
+           'third_party_app.middleware.SomeMiddleware',
+       ]
+
+
+Defining Static Media Bundles
+=============================
+
+Static media bundles for your extension can be defined through the
+:py:attr:`~djblets.extensions.extension.Extension.css_bundles` and
+:py:attr:`~djblets.extensions.extension.Extension.js_bundles` attributes. These
+are used to package up CSS/LessCSS/JavaScript files that can be loaded onto
+any new or existing pages in Review Board. For example:
+
+.. code-block:: python
+
+    class SampleExtension(Extension):
+        css_bundles = {
+            'default': {
+                'source_filenames': ['css/common.less'],
+            },
+        }
+
+        js_bundles = {
+            'default': {
+                'source_filenames': [
+                    'js/extension.js',
+                    'js/common.js',
+                ]
+            },
+            'admin': {
+                'source_filenames': ['js/admin.js'],
+            }
+        }
+
+This is covered in more detail in :ref:`extension-static-files`.
+
+
+Custom Configuration and Settings
+=================================
+
+Extensions come with their own settings storage, and you can offer
+customization of these settings however you like.
+
+Default settings can be specified by setting a
+:py:attr:`~djblets.extensions.extension.Extension.default_settings`
+dictionary.  These are the fallbacks for any values not stored in the database
+for the extension. Enabled extensions can then access the current settings or
+set new ones through
+:py:attr:`~djblets.extensions.extension.Extension.settings`.
+
+.. code-block:: python
+
+    class SampleExtension(Extension):
+        default_settings = {
+            'enable_secret_message': True,
+            'days_until_secret_message': 42,
+            'secret_message_text': "It's a secret to everyone.",
+        }
+
+If you want to enable configuration, you'll need to set
+:py:attr:`~djblets.extensions.extension.Extension.is_configurable` to ``True``
+and define URLs and views for your configuration page.
+
+.. code-block:: python
+
+    class SampleExtension(Extension):
+        is_configurable = True
+
+This is covered in more detail in :ref:`extension-configuration`.
+
+
+Adding API Resources
+====================
+
+Your extension may want to define custom API for use by RBTools_ and other
+clients or services. Any top-level API resources you define can be enabled
+through :py:attr:`~djblets.extensions.extension.Extension.resources`. You'll
+specify them as instances of your resource classes.
+
+.. code-block:: python
+
+    from my_extension.resources import my_resource_1, my_resource_2
+
+
+    class SampleExtension(Extension):
+        resources = [
+            my_resource_1,
+            my_resource_2,
+        ]
+
+This is covered in more detail in :ref:`extension-resources`.
+
+
+.. _RBTools: https://www.reviewboard.org/downloads/rbtools/
+
+
+Adding JavaScript Extensions
+============================
+
+Review Board extensions can contain a JavaScript extension counterpart, which
+can interact with the UI dynamically. These are added by subclassing
+:py:class:`~reviewboard.extensions.base.JSExtension` and listing the classes
+in :py:attr:`~djblets.extensions.extension.Extension.js_extensions`.
+
+.. code-block:: python
+
+    class SampleJSExtension(JSExtension):
+        ...
+
+
+    class SampleExtension(Extension):
+        js_extensions = [SampleJSExtension]
+
+This is covered in more detail in :ref:`js-extensions`.
+
+
+Enabling an Administrator Site
+==============================
+
+If you're defining custom database models, you may want to allow users to
+create or modify entries for these models. You can do this by enabling a
+database administrator site for your extension by setting
+:py:attr:`~djblets.extensions.extension.Extension.has_admin_site` to ``True``.
+
+.. code-block:: python
+
+    class SampleExtension(Extension):
+        has_admin_site = True
+
+When the extension is enabled, a :guilabel:`Database` will be shown along with
+the extension's information. This will be a miniature version of Review
+Board's normal database viewer.
+
+This is covered in more detail in :ref:`extension-admin-site`.
