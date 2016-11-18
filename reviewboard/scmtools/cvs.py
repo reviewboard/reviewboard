@@ -310,6 +310,8 @@ class CVSDiffParser(DiffParser):
 
         self.rcs_file_re = re.compile('^RCS file: (%s/)?(?P<path>.+?)(,v)?$'
                                       % re.escape(rel_repo_path))
+        self.binary_re = re.compile(
+            r'^Binary files (?P<origFile>.+) and (?P<newFile>.+) differ$')
 
     def parse_special_header(self, linenum, info):
         linenum = super(CVSDiffParser, self).parse_special_header(
@@ -338,11 +340,36 @@ class CVSDiffParser(DiffParser):
     def parse_diff_header(self, linenum, info):
         linenum = super(CVSDiffParser, self).parse_diff_header(linenum, info)
 
+        if 'origFile' not in info:
+            # Check if this is a binary diff.
+            m = self.binary_re.match(self.lines[linenum])
+
+            if m:
+                info['binary'] = True
+
+                # The only file information we're going to have will come from
+                # the binary string or the Index header. The Index header only
+                # contains the new filename, not the original, so we're going
+                # to trust the original value in the binary string message and
+                # attempt to use the Index header value for the new filename.
+                #
+                # Later, we may change these up, depending on values, but they
+                # work as reasonable defaults.
+                info['origFile'] = m.group('origFile')
+                info['newFile'] = info.get('filename') or m.group('newFile')
+
+                # We can't get any revision information for this file.
+                info['origInfo'] = ''
+                info['newInfo'] = ''
+
+                linenum += 1
+
         if info.get('origFile') in (b'/dev/null', b'nul:'):
+            # If 'origFile' exists, then 'newFile' will also exist.
             info['origFile'] = info['newFile']
-            info['origInfo'] = 'PRE-CREATION'
+            info['origInfo'] = PRE_CREATION
         elif 'filename' in info:
-            if info['newFile'] == info['origFile']:
+            if info.get('newFile') == info.get('origFile'):
                 # Both the old and new filenames referenced are identical, so
                 # we'll want to update both to include the filename.
                 #
