@@ -155,7 +155,6 @@ class ReviewRequestManager(ConcurrencyManager):
                 draft = ReviewRequestDraft.objects.create(
                     review_request=review_request)
                 draft.update_from_commit_id(commit_id)
-                draft.commit_id = commit_id
                 draft.save()
                 draft.add_default_reviewers()
             except Exception as e:

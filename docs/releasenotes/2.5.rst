@@ -40,7 +40,7 @@ Compatibility Changes
 New User Features
 =================
 
-.. _design-update:
+.. _2.5-design-update:
 
 Design Update
 -------------
@@ -286,7 +286,7 @@ will also scroll to reveal more of the image.
 .. image:: _static/images/2.5/2.5-file-attachments.png
 
 
-.. _revisioned-file-attachments:
+.. _2.5-revisioned-file-attachments:
 
 Revisioned File Attachments
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -393,7 +393,7 @@ Miscellaneous User Features
 New Administration Features
 ===========================
 
-.. _webhooks-feature:
+.. _2.5-webhooks-feature:
 
 Webhooks
 --------
@@ -407,10 +407,10 @@ It also supports sending review API payloads for publishing a review or a reply
 to a review. The payload will include all comments filed on the review.
 
 The payloads can be sent in JSON, XML, or HTTP form data formats. They can also
-be completely replaced by a :ref:`custom template <webhook-custom-payloads>`,
-powered by a subset of Django's templating language. This can make use of the
-original payload's contents as variables, allowing any custom payload format to
-be sent.
+be completely replaced by a :ref:`custom template
+<rb2.5:webhook-custom-payloads>`, powered by a subset of Django's templating
+language. This can make use of the original payload's contents as variables,
+allowing any custom payload format to be sent.
 
 The HTTP requests will contain a ``X-ReviewBoard-Event`` header that lists the
 event name, and a standard ``X-Hub-Signature`` header which contains a HMAC
@@ -421,7 +421,7 @@ Webhooks can be configured to be global across all repositories, tied to
 specific repositories, or to review requests/reviews not associated with a
 repository. They can also be tied to any number of events.
 
-See the :ref:`documentation <webhooks>` for more details.
+See the :ref:`documentation <rb2.5:webhooks>` for more details.
 
 .. _webhooks: http://en.wikipedia.org/wiki/Webhook
 
@@ -516,7 +516,7 @@ Usability Improvements
 
 This release contains numerous usability improvements for both desktop and
 mobile devices as part of the new visual redesign. See the
-:ref:`Design Update <design-update>` section above.
+:ref:`Design Update <2.5-design-update>` section above.
 
 * The username in the navigation bar at the top of the page now links
   to the user's profile page instead of the preferences page.
@@ -536,7 +536,8 @@ password, and can be easily revoked at any time.
 
 Tokens can restrict the client's access to the API. Through a simple
 drop-down menu, an API token can be set to allow full read/write access to
-the API, read-only access, or a :ref:`custom policy <api-token-policies>`.
+the API, read-only access, or a :ref:`custom policy
+<rb2.5:api-token-policies>`.
 
 Custom API token policies allow for very fine-grained access to the API,
 limiting what methods can be performed on exactly which resources, even
@@ -546,7 +547,7 @@ To add API tokens, simply open the My Account page, click
 :guilabel:`API Tokens`, and then :guilabel:`Generate a new API token`.
 That token can then be configured and used immediately.
 
-See the :ref:`API authentication <2.0-authenticating>` documentation for
+See the :ref:`API authentication <rb2.5:2.0-authenticating>` documentation for
 instructions on using API tokens with the API.
 
 RBTools 0.6.3 and higher support authenticating with API tokens.
@@ -568,7 +569,7 @@ Other API Features
   Likewise, the ``?only-links=`` query argument limits the returned links in
   the payload. It behaves exactly like ``?only-fields=``.
 
-* Added :ref:`webapi2.0-hosting-service-list-resource` for accessing
+* Added :ref:`rb2.5:webapi2.0-hosting-service-list-resource` for accessing
   information on registered hosting services.
 
   This resource exposes information on each hosting service that can be
@@ -582,7 +583,7 @@ Other API Features
   Note that this resource's payload data is not yet considered stable, and is
   subject to change in future releases.
 
-* Added :ref:`webapi2.0-remote-repository-list-resource` for listing all
+* Added :ref:`rb2.5:webapi2.0-remote-repository-list-resource` for listing all
   available remote repositories on a hosting service.
 
   Repositories can be filtered by the owner, type of owner (organization or
@@ -591,14 +592,14 @@ Other API Features
   Note that this resource isn't available for all hosting services, and the
   API is not yet considered stable.
 
-* :ref:`webapi2.0-hosting-service-account-list-resource` now allows for
+* :ref:`rb2.5:webapi2.0-hosting-service-account-list-resource` now allows for
   filtering by username or hosting service ID.
 
   The list resource now takes ``?username=`` and ``?service=`` arguments for
   filtering the resulting list by the username and/or service ID.
 
-* Added :ref:`webapi2.0-api-token-list-resource` for working with your user's
-  list of API tokens.
+* Added :ref:`rb2.5:webapi2.0-api-token-list-resource` for working with your
+  user's list of API tokens.
 
   This resource makes it easy to fetch your user's list of API tokens,
   to create new tokens, update existing tokens, and delete tokens.
@@ -608,20 +609,21 @@ Other API Features
   prevent a client with a valid read-only token to fetch the list of tokens
   and swap out the one used for authentication.
 
-* The :ref:`webapi2.0-file-attachment-resource` now contains a ``revision``
-  field. This is used for :ref:`revisioned-file-attachments`.
+* The :ref:`rb2.5:webapi2.0-file-attachment-resource` now contains a
+  ``revision`` field. This is used for :ref:`2.5-revisioned-file-attachments`.
 
-* The :ref:`webapi2.0-repository-resource` now contains a ``bug_tracker``
+* The :ref:`rb2.5:webapi2.0-repository-resource` now contains a ``bug_tracker``
   field.
 
   Patch by Halvor Lund.
 
-* In the :ref:`webapi2.0-review-request-resource`, the ``depends_on`` and
+* In the :ref:`rb2.5:webapi2.0-review-request-resource`, the ``depends_on`` and
   ``blocks`` fields now include the ID of the review requests being linked to.
   (:bug:`3863`).
 
-* Added a :ref:`webapi2.0-web-hook-resource` for managing webhooks. See
-  :ref:`Webhooks <webhooks-feature>` for more information on this new feature.
+* Added a :ref:`rb2.5:webapi2.0-web-hook-resource` for managing webhooks. See
+  :ref:`Webhooks <2.5-webhooks-feature>` for more information on this new
+  feature.
 
 * Added a ``review_requests.trivial_publish`` API capability.
 
@@ -637,38 +639,39 @@ New Hooks
 
 * Added a hook for creating widgets in the administration dashboard.
 
-  :ref:`admin-widget-hook` allows extensions to register widgets to be shown in
-  the administration UI. These hooks will be available for administrators to
-  add to the dashboard. Widgets are automatically removed when the extension is
-  disabled.
+  :ref:`rb2.5:admin-widget-hook` allows extensions to register widgets to be
+  shown in the administration UI. These hooks will be available for
+  administrators to add to the dashboard. Widgets are automatically removed
+  when the extension is disabled.
 
   Patch by Justin Maillet.
 
 * Added a hook for adding capability flags to the Web API.
 
-  :ref:`webapi-capabilities-hook` allows extensions to register custom
-  capability flags to show in the API's :ref:`webapi2.0-root-resource`. This
-  helps clients of the API that support the extension to query its capabilities
-  without loading a custom resource.
+  :ref:`rb2.5:webapi-capabilities-hook` allows extensions to register custom
+  capability flags to show in the API's :ref:`rb2.5:webapi2.0-root-resource`.
+  This helps clients of the API that support the extension to query its
+  capabilities without loading a custom resource.
 
   Patch by Justin Maillet.
 
 * Added new extension hooks for manipulating the recipient list for review
   and review request e-mails.
 
-  The new :ref:`email-hook` allows an extension to designate new lists of
-  recipients for all the review/review request e-mails that Review Board
+  The new :ref:`rb2.5:email-hook` allows an extension to designate new lists
+  of recipients for all the review/review request e-mails that Review Board
   sends. They can update both the To and CC lists for any e-mail.
 
   These take lists of signals the hook should listen to for the various events
-  (such as :py:data:`~reviewboard.reviews.signals.review_request_published`).
+  (such as
+  :py:data:`~rb2.5:reviewboard.reviews.signals.review_request_published`).
   As a convenience, callers can make use of one of the subclasses for specific
   events:
 
-  * :ref:`review-request-published-email-hook`
-  * :ref:`review-request-closed-email-hook`
-  * :ref:`review-published-email-hook`
-  * :ref:`review-reply-published-email-hook`
+  * :ref:`rb2.5:review-request-published-email-hook`
+  * :ref:`rb2.5:review-request-closed-email-hook`
+  * :ref:`rb2.5:review-published-email-hook`
+  * :ref:`rb2.5:review-reply-published-email-hook`
 
 
 Extension Web APIs
@@ -677,7 +680,7 @@ Extension Web APIs
 * API resources provided by extensions can now add specialized serialization
   of links.
 
-  Subclasses of :py:class:`~reviewboard.webapi.base.WebAPIResource` can
+  Subclasses of :py:class:`~rb2.5:reviewboard.webapi.base.WebAPIResource` can
   implement a :samp:`serialize_<linkname>_link()` function to provide the
   desired information for the link. This is useful for links that need to
   contain additional metadata about the link that would be helpful to the
@@ -790,8 +793,8 @@ New Review Request
 Web API
 -------
 
-* Fixed links in the :ref:`webapi2.0-hosting-service-account-resource` when
-  using local sites.
+* Fixed links in the :ref:`rb2.5:webapi2.0-hosting-service-account-resource`
+  when using local sites.
 
 
 CVS

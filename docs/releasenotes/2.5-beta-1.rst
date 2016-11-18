@@ -185,7 +185,8 @@ password, and can be easily revoked at any time.
 
 Tokens can restrict the client's access to the API. Through a simple
 drop-down menu, an API token can be set to allow full read/write access to
-the API, read-only access, or a :ref:`custom policy <api-token-policies>`.
+the API, read-only access, or a :ref:`custom policy
+<rb2.5:api-token-policies>`.
 
 Custom API token policies allow for very fine-grained access to the API,
 limiting what methods can be performed on exactly which resources, even
@@ -353,10 +354,10 @@ Extensions
 AdminWidgetHook
 ---------------
 
-:ref:`admin-widget-hook` allows extensions to register widgets to be shown in
-the administration UI. These hooks will be available for administrators to add
-to the dashboard. Widgets are automatically removed when the extension is
-disabled.
+:ref:`rb2.5:admin-widget-hook` allows extensions to register widgets to be
+shown in the administration UI. These hooks will be available for
+administrators to add to the dashboard. Widgets are automatically removed when
+the extension is disabled.
 
 Patch by Justin Maillet.
 
@@ -364,10 +365,10 @@ Patch by Justin Maillet.
 WebAPICapabilitiesHook
 ----------------------
 
-:ref:`webapi-capabilities-hook` allows extensions to register custom
-capability flags to show in the API's :ref:`webapi2.0-root-resource`. This
-helps clients of the API that support the extension to query its capabilities
-without loading a custom resource.
+:ref:`rb2.5:webapi-capabilities-hook` allows extensions to register custom
+capability flags to show in the API's :ref:`rb2.5:webapi2.0-root-resource`.
+This helps clients of the API that support the extension to query its
+capabilities without loading a custom resource.
 
 Patch by Justin Maillet.
 
@@ -377,7 +378,7 @@ Web API
 
 * The API now supports authentication with API tokens.
 
-  See the :ref:`API authentication <2.0-authenticating>` documentation
+  See the :ref:`API authentication <rb2.5:2.0-authenticating>` documentation
   for instructions on logging in using API tokens.
 
 * Added support for returning only certain fields or links in the API.
@@ -393,7 +394,7 @@ Web API
   Likewise, the ``?only-links=`` query argument limits the returned links in
   the payload. It behaves exactly like ``?only-fields=``.
 
-* Added :ref:`webapi2.0-hosting-service-list-resource` for accessing
+* Added :ref:`rb2.5:webapi2.0-hosting-service-list-resource` for accessing
   information on registered hosting services.
 
   This resource exposes information on each hosting service that can be
@@ -407,7 +408,7 @@ Web API
   Note that this resource's payload data is not yet considered stable, and is
   subject to change in future releases.
 
-* Added :ref:`webapi2.0-remote-repository-list-resource` for listing all
+* Added :ref:`rb2.5:webapi2.0-remote-repository-list-resource` for listing all
   available remote repositories on a hosting service.
 
   Repositories can be filtered by the owner, type of owner (organization or
@@ -416,14 +417,14 @@ Web API
   Note that this resource isn't available for all hosting services, and the
   API is not yet considered stable.
 
-* :ref:`webapi2.0-hosting-service-account-list-resource` now allows for
+* :ref:`rb2.5:webapi2.0-hosting-service-account-list-resource` now allows for
   filtering by username or hosting service ID.
 
   The list resource now takes ``?username=`` and ``?service=`` arguments for
   filtering the resulting list by the username and/or service ID.
 
-* Added :ref:`webapi2.0-api-token-list-resource` for working with your user's
-  list of API tokens.
+* Added :ref:`rb2.5:webapi2.0-api-token-list-resource` for working with your
+  user's list of API tokens.
 
   This resource makes it easy to fetch your user's list of API tokens,
   to create new tokens, update existing tokens, and delete tokens.

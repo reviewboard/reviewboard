@@ -1,3 +1,5 @@
+.. _extension-configuration:
+
 =======================
 Extension Configuration
 =======================
@@ -12,11 +14,12 @@ Extensions are able to access, store, and modify settings that define their
 behavior.
 
 When an extension is enabled, Review Board will load any stored settings from
-the database, making them available through the :py:attr:`settings` attribute
-on the Extension.
+the database, making them available through the :py:attr:`Extension.settings
+<djblets.extensions.extension.Extension.settings>` attribute on the Extension.
 
 Extensions can modify the settings by changing the contents of the dictionary
-and calling :py:meth:`save`. For example:
+and calling :py:meth:`settings.save()
+<djblets.extensions.settings.Settings.save>`. For example:
 
 .. code-block:: python
 
@@ -32,10 +35,10 @@ Default Settings
 ----------------
 
 Any settings not explicitly saved by the extension or loaded from the database
-will be looked up in :py:attr:`default_settings`. This can be defined on the
-Extension class.
+will be looked up in :py:attr:`Extension.default_settings
+<djblets.extensions.extension.Extension.default_settings>`.
 
-Here is an example extension setting :py:attr:`default_settings`:
+Here is an example extension setting default settings:
 
 .. code-block:: python
 
@@ -47,11 +50,14 @@ Here is an example extension setting :py:attr:`default_settings`:
        }
 
 
-If neither :py:attr:`settings` nor :py:attr:`default_settings` contains the
-key, a :py:exc:`KeyError` exception will be thrown.
+If neither :py:attr:`Extension.settings
+<djblets.extensions.extension.Extension.settings>` nor
+:py:attr:`Extension.default_settings
+<djblets.extensions.extension.Extension.default_settings>` contains the key, a
+:py:exc:`KeyError` exception will be raised.
 
 
-.. _extension-configuration:
+.. _extension-configuration-pages:
 
 Configuration Pages
 ===================
@@ -59,10 +65,11 @@ Configuration Pages
 Extensions can provide a configuration page, allowing Review Board
 administrators to customize the behavior of the extension.
 
-By setting :py:attr:`is_configurable` to ``True`` and providing a
-:file:`admin_urls.py` file, a :guilabel:`Configure` link will be shown in the
-extension list for the extension. This is only shown when the extension is
-enabled.
+By setting :py:attr:`Extension.is_configurable
+<djblets.extensions.extension.Extension.is_configurable>` to ``True`` and
+providing a :file:`admin_urls.py` file, a :guilabel:`Configure` link will be
+shown in the extension list for the extension. This is only shown when the
+extension is enabled.
 
 The extension will then need to create a page to present to the user for any
 customizable settings. Review Board provides some helpers for this, which
@@ -80,9 +87,9 @@ whatever it wants in here, but it's expected to provide at least the root
 URL, designated by ``url(r'^$', ...)``. This should point to the main
 configuration page.
 
-This file follows the `Django URLs`_ format. It must provide a
-``urlpatterns`` variable, which will contain all the URL patterns.
-For example:
+This file follows the :djangodoc:`Django URLs <topics/http/urls>` format. It
+must provide a ``urlpatterns`` variable, which will contain all the URL
+patterns. For example:
 
 .. code-block:: python
 
@@ -90,13 +97,11 @@ For example:
 
 
    urlpatterns = patterns('sample_extension.views',
-       url(r'^$', 'configure')
+       url(r'^$', 'configure'),
    )
 
 This will call the ``configure`` function in ``sample_extension.views``
 when clicking the :guilabel:`Configure` link.
-
-.. _`Django URLs`: https://docs.djangoproject.com/en/dev/topics/http/urls/
 
 
 .. _extension-configuration-settings-form:
@@ -126,8 +131,9 @@ Here is an example form class:
 
 
    class SampleExtensionSettingsForm(SettingsForm):
-       field1 = forms.IntegerField(min_value=0, initial=1,
-                                   help_text="Field 1")
+       field1 = forms.IntegerField(min_value=0,
+                                   initial=1,
+                                   help_text='Put a number in this field.')
 
 
 And here is an example URL pattern for the form:
@@ -148,42 +154,3 @@ And here is an example URL pattern for the form:
                'form_class': SampleExtensionSettingsForm,
            }),
    )
-
-
-.. _extension-admin-site:
-
-Admin Site (Database Browser)
-=============================
-
-By setting :py:attr:`has_admin_site` to ``True``, an extension will be given
-its own Django database administration site. A button labeled
-:guilabel:`Database` will appear in the list of installed extensions, linking
-to that site.
-
-The extension will also have a :py:attr:`admin_site` attribute that points to
-the :py:class:`django.contrib.admin.sites.AdminSite` used. This is provided
-automatically, and is used primarily for the registration of models.
-
-Only models that are registered will appear in the database browser. You can
-see the documentation on the `Django admin site`_ for details on how this
-works. For example:
-
-.. code-block:: python
-
-   from reviewboard.extensions.base import get_extension_manager
-
-   from sample_extension.extension import SampleExtension
-   from sample_extension.models import SampleModel
-
-
-   # You must get the loaded instance of the extension to register to the
-   # admin site.
-   extension_manager = get_extension_manager()
-   extension = extension_manager.get_enabled_extension(SampleExtension.id)
-
-   # Register the Model so it will show up in the admin site.
-   extension.admin_site.register(SampleModel)
-
-
-.. _`Django Admin Site`:
-   https://docs.djangoproject.com/en/dev/ref/contrib/admin/

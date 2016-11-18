@@ -9,9 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
 
 from reviewboard.attachments.models import FileAttachmentHistory
-from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models.default_reviewer import DefaultReviewer
-from reviewboard.scmtools.errors import InvalidChangeNumberError
 
 
 @python_2_unicode_compatible
@@ -197,91 +195,6 @@ class BaseReviewRequestDetails(models.Model):
         for group in groups:
             if group not in existing_groups:
                 self.target_groups.add(group)
-
-    def update_from_commit_id(self, commit_id):
-        """Updates the data from a server-side changeset.
-
-        If the commit ID refers to a pending changeset on an SCM which stores
-        such things server-side (like perforce), the details like the summary
-        and description will be updated with the latest information.
-
-        If the change number is the commit ID of a change which exists on the
-        server, the summary and description will be set from the commit's
-        message, and the diff will be fetched from the SCM.
-        """
-        scmtool = self.repository.get_scmtool()
-
-        changeset = None
-        if scmtool.supports_pending_changesets:
-            changeset = scmtool.get_changeset(commit_id, allow_empty=True)
-
-        if changeset and changeset.pending:
-            self.update_from_pending_change(commit_id, changeset)
-        elif self.repository.supports_post_commit:
-            self.update_from_committed_change(commit_id)
-        else:
-            if changeset:
-                raise InvalidChangeNumberError()
-            else:
-                raise NotImplementedError()
-
-    def update_from_pending_change(self, commit_id, changeset):
-        """Updates the data from a server-side pending changeset.
-
-        This will fetch the metadata from the server and update the fields on
-        the review request.
-        """
-        if not changeset:
-            raise InvalidChangeNumberError()
-
-        # If the SCM supports changesets, they should always include a number,
-        # summary and description, parsed from the changeset description. Some
-        # specialized systems may support the other fields, but we don't want
-        # to clobber the user-entered values if they don't.
-        self.commit = commit_id
-        description = changeset.description
-        testing_done = changeset.testing_done
-
-        self.summary = changeset.summary
-        self.description = description
-        self.description_rich_text = False
-
-        if testing_done:
-            self.testing_done = testing_done
-            self.testing_done_rich_text = False
-
-        if changeset.branch:
-            self.branch = changeset.branch
-
-        if changeset.bugs_closed:
-            self.bugs_closed = ','.join(changeset.bugs_closed)
-
-    def update_from_committed_change(self, commit_id):
-        """Updates from a committed change present on the server.
-
-        Fetches the commit message and diff from the repository and sets the
-        relevant fields.
-        """
-        commit = self.repository.get_change(commit_id)
-        summary, message = commit.split_message()
-        message = message.strip()
-
-        self.commit = commit_id
-        self.summary = summary.strip()
-
-        self.description = message
-        self.description_rich_text = False
-
-        DiffSet.objects.create_from_data(
-            repository=self.repository,
-            diff_file_name='diff',
-            diff_file_contents=commit.diff.encode('utf-8'),
-            parent_diff_file_name=None,
-            parent_diff_file_contents=None,
-            diffset_history=self.get_review_request().diffset_history,
-            basedir='/',
-            request=None,
-            base_commit_id=commit.parent)
 
     def save(self, **kwargs):
         self.bugs_closed = self.bugs_closed.strip()

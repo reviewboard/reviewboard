@@ -46,7 +46,7 @@ Web API Changes
 ===============
 
 * Added the ``mirror_path`` field to
-  :ref:`Repository Resource <webapi2.0-repository-resource>`.
+  :ref:`Repository Resource <rb1.7:webapi2.0-repository-resource>`.
 
   Patch by Edward Lee.
 

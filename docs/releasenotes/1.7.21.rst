@@ -64,8 +64,9 @@ API Changes
 
 * Added new query parameters for filtering lists of repositories.
 
-  The :ref:`repository list resource <webapi2.0-repository-list-resource>`
-  now accepts the following arguments for filtering the list of repositories:
+  The :ref:`repository list resource
+  <rb1.7:webapi2.0-repository-list-resource>` now accepts the following
+  arguments for filtering the list of repositories:
 
   * ``?name=`` - Comma-separated list of repository names.
   * ``?path=`` - Comma-separated list of paths or mirror paths.
