@@ -14,6 +14,7 @@ except ImportError:
 from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.template.defaultfilters import title
+from djblets.features.testing import override_feature_checks
 from djblets.util.http import is_mimetype_a
 from djblets.webapi.resources import get_resource_from_class, WebAPIResource
 from djblets.webapi.responses import WebAPIResponseError
@@ -74,6 +75,7 @@ class DummyRequest(HttpRequest):
         self.user = User.objects.all()[0]
         self.session = {}
         self._local_site_name = None
+        self.local_site = None
 
         # This is normally set internally by Djblets, but we don't
         # go through the standard __call__ flow.
@@ -147,6 +149,13 @@ class ResourceDirective(Directive):
         main_section += parse_text(
             self, inspect.getdoc(resource),
             where='%s class docstring' % self.options['classname'])
+
+        if getattr(resource, 'required_features', False):
+            required_features = nodes.important()
+            required_features += nodes.inline(
+                text='Using this resource requires extra features to be '
+                     'enabled on the server. See "Required Features" below.')
+            main_section += required_features
 
         # Details section
         details_section = nodes.section(ids=['details'])
@@ -272,6 +281,20 @@ class ResourceDirective(Directive):
         # URI
         uri_template = get_resource_uri_template(resource, not is_list)
         append_detail_row(tbody, "URI", nodes.literal(text=uri_template))
+
+        # Required features
+        if getattr(resource, 'required_features', False):
+            feature_list = nodes.bullet_list()
+
+            for feature in resource.required_features:
+                item = nodes.list_item()
+                paragraph = nodes.paragraph()
+
+                paragraph += nodes.inline(text=feature.feature_id)
+                item += paragraph
+                feature_list += item
+
+            append_detail_row(tbody, 'Required Features', feature_list)
 
         # Token Policy ID
         if hasattr(resource, 'policy_id'):
@@ -594,15 +617,21 @@ class ResourceDirective(Directive):
         return returned_nodes
 
     def fetch_resource_data(self, resource, mimetype):
-        kwargs = {}
-        request = DummyRequest()
-        request.path = create_fake_resource_path(request, resource, kwargs,
-                                                 'is-list' not in self.options)
+        features = {
+            feature.feature_id: True
+            for feature in resource.required_features
+        }
 
-        headers, data = fetch_response_data(resource, mimetype, request,
-                                            **kwargs)
+        with override_feature_checks(features):
+            kwargs = {}
+            request = DummyRequest()
+            request.path = create_fake_resource_path(
+                request, resource, kwargs, 'is-list' not in self.options)
 
-        return request.path, headers, data
+            headers, data = fetch_response_data(resource, mimetype, request,
+                                                **kwargs)
+
+            return request.path, headers, data
 
     def get_resource_class(self, classname):
         try:
