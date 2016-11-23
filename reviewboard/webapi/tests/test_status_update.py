@@ -5,6 +5,7 @@ from djblets.features.testing import override_feature_checks
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
 
+from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.models.status_update import StatusUpdate
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -61,6 +62,70 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         return (get_status_update_list_url(review_request, local_site_name),
                 status_update_list_mimetype,
                 items)
+
+    def test_get_with_change_id(self):
+        """Testing the GET /review-requests/<id>/status-updates/?change= API"""
+        review_request = self.create_review_request(
+            submitter=self.user,
+            publish=True)
+
+        change = ChangeDescription.objects.create()
+        review_request.changedescs.add(change)
+
+        self.create_status_update(review_request)
+        update = self.create_status_update(review_request,
+                                           change_description=change)
+
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(
+                get_status_update_list_url(review_request),
+                {'change': change.pk},
+                expected_mimetype=status_update_list_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['status_updates']), 1)
+        self.assertEqual(rsp['status_updates'][0]['id'], update.pk)
+
+    def test_get_with_service_id(self):
+        """Testing the GET /review-requests/<id>/status-updates/?service-id=
+        API"""
+        review_request = self.create_review_request(
+            submitter=self.user,
+            publish=True)
+
+        self.create_status_update(review_request, service_id='service1')
+        update = self.create_status_update(review_request,
+                                           service_id='service2')
+
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(
+                get_status_update_list_url(review_request),
+                {'service-id': update.service_id},
+                expected_mimetype=status_update_list_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['status_updates']), 1)
+        self.assertEqual(rsp['status_updates'][0]['id'], update.pk)
+
+    def test_get_with_state(self):
+        """Testing the GET /review-requests/<id>/status-updates/?state= API"""
+        review_request = self.create_review_request(
+            submitter=self.user,
+            publish=True)
+
+        self.create_status_update(review_request, state=StatusUpdate.PENDING)
+        update = self.create_status_update(review_request,
+                                           state=StatusUpdate.DONE_SUCCESS)
+
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(
+                get_status_update_list_url(review_request),
+                {'state': 'done-success'},
+                expected_mimetype=status_update_list_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['status_updates']), 1)
+        self.assertEqual(rsp['status_updates'][0]['id'], update.pk)
 
     #
     # HTTP POST tests
