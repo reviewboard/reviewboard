@@ -412,8 +412,8 @@
 .review-comment-screenshot,
 .review-comment-file-attachment,
 .review-comment-diff {
-  background-color: #F0F0F0;
-  border-color: #C0C0C0;
+  background-color: @review-comment-filename-background-color;
+  border-color: @review-comment-filename-border-color;
   border-width: 1px 0;
   border-style: solid;
 
@@ -458,7 +458,7 @@
    * precedence.
    */
   .sidebyside .filename-row th {
-    background: #F0F0F0;
+    background: @review-comment-filename-background-color;
   }
 
   .diff-error tbody {
@@ -1112,11 +1112,20 @@
 
 
 /****************************************************************************
- * Review Form
+ * Review Dialog
  ****************************************************************************/
 #review-form {
+  @review-dialog-padding: 20px;
+
   overflow: auto;
-  padding: 10px;
+  margin: 0;
+  padding: @review-dialog-padding;;
+
+  label {
+    color: black;
+    font-weight: bold;
+    margin-top: 10px;
+  }
 
   .add-link {
     font-size: 110%;
@@ -1130,27 +1139,26 @@
     color: #000000;
   }
 
-  label {
-    color: black;
-    font-weight: bold;
-    margin-top: 10px;
-  }
-
-  dt label {
+  .comment-label {
     color: #AB5603;
     font-size: 1.1em;
     font-weight: bold;
+    margin-bottom: 2em;
     text-decoration: none;
+
+    .inline-editor-label();
   }
 
-  .comment-text-field > .edit-field {
-    margin: 1em 0;
+  .comment-text-field {
+    margin-bottom: 1em;
+  }
 
-    .comment-text-field {
-      label {
-        .inline-editor-label();
-      }
-    }
+  .rich-text {
+    margin-bottom: 2em;
+  }
+
+  .text-editor {
+    width: inherit;
   }
 
   #review-form-comments {
@@ -1158,15 +1166,36 @@
 
     pre {
       white-space: pre-wrap;
-
-      &.rich-text {
-        margin: @textarea-editor-margin;
-        padding: @textarea-editor-padding + @textarea-border-size;
-      }
     }
 
-    .spinner {
-      font-size: 20px;
+    .diffrevision {
+      font-weight: normal;
+    }
+
+    .file-attachment {
+      background: @review-comment-filename-background-color;
+      border-color: @review-comment-filename-border-color;
+      border-width: 1px 0;
+      border-style: solid;
+      margin: 0 -@review-dialog-padding;
+      padding: 5px;
+
+      .diffrevision,
+      .filename {
+        font-size: 120%;
+      }
+
+      .filename {
+        font-weight: bold;
+
+        a {
+          color: black;
+        }
+      }
+
+      .thumbnail {
+        margin-top: 1em;
+      }
     }
 
     .review-comments {
@@ -1178,17 +1207,27 @@
         margin: 2em 0;
         padding: 0;
 
-        .edit-fields {
-          margin-left: 2em;
-        }
-
+        .review-comments-inline();
       }
     }
 
-    .review-comments-inline();
+    .review-dialog-comment-diff {
+      margin: 0 -@review-dialog-padding;
+    }
 
-    dd {
-      margin: 0;
+    .sidebyside {
+      border-color: @review-comment-filename-border-color;
+      border-width: 1px 0;
+      border-style: solid;
+
+      .filename-row th {
+        background: @review-comment-filename-background-color;
+        border-bottom: 1px @review-comment-filename-border-color solid;
+      }
+    }
+
+    .spinner {
+      font-size: 20px;
     }
 
     .delete-comment {
