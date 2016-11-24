@@ -1,3 +1,5 @@
+.. _reviewboard-coderef:
+
 ===========================
 Module and Class References
 ===========================

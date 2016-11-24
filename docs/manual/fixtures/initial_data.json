@@ -3743,6 +3743,25 @@
     }
 },
 {
+    "pk": 1,
+    "model": "reviews.statusupdate",
+    "fields": {
+        "change_description": 1,
+        "description": "running...",
+        "extra_data": "{}",
+        "review": null,
+        "review_request": 8,
+        "service_id": "reviewbot.pep8",
+        "state": "P",
+        "summary": "PEP-8",
+        "timeout": 20,
+        "timestamp": "2007-06-24T00:15:44Z",
+        "url": "",
+        "url_text": "",
+        "user": 1
+    }
+},
+{
     "pk": 1, 
     "model": "scmtools.tool", 
     "fields": {

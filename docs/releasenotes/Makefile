@@ -13,6 +13,10 @@ PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
+ifeq ($(USE_LOCAL_RBWEBSITE), 1)
+	SPHINXBUILD := DOCS_USE_LOCAL_RBWEBSITE=1 $(SPHINXBUILD)
+endif
+
 .PHONY: help clean html web pickle htmlhelp latex changes linkcheck
 
 help:

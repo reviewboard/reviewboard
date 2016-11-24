@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from djblets.features.testing import override_feature_checks
 from djblets.webapi.testing.decorators import webapi_test_template
 
 
@@ -23,7 +24,9 @@ class ExtraDataListMixin(object):
             self.setup_basic_post_test(self.user, False, None, True)
         data.update(extra_fields)
 
-        rsp = self.api_post(url, data, expected_mimetype=mimetype)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_post(url, data, expected_mimetype=mimetype)
+
         self.assertEqual(rsp['stat'], 'ok')
 
         item_rsp = rsp[self.resource.item_result_key]
@@ -52,7 +55,9 @@ class ExtraDataListMixin(object):
             self.user, False, None, True)
         data.update(extra_fields)
 
-        rsp = self.api_post(url, data, expected_mimetype=mimetype)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_post(url, data, expected_mimetype=mimetype)
+
         self.assertEqual(rsp['stat'], 'ok')
 
         item_rsp = rsp[self.resource.item_result_key]
@@ -82,7 +87,9 @@ class ExtraDataItemMixin(object):
             self.setup_basic_put_test(self.user, False, None, True)
         data.update(extra_fields)
 
-        rsp = self.api_put(url, data, expected_mimetype=mimetype)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_put(url, data, expected_mimetype=mimetype)
+
         self.assertEqual(rsp['stat'], 'ok')
 
         item_rsp = rsp[self.resource.item_result_key]
@@ -111,7 +118,9 @@ class ExtraDataItemMixin(object):
             self.setup_basic_put_test(self.user, False, None, True)
         data.update(extra_fields)
 
-        rsp = self.api_put(url, data, expected_mimetype=mimetype)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_put(url, data, expected_mimetype=mimetype)
+
         self.assertEqual(rsp['stat'], 'ok')
 
         item_rsp = rsp[self.resource.item_result_key]
@@ -142,9 +151,10 @@ class ExtraDataItemMixin(object):
         obj.extra_data = extra_fields
         obj.save(update_fields=['extra_data'])
 
-        rsp = self.api_get(url,
-                           expected_mimetype=mimetype,
-                           expected_json=self.basic_get_returns_json)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(url,
+                               expected_mimetype=mimetype,
+                               expected_json=self.basic_get_returns_json)
 
         item_rsp = rsp[self.resource.item_result_key]
 

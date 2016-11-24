@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.utils import six
+from djblets.features.testing import override_feature_checks
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
 
@@ -95,14 +96,15 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         """Testing the POST <URL> API with an invalid state"""
         review_request = self.create_review_request(publish=True)
 
-        rsp = self.api_post(
-            get_status_update_list_url(review_request),
-            {
-                'service_id': 'Service',
-                'summary': 'Summary',
-                'state': 'incorrect',
-            },
-            expected_status=400)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_post(
+                get_status_update_list_url(review_request),
+                {
+                    'service_id': 'Service',
+                    'summary': 'Summary',
+                    'state': 'incorrect',
+                },
+                expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
@@ -113,14 +115,15 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         """Testing the POST <URL> API with an change_id state"""
         review_request = self.create_review_request(publish=True)
 
-        rsp = self.api_post(
-            get_status_update_list_url(review_request),
-            {
-                'service_id': 'Service',
-                'summary': 'Summary',
-                'change_id': '123456',
-            },
-            expected_status=400)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_post(
+                get_status_update_list_url(review_request),
+                {
+                    'service_id': 'Service',
+                    'summary': 'Summary',
+                    'change_id': '123456',
+                },
+                expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
@@ -131,14 +134,15 @@ class ResourceListTests(ExtraDataListMixin, ReviewRequestChildListMixin,
         """Testing the POST <URL> API with an invalid review_id"""
         review_request = self.create_review_request(publish=True)
 
-        rsp = self.api_post(
-            get_status_update_list_url(review_request),
-            {
-                'service_id': 'Service',
-                'summary': 'Summary',
-                'review_id': '123456',
-            },
-            expected_status=400)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_post(
+                get_status_update_list_url(review_request),
+                {
+                    'service_id': 'Service',
+                    'summary': 'Summary',
+                    'review_id': '123456',
+                },
+                expected_status=400)
 
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
@@ -198,9 +202,11 @@ class ResourceItemTests(ReviewRequestChildItemMixin, ExtraDataItemMixin,
         """
         review_request = self.create_review_request(publish=True)
 
-        rsp = self.api_delete(
-            get_status_update_item_url(review_request, 12345),
-            expected_status=404)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_delete(
+                get_status_update_item_url(review_request, 12345),
+                expected_status=404)
+
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], DOES_NOT_EXIST.code)
 
@@ -228,9 +234,10 @@ class ResourceItemTests(ReviewRequestChildItemMixin, ExtraDataItemMixin,
         review_request = self.create_review_request(publish=True)
         status_update = self.create_status_update(review_request)
 
-        self._testHttpCaching(
-            get_status_update_item_url(review_request, status_update.pk),
-            check_etags=True)
+        with override_feature_checks(self.override_features):
+            self._testHttpCaching(
+                get_status_update_item_url(review_request, status_update.pk),
+                check_etags=True)
 
     #
     # HTTP PUT tests

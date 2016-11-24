@@ -34,7 +34,8 @@ sys.path = os.getenv('PYTHONPATH_PREPEND', '').split(':') + sys.path
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
 
 import reviewboard
-from reviewboard.dependencies import django_doc_major_version
+from reviewboard.dependencies import (django_doc_major_version,
+                                      djblets_doc_major_version)
 
 from beanbag_docutils.sphinx.ext.github import github_linkcode_resolve
 
@@ -60,6 +61,7 @@ extensions = [
     'sphinx.ext.todo',
     'beanbag_docutils.sphinx.ext.autodoc_utils',
     'beanbag_docutils.sphinx.ext.django_utils',
+    'beanbag_docutils.sphinx.ext.extlinks',
     'beanbag_docutils.sphinx.ext.http_role',
     'beanbag_docutils.sphinx.ext.retina_images',
     'webapidocs',
@@ -239,13 +241,47 @@ latex_show_urls = True
 latex_show_pagerefs = True
 
 
+# Determine the branch or tag used for code references.
+rb_version = reviewboard.VERSION
+
+if rb_version[4] == 'final' or rb_version[4] > 0:
+    if reviewboard.is_release():
+        git_branch = 'release-%s.%s.%s' % rb_version[:3]
+    else:
+        git_branch = 'release-%s.%s.x' % rb_version[:2]
+else:
+    git_branch = 'master'
+
+
+# Check whether reviewboard.org intersphinx lookups should use the local
+# server.
+if os.getenv('DOCS_USE_LOCAL_RBWEBSITE') == '1':
+    rbwebsite_url = 'http://localhost:8081'
+else:
+    rbwebsite_url = 'https://www.reviewboard.org'
+
+
+django_doc_base_url = ('http://django.readthedocs.io/en/%s.x/'
+                       % django_doc_major_version)
+
+
 intersphinx_mapping = {
-    'django': ('http://django.readthedocs.io/en/%s.x/'
-               % django_doc_major_version,
-               None),
-    'djblets': ('https://www.reviewboard.org/docs/djblets/dev/', None),
+    'django': (django_doc_base_url, None),
+    'djblets': ('%s/docs/djblets/%s/'
+                % (rbwebsite_url, djblets_doc_major_version),
+                None),
     'python': ('https://docs.python.org/2.7', None),
-    'rbtools': ('https://www.reviewboard.org/docs/rbtools/dev/', None),
+    'rbtools': ('%s/docs/rbtools/latest/' % rbwebsite_url, None),
+    'rbcontributing': ('%s/docs/codebase/dev/' % rbwebsite_url, None),
+}
+
+
+extlinks = {
+    'djangodoc': ('%s%%s.html' % django_doc_base_url, None),
+    'backbonejs': ('http://backbonejs.org/#%s', 'Backbone.'),
+    'rbsource': ('https://github.com/reviewboard/reviewboard/blob/%s/%%s'
+                 % git_branch,
+                 ''),
 }
 
 todo_include_todos = True
@@ -285,19 +321,9 @@ napolean_numpy_docstring = False
 
 
 def linkcode_resolve(domain, info):
-    version = reviewboard.VERSION
-
-    if version[4] == 'final' or version[4] > 0:
-        if reviewboard.is_release():
-            branch = 'release-%s.%s.%s' % (version[0], version[1], version[2])
-        else:
-            branch = 'release-%s.%s.x' % (version[0], version[1])
-    else:
-        branch = 'master'
-
     return github_linkcode_resolve(domain=domain,
                                    info=info,
                                    allowed_module_names=['reviewboard'],
                                    github_org_id='reviewboard',
                                    github_repo_id='reviewboard',
-                                   branch=branch)
+                                   branch=git_branch)

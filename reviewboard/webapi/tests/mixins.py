@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from django.utils import six
 from django.utils.six.moves import range
+from djblets.features.testing import override_feature_checks
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -40,6 +41,15 @@ class BasicTestsMetaclass(type):
         else:
             test_http_methods = ('DELETE', 'GET', 'POST', 'PUT')
             d['test_http_methods'] = test_http_methods
+
+        if (hasattr(resource, 'required_features') and
+            resource.required_features):
+            d['override_features'] = {
+                feature.feature_id: True
+                for feature in resource.required_features
+            }
+        else:
+            d['override_features'] = {}
 
         if name == 'ResourceListTests':
             is_list = True
@@ -175,7 +185,9 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         url, cb_args = self.setup_basic_delete_test(self.user, False, None)
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
-        self.api_delete(url)
+        with override_feature_checks(self.override_features):
+            self.api_delete(url)
+
         self.check_delete_result(self.user, *cb_args)
 
     @webapi_test_template
@@ -189,7 +201,9 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         url, cb_args = self.setup_basic_delete_test(user, False, None)
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.api_delete(url, expected_status=403)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_delete(url, expected_status=403)
+
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -206,7 +220,9 @@ class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
         """Testing the DELETE <URL> API with access to a local site"""
         user, url, cb_args = self._setup_test_delete_with_site()
 
-        self.api_delete(url)
+        with override_feature_checks(self.override_features):
+            self.api_delete(url)
+
         self.check_delete_result(user, *cb_args)
 
     @add_fixtures(['test_site'])
@@ -217,7 +233,9 @@ class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
 
         self._login_user()
 
-        rsp = self.api_delete(url, expected_status=403)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_delete(url, expected_status=403)
+
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -252,7 +270,9 @@ class BasicDeleteTestsWithLocalSiteAndAPITokenMixin(object):
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id)
 
-        self.api_delete(url)
+        with override_feature_checks(self.override_features):
+            self.api_delete(url)
+
         self.check_delete_result(user, *cb_args)
 
     @add_fixtures(['test_site'])
@@ -265,7 +285,9 @@ class BasicDeleteTestsWithLocalSiteAndAPITokenMixin(object):
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id + 1)
 
-        rsp = self.api_delete(url, expected_status=403)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_delete(url, expected_status=403)
+
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -287,7 +309,8 @@ class BasicDeleteNotAllowedTestsMixin(BasicTestsMixin):
         """Testing the DELETE <URL> API gives Method Not Allowed"""
         url = self.setup_http_not_allowed_item_test(self.user)
 
-        self.api_delete(url, expected_status=405)
+        with override_feature_checks(self.override_features):
+            self.api_delete(url, expected_status=405)
 
 
 class BasicGetItemTestsMixin(BasicTestsMixin):
@@ -315,9 +338,10 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
         url, mimetype, item = self.setup_basic_get_test(self.user, False, None)
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.api_get(url,
-                           expected_mimetype=mimetype,
-                           expected_json=self.basic_get_returns_json)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(url,
+                               expected_mimetype=mimetype,
+                               expected_json=self.basic_get_returns_json)
 
         if self.basic_get_returns_json:
             self.assertEqual(rsp['stat'], 'ok')
@@ -341,9 +365,10 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
         """Testing the GET <URL> API with access to a local site"""
         user, url, mimetype, item = self._setup_test_get_with_site()
 
-        rsp = self.api_get(url,
-                           expected_mimetype=mimetype,
-                           expected_json=self.basic_get_returns_json)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(url,
+                               expected_mimetype=mimetype,
+                               expected_json=self.basic_get_returns_json)
 
         if self.basic_get_returns_json:
             self.assertEqual(rsp['stat'], 'ok')
@@ -362,7 +387,9 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
 
         self._login_user()
 
-        rsp = self.api_get(url, expected_status=403)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(url, expected_status=403)
+
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -397,8 +424,9 @@ class BasicGetItemTestsWithLocalSiteAndAPITokenMixin(object):
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id)
 
-        rsp = self.api_get(url, expected_mimetype=mimetype,
-                           expected_json=self.basic_get_returns_json)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(url, expected_mimetype=mimetype,
+                               expected_json=self.basic_get_returns_json)
 
         if self.basic_get_returns_json:
             self.assertEqual(rsp['stat'], 'ok')
@@ -419,7 +447,9 @@ class BasicGetItemTestsWithLocalSiteAndAPITokenMixin(object):
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id + 1)
 
-        rsp = self.api_get(url, expected_status=403)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(url, expected_status=403)
+
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -450,7 +480,9 @@ class BasicGetListTestsMixin(BasicTestsMixin):
                                                          None, True)
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.api_get(url, expected_mimetype=mimetype)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(url, expected_mimetype=mimetype)
+
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn(self.resource.list_result_key, rsp)
 
@@ -473,7 +505,9 @@ class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
         """Testing the GET <URL> API with access to a local site"""
         user, url, mimetype, items = self._setup_test_get_list_with_site()
 
-        rsp = self.api_get(url, expected_mimetype=mimetype)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(url, expected_mimetype=mimetype)
+
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn(self.resource.list_result_key, rsp)
 
@@ -527,7 +561,9 @@ class BasicGetListTestsWithLocalSiteAndAPITokenMixin(object):
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id)
 
-        rsp = self.api_get(url, expected_mimetype=mimetype)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(url, expected_mimetype=mimetype)
+
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn(self.resource.list_result_key, rsp)
 
@@ -547,7 +583,9 @@ class BasicGetListTestsWithLocalSiteAndAPITokenMixin(object):
             with_webapi_token=True,
             webapi_token_local_site_id=self.local_site_id + 1)
 
-        rsp = self.api_get(url, expected_status=403)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(url, expected_status=403)
+
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -584,7 +622,9 @@ class BasicPostTestsMixin(BasicTestsMixin):
             self.setup_basic_post_test(self.user, False, None, True)
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.api_post(url, post_data, expected_mimetype=mimetype)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_post(url, post_data, expected_mimetype=mimetype)
+
         self._close_file_handles(post_data)
         self.assertEqual(rsp['stat'], 'ok')
         self.check_post_result(self.user, rsp, *cb_args)
@@ -603,7 +643,9 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
         user, url, mimetype, post_data, cb_args = \
             self._setup_test_post_with_site()
 
-        rsp = self.api_post(url, post_data, expected_mimetype=mimetype)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_post(url, post_data, expected_mimetype=mimetype)
+
         self._close_file_handles(post_data)
         self.assertEqual(rsp['stat'], 'ok')
         self.check_post_result(user, rsp, *cb_args)
@@ -617,7 +659,9 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
 
         self._login_user()
 
-        rsp = self.api_post(url, post_data, expected_status=403)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_post(url, post_data, expected_status=403)
+
         self._close_file_handles(post_data)
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
@@ -654,7 +698,9 @@ class BasicPostTestsWithLocalSiteAndAPITokenMixin(object):
                 with_webapi_token=True,
                 webapi_token_local_site_id=self.local_site_id)
 
-        rsp = self.api_post(url, post_data, expected_mimetype=mimetype)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_post(url, post_data, expected_mimetype=mimetype)
+
         self._close_file_handles(post_data)
         self.assertEqual(rsp['stat'], 'ok')
         self.check_post_result(user, rsp, *cb_args)
@@ -691,7 +737,8 @@ class BasicPostNotAllowedTestsMixin(BasicTestsMixin):
         """Testing the POST <URL> API gives Method Not Allowed"""
         url = self.setup_http_not_allowed_list_test(self.user)
 
-        self.api_post(url, {}, expected_status=405)
+        with override_feature_checks(self.override_features):
+            self.api_post(url, {}, expected_status=405)
 
 
 class BasicPutTestsMixin(BasicTestsMixin):
@@ -726,7 +773,9 @@ class BasicPutTestsMixin(BasicTestsMixin):
             self.setup_basic_put_test(self.user, False, None, True)
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.api_put(url, put_data, expected_mimetype=mimetype)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_put(url, put_data, expected_mimetype=mimetype)
+
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn(self.resource.item_result_key, rsp)
 
@@ -745,7 +794,9 @@ class BasicPutTestsMixin(BasicTestsMixin):
             self.setup_basic_put_test(user, False, None, False)
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
-        rsp = self.api_put(url, put_data, expected_status=403)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_put(url, put_data, expected_status=403)
+
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -763,7 +814,9 @@ class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
         user, url, mimetype, put_data, item, cb_args = \
             self._setup_test_put_with_site()
 
-        rsp = self.api_put(url, put_data, expected_mimetype=mimetype)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_put(url, put_data, expected_mimetype=mimetype)
+
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn(self.resource.item_result_key, rsp)
 
@@ -779,7 +832,9 @@ class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
 
         self._login_user()
 
-        rsp = self.api_put(url, put_data, expected_status=403)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_put(url, put_data, expected_status=403)
+
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -815,7 +870,9 @@ class BasicPutTestsWithLocalSiteAndAPITokenMixin(object):
                 with_webapi_token=True,
                 webapi_token_local_site_id=self.local_site_id)
 
-        rsp = self.api_put(url, put_data, expected_mimetype=mimetype)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_put(url, put_data, expected_mimetype=mimetype)
+
         self.assertEqual(rsp['stat'], 'ok')
         self.assertIn(self.resource.item_result_key, rsp)
 
@@ -833,7 +890,9 @@ class BasicPutTestsWithLocalSiteAndAPITokenMixin(object):
                 with_webapi_token=True,
                 webapi_token_local_site_id=self.local_site_id + 1)
 
-        rsp = self.api_put(url, put_data, expected_status=403)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_put(url, put_data, expected_status=403)
+
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -855,7 +914,8 @@ class BasicPutNotAllowedTestsMixin(BasicTestsMixin):
         """Testing the PUT <URL> API gives Method Not Allowed"""
         url = self.setup_http_not_allowed_item_test(self.user)
 
-        self.api_put(url, {}, expected_status=405)
+        with override_feature_checks(self.override_features):
+            self.api_put(url, {}, expected_status=405)
 
 
 class BaseReviewRequestChildMixin(object):
@@ -868,6 +928,7 @@ class BaseReviewRequestChildMixin(object):
     This applies to immediate children and any further down the tree.
     """
     basic_get_returns_json = True
+    override_features = {}
 
     def setup_review_request_child_test(self, review_request):
         raise NotImplementedError(
@@ -886,9 +947,10 @@ class BaseReviewRequestChildMixin(object):
 
         url, mimetype = self.setup_review_request_child_test(review_request)
 
-        self.api_get(url,
-                     expected_mimetype=mimetype,
-                     expected_json=self.basic_get_returns_json)
+        with override_feature_checks(self.override_features):
+            self.api_get(url,
+                         expected_mimetype=mimetype,
+                         expected_json=self.basic_get_returns_json)
 
     @webapi_test_template
     def test_get_with_private_group_no_access(self):
@@ -901,7 +963,9 @@ class BaseReviewRequestChildMixin(object):
 
         url, mimetype = self.setup_review_request_child_test(review_request)
 
-        rsp = self.api_get(url, expected_status=403)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(url, expected_status=403)
+
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 
@@ -918,9 +982,10 @@ class BaseReviewRequestChildMixin(object):
 
         url, mimetype = self.setup_review_request_child_test(review_request)
 
-        self.api_get(url,
-                     expected_mimetype=mimetype,
-                     expected_json=self.basic_get_returns_json)
+        with override_feature_checks(self.override_features):
+            self.api_get(url,
+                         expected_mimetype=mimetype,
+                         expected_json=self.basic_get_returns_json)
 
     @add_fixtures(['test_scmtools'])
     @webapi_test_template
@@ -934,7 +999,9 @@ class BaseReviewRequestChildMixin(object):
 
         url, mimetype = self.setup_review_request_child_test(review_request)
 
-        rsp = self.api_get(url, expected_status=403)
+        with override_feature_checks(self.override_features):
+            rsp = self.api_get(url, expected_status=403)
+
         self.assertEqual(rsp['stat'], 'fail')
         self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
 

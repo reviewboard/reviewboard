@@ -47,8 +47,8 @@ Usability Improvements
   can result on large installations with the current selector.
 
   If you were previously affected by these performance problems, and aren't
-  susceptible to the :ref:`PostgreSQL bug <postgresql-bug>` mentioned below,
-  then you may want to stay on 2.5.4 for now.
+  susceptible to the :ref:`PostgreSQL bug <2.5.5-postgresql-bug>` mentioned
+  below, then you may want to stay on 2.5.4 for now.
 
 
 Extensions
@@ -67,7 +67,7 @@ Bug Fixes
 Administration
 --------------
 
-.. _postgresql-bug:
+.. _2.5.5-postgresql-bug:
 
 * Condensing diffs no longer fails or causes data loss when using Postgres
   databases.

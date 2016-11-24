@@ -174,6 +174,16 @@ Search
    search
 
 
+Status Updates
+==============
+
+.. toctree::
+   :maxdepth: 1
+
+   status-update-list
+   status-update
+
+
 Users
 =====
 

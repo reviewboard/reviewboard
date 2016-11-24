@@ -625,6 +625,44 @@ class CVSTests(SCMTestCase):
             b' OUTNAME = cvs-misc-docs\n',
             'Makefile')
 
+    def test_binary_diff(self):
+        """Testing parsing CVS binary diff"""
+        diff = (
+            b'Index: testfile\n'
+            b'==============================================================='
+            b'====\n'
+            b'RCS file: %s/test/testfile,v\n'
+            b'retrieving revision 1.1.1.1\n'
+            b'diff -u -r1.1.1.1 testfile\n'
+            b'Binary files testfile and testfile differ\n'
+            % self.cvs_repo_path)
+
+        file = self.tool.get_parser(diff).parse()[0]
+        self.assertEqual(file.origFile, 'test/testfile')
+        self.assertEqual(file.origInfo, '')
+        self.assertEqual(file.newFile, 'test/testfile')
+        self.assertEqual(file.newInfo, '')
+        self.assertTrue(file.binary)
+        self.assertEqual(file.data, diff)
+
+    def test_binary_diff_new_file(self):
+        """Testing parsing CVS binary diff with new file"""
+        diff = (
+            b'Index: test/testfile\n'
+            b'==============================================================='
+            b'====\n'
+            b'RCS file: test/testfile,v\n'
+            b'diff -N test/testfile\n'
+            b'Binary files /dev/null and testfile differ\n')
+
+        file = self.tool.get_parser(diff).parse()[0]
+        self.assertEqual(file.origFile, 'test/testfile')
+        self.assertEqual(file.origInfo, 'PRE-CREATION')
+        self.assertEqual(file.newFile, 'test/testfile')
+        self.assertEqual(file.newInfo, '')
+        self.assertTrue(file.binary)
+        self.assertEqual(file.data, diff)
+
     def test_bad_root(self):
         """Testing CVSTool with a bad CVSROOT"""
         file = 'test/testfile'

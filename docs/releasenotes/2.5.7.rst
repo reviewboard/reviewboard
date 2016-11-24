@@ -139,8 +139,8 @@ Extensions
   extension authors can use to easily run unit tests shipped with their
   extensions, helping ensure their extensions run as expected.
 
-  See the guide on :ref:`testing-extensions` for information on how to write
-  and run unit tests for your extension.
+  See the guide on :ref:`rb2.5:testing-extensions` for information on how to
+  write and run unit tests for your extension.
 
 
 Usability Improvements
@@ -175,9 +175,9 @@ Web API
 * Added an API for creating new users.
 
   Users can now be manually created through the
-  :ref:`webapi2.0-user-list-resource` API. Callers can provide the username,
-  e-mail address, and password, along with an optional first and last name for
-  the user.
+  :ref:`rb2.5:webapi2.0-user-list-resource` API. Callers can provide the
+  username, e-mail address, and password, along with an optional first and
+  last name for the user.
 
   This cannot be called on Local Sites, and the authenticated user calling
   this API must either be a superuser or must have the ``auth.add_user``
@@ -201,26 +201,26 @@ Web API
 
 * Add a link to the latest diff revision from review request payloads.
 
-  The :ref:`webapi2.0-review-request-resource` now includes a ``latest_diff``
-  link, pointing to the latest revision of the diff. This can save several
-  queries in the API.
+  The :ref:`rb2.5:webapi2.0-review-request-resource` now includes a
+  ``latest_diff`` link, pointing to the latest revision of the diff. This can
+  save several queries in the API.
 
 * Hosting service errors now return a suitable error message in the
-  :ref:`webapi2.0-repository-branches-resource` API.
+  :ref:`rb2.5:webapi2.0-repository-branches-resource` API.
 
   Previously, a hosting service error would result in an HTTP 500 page without
-  a payload. It now returns a :ref:`webapi2.0-error-210`.
+  a payload. It now returns a :ref:`rb2.5:webapi2.0-error-210`.
 
 * Floating point values are now serialized without crashing when using an XML
   response payload.
 
   Patch by Griffin Myers.
 
-* Fixed the links generated in the :ref:`webapi2.0-review-group-user-resource`
-  (:bug:`4382`).
+* Fixed the links generated in the
+  :ref:`rb2.5:webapi2.0-review-group-user-resource` (:bug:`4382`).
 
-  The links were pointing to the :ref:`webapi2.0-user-resource`, breaking
-  actions like deletion of users from a group.
+  The links were pointing to the :ref:`rb2.5:webapi2.0-user-resource`,
+  breaking actions like deletion of users from a group.
 
 
 Performance Improvements

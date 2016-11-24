@@ -30,6 +30,12 @@ Glossary
        <http://en.wikipedia.org/wiki/DomainKeys_Identified_Mail>`_ for more
        information.
 
+   Evolution File
+       A file that contains information on how to make changes to the database
+       schema (in a database-agnostic way). These files are shipped with
+       Review Board or extensions and are applied automatically during site
+       upgrade or when enabling an extension.
+
    Interdiffs
        An interdiff is a diff between diffs. They show what has changed
        between two versions of a diff, which is useful when making incremental
@@ -67,6 +73,25 @@ Glossary
        A review request that can only be accessed by users meeting certain
        criteria, such as being on an access list for a group or repository.
        See :ref:`access-control` for more information.
+
+   Python Eggs
+       A type of binary package for Python applications. These are installed
+       via :command:`easy_install`.
+
+       Historically, this was the main way that Python applications, Review
+       Board included, would be packaged and distributed. They have since
+       been replaced by a new format, :term:`Python Wheels`.
+
+   Python Entry Point
+   Python Entry Points
+       A mechanism used by Python packages to register classes so that they
+       can be found by other Python applications. This is often used for
+       pluggable features. Review Board uses this to register extensions,
+       repository support, and more.
+
+   Python Wheels
+       The modern package format for Python applications. These are installed
+       using modern versions of the :command:`pip` package installer.
 
    Review Request
    Review Requests

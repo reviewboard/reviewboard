@@ -95,9 +95,9 @@ Extensions
   signals.
 
   Listening to these signals and raising a
-  :py:class:`reviewboard.reviews.signals.CloseError` or
-  :py:class:`reviewboard.reviews.signals.ReopenError` (respectively) will
-  abort closing/reopening. These can be used to add additional validation
+  :py:class:`rb2.0:reviewboard.reviews.signals.CloseError` or
+  :py:class:`rb2.0:reviewboard.reviews.signals.ReopenError` (respectively)
+  will abort closing/reopening. These can be used to add additional validation
   before these operations are allowed.
 
 
@@ -112,12 +112,12 @@ Web API
   a string in a list, instead of a string or series of strings.
 
 * Attempting to close review requests containing drafts now results in a
-  :ref:`webapi2.0-error-225` saying that the draft must be published
+  :ref:`rb2.0:webapi2.0-error-225` saying that the draft must be published
   before closing.
 
-* :ref:`webapi2.0-review-request-resource` will now return
-  :ref:`webapi2.0-error-230` and :ref:`webapi2.0-error-231` if an extension
-  blocks closing or reopening (respectively).
+* :ref:`rb2.0:webapi2.0-review-request-resource` will now return
+  :ref:`rb2.0:webapi2.0-error-230` and :ref:`rb2.0:webapi2.0-error-231` if an
+  extension blocks closing or reopening (respectively).
 
 * Fixed issues with expanding fields for list resources.
 
