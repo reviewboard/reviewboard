@@ -600,12 +600,12 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             else:
                 filediffs = diffset.files.select_related().all()
 
-            filediffs = list(filediffs)
-
             filediffs = exclude_filediff_ancestors(filediffs, diffset,
                                                    diffset_file_graph)
         else:
             filediffs = diffset.files.select_related().all()
+
+        filediffs = list(filediffs)
 
         if interdiffset:
             log_timer = log_timed("Generating diff file info for "
