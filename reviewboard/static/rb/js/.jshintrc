@@ -11,5 +11,5 @@
     "onevar": true,
     "proto": true,
     "trailing": true,
-    "unused": true
+    "unused": "vars"
 }
