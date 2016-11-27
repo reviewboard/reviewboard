@@ -1,4 +1,4 @@
-/*
+/**
  * Represents the comments on a file attachment.
  *
  * FileAttachmentCommentBlock deals with creating and representing comments
@@ -11,27 +11,37 @@ RB.FileAttachmentCommentBlock = RB.AbstractCommentBlock.extend({
         diffAgainstFileAttachmentID: null
     }, RB.AbstractCommentBlock.prototype.defaults),
 
-    /*
-     * The list of fields on this model that will be stored on the server
-     * in the FileAttachmentComment's extraData.
+    /**
+     * The list of extra fields on this model.
+     *
+     * These will be stored on the server in the FileAttachmentComment's
+     * extra_data field.
      */
     serializedFields: [],
 
-    /*
-     * Creates a FileAttachmentComment for the given comment ID.
+    /**
+     * Create a FileAttachmentComment for the given comment ID.
      *
      * The subclass's storeCommentData will be called, allowing additional
      * data to be stored along with the comment.
+     *
+     * Args:
+     *     id (number):
+     *         The ID of the comment to instantiate the model for.
+     *
+     * Returns:
+     *     RB.FileAttachmentComment:
+     *     The new comment model.
      */
-    createComment: function(id) {
-        var comment = this.get('review').createFileAttachmentComment(
-                id,
-                this.get('fileAttachmentID'),
-                this.get('diffAgainstFileAttachmentID'));
+    createComment(id) {
+        const comment = this.get('review').createFileAttachmentComment(
+            id,
+            this.get('fileAttachmentID'),
+            this.get('diffAgainstFileAttachmentID'));
 
         _.extend(comment.get('extraData'),
                  _.pick(this.attributes, this.serializedFields));
 
         return comment;
-    }
+    },
 });
