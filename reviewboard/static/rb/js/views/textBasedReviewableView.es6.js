@@ -1,4 +1,4 @@
-/*
+/**
  * Base for text-based review UIs.
  *
  * This will display all existing comments on an element by displaying a comment
@@ -9,10 +9,14 @@
 RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
     commentBlockView: RB.TextBasedCommentBlockView,
 
-    /*
-     * Initializes the view.
+    /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view.
      */
-    initialize: function(options) {
+    initialize(options) {
         RB.FileAttachmentReviewableView.prototype.initialize.call(
             this, options);
 
@@ -26,53 +30,49 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
 
         this.router = new Backbone.Router({
             routes: {
-                ':viewMode(/line:lineNum)': 'viewMode'
+                ':viewMode(/line:lineNum)': 'viewMode',
+            },
+        });
+        this.listenTo(this.router, 'route:viewMode', (viewMode, lineNum) => {
+            /*
+             * Router's pattern matching isn't very good. Since we don't
+             * want to stick "view" or something before the view mode,
+             * and we want to allow for view, line, or view + line, we need
+             * to check and transform viewMode if it seems to be a line
+             * reference.
+             */
+            if (viewMode.indexOf('line') === 0) {
+                lineNum = viewMode.substr(4);
+                viewMode = null;
+            }
+
+            if (viewMode) {
+                this.model.set('viewMode', viewMode);
+            }
+
+            if (lineNum) {
+                this._scrollToLine(lineNum);
             }
         });
-        this.listenTo(
-            this.router, 'route:viewMode',
-            function(viewMode, lineNum) {
-                /*
-                 * Router's pattern matching isn't very good. Since we don't
-                 * want to stick "view" or something before the view mode,
-                 * and we want to allow for view, line, or view + line, we need
-                 * to check and transform viewMode if it seems to be a line
-                 * reference.
-                 */
-                if (viewMode.indexOf('line') === 0) {
-                    lineNum = viewMode.substr(4);
-                    viewMode = null;
-                }
-
-                if (viewMode) {
-                    this.model.set('viewMode', viewMode);
-                }
-
-                if (lineNum) {
-                    this._scrollToLine(lineNum);
-                }
-            });
     },
 
-    /*
-     * Removes the reviewable from the DOM.
+    /**
+     * Remove the reviewable from the DOM.
      */
-    remove: function() {
+    remove() {
         _super(this).remove.call(this);
 
         this._textSelector.remove();
         this._renderedSelector.remove();
     },
 
-    /*
-     * Renders the view.
+    /**
+     * Render the view.
      */
-    renderContent: function() {
-        var $fileHeader;
-
+    renderContent() {
         this._$viewTabs = this.$('.text-review-ui-views li');
 
-        /* Set up the source text table. */
+        // Set up the source text table.
         this._$textTable = this.$('.text-review-ui-text-table');
 
         this._textSelector = new RB.TextCommentRowSelector({
@@ -82,7 +82,7 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
         this._textSelector.render();
 
         if (this.model.get('hasRenderedView')) {
-            /* Set up the rendered table. */
+            // Set up the rendered table.
             this._$renderedTable = this.$('.text-review-ui-rendered-table');
 
             this._renderedSelector = new RB.TextCommentRowSelector({
@@ -94,7 +94,7 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
 
         this.listenTo(this.model, 'change:viewMode', this._onViewChanged);
 
-        $fileHeader = this.$('.review-ui-header');
+        const $fileHeader = this.$('.review-ui-header');
 
         if (this.model.get('numRevisions') > 1) {
             this._revisionSelectorView = new RB.FileAttachmentRevisionSelectorView({
@@ -119,61 +119,75 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
         });
     },
 
-    /*
+    /**
      * Callback for when a new file revision is selected.
      *
-     * This supports single revisions and diffs. If `base is 0, a
-     * single revision is selected, If not, the diff between `base` and
-     * `tip` will be shown.
+     * This supports single revisions and diffs. If ``base`` is 0, a
+     * single revision is selected, If not, the diff between ``base`` and
+     * ``tip`` will be shown.
+     *
+     * Args:
+     *     revisions (array of number):
+     *         A 2-element array containing the new revisions to be viewed.
      */
-    _onRevisionSelected: function(revisions) {
-        var revisionIDs = this.model.get('attachmentRevisionIDs'),
-            base = revisions[0],
-            tip = revisions[1],
-            revisionBase,
-            revisionTip,
-            redirectURL;
+    _onRevisionSelected(revisions) {
+        const [base, tip] = revisions;
 
-        // Ignore clicks on No Diff Label
+        // Ignore clicks on No Diff Label.
         if (tip === 0) {
             return;
         }
 
-        revisionTip = revisionIDs[tip-1];
+        const revisionIDs = this.model.get('attachmentRevisionIDs');
+        const revisionTip = revisionIDs[tip - 1];
 
-        /* Eventually these hard redirects will use a router
+        /*
+         * Eventually these hard redirects will use a router
          * (see diffViewerPageView.js for example)
          * this.router.navigate(base + '-' + tip + '/', {trigger: true});
          */
+        let redirectURL;
 
         if (base === 0) {
-            redirectURL = '../' + revisionTip + '/';
+            redirectURL = `../${revisionTip}/`;
         } else {
-            revisionBase = revisionIDs[base-1];
-            redirectURL = '../' + revisionBase + '-' + revisionTip + '/';
+            const revisionBase = revisionIDs[base - 1];
+            redirectURL = `../${revisionBase}-${revisionTip}/`;
         }
+
         window.location.replace(redirectURL);
     },
 
-    /*
-     * Scrolls the page to the top of the specified line number.
+    /**
+     * Scroll the page to the top of the specified line number.
+     *
+     * Args:
+     *     lineNum (number):
+     *         The line number to scroll to.
      */
-    _scrollToLine: function(lineNum) {
-        var $table = this._getTableForViewMode(this.model.get('viewMode')),
-            rows = $table[0].tBodies[0].rows,
-            $row;
+    _scrollToLine(lineNum) {
+        const $table = this._getTableForViewMode(this.model.get('viewMode'));
+        const rows = $table[0].tBodies[0].rows;
 
         /* Normalize this to a valid row index. */
         lineNum = RB.MathUtils.clip(lineNum, 1, rows.length) - 1;
 
-        $row = $($table[0].tBodies[0].rows[lineNum]);
+        const $row = $($table[0].tBodies[0].rows[lineNum]);
         $(window).scrollTop($row.offset().top);
     },
 
-    /*
-     * Returns the table element for the given view mode.
+    /**
+     * Return the table element for the given view mode.
+     *
+     * Args:
+     *     viewMode (string):
+     *         The view mode to show.
+     *
+     * Returns:
+     *     jQuery:
+     *     The table element corresponding to the requested view mode.
      */
-    _getTableForViewMode: function(viewMode) {
+    _getTableForViewMode(viewMode) {
         if (viewMode === 'source') {
             return this._$textTable;
         } else if (viewMode === 'rendered' &&
@@ -185,10 +199,18 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
         }
     },
 
-    /*
-     * Returns the row selector for the given view mode.
+    /**
+     * Return the row selector for the given view mode.
+     *
+     * Args:
+     *     viewMode (string):
+     *         The view mode to show.
+     *
+     * Returns:
+     *     RB.TextCommentRowSelector:
+     *     The row selector.
      */
-    _getRowSelectorForViewMode: function(viewMode) {
+    _getRowSelectorForViewMode(viewMode) {
         if (viewMode === 'source') {
             return this._textSelector;
         } else if (viewMode === 'rendered' &&
@@ -200,25 +222,27 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
         }
     },
 
-    /*
-     * Adds the comment view to the line the comment was created on.
+    /**
+     * Add the comment view to the line the comment was created on.
+     *
+     * Args:
+     *     commentBlockView (RB.AbstractCommentBlockView):
+     *         The comment view to add.
      */
-    _placeCommentBlockView: function(commentBlockView) {
-        var commentBlock = commentBlockView.model,
-            beginLineNum = commentBlock.get('beginLineNum'),
-            endLineNum = commentBlock.get('endLineNum'),
-            rowSelector,
-            viewMode,
-            rowEls,
-            rows;
+    _placeCommentBlockView(commentBlockView) {
+        const commentBlock = commentBlockView.model;
+        const beginLineNum = commentBlock.get('beginLineNum');
+        const endLineNum = commentBlock.get('endLineNum');
 
         if (beginLineNum && endLineNum) {
-            viewMode = commentBlock.get('viewMode');
-            rowSelector = this._getRowSelectorForViewMode(viewMode);
+            const viewMode = commentBlock.get('viewMode');
+            const rowSelector = this._getRowSelectorForViewMode(viewMode);
 
             if (!rowSelector) {
                 return;
             }
+
+            let rowEls;
 
             if (this.model.get('diffRevision')) {
                 /*
@@ -232,7 +256,7 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
                  * list, we don't need to use getRowsForRange here, and instead
                  * can look up the lines directly in the lists of rows.
                  */
-                rows = rowSelector.el.tBodies[0].rows;
+                const rows = rowSelector.el.tBodies[0].rows;
 
                 /* The line numbers are 1-based, so normalize for the rows. */
                 rowEls = [rows[beginLineNum - 1], rows[endLineNum - 1]];
@@ -246,18 +270,18 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
         }
     },
 
-    /*
-     * Handler for when the view changes.
+    /**
+     * Handle a change to the view mode.
      *
      * This will set the correct tab to be active and switch which table of
      * text is shown.
      */
-    _onViewChanged: function() {
-        var viewMode = this.model.get('viewMode');
+    _onViewChanged() {
+        const viewMode = this.model.get('viewMode');
 
         this._$viewTabs
             .removeClass('active')
-            .filter('[data-view-mode=' + viewMode + ']')
+            .filter(`[data-view-mode=${viewMode}]`)
                 .addClass('active');
 
         this._$textTable.setVisible(viewMode === 'source');
@@ -265,5 +289,5 @@ RB.TextBasedReviewableView = RB.FileAttachmentReviewableView.extend({
 
         /* Cause all comments to recalculate their sizes. */
         $(window).triggerHandler('resize');
-    }
+    },
 });

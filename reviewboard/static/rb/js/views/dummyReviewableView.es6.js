@@ -1,4 +1,4 @@
-/*
+/**
  * A Review UI for file types which otherwise do not have one.
  *
  * Normally, file types that do not have a Review UI are not linked to one.
@@ -15,76 +15,61 @@ RB.DummyReviewableView = RB.FileAttachmentReviewableView.extend({
         '<table><tr><%= items %></tr></table>'
     ),
 
-    captionItemTemplate: _.template([
-        '<td>',
-        ' <h1 class="caption">',
-        '  <%- caption %>',
-        ' </h1>',
-        '</td>'
-    ].join('')),
+    captionItemTemplate: _.template(dedent`
+        <td>
+         <h1 class="caption"><%- caption %></h1>
+        </td>
+    `),
 
-    /*
-     * Initializes the view.
+    /**
+     * Render the view.
      */
-    initialize: function(options) {
-        RB.FileAttachmentReviewableView.prototype.initialize.call(
-            this, options);
-    },
-
-    /*
-     * Renders the view.
-     */
-    renderContent: function() {
-        var hasDiff = this.model.get('diffAgainstFileAttachmentID') !== null,
-            captionItems = [],
-            $header,
-            $revisionLabel,
-            $revisionSelector;
-
-        $header = $('<div/>')
+    renderContent() {
+        const $header = $('<div/>')
             .addClass('review-ui-header')
             .prependTo(this.$el);
 
         if (this.model.get('numRevisions') > 1) {
-            $revisionLabel = $('<div id="revision_label"/>')
+            const $revisionLabel = $('<div id="revision_label"/>')
                 .appendTo($header);
+
             this._revisionLabelView = new RB.FileAttachmentRevisionLabelView({
                 el: $revisionLabel,
-                model: this.model
+                model: this.model,
             });
             this._revisionLabelView.render();
             this.listenTo(this._revisionLabelView, 'revisionSelected',
                           this._onRevisionSelected);
 
-            $revisionSelector = $('<div id="attachment_revision_selector" />')
+            const $revisionSelector = $('<div id="attachment_revision_selector" />')
                 .appendTo($header);
             this._revisionSelectorView = new RB.FileAttachmentRevisionSelectorView({
                 el: $revisionSelector,
-                model: this.model
+                model: this.model,
             });
             this._revisionSelectorView.render();
             this.listenTo(this._revisionSelectorView, 'revisionSelected',
                           this._onRevisionSelected);
 
-            console.log(this.model.get('caption'), this.model.get('fileRevision'));
+            const captionItems = [];
 
             captionItems.push(this.captionItemTemplate({
                 caption: interpolate(
                     gettext('%(caption)s (revision %(revision)s)'),
                     {
                         caption: this.model.get('caption'),
-                        revision: this.model.get('fileRevision')
+                        revision: this.model.get('fileRevision'),
                     },
                     true)
             }));
 
-            if (hasDiff) {
+            if (this.model.get('diffAgainstFileAttachmentID') !== null) {
                 captionItems.push(this.captionItemTemplate({
                     caption: interpolate(
                         gettext('%(caption)s (revision %(revision)s)'),
                         {
                             caption: this.model.get('diffCaption'),
-                            revision: this.model.get('diffRevision')
+                            revision: this.model.get('diffRevision'),
                         },
                         true)
                 }));
@@ -96,39 +81,43 @@ RB.DummyReviewableView = RB.FileAttachmentReviewableView.extend({
         }
     },
 
-    /*
+    /**
      * Callback for when a new file revision is selected.
      *
      * This supports single revisions and diffs. If 'base' is 0, a
      * single revision is selected, If not, the diff between `base` and
      * `tip` will be shown.
+     *
+     * Args:
+     *     revisions (array of number):
+     *         An array with two elements, representing the range of revisions
+     *         to display.
      */
-    _onRevisionSelected: function(revisions) {
-        var revisionIDs = this.model.get('attachmentRevisionIDs'),
-            base = revisions[0],
-            tip = revisions[1],
-            revisionBase,
-            revisionTip,
-            redirectURL;
+    _onRevisionSelected(revisions) {
+        const [base, tip] = revisions;
 
-        // Ignore clicks on No Diff Label
+        // Ignore clicks on No Diff Label.
         if (tip === 0) {
             return;
         }
 
-        revisionTip = revisionIDs[tip-1];
+        const revisionIDs = this.model.get('attachmentRevisionIDs');
+        const revisionTip = revisionIDs[tip - 1];
 
-        /* Eventually these hard redirects will use a router
+        /*
+         * Eventually these hard redirects will use a router
          * (see diffViewerPageView.js for example)
          * this.router.navigate(base + '-' + tip + '/', {trigger: true});
          */
+        let redirectURL;
 
         if (base === 0) {
-            redirectURL = '../' + revisionTip + '/';
+            redirectURL = `../${revisionTip}/`;
         } else {
-            revisionBase = revisionIDs[base-1];
-            redirectURL = '../' + revisionBase + '-' + revisionTip + '/';
+            const revisionBase = revisionIDs[base - 1];
+            redirectURL = `../${revisionBase}-${revisionTip}/`;
         }
+
         window.location.replace(redirectURL);
-    }
+    },
 });

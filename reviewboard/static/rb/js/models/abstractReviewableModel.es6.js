@@ -1,4 +1,4 @@
-/*
+/**
  * Abstract model for reviewable content.
  *
  * This is the basis for subclasses that handle review capabilities for
@@ -13,16 +13,16 @@ RB.AbstractReviewable = Backbone.Model.extend({
         renderedInline: false,
         reviewRequest: null,
         review: null,
-        serializedCommentBlocks: []
+        serializedCommentBlocks: [],
     },
 
-    /*
+    /**
      * The AbstractCommentBlock subclass for this content type's comment
      * blocks.
      */
     commentBlockModel: null,
 
-    /*
+    /**
      * The list of fields from this model to populate in each new instance
      * of a commentBlockModel.
      *
@@ -30,11 +30,11 @@ RB.AbstractReviewable = Backbone.Model.extend({
      */
     defaultCommentBlockFields: [],
 
-    /*
-     * Initializes the reviewable.
+    /**
+     * Initialize the reviewable.
      */
-    initialize: function() {
-        var reviewRequest = this.get('reviewRequest');
+    initialize() {
+        const reviewRequest = this.get('reviewRequest');
 
         console.assert(this.commentBlockModel,
                        "'commentBlockModel' must be defined in the " +
@@ -51,33 +51,40 @@ RB.AbstractReviewable = Backbone.Model.extend({
         this.commentBlocks.model = this.commentBlockModel;
 
         /* Add all existing comment regions to the page. */
-        _.each(this.get('serializedCommentBlocks'),
-               this.loadSerializedCommentBlock,
-               this);
+        this.get('serializedCommentBlocks').forEach(
+            block => this.loadSerializedCommentBlock(block));
     },
 
-    /*
-     * Creates a CommentBlock for this reviewable.
+    /**
+     * Create a CommentBlock for this reviewable.
      *
      * The CommentBlock will be stored in the list of comment blocks.
+     *
+     * Args:
+     *     attrs (object):
+     *         The attributes for the comment block;
      */
-    createCommentBlock: function(attrs) {
+    createCommentBlock(attrs) {
         this.commentBlocks.add(_.defaults({
             reviewRequest: this.get('reviewRequest'),
-            review: this.get('review')
+            review: this.get('review'),
         }, attrs));
     },
 
-    /*
-     * Loads a serialized comment and adds comment blocks for it.
+    /**
+     * Load a serialized comment and add comment blocks for it.
      *
      * This should parse the serializedCommentBlock and add one or more
      * comment blocks (using createCommentBlock).
      *
      * This must be implemented by subclasses.
+     *
+     * Args:
+     *     serializedCommentBlock (object):
+     *         The serialized data for the new comment block(s).
      */
-    loadSerializedCommentBlock: function(/* serializedCommentBlock */) {
+    loadSerializedCommentBlock(serializedCommentBlock) {
         console.assert(false, 'loadSerializedCommentBlock must be ' +
                               'implemented by a subclass');
-    }
+    },
 });
