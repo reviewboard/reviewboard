@@ -1,13 +1,13 @@
 from __future__ import unicode_literals
 
-from django.contrib.auth.models import User
-from django.http import HttpRequest
-from django.template import Context, Template
+from django.contrib.auth.models import AnonymousUser, User
+from django.test.client import RequestFactory
+from django.template import RequestContext, Template
 from django.utils.html import escape
 from djblets.avatars.services import (FileUploadService,
                                       GravatarService,
                                       URLAvatarService)
-from djblets.avatars.tests import DummyAvatarService
+from djblets.avatars.tests import DummyAvatarService, DummyHighDPIAvatarService
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.models import Profile
@@ -44,7 +44,7 @@ class AvatarServiceRegistryTests(AvatarServicesTestMixin, TestCase):
                 URLAvatarService,
             })
 
-        self.assertIs(registry.default_service, GravatarService)
+        self.assertIsInstance(registry.default_service, GravatarService)
         self.assertSetEqual(
             set(registry.enabled_services),
             {
@@ -109,82 +109,174 @@ class AvatarServiceRegistryTests(AvatarServicesTestMixin, TestCase):
             siteconfig.get(AvatarServiceRegistry.DEFAULT_SERVICE_KEY))
 
 
-class TemplateTagTests(TestCase):
-    """Tests for reviewboard.accounts.templatetags.avatars."""
+class TemplateTagTests(AvatarServicesTestMixin, TestCase):
+    """Tests for reviewboard.avatars.templatetags."""
 
     fixtures = ['test_users']
 
     def setUp(self):
         super(TemplateTagTests, self).setUp()
-        self.request = HttpRequest()
+
+        avatar_services.enable_service(GravatarService, save=False)
+        avatar_services.set_default_service(GravatarService, save=False)
+
         self.user = User.objects.get(username='doc')
+        self.request = RequestFactory().get('/')
+        self.request.user = AnonymousUser()
 
-    def tearDown(self):
-        avatar_services.reset()
+    def test_avatar_urls(self):
+        """Testing {% avatar_urls %} template tag"""
+        service = avatar_services.default_service
+        self.assertIsNotNone(service)
 
-    def test_default_avatar_service(self):
-        """Test avatar template tag rendering the default avatar service"""
+        t = Template(
+            '{% load avatars %}'
+            '{% avatar_urls u 32 %}'
+        )
+
+        self.assertEqual(
+            t.render(RequestContext(self.request, {
+                'u': self.user,
+                'service_id': service.avatar_service_id,
+            })),
+            ('{'
+             '"1x": "%(1x)s", '
+             '"3x": "%(3x)s", '
+             '"2x": "%(2x)s"'
+             '}'
+             % service.get_avatar_urls_uncached(self.user, 32))
+        )
+
+    def test_avatar_urls_with_service(self):
+        """Testing {% avatar_urls %} template tag with avatar_service_id"""
+        avatar_services.register(DummyHighDPIAvatarService)
+        avatar_services.enable_service(DummyHighDPIAvatarService)
+
+        service = avatar_services.get_avatar_service(
+            DummyHighDPIAvatarService.avatar_service_id)
+
+        t = Template(
+            '{% load avatars %}'
+            '{% avatar_urls u 32 service_id %}'
+        )
+
+        self.assertEqual(
+            t.render(RequestContext(self.request, {
+                'u': self.user,
+                'service_id': DummyHighDPIAvatarService.avatar_service_id,
+            })),
+            ('{'
+             '"1x": "%(1x)s", '
+             '"2x": "%(2x)s"'
+             '}'
+             % service.get_avatar_urls_uncached(self.user, 32))
+        )
+
+    def test_avatar_urls_no_service(self):
+        """Testing {% avatar_urls %} template tag with no available services"""
+        services = list(avatar_services)
+
+        for service in services:
+            avatar_services.unregister(service)
+
+        t = Template(
+            '{% load avatars %}'
+            '{% avatar_urls u 32 %}'
+        )
+
+        self.assertEqual(
+            t.render(RequestContext(self.request, {
+                'u': self.user,
+            })),
+            '{}')
+
+    def test_avatar_urls_service_not_found(self):
+        """Testing {% avatar_urls %} template tag with an invalid service"""
+        service = avatar_services.default_service
+
+        self.assertIsNotNone(service)
+        self.assertIsNone(avatar_services.get_avatar_service(
+            DummyAvatarService.avatar_service_id))
+
+        t = Template(
+            '{% load avatars %}'
+            '{% avatar_urls u 32 service_id %}'
+        )
+
+        self.assertEqual(
+            t.render(RequestContext(self.request, {
+                'u': self.user,
+                'service_id': DummyAvatarService.avatar_service_id,
+            })),
+            ('{'
+             '"1x": "%(1x)s", '
+             '"3x": "%(3x)s", '
+             '"2x": "%(2x)s"'
+             '}'
+             % service.get_avatar_urls_uncached(self.user, 32))
+        )
+
+    def test_avatar_default_service(self):
+        """Testing {% avatar %} template tag with the default avatar service"""
         default_avatar_template = Template('{% load avatars %}'
-                                           '{% avatar user 32 %}')
-        gravatar_template = Template('{% load avatars %}'
-                                     '{% avatar user 32 avatar_service_id %}')
+                                           '{% avatar target_user 32 %}')
+        service_template = Template(
+            '{% load avatars %}'
+            '{% avatar target_user 32 avatar_service_id %}')
 
         self.assertIsNotNone(avatar_services.default_service)
 
-        default_service = avatar_services.default_service
-
         self.assertHTMLEqual(
-            default_avatar_template.render(Context({
-                'user': self.user,
-                'request': self.request,
+            default_avatar_template.render(RequestContext(self.request, {
+                'target_user': self.user,
             })),
-            gravatar_template.render(Context({
-                'user': self.user,
-                'avatar_service_id': default_service.avatar_service_id,
-                'request': self.request,
+            service_template.render(RequestContext(self.request, {
+                'target_user': self.user,
+                'avatar_service_id': GravatarService.avatar_service_id,
             })))
 
-    def test_custom_avatar_service(self):
-        """Test avatar template tag rendering a specific avatar service"""
+    def test_avatar_specific_service(self):
+        """Testing {% avatar %} template tag using a specific avatar service"""
+
         avatar_services.register(DummyAvatarService)
         avatar_services.enable_service(DummyAvatarService)
 
         t = Template('{% load avatars %}'
-                     '{% avatar user 32 avatar_service_id %}')
+                     '{% avatar target_user 32 avatar_service_id %}')
 
         self.assertHTMLEqual(
-            t.render(Context({
-                'user': self.user,
+            t.render(RequestContext(self.request, {
+                'target_user': self.user,
                 'avatar_service_id': DummyAvatarService.avatar_service_id,
-                'request': self.request,
+
             })),
-            '<img src="http://example.com/avatar.png" alt="%s" width="32"'
-            ' height="32" srcset="http://example.com/avatar.png 1x"'
-            ' class="avatar">\n'
-            % self.user.get_full_name() or self.user.username
+            ('<img src="http://example.com/avatar.png" alt="%s" width="32"'
+             ' height="32" srcset="http://example.com/avatar.png 1x"'
+             ' class="avatar">\n'
+             % self.user.get_full_name() or self.user.username)
         )
 
-    def test_no_avatar_service(self):
-        """Test avatar template tag rendering with invalid avatar service"""
+    def test_avatar_invalid_service(self):
+        """Test {% avatar %} template tag rendering with an invalid avatar
+        service
+        """
         t = Template('{% load avatars %}'
-                     '{% avatar user 32 avatar_service_id %}')
+                     '{% avatar target_user 32 avatar_service_id %}')
 
         self.assertEqual(
-            t.render(Context({
-                'user': self.user,
+            t.render(RequestContext(self.request, {
+                'target_user': self.user,
                 'avatar_service_id': 'INVALID_ID',
-                'request': self.request,
             })),
-            t.render(Context({
-                'user': self.user,
+            t.render(RequestContext(self.request, {
+                'target_user': self.user,
                 'avatar_service_id': None,
-                'request': self.request,
             })))
 
     def test_username_unsafe(self):
         """Testing avatar template tag rendering with an unsafe username"""
         t = Template('{% load avatars %}'
-                     '{% avatar user 32 avatar_service_id %}')
+                     '{% avatar target_user 32 avatar_service_id %}')
 
         user = User.objects.create(
             first_name='<b>Bad',
@@ -199,9 +291,8 @@ class TemplateTagTests(TestCase):
         avatar_services.enable_service(DummyAvatarService)
 
         self.assertHTMLEqual(
-            t.render(Context({
-                'user': user,
-                'request': self.request,
+            t.render(RequestContext(self.request, {
+                'target_user': user,
                 'avatar_service_id': DummyAvatarService.avatar_service_id,
             })),
             '<img src="http://example.com/avatar.png" alt="%s" width="32"'
