@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Q
 from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
@@ -203,6 +204,23 @@ class StatusUpdateResource(WebAPIResource):
         return StatusUpdate.state_to_string(obj.effective_state)
 
     @webapi_check_local_site
+    @webapi_request_fields(
+        optional={
+            'change': {
+                'type': int,
+                'description': 'The change description to get status updates '
+                               'for.'
+            },
+            'service-id': {
+                'type': six.text_type,
+                'description': 'The service ID to query for.',
+            },
+            'state': {
+                'type': ('pending', 'done-success', 'done-failure', 'error'),
+                'description': 'The state to query for.',
+            },
+        },
+    )
     @augment_method_from(WebAPIResource)
     def get_list(self, *args, **kwargs):
         """Returns a list of status updates on a review request.
@@ -238,7 +256,21 @@ class StatusUpdateResource(WebAPIResource):
         review_request = resources.review_request.get_object(
             request, *args, **kwargs)
 
-        return review_request.status_updates.all()
+        q = Q()
+
+        if is_list:
+
+            if 'change' in request.GET:
+                q = q & Q(change_description=int(request.GET.get('change')))
+
+            if 'service-id' in request.GET:
+                q = q & Q(service_id=request.GET.get('service-id'))
+
+            if 'state' in request.GET:
+                q = q & Q(state=StatusUpdate.string_to_state(
+                    request.GET.get('state')))
+
+        return review_request.status_updates.filter(q)
 
     @webapi_check_local_site
     @webapi_login_required

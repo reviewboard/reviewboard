@@ -734,7 +734,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
     def create_status_update(self, review_request, user='dopey',
                              service_id='service', summary='Status Update',
-                             state=StatusUpdate.PENDING):
+                             state=StatusUpdate.PENDING,
+                             change_description=None):
         """Create a status update for testing.
 
         It is populated with default data that can be overridden by the caller.
@@ -757,6 +758,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 The state for the new model. This must be one of the valid
                 choices for the state field.
 
+            change_description (reviewboard.changedescs.models.ChangeDescription, optional):
+                The change description for this status update.
+
         Returns:
             reviewboard.reviews.models.StatusUpdate:
             The new status update.
@@ -766,6 +770,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         return StatusUpdate.objects.create(
             review_request=review_request,
+            change_description=change_description,
             service_id=service_id,
             summary=summary,
             state=state,

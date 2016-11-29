@@ -6,9 +6,14 @@ import warnings
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import six
-from djblets.extensions.hooks import (AppliesToURLMixin, DataGridColumnsHook,
-                                      ExtensionHook, ExtensionHookPoint,
-                                      SignalHook, TemplateHook, URLHook)
+from djblets.extensions.hooks import (AppliesToURLMixin,
+                                      BaseRegistryHook,
+                                      DataGridColumnsHook,
+                                      ExtensionHook,
+                                      ExtensionHookPoint,
+                                      SignalHook,
+                                      TemplateHook,
+                                      URLHook)
 from djblets.integrations.hooks import BaseIntegrationHook
 from djblets.registries.errors import ItemLookupError
 
@@ -21,6 +26,7 @@ from reviewboard.admin.widgets import (register_admin_widget,
                                        unregister_admin_widget)
 from reviewboard.attachments.mimetypes import (register_mimetype_handler,
                                                unregister_mimetype_handler)
+from reviewboard.avatars import avatar_services
 from reviewboard.datagrids.grids import (DashboardDataGrid,
                                          UserPageReviewRequestDataGrid)
 from reviewboard.hostingsvcs.service import (register_hosting_service,
@@ -63,6 +69,32 @@ class AuthBackendHook(ExtensionHook):
         super(AuthBackendHook, self).shutdown()
 
         unregister_auth_backend(self.backend_cls)
+
+
+@six.add_metaclass(ExtensionHookPoint)
+class AvatarServiceHook(BaseRegistryHook):
+    """"A hook for adding avatar services.
+
+    This hook will register services with the avatar services registry and
+    unregister them when the hook is shut down.
+    """
+
+    registry = avatar_services
+
+    def __init__(self, extension, service, **kwargs):
+        """Initialize the avatar service hook with the given service.
+
+        Args:
+            extension (djblets.extensions.extension.Extension):
+                The extension registering this hook.
+
+            service (type):
+                The avatar service class to register.
+
+                This must be a subclass of
+                :py:class:`djblets.avatars.services.base.AvatarService`.
+        """
+        super(AvatarServiceHook, self).__init__(extension, service, **kwargs)
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -1520,6 +1552,7 @@ __all__ = [
     'AdminWidgetHook',
     'APIExtraDataAccessHook',
     'AuthBackendHook',
+    'AvatarServiceHook',
     'BaseReviewRequestActionHook',
     'CommentDetailDisplayHook',
     'DashboardColumnsHook',

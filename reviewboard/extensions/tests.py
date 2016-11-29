@@ -7,6 +7,7 @@ from django.core import mail
 from django.template import Context, Template
 from django.test.client import RequestFactory
 from django.utils import six
+from djblets.avatars.tests import DummyAvatarService
 from djblets.extensions.extension import ExtensionInfo
 from djblets.extensions.manager import ExtensionManager
 from djblets.extensions.models import RegisteredExtension
@@ -20,9 +21,11 @@ from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.admin.widgets import (primary_widgets,
                                        secondary_widgets,
                                        Widget)
+from reviewboard.avatars import avatar_services
 from reviewboard.extensions.base import Extension
 from reviewboard.extensions.hooks import (AdminWidgetHook,
                                           APIExtraDataAccessHook,
+                                          AvatarServiceHook,
                                           BaseReviewRequestActionHook,
                                           CommentDetailDisplayHook,
                                           DiffViewerActionHook,
@@ -1743,3 +1746,41 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
                              call_kwargs)
             self.assertEqual(hook.get_cc_field.spy.calls[-1].kwargs,
                              call_kwargs)
+
+
+class AvatarServiceHookTests(ExtensionManagerMixin, TestCase):
+    """Test for reviewboard.extensions.hooks.AvatarServiceHook."""
+
+    @classmethod
+    def setUpClass(cls):
+        super(AvatarServiceHookTests, cls).setUpClass()
+        avatar_services.reset()
+
+    def setUp(self):
+        super(AvatarServiceHookTests, self).setUp()
+        self.extension = DummyExtension(extension_manager=self.manager)
+
+    def tearDown(self):
+        super(AvatarServiceHookTests, self).tearDown()
+        self.extension.shutdown()
+        avatar_services.reset()
+
+    def test_register(self):
+        """Testing AvatarServiceHook registers services"""
+        self.assertNotIn(DummyAvatarService, avatar_services)
+        AvatarServiceHook(self.extension, DummyAvatarService,
+                          start_enabled=True)
+        self.assertIn(DummyAvatarService, avatar_services)
+
+        avatar_services.enable_service(DummyAvatarService, save=False)
+        self.assertTrue(avatar_services.is_enabled(DummyAvatarService))
+
+    def test_unregister(self):
+        """Testing AvatarServiceHook unregisters services on shutdown"""
+        self.assertNotIn(DummyAvatarService, avatar_services)
+        AvatarServiceHook(self.extension, DummyAvatarService,
+                          start_enabled=True)
+        self.assertIn(DummyAvatarService, avatar_services)
+
+        self.extension.shutdown()
+        self.assertNotIn(DummyAvatarService, avatar_services)

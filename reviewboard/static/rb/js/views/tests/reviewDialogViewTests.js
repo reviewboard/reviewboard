@@ -282,7 +282,7 @@ suite('rb/views/ReviewDialogView', function() {
                         expect(dlg._bodyBottomView.$el.is(':visible'))
                             .toBe(true);
                         expect(dlg._$shipIt.prop('checked')).toBe(shipIt);
-                        expect(dlg._$comments.children().length).toBe(0);
+                        expect(dlg._$comments.children().length).toBe(2);
                         expect(dlg._$spinner).toBe(null);
                     }
 
