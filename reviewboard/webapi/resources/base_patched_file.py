@@ -65,7 +65,7 @@ class BasePatchedFileResource(WebAPIResource):
         try:
             patched_file = get_patched_file(orig_file, filediff, request)
         except Exception as e:
-            logging.error('%s: Error retrieving patched file for FileDiff %'
+            logging.error('%s: Error retrieving patched file for FileDiff '
                           '%s: %s',
                           self.__class__.__name__, filediff.pk, e, exc_info=1,
                           request=request)
