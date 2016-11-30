@@ -1,4 +1,4 @@
-/*
+/**
  * Provides state and utility functions for loading and reviewing diffs.
  */
 RB.DiffReviewable = RB.AbstractReviewable.extend({
@@ -7,17 +7,20 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
         fileDiffID: null,
         interFileDiffID: null,
         revision: null,
-        interdiffRevision: null
+        interdiffRevision: null,
     }, RB.AbstractReviewable.prototype.defaults),
 
     commentBlockModel: RB.DiffCommentBlock,
     defaultCommentBlockFields: ['fileDiffID', 'interFileDiffID'],
 
-    /*
-     * Adds comment blocks for the serialized comment blocks passed to the
-     * reviewable.
+    /**
+     * Load a serialized comment and add comment blocks for it.
+     *
+     * Args:
+     *     serializedCommentBlock (object):
+     *         The serialized data for the new comment block(s).
      */
-    loadSerializedCommentBlock: function(serializedCommentBlock) {
+    loadSerializedCommentBlock(serializedCommentBlock) {
         this.createCommentBlock({
             reviewRequest: this.get('reviewRequest'),
             review: this.get('review'),
@@ -26,7 +29,7 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
             beginLineNum: serializedCommentBlock.linenum,
             endLineNum: serializedCommentBlock.linenum +
                         serializedCommentBlock.num_lines - 1,
-            serializedComments: serializedCommentBlock.comments || []
+            serializedComments: serializedCommentBlock.comments || [],
         });
     },
 
@@ -43,7 +46,7 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
      *     context (object):
      *         The context passed to each callback function.
      *
-     *     options (object):
+     *     options (object, optional):
      *         The option arguments that control the behavior of this function.
      *
      * Option Args:
@@ -51,11 +54,9 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
      *         Determines whether or not we want to requeue the corresponding
      *         diff in order to show its deleted content.
      */
-    getRenderedDiff: function(callbacks, context, options) {
-        var url = this._buildRenderedDiffURL() + '?index=' +
+    getRenderedDiff(callbacks, context, options={}) {
+        let url = this._buildRenderedDiffURL() + '?index=' +
                   this.get('fileIndex');
-
-        options = options || {};
 
         if (options.showDeleted) {
             url += '&show-deleted=1';
@@ -65,23 +66,36 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
 
         this._fetchFragment({
             url: url,
-            noActivityIndicator: true
+            noActivityIndicator: true,
         }, callbacks, context);
     },
 
-    /*
-     * Returns a rendered fragment of a diff.
+    /**
+     * Return a rendered fragment of a diff.
      *
      * The fragment will be fetched from the server and eventually returned
      * as the argument to the success callback.
+     *
+     * Args:
+     *     options (object):
+     *         The option arguments that control the behavior of this function.
+     *
+     *     callbacks (object):
+     *         The functions used to fetch the corresponding diff fragments.
+     *
+     *     context (object):
+     *         The context passed to each callback function.
+     *
+     * Option Args:
+     *     chunkIndex (string):
+     *         The chunk index to load.
      */
-    getRenderedDiffFragment: function(options, callbacks, context) {
+    getRenderedDiffFragment(options, callbacks, context) {
         console.assert(options.chunkIndex !== undefined,
                        'chunkIndex must be provided');
 
         this._fetchFragment({
-            url: this._buildRenderedDiffURL() + 'chunk/' +
-                 options.chunkIndex + '/',
+            url: `${this._buildRenderedDiffURL()}chunk/${options.chunkIndex}/`,
             data: {
                 'index': this.get('fileIndex'),
                 'lines-of-context': options.linesOfContext
@@ -89,13 +103,23 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
         }, callbacks, context);
     },
 
-    /*
-     * Fetches the diff fragment from the server.
+    /**
+     * Fetch the diff fragment from the server.
      *
      * This is used internally by getRenderedDiff and getRenderedDiffFragment
      * to do all the actual fetching and calling of callbacks.
+     *
+     * Args:
+     *     options (object):
+     *         The option arguments that control the behavior of this function.
+     *
+     *     callbacks (object):
+     *         The functions used to fetch the corresponding diff fragments.
+     *
+     *     context (object):
+     *         The context passed to each callback function.
      */
-    _fetchFragment: function(options, callbacks, context) {
+    _fetchFragment(options, callbacks, context) {
         RB.apiCall(_.defaults(
             {
                 type: 'GET',
@@ -106,15 +130,17 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
         ));
     },
 
-    /*
-     * Builds a URL that forms the base of a diff fragment fetch.
+    /**
+     * Return a URL that forms the base of a diff fragment fetch.
+     *
+     * Returns:
+     *     string:
+     *     The URL for fetching diff fragments.
      */
-    _buildRenderedDiffURL: function() {
-        var revisionStr,
-            interdiffRevision = this.get('interdiffRevision'),
-            interFileDiffID = this.get('interFileDiffID');
-
-        revisionStr = this.get('revision');
+    _buildRenderedDiffURL() {
+        const interdiffRevision = this.get('interdiffRevision');
+        const interFileDiffID = this.get('interFileDiffID');
+        let revisionStr = this.get('revision');
 
         if (interdiffRevision) {
             revisionStr += '-' + interdiffRevision;
@@ -124,5 +150,5 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
                revisionStr + '/fragment/' + this.get('fileDiffID') +
                (interFileDiffID ? '-' + interFileDiffID : '') +
                '/';
-    }
+    },
 });

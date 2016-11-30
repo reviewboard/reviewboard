@@ -5,27 +5,29 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
 
     tooltipSides: 'lrbt',
 
-    /*
-     * Disposes the comment block.
+    /**
+     * Dispose the comment block.
      *
      * This will remove the view and the tooltip.
      */
-    dispose: function() {
+    dispose() {
         this.trigger('removing');
         this.remove();
         this._$tooltip.remove();
     },
 
-    /*
-     * Renders the comment block.
+    /**
+     * Render the comment block.
      *
      * Along with the block, a floating tooltip will be created that
      * displays summaries of the comments.
+     *
+     * Returns:
+     *     RB.AbstractCommentBlockView:
+     *     This object, for chaining.
      */
-    render: function() {
-        this._$tooltip = $.tooltip(this.$el, {
-                side: this.tooltipSides
-            })
+    render() {
+        this._$tooltip = $.tooltip(this.$el, { side: this.tooltipSides })
             .addClass('comments');
 
         this.renderContent();
@@ -38,7 +40,7 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
         return this;
     },
 
-    /*
+    /**
      * Hide the tooltip from the page.
      *
      * This will force the tooltip to hide, preventing it from interfering
@@ -47,58 +49,76 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
      * It will automatically show again the next time there is a mouse enter
      * event.
      */
-    hideTooltip: function() {
+    hideTooltip() {
         this._$tooltip.hide();
     },
 
-    /*
-     * Positions the comment dlg to the right side of comment block.
+    /**
+     * Position the comment dlg to the right side of comment block.
      *
      * This can be overridden to change where the comment dialog will
      * be displayed.
+     *
+     * Args:
+     *     commntDlg (RB.CommentDialogView):
+     *          The view for the comment dialog.
      */
-    positionCommentDlg: function(commentDlg) {
+    positionCommentDlg(commentDlg) {
         commentDlg.positionBeside(this.$el, {
             side: 'r',
             fitOnScreen: true
         });
     },
 
-    /*
-     * Positions the notification bubble around the comment block.
+    /**
+     * Position the notification bubble around the comment block.
      *
      * This can be overridden to change where the bubble will be displayed.
      * By default, it is centered over the block.
+     *
+     * Args:
+     *     $bubble (jQuery):
+     *         The selector for the notification bubble.
      */
-    positionNotifyBubble: function($bubble) {
+    positionNotifyBubble($bubble) {
         $bubble.move(Math.round((this.$el.width()  - $bubble.width())  / 2),
                      Math.round((this.$el.height() - $bubble.height()) / 2));
     },
 
-    /*
-     * Notifies the user of some update. This notification appears in the
-     * comment area.
+    /**
+     * Notify the user of some update.
+     *
+     * This notification appears in the comment area.
+     *
+     * Args:
+     *     text (string):
+     *         The text to show in the notification.
+     *
+     *     cb (function, optional):
+     *         A callback function to call once the notification has been
+     *         removed.
+     *
+     *     context (object):
+     *         Context to bind when calling the ``cb`` callback function.
      */
-    notify: function(text, cb, context) {
-        var $bubble = $('<div/>')
-                .addClass('bubble')
-                .appendTo(this.$el)
-                .text(text);
-
-        $bubble.css('opacity', 0);
+    notify(text, cb, context) {
+        const $bubble = $('<div class="bubble">')
+            .css('opacity', 0)
+            .appendTo(this.$el)
+            .text(text);
 
         this.positionNotifyBubble($bubble);
 
         $bubble
             .animate({
                 top: '-=10px',
-                opacity: 0.8
+                opacity: 0.8,
             }, 350, 'swing')
             .delay(1200)
             .animate({
                 top: '+=10px',
-                opacity: 0
-            }, 350, 'swing', function() {
+                opacity: 0,
+            }, 350, 'swing', () => {
                 $bubble.remove();
 
                 if (_.isFunction(cb)) {
@@ -107,38 +127,37 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
             });
     },
 
-    /*
-     * Updates the tooltip contents.
+    /**
+     * Update the tooltip contents.
      *
      * The contents will show the summary of each comment, including
      * the draft comment, if any.
      */
-    _updateTooltip: function() {
-        var $list = $('<ul/>'),
-            draftComment = this.model.get('draftComment'),
-            userSession = RB.UserSession.instance,
-            tooltipTemplate = _.template([
-                '<li>',
-                ' <div class="reviewer">',
-                '  <%- user %>:',
-                ' </div>',
-                ' <pre class="rich-text"><%= html %></pre>',
-                '</li>'
-            ].join(''));
+    _updateTooltip() {
+        const $list = $('<ul/>');
+        const draftComment = this.model.get('draftComment');
+        const tooltipTemplate = _.template(dedent`
+            <li>
+             <div class="reviewer">
+              <%- user %>:
+             </div>
+             <pre class="rich-text"><%= html %></pre>
+            </li>
+        `);
 
         if (draftComment) {
             $(tooltipTemplate({
-                user: userSession.get('fullName'),
-                html: draftComment.get('html')
+                user: RB.UserSession.instance.get('fullName'),
+                html: draftComment.get('html'),
             }))
             .addClass('draft')
             .appendTo($list);
         }
 
-        _.each(this.model.get('serializedComments'), function(comment) {
+        this.model.get('serializedComments').forEach(comment => {
             $(tooltipTemplate({
                 user: comment.user.name,
-                html: comment.html
+                html: comment.html,
             }))
             .appendTo($list);
         });
@@ -148,8 +167,8 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
             .append($list);
     },
 
-    /*
-     * Handles when the model's draftComment property changes.
+    /**
+     * Handle changes to the model's draftComment property.
      *
      * If there's a new draft comment, we'll begin listening for updates
      * on it in order to update the tooltip or display notification bubbles.
@@ -160,31 +179,29 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
      * If the draft comment is deleted, and there are no other comments,
      * the view will be removed.
      */
-    _onDraftCommentChanged: function() {
-        var self = this,
-            $el = this.$el,
-            comment = this.model.get('draftComment');
+    _onDraftCommentChanged() {
+        const comment = this.model.get('draftComment');
 
         if (!comment) {
-            $el.removeClass('draft');
+            this.$el.removeClass('draft');
             return;
         }
 
         comment.on('change:text', this._updateTooltip, this);
 
-        comment.on('destroy', function() {
-            this.notify(gettext('Comment Deleted'), function() {
-                /* Discard the comment block if empty. */
+        comment.on('destroy', () => {
+            this.notify(gettext('Comment Deleted'), () => {
+                // Discard the comment block if empty.
                 if (this.model.isEmpty()) {
-                    $el.fadeOut(350, function() { self.dispose(); });
+                    this.$el.fadeOut(350, () => this.dispose());
                 } else {
-                    $el.removeClass('draft');
+                    this.$el.removeClass('draft');
                     this._updateTooltip();
                 }
-            }, this);
-        }, this);
+            });
+        });
 
-        comment.on('saved', function(options) {
+        comment.on('saved', options => {
             this._updateTooltip();
 
             if (!options.boundsUpdated) {
@@ -192,17 +209,17 @@ RB.AbstractCommentBlockView = Backbone.View.extend({
             }
 
             RB.DraftReviewBannerView.instance.show();
-        }, this);
+        });
 
-        $el.addClass('draft');
+        this.$el.addClass('draft');
     },
 
-    /*
-     * Handler for when the comment block is clicked.
+    /**
+     * Handle the comment block being clicked.
      *
      * Emits the 'clicked' signal so that parent views can process it.
      */
-    _onClicked: function() {
+    _onClicked() {
         this.trigger('clicked');
-    }
+    },
 });

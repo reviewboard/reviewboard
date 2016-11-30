@@ -1,4 +1,4 @@
-/*
+/**
  * Represents the comments on a region of a screenshot.
  *
  * ScreenshotCommentBlock deals with creating and representing comments
@@ -10,10 +10,10 @@ RB.ScreenshotCommentBlock = RB.AbstractCommentBlock.extend({
         x: null,
         y: null,
         width: null,
-        height: null
+        height: null,
     }, RB.AbstractCommentBlock.prototype.defaults),
 
-    /*
+    /**
      * Return whether the bounds of this region can be updated.
      *
      * If there are any existing published comments on this region, it
@@ -23,17 +23,24 @@ RB.ScreenshotCommentBlock = RB.AbstractCommentBlock.extend({
      *     boolean:
      *     A value indicating whether new bounds can be set for this region.
      */
-    canUpdateBounds: function() {
+    canUpdateBounds() {
         return false;
     },
 
-    /*
-     * Creates a ScreenshotComment for the given comment ID and this block's
-     * region.
+    /**
+     * Creates a ScreenshotComment for the given comment ID.
+     *
+     * Args:
+     *     id (number):
+     *         The ID of the comment to instantiate the model for.
+     *
+     * Returns:
+     *     RB.ScreenshotComment:
+     *     The new comment model.
      */
-    createComment: function(id) {
+    createComment(id) {
         return this.get('review').createScreenshotComment(
             id, this.get('screenshotID'), this.get('x'), this.get('y'),
             this.get('width'), this.get('height'));
-    }
+    },
 });

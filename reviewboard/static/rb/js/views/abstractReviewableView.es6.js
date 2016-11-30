@@ -1,25 +1,30 @@
-/*
+/**
  * Abstract base for review UIs.
  *
  * This provides all the basics for creating a review UI. It does the
  * work of loading in comments, creating views, and displaying comment dialogs,
  */
 RB.AbstractReviewableView = Backbone.View.extend({
-    /*
-     * The AbstractCommentBlockView subclass that will be instantiated for
-     * rendering comment blocks.
+    /**
+     * The AbstractCommentBlockView subclass.
+     *
+     * This is the type that will be instantiated for rendering comment blocks.
      */
     commentBlockView: null,
 
-    /* The list type (as a string) for passing to CommentDlg. */
+    /**
+     * The list type (as a string) for passing to CommentDlg.
+     */
     commentsListName: null,
 
-    /*
-     * Initializes AbstractReviewableView.
+    /**
+     * Initialize AbstractReviewableView.
+     *
+     * Args:
+     *     options (object, optional):
+     *         Options for the view.
      */
-    initialize: function(options) {
-        options = options || {};
-
+    initialize(options={}) {
         console.assert(this.commentBlockView,
                        'commentBlockView must be defined by the subclass');
         console.assert(this.commentsListName,
@@ -30,13 +35,17 @@ RB.AbstractReviewableView = Backbone.View.extend({
         this.renderedInline = options.renderedInline || false;
     },
 
-    /*
-     * Renders the reviewable to the page.
+    /**
+     * Render the reviewable to the page.
      *
      * This will call the subclass's renderContent(), and then handle
      * rendering each comment block on the reviewable.
+     *
+     * Returns:
+     *     RB.AbstractReviewableView:
+     *     This object, for chaining.
      */
-    render: function() {
+    render() {
         this.renderContent();
 
         this.model.commentBlocks.each(this._addCommentBlockView, this);
@@ -45,19 +54,23 @@ RB.AbstractReviewableView = Backbone.View.extend({
         return this;
     },
 
-    /*
-     * Renders the content of the reviewable.
+    /**
+     * Render the content of the reviewable.
      *
      * This should be overridden by subclasses.
      */
-    renderContent: function() {
+    renderContent() {
     },
 
-    /*
-     * Creates a new comment in a comment block and opens it for editing.
+    /**
+     * Create a new comment in a comment block and opens it for editing.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the comment block creation.
      */
-    createAndEditCommentBlock: function(opts) {
-        var defaultCommentBlockFields =
+    createAndEditCommentBlock(options) {
+        let defaultCommentBlockFields =
             _.result(this.model, 'defaultCommentBlockFields');
 
         if (defaultCommentBlockFields.length === 0 &&
@@ -69,20 +82,23 @@ RB.AbstractReviewableView = Backbone.View.extend({
         }
 
         /* As soon as we add the comment block, show the dialog. */
-        this.once('commentBlockViewAdded', function(commentBlockView) {
-            this.showCommentDlg(commentBlockView);
-        }, this);
+        this.once('commentBlockViewAdded',
+                  commentBlockView => this.showCommentDlg(commentBlockView));
 
-        _.extend(opts,
+        _.extend(options,
                  _.pick(this.model.attributes, defaultCommentBlockFields));
-        this.model.createCommentBlock(opts);
+        this.model.createCommentBlock(options);
     },
 
-    /*
-     * Shows the comment details dialog for a comment block.
+    /**
+     * Show the comment details dialog for a comment block.
+     *
+     * Args:
+     *     commentBlockView (RB.AbstractCommentBlockView):
+     *         The comment block to show the dialog for.
      */
-    showCommentDlg: function(commentBlockView) {
-        var commentBlock = commentBlockView.model;
+    showCommentDlg(commentBlockView) {
+        const commentBlock = commentBlockView.model;
 
         commentBlock.ensureDraftComment();
 
@@ -95,35 +111,34 @@ RB.AbstractReviewableView = Backbone.View.extend({
             comment: commentBlock.get('draftComment'),
             publishedComments: commentBlock.get('serializedComments'),
             publishedCommentsType: this.commentsListName,
-            position: function(dlg) {
-                commentBlockView.positionCommentDlg(dlg);
-            }
+            position: dlg => commentBlockView.positionCommentDlg(dlg),
         });
         this._activeCommentBlock = commentBlock;
 
-        this.listenTo(this.commentDlg, 'closed', function() {
+        this.listenTo(this.commentDlg, 'closed', () => {
             this.commentDlg = null;
             this._activeCommentBlock = null;
         });
     },
 
-    /*
-     * Adds a CommentBlockView for the given CommentBlock.
+    /**
+     * Add a CommentBlockView for the given CommentBlock.
      *
      * This will create a view for the block, render it, listen for clicks
      * in order to show the comment dialog, and then emit
      * 'commentBlockViewAdded'.
+     *
+     * Args:
+     *     commentBlock (RB.AbstractCommentBlock):
+     *         The comment block to add a view for.
      */
-    _addCommentBlockView: function(commentBlock) {
-        var commentBlockView = new this.commentBlockView({
+    _addCommentBlockView(commentBlock) {
+        const commentBlockView = new this.commentBlockView({
             model: commentBlock
         });
 
-        commentBlockView.on('clicked', function() {
-            this.showCommentDlg(commentBlockView);
-        }, this);
-
+        commentBlockView.on('clicked', () => this.showCommentDlg(commentBlockView));
         commentBlockView.render();
         this.trigger('commentBlockViewAdded', commentBlockView);
-    }
+    },
 });

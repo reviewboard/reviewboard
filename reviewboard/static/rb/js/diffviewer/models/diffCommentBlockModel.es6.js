@@ -1,4 +1,4 @@
-/*
+/**
  * Represents the comments on a region of a diff.
  *
  * DiffCommentBlock deals with creating and representing comments that exist
@@ -11,19 +11,30 @@ RB.DiffCommentBlock = RB.AbstractCommentBlock.extend({
         beginLineNum: null,
         endLineNum: null,
         $beginRow: null,
-        $endRow: null
+        $endRow: null,
     }, RB.AbstractCommentBlock.prototype.defaults),
 
-    /*
-     * Returns the number of lines this comment block spans.
+    /**
+     * Return the number of lines this comment block spans.
+     *
+     * Returns:
+     *     number:
+     *     The number of lines spanned by this comment.
      */
     getNumLines: function() {
         return this.get('endLineNum') + this.get('beginLineNum') + 1;
     },
 
-    /*
-     * Creates a DiffComment for the given comment ID and this block's
-     * line range.
+    /**
+     * Create a DiffComment for the given comment ID.
+     *
+     * Args:
+     *     id (number):
+     *         The ID of the comment to instantiate the model for.
+     *
+     * Returns:
+     *     RB.DiffComment:
+     *     The new comment model.
      */
     createComment: function(id) {
         return this.get('review').createDiffComment(
@@ -32,5 +43,5 @@ RB.DiffCommentBlock = RB.AbstractCommentBlock.extend({
             this.get('interFileDiffID'),
             this.get('beginLineNum'),
             this.get('endLineNum'));
-    }
+    },
 });
