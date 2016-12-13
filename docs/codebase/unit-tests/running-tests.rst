@@ -40,11 +40,11 @@ To run only the tests in a specific module::
 
 To run the tests in a specific class::
 
-    $ ./tests/runtests.py reviewboard.scmtools.tests:GitTests
+    $ ./tests/runtests.py — reviewboard.scmtools.tests.test_git:GitTests
 
 To run only a specific test case::
 
-    $ ./tests/runtests.py reviewboard.scmtools.tests:GitTests.test_get_file
+    $ ./tests/runtests.py — reviewboard.scmtools.tests.test_git:GitTests.test_get_file
 
 
 Working With Failed Tests
