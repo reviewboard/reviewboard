@@ -396,6 +396,27 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         {
             fieldID: 'depends_on',
             fieldName: 'dependsOn',
+            autocomplete: {
+                fieldName: function(data) {
+                    return data.search.review_requests;
+                },
+                nameKey: 'id',
+                descKey: 'summary',
+                display_name: 'summary',
+                resourceName: 'search',
+                parseItem: function(item) {
+                    item.id = item.id.toString();
+                    item.display_name = item.summary;
+
+                    return item;
+                },
+                extraParams: {
+                    summary: 1
+                },
+                cmp: function(term, a, b) {
+                    return b.data.id - a.data.id;
+                }
+            },
             useEditIconOnly: true,
             formatter: function(view, data, $el) {
                 $el.html(view.urlizeList(
@@ -1336,19 +1357,28 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 matchCase: false,
                 multiple: true,
                 parse: function(data) {
-                    var items = data[options.fieldName],
-                        itemsLen = items.length,
-                        parsed = [],
-                        value,
+                    var parsed = [],
+                        items,
+                        item,
                         i;
 
-                    for (i = 0; i < itemsLen; i++) {
-                        value = items[i];
+                    if (_.isFunction(options.fieldName)) {
+                        items = options.fieldName(data);
+                    } else {
+                        items = data[options.fieldName];
+                    }
+
+                    for (i = 0; i < items.length; i++) {
+                        item = items[i];
+
+                        if (options.parseItem) {
+                            item = options.parseItem(item);
+                        }
 
                         parsed.push({
-                            data: value,
-                            value: value[options.nameKey],
-                            result: value[options.nameKey]
+                            data: item,
+                            value: item[options.nameKey],
+                            result: item[options.nameKey]
                         });
                     }
 
