@@ -78,6 +78,10 @@ RB.DummyReviewableView = RB.FileAttachmentReviewableView.extend({
             $header.append(this.captionTableTemplate({
                 items: captionItems.join('')
             }));
+        } else {
+            $('<h1 class="caption file-attachment-single-revision">')
+                .text(this.model.get('caption'))
+                .appendTo($header);
         }
     },
 
