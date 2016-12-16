@@ -780,16 +780,16 @@ class GitHub(HostingService, BugTracker):
         tree = self.client.api_get_tree(repo_api_url, tree_sha, recursive=True)
 
         file_shas = {}
-        for file in tree['tree']:
-            file_shas[file['path']] = file['sha']
+        for f in tree['tree']:
+            file_shas[f['path']] = f['sha']
 
         diff = []
 
-        for file in files:
-            filename = file['filename']
-            status = file['status']
+        for f in files:
+            filename = f['filename']
+            status = f['status']
             try:
-                patch = file['patch']
+                patch = f['patch']
             except KeyError:
                 continue
 
@@ -797,12 +797,12 @@ class GitHub(HostingService, BugTracker):
 
             if status == 'modified':
                 old_sha = file_shas[filename]
-                new_sha = file['sha']
+                new_sha = f['sha']
                 diff.append('index %s..%s 100644' % (old_sha, new_sha))
                 diff.append('--- a/%s' % filename)
                 diff.append('+++ b/%s' % filename)
             elif status == 'added':
-                new_sha = file['sha']
+                new_sha = f['sha']
 
                 diff.append('new file mode 100644')
                 diff.append('index %s..%s' % ('0' * 40, new_sha))
@@ -815,6 +815,16 @@ class GitHub(HostingService, BugTracker):
                 diff.append('index %s..%s' % (old_sha, '0' * 40))
                 diff.append('--- a/%s' % filename)
                 diff.append('+++ /dev/null')
+            elif status == 'renamed':
+                old_filename = f['previous_filename']
+                old_sha = file_shas[old_filename]
+                new_sha = f['sha']
+
+                diff.append('rename from %s' % old_filename)
+                diff.append('rename to %s' % filename)
+                diff.append('index %s..%s' % (old_sha, new_sha))
+                diff.append('--- a/%s' % old_filename)
+                diff.append('+++ b/%s' % filename)
 
             diff.append(patch)
 
