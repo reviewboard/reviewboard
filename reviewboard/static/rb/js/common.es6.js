@@ -15,13 +15,19 @@ $.fn.infobox = function(id) {
             .appendTo(document.body);
     }
 
-    this.each(function() {
-        const view = new RB.InfoboxView({
-            $target: $(this),
-            el: $el
-        });
+    this.each((idx, target) => {
+        const $target = $(target);
+        let view = $target.data('infobox');
 
-        view.render();
+        if (!view) {
+            view = new RB.InfoboxView({
+                $target: $target,
+                el: $el,
+            });
+
+            $target.data('infobox', view);
+            view.render();
+        }
     });
 };
 
