@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import logging
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 from difflib import SequenceMatcher
@@ -14,6 +15,7 @@ from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.contextmanagers import controlled_subprocess
 
+from reviewboard.diffviewer.errors import PatchError
 from reviewboard.scmtools.core import PRE_CREATION, HEAD
 
 
@@ -117,68 +119,94 @@ def split_line_endings(data):
     return lines
 
 
-def patch(diff, file, filename, request=None):
-    """Apply a diff to a file.  Delegates out to `patch` because noone
-       except Larry Wall knows how to patch."""
+def patch(diff, orig_file, filename, request=None):
+    """Apply a diff to a file.
 
-    log_timer = log_timed("Patching file %s" % filename,
-                          request=request)
+    This delegates out to ``patch`` because noone except Larry Wall knows how
+    to patch.
+
+    Args:
+        diff (bytes):
+            The contents of the diff to apply.
+
+        orig_file (bytes):
+            The contents of the original file.
+
+        filename (unicode):
+            The name of the file being patched.
+
+        request (django.http.HttpRequest, optional):
+            The HTTP request, for use in logging.
+
+    Returns:
+        bytes:
+        The contents of the patched file.
+
+    Raises:
+        reviewboard.diffutils.errors.PatchError:
+            An error occurred when trying to apply the patch.
+    """
+    log_timer = log_timed('Patching file %s' % filename, request=request)
 
     if not diff.strip():
         # Someone uploaded an unchanged file. Return the one we're patching.
-        return file
+        return orig_file
 
     # Prepare the temporary directory if none is available
     tempdir = tempfile.mkdtemp(prefix='reviewboard.')
 
-    (fd, oldfile) = tempfile.mkstemp(dir=tempdir)
-    f = os.fdopen(fd, "w+b")
-    f.write(convert_line_endings(file))
-    f.close()
+    try:
+        orig_file = convert_line_endings(orig_file)
+        diff = convert_line_endings(diff)
 
-    diff = convert_line_endings(diff)
+        (fd, oldfile) = tempfile.mkstemp(dir=tempdir)
+        f = os.fdopen(fd, 'w+b')
+        f.write(orig_file)
+        f.close()
 
-    newfile = '%s-new' % oldfile
+        newfile = '%s-new' % oldfile
 
-    process = subprocess.Popen(['patch', '-o', newfile, oldfile],
-                               stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE, cwd=tempdir)
+        process = subprocess.Popen(['patch', '-o', newfile, oldfile],
+                                   stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE, cwd=tempdir)
 
-    with controlled_subprocess("patch", process) as p:
-        stdout, stderr = p.communicate(diff)
-        failure = p.returncode
+        with controlled_subprocess('patch', process) as p:
+            stdout, stderr = p.communicate(diff)
+            failure = p.returncode
 
-    if failure:
-        absolute_path = os.path.join(tempdir, os.path.basename(filename))
-        with open("%s.diff" % absolute_path, 'w') as f:
-            f.write(diff)
+        try:
+            with open(newfile, 'r') as f:
+                new_file = f.read()
+        except Exception:
+            new_file = None
 
+        if failure:
+            rejects_file = '%s.rej' % newfile
+
+            try:
+                with open(rejects_file, 'rb') as f:
+                    rejects = f.read()
+            except Exception:
+                rejects = None
+
+            error_output = stderr.strip() or stdout.strip()
+
+            # Munge the output to show the filename instead of
+            # randomly-generated tempdir locations.
+            base_filename = os.path.basename(filename)
+            error_output = (
+                error_output
+                .replace(rejects_file, '%s.rej' % base_filename)
+                .replace(oldfile, base_filename)
+            )
+
+            raise PatchError(filename, error_output, orig_file, new_file,
+                             diff, rejects)
+
+        return new_file
+    finally:
+        shutil.rmtree(tempdir)
         log_timer.done()
-
-        # FIXME: This doesn't provide any useful error report on why the patch
-        # failed to apply, which makes it hard to debug.  We might also want to
-        # have it clean up if DEBUG=False
-        raise Exception(
-            _("The patch to '%(filename)s' didn't apply cleanly. The "
-              "temporary files have been left in '%(tempdir)s' for debugging "
-              "purposes.\n"
-              "`patch` returned: %(output)s")
-            % {
-                'filename': filename,
-                'tempdir': tempdir,
-                'output': stderr,
-            })
-
-    with open(newfile, "r") as f:
-        data = f.read()
-
-    os.unlink(oldfile)
-    os.unlink(newfile)
-    os.rmdir(tempdir)
-
-    log_timer.done()
-
-    return data
 
 
 def get_original_file(filediff, request, encoding_list):

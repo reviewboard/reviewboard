@@ -1,0 +1,44 @@
+{% load i18n %}
+
+<table class="sidebyside diff-error{% if file.newfile %} newfile{% endif %}"
+       id="file{{file.filediff.id}}">
+ <colgroup>
+  <col class="left">
+  <col class="right">
+ </colgroup>
+ <thead>
+  <tr class="filename-row">
+{% if comment %}
+   <th colspan="2" class="filename">
+    <a href="{{comment.get_absolute_url}}">{{comment.filediff.dest_file_display}}</a>
+    <span class="diffrevision">
+{% if comment.interfilediff %}
+{%  blocktrans with comment.filediff.diffset.revision as revision1 and comment.interfilediff.diffset.revision as revision2 %}
+     (Diff revisions {{revision1}} - {{revision2}})
+{%  endblocktrans %}
+{% else %}
+{%  blocktrans with comment.filediff.diffset.revision as revision %}
+     (Diff revision {{revision}})
+{%  endblocktrans %}
+{% endif %}
+    </span>
+{% else %}
+   <th colspan="2">
+    {% if file.index != None %}<a name="{{file.index}}">{% endif %}
+    {{file.depot_filename}}
+    {% if file.index != None %}</a>{% endif %}
+    </th>
+{% endif %}
+  </tr>
+{% if file.revision %}
+  <tr class="revision-row">
+   <th>{{file.revision}}</th>
+   <th>{{file.dest_revision}}</th>
+  </tr>
+{% endif %}
+ </thead>
+ <tbody>
+{% block tbody %}
+{% endblock %}
+ </tbody>
+</table>

@@ -50,9 +50,16 @@ RB.AbstractReviewable = Backbone.Model.extend({
         this.commentBlocks = new Backbone.Collection();
         this.commentBlocks.model = this.commentBlockModel;
 
-        /* Add all existing comment regions to the page. */
-        this.get('serializedCommentBlocks').forEach(
-            block => this.loadSerializedCommentBlock(block));
+        /*
+         * Add all existing comment regions to the page.
+         *
+         * This intentionally doesn't use forEach because some review UIs (such
+         * as the image review UI) return their serialized comments as an
+         * object instead of an array.
+         */
+        _.each(this.get('serializedCommentBlocks'),
+               this.loadSerializedCommentBlock,
+               this);
     },
 
     /**

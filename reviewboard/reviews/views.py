@@ -43,7 +43,9 @@ from reviewboard.diffviewer.diffutils import (convert_to_unicode,
                                               get_original_file,
                                               get_patched_file)
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.diffviewer.views import (DiffFragmentView, DiffViewerView,
+from reviewboard.diffviewer.views import (DiffFragmentView,
+                                          DiffViewerView,
+                                          DownloadPatchErrorBundleView,
                                           exception_traceback_string)
 from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.reviews.ui.screenshot import LegacyScreenshotReviewUI
@@ -892,7 +894,7 @@ class ReviewsDiffFragmentView(DiffFragmentView):
         * interdiff_revision
           - The second DiffSet revision in an interdiff revision range.
 
-        * chunkindex
+        * chunk_index
           - The index (0-based) of the chunk to render. If left out, the
             entire file will be rendered.
 
@@ -1118,6 +1120,17 @@ class ReviewsDiffFragmentView(DiffFragmentView):
                           filediff.pk,
                           exc_info=1)
             return None
+
+
+class ReviewsDownloadPatchErrorBundleView(DownloadPatchErrorBundleView,
+                                          ReviewsDiffFragmentView):
+    """A view to download the patch error bundle.
+
+    This view allows users to download a bundle containing data to help debug
+    issues when a patch fails to apply. The bundle will contain the diff, the
+    original file (as returned by the SCMTool), and the rejects file, if
+    applicable.
+    """
 
 
 @check_login_required

@@ -34,6 +34,7 @@ class StatusUpdatesFeature(Feature):
 
     feature_id = 'reviews.status_updates'
     name = _('Status Updates')
+    level = FeatureLevel.STABLE
     summary = _('A way for external tools to do checks on a review request '
                 'and report the results of those checks.')
 

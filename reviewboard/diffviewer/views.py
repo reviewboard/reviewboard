@@ -1,26 +1,37 @@
 from __future__ import unicode_literals
 
 import logging
+import os
 import traceback
+from zipfile import ZipFile
 
 from django.conf import settings
 from django.core.paginator import InvalidPage, Paginator
-from django.http import (HttpResponse, HttpResponseNotModified,
-                         HttpResponseServerError, Http404)
+from django.http import (HttpResponse,
+                         HttpResponseNotFound,
+                         HttpResponseNotModified,
+                         HttpResponseServerError,
+                         Http404)
 from django.shortcuts import get_object_or_404
 from django.template import RequestContext
 from django.template.loader import render_to_string
+from django.utils.safestring import mark_safe
+from django.utils.six.moves import cStringIO as StringIO
 from django.utils.translation import ugettext as _
 from django.views.generic.base import TemplateView, View
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.http import encode_etag, etag_if_none_match, set_etag
+from pygments import highlight
+from pygments.formatters import HtmlFormatter
+from pygments.lexers import get_lexer_by_name
 
 from reviewboard.diffviewer.diffutils import (get_diff_files,
                                               get_enable_highlighting)
-from reviewboard.diffviewer.errors import UserVisibleError
+from reviewboard.diffviewer.errors import PatchError, UserVisibleError
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.diffviewer.renderers import (get_diff_renderer,
                                               get_diff_renderer_class)
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 def get_collapse_diff(request):
@@ -233,7 +244,7 @@ class DiffFragmentView(View):
         * interfilediff_id
           - A FileDiff ID for the other end of a revision range.
 
-        * chunkindex
+        * chunk_index
           - The index (0-based) of the chunk to render. If left out, the
             entire file will be rendered.
 
@@ -250,16 +261,35 @@ class DiffFragmentView(View):
 
     template_name = 'diffviewer/diff_file_fragment.html'
     error_template_name = 'diffviewer/diff_fragment_error.html'
+    patch_error_template_name = 'diffviewer/diff_fragment_patch_error.html'
 
     def get(self, request, *args, **kwargs):
-        """Handles GET requests for this view.
+        """Handle GET requests for this view.
 
         This will create the renderer for the diff fragment, render it, and
         return it.
 
         If there's an error when rendering the diff fragment, an error page
         will be rendered and returned instead.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request.
+
+            *args (tuple):
+                Additional positional arguments for the view.
+
+            **kwargs (dict):
+                Additional keyword arguments for the view.
+
+        Returns:
+            django.http.HttpResponse:
+            A response containing the rendered fragment.
         """
+        filediff_id = kwargs.get('filediff_id')
+        interfilediff_id = kwargs.get('interfilediff_id')
+        chunk_index = kwargs.get('chunk_index')
+
         try:
             renderer_settings = self._get_renderer_settings(**kwargs)
             etag = self.make_etag(renderer_settings, **kwargs)
@@ -276,11 +306,11 @@ class DiffFragmentView(View):
         except Exception as e:
             logging.exception('%s.get: Error when processing diffset info '
                               'for filediff ID=%s, interfilediff ID=%s, '
-                              'chunkindex=%s: %s',
+                              'chunk_index=%s: %s',
                               self.__class__.__name__,
-                              kwargs.get('filediff_id'),
-                              kwargs.get('interfilediff_id'),
-                              kwargs.get('chunkindex'),
+                              filediff_id,
+                              interfilediff_id,
+                              chunk_index,
                               e,
                               request=request)
 
@@ -297,16 +327,53 @@ class DiffFragmentView(View):
                 renderer_settings=renderer_settings,
                 *args, **kwargs)
             response = renderer.render_to_response(request)
+        except PatchError as e:
+            logging.warning(
+                '%s.get: PatchError when rendering diffset for filediff '
+                'ID=%s, interfilediff ID=%s, chunk_index=%s: %s',
+                self.__class__.__name__,
+                filediff_id,
+                interfilediff_id,
+                chunk_index,
+                e,
+                request=request)
+
+            url_kwargs = {
+                key: kwargs[key]
+                for key in ('chunk_index', 'interfilediff_id',
+                            'review_request_id', 'filediff_id', 'revision')
+                if key in kwargs and kwargs[key] is not None
+            }
+            bundle_url = local_site_reverse('patch-error-bundle',
+                                            kwargs=url_kwargs,
+                                            request=request)
+
+            if e.rejects:
+                lexer = get_lexer_by_name('diff')
+                formatter = HtmlFormatter()
+                rejects = highlight(e.rejects, lexer, formatter)
+            else:
+                rejects = None
+
+            return HttpResponseServerError(render_to_string(
+                self.patch_error_template_name,
+                RequestContext(request, {
+                    'bundle_url': bundle_url,
+                    'file': diff_info_or_response['diff_file'],
+                    'filename': os.path.basename(e.filename),
+                    'patch_output': e.error_output,
+                    'rejects': mark_safe(rejects),
+                })))
         except Exception as e:
-            logging.exception('%s.get: Error when rendering diffset for '
-                              'filediff ID=%s, interfilediff ID=%s, '
-                              'chunkindex=%s: %s',
-                              self.__class__.__name__,
-                              kwargs.get('filediff_id'),
-                              kwargs.get('interfilediff_id'),
-                              kwargs.get('chunkindex'),
-                              e,
-                              request=request)
+            logging.exception(
+                '%s.get: Error when rendering diffset for filediff ID=%s, '
+                'interfilediff ID=%s, chunk_index=%s: %s',
+                self.__class__.__name__,
+                filediff_id,
+                interfilediff_id,
+                chunk_index,
+                e,
+                request=request)
 
             return exception_traceback(
                 self.request, e, self.error_template_name,
@@ -539,10 +606,115 @@ class DiffFragmentView(View):
         return None
 
 
+class DownloadPatchErrorBundleView(DiffFragmentView):
+    """A view to download the patch error bundle.
+
+    This view allows users to download a bundle containing data to help debug
+    issues when a patch fails to apply. The bundle will contain the diff, the
+    original file (as returned by the SCMTool), and the rejects file, if
+    applicable.
+    """
+
+    def get(self, request, *args, **kwargs):
+        """Handle GET requests for this view.
+
+        This will create the renderer for the diff fragment and render it in
+        order to get the PatchError information. It then returns a response
+        with a zip file containing all the debug data.
+
+        If no PatchError occurred, this will return a 404.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request.
+
+            *args (tuple):
+                Additional positional arguments for the view.
+
+            **kwargs (dict):
+                Additional keyword arguments for the view.
+
+        Returns:
+            django.http.HttpResponse:
+            A response containing the data bundle.
+        """
+        try:
+            renderer_settings = self._get_renderer_settings(**kwargs)
+            etag = self.make_etag(renderer_settings, **kwargs)
+
+            if etag_if_none_match(request, etag):
+                return HttpResponseNotModified()
+
+            diff_info_or_response = self.process_diffset_info(**kwargs)
+
+            if isinstance(diff_info_or_response, HttpResponse):
+                return diff_info_or_response
+        except Http404:
+            return HttpResponseNotFound()
+        except Exception as e:
+            logging.exception(
+                '%s.get: Error when processing diffset info for filediff '
+                'ID=%s, interfilediff ID=%s, chunk_index=%s: %s',
+                self.__class__.__name__,
+                kwargs.get('filediff_id'),
+                kwargs.get('interfilediff_id'),
+                kwargs.get('chunk_index'),
+                e,
+                request=request)
+            return HttpResponseServerError()
+
+        kwargs.update(diff_info_or_response)
+
+        try:
+            context = self.get_context_data(**kwargs)
+
+            renderer = self.create_renderer(
+                context=context,
+                renderer_settings=renderer_settings,
+                *args, **kwargs)
+            renderer.render_to_response(request)
+        except PatchError as e:
+            patch_error = e
+        except Exception as e:
+            logging.exception(
+                '%s.get: Error when rendering diffset for filediff ID=%s, '
+                'interfilediff ID=%s, chunk_index=%s: %s',
+                self.__class__.__name__,
+                kwargs.get('filediff_id'),
+                kwargs.get('interfilediff_id'),
+                kwargs.get('chunk_index'),
+                e,
+                request=request)
+            return HttpResponseServerError()
+        else:
+            return HttpResponseNotFound()
+
+        zip_data = StringIO()
+
+        with ZipFile(zip_data, 'w') as zipfile:
+            basename = os.path.basename(patch_error.filename)
+            zipfile.writestr('%s.orig' % basename, patch_error.orig_file)
+            zipfile.writestr('%s.diff' % basename, patch_error.diff)
+
+            if patch_error.rejects:
+                zipfile.writestr('%s.rej' % basename, patch_error.rejects)
+
+            if patch_error.new_file:
+                zipfile.writestr('%s.new' % basename, patch_error.new_file)
+
+        rsp = HttpResponse(zip_data.getvalue(),
+                           content_type='application/zip')
+        rsp['Content-Disposition'] = \
+            'attachment; filename=%s.zip' % basename
+
+        return rsp
+
+
 def exception_traceback_string(request, e, template_name, extra_context={}):
     context = {'error': e}
     context.update(extra_context)
-    if e.__class__ is not UserVisibleError:
+
+    if not isinstance(e, UserVisibleError):
         context['trace'] = traceback.format_exc()
 
     if request:

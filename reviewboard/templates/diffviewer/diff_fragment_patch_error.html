@@ -1,0 +1,34 @@
+{% extends "diffviewer/diff_fragment_error_base.html" %}
+{% load djblets_utils i18n %}
+
+{% block tbody %}
+{%  definevar "link_suffix" %}{{file.filediff.pk}}{% if comment %}-{{comment.pk}}{% endif %}{% enddefinevar %}
+<tr>
+ <td colspan="2" class="diff-patch-error">
+  <h2>
+   <div class="rb-icon rb-icon-warning"></div>
+{%  blocktrans %}
+    The patch to {{filename}} did not apply cleanly.
+{%  endblocktrans %}
+  </h2>
+  <p><pre>{{patch_output}}</pre></p>
+
+  <div>
+{%  if rejects %}
+   <a class="btn" href="#"
+      onclick="$('#diff-error-details-{{link_suffix}}').toggle(); return false;">
+    {% trans "Show rejects" %}
+   </a>
+{%  endif %}
+   <a class="btn" href="{{bundle_url}}">
+    {% trans "Download patch reject bundle" %}
+   </a>
+  </div>
+ </td>
+</tr>
+{%  if rejects %}
+<tr class="error-details" id="diff-error-details-{{link_suffix}}">
+ <td colspan="2">{{rejects}}</td>
+</tr>
+{%  endif %}
+{% endblock %}

@@ -25,6 +25,9 @@ suite('rb/views/ReviewRequestEditorView', function() {
             '   <span id="field_bugs_closed"',
             '         data-field-id="bugs_closed"',
             '         class="field editable comma-editable"></span>',
+            '   <span id="field_depends_on"',
+            '         data-field-id="depends_on"',
+            '         class="field editable comma-editable"></span>',
             '   <span id="field_target_groups"',
             '         data-field-id="target_groups"',
             '         class="field editable comma-editable"></span>',
@@ -666,6 +669,42 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                     expect($field.html()).toBe('1, 2, 3');
                 });
+            });
+
+            editCountTests();
+            securityTests();
+        });
+
+        describe('Depends On', function() {
+            var field_children;
+
+            setupFieldTests({
+                fieldName: 'dependsOn',
+                jsonFieldName: 'depends_on',
+                selector: '#field_depends_on'
+            });
+
+            hasAutoCompleteTest();
+            hasEditorTest();
+            savingTest();
+
+            it('Formatting', function() {
+                reviewRequest.draft.set('dependsOn', [
+                    {
+                        id: '123',
+                        url: '/r/123/'
+                    },
+                    {
+                        id: '124',
+                        url: '/r/124/'
+                    }
+                ]);
+                editor.trigger('fieldChanged:dependsOn');
+
+                field_children = $field.children();
+                expect($field.text()).toBe('123, 124');
+                expect(field_children.eq(0).attr('href')).toBe('/r/123/');
+                expect(field_children.eq(1).attr('href')).toBe('/r/124/');
             });
 
             editCountTests();

@@ -3,7 +3,8 @@ from __future__ import unicode_literals
 from django.conf.urls import include, patterns, url
 
 from reviewboard.reviews.views import (ReviewsDiffFragmentView,
-                                       ReviewsDiffViewerView)
+                                       ReviewsDiffViewerView,
+                                       ReviewsDownloadPatchErrorBundleView)
 
 
 download_diff_urls = patterns(
@@ -11,6 +12,16 @@ download_diff_urls = patterns(
 
     url(r'^orig/$', 'download_orig_file', name='download-orig-file'),
     url(r'^new/$', 'download_modified_file', name='download-modified-file'),
+)
+
+diff_fragment_urls = patterns(
+    '',
+
+    url('^$', ReviewsDiffFragmentView.as_view(),
+        name='view-diff-fragment'),
+    url('^patch-error-bundle/$',
+        ReviewsDownloadPatchErrorBundleView.as_view(),
+        name='patch-error-bundle'),
 )
 
 diffviewer_revision_urls = patterns(
@@ -25,8 +36,8 @@ diffviewer_revision_urls = patterns(
         name='raw-diff-revision'),
 
     url(r'^fragment/(?P<filediff_id>[0-9]+)/'
-        r'(chunk/(?P<chunk_index>[0-9]+)/)?$',
-        ReviewsDiffFragmentView.as_view()),
+        r'(chunk/(?P<chunk_index>[0-9]+)/)?',
+        include(diff_fragment_urls)),
 
     url(r'^download/(?P<filediff_id>[0-9]+)/', include(download_diff_urls)),
 )
@@ -39,8 +50,8 @@ diffviewer_interdiff_urls = patterns(
         name="view-interdiff"),
 
     url(r'^fragment/(?P<filediff_id>[0-9]+)(-(?P<interfilediff_id>[0-9]+))?/'
-        r'(chunk/(?P<chunk_index>[0-9]+)/)?$',
-        ReviewsDiffFragmentView.as_view()),
+        r'(chunk/(?P<chunk_index>[0-9]+)/)?',
+        include(diff_fragment_urls)),
 )
 
 diffviewer_urls = patterns(
