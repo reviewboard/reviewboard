@@ -36,6 +36,7 @@ from reviewboard.accounts.decorators import (check_login_required,
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
 from reviewboard.attachments.models import (FileAttachment,
                                             get_latest_file_attachments)
+from reviewboard.avatars import avatar_services
 from reviewboard.diffviewer.diffutils import (convert_to_unicode,
                                               get_file_chunks_in_range,
                                               get_last_header_before_line,
@@ -1419,6 +1420,12 @@ def user_infobox(request, username,
         six.text_type(show_profile),
         timezone,
     ]
+
+    if avatar_services.avatars_enabled:
+        avatar_service = avatar_services.for_user(user)
+
+        if avatar_service:
+            etag_data.extend(avatar_service.get_etag_data(user))
 
     for hook in UserInfoboxHook.hooks:
         try:
