@@ -1859,7 +1859,18 @@ class GitHubTests(ServiceTests):
                          /****************************************************************************
                           * Issue Summary"""),
                 },
-            ]
+                {
+                    'sha': '17ba0791499db908433b80f37c5fbc89b870084b',
+                    'filename': 'new_filename',
+                    'previous_filename': 'old_filename',
+                    'status': 'renamed',
+                    'patch': dedent('''\
+                        @@ -1,1 +1,1 @@
+                        - foo
+                        + bar
+                    ''')
+                },
+            ],
         })
 
         trees_api_response = json.dumps({
@@ -1872,6 +1883,10 @@ class GitHubTests(ServiceTests):
                     'path': 'reviewboard/static/rb/css/reviews.less',
                     'sha': '535cd2c4211038d1bb8ab6beaed504e0db9d7e62',
                 },
+                {
+                    'path': 'old_filename',
+                    'sha': '356a192b7913b04c54574d18c28d46e6395428ab',
+                }
             ],
         })
 
@@ -1927,7 +1942,7 @@ class GitHubTests(ServiceTests):
 
         self.assertEqual(change.message, 'Move .clearfix to defs.less')
         self.assertEqual(md5(change.diff.encode('utf-8')).hexdigest(),
-                         '5f63bd4f1cd8c4d8b46f2f72ea8d33bc')
+                         '2e928c77c0bf703960eb49f04e76bc11')
 
     def test_get_change_exception(self):
         """Testing GitHub get_change exception types"""
