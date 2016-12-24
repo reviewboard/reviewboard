@@ -154,9 +154,8 @@ class PostCommitTests(SpyAgency, TestCase):
         def get_change(repository, commit_to_get):
             self.assertEqual(commit_id, commit_to_get)
 
-            commit = Commit()
-            commit.message = \
-                'This is my commit message\n\nWith a summary line too.'
+            commit = Commit(message='This is my commit message\n\n'
+                                    'With a summary line too.')
             diff_filename = os.path.join(self.testdata_dir, 'git_readme.diff')
 
             with open(diff_filename, 'r') as f:
@@ -168,12 +167,14 @@ class PostCommitTests(SpyAgency, TestCase):
                             request=None):
             return (path, revision) in [('/readme', 'd6613f5')]
 
-        self.spy_on(self.repository.get_change, call_fake=get_change)
-        self.spy_on(self.repository.get_file_exists, call_fake=get_file_exists)
-
         review_request = ReviewRequest.objects.create(self.user,
                                                       self.repository)
         draft = ReviewRequestDraft.create(review_request)
+
+        self.spy_on(draft.repository.get_change, call_fake=get_change)
+        self.spy_on(draft.repository.get_file_exists,
+                    call_fake=get_file_exists)
+
         draft.update_from_commit_id(commit_id)
 
         self.assertEqual(review_request.summary, '')
@@ -195,8 +196,8 @@ class PostCommitTests(SpyAgency, TestCase):
         fields
         """
         def get_change(repository, commit_to_get):
-            commit = Commit()
-            commit.message = '* This is a summary\n\n* This is a description.'
+            commit = Commit(
+                message='* This is a summary\n\n* This is a description.')
             diff_filename = os.path.join(self.testdata_dir, 'git_readme.diff')
 
             with open(diff_filename, 'r') as f:
@@ -208,12 +209,13 @@ class PostCommitTests(SpyAgency, TestCase):
                             request=None):
             return (path, revision) in [('/readme', 'd6613f5')]
 
-        self.spy_on(self.repository.get_change, call_fake=get_change)
-        self.spy_on(self.repository.get_file_exists, call_fake=get_file_exists)
-
         review_request = ReviewRequest.objects.create(self.user,
                                                       self.repository)
         draft = ReviewRequestDraft.create(review_request)
+
+        self.spy_on(draft.repository.get_change, call_fake=get_change)
+        self.spy_on(draft.repository.get_file_exists,
+                    call_fake=get_file_exists)
 
         draft.description_rich_text = True
         draft.update_from_commit_id('4')
