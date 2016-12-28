@@ -131,6 +131,8 @@ objects:
   A list of file attachment comments in the review.
 ``screenshot_comments``
   A list of screenshot comments in the review.
+``review_request``
+  The parent review request for the review.
 
 
 ``reply_published`` event
@@ -146,6 +148,8 @@ objects:
   A list of file attachment comment replies.
 ``screenshot_comments``
   A list of screenshot comment replies.
+``review_request``
+  The parent review request for the reply.
 
 
 Example payload

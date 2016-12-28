@@ -2171,6 +2171,8 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
 
         payload = last_call.args[3]
         self.assertEqual(payload['event'], 'review_published')
+        self.assertEqual(payload['review_request']['id'],
+                         review_request.display_id)
         self.assertEqual(payload['review']['id'], review.pk)
         self.assertIn('diff_comments', payload)
         self.assertIn('screenshot_comments', payload)
@@ -2203,6 +2205,8 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
 
         payload = last_call.args[3]
         self.assertEqual(payload['event'], 'review_published')
+        self.assertEqual(payload['review_request']['id'],
+                         review_request.display_id)
         self.assertEqual(payload['review']['id'], review.pk)
         self.assertIn('diff_comments', payload)
         self.assertIn('screenshot_comments', payload)
@@ -2228,6 +2232,8 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
 
         payload = last_call.args[3]
         self.assertEqual(payload['event'], 'reply_published')
+        self.assertEqual(payload['review_request']['id'],
+                         review_request.display_id)
         self.assertEqual(payload['reply']['id'], reply.pk)
         self.assertIn('diff_comments', payload)
         self.assertIn('screenshot_comments', payload)
@@ -2266,6 +2272,8 @@ class WebHookSignalDispatchTests(SpyAgency, TestCase):
 
         payload = last_call.args[3]
         self.assertEqual(payload['event'], 'reply_published')
+        self.assertEqual(payload['review_request']['id'],
+                         review_request.display_id)
         self.assertEqual(payload['reply']['id'], reply.pk)
         self.assertIn('diff_comments', payload)
         self.assertIn('screenshot_comments', payload)

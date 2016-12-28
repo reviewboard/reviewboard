@@ -172,6 +172,8 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
 
 def _serialize_review(review, request):
     return {
+        'review_request': resources.review_request.serialize_object(
+            review.review_request, request=request),
         'review': resources.review.serialize_object(
             review, request=request),
         'diff_comments': [
@@ -199,6 +201,8 @@ def _serialize_review(review, request):
 
 def _serialize_reply(reply, request):
     return {
+        'review_request': resources.review_request.serialize_object(
+            reply.review_request, request=request),
         'reply': resources.review_reply.serialize_object(
             reply, request=request),
         'diff_comments': [
