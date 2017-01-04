@@ -57,4 +57,4 @@ class WebAPIBasicAuthBackend(DjbletsWebAPIBasicAuthBackend):
             if users:
                 credentials['username'] = users[0]
 
-    return credentials
+        return credentials
