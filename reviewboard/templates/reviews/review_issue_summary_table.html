@@ -58,7 +58,7 @@
         data-comment-href="#{{comment.anchor_prefix}}{{comment.pk}}">
      <td class="summary-table-description">
       <span class="issue-icon rb-icon {{comment.issue_status|issue_status_icon}}"></span>
-      <span class="issue-text">{{comment.text|render_markdown:comment.rich_text|striptags|truncatewords:20}}</span></a>
+      <span class="issue-text">{{comment.text|render_markdown:comment.rich_text|striptags|truncatewords:20}}</span>
      </td>
      <td class="reviewer">
       <a href="{% url 'user' entry.review.user %}" class="user">
