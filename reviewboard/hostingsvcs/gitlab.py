@@ -8,21 +8,127 @@ from django import forms
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
-from django.utils.six.moves.urllib.parse import quote
+from django.utils.six.moves.urllib.parse import quote, urlparse
 from django.utils.translation import ugettext_lazy as _, ugettext
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             InvalidPlanError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.forms import HostingServiceForm
+from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
+                                           HostingServiceForm)
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.scmtools.core import Branch, Commit
+
+
+class GitLabHostingURLWidget(forms.Widget):
+    """"A custom input widget for selecting a GitLab host.
+
+    The user can choose between gitlab.com-hosted and self-hosted instances of
+    GitLab.
+    """
+
+    GITLAB = 'https://gitlab.com'
+    CUSTOM = 'custom'
+
+    CHOICES = (
+        (GITLAB, _('gitlab.com')),
+        (CUSTOM, _('Custom')),
+    )
+
+    def value_from_datadict(self, data, files, name):
+        """Extract the value from the form data.
+
+        Args:
+            data (dict):
+                The form data.
+
+            files (dict):
+                The files.
+
+            name (unicode):
+                The name of the form field.
+
+        Returns:
+            unicode:
+            The form value.
+        """
+        if data:
+            return data.get(name)
+
+        return self.GITLAB
+
+    def render(self, name, value, attrs=None):
+        """Render the widget.
+
+        Args:
+            name (unicode):
+                The name of the widget.
+
+            value (unicode):
+                The value of the widget.
+
+            attrs (dict, optional):
+                Additional attributes to pass to the widget.
+
+        Returns:
+            django.util.safestring.SafeText:
+            The rendered widget.
+        """
+        attrs = self.build_attrs(attrs)
+
+        return render_to_string('hostingsvcs/gitlab/url_widget.html', {
+            'attrs': attrs,
+            'id': attrs.pop('id'),
+            'is_custom': value and value != self.GITLAB,
+            'name': name,
+            'value': value or '',
+        })
+
+
+class GitLabAuthForm(HostingServiceAuthForm):
+    """An authentication form for the GitLab hosting service.
+
+    This form allows user to select between gitlab.com and self-hosted
+    instances of GitLab.
+    """
+
+    hosting_url = forms.CharField(
+        label=_('Service URL'),
+        required=True,
+        widget=GitLabHostingURLWidget(attrs={'size': 30}))
+
+    def clean_hosting_url(self):
+        """Clean the hosting_url field.
+
+        This method ensures that the URL has a scheme.
+
+        Returns:
+            unicode: The URL.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                Raised when the URL is missing a scheme.
+        """
+        hosting_url = self.cleaned_data['hosting_url']
+        result = urlparse(hosting_url)
+
+        if not result.scheme:
+            raise ValidationError(
+                _('Invalid hosting URL "%(url)s": missing scheme (e.g., HTTP '
+                  'or HTTPS)')
+                % {
+                    'url': hosting_url,
+                }
+            )
+
+        return hosting_url
 
 
 class GitLabPersonalForm(HostingServiceForm):
@@ -68,6 +174,8 @@ class GitLab(HostingService):
     # Pagination links (in GitLab 6.8.0+) take the form:
     # '<http://gitlab/api/v3/projects?page=2&per_page=100>; rel="next"'
     LINK_HEADER_RE = re.compile(r'\<(?P<url>[^\>]+)\>; rel="next"')
+
+    auth_form = GitLabAuthForm
 
     plans = [
         ('personal', {

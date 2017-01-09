@@ -217,7 +217,7 @@ WEB_API_ENCODERS = (
 
 # The backends that are used to authenticate requests against the web API.
 WEB_API_AUTH_BACKENDS = (
-    'djblets.webapi.auth.backends.basic.WebAPIBasicAuthBackend',
+    'reviewboard.webapi.auth_backends.WebAPIBasicAuthBackend',
     'djblets.webapi.auth.backends.api_tokens.WebAPITokenAuthBackend',
 )
 

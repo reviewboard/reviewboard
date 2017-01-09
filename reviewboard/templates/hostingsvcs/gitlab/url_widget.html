@@ -1,0 +1,44 @@
+{% load djblets_utils i18n %}
+<div class="gitlab-url-options">
+ <div class="gitlab-url-option">
+  <input type="radio" id="{{id}}_gitlab" name="{{name}}_radio" value="https://gitlab.com"{% if not is_custom %} checked{% endif %}>
+  <label for="{{id}}_gitlab">https://gitlab.com</label>
+ </div>
+ <div class="gitlab-url-option">
+  <input type="radio" id="{{id}}_custom" name="{{name}}_radio" value="custom"{% if is_custom %} checked{% endif %}>
+  <label for="{{id}}_custom">{% trans "Custom:" %}</label>
+  <input type="text" id="{{id}}_custom_input" value="{% if is_custom %}{{value}}{% endif %}"{% for attr_name, attr_value in attrs.items %} {% attr attr_name %}{{ attr_value }}{% endattr %}{% endfor %}>
+ </div>
+</div>
+<input type="hidden" id="{{id}}" name="{{name}}" value="{{value}}">
+<script>
+    $(function() {
+        var $gitlabRadio = $('#{{id}}_gitlab'),
+            $customInput = $('#{{id}}_custom_input'),
+            $value = $('#{{id}}');
+
+        function onRadioChanged() {
+            if ($gitlabRadio.is(':checked')) {
+                $customInput.prop('disabled', true);
+                $value.val($gitlabRadio.val());
+            } else {
+                $customInput.prop('disabled', false);
+                $value.val($customInput.val());
+            }
+        }
+
+        $('input[name="{{name}}_radio"]')
+            .change(onRadioChanged)
+            .change(function() {
+                if (!$gitlabRadio.is(':checked')) {
+                    $customInput.focus();
+                }
+            });
+
+        $customInput.change(function() {
+            $value.val($customInput.val());
+        });
+
+        onRadioChanged();
+    });
+</script>
