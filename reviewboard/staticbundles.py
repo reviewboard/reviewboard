@@ -263,7 +263,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/views/markdownReviewableView.es6.js',
             'rb/js/views/uploadDiffView.js',
             'rb/js/views/updateDiffView.js',
-            'rb/js/diffviewer/models/diffCommentBlockModel.js',
+            'rb/js/diffviewer/models/diffCommentBlockModel.es6.js',
             'rb/js/diffviewer/models/diffCommentsHintModel.js',
             'rb/js/diffviewer/models/diffFileModel.js',
             'rb/js/diffviewer/models/diffReviewableModel.es6.js',
