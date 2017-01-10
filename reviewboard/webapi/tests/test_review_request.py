@@ -4,10 +4,14 @@ from django.contrib import auth
 from django.contrib.auth.models import User, Permission
 from django.db.models import Q
 from django.utils import six
+from django.utils.timezone import get_current_timezone
 from djblets.db.query import get_object_or_none
 from djblets.testing.decorators import add_fixtures
-from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
+from djblets.webapi.errors import (DOES_NOT_EXIST,
+                                   INVALID_FORM_DATA,
+                                   PERMISSION_DENIED)
 from kgb import SpyAgency
+from pytz import timezone
 
 from reviewboard.accounts.backends import AuthBackend
 from reviewboard.accounts.models import LocalSiteProfile
@@ -680,6 +684,25 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
             ReviewRequest.objects.filter(
                 public=True, status='P',
                 last_updated__lt=r.last_updated).count())
+
+    def test_get_with_last_updated_from_and_ambiguous_time(self):
+        """Testing the GET review-requests/?last-updated-from= API with an
+        ambiguous timestamp
+        """
+        self.spy_on(get_current_timezone,
+                    call_fake=lambda: timezone('America/Chicago'))
+
+        rsp = self.api_get(
+            get_review_request_list_url(),
+            {
+                'last-updated-from': '2016-11-06T01:05:59',
+                'counts-only': 1,
+            },
+            expected_status=400)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+        self.assertTrue('last-updated-from' in rsp['fields'])
 
     @add_fixtures(['test_scmtools'])
     def test_get_with_repository_and_changenum(self):
