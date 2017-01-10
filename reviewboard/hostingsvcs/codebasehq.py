@@ -335,6 +335,7 @@ class CodebaseHQ(HostingService):
     auth_form = CodebaseHQAuthForm
 
     needs_authorization = True
+    supports_bug_trackers = True
     supports_repositories = True
 
     supported_scmtools = ['Git', 'Subversion', 'Mercurial']
@@ -356,6 +357,11 @@ class CodebaseHQ(HostingService):
                     '%(codebasehq_repo_name)s/',
         },
     }
+
+    bug_tracker_field = (
+        'https://%(domain)s.codebasehq.com/projects/'
+        '%(codebasehq_project_name)s/tickets/%%s'
+    )
 
     #: A mapping of Codebase SCM types to SCMTool names.
     REPO_SCM_TOOL_MAP = {
