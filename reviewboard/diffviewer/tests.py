@@ -2977,6 +2977,7 @@ class DiffUtilsTests(TestCase):
             source_file='foo.txt',
             source_revision=123,
             dest_file='foo.txt',
+            dest_detail='124',
             diff='diff1')
 
         # This one should match up with interfilediff1.
@@ -2985,6 +2986,7 @@ class DiffUtilsTests(TestCase):
             source_file='foo.txt',
             source_revision=123,
             dest_file='foo2.txt',
+            dest_detail='124',
             status=FileDiff.COPIED,
             diff='diff2')
 
@@ -2995,6 +2997,7 @@ class DiffUtilsTests(TestCase):
             source_file='foo.txt',
             source_revision=123,
             dest_file='foo3.txt',
+            dest_detail='124',
             status=FileDiff.COPIED,
             diff='diff3')
 
@@ -3004,6 +3007,7 @@ class DiffUtilsTests(TestCase):
             source_file='foo4.txt',
             source_revision=123,
             dest_file='foo4.txt',
+            dest_detail='124',
             diff='diff4')
 
         interdiffset = self.create_diffset(review_request=review_request,
@@ -3015,6 +3019,7 @@ class DiffUtilsTests(TestCase):
             source_file='foo.txt',
             source_revision=123,
             dest_file='foo2.txt',
+            dest_detail='124',
             status=FileDiff.COPIED,
             diff='interdiff1')
 
@@ -3024,6 +3029,7 @@ class DiffUtilsTests(TestCase):
             source_file='foo.txt',
             source_revision=PRE_CREATION,
             dest_file='foo.txt',
+            dest_detail='125',
             diff='interdiff2')
 
         # This one should match up with filediff4.
@@ -3032,6 +3038,7 @@ class DiffUtilsTests(TestCase):
             source_file='foo4.txt',
             source_revision=123,
             dest_file='foo5.txt',
+            dest_detail='124',
             diff='interdiff2')
 
         # This one should match up with filediff4 as well.
@@ -3040,6 +3047,7 @@ class DiffUtilsTests(TestCase):
             source_file='foo4.txt',
             source_revision=123,
             dest_file='foo6.txt',
+            dest_detail='124',
             diff='interdiff3')
 
         diff_files = diffutils.get_diff_files(diffset=diffset,
@@ -3859,6 +3867,7 @@ class DiffUtilsTests(TestCase):
             source_file='foo.txt',
             source_revision=PRE_CREATION,
             dest_file='foo.txt',
+            dest_detail='124',
             diff='diff1')
 
         filediff2 = self.create_filediff(
@@ -3866,6 +3875,7 @@ class DiffUtilsTests(TestCase):
             source_file='foo2.txt',
             source_revision=123,
             dest_file='foo2.txt',
+            dest_detail='124',
             diff='diff2')
 
         interdiffset = self.create_diffset(review_request=review_request,
@@ -3876,6 +3886,7 @@ class DiffUtilsTests(TestCase):
             source_file='foo.txt',
             source_revision=123,
             dest_file='foo.txt',
+            dest_detail='124',
             diff='interdiff1')
 
         interfilediff2 = self.create_filediff(
@@ -3883,6 +3894,7 @@ class DiffUtilsTests(TestCase):
             source_file='foo2.txt',
             source_revision=PRE_CREATION,
             dest_file='foo3.txt',
+            dest_detail='125',
             diff='interdiff2')
 
         matched_files = get_matched_interdiff_files(
@@ -4059,49 +4071,76 @@ class DiffUtilsTests(TestCase):
 
         diffset = self.create_diffset(review_request=review_request,
                                       revision=1)
+        interdiffset = self.create_diffset(review_request=review_request,
+                                           revision=2)
 
+        # Modified in revision 1 and in revision 2. Match.
         filediff1 = self.create_filediff(
             diffset=diffset,
             source_file='foo.txt',
             source_revision=123,
             dest_file='foo.txt',
+            dest_detail='124',
             diff='diff1')
-
-        filediff2 = self.create_filediff(
-            diffset=diffset,
-            source_file='foo2.txt',
-            source_revision=123,
-            dest_file='foo2.txt',
-            diff='diff2')
-
-        interdiffset = self.create_diffset(review_request=review_request,
-                                           revision=2)
 
         interfilediff1 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo.txt',
             source_revision=123,
             dest_file='foo.txt',
+            dest_detail='124',
             diff='interdiff1')
+
+        # Modified in revision 1. Re-created in revision 2 with the same
+        # revision (implying an edge case where the file was deleted in a
+        # parent diff and re-introduced in the main diff, turning into what
+        # looks like a modification in the FileDiff).
+        filediff2 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo2.txt',
+            source_revision=123,
+            dest_file='foo2.txt',
+            dest_detail='124',
+            diff='diff2')
 
         interfilediff2 = self.create_filediff(
             diffset=interdiffset,
             source_file='foo2.txt',
             source_revision=PRE_CREATION,
             dest_file='foo2.txt',
+            dest_detail='124',
             diff='interdiff2')
+
+        # Modified in revision 1. Re-created in revision 2 with a new revision
+        # (implying it was deleted upstream).
+        filediff3 = self.create_filediff(
+            diffset=diffset,
+            source_file='foo3.txt',
+            source_revision=123,
+            dest_file='foo3.txt',
+            dest_detail='124',
+            diff='diff3')
+
+        interfilediff3 = self.create_filediff(
+            diffset=interdiffset,
+            source_file='foo3.txt',
+            source_revision=PRE_CREATION,
+            dest_file='foo3.txt',
+            dest_detail='125',
+            diff='interdiff3')
 
         matched_files = get_matched_interdiff_files(
             tool=repository.get_scmtool(),
-            filediffs=[filediff1, filediff2],
-            interfilediffs=[interfilediff1, interfilediff2])
+            filediffs=[filediff1, filediff2, filediff3],
+            interfilediffs=[interfilediff1, interfilediff2, interfilediff3])
 
         self.assertEqual(
             list(matched_files),
             [
                 (filediff1, interfilediff1),
-                (filediff2, None),
-                (None, interfilediff2),
+                (filediff2, interfilediff2),
+                (filediff3, None),
+                (None, interfilediff3),
             ])
 
     def test_get_line_changed_regions(self):

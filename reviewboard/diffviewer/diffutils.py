@@ -431,8 +431,10 @@ def get_matched_interdiff_files(tool, filediffs, interfilediffs):
         found_interfilediffs = [
             temp_interfilediff
             for temp_interfilediff in simple_interdiff_map.get(source_file, [])
-            if ((filediff.is_new or not temp_interfilediff.is_new) and
-                (temp_interfilediff.deleted or not filediff.deleted))
+            if (((filediff.is_new or not temp_interfilediff.is_new) or
+                 (not filediff.is_new and temp_interfilediff.is_new and
+                  filediff.dest_detail == temp_interfilediff.dest_detail)) and
+                (not filediff.deleted or temp_interfilediff.deleted))
         ]
 
         if found_interfilediffs:
