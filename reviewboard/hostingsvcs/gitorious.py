@@ -26,14 +26,16 @@ class Gitorious(HostingService):
     form = GitoriousForm
     supported_scmtools = ['Git']
     supports_repositories = True
+    self_hosted = True
+
     repository_fields = {
         'Git': {
-            'path': 'git://gitorious.org/%(gitorious_project_name)s/'
+            'path': 'git://%(hosting_domain)s/%(gitorious_project_name)s/'
                     '%(gitorious_repo_name)s.git',
-            'mirror_path': 'https://gitorious.org/'
+            'mirror_path': '%(hosting_url)s/'
                            '%(gitorious_project_name)s/'
                            '%(gitorious_repo_name)s.git',
-            'raw_file_url': 'https://gitorious.org/'
+            'raw_file_url': '%(hosting_url)s/'
                             '%(gitorious_project_name)s/'
                             '%(gitorious_repo_name)s/blobs/raw/<revision>'
         },
