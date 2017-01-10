@@ -311,6 +311,7 @@ RB.CommentDialogView = Backbone.View.extend({
         RB.CommentDialogHook.each(function(hook) {
             var HookViewType = hook.get('viewType'),
                 hookView = new HookViewType({
+                    extension: hook.get('extension'),
                     commentDialog: this,
                     commentEditor: this.model,
                     el: this.el
