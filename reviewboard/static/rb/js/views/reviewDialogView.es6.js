@@ -199,6 +199,7 @@ const BaseCommentView = Backbone.View.extend({
         RB.ReviewDialogCommentHook.each(hook => {
             const HookView = hook.get('viewType');
             const hookView = new HookView({
+                extension: hook.get('extension'),
                 model: this.model,
             });
 
@@ -887,6 +888,7 @@ RB.ReviewDialogView = Backbone.View.extend({
         RB.ReviewDialogHook.each(hook => {
             const HookView = hook.get('viewType');
             const hookView = new HookView({
+                extension: hook.get('extension'),
                 model: this.model,
             });
 

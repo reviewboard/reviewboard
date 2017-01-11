@@ -416,6 +416,7 @@ PIPELINE = {
                          os.getenv('FORCE_BUILD_MEDIA', '')),
     'COMPILERS': PIPELINE_COMPILERS,
     'JAVASCRIPT': PIPELINE_JAVASCRIPT,
+    'STYLESHEETS': PIPELINE_STYLESHEETS,
     'JS_COMPRESSOR': 'pipeline.compressors.uglifyjs.UglifyJSCompressor',
     'CSS_COMPRESSOR': None,
     'BABEL_BINARY': os.path.join(NODE_PATH, 'babel-cli', 'bin', 'babel.js'),
@@ -432,7 +433,7 @@ PIPELINE = {
         # happens on the back-end instead of in the browser.
         '--global-var=STATIC_ROOT=""',
     ],
-    'STYLESHEETS': PIPELINE_STYLESHEETS,
+    'UGLIFYJS_BINARY': os.path.join(NODE_PATH, 'uglifyjs', 'bin', 'uglifyjs'),
 }
 
 
