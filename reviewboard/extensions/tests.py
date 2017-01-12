@@ -37,6 +37,7 @@ from reviewboard.extensions.hooks import (AdminWidgetHook,
                                           WebAPICapabilitiesHook)
 from reviewboard.hostingsvcs.service import (get_hosting_service,
                                              HostingService)
+from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.testing.testcase import TestCase
 from reviewboard.reviews.models.review_request import ReviewRequest
 from reviewboard.reviews.fields import (BaseReviewRequestField,
@@ -367,6 +368,73 @@ class HookTests(TestCase):
 
 class TestService(HostingService):
     name = 'test-service'
+
+    def get_file(self, repository, path, revision, *args, **kwargs):
+        """Return the specified file from the repository.
+
+        If the given file path is ``/invalid-path``, the file will be assumed
+        to not exist and
+        :py:exc:`reviewboard.scmtools.errors.FileNotFoundError` will be raised.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository the file belongs to.
+
+            path (unicode):
+                The file path.
+
+            revision (unicode):
+                The file revision.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+
+        Returns:
+            unicode: The file data.
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                Raised if the file does not exist.
+        """
+        if path == '/invalid-path':
+            raise FileNotFoundError(path, revision)
+
+        return super(TestService, self).get_file(repository, path, revision,
+                                                 *args, **kwargs)
+
+    def get_file_exists(self, repository, path, revision, *args, **kwargs):
+        """Return the specified file from the repository.
+
+        If the given file path is ``/invalid-path``, the file will
+        be assumed to not exist.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository the file belongs to.
+
+            path (unicode):
+                The file path.
+
+            revision (unicode):
+                The file revision.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+
+        Returns:
+            bool: Whether or not the file exists.
+        """
+        if path == '/invalid-path':
+            return False
+
+        return super(TestService, self).get_file_exists(
+            repository, path, revision, *args, **kwargs)
 
 
 class HostingServiceHookTests(TestCase):
