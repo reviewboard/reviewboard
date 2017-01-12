@@ -12,6 +12,7 @@ class GitoriousTests(ServiceTests):
         """Testing the Gitorious service support capabilities"""
         self.assertFalse(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
+        self.assertTrue(self.service_class.self_hosted)
 
     def test_repo_field_values(self):
         """Testing the Gitorious repository field values"""
@@ -20,9 +21,9 @@ class GitoriousTests(ServiceTests):
             'gitorious_repo_name': 'myrepo',
         })
         self.assertEqual(fields['path'],
-                         'git://gitorious.org/myproj/myrepo.git')
+                         'git://example.com/myproj/myrepo.git')
         self.assertEqual(fields['mirror_path'],
-                         'https://gitorious.org/myproj/myrepo.git')
+                         'https://example.com/myproj/myrepo.git')
         self.assertEqual(fields['raw_file_url'],
-                         'https://gitorious.org/myproj/myrepo/blobs/raw/'
+                         'https://example.com/myproj/myrepo/blobs/raw/'
                          '<revision>')
