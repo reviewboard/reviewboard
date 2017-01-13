@@ -10,12 +10,16 @@ from django.core.exceptions import (PermissionDenied,
                                     ValidationError)
 from django.db.models import Q
 from django.utils import six
+from django.utils.timezone import get_current_timezone, is_aware, make_aware
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
                                        webapi_request_fields)
-from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
+from djblets.webapi.errors import (DOES_NOT_EXIST,
+                                   INVALID_FORM_DATA,
+                                   NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
+from pytz.exceptions import AmbiguousTimeError
 
 from reviewboard.admin.server import build_server_url
 from reviewboard.diffviewer.errors import (DiffTooBigError,
@@ -434,29 +438,17 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 q = q & self.build_queries_for_int_field(
                     request, issue_field)
 
-            if 'time-added-from' in request.GET:
-                date = self._parse_date(request.GET['time-added-from'])
+            if 'time-added-from' in kwargs:
+                q = q & Q(time_added__gte=kwargs['time-added-from'])
 
-                if date:
-                    q = q & Q(time_added__gte=date)
+            if 'time-added-to' in kwargs:
+                q = q & Q(time_added__lt=kwargs['time-added-to'])
 
-            if 'time-added-to' in request.GET:
-                date = self._parse_date(request.GET['time-added-to'])
+            if 'last-updated-from' in kwargs:
+                q = q & Q(last_updated__gte=kwargs['last-updated-from'])
 
-                if date:
-                    q = q & Q(time_added__lt=date)
-
-            if 'last-updated-from' in request.GET:
-                date = self._parse_date(request.GET['last-updated-from'])
-
-                if date:
-                    q = q & Q(last_updated__gte=date)
-
-            if 'last-updated-to' in request.GET:
-                date = self._parse_date(request.GET['last-updated-to'])
-
-                if date:
-                    q = q & Q(last_updated__lt=date)
+            if 'last-updated-to' in kwargs:
+                q = q & Q(last_updated__lt=kwargs['last-updated-to'])
 
             status = ReviewRequest.string_to_status(
                 request.GET.get('status', 'pending'))
@@ -1235,8 +1227,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         },
         allow_unknown=True
     )
-    @augment_method_from(WebAPIResource)
-    def get_list(self, *args, **kwargs):
+    def get_list(self, request, *args, **kwargs):
         """Returns all review requests that the user has read access to.
 
         By default, this returns all published or formerly published
@@ -1245,7 +1236,37 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         The resulting list can be filtered down through the many
         request parameters.
         """
-        pass
+        invalid_fields = {}
+        current_tz = get_current_timezone()
+
+        for field in ('time-added-from', 'time-added-to', 'last-updated-from',
+                      'last-updated-to'):
+            if field in request.GET:
+                try:
+                    date = dateutil.parser.parse(request.GET[field])
+
+                    if not is_aware(date):
+                        date = make_aware(date, current_tz)
+
+                    kwargs[field] = date
+                except AmbiguousTimeError:
+                    invalid_fields[field] = [
+                        'The given timestamp string was ambiguous because of '
+                        'daylight savings time changes. You may specify a UTC '
+                        'offset instead.'
+                    ]
+                except ValueError:
+                    invalid_fields[field] = [
+                        'The given timestamp could not be parsed.'
+                    ]
+
+        if invalid_fields:
+            return INVALID_FORM_DATA, {
+                'fields': invalid_fields,
+            }
+        else:
+            return super(ReviewRequestResource, self).get_list(
+                request, *args, **kwargs)
 
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
@@ -1293,12 +1314,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
 
         return request.build_absolute_uri(
             self.get_item_url(local_site_name=local_site_name, **href_kwargs))
-
-    def _parse_date(self, timestamp_str):
-        try:
-            return dateutil.parser.parse(timestamp_str)
-        except ValueError:
-            return None
 
     def _find_user(self, username, local_site, request):
         """Finds a User object matching ``username``.
