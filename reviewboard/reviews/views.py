@@ -66,6 +66,7 @@ from reviewboard.reviews.models import (Comment,
                                         ReviewRequest,
                                         Screenshot)
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
+from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.decorators import check_local_site_access
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -1554,7 +1555,14 @@ def _download_diff_file(modified, request, review_request_id, revision,
     diffset = _query_for_diff(review_request, request.user, revision, draft)
     filediff = get_object_or_404(diffset.files, pk=filediff_id)
     encoding_list = diffset.repository.get_encoding_list()
-    data = get_original_file(filediff, request, encoding_list)
+
+    try:
+        data = get_original_file(filediff, request, encoding_list)
+    except FileNotFoundError:
+        logging.exception(
+            'Could not retrieve file "%s" (revision %s) for filediff ID %s',
+            filediff.dest_detail, revision, filediff_id)
+        raise Http404
 
     if modified:
         data = get_patched_file(data, filediff, request)

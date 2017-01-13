@@ -1258,11 +1258,15 @@ class SearchSettingsForm(SiteSettingsForm):
         This forces a site configuration reload.
         """
         search_backend_id = self.cleaned_data['search_backend_id']
-        backend_form = self.search_backend_forms[search_backend_id]
-        backend = search_backend_registry.get_search_backend(search_backend_id)
 
-        backend.configuration = backend.get_configuration_from_form_data(
-            backend_form.cleaned_data)
+        if self.cleaned_data['search_enable']:
+            # We only need to update the backend settings when search is
+            # enabled.
+            backend_form = self.search_backend_forms[search_backend_id]
+            backend = search_backend_registry.get_search_backend(
+                search_backend_id)
+            backend.configuration = backend.get_configuration_from_form_data(
+                backend_form.cleaned_data)
 
         super(SearchSettingsForm, self).save()
 

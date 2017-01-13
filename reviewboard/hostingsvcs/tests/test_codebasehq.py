@@ -17,8 +17,8 @@ class CodebaseHQTests(ServiceTests):
 
     def test_service_support(self):
         """Testing Codebase HQ service support capabilities"""
-        self.assertFalse(self.service_class.supports_bug_trackers)
         self.assertFalse(self.service_class.supports_post_commit)
+        self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
 
     def test_repo_field_values_git(self):
@@ -79,6 +79,17 @@ class CodebaseHQTests(ServiceTests):
                          'https://mydomain.codebasehq.com/myproj/myrepo.svn')
         self.assertNotIn('raw_file_url', fields)
         self.assertNotIn('mirror_path', fields)
+
+    def test_bug_tracker_field(self):
+        """Testing Codebase HQ bug tracker field values"""
+        self.assertEqual(
+            self.service_class.get_bug_tracker_field(
+                None,
+                {
+                    'codebasehq_project_name': 'myproj',
+                    'domain': 'mydomain',
+                }),
+            'https://mydomain.codebasehq.com/projects/myproj/tickets/%s')
 
     def test_check_repository_git(self):
         """Testing Codebase HQ check_repository for Git"""
