@@ -96,6 +96,25 @@ class CVSTool(SCMTool):
     def get_parser(self, data):
         return CVSDiffParser(data, self.repopath)
 
+    def normalize_path_for_display(self, filename):
+        """Normalize a path from a diff for display to the user.
+
+        This can take a path/filename found in a diff and normalize it,
+        stripping away unwanted information, so that it displays in a better
+        way in the diff viewer.
+
+        For CVS, this strips trailing ",v" from filenames.
+
+        Args:
+            filename (unicode):
+                The filename/path to normalize.
+
+        Returns:
+            unicode:
+            The resulting filename/path.
+        """
+        return re.sub(',v$', '', filename)
+
     def normalize_patch(self, patch, filename, revision=HEAD):
         """Normalizes the content of a patch.
 
