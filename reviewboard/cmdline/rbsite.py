@@ -624,15 +624,16 @@ class Site(object):
 
     def create_admin_user(self):
         """Create an administrator user account."""
-        cwd = os.getcwd()
-        os.chdir(self.abs_install_dir)
-
         from django.contrib.auth.models import User
 
-        User.objects.create_superuser(self.admin_user, self.admin_email,
-                                      self.admin_password)
+        if not User.objects.filter(username=self.admin_user).exists():
+            cwd = os.getcwd()
+            os.chdir(self.abs_install_dir)
 
-        os.chdir(cwd)
+            User.objects.create_superuser(self.admin_user, self.admin_email,
+                                          self.admin_password)
+
+            os.chdir(cwd)
 
     def register_support_page(self):
         """Register this installation with the support data tracker."""
