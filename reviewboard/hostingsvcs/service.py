@@ -115,10 +115,16 @@ class HostingServiceClient(object):
         r = URLRequest(url, body, headers, method=method)
 
         if username is not None and password is not None:
-            auth_key = username + ':' + password
+            if isinstance(username, six.text_type):
+                username = username.encode('utf-8')
+
+            if isinstance(password, six.text_type):
+                password = password.encode('utf-8')
+
+            auth_key = username + b':' + password
             r.add_header(HTTPBasicAuthHandler.auth_header,
-                         'Basic %s' %
-                         base64.b64encode(auth_key.encode('utf-8')))
+                         b'Basic %s' %
+                         base64.b64encode(auth_key))
 
         return r
 
