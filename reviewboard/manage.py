@@ -55,8 +55,10 @@ def check_dependencies(settings):
             subprocess.call(['p4', '-h'],
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         except OSError:
-            dependency_error('p4 command not found. Perforce integration '
-                             'will not work.')
+            dependency_warning('p4 command not found. Perforce integration '
+                               'will not work. You should download p4 from '
+                               'http://cdist2.perforce.com/perforce/ and '
+                               'place it in your PATH.')
     else:
         dependency_warning('p4python (>=07.3) not found. Perforce integration '
                            'will not work.')

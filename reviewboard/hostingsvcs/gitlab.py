@@ -626,8 +626,8 @@ class GitLab(HostingService):
             data, headers = self.client.http_get(
                 url,
                 headers={
-                    'Accept': 'application/json',
-                    'PRIVATE-TOKEN': self._get_private_token(),
+                    b'Accept': b'application/json',
+                    b'PRIVATE-TOKEN': self._get_private_token(),
                 })
 
             if raw_content:
