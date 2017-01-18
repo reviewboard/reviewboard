@@ -21,7 +21,8 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             InvalidPlanError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.forms import HostingServiceForm
+from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
+                                           HostingServiceForm)
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_repository_for_hook,
                                                 get_review_request_id)
@@ -33,12 +34,58 @@ from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
+class BitbucketAuthForm(HostingServiceAuthForm):
+    class Meta(object):
+        help_texts = {
+            'hosting_account_username': _(
+                'Your Bitbucket username. This must <em>not</em> be your '
+                'e-mail address! You can find your username in your '
+                '<a href="https://bitbucket.org/account/admin/">Bitbucket '
+                'Account Settings</a>.'
+            ),
+            'hosting_account_password': _(
+                'The password used for your account, or a '
+                '<a href="https://bitbucket.org/account/admin/app-passwords">'
+                'configured app password</a>. <strong>Important:</strong> If '
+                'using two-factor authentication, you <em>must</em> use an '
+                'app password configured with read access to repositories, '
+                'accounts, and projects.'
+            ),
+        }
+
+
 class BitbucketPersonalForm(HostingServiceForm):
     bitbucket_repo_name = forms.CharField(
         label=_('Repository name'),
         max_length=64,
         required=True,
-        widget=forms.TextInput(attrs={'size': '60'}))
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_('The username of the user who owns the repository. This '
+                    'is the &lt;repo_name&gt; in '
+                    'https://bitbucket.org/&lt;username&gt;/'
+                    '&lt;repo_name&gt;/'))
+
+
+class BitbucketOtherUserForm(HostingServiceForm):
+    bitbucket_other_user_username = forms.CharField(
+        label=_('Username'),
+        max_length=64,
+        required=True,
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_('The username of the user who owns the repository. This '
+                    'is the &lt;username&gt; in '
+                    'https://bitbucket.org/&lt;username&gt;/'
+                    '&lt;repo_name&gt;/'))
+
+    bitbucket_other_user_repo_name = forms.CharField(
+        label=_('Repository name'),
+        max_length=64,
+        required=True,
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_('The name of the repository. This is the '
+                    '&lt;repo_name&gt; in '
+                    'https://bitbucket.org/&lt;username&gt;/'
+                    '&lt;repo_name&gt;/'))
 
 
 class BitbucketTeamForm(HostingServiceForm):
@@ -55,7 +102,11 @@ class BitbucketTeamForm(HostingServiceForm):
         label=_('Repository name'),
         max_length=64,
         required=True,
-        widget=forms.TextInput(attrs={'size': '60'}))
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_('The name of the repository. This is the '
+                    '&lt;repo_name&gt; in '
+                    'https://bitbucket.org/&lt;team_name&gt;/'
+                    '&lt;repo_name&gt;/'))
 
 
 class Bitbucket(HostingService):
@@ -65,7 +116,9 @@ class Bitbucket(HostingService):
     repositories, and provides issue tracker support. It's available
     at https://www.bitbucket.org/.
     """
+
     name = 'Bitbucket'
+    auth_form = BitbucketAuthForm
 
     needs_authorization = True
     supports_repositories = True
@@ -109,6 +162,33 @@ class Bitbucket(HostingService):
             'bug_tracker_field': ('https://bitbucket.org/'
                                   '%(hosting_account_username)s/'
                                   '%(bitbucket_repo_name)s/issue/%%s/'),
+        }),
+        ('other-user', {
+            'name': _('Other User'),
+            'form': BitbucketOtherUserForm,
+            'repository_fields': {
+                'Git': {
+                    'path': 'git@bitbucket.org:'
+                            '%(bitbucket_other_user_username)s/'
+                            '%(bitbucket_other_user_repo_name)s.git',
+                    'mirror_path': 'https://%(hosting_account_username)s@'
+                                   'bitbucket.org/'
+                                   '%(bitbucket_other_user_username)s/'
+                                   '%(bitbucket_other_user_repo_name)s.git',
+                },
+                'Mercurial': {
+                    'path': 'https://%(hosting_account_username)s@'
+                            'bitbucket.org/%(bitbucket_other_user_username)s/'
+                            '%(bitbucket_other_user_repo_name)s',
+                    'mirror_path': 'ssh://hg@bitbucket.org/'
+                                   '%(bitbucket_other_user_username)s/'
+                                   '%(bitbucket_other_user_repo_name)s',
+                },
+            },
+            'bug_tracker_field': ('https://bitbucket.org/'
+                                  '%(bitbucket_other_user_username)s/'
+                                  '%(bitbucket_other_user_repo_name)s/'
+                                  'issue/%%s/'),
         }),
         ('team', {
             'name': _('Team'),
@@ -181,6 +261,13 @@ class Bitbucket(HostingService):
         try:
             self._api_get(self._build_api_url('user'))
             self.account.save()
+        except HostingServiceError as e:
+            del self.account.data['password']
+
+            if e.http_code in (401, 403):
+                self._raise_auth_error()
+            else:
+                raise
         except Exception:
             del self.account.data['password']
             raise
@@ -418,6 +505,8 @@ class Bitbucket(HostingService):
             return extra_data['bitbucket_repo_name']
         elif plan == 'team':
             return extra_data['bitbucket_team_repo_name']
+        elif plan == 'other-user':
+            return extra_data['bitbucket_other_user_repo_name']
         else:
             raise InvalidPlanError(plan)
 
@@ -431,6 +520,8 @@ class Bitbucket(HostingService):
             return self.account.username
         elif plan == 'team':
             return extra_data['bitbucket_team_name']
+        elif plan == 'other-user':
+            return extra_data['bitbucket_other_user_username']
         else:
             raise InvalidPlanError(plan)
 
@@ -468,18 +559,21 @@ class Bitbucket(HostingService):
             message = six.text_type(message)
 
         if e.code == 401:
-            raise AuthorizationError(
-                message or ugettext('Invalid Bitbucket username or password'))
+            self._raise_auth_error(message)
         elif e.code == 404:
             if message.startswith('Repository'):
-                raise HostingServiceError(message)
+                raise HostingServiceError(message, http_code=e.code)
 
             # We don't have a path here, but it will be filled in inside
             # _api_get_src.
             raise FileNotFoundError('')
         else:
             raise HostingServiceError(
-                message or ugettext('Unknown error when talking to Bitbucket'))
+                message or (
+                    ugettext('Unexpected HTTP %s error when talking to '
+                             'Bitbucket')
+                    % e.code),
+                http_code=e.code)
 
     def _parse_timestamp(self, timestamp):
         """Parse a timestamp given by BitBucket's API into the correct format.
@@ -496,6 +590,14 @@ class Bitbucket(HostingService):
             unicode: A string representing a UTC timestamp in ISO 8601 format.
         """
         return timestamp.replace(' ', 'T')
+
+    def _raise_auth_error(self, message=None):
+        raise AuthorizationError(
+            message or ugettext(
+                'Invalid Bitbucket username or password. Make sure '
+                'you are using your Bitbucket username and not e-mail '
+                'address, and are using an app password if two-factor '
+                'authentication is enabled.'))
 
 
 @require_POST

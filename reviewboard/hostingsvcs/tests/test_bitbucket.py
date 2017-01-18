@@ -146,6 +146,68 @@ class BitbucketTests(ServiceTests):
                                  plan='team')
         self.assertTrue(service.client.http_get.called)
 
+    def test_other_user_repo_field_values_git(self):
+        """Testing Bitbucket other-user repository field values for Git"""
+        fields = self._get_repository_fields(
+            'Git',
+            fields={
+                'bitbucket_other_user_username': 'someuser',
+                'bitbucket_other_user_repo_name': 'myrepo',
+            },
+            plan='other-user')
+        self.assertEqual(fields['path'],
+                         'git@bitbucket.org:someuser/myrepo.git')
+        self.assertEqual(fields['mirror_path'],
+                         'https://myuser@bitbucket.org/someuser/myrepo.git')
+
+    def test_other_user_repo_field_values_mercurial(self):
+        """Testing Bitbucket other-user repository field values for Mercurial
+        """
+        fields = self._get_repository_fields(
+            'Mercurial',
+            fields={
+                'bitbucket_other_user_username': 'someuser',
+                'bitbucket_other_user_repo_name': 'myrepo',
+            },
+            plan='other-user')
+        self.assertEqual(fields['path'],
+                         'https://myuser@bitbucket.org/someuser/myrepo')
+        self.assertEqual(fields['mirror_path'],
+                         'ssh://hg@bitbucket.org/someuser/myrepo')
+
+    def test_other_user_bug_tracker_field(self):
+        """Testing Bitbucket other-user bug tracker field values"""
+        self.assertFalse(self.service_class.get_bug_tracker_requires_username(
+            plan='other-user'))
+        self.assertEqual(
+            self.service_class.get_bug_tracker_field(
+                'other-user',
+                {
+                    'bitbucket_other_user_username': 'someuser',
+                    'bitbucket_other_user_repo_name': 'myrepo',
+                }),
+            'https://bitbucket.org/someuser/myrepo/issue/%s/')
+
+    def test_other_user_check_repository(self):
+        """Testing Bitbucket other-user check_repository"""
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(
+                url,
+                'https://bitbucket.org/api/1.0/repositories/someuser/myrepo')
+            return b'{}', {}
+
+        account = self._get_hosting_account()
+        service = account.service
+
+        account.data['password'] = encrypt_password('abc123')
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        service.check_repository(bitbucket_other_user_username='someuser',
+                                 bitbucket_other_user_repo_name='myrepo',
+                                 plan='other-user')
+        self.assertTrue(service.client.http_get.called)
+
     def test_check_repository_with_slash(self):
         """Testing Bitbucket check_repository with /"""
         account = self._get_hosting_account()
@@ -206,7 +268,33 @@ class BitbucketTests(ServiceTests):
 
         self.assertRaisesMessage(
             AuthorizationError,
-            'Invalid Bitbucket username or password',
+            'Invalid Bitbucket username or password. Make sure '
+            'you are using your Bitbucket username and not e-mail '
+            'address, and are using an app password if two-factor '
+            'authentication is enabled.',
+            lambda: service.authorize('myuser', 'abc123', None))
+
+        self.assertNotIn('password', account.data)
+        self.assertFalse(service.is_authorized())
+
+    def test_authorize_with_403(self):
+        """Testing Bitbucket authorization with HTTP 403 result"""
+        def _http_get(service, url, *args, **kwargs):
+            raise HTTPError(url, 403, '', {}, StringIO(''))
+
+        account = self._get_hosting_account()
+        service = account.service
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        self.assertFalse(service.is_authorized())
+
+        self.assertRaisesMessage(
+            AuthorizationError,
+            'Invalid Bitbucket username or password. Make sure '
+            'you are using your Bitbucket username and not e-mail '
+            'address, and are using an app password if two-factor '
+            'authentication is enabled.',
             lambda: service.authorize('myuser', 'abc123', None))
 
         self.assertNotIn('password', account.data)
