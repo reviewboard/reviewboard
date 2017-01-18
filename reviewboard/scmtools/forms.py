@@ -767,12 +767,13 @@ class RepositoryForm(forms.ModelForm):
                 # We have a valid hosting account linked up, so we can
                 # process this and copy over the account information.
                 form = self.repository_forms[hosting_type][plan]
+                hosting_account = self.cleaned_data['hosting_account']
+
                 new_data = self.cleaned_data.copy()
                 new_data.update(form.cleaned_data)
-                new_data['hosting_account_username'] = \
-                    self.cleaned_data['hosting_account'].username
-                new_data['hosting_url'] = \
-                    self.cleaned_data['hosting_account'].hosting_url
+                new_data.update(hosting_account.data)
+                new_data['hosting_account_username'] = hosting_account.username
+                new_data['hosting_url'] = hosting_account.hosting_url
 
                 bug_tracker_url = hosting_service_cls.get_bug_tracker_field(
                     plan, new_data)

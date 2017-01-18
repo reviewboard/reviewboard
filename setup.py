@@ -24,17 +24,11 @@ from reviewboard.dependencies import (build_dependency_list,
 # Make sure this is a version of Python we are compatible with. This should
 # prevent people on older versions from unintentionally trying to install
 # the source tarball, and failing.
-if sys.hexversion < 0x02050000:
+if sys.hexversion < 0x02070000:
     sys.stderr.write(
         'Review Board %s is incompatible with your version of Python.\n'
-        'Please install Review Board 1.6.x or upgrade Python to at least '
-        '2.6.x (preferably 2.7).\n' % get_package_version())
-    sys.exit(1)
-elif sys.hexversion < 0x02060500:
-    sys.stderr.write(
-        'Review Board %s is incompatible with your version of Python.\n'
-        'Please install Review Board 1.7.x or upgrade Python to at least '
-        '2.6.5 (preferably 2.7).\n' % get_package_version())
+        'Please install Review Board 2.5.x or upgrade Python to at least '
+        '2.7.\n' % get_package_version())
     sys.exit(1)
 
 
