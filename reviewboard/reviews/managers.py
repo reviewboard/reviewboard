@@ -144,8 +144,8 @@ class ReviewRequestManager(ConcurrencyManager):
             diffset_history=diffset_history,
             local_site=local_site)
 
-        if commit_id and not create_from_commit_id:
-            review_request.commit_id = commit_id
+        if commit_id:
+            review_request.commit = commit_id
 
         review_request.validate_unique()
         review_request.save()
@@ -158,8 +158,6 @@ class ReviewRequestManager(ConcurrencyManager):
                 draft.save()
                 draft.add_default_reviewers()
             except Exception as e:
-                review_request.commit_id = commit_id
-                review_request.save(update_fields=['commit_id'])
                 logging.error('Unable to update new review request from '
                               'commit ID %s: %s',
                               commit_id, e, exc_info=1)

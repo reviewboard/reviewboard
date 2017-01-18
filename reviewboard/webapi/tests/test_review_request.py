@@ -10,6 +10,7 @@ from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import (DOES_NOT_EXIST,
                                    INVALID_FORM_DATA,
                                    PERMISSION_DENIED)
+from djblets.webapi.testing.decorators import webapi_test_template
 from kgb import SpyAgency
 from pytz import timezone
 
@@ -1008,19 +1009,52 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
             },
             expected_mimetype=review_request_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['review_request']['commit_id'], None)
+        self.assertEqual(rsp['review_request']['commit_id'], 'abc123')
+        self.assertEqual(rsp['review_request']['changenum'], None)
         self.assertEqual(rsp['review_request']['summary'], '')
         self.assertEqual(rsp['review_request']['description'], '')
 
         review_request = \
             ReviewRequest.objects.get(pk=rsp['review_request']['id'])
-        self.assertEqual(review_request.commit_id, None)
+        self.assertEqual(review_request.commit_id, 'abc123')
         self.assertEqual(review_request.summary, '')
         self.assertEqual(review_request.description, '')
 
         draft = review_request.get_draft()
         self.assertIsNotNone(draft)
         self.assertEqual(draft.commit_id, commit_id)
+        self.assertEqual(draft.summary, 'Commit summary')
+        self.assertEqual(draft.description, 'Commit description.')
+
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_post_with_changenum(self):
+        """Testing the POST <URL> API with changenum"""
+        repository = self.create_repository(tool_name='Test')
+
+        rsp = self.api_post(
+            get_review_request_list_url(),
+            {
+                'repository': repository.name,
+                'changenum': 123,
+            },
+            expected_mimetype=review_request_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['review_request']['commit_id'], '123')
+        self.assertEqual(rsp['review_request']['changenum'], 123)
+        self.assertEqual(rsp['review_request']['summary'], '')
+        self.assertEqual(rsp['review_request']['description'], '')
+
+        review_request = \
+            ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        self.assertEqual(review_request.commit_id, '123')
+        self.assertEqual(review_request.changenum, 123)
+        self.assertEqual(review_request.summary, '')
+        self.assertEqual(review_request.description, '')
+
+        draft = review_request.get_draft()
+        self.assertIsNotNone(draft)
+        self.assertEqual(draft.commit_id, '123')
         self.assertEqual(draft.summary, 'Commit summary')
         self.assertEqual(draft.description, 'Commit description.')
 

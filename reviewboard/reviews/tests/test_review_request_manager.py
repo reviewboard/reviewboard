@@ -136,7 +136,8 @@ class ReviewRequestManagerTests(TestCase):
             create_from_commit_id=True)
         self.assertEqual(review_request.repository, repository)
         self.assertEqual(review_request.diffset_history.diffsets.count(), 0)
-        self.assertIsNone(review_request.commit_id)
+        self.assertEqual(review_request.commit_id, '123')
+        self.assertEqual(review_request.changenum, 123)
 
         draft = review_request.get_draft()
         self.assertIsNotNone(draft)
