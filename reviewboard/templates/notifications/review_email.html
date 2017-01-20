@@ -1,5 +1,6 @@
 {% extends "notifications/email_base.html" %}
-{% load djblets_email djblets_utils markdown_email rb_extensions %}
+{% load djblets_email djblets_extensions djblets_utils %}
+{% load markdown_email rb_extensions %}
 
 {% block content %}
 {% if review.ship_it %}
@@ -12,6 +13,7 @@ Ship it!
 </p>
 {% endif %}
 
+{% template_hook_point "review-email-html-summary" %}
 {% if review.body_top %}
  <pre style="{{precss}}">{{review.body_top|markdown_email_html:review.body_top_rich_text}}</pre>
  <br />

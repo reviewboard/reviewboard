@@ -2,7 +2,6 @@ from __future__ import absolute_import, unicode_literals
 
 import email
 import logging
-from email.utils import formataddr
 from collections import defaultdict
 
 from django.conf import settings
@@ -125,7 +124,7 @@ def review_request_published_cb(sender, user, review_request, trivial,
         mail_review_request(review_request, user, changedesc)
 
 
-def review_published_cb(sender, user, review, **kwargs):
+def review_published_cb(sender, user, review, request, **kwargs):
     """Send e-mail when a review is published.
 
     Listens to the :py:data:`~reviewboard.reviews.signals.review_published`
@@ -135,7 +134,7 @@ def review_published_cb(sender, user, review, **kwargs):
     siteconfig = SiteConfiguration.objects.get_current()
 
     if siteconfig.get('mail_send_review_mail'):
-        mail_review(review, user)
+        mail_review(review, user, request)
 
 
 def reply_published_cb(sender, user, reply, trivial, **kwargs):
@@ -729,12 +728,19 @@ def mail_review_request(review_request, user, changedesc=None,
     review_request.save()
 
 
-def mail_review(review, user):
+def mail_review(review, user, request):
     """Send an e-mail representing the supplied review.
 
     Args:
         review (reviewboard.reviews.models.Review):
             The review to send an e-mail about.
+
+        user (django.contrib.auth.models.User):
+            The user who published the review.
+
+        request (django.http.HttpRequest):
+            The request object if the review was published from an HTTP
+            request.
     """
     review_request = review.review_request
 
@@ -754,6 +760,7 @@ def mail_review(review, user):
         'user': review.user,
         'review': review,
         'has_issues': has_issues,
+        'request': request,
     }
 
     extra_headers = {}

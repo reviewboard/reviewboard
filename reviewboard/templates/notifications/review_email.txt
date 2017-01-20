@@ -1,4 +1,4 @@
-{% autoescape off %}{% load djblets_email djblets_utils markdown_email rb_extensions reviewtags %}
+{% autoescape off %}{% load djblets_email djblets_extensions djblets_utils markdown_email rb_extensions reviewtags %}
 -----------------------------------------------------------
 This is an automatically generated e-mail. To reply, visit:
 {{domain_method}}://{{domain}}{{review.get_absolute_url}}
@@ -10,7 +10,7 @@ Fix it, then Ship it!
 Ship it!
 {%  endif %}
 {% endif %}
-
+{% template_hook_point "review-email-text-summary" %}
 {% if review.body_top %}
 {{review.body_top|markdown_email_text:review.body_top_rich_text}}
 {% endif %}{% for comment in review.file_attachment_comments.all %}
