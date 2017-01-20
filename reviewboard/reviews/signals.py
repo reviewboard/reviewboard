@@ -110,7 +110,7 @@ review_publishing = Signal(providing_args=['user', 'review',
 #:
 #: Args:
 #:     user (django.contrib.auth.models.User):
-#:         The user who published the review request.
+#:         The user who published the review.
 #:
 #:     review (reviewboard.reviews.models.Review):
 #:         The review that was published.
@@ -118,9 +118,11 @@ review_publishing = Signal(providing_args=['user', 'review',
 #:     to_submitter_only (boolean):
 #:         Whether the review e-mail should be sent only to the review request
 #:         submitter.
-review_published = Signal(providing_args=['user', 'review',
-                                          'to_submitter_only'])
-
+#:
+#:     request (django.http.HttpRequest):
+#:         The request object if the review was published from an HTTP request.
+review_published = Signal(
+    providing_args=['user', 'review', 'to_submitter_only', 'request'])
 
 #: Emitted when a reply to a review is being published.
 #:

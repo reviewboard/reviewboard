@@ -212,7 +212,8 @@ class Review(models.Model):
 
         super(Review, self).save()
 
-    def publish(self, user=None, trivial=False, to_submitter_only=False):
+    def publish(self, user=None, trivial=False, to_submitter_only=False,
+                request=None):
         """Publishes this review.
 
         This will make the review public and update the timestamps of all
@@ -271,7 +272,8 @@ class Review(models.Model):
 
             review_published.send(sender=self.__class__,
                                   user=user, review=self,
-                                  to_submitter_only=to_submitter_only)
+                                  to_submitter_only=to_submitter_only,
+                                  request=request)
 
     def delete(self):
         """Deletes this review.

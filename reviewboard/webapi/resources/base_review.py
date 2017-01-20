@@ -317,7 +317,8 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         if public:
             try:
                 review.publish(user=request.user,
-                               to_submitter_only=publish_to_submitter_only)
+                               to_submitter_only=publish_to_submitter_only,
+                               request=request)
             except PublishError as e:
                 return PUBLISH_ERROR.with_message(six.text_type(e))
 
