@@ -124,7 +124,6 @@ review_publishing = Signal(providing_args=['user', 'review',
 review_published = Signal(
     providing_args=['user', 'review', 'to_submitter_only', 'request'])
 
-
 #: Emitted when a reply to a review is being published.
 #:
 #: Args:
