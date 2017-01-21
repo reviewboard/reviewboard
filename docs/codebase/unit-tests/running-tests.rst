@@ -9,7 +9,26 @@ to make sure you don't break anything. It is important that you run
 these before posting code for review. We also request that new code
 include additions to the unit tests.
 
-You can run the test suite for any of our modules by typing::
+There are two types of tests that can be run: Python and JavaScript.
+
+
+Running JavaScript Unit Tests
+-----------------------------
+
+To run the JavaScript tests, first launch the development web server.
+Instructions on how to do so can be found in the :ref:`getting-started`
+guide, under :ref:`development-web-server`. Once you have launched the
+server, browse to::
+
+    http://localhost:8080/js-tests/
+
+The full JavaScript test suite should then run automatically.
+
+
+Running Python Unit Tests
+-------------------------
+
+You can run the test suite for any of our Python modules by typing::
 
     $ ./tests/runtests.py
 
