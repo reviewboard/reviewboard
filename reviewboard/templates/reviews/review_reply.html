@@ -1,6 +1,7 @@
 {% load avatars djblets_utils i18n reviewtags tz %}
 
 <li{% if draft %} class="draft"{% endif %}{% if comment_id %} data-comment-id="{{comment_id}}"{% endif %}>
+ <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment_id}}"></a>
  <div class="comment-author">
   <label for="{% if draft %}draft{% endif %}comment_{{context_id}}-{{id}}">
    <div class="avatar-container">
