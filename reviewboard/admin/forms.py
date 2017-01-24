@@ -38,7 +38,8 @@ from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.utils import six
 from django.utils.six.moves.urllib.parse import urlparse
-from django.utils.translation import ugettext as _
+from django.utils.translation import (ugettext,
+                                      ugettext_lazy as _)
 from djblets.cache.backend_compat import normalize_cache_backend
 from djblets.cache.forwarding_backend import DEFAULT_FORWARD_CACHE_ALIAS
 from djblets.forms.fields import TimeZoneField
@@ -168,12 +169,12 @@ class GeneralSettingsForm(SiteSettingsForm):
 
         if settings.DEBUG:
             self.fields['cache_type'].choices += (
-                ('locmem', _('Local memory cache')),
+                ('locmem', ugettext('Local memory cache')),
             )
 
         if cache_type == 'custom':
             self.fields['cache_type'].choices += (
-                ('custom', _('Custom')),
+                ('custom', ugettext('Custom')),
             )
             cache_locations = []
         elif cache_type != 'locmem':
@@ -256,7 +257,7 @@ class GeneralSettingsForm(SiteSettingsForm):
 
         if self.fields['cache_host'].required and not cache_host:
             raise ValidationError(
-                _('A valid cache host must be provided.'))
+                ugettext('A valid cache host must be provided.'))
 
         return cache_host
 
@@ -266,7 +267,7 @@ class GeneralSettingsForm(SiteSettingsForm):
 
         if self.fields['cache_path'].required and not cache_path:
             raise ValidationError(
-                _('A valid cache path must be provided.'))
+                ugettext('A valid cache path must be provided.'))
 
         return cache_path
 
@@ -615,9 +616,10 @@ class EMailSettingsForm(SiteSettingsForm):
             else:
                 to_user = siteconfig.get('site_admin_email')
 
-            send_mail(_('E-mail settings test'),
-                      _('This is a test of the e-mail settings for the Review '
-                        'Board server at %s.') % site_url,
+            send_mail(ugettext('E-mail settings test'),
+                      ugettext('This is a test of the e-mail settings '
+                               'for the Review Board server at %s.')
+                      % site_url,
                       siteconfig.get('mail_default_from'),
                       [to_user],
                       fail_silently=True)
@@ -796,14 +798,14 @@ class LoggingSettingsForm(SiteSettingsForm):
         logging_dir = self.cleaned_data['logging_directory']
 
         if not os.path.exists(logging_dir):
-            raise ValidationError(_("This path does not exist."))
+            raise ValidationError(ugettext("This path does not exist."))
 
         if not os.path.isdir(logging_dir):
-            raise ValidationError(_("This is not a directory."))
+            raise ValidationError(ugettext("This is not a directory."))
 
         if not os.access(logging_dir, os.W_OK):
             raise ValidationError(
-                _("This path is not writable by the web server."))
+                ugettext("This path is not writable by the web server."))
 
         return logging_dir
 
@@ -851,12 +853,12 @@ class SSHSettingsForm(forms.Form):
                 SSHClient().generate_user_key()
             except IOError as e:
                 self.errors['generate_key'] = forms.util.ErrorList([
-                    _('Unable to write SSH key file: %s') % e
+                    ugettext('Unable to write SSH key file: %s') % e
                 ])
                 raise
             except Exception as e:
                 self.errors['generate_key'] = forms.util.ErrorList([
-                    _('Error generating SSH key: %s') % e
+                    ugettext('Error generating SSH key: %s') % e
                 ])
                 raise
         elif self.cleaned_data['keyfile']:
@@ -864,12 +866,12 @@ class SSHSettingsForm(forms.Form):
                 SSHClient().import_user_key(files['keyfile'])
             except IOError as e:
                 self.errors['keyfile'] = forms.util.ErrorList([
-                    _('Unable to write SSH key file: %s') % e
+                    ugettext('Unable to write SSH key file: %s') % e
                 ])
                 raise
             except Exception as e:
                 self.errors['keyfile'] = forms.util.ErrorList([
-                    _('Error uploading SSH key: %s') % e
+                    ugettext('Error uploading SSH key: %s') % e
                 ])
                 raise
 
@@ -884,7 +886,7 @@ class SSHSettingsForm(forms.Form):
                 SSHClient().delete_user_key()
             except Exception as e:
                 self.errors['delete_key'] = forms.util.ErrorList([
-                    _('Unable to delete SSH key file: %s') % e
+                    ugettext('Unable to delete SSH key file: %s') % e
                 ])
                 raise
 
@@ -1226,9 +1228,9 @@ class SearchSettingsForm(SiteSettingsForm):
 
         if not search_backend:
             raise ValidationError(
-                _('The search engine "%s" could not be found. If this is '
-                  'provided by an extension, you will have to make sure that '
-                  'extension is enabled..')
+                ugettext('The search engine "%s" could not be found. '
+                         'If this is provided by an extension, you will have '
+                         'to make sure that extension is enabled.')
                 % search_backend_id
             )
 

@@ -214,3 +214,5 @@ class StatusUpdate(models.Model):
         app_label = 'reviews'
         ordering = ['timestamp']
         get_latest_by = 'timestamp'
+        verbose_name = _('status update')
+        verbose_name_plural = _('status updates')
