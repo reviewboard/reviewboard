@@ -34,6 +34,7 @@ from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.sites.models import Site
 from django.conf import settings
+from django.core.cache import get_cache
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.utils import six
@@ -84,6 +85,9 @@ class GeneralSettingsForm(SiteSettingsForm):
         'file': 'cache_path',
         'memcached': 'cache_host',
     }
+
+    CACHE_VALIDATION_KEY = '__rb-cache-validation__'
+    CACHE_VALIDATION_VALUE = 12345
 
     company = forms.CharField(
         label=_("Company/Organization"),
@@ -138,7 +142,10 @@ class GeneralSettingsForm(SiteSettingsForm):
         label=_("Cache Path"),
         help_text=_('The file location for the cache.'),
         required=True,
-        widget=forms.TextInput(attrs={'size': '50'}))
+        widget=forms.TextInput(attrs={'size': '50'}),
+        error_messages={
+            'required': 'A valid cache path must be provided.'
+        })
 
     cache_host = forms.CharField(
         label=_("Cache Hosts"),
@@ -146,7 +153,10 @@ class GeneralSettingsForm(SiteSettingsForm):
                     'form. Multiple hosts can be specified by separating '
                     'them with a semicolon (;).'),
         required=True,
-        widget=forms.TextInput(attrs={'size': '50'}))
+        widget=forms.TextInput(attrs={'size': '50'}),
+        error_messages={
+            'required': 'A valid cache host must be provided.'
+        })
 
     def load(self):
         """Load the form."""
@@ -207,8 +217,10 @@ class GeneralSettingsForm(SiteSettingsForm):
             domain_name = domain_name[:-1]
 
         site = Site.objects.get_current()
-        site.domain = domain_name
-        site.save()
+
+        if site.domain != domain_name:
+            site.domain = domain_name
+            site.save(update_fields=['domain'])
 
         self.siteconfig.set("site_domain_method", domain_method)
 
@@ -241,15 +253,86 @@ class GeneralSettingsForm(SiteSettingsForm):
         load_site_config()
 
     def full_clean(self):
-        """Clean and validate all form fields."""
+        """Begin cleaning and validating all form fields.
+
+        This is the beginning of the form validation process. Before cleaning
+        the fields, this will set the "required" states for the caching
+        fields, based on the chosen caching type. This will enable or disable
+        validation for those particular fields.
+
+        Returns:
+            dict:
+            The cleaned form data.
+        """
+        orig_required = {}
         cache_type = (self['cache_type'].data or
                       self.fields['cache_type'].initial)
 
         for iter_cache_type, field in six.iteritems(
                 self.CACHE_LOCATION_FIELD_MAP):
+            orig_required[field] = self.fields[field].required
             self.fields[field].required = (cache_type == iter_cache_type)
 
-        return super(GeneralSettingsForm, self).full_clean()
+        cleaned_data = super(GeneralSettingsForm, self).full_clean()
+
+        # Reset the required flags for any modified field.
+        for field, required in six.iteritems(orig_required):
+            self.fields[field].required = required
+
+        return cleaned_data
+
+    def clean(self):
+        """Clean and validate the form fields.
+
+        This is called after all individual fields are validated. It does
+        the remaining work of checking to make sure the resulting configuration
+        is valid.
+
+        Returns:
+            dict:
+            The cleaned form data.
+        """
+        cleaned_data = super(GeneralSettingsForm, self).clean()
+
+        if 'cache_type' not in self.errors:
+            cache_type = cleaned_data['cache_type']
+            cache_location_field = \
+                self.CACHE_LOCATION_FIELD_MAP.get(cache_type)
+
+            if cache_location_field not in self.errors:
+                cache_backend = None
+
+                try:
+                    cache_backend = get_cache(
+                        self.CACHE_BACKENDS_MAP[cache_type],
+                        LOCATION=cleaned_data.get(cache_location_field))
+
+                    cache_backend.set(self.CACHE_VALIDATION_KEY,
+                                      self.CACHE_VALIDATION_VALUE)
+                    value = cache_backend.get(self.CACHE_VALIDATION_KEY)
+                    cache_backend.delete(self.CACHE_VALIDATION_KEY)
+
+                    if value != self.CACHE_VALIDATION_VALUE:
+                        self.errors[cache_location_field] = self.error_class([
+                            _('Unable to store and retrieve values from this '
+                              'caching backend. There may be a problem '
+                              'connecting.')
+                        ])
+                except Exception as e:
+                    self.errors[cache_location_field] = self.error_class([
+                        _('Error with this caching configuration: %s')
+                        % e
+                    ])
+
+                # If the cache backend is open, try closing it. This may fail,
+                # so we want to ignore any failures.
+                if cache_backend is not None:
+                    try:
+                        cache_backend.close()
+                    except:
+                        pass
+
+        return cleaned_data
 
     def clean_cache_host(self):
         """Validate that the cache_host field is provided if required."""
