@@ -125,5 +125,6 @@ class Group(models.Model):
     class Meta:
         app_label = 'reviews'
         unique_together = (('name', 'local_site'),)
-        verbose_name = _("review group")
+        verbose_name = _('review group')
+        verbose_name_plural = _('review groups')
         ordering = ['name']

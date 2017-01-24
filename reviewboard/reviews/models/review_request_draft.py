@@ -353,3 +353,5 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
     class Meta:
         app_label = 'reviews'
         ordering = ['-last_updated']
+        verbose_name = _('review request draft')
+        verbose_name_plural = _('review request drafts')

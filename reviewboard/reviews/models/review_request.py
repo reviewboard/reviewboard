@@ -983,3 +983,5 @@ class ReviewRequest(BaseReviewRequestDetails):
             ("can_submit_as_another_user", "Can submit as another user"),
             ("can_edit_reviewrequest", "Can edit review request"),
         )
+        verbose_name = _('review request')
+        verbose_name_plural = _('review requests')

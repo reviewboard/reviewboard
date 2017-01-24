@@ -88,6 +88,7 @@ class RepositoryAdmin(admin.ModelAdmin):
                 return '%s@%s' % (account.username, account.service.name)
 
         return ''
+    hosting.short_description = _('Hosting Service Account')
 
     def inline_actions(self, repository):
         s = ['<div class="admin-inline-actions">']
