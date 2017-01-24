@@ -415,7 +415,7 @@ class UsersDataGrid(AlphanumericDataGrid):
                                        shrink=True)
 
     def __init__(self, request,
-                 queryset=User.objects.filter(is_active=True),
+                 queryset=User.objects.all(),
                  title=_('All users'),
                  local_site=None):
         """Initialize the datagrid."""
@@ -428,17 +428,45 @@ class UsersDataGrid(AlphanumericDataGrid):
                                             sortable_column='username',
                                             extra_regex='^[0-9_\-\.].*')
 
+        self.listview_template = 'datagrids/user_listview.html'
         self.default_sort = ['username']
         self.profile_sort_field = 'sort_submitter_columns'
         self.profile_columns_field = 'submitter_columns'
         self.default_columns = [
             'username', 'fullname', 'pending_count'
         ]
+        self.show_inactive = False
 
     def link_to_object(self, state, obj, value):
         """Return a link to the given object."""
         return local_site_reverse('user', request=self.request,
                                   args=[obj.username])
+
+    def load_extra_state(self, profile):
+        """Load extra state for the datagrid.
+
+        This handles hiding or showing inactive users.
+
+        Args:
+            profile (reviewboard.accounts.models.Profile):
+                The user profile which contains some basic
+                configurable settings.
+
+        Returns:
+            bool:
+            Always returns False.
+        """
+        show_inactive = self.request.GET.get('show-inactive', 0)
+
+        try:
+            self.show_inactive = int(show_inactive)
+        except ValueError:
+            pass
+
+        if not self.show_inactive:
+            self.queryset = self.queryset.filter(is_active=True)
+
+        return False
 
 
 class GroupDataGrid(DataGrid):
