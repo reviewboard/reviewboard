@@ -289,3 +289,5 @@ class Review(models.Model):
         app_label = 'reviews'
         ordering = ['timestamp']
         get_latest_by = 'timestamp'
+        verbose_name = _('review')
+        verbose_name_plural = _('reviews')

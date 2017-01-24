@@ -41,3 +41,8 @@ class Comment(BaseComment):
             self.get_review_request().get_absolute_url(),
             revision_path, self.filediff.id, self.filediff.id,
             self.first_line)
+
+    class Meta:
+        app_label = 'reviews'
+        verbose_name = _('comment')
+        verbose_name_plural = _('comments')
