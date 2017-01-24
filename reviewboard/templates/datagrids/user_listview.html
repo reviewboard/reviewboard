@@ -1,0 +1,12 @@
+{% extends "datagrids/listview.html" %}
+{% load djblets_utils i18n reviewtags %}
+
+{% block datagrid_filters %}
+<li class="datagrid-showinactive">
+{%  if datagrid.show_inactive %}
+ <a href="{% querystring_with 'show-inactive' '0' %}">{% trans "Hide inactive" %}</a>
+{%  else %}
+ <a href="{% querystring_with 'show-inactive' '1' %}">{% trans "Show inactive" %}</a>
+{%  endif %}
+</li>
+{% endblock datagrid_filters %}
