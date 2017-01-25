@@ -1,15 +1,12 @@
-==========================================
-Review Board Administration Guide Contents
-==========================================
+============================================
+Review Board Codebase Contributions Contents
+============================================
 
 .. toctree::
    :maxdepth: 2
    :glob:
 
    index
-   coding-standards
-   contributing-patches
-   unit-tests/fixtures
 
 
 Indices, glossary and tables
