@@ -381,6 +381,57 @@ class BitbucketTests(ServiceTests):
             expected_revision='456',
             expected_found=False)
 
+    def test_get_change(self):
+        """Testing BitBucket get_change"""
+        commit_sha = '1c44b461cebe5874a857c51a4a13a849a4d1e52d'
+        parent_sha = '44568f7d33647d286691517e6325fea5c7a21d5e'
+
+        commits_api_response = json.dumps({
+            'changesets': [
+                {
+                    'raw_node': commit_sha,
+                    'author': 'Some User',
+                    'utctimestamp': '2017-01-24 13:11:22+0000',
+                    'message': 'This is a message.',
+                    'parents': [parent_sha],
+                },
+            ]
+        })
+
+        diff_api_response = b'This is a test \xc7.'
+        norm_diff_api_response = b'This is a test \xc7.\n'
+
+        def _http_get(service, url, *args, **kwargs):
+            if url == ('https://bitbucket.org/api/1.0/repositories/'
+                       'myuser/myrepo/changesets/?limit=20&start=%s'
+                       % commit_sha):
+                return commits_api_response, None
+            elif url == ('https://bitbucket.org/api/2.0/repositories/'
+                         'myuser/myrepo/diff/%s' % commit_sha):
+                return diff_api_response, None
+            else:
+                self.fail('Unexpected URL %s' % url)
+
+        account = self._get_hosting_account()
+        service = account.service
+        repository = Repository(hosting_account=account,
+                                tool=Tool.objects.get(name='Git'))
+        repository.extra_data = {
+            'bitbucket_repo_name': 'myrepo',
+        }
+
+        account.data['password'] = encrypt_password('abc123')
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        commit = service.get_change(repository, commit_sha)
+        self.assertEqual(commit.id, commit_sha)
+        self.assertEqual(commit.author_name, 'Some User')
+        self.assertEqual(commit.message, 'This is a message.')
+        self.assertEqual(commit.date, '2017-01-24T13:11:22+0000')
+        self.assertEqual(commit.parent, parent_sha)
+        self.assertEqual(commit.diff, norm_diff_api_response)
+
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_close_submitted_hook(self):
         """Testing BitBucket close_submitted hook"""
