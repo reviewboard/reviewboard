@@ -102,3 +102,5 @@ class Screenshot(models.Model):
 
     class Meta:
         app_label = 'reviews'
+        verbose_name = _('screenshot')
+        verbose_name_plural = _('screenshots')
