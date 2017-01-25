@@ -417,8 +417,8 @@ class Bitbucket(HostingService):
 
         diff = self._api_get(url, raw_content=True)
 
-        if not diff.endswith('\n'):
-            diff += '\n'
+        if not diff.endswith(b'\n'):
+            diff += b'\n'
 
         return Commit(author_name=commit.author_name,
                       id=commit.id,
