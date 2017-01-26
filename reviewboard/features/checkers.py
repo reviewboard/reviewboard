@@ -56,12 +56,11 @@ class RBFeatureChecker(SiteConfigFeatureChecker):
         if local_site is None and request is not None:
             local_site = request.local_site
 
-        if not (local_site and local_site.extra_data):
-            return super(RBFeatureChecker, self).is_feature_enabled(
-                feature_id, **kwargs)
+        if local_site and local_site.extra_data:
+            try:
+                return local_site.extra_data[self.EXTRA_DATA_KEY][feature_id]
+            except KeyError:
+                pass
 
-        try:
-            return local_site.extra_data[self.EXTRA_DATA_KEY][feature_id]
-        except KeyError:
-            return super(RBFeatureChecker, self).is_feature_enabled(
-                feature_id, **kwargs)
+        return super(RBFeatureChecker, self).is_feature_enabled(feature_id,
+                                                                **kwargs)
