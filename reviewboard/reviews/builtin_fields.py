@@ -5,7 +5,8 @@ import uuid
 from django.contrib.auth.models import User
 from django.core.urlresolvers import NoReverseMatch
 from django.db import models
-from django.template.loader import Context, get_template
+from django.template.base import Context
+from django.template.loader import get_template
 from django.utils import six
 from django.utils.html import escape, format_html, format_html_join
 from django.utils.safestring import mark_safe

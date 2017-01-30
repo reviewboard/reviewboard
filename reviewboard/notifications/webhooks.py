@@ -8,7 +8,7 @@ from django.contrib.sites.models import Site
 from django.http.request import HttpRequest
 from django.utils.six.moves.urllib.parse import urlencode
 from django.utils.six.moves.urllib.request import Request, urlopen
-from django.template import Context, Lexer, Parser
+from django.template.base import Context, Lexer, Parser
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.encoders import (JSONEncoderAdapter, ResourceAPIEncoder,
                                      XMLEncoderAdapter)
