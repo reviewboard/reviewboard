@@ -123,9 +123,9 @@ urlpatterns += patterns(
     ('^feed/news/$', 'djblets.feedview.views.view_feed',
      {'template_name': 'admin/feed.html',
       'url': NEWS_FEED}),
-    (r'^feed/news/rss/$', RedirectView.as_view(url=NEWS_FEED)),
+    (r'^feed/news/rss/$', RedirectView.as_view(url=NEWS_FEED, permanent=True)),
 
     url(r'^integrations/', include('reviewboard.integrations.urls')),
-    url(r'^settings/$', RedirectView.as_view(url='general/'),
+    url(r'^settings/$', RedirectView.as_view(url='general/', permanent=True),
         name="site-settings"),
 )
