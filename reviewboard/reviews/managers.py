@@ -98,7 +98,13 @@ class ReviewRequestManager(ConcurrencyManager):
     requests based on certain data.
     """
 
-    def get_query_set(self):
+    def get_queryset(self):
+        """Return a QuerySet for ReviewRequest models.
+
+        Returns:
+            ReviewRequestQuerySet:
+            The new QuerySet instance.
+        """
         return ReviewRequestQuerySet(self.model)
 
     def create(self, user, repository, commit_id=None, local_site=None,
