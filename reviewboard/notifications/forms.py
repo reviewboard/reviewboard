@@ -75,3 +75,4 @@ class WebHookTargetForm(forms.ModelForm):
                 'invalid_pk_value': _('"%(pk)s" is an invalid repository ID.'),
             },
         }
+        fields = '__all__'

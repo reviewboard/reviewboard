@@ -1369,3 +1369,4 @@ class RepositoryForm(forms.ModelForm):
             'review_groups': FilteredSelectMultiple(
                 _('review groups with access'), False),
         }
+        fields = '__all__'
