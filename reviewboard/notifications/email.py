@@ -428,7 +428,7 @@ def build_recipients(user, review_request, extra_recipients=None,
 
             recipients.update(
                 recipient
-                for recipient in filtered_users.select_related('Profile')
+                for recipient in filtered_users.select_related('profile')
                 if recipient.should_send_email()
             )
 
@@ -441,7 +441,7 @@ def build_recipients(user, review_request, extra_recipients=None,
 
         to_field.update(
             recipient
-            for recipient in target_people.select_related('Profile')
+            for recipient in target_people.select_related('profile')
             if (recipient.should_send_email() and
                 recipient.visibility != ReviewRequestVisit.MUTED)
         )

@@ -556,7 +556,7 @@ class ReviewSubmitterColumn(BaseSubmitterColumn):
 
     def augment_queryset(self, state, queryset):
         """Add additional queries to the queryset."""
-        return queryset.select_related('reviews')
+        return queryset.select_related('review_request')
 
 
 class ShipItColumn(Column):
@@ -710,7 +710,7 @@ class ReviewSummaryColumn(SummaryColumn):
 
     def augment_queryset(self, state, queryset):
         """Add additional queries to the queryset."""
-        return queryset.select_related('reviews')
+        return queryset.select_related('review_request')
 
 
 class ToMeColumn(Column):
