@@ -83,7 +83,6 @@ MIDDLEWARE_CLASSES = [
 
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.doc.XViewMiddleware',
     'django.middleware.http.ConditionalGetMiddleware',
     'django.middleware.locale.LocaleMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
