@@ -53,10 +53,11 @@ class ServiceTests(SpyAgency, TestCase):
         else:
             hosting_url = None
 
-        return HostingServiceAccount(service_name=self.service_name,
-                                     username='myuser',
-                                     hosting_url=hosting_url,
-                                     local_site=local_site)
+        return HostingServiceAccount.objects.create(
+            service_name=self.service_name,
+            username='myuser',
+            hosting_url=hosting_url,
+            local_site=local_site)
 
     def _get_service(self):
         return self._get_hosting_account().service
