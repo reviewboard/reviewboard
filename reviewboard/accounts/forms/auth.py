@@ -122,16 +122,6 @@ class StandardAuthSettingsForm(SiteSettingsForm):
 
     auth_registration_show_captcha = forms.BooleanField(
         label=_('Show a captcha for registration'),
-        help_text=mark_safe(
-            _('Displays a captcha using <a href="%(recaptcha_url)s">'
-              'reCAPTCHA</a> on the registration page. To enable this, you '
-              'will need to go <a href="%(register_url)s">here</A> to '
-              'register an account and type in your new keys below.')
-            % {
-                'recaptcha_url': 'http://www.google.com/recaptcha',
-                'register_url': 'https://www.google.com/recaptcha/admin'
-                                '#createsite',
-            }),
         required=False)
 
     recaptcha_public_key = forms.CharField(
@@ -143,6 +133,24 @@ class StandardAuthSettingsForm(SiteSettingsForm):
         label=_('reCAPTCHA Private Key'),
         required=False,
         widget=forms.TextInput(attrs={'size': '60'}))
+
+    def __init__(self, *args, **kwargs):
+        super(StandardAuthSettingsForm, self).__init__(*args, **kwargs)
+
+        # This is done at initialization time instead of in the field
+        # definition because the format operation causes the lazy translation
+        # to be evaluated, which has to happen after the i18n infrastructure
+        # has been started.
+        self.fields['auth_registration_show_captcha'].help_text = mark_safe(
+            _('Displays a captcha using <a href="%(recaptcha_url)s">'
+              'reCAPTCHA</a> on the registration page. To enable this, you '
+              'will need to go <a href="%(register_url)s">here</A> to '
+              'register an account and type in your new keys below.')
+            % {
+                'recaptcha_url': 'http://www.google.com/recaptcha',
+                'register_url': 'https://www.google.com/recaptcha/admin'
+                                '#createsite',
+            })
 
     def clean_recaptcha_public_key(self):
         """Validate that the reCAPTCHA public key is specified if needed."""
@@ -258,13 +266,6 @@ class LDAPSettingsForm(SiteSettingsForm):
 
     auth_ldap_uid_mask = forms.CharField(
         label=_("Custom LDAP User Search Filter"),
-        help_text=_("A custom LDAP search filter, corresponding to RFC 2254. "
-                    "If left unset, this option is equivalent to "
-                    "<tt>(usernameattribute=%(varname)s)</tt>. Use "
-                    "<tt>\"%(varname)s\"</tt> "
-                    "wherever the username would normally go. "
-                    "Specify this value only if the default cannot locate "
-                    "all users.") % {'varname': '%s'},
         required=False,
         widget=forms.TextInput(attrs={'size': '40'}))
 
@@ -283,6 +284,24 @@ class LDAPSettingsForm(SiteSettingsForm):
         widget=forms.PasswordInput(attrs={'size': '30'}, render_value=True),
         help_text=_("The password for the Review Board LDAP Bind Account."),
         required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(LDAPSettingsForm, self).__init__(*args, **kwargs)
+
+        # This is done at initialization time instead of in the field
+        # definition because the format operation causes the lazy translation
+        # to be evaluated, which has to happen after the i18n infrastructure
+        # has been started.
+        self.fields['auth_ldap_uid_mask'].help_text = mark_safe(
+            _('A custom LDAP search filter, corresponding to RFC 2254. If '
+              'left unset, this option is equivalent to <tt>('
+              'usernameattribute=%(varname)s)</tt>. Use <tt>'
+              '"%(varname)s"</tt> wherever the username would normally go. '
+              'Specify this value only if the default cannot locate all '
+              'users.')
+            % {
+                'varname': '%s',
+            })
 
     def load(self):
         """Load the data for the form."""
