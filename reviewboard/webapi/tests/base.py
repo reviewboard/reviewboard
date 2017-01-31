@@ -40,9 +40,9 @@ class BaseWebAPITestCase(WebAPITestCaseMixin, TestCase, EmailTestHelper):
 
         mail.outbox = []
 
-        fixtures = getattr(self, 'fixtures', [])
+        fixtures = getattr(self, 'fixtures', None)
 
-        if 'test_users' in fixtures:
+        if fixtures and 'test_users' in fixtures:
             self.client.login(username="grumpy", password="grumpy")
             self.user = User.objects.get(username="grumpy")
 
