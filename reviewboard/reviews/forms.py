@@ -92,6 +92,7 @@ class DefaultReviewerForm(forms.ModelForm):
 
     class Meta:
         model = DefaultReviewer
+        fields = '__all__'
 
 
 class GroupForm(forms.ModelForm):
@@ -115,6 +116,7 @@ class GroupForm(forms.ModelForm):
 
     class Meta:
         model = Group
+        fields = '__all__'
 
 
 class UploadDiffForm(diffviewer_forms.UploadDiffForm):

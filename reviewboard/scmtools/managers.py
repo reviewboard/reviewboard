@@ -42,7 +42,13 @@ class ToolManager(Manager):
     """
     use_for_related_fields = True
 
-    def get_query_set(self):
+    def get_queryset(self):
+        """Return a QuerySet for Tool models.
+
+        Returns:
+            ToolQuerySet:
+            The new QuerySet instance.
+        """
         return ToolQuerySet(self.model, using=self.db)
 
 

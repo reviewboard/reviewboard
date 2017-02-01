@@ -6,17 +6,13 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.attachments.models import FileAttachment
 from reviewboard.extensions.tests import TestService
 from reviewboard.hostingsvcs.service import (register_hosting_service,
                                              unregister_hosting_service)
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.reviews.models import (Comment,
                                         GeneralComment,
-                                        Review,
-                                        ReviewRequest,
-                                        ReviewRequestDraft,
-                                        Screenshot)
+                                        Review)
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
 
@@ -121,8 +117,11 @@ class ViewTests(TestCase):
         self.assertTrue(reply1.timestamp > reply2.timestamp)
 
         # Make sure they're looked up in the order expected.
-        comments = list(Comment.objects.filter(
-            review__review_request=review_request))
+        comments = list(
+            Comment.objects
+            .filter(review__review_request=review_request)
+            .order_by('timestamp')
+        )
         self.assertEqual(len(comments), 3)
         self.assertEqual(comments[0].text, comment_text_1)
         self.assertEqual(comments[1].text, comment_text_3)
@@ -186,8 +185,11 @@ class ViewTests(TestCase):
         self.assertTrue(reply1.timestamp > reply2.timestamp)
 
         # Make sure they're looked up in the order expected.
-        comments = list(GeneralComment.objects.filter(
-            review__review_request=review_request))
+        comments = list(
+            GeneralComment.objects
+            .filter(review__review_request=review_request)
+            .order_by('timestamp')
+        )
         self.assertEqual(len(comments), 3)
         self.assertEqual(comments[0].text, comment_text_1)
         self.assertEqual(comments[1].text, comment_text_3)
