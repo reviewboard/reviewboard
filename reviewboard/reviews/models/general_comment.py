@@ -21,5 +21,6 @@ class GeneralComment(BaseComment):
 
     class Meta:
         app_label = 'reviews'
-        verbose_name = _('general comment')
-        verbose_name_plural = _('general comments')
+        db_table = 'reviews_generalcomment'
+        verbose_name = _('General Comment')
+        verbose_name_plural = _('General Comments')

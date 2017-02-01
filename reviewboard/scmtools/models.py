@@ -78,7 +78,10 @@ class Tool(models.Model):
     scmtool_class = property(get_scmtool_class)
 
     class Meta:
-        ordering = ("name",)
+        db_table = 'scmtools_tool'
+        ordering = ('name',)
+        verbose_name = _('Tool')
+        verbose_name_plural = _('Tools')
 
 
 @python_2_unicode_compatible
@@ -654,7 +657,9 @@ class Repository(models.Model):
                     params={'field': 'path'})
 
     class Meta:
-        verbose_name_plural = "Repositories"
+        db_table = 'scmtools_repository'
         unique_together = (('name', 'local_site'),
                            ('archived_timestamp', 'path', 'local_site'),
                            ('hooks_uuid', 'local_site'))
+        verbose_name = _('Repository')
+        verbose_name_plural = _('Repositories')

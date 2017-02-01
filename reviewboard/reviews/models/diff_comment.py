@@ -44,5 +44,6 @@ class Comment(BaseComment):
 
     class Meta:
         app_label = 'reviews'
-        verbose_name = _('comment')
-        verbose_name_plural = _('comments')
+        db_table = 'reviews_comment'
+        verbose_name = _('Diff Comment')
+        verbose_name_plural = _('Diff Comments')

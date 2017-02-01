@@ -72,3 +72,8 @@ class HostingServiceAccount(models.Model):
         """
         return user.has_perm('hostingsvcs.change_hostingserviceaccount',
                              self.local_site)
+
+    class Meta:
+        db_table = 'hostingsvcs_hostingserviceaccount'
+        verbose_name = _('Hosting Service Account')
+        verbose_name_plural = _('Hosting Service Accounts')

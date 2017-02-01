@@ -39,5 +39,6 @@ class ScreenshotComment(BaseComment):
 
     class Meta:
         app_label = 'reviews'
-        verbose_name = _('screenshot comment')
-        verbose_name_plural = _('screenshot comments')
+        db_table = 'reviews_screenshotcomment'
+        verbose_name = _('Screenshot Comment')
+        verbose_name_plural = _('Screenshot Comments')

@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 from django.db import models
+from django.utils.translation import ugettext_lazy as _
 from djblets.webapi.models import BaseWebAPIToken
 
 from reviewboard.site.models import LocalSite
@@ -25,3 +26,8 @@ class WebAPIToken(BaseWebAPIToken):
         from reviewboard.webapi.resources import resources
 
         return resources.root
+
+    class Meta:
+        db_table = 'webapi_webapitoken'
+        verbose_name = _('Web API Token')
+        verbose_name_plural = _('Web API Tokens')

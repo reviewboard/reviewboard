@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 import logging
 
 from django.db import models
+from django.utils.translation import ugettext_lazy as _
 from djblets.conditions import ConditionSet
 from djblets.integrations.models import BaseIntegrationConfig
 
@@ -114,3 +115,8 @@ class IntegrationConfig(GetIntegrationManagerMixin, BaseIntegrationConfig):
                     self.pk, conditions_key, match_kwargs, e)
 
         return False
+
+    class Meta:
+        db_table = 'integrations_integrationconfig'
+        verbose_name = _('Integration Configuration')
+        verbose_name_plural = _('Integration Configurations')

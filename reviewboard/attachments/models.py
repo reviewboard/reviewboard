@@ -52,6 +52,11 @@ class FileAttachmentHistory(models.Model):
 
         return max_position + 1
 
+    class Meta:
+        db_table = 'attachments_fileattachmenthistory'
+        verbose_name = _('File Attachment History')
+        verbose_name_plural = _('File Attachment Histories')
+
 
 @python_2_unicode_compatible
 class FileAttachment(models.Model):
@@ -274,7 +279,10 @@ class FileAttachment(models.Model):
         return self.user and (user.is_superuser or self.user == user)
 
     class Meta:
+        db_table = 'attachments_fileattachment'
         get_latest_by = 'attachment_revision'
+        verbose_name = _('File Attachment')
+        verbose_name_plural = _('File Attachments')
 
 
 def get_latest_file_attachments(file_attachments):

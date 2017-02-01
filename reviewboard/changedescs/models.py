@@ -142,5 +142,8 @@ class ChangeDescription(models.Model):
         return bool(self.fields_changed)
 
     class Meta:
+        db_table = 'changedescs_changedescription'
         ordering = ['-timestamp']
         get_latest_by = "timestamp"
+        verbose_name = _('Change Description')
+        verbose_name_plural = _('Change Descriptions')

@@ -69,5 +69,6 @@ class DefaultReviewer(models.Model):
 
     class Meta:
         app_label = 'reviews'
-        verbose_name = _('default reviewer')
-        verbose_name_plural = _('default reviewers')
+        db_table = 'reviews_defaultreviewer'
+        verbose_name = _('Default Reviewer')
+        verbose_name_plural = _('Default Reviewers')
