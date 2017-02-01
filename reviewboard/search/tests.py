@@ -24,6 +24,8 @@ class SearchTests(TestCase):
         This will enable search and reset Haystack's configuration based
         on that, allowing the search tests to run.
         """
+        super(SearchTests, cls).setUpClass()
+
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set('search_enable', True)
         siteconfig.save()
