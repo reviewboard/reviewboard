@@ -101,7 +101,7 @@ class HostingServiceAuthForm(forms.Form):
 
             hosting_service_cls (type):
                 The hosting service class (subclass of
-                :py:class:`~reviewboard.hostingsvcs.service.HostingService)
+                :py:class:`~reviewboard.hostingsvcs.service.HostingService`)
                 that works with this form.
 
                 This must be provided, or an assertion error will be raised.
