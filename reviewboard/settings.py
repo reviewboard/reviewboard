@@ -303,6 +303,13 @@ try:
 except ImportError as exc:
     dependency_error('Unable to import settings_local.py: %s' % exc)
 
+
+# If we're using MySQL, switch to our custom backend.
+for db_info in DATABASES.values():
+    if db_info['ENGINE'] == 'django.db.backends.mysql':
+        db_info['ENGINE'] = 'djblets.db.backends.mysql'
+
+
 SESSION_COOKIE_PATH = SITE_ROOT
 
 INSTALLED_APPS = RB_BUILTIN_APPS + RB_EXTRA_APPS + ['django_evolution']
