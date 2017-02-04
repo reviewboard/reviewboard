@@ -89,6 +89,11 @@ class LocalSite(models.Model):
     def __str__(self):
         return self.name
 
+    class Meta:
+        db_table = 'site_localsite'
+        verbose_name = _('Local Site')
+        verbose_name_plural = _('Local Sites')
+
 
 @receiver(m2m_changed, sender=LocalSite.users.through)
 def _on_local_site_users_changed(sender, instance, model,

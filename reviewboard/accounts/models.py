@@ -61,8 +61,11 @@ class ReviewRequestVisit(models.Model):
         return 'Review request visit'
 
     class Meta:
+        db_table = 'accounts_reviewrequestvisit'
         unique_together = ('user', 'review_request')
         index_together = [('user', 'visibility')]
+        verbose_name = _('Review Request Visit')
+        verbose_name_plural = _('Review Request Visits')
 
 
 @python_2_unicode_compatible
@@ -286,6 +289,11 @@ class Profile(models.Model):
         self.settings.setdefault('avatars', {})['avatar_service_id'] = \
             service.avatar_service_id
 
+    class Meta:
+        db_table = 'accounts_profile'
+        verbose_name = _('Profile')
+        verbose_name_plural = _('Profiles')
+
 
 @python_2_unicode_compatible
 class LocalSiteProfile(models.Model):
@@ -334,13 +342,16 @@ class LocalSiteProfile(models.Model):
                 user=None, local_site=p.local_site).count()
             if p.pk else 0))
 
-    class Meta:
-        unique_together = (('user', 'local_site'),
-                           ('profile', 'local_site'))
-
     def __str__(self):
         """Return a string used for the admin site listing."""
         return '%s (%s)' % (self.user.username, self.local_site)
+
+    class Meta:
+        db_table = 'accounts_localsiteprofile'
+        unique_together = (('user', 'local_site'),
+                           ('profile', 'local_site'))
+        verbose_name = _('Local Site Profile')
+        verbose_name_plural = _('Local Site Profiles')
 
 
 class Trophy(models.Model):
@@ -367,6 +378,11 @@ class Trophy(models.Model):
     def get_display_text(self):
         """Get the display text for this trophy."""
         return self.trophy_type.get_display_text(self)
+
+    class Meta:
+        db_table = 'accounts_trophy'
+        verbose_name = _('Trophy')
+        verbose_name_plural = _('Trophies')
 
 
 #

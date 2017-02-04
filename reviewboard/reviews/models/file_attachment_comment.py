@@ -98,5 +98,6 @@ class FileAttachmentComment(BaseComment):
 
     class Meta:
         app_label = 'reviews'
-        verbose_name = _('file attachment comment')
-        verbose_name_plural = _('file attachment comments')
+        db_table = 'reviews_fileattachmentcomment'
+        verbose_name = _('File Attachment Comment')
+        verbose_name_plural = _('File Attachment Comments')

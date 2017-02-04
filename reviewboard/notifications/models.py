@@ -157,4 +157,6 @@ class WebHookTarget(models.Model):
         return self.url
 
     class Meta:
-        verbose_name = _('webhook')
+        db_table = 'notifications_webhooktarget'
+        verbose_name = _('Webhook')
+        verbose_name_plural = _('Webhooks')

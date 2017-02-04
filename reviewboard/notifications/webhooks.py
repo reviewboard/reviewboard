@@ -8,7 +8,7 @@ from django.contrib.sites.models import Site
 from django.http.request import HttpRequest
 from django.utils.six.moves.urllib.parse import urlencode
 from django.utils.six.moves.urllib.request import Request, urlopen
-from django.template import Context
+from django.template import Context, Template
 from django.template.base import Lexer, Parser
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.encoders import (JSONEncoderAdapter, ResourceAPIEncoder,
@@ -99,9 +99,10 @@ def render_custom_content(body, context_data={}):
     """
     lexer = Lexer(body, origin=None)
     parser = CustomPayloadParser(lexer.tokenize())
-    nodes = parser.parse()
+    template = Template('')
+    template.nodelist = parser.parse()
 
-    return nodes.render(Context(context_data))
+    return template.render(Context(context_data))
 
 
 def dispatch_webhook_event(request, webhook_targets, event, payload):

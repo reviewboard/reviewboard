@@ -1082,6 +1082,7 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     class Meta:
         app_label = 'reviews'
+        db_table = 'reviews_reviewrequest'
         ordering = ['-last_updated', 'submitter', 'summary']
         unique_together = (('commit_id', 'repository'),
                            ('changenum', 'repository'),
@@ -1091,5 +1092,5 @@ class ReviewRequest(BaseReviewRequestDetails):
             ("can_submit_as_another_user", "Can submit as another user"),
             ("can_edit_reviewrequest", "Can edit review request"),
         )
-        verbose_name = _('review request')
-        verbose_name_plural = _('review requests')
+        verbose_name = _('Review Request')
+        verbose_name_plural = _('Review Requests')

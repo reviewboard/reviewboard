@@ -31,6 +31,8 @@ class LegacyFileDiffData(models.Model):
 
     class Meta:
         db_table = 'diffviewer_filediffdata'
+        verbose_name = _('Legacy File Diff Data')
+        verbose_name_plural = _('Legacy File Diff Data Blobs')
 
 
 class RawFileDiffData(models.Model):
@@ -114,6 +116,11 @@ class RawFileDiffData(models.Model):
 
             if self.pk:
                 self.save(update_fields=['extra_data'])
+
+    class Meta:
+        db_table = 'diffviewer_rawfilediffdata'
+        verbose_name = _('Raw File Diff Data')
+        verbose_name_plural = _('Raw File Diff Data Blobs')
 
 
 @python_2_unicode_compatible
@@ -540,6 +547,11 @@ class FileDiff(models.Model):
         return "%s (%s) -> %s (%s)" % (self.source_file, self.source_revision,
                                        self.dest_file, self.dest_detail)
 
+    class Meta:
+        db_table = 'diffviewer_filediff'
+        verbose_name = _('File Diff')
+        verbose_name_plural = _('File Diffs')
+
 
 @python_2_unicode_compatible
 class DiffSet(models.Model):
@@ -632,8 +644,11 @@ class DiffSet(models.Model):
         return "[%s] %s r%s" % (self.id, self.name, self.revision)
 
     class Meta:
+        db_table = 'diffviewer_diffset'
         get_latest_by = 'revision'
         ordering = ['revision', 'timestamp']
+        verbose_name = _('Diff Set')
+        verbose_name_plural = _('Diff Sets')
 
 
 @python_2_unicode_compatible
@@ -658,4 +673,6 @@ class DiffSetHistory(models.Model):
         return 'Diff Set History (%s revisions)' % self.diffsets.count()
 
     class Meta:
-        verbose_name_plural = "Diff set histories"
+        db_table = 'diffviewer_diffsethistory'
+        verbose_name = _('Diff Set History')
+        verbose_name_plural = _('Diff Set Histories')
