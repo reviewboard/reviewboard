@@ -61,23 +61,17 @@ def admin_actions(context):
     """
     request = context.get('request')
 
-    if '_popup' not in request.REQUEST or 'pop' not in request.REQUEST:
-        request_context = {
-            'show_sidebar': True,
-            'count_users': User.objects.count(),
-            'count_review_groups': Group.objects.count(),
-            'count_default_reviewers': DefaultReviewer.objects.count(),
-            'count_repository': Repository.objects.accessible(
-                request.user, visible_only=False).count(),
-            'count_webhooks': WebHookTarget.objects.count(),
-            'count_hosting_accounts': HostingServiceAccount.objects.count(),
-            'has_cache_stats': get_has_cache_stats(),
-            'version': get_version_string(),
-        }
-    else:
-        request_context = {
-            'show_sidebar': False,
-        }
+    request_context = {
+        'count_users': User.objects.count(),
+        'count_review_groups': Group.objects.count(),
+        'count_default_reviewers': DefaultReviewer.objects.count(),
+        'count_repository': Repository.objects.accessible(
+            request.user, visible_only=False).count(),
+        'count_webhooks': WebHookTarget.objects.count(),
+        'count_hosting_accounts': HostingServiceAccount.objects.count(),
+        'has_cache_stats': get_has_cache_stats(),
+        'version': get_version_string(),
+    }
 
     return RequestContext(request, request_context)
 
