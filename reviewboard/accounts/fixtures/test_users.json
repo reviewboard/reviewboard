@@ -73,15 +73,6 @@
     }, 
     {
         "pk": 1, 
-        "model": "accounts.reviewrequestvisit", 
-        "fields": {
-            "timestamp": "2010-12-02T10:57:37+00:00", 
-            "review_request": 9, 
-            "user": 1
-        }
-    }, 
-    {
-        "pk": 1, 
         "model": "accounts.profile", 
         "fields": {
             "review_request_columns": "star,summary,submitter,time_added,last_updated_since", 
@@ -188,20 +179,6 @@
             "total_outgoing_request_count": 0, 
             "pending_outgoing_request_count": 0, 
             "user": 4, 
-            "total_incoming_request_count": 0
-        }
-    }, 
-    {
-        "pk": 4, 
-        "model": "accounts.localsiteprofile", 
-        "fields": {
-            "profile": 1, 
-            "direct_incoming_request_count": 0, 
-            "local_site": 1, 
-            "starred_public_request_count": 0, 
-            "total_outgoing_request_count": 0,
-            "pending_outgoing_request_count": 0,
-            "user": 1, 
             "total_incoming_request_count": 0
         }
     }

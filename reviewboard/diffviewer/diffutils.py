@@ -1033,8 +1033,8 @@ def get_sorted_filediffs(filediffs, key=None):
     in ascending order.
 
     If two files have the same base path and base name, we'll sort by the
-    extension in descending order. This will make *.h sort ahead of *.c/cpp,
-    for example.
+    extension in descending order. This will make :file:`*.h` sort ahead of
+    :file:`*.c`/:file:`*.cpp`, for example.
 
     If the list being passed in is actually not a list of FileDiffs, it
     must provide a callable ``key`` parameter that will return a FileDiff
@@ -1111,7 +1111,7 @@ def get_displayed_diff_line_ranges(chunks, first_vlinenum, last_vlinenum):
 
         ``chunk_range``:
             A tuple containing the beginning/ending chunks that
-            ``display_range` maps to.
+            ``display_range`` maps to.
 
     Raises:
         ValueError:

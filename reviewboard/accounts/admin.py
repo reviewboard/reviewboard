@@ -74,6 +74,7 @@ class ProfileInline(admin.StackedInline):
             'fields': ('first_time_setup_done',
                        'starred_review_requests',
                        'starred_groups',
+                       'settings',
                        'extra_data'),
         }),
     )

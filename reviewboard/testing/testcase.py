@@ -840,7 +840,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         webhook = WebHookTarget.objects.create(
             enabled=enabled,
-            events=events,
+            events=events.split(','),
             url=url,
             encoding=encoding,
             use_custom_content=use_custom_content,

@@ -135,6 +135,15 @@ def initialize():
         if not getattr(settings, 'TEMPLATE_SERIAL', None):
             settings.TEMPLATE_SERIAL = settings.AJAX_SERIAL
 
+    try:
+        # Django >= 1.7
+        from django import setup
+        setup()
+    except ImportError:
+        # Django < 1.7
+        pass
+
+    if not is_running_test:
         # Load all extensions
         try:
             get_extension_manager().load()
