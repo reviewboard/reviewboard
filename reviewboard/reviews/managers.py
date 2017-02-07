@@ -175,6 +175,9 @@ class ReviewRequestManager(ConcurrencyManager):
             # SQL and then reload the model.
             from reviewboard.reviews.models import ReviewRequest
             db = router.db_for_write(ReviewRequest)
+
+            # TODO: Use the cursor as a context manager when we move over
+            # to Django 1.7+.
             cursor = connections[db].cursor()
             cursor.execute(
                 'UPDATE %(table)s SET'
@@ -190,6 +193,7 @@ class ReviewRequestManager(ConcurrencyManager):
                     'local_site_id': local_site.pk,
                     'id': review_request.pk,
                 })
+            cursor.close()
             transaction.commit()
 
             review_request = ReviewRequest.objects.get(pk=review_request.pk)
