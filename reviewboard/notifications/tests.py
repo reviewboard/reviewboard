@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
 from django.template import TemplateSyntaxError
+from django.utils import six
 from django.utils.datastructures import MultiValueDict
 from django.utils.six.moves.urllib.request import urlopen
 from djblets.mail.testing import DmarcDnsTestsMixin
@@ -1601,6 +1602,24 @@ class WebHookDispatchTests(SpyAgency, TestCase):
              '  "item3": true\n'
              '}'))
 
+    def test_dispatch_non_ascii_custom_payload(self):
+        """Testing dispatch_webhook_event with non-ASCII custom payload"""
+        non_ascii_content = '{"sign": "{{sign|escapejs}}"}'
+
+        handler = WebHookTarget(events='my-event',
+                                url=self.ENDPOINT_URL,
+                                encoding=WebHookTarget.ENCODING_JSON,
+                                use_custom_content=True,
+                                custom_content=non_ascii_content)
+
+        self._test_dispatch(
+            handler,
+            'my-event',
+            {'sign': '\u00A4'},
+            'application/json',
+            '{"sign": "\u00A4"}'.encode('utf-8')
+        )
+
     def test_dispatch_form_data(self):
         """Test dispatch_webhook_event with Form Data payload"""
         handler = WebHookTarget(events='my-event',
@@ -1616,6 +1635,21 @@ class WebHookDispatchTests(SpyAgency, TestCase):
             'application/x-www-form-urlencoded',
             'payload=%7B%22items%22%3A+%5B1%2C+2%2C+3%5D%7D')
 
+    def test_dispatch_non_ascii_form_data(self):
+        """Testing dispatch_webhook_event with non-ASCII Form Data payload"""
+        handler = WebHookTarget(events='my-event',
+                                url=self.ENDPOINT_URL,
+                                encoding=WebHookTarget.ENCODING_FORM_DATA)
+
+        self._test_dispatch(
+            handler,
+            'my-event',
+            {
+                'sign': '\u00A4',
+            },
+            'application/x-www-form-urlencoded',
+            'payload=%7B%22sign%22%3A+%22%5Cu00a4%22%7D')
+
     def test_dispatch_json(self):
         """Test dispatch_webhook_event with JSON payload"""
         handler = WebHookTarget(events='my-event',
@@ -1630,6 +1664,21 @@ class WebHookDispatchTests(SpyAgency, TestCase):
             },
             'application/json',
             '{"items": [1, 2, 3]}')
+
+    def test_dispatch_non_ascii_json(self):
+        """Testing dispatch_webhook_event with non-ASCII JSON payload"""
+        handler = WebHookTarget(events='my-event',
+                                url=self.ENDPOINT_URL,
+                                encoding=WebHookTarget.ENCODING_JSON)
+
+        self._test_dispatch(
+            handler,
+            'my-event',
+            {
+                'sign': '\u00A4',
+            },
+            'application/json',
+            '{"sign": "\\u00a4"}')
 
     def test_dispatch_xml(self):
         """Test dispatch_webhook_event with XML payload"""
@@ -1654,6 +1703,24 @@ class WebHookDispatchTests(SpyAgency, TestCase):
              '  </array>\n'
              ' </items>\n'
              '</rsp>'))
+
+    def test_dispatch_non_ascii_xml(self):
+        """Testing dispatch_webhook_event with non-ASCII XML payload"""
+        handler = WebHookTarget(events='my-event',
+                                url=self.ENDPOINT_URL,
+                                encoding=WebHookTarget.ENCODING_XML)
+
+        self._test_dispatch(
+            handler,
+            'my-event',
+            {
+                'sign': '\u00A4',
+            },
+            'application/xml',
+            ('<?xml version="1.0" encoding="utf-8"?>\n'
+             '<rsp>\n'
+             ' <sign>\u00A4</sign>\n'
+             '</rsp>').encode('utf-8'))
 
     def test_dispatch_with_secret(self):
         """Test dispatch_webhook_event with HMAC secret"""
@@ -1749,10 +1816,28 @@ class WebHookDispatchTests(SpyAgency, TestCase):
             else:
                 self.assertNotIn('X-hub-signature', request.headers)
 
+            # Check that all sent data are binary strings.
+            self.assertIsInstance(request.get_full_url(), six.binary_type)
+
+            for h in request.headers:
+                self.assertIsInstance(h, six.binary_type)
+                self.assertNotIsInstance(request.headers[h], six.text_type)
+
+            self.assertIsInstance(request.data, six.binary_type)
+
         self.spy_on(urlopen, call_fake=_urlopen)
+
+        # We need to ensure that logging.exception is not called
+        # in order to avoid silent swallowing of test assertion failures
+        self.spy_on(logging.exception)
 
         request = FakeHTTPRequest(None)
         dispatch_webhook_event(request, [handler], event, payload)
+
+        # Assuming that if logging.exception is called, an assertion
+        # error was raised - and should thus be raised further.
+        if logging.exception.spy.called:
+            raise logging.exception.spy.calls[0].args[2]
 
 
 class WebHookTargetManagerTests(TestCase):
