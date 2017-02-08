@@ -113,6 +113,8 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
             try:
                 body = render_custom_content(webhook_target.custom_content,
                                              payload)
+
+                body = body.encode('utf-8')
             except Exception as e:
                 logging.exception('Could not render WebHook payload: %s', e)
                 continue
@@ -125,6 +127,7 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                     if encoding == webhook_target.ENCODING_JSON:
                         adapter = JSONEncoderAdapter(encoder)
                         body = adapter.encode(payload, request=request)
+                        body = body.encode('utf-8')
                     elif encoding == webhook_target.ENCODING_XML:
                         adapter = XMLEncoderAdapter(encoder)
                         body = adapter.encode(payload, request=request)
@@ -134,6 +137,7 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                             'payload': adapter.encode(payload,
                                                       request=request),
                         })
+                        body = body.encode('utf-8')
                     else:
                         logging.error('Unexpected WebHookTarget encoding "%s" '
                                       'for ID %s',
@@ -144,27 +148,30 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                                       e)
                     continue
 
-                body = body.encode('utf-8')
                 bodies[encoding] = body
             else:
                 body = bodies[encoding]
 
         headers = {
-            'X-ReviewBoard-Event': event,
-            'Content-Type': webhook_target.encoding,
-            'Content-Length': len(body),
-            'User-Agent': 'ReviewBoard-WebHook/%s' % get_package_version(),
+            b'X-ReviewBoard-Event': event.encode('utf-8'),
+            b'Content-Type': webhook_target.encoding.encode('utf-8'),
+            b'Content-Length': len(body),
+            b'User-Agent':
+                ('ReviewBoard-WebHook/%s' % get_package_version())
+                .encode('utf-8'),
         }
 
         if webhook_target.secret:
             signer = hmac.new(webhook_target.secret.encode('utf-8'), body,
                               hashlib.sha1)
-            headers['X-Hub-Signature'] = 'sha1=%s' % signer.hexdigest()
+            headers[b'X-Hub-Signature'] = \
+                ('sha1=%s' % signer.hexdigest()).encode('utf-8')
 
         logging.info('Dispatching webhook for event %s to %s',
                      event, webhook_target.url)
         try:
-            urlopen(Request(webhook_target.url, body, headers))
+            url = webhook_target.url.encode('utf-8')
+            urlopen(Request(url, body, headers))
         except Exception as e:
             logging.exception('Could not dispatch WebHook to %s: %s',
                               webhook_target.url, e)
