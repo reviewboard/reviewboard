@@ -1,12 +1,10 @@
 from __future__ import unicode_literals
 
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 
 from reviewboard.search.views import search
 
 
-urlpatterns = patterns(
-    '',
-
+urlpatterns = [
     url(r'^$', search, name='search'),
-)
+]
