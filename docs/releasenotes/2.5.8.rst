@@ -2,7 +2,7 @@
 Review Board 2.5.8 Release Notes
 ================================
 
-**Release date**: TBD
+**Release date**: February 9, 2017
 
 
 Security Improvements
