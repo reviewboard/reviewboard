@@ -26,7 +26,7 @@ more information.
 
    * :ref:`Assembla <repository-hosting-assembla>`
    * :ref:`Beanstalk <repository-hosting-beanstalk>`
-   * :ref:`Codebase <repository-hosting-codebase>`
+   * :ref:`Codebase <repository-hosting-codebasehq>`
    * :ref:`Fedora Hosted <repository-hosting-fedorahosted>`
    * :ref:`SourceForge <repository-hosting-sourceforge>`
    * :ref:`Unfuddle <repository-hosting-unfuddle>`

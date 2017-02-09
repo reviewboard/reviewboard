@@ -170,6 +170,8 @@ listed will depend on the requirements of the hosting service.
     `Repository type`_.
 
 
+.. _repository-bug-tracker:
+
 Bug Tracker
 ~~~~~~~~~~~
 
@@ -186,24 +188,31 @@ associated with the repository if this field is provided.
 
    If unchecked, a bug tracker can be specified below.
 
-* **Type** (optional)
-    The value of the field should be the path of a ticket, except with
-    ``%s`` substituted for the ticket name.
+* **Type**
+    The type of bug tracker to use. Depending on your choice here, you may be
+    presented with additional fields for choosing the bug tracker.
 
-    For example:
-      * **Bugzilla**:
-        ``http://bugzilla.example.com/show_bug.cgi?id=%s``
-      * **Google Code**:
-        ``http://code.google.com/p/myproject/issues/detail?id=%s``
+    If you choose :guilabel:`(Custom Bug Tracker)`, you will be presented
+    with a :guilabel:`Bug tracker URL` field, as documented below.
 
-    If you don't use a bug tracker with projects in this repository, this
-    field can be left blank.
+    If you choose :guilabel:`(None)`, bug linking will be disabled for this
+    repository.
 
+* **Bug tracker URL** (optional)
+    A custom URL to your bug tracker.
+
+    The value of the field should be the path of a bug/ticket, except with
+    ``%s`` substituted for the bug/ticket ID.
+
+    For example::
+
+        https://mytracker.example.com/bugs/%s
+
+
+.. _repository-access-control:
 
 Access Control
 ~~~~~~~~~~~~~~
-
-.. versionadded:: 1.6
 
 Repository access can be limited to certain users and review groups.
 See :ref:`access-control` for more information on how this works.
@@ -221,16 +230,10 @@ See :ref:`access-control` for more information on how this works.
     If the repository is not publicly accessible, only users listed here
     will have access to the repository and review requests on it.
 
-    Hold down :kbd:`Control` (on the PC) or :kbd:`Command` (on the Mac) to
-    select more than one.
-
 * **Review groups with access** (optional)
     If the repository is not publicly accessible, only users on the
     invite-only review groups listed here will have access to the repository
     and review requests on it.
-
-    Hold down :kbd:`Control` (on the PC) or :kbd:`Command` (on the Mac) to
-    select more than one.
 
 
 Advanced Settings
@@ -278,61 +281,6 @@ Then click :guilabel:`Delete` at the bottom of the page.
    able to grab the diff information anyway).
 
 
-.. _hosting-services:
-
-Hosting Services
-================
-
-Review Board can be easily configured to work with different hosting
-services. This is a convenient method for specifying the repository paths
-and other information necessary to talk to the particular repository.
-
-By changing the `Hosting service`_ field, the list of repository types
-(Subversion, Git, etc.) will be limited to the list that the hosting
-service supports. The list of fields you need to fill out will also change.
-
-As of Review Board 1.6, the following hosting services are supported:
-
-* Bitbucket_
-* `Codebase HQ`_
-* `Fedora Hosted`_
-* GitHub_ (public and private repositories and organizations)
-* Gitorious_
-* `Google Code`_
-* SourceForge_
-
-More may be added in future releases based on demand.
-
-If you're using a custom code repository, whether hosted on a private server
-or on some other hosting provider, you can set `Hosting service`_ to
-:guilabel:`(None - Custom Repository)` and fill out the information manually.
-This is equivalent to configuring a repository in Review Board 1.0.x.
-
-If you have a repository with a hosting service from a version of Review Board
-prior to 1.6.7, you will need to set your hosting service again, as the
-mechanism for storing and linking hosting services has changed.
-
-.. _Bitbucket: http://bitbucket.org/
-.. _`Codebase HQ`: http://www.codebasehq.com/
-.. _`Fedora Hosted`: http://fedorahosted.org/
-.. _GitHub: http://github.com/
-.. _Gitorious: http://gitorious.org/
-.. _`Google Code`: http://code.google.com/hosting/
-.. _SourceForge: http://sourceforge.net/
-
-
-Linking Accounts
-----------------
-
-When configuring a hosting service, an account must be linked. For some
-hosting services, linking an account will first authenticate against the
-hosting service and store a token as part of the account.
-
-Some hosting services will require a password as part of the linking
-process. The password will not be stored, just used to initially link
-the account.
-
-
 SSH-Backed Repositories
 =======================
 
@@ -352,6 +300,40 @@ the repository is not covered here. There are plenty of resources on
 granting access via SSH keys.
 
 
+.. _hosting-services:
+
+Hosting Services
+================
+
+Review Board can be easily configured to work with different hosting
+services. This is a convenient method for specifying the repository paths
+and other information necessary to talk to the particular repository.
+
+By changing the `Hosting service`_ field, the list of repository types
+(Subversion, Git, etc.) will be limited to the list that the hosting
+service supports. The list of fields you need to fill out will also change.
+
+If you're using a custom code repository, whether hosted on a private server
+or on some other hosting provider, you can set `Hosting service`_ to
+:guilabel:`(None - Custom Repository)` and fill out the information manually
+
+If you have a repository with a hosting service from a version of Review Board
+prior to 1.6.7, you will need to set your hosting service again, as the
+mechanism for storing and linking hosting services has changed.
+
+
+Linking Accounts
+----------------
+
+When configuring a hosting service, an account must be linked. For some
+hosting services, linking an account will first authenticate against the
+hosting service and store a token as part of the account.
+
+Some hosting services will require a password as part of the linking
+process. The password will not be stored, just used to initially link
+the account.
+
+
 .. _determining-repository-information:
 
 Determining Repository Information
@@ -362,8 +344,10 @@ you're configuring. This section provides some help for determining which
 value to use.
 
 
-Configuring Repositories
-========================
+.. _configuring-self-hosted-repos:
+
+Configuring Self-Hosted Repositories
+====================================
 
 .. toctree::
    :maxdepth: 1
@@ -375,3 +359,25 @@ Configuring Repositories
    mercurial
    perforce
    subversion
+
+
+.. _configuring-hosted-repos:
+
+Configuring Hosted Repositories
+===============================
+
+.. toctree::
+   :maxdepth: 1
+
+   assembla
+   beanstalk
+   bitbucket
+   codebasehq
+   fedorahosted
+   github
+   github-enterprise
+   gitlab
+   gitorious
+   sourceforge
+   unfuddle
+   visualstudio

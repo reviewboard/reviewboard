@@ -33,14 +33,14 @@ more information.
    * :ref:`Assembla <repository-hosting-assembla>`
    * :ref:`Beanstalk <repository-hosting-beanstalk>`
    * :ref:`Bitbucket <repository-hosting-bitbucket>`
-   * :ref:`Codebase <repository-hosting-codebase>`
+   * :ref:`Codebase <repository-hosting-codebasehq>`
    * :ref:`Fedora Hosted <repository-hosting-fedorahosted>`
    * :ref:`GitHub <repository-hosting-github>`
    * :ref:`GitHub Enterprise <repository-hosting-github-enterprise>`
    * :ref:`GitLab <repository-hosting-gitlab>`
    * :ref:`Gitorious <repository-hosting-gitorious>`
-   * :ref:`Kiln <repository-hosting-kiln>`
    * :ref:`Unfuddle <repository-hosting-unfuddle>`
+   * :ref:`VisualStudio.com <repository-hosting-visualstudio>`
 
    If your Git repository is hosted on another third-party service, it
    will not work with Review Board! Please contact us to request support

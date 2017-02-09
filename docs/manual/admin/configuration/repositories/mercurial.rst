@@ -26,7 +26,6 @@ requests much easier. See :ref:`Using RBTools with Mercurial
    * :ref:`Bitbucket <repository-hosting-bitbucket>`
    * :ref:`Codebase <repository-hosting-codebasehq>`
    * :ref:`Fedora Hosted <repository-hosting-fedorahosted>`
-   * :ref:`Kiln <repository-hosting-kiln>`
    * :ref:`SourceForge <repository-hosting-sourceforge>`
 
    If your Mercurial repository is hosted on another third-party service, it
