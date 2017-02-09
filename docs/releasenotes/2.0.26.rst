@@ -1,0 +1,126 @@
+=================================
+Review Board 2.0.26 Release Notes
+=================================
+
+**Release date**: February 9, 2017
+
+
+Upgrade Instructions
+====================
+
+To upgrade to Review Board 2.0.26, run::
+
+    pip install ReviewBoard==2.0.26
+
+or::
+
+    easy_install ReviewBoard==2.0.26
+
+
+Security Improvements
+=====================
+
+* Fixed an API call that would return too much information in the request,
+  potentially overloading the server.
+
+  :ref:`rb2.0:webapi2.0-search-resource`, when passing an empty search query,
+  would attempt to return far too many results. Depending on the size of the
+  server, this could end up using too much memory and swamping the server.
+  We've fixed this API to always return a maximum number of results.
+
+
+Packaging
+=========
+
+* Simplified installation of dependencies for contributors to Review Board.
+
+  If you're working on the Review Board codebase, installing the package in
+  development mode (running :command:`setup.py develop`) will now install
+  all of Python packages as Wheels instead of Eggs (simplifying installation
+  on most systems), and will install the node.js dependencies needed for
+  building static media.
+
+  This should help contributors get going with development. It does not
+  impact consumers of the Review Board packages in any way.
+
+* The complete list of package dependencies now lives in the
+  :py:mod:`reviewboard.dependencies` module instead of :file:`setup.py`.
+
+  Package maintainers looking to update the list of dependencies in some way
+  or wanting to stay up-to-date on the list of dependencies should consult
+  the :file:`reviewboard/dependencies.py` file. Note that only the Python
+  dependencies listed in there are requirements for consuming the package.
+  The node.js dependencies are only used to build the Review Board packages.
+
+
+Web API
+=======
+
+* :ref:`rb2.5:webapi2.0-search-resource` now always provides a maximum number
+  of results, preventing the server from being swamped.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed errors that could occur with Unicode passwords and API tokens for
+  GitLab and other services. (:bug:`4069`, :bug:`4472`)
+
+
+Administration
+--------------
+
+* Greatly improved validation for cache settings, preventing possible
+  breakages.
+
+  It was possible to set some bad cache settings that would result in the
+  cache backend failing to load and Apache processes taking on the burden,
+  eventually causing slowdowns and crashes.
+
+  We've made significant improvements to the cache validation to ensure that
+  all cache information is valid when set.
+
+* Fixed crashes that could occur if failing to close an invalid cache backend.
+
+* Removed 404 errors and Permission Denied errors from the Review Board log
+  file.
+
+  These would often appear as errors with tracebacks, which was unnecessary
+  and led to clutter.
+
+* Fixed localization issues with some fields in the administration settings
+  forms. (:bug:`4512`)
+
+  Patch by Raman Dhatt.
+
+
+CVS
+---
+
+* Fixed parsing binary file diffs in CVS.
+
+  Entries for binary files in CVS diffs are now properly recognized and
+  flagged as binary. This shows up in the diff viewer with a special message.
+  Previously, these were either ignored or, in more recent releases, could
+  cause a crash during parsing.
+
+
+GitHub
+------
+
+* Fixed posting existing commits containing renamed files for review.
+
+  When posting existing commits for review in the New Review Request page,
+  posting would fail for commits containing renamed files.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Raman Dhatt

@@ -144,6 +144,9 @@ screenshot_draft_item_mimetype = _build_mimetype('draft-screenshot')
 screenshot_draft_list_mimetype = _build_mimetype('draft-screenshots')
 
 
+search_mimetype = _build_mimetype('search')
+
+
 server_info_mimetype = _build_mimetype('server-info')
 
 
