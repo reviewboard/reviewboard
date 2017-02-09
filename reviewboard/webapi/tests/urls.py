@@ -567,6 +567,13 @@ def get_screenshot_draft_item_url(review_request, screenshot_id,
 
 
 #
+# SearchResource
+#
+def get_search_url(local_site_name=None):
+    return resources.search.get_item_url(local_site_name=local_site_name)
+
+
+#
 # ServerInfoResource
 #
 def get_server_info_url(local_site_name=None):
