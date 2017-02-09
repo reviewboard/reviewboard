@@ -152,8 +152,6 @@ listed will depend on the requirements of the hosting service.
     :guilabel:`(None - Custom Repository)` and `Repository type`_ is set to
     :guilabel:`Git`.
 
-    See :ref:`raw-file-urls` below for more information.
-
 .. _`Username and Password fields`:
 .. _`Username field`:
 
@@ -364,200 +362,16 @@ you're configuring. This section provides some help for determining which
 value to use.
 
 
-ClearCase
----------
-
-Review Board works with local ClearCase dynamic views, by utilizing
-version-extended paths to access specific file revisions.
-
-The `Path field`_ should point to the particular VOB, which must be an
-absolute path starting with a drive letter on Windows or a mount point on
-Unix/Linux.
-
-The `Username and Password fields`_ should be blank.
-
-.. note:: When uploading new diffs, Review Board will compare the VOBs by UUID.
-          If the UUID doesn't match, :command:`post-review` will use the VOB's
-          name as the repository name. Because of this, it is a good idea to
-          name the repositories in Review Board to match the VOB names.
-
-
-CVS
----
-
-Review Board supports several methods of connecting to a CVS server. In
-particular, the following connection types can be used:
-
-* ``:ext:``
-* ``:fork:``
-* ``:gserver:``
-* ``:kserver:``
-* ``:local:``
-* ``:pserver:``
-* ``:server:``
-
-If you use one of these connection types and provide it for the `Path field`_,
-you won't need to fill in the `Username and Password fields`_.
-
-If you user ``:pserver:``, ``:gserver:``, or ``:kserver:``, you can opt not to
-include the username or password in the string, and just fill them in in the
-form.
-
-Some example of valid paths include:
-
-* ``:pserver:cvs.example.com/cvsroot``
-* ``:pserver:anonymous@cvs.example.com/cvsroot``
-* ``:pserver:myuser:mypass@cvs.example.com:1234/cvsroot``
-* ``:local:C:\CVSROOTS\myproject``
-
-
-To determine the path of an existing checkout, you can go to the top-most
-directory of the checkout and type::
-
-    $ cat CVS/Root
-
-You should use the contents of this file as the repository path, adjusting the
-username, password or path as necessary.
-
-
-Git
----
-
-In order to use Git with Review Board, you'll need either a local clone
-on the server, or by using raw file URLs to a web front-end to Git (cgit,
-Gitweb, etc.) on the Git server. Git doesn't have a way of fetching an
-individual file of a given revision from a remote server without having an
-entire clone, so it works differently from other repository types.
-
-
-Local Clone
-~~~~~~~~~~~
-
-In order to work with Review Board, a local clone needs to be kept in
-sync regularly. It should either have direct access to a central Git
-server, or it needs to be updated on every commit to the central Git
-server.
-
-The `Path field`_ should be the full path of the ``.git`` directory inside
-this checkout.  For example: ``/var/git/projectname/.git``
-
-The `Mirror path field`_ should contain the repository URL.  Find the URL you
-should use from within a git checkout by running the following::
-
-    $ git remote show origin
-
-The value shown as ``URL:`` should be entered as the mirror path.  For
-example: ``git@git.example.com:projectname.git``
-
-The `Username and Password fields`_ should be blank.
-
-
-.. _raw-file-urls:
-
-Raw File URLs
-~~~~~~~~~~~~~
-
-.. versionadded:: 1.5
-
-Review Board can access a remote file by talking to a cgit or gitweb server.
-This is done by filling out the `Raw file URL mask`_ field to tell Review
-Board how to access a single file based on revision.
-
-The URL can make use of the following tags, which will be replaced before
-attempting to fetch the file:
-
-* ``<revision>`` - The full SHA1 of the file blob.
-* ``<filename>`` - The unescaped path to the file.
-
-cgit
-^^^^
-
-For cgit, this path should be in the form of:
-
-:samp:`http://{servername}/browse/repo/blob/<filename>?id=<revision>`
-
-For example:
-
-:samp:`http://git.gnome.org/browse/gtk+/blob/<filename>?id=<revision>`
-
-
-Gitweb
-^^^^^^
-
-For Gitweb:
-
-:samp:`http://{servername}/?p={relative path to git repo};a=blob_plain;f=<filename>;h=<revision>`
-
-For example:
-
-:samp:`http://git.kernel.org/?p=bluetooth/bluez-gnome.git;a=blob_plain;f=<filename>;h=<revision>`
-
-
-Perforce
---------
-
-The Perforce path can be retrieved from an existing Perforce checkout by
-typing the following::
-
-    $ p4 info
-
-Use the value from the :guilabel:`Server address` field.
-
-In most setups, the `Username field`_ must be provided. This must be a user
-that has access to the whole repository. In some setups, this is a dedicated
-read-only user.
-
-Note that Review Board will only ever use this user for read-only operations.
-It will never write to the repository.
-
-
-.. _perforce-stunnel:
-
-Using Perforce with stunnel
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. versionadded:: 1.6
-
-Perforce can be configured to operate with a secure stunnel setup. This is
-particularly important if the server running Review Board needs to talk to
-the Perforce server over the Internet or an otherwise easily accessible
-network.
-
-To set up an stunnel connection on the Perforce server, see Perforce's guide
-on `Using Stunnel with Perforce`_.
-
-.. _`Using Stunnel with Perforce`:
-   http://kb.perforce.com/article/1018/using-stunnel-with-perforce
-
-Once the server is set up, ensure that stunnel version 3 (not 4) is installed on
-the server running Review Board and available in the web server's PATH. You can
-then configure your repository settings so that Review Board can access the
-repository. To do this, just prefix your repository path with ``stunnel:`` and
-list the port that the stunnel server is running on. For example::
-
-    stunnel:perforce.example.com:2666
-
-Review Board will automatically set up a local tunnel client as necessary.
-It will bind this to a port between 30000 and 60000 on localhost, and proxy
-all requests through it.
-
-
-Subversion
-----------
-
-The Subversion path can be retrieved from an existing Subversion checkout by
-typing the following::
-
-    $ svn info
-
-Use the value from the :guilabel:`Repository Root` field.
-
-In most server setups, Subversion provides anonymous access, so the
-`Username and Password fields`_ won't need to be filled out. However, this
-depends on the server setup. Some are more restricted and will require a
-dedicated user.
-
-In Subversion setups where there's a public anonymous URL and a secured
-developer URL (such as one using ``https`` or ``svn+ssh``), you
-should put the public URL in :guilabel:`Path` field and
-your developer URL in the :guilabel:`Mirror Path`.
+Configuring Repositories
+========================
+
+.. toctree::
+   :maxdepth: 1
+
+   bazaar
+   clearcase
+   cvs
+   git
+   mercurial
+   perforce
+   subversion

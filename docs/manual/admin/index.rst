@@ -79,7 +79,16 @@ available through the Administration UI:
 Next, you'll want to configure your repositories, :term:`review groups`, and
 :term:`default reviewers`:
 
-* :doc:`Managing repositories <configuration/repositories>`
+* :doc:`Managing repositories <configuration/repositories/index>`
+
+  * :ref:`Bazaar <repository-scm-bazaar>` |
+    :ref:`ClearCase <repository-scm-clearcase>` |
+    :ref:`CVS <repository-scm-cvs>` |
+    :ref:`Git <repository-scm-git>` |
+    :ref:`Mercurial <repository-scm-mercurial>` |
+    :ref:`Perforce <repository-scm-perforce>` |
+    :ref:`Subversion <repository-scm-subversion>`
+
 * :doc:`Managing review groups <configuration/review-groups>`
 * :doc:`Managing default reviewers <configuration/default-reviewers>`
 

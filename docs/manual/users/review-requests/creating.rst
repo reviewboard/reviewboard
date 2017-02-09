@@ -24,6 +24,8 @@ built-in diff tools generating files with insufficient information). For more
 information, see the :ref:`RBTools documentation <rbtools:rbt>`.
 
 
+.. _new-review-request-page:
+
 Using the Web UI to Create Review Requests
 ==========================================
 
