@@ -2,7 +2,7 @@
 Review Board 2.0.26 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: February 9, 2017
 
 
 Upgrade Instructions
