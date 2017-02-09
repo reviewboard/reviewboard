@@ -235,6 +235,8 @@ Depending on which source control systems you plan to use, you will need
 some additional components.
 
 
+.. _installing-cvs:
+
 CVS
 ---
 
@@ -252,6 +254,8 @@ To install on `RedHat Enterprise`_, Fedora_ or CentOS_, type::
 
 .. _CVS: http://www.nongnu.org/cvs/
 
+
+.. _installing-git:
 
 Git
 ---
@@ -301,6 +305,8 @@ You'll then need to install the Python bindings by typing the following::
 .. _`Perforce downloads`: http://perforce.com/perforce/downloads/
 .. _Perforce: http://www.perforce.com/
 
+
+.. _installing-svn:
 
 Subversion
 ----------

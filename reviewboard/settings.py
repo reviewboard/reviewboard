@@ -67,15 +67,6 @@ EMAIL_DEFAULT_SENDER_SERVICE_NAME = 'Review Board'
 # to load the internationalization machinery.
 USE_I18N = True
 
-# List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = (
-    ('djblets.template.loaders.conditional_cached.Loader', (
-        'django.template.loaders.filesystem.Loader',
-        'djblets.template.loaders.namespaced_app_dirs.Loader',
-        'djblets.extensions.loaders.Loader',
-    )),
-)
-
 MIDDLEWARE_CLASSES = [
     # Keep these first, in order
     'django.middleware.gzip.GZipMiddleware',
@@ -111,25 +102,6 @@ MIDDLEWARE_CLASSES = [
 ]
 RB_EXTRA_MIDDLEWARE_CLASSES = []
 
-TEMPLATE_CONTEXT_PROCESSORS = (
-    'django.contrib.auth.context_processors.auth',
-    'django.contrib.messages.context_processors.messages',
-    'django.core.context_processors.debug',
-    'django.core.context_processors.i18n',
-    'django.core.context_processors.media',
-    'django.core.context_processors.request',
-    'django.core.context_processors.static',
-    'djblets.cache.context_processors.ajax_serial',
-    'djblets.cache.context_processors.media_serial',
-    'djblets.siteconfig.context_processors.siteconfig',
-    'djblets.siteconfig.context_processors.settings_vars',
-    'djblets.urls.context_processors.site_root',
-    'reviewboard.accounts.context_processors.auth_backends',
-    'reviewboard.accounts.context_processors.profile',
-    'reviewboard.admin.context_processors.version',
-    'reviewboard.site.context_processors.localsite',
-)
-
 SITE_ROOT_URLCONF = 'reviewboard.urls'
 ROOT_URLCONF = 'djblets.urls.root'
 
@@ -137,11 +109,6 @@ REVIEWBOARD_ROOT = os.path.abspath(os.path.split(__file__)[0])
 
 # where is the site on your server ? - add the trailing slash.
 SITE_ROOT = '/'
-
-TEMPLATE_DIRS = (
-    # Don't forget to use absolute paths, not relative paths.
-    os.path.join(REVIEWBOARD_ROOT, 'templates'),
-)
 
 STATICFILES_DIRS = (
     ('lib', os.path.join(REVIEWBOARD_ROOT, 'static', 'lib')),
@@ -306,6 +273,43 @@ SVNTOOL_BACKENDS = [
 GRAVATAR_DEFAULT = 'mm'
 
 
+TEMPLATE_DIRS = [
+    # Don't forget to use absolute paths, not relative paths.
+    os.path.join(REVIEWBOARD_ROOT, 'templates'),
+]
+
+# List of callables that know how to import templates from various sources.
+TEMPLATE_LOADERS = [
+    (
+        'djblets.template.loaders.conditional_cached.Loader',
+        (
+            'django.template.loaders.filesystem.Loader',
+            'djblets.template.loaders.namespaced_app_dirs.Loader',
+            'djblets.extensions.loaders.Loader',
+        )
+    ),
+]
+
+TEMPLATE_CONTEXT_PROCESSORS = [
+    'django.contrib.auth.context_processors.auth',
+    'django.contrib.messages.context_processors.messages',
+    'django.core.context_processors.debug',
+    'django.core.context_processors.i18n',
+    'django.core.context_processors.media',
+    'django.core.context_processors.request',
+    'django.core.context_processors.static',
+    'djblets.cache.context_processors.ajax_serial',
+    'djblets.cache.context_processors.media_serial',
+    'djblets.siteconfig.context_processors.siteconfig',
+    'djblets.siteconfig.context_processors.settings_vars',
+    'djblets.urls.context_processors.site_root',
+    'reviewboard.accounts.context_processors.auth_backends',
+    'reviewboard.accounts.context_processors.profile',
+    'reviewboard.admin.context_processors.version',
+    'reviewboard.site.context_processors.localsite',
+]
+
+
 # Load local settings.  This can override anything in here, but at the very
 # least it needs to define database connectivity.
 try:
@@ -326,7 +330,19 @@ SESSION_COOKIE_PATH = SITE_ROOT
 INSTALLED_APPS = RB_BUILTIN_APPS + RB_EXTRA_APPS + ['django_evolution']
 MIDDLEWARE_CLASSES += RB_EXTRA_MIDDLEWARE_CLASSES
 
-TEMPLATE_DEBUG = DEBUG
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': TEMPLATE_DIRS,
+        'OPTIONS': {
+            'context_processors': TEMPLATE_CONTEXT_PROCESSORS,
+            'debug': DEBUG,
+            'loaders': TEMPLATE_LOADERS,
+        },
+    },
+]
+
 
 if not LOCAL_ROOT:
     local_dir = os.path.dirname(settings_local.__file__)

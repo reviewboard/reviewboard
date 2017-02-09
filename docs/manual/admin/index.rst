@@ -79,7 +79,29 @@ available through the Administration UI:
 Next, you'll want to configure your repositories, :term:`review groups`, and
 :term:`default reviewers`:
 
-* :doc:`Managing repositories <configuration/repositories>`
+* :doc:`Managing repositories <configuration/repositories/index>`
+
+  * :ref:`Bazaar <repository-scm-bazaar>` |
+    :ref:`ClearCase <repository-scm-clearcase>` |
+    :ref:`CVS <repository-scm-cvs>` |
+    :ref:`Git <repository-scm-git>` |
+    :ref:`Mercurial <repository-scm-mercurial>` |
+    :ref:`Perforce <repository-scm-perforce>` |
+    :ref:`Subversion <repository-scm-subversion>`
+
+  * :ref:`Assembla <repository-hosting-assembla>` |
+    :ref:`Beanstalk <repository-hosting-beanstalk>` |
+    :ref:`Bitbucket <repository-hosting-bitbucket>` |
+    :ref:`Codebase <repository-hosting-codebasehq>` |
+    :ref:`Fedora Hosted <repository-hosting-fedorahosted>` |
+    :ref:`GitHub <repository-hosting-github>` |
+    :ref:`GitHub Enterprise <repository-hosting-github-enterprise>` |
+    :ref:`GitLab <repository-hosting-gitlab>` |
+    :ref:`Gitorious <repository-hosting-gitorious>` |
+    :ref:`SourceForge <repository-hosting-sourceforge>` |
+    :ref:`Unfuddle STACK <repository-hosting-unfuddle>`
+    :ref:`VisualStudio.com <repository-hosting-visualstudio>`
+
 * :doc:`Managing review groups <configuration/review-groups>`
 * :doc:`Managing default reviewers <configuration/default-reviewers>`
 

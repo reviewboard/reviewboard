@@ -316,3 +316,23 @@ class ResourceItemTests(AvatarServicesTestMixin, BaseWebAPITestCase):
         self._login_user(local_site=True)
         self.api_get(get_user_item_url('dopey', self.local_site_name),
                      expected_status=404)
+
+    @webapi_test_template
+    def test_get_with_profile_private_and_only_fields(self):
+        """Testing the GET <URL> API with a private profile and ?only-fields=
+        """
+        username = 'dopey'
+        user = User.objects.get(username=username)
+
+        profile, is_new = Profile.objects.get_or_create(user=user)
+        profile.is_private = True
+        profile.save()
+
+        rsp = self.api_get(
+            '%s?only-fields=username' % get_user_item_url(username),
+            expected_mimetype=user_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['user']['username'], user.username)
+        self.assertNotIn('first_name', rsp['user'])
+        self.assertNotIn('last_name', rsp['user'])
+        self.assertNotIn('email', rsp['user'])

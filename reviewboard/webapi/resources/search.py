@@ -1,6 +1,8 @@
 from __future__ import unicode_literals
 
 from django.db.models import Q
+from django.utils import six
+from djblets.webapi.decorators import webapi_request_fields
 from djblets.webapi.resources.user import UserResource as DjbletsUserResource
 
 from reviewboard.reviews.models import Group, ReviewRequest
@@ -13,9 +15,8 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
     """
     Provides information on users, groups and review requests.
 
-    This is the resource for the autocomplete widget for
-    quick search. This resource helps filter for
-    users, groups and review requests.
+    This is the resource for the autocomplete widget for quick search. This
+    resource helps filter for users, groups and review requests.
     """
     added_in = '1.6'
 
@@ -27,19 +28,49 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
     def has_access_permissions(self, request, *args, **kwargs):
         return True
 
+    @webapi_request_fields(
+        optional={
+            'q': {
+                'type': six.text_type,
+                'description': 'The text to search for.',
+            },
+            'displayname': {
+                'type': bool,
+                'description': 'Whether or not to include groups whose '
+                               'display_name field includes the search text.',
+            },
+            'fullname': {
+                'type': bool,
+                'description': 'Whether or not to include users whose full '
+                               'name includes the search text.',
+            },
+            'id': {
+                'type': bool,
+                'description': 'Whether or not to include review requests '
+                               'with IDs that start with the given search '
+                               'text.',
+            },
+            'max_results': {
+                'type': int,
+                'description': 'The maximum number of results to return '
+                                'for each type of matching object. By '
+                                'default, this is 25. There is a hard limit '
+                                'of 200.',
+            },
+        },
+    )
     @webapi_check_local_site
     @webapi_check_login_required
-    def get(self, request, local_site_name=None, fullname=None, q=None,
-            displayname=None, id=None, *args, **kwargs):
+    def get(self, request, displayname=None, fullname=None, id=None,
+            max_results=None, q=None, local_site_name=None, *args, **kwargs):
         """Returns information on users, groups and review requests.
 
-        This is used by the autocomplete widget for quick search to
-        get information on users, groups and review requests. This
-        function returns users' first name, last name and username,
-        groups' name and display name, and review requests' ID and
-        summary.
+        This is used by the autocomplete widget for quick search to get
+        information on users, groups and review requests. This function returns
+        users' first name, last name and username, groups' name and display
+        name, and review requests' ID and summary.
         """
-        search_q = request.GET.get('q', None)
+        q = request.GET.get('q', None)
         local_site = self._get_local_site(local_site_name)
 
         if local_site:
@@ -51,53 +82,55 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
         query_review_requests = \
             ReviewRequest.objects.filter(local_site=local_site)
 
-        if search_q:
+        if q:
             # Try to match users.
-            parts = search_q.split(' ', 1)
+            parts = q.split(' ', 1)
 
-            q = Q()
+            query = Q()
 
             if len(parts) > 1:
-                q |= ((Q(first_name__istartswith=parts[0]) &
-                       Q(last_name__istartswith=parts[1])) |
-                      (Q(first_name__istartswith=parts[1]) &
-                       Q(last_name__istartswith=parts[0])))
+                query |= ((Q(first_name__istartswith=parts[0]) &
+                           Q(last_name__istartswith=parts[1])) |
+                          (Q(first_name__istartswith=parts[1]) &
+                           Q(last_name__istartswith=parts[0])))
             else:
-                q |= (Q(username__istartswith=search_q) |
-                      Q(first_name__istartswith=search_q) |
-                      Q(last_name__istartswith=search_q))
+                query |= (Q(username__istartswith=q) |
+                          Q(first_name__istartswith=q) |
+                          Q(last_name__istartswith=q))
 
-            if request.GET.get('fullname', None):
-                q = q | (Q(first_name__istartswith=search_q) |
-                         Q(last_name__istartswith=search_q))
+            if fullname:
+                query = query | (Q(first_name__istartswith=q) |
+                                 Q(last_name__istartswith=q))
 
-            query_users = query_users.filter(q)
+            query_users = query_users.filter(query)
 
             # Try to match groups.
-            q = (Q(name__istartswith=search_q) |
-                 Q(display_name__istartswith=search_q))
+            query = (Q(name__istartswith=q) |
+                     Q(display_name__istartswith=q))
 
-            if request.GET.get('displayname', None):
-                q = q | Q(display_name__istartswith=search_q)
+            if displayname:
+                query = query | Q(display_name__istartswith=q)
 
-            query_groups = query_groups.filter(q)
+            query_groups = query_groups.filter(query)
 
             # Try to match summaries or IDs.
-            q = Q(id__istartswith=search_q)
+            query = Q(id__istartswith=q)
 
-            if len(search_q) >= self.MIN_SUMMARY_LEN:
-                q |= Q(summary__istartswith=search_q)
+            if len(q) >= self.MIN_SUMMARY_LEN:
+                query |= Q(summary__istartswith=q)
 
-            if request.GET.get('id', None):
-                q |= Q(id__istartswith=request.GET['id'])
+            if id:
+                query |= Q(id__istartswith=id)
 
-            query_review_requests = query_review_requests.filter(q)
+            query_review_requests = query_review_requests.filter(query)
+
+        max_results = min((max_results or 25), 200)
 
         return 200, {
             self.name: {
-                'users': query_users,
-                'groups': query_groups,
-                'review_requests': query_review_requests,
+                'users': query_users[:max_results],
+                'groups': query_groups[:max_results],
+                'review_requests': query_review_requests[:max_results],
             },
         }
 

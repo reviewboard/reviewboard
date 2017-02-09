@@ -152,8 +152,6 @@ listed will depend on the requirements of the hosting service.
     :guilabel:`(None - Custom Repository)` and `Repository type`_ is set to
     :guilabel:`Git`.
 
-    See :ref:`raw-file-urls` below for more information.
-
 .. _`Username and Password fields`:
 .. _`Username field`:
 
@@ -172,6 +170,8 @@ listed will depend on the requirements of the hosting service.
     `Repository type`_.
 
 
+.. _repository-bug-tracker:
+
 Bug Tracker
 ~~~~~~~~~~~
 
@@ -188,24 +188,31 @@ associated with the repository if this field is provided.
 
    If unchecked, a bug tracker can be specified below.
 
-* **Type** (optional)
-    The value of the field should be the path of a ticket, except with
-    ``%s`` substituted for the ticket name.
+* **Type**
+    The type of bug tracker to use. Depending on your choice here, you may be
+    presented with additional fields for choosing the bug tracker.
 
-    For example:
-      * **Bugzilla**:
-        ``http://bugzilla.example.com/show_bug.cgi?id=%s``
-      * **Google Code**:
-        ``http://code.google.com/p/myproject/issues/detail?id=%s``
+    If you choose :guilabel:`(Custom Bug Tracker)`, you will be presented
+    with a :guilabel:`Bug tracker URL` field, as documented below.
 
-    If you don't use a bug tracker with projects in this repository, this
-    field can be left blank.
+    If you choose :guilabel:`(None)`, bug linking will be disabled for this
+    repository.
 
+* **Bug tracker URL** (optional)
+    A custom URL to your bug tracker.
+
+    The value of the field should be the path of a bug/ticket, except with
+    ``%s`` substituted for the bug/ticket ID.
+
+    For example::
+
+        https://mytracker.example.com/bugs/%s
+
+
+.. _repository-access-control:
 
 Access Control
 ~~~~~~~~~~~~~~
-
-.. versionadded:: 1.6
 
 Repository access can be limited to certain users and review groups.
 See :ref:`access-control` for more information on how this works.
@@ -223,16 +230,10 @@ See :ref:`access-control` for more information on how this works.
     If the repository is not publicly accessible, only users listed here
     will have access to the repository and review requests on it.
 
-    Hold down :kbd:`Control` (on the PC) or :kbd:`Command` (on the Mac) to
-    select more than one.
-
 * **Review groups with access** (optional)
     If the repository is not publicly accessible, only users on the
     invite-only review groups listed here will have access to the repository
     and review requests on it.
-
-    Hold down :kbd:`Control` (on the PC) or :kbd:`Command` (on the Mac) to
-    select more than one.
 
 
 Advanced Settings
@@ -280,61 +281,6 @@ Then click :guilabel:`Delete` at the bottom of the page.
    able to grab the diff information anyway).
 
 
-.. _hosting-services:
-
-Hosting Services
-================
-
-Review Board can be easily configured to work with different hosting
-services. This is a convenient method for specifying the repository paths
-and other information necessary to talk to the particular repository.
-
-By changing the `Hosting service`_ field, the list of repository types
-(Subversion, Git, etc.) will be limited to the list that the hosting
-service supports. The list of fields you need to fill out will also change.
-
-As of Review Board 1.6, the following hosting services are supported:
-
-* Bitbucket_
-* `Codebase HQ`_
-* `Fedora Hosted`_
-* GitHub_ (public and private repositories and organizations)
-* Gitorious_
-* `Google Code`_
-* SourceForge_
-
-More may be added in future releases based on demand.
-
-If you're using a custom code repository, whether hosted on a private server
-or on some other hosting provider, you can set `Hosting service`_ to
-:guilabel:`(None - Custom Repository)` and fill out the information manually.
-This is equivalent to configuring a repository in Review Board 1.0.x.
-
-If you have a repository with a hosting service from a version of Review Board
-prior to 1.6.7, you will need to set your hosting service again, as the
-mechanism for storing and linking hosting services has changed.
-
-.. _Bitbucket: http://bitbucket.org/
-.. _`Codebase HQ`: http://www.codebasehq.com/
-.. _`Fedora Hosted`: http://fedorahosted.org/
-.. _GitHub: http://github.com/
-.. _Gitorious: http://gitorious.org/
-.. _`Google Code`: http://code.google.com/hosting/
-.. _SourceForge: http://sourceforge.net/
-
-
-Linking Accounts
-----------------
-
-When configuring a hosting service, an account must be linked. For some
-hosting services, linking an account will first authenticate against the
-hosting service and store a token as part of the account.
-
-Some hosting services will require a password as part of the linking
-process. The password will not be stored, just used to initially link
-the account.
-
-
 SSH-Backed Repositories
 =======================
 
@@ -354,6 +300,40 @@ the repository is not covered here. There are plenty of resources on
 granting access via SSH keys.
 
 
+.. _hosting-services:
+
+Hosting Services
+================
+
+Review Board can be easily configured to work with different hosting
+services. This is a convenient method for specifying the repository paths
+and other information necessary to talk to the particular repository.
+
+By changing the `Hosting service`_ field, the list of repository types
+(Subversion, Git, etc.) will be limited to the list that the hosting
+service supports. The list of fields you need to fill out will also change.
+
+If you're using a custom code repository, whether hosted on a private server
+or on some other hosting provider, you can set `Hosting service`_ to
+:guilabel:`(None - Custom Repository)` and fill out the information manually
+
+If you have a repository with a hosting service from a version of Review Board
+prior to 1.6.7, you will need to set your hosting service again, as the
+mechanism for storing and linking hosting services has changed.
+
+
+Linking Accounts
+----------------
+
+When configuring a hosting service, an account must be linked. For some
+hosting services, linking an account will first authenticate against the
+hosting service and store a token as part of the account.
+
+Some hosting services will require a password as part of the linking
+process. The password will not be stored, just used to initially link
+the account.
+
+
 .. _determining-repository-information:
 
 Determining Repository Information
@@ -364,200 +344,40 @@ you're configuring. This section provides some help for determining which
 value to use.
 
 
-ClearCase
----------
-
-Review Board works with local ClearCase dynamic views, by utilizing
-version-extended paths to access specific file revisions.
-
-The `Path field`_ should point to the particular VOB, which must be an
-absolute path starting with a drive letter on Windows or a mount point on
-Unix/Linux.
-
-The `Username and Password fields`_ should be blank.
-
-.. note:: When uploading new diffs, Review Board will compare the VOBs by UUID.
-          If the UUID doesn't match, :command:`post-review` will use the VOB's
-          name as the repository name. Because of this, it is a good idea to
-          name the repositories in Review Board to match the VOB names.
-
-
-CVS
----
-
-Review Board supports several methods of connecting to a CVS server. In
-particular, the following connection types can be used:
-
-* ``:ext:``
-* ``:fork:``
-* ``:gserver:``
-* ``:kserver:``
-* ``:local:``
-* ``:pserver:``
-* ``:server:``
-
-If you use one of these connection types and provide it for the `Path field`_,
-you won't need to fill in the `Username and Password fields`_.
-
-If you user ``:pserver:``, ``:gserver:``, or ``:kserver:``, you can opt not to
-include the username or password in the string, and just fill them in in the
-form.
-
-Some example of valid paths include:
-
-* ``:pserver:cvs.example.com/cvsroot``
-* ``:pserver:anonymous@cvs.example.com/cvsroot``
-* ``:pserver:myuser:mypass@cvs.example.com:1234/cvsroot``
-* ``:local:C:\CVSROOTS\myproject``
-
-
-To determine the path of an existing checkout, you can go to the top-most
-directory of the checkout and type::
-
-    $ cat CVS/Root
-
-You should use the contents of this file as the repository path, adjusting the
-username, password or path as necessary.
-
-
-Git
----
-
-In order to use Git with Review Board, you'll need either a local clone
-on the server, or by using raw file URLs to a web front-end to Git (cgit,
-Gitweb, etc.) on the Git server. Git doesn't have a way of fetching an
-individual file of a given revision from a remote server without having an
-entire clone, so it works differently from other repository types.
-
-
-Local Clone
-~~~~~~~~~~~
-
-In order to work with Review Board, a local clone needs to be kept in
-sync regularly. It should either have direct access to a central Git
-server, or it needs to be updated on every commit to the central Git
-server.
-
-The `Path field`_ should be the full path of the ``.git`` directory inside
-this checkout.  For example: ``/var/git/projectname/.git``
-
-The `Mirror path field`_ should contain the repository URL.  Find the URL you
-should use from within a git checkout by running the following::
-
-    $ git remote show origin
-
-The value shown as ``URL:`` should be entered as the mirror path.  For
-example: ``git@git.example.com:projectname.git``
-
-The `Username and Password fields`_ should be blank.
-
-
-.. _raw-file-urls:
-
-Raw File URLs
-~~~~~~~~~~~~~
-
-.. versionadded:: 1.5
-
-Review Board can access a remote file by talking to a cgit or gitweb server.
-This is done by filling out the `Raw file URL mask`_ field to tell Review
-Board how to access a single file based on revision.
-
-The URL can make use of the following tags, which will be replaced before
-attempting to fetch the file:
-
-* ``<revision>`` - The full SHA1 of the file blob.
-* ``<filename>`` - The unescaped path to the file.
-
-cgit
-^^^^
-
-For cgit, this path should be in the form of:
-
-:samp:`http://{servername}/browse/repo/blob/<filename>?id=<revision>`
-
-For example:
-
-:samp:`http://git.gnome.org/browse/gtk+/blob/<filename>?id=<revision>`
-
-
-Gitweb
-^^^^^^
-
-For Gitweb:
-
-:samp:`http://{servername}/?p={relative path to git repo};a=blob_plain;f=<filename>;h=<revision>`
-
-For example:
-
-:samp:`http://git.kernel.org/?p=bluetooth/bluez-gnome.git;a=blob_plain;f=<filename>;h=<revision>`
-
-
-Perforce
---------
-
-The Perforce path can be retrieved from an existing Perforce checkout by
-typing the following::
-
-    $ p4 info
-
-Use the value from the :guilabel:`Server address` field.
-
-In most setups, the `Username field`_ must be provided. This must be a user
-that has access to the whole repository. In some setups, this is a dedicated
-read-only user.
-
-Note that Review Board will only ever use this user for read-only operations.
-It will never write to the repository.
-
-
-.. _perforce-stunnel:
-
-Using Perforce with stunnel
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. versionadded:: 1.6
-
-Perforce can be configured to operate with a secure stunnel setup. This is
-particularly important if the server running Review Board needs to talk to
-the Perforce server over the Internet or an otherwise easily accessible
-network.
-
-To set up an stunnel connection on the Perforce server, see Perforce's guide
-on `Using Stunnel with Perforce`_.
-
-.. _`Using Stunnel with Perforce`:
-   http://kb.perforce.com/article/1018/using-stunnel-with-perforce
-
-Once the server is set up, ensure that stunnel version 3 (not 4) is installed on
-the server running Review Board and available in the web server's PATH. You can
-then configure your repository settings so that Review Board can access the
-repository. To do this, just prefix your repository path with ``stunnel:`` and
-list the port that the stunnel server is running on. For example::
-
-    stunnel:perforce.example.com:2666
-
-Review Board will automatically set up a local tunnel client as necessary.
-It will bind this to a port between 30000 and 60000 on localhost, and proxy
-all requests through it.
-
-
-Subversion
-----------
-
-The Subversion path can be retrieved from an existing Subversion checkout by
-typing the following::
-
-    $ svn info
-
-Use the value from the :guilabel:`Repository Root` field.
-
-In most server setups, Subversion provides anonymous access, so the
-`Username and Password fields`_ won't need to be filled out. However, this
-depends on the server setup. Some are more restricted and will require a
-dedicated user.
-
-In Subversion setups where there's a public anonymous URL and a secured
-developer URL (such as one using ``https`` or ``svn+ssh``), you
-should put the public URL in :guilabel:`Path` field and
-your developer URL in the :guilabel:`Mirror Path`.
+.. _configuring-self-hosted-repos:
+
+Configuring Self-Hosted Repositories
+====================================
+
+.. toctree::
+   :maxdepth: 1
+
+   bazaar
+   clearcase
+   cvs
+   git
+   mercurial
+   perforce
+   subversion
+
+
+.. _configuring-hosted-repos:
+
+Configuring Hosted Repositories
+===============================
+
+.. toctree::
+   :maxdepth: 1
+
+   assembla
+   beanstalk
+   bitbucket
+   codebasehq
+   fedorahosted
+   github
+   github-enterprise
+   gitlab
+   gitorious
+   sourceforge
+   unfuddle
+   visualstudio

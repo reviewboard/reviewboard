@@ -10,7 +10,7 @@ Configuration
    email
    default-reviewers
    permission-groups
-   repositories
+   repositories/index
    review-groups
    users
    webhooks
