@@ -1,0 +1,322 @@
+================================
+Review Board 2.5.8 Release Notes
+================================
+
+**Release date**: February 9, 2017
+
+
+Security Improvements
+=====================
+
+* Fixed an API call that would return too much information in the request,
+  potentially overloading the server.
+
+  :ref:`rb2.5:webapi2.0-search-resource`, when passing an empty search query,
+  would attempt to return far too many results. Depending on the size of the
+  server, this could end up using too much memory and swamping the server.
+  We've fixed this API to always return a maximum number of results.
+
+
+Packaging
+=========
+
+* Simplified installation of dependencies for contributors to Review Board.
+
+  If you're working on the Review Board codebase, installing the package in
+  development mode (running :command:`setup.py develop`) will now install
+  all of Python packages as Wheels instead of Eggs (simplifying installation
+  on most systems), and will install the node.js dependencies needed for
+  building static media.
+
+  This should help contributors get going with development. It does not
+  impact consumers of the Review Board packages in any way.
+
+* The complete list of package dependencies now lives in the
+  :py:mod:`reviewboard.dependencies` module instead of :file:`setup.py`.
+
+  Package maintainers looking to update the list of dependencies in some way
+  or wanting to stay up-to-date on the list of dependencies should consult
+  the :file:`reviewboard/dependencies.py` file. Note that only the Python
+  dependencies listed in there are requirements for consuming the package.
+  The node.js dependencies are only used to build the Review Board packages.
+
+
+New Features
+============
+
+* Added a "New Updates" column to the All Review Requests page.
+
+  We've brought this column from the dashboard to the All Review Requests page
+  to make it easier to see if there have been updates since you last saw the
+  review requests.
+
+  This column is not added by default. You can enable it by editing columns
+  and choosing "New Updates".
+
+  Patch by Griffin Myers.
+
+* Simplified configuration of GitLab repositories hosted on gitlab.com.
+
+  When configuring a GitLab repository, you can now select whether the
+  repository is hosted on gitlab.com or self-hosted on your own server.
+
+* Simplified configuration of Bitbucket repositories.
+
+  There were a handful of issues related to Bitbucket configuration that made
+  things difficult for many users. Bitbucket requires a username instead of
+  the Atlassian account, which wasn't always obvious, and two-factor
+  authentication required usage of app-specific passwords. When things did go
+  wrong, Bitbucket often didn't send any error messages in the API responses.
+
+  We've made a lot of changes to help make configuring Bitbucket a smoother
+  experience. There's more useful information on the form for the
+  authentication requirements. We're handling empty error responses and
+  providing suitable errors that provide suggestions for solving the problems.
+
+  We've also made it easier to add personal repositories owned by a different
+  user.
+
+* Added support for self-hosted Gitorious servers.
+
+  We previously had support for hosting on gitorious.org, but this service no
+  longer exists. We now allow for configuring a repository to use a
+  self-hosted Gitorious server instead.
+
+* Added support for bug trackers hosted on Codebase_.
+
+* WebHooks invoked by publishing reviews or replies to reviews will now
+  provide the parent review request in the payload (under the
+  ``review_request`` key).
+
+  Patch by Jean Hominal.
+
+
+.. _Codebase: https://www.codebasehq.com/
+
+
+Extensions
+==========
+
+* Added template hooks for injecting content into review e-mails.
+
+  :ref:`rb2.5:template-hook` now supports the ``review-email-html-summary``
+  and ``review-email-text-summary`` hook points for adding custom content to
+  HTML and plain text e-mails (respectively).
+
+  Patch by Erik Johansson.
+
+
+Web API
+=======
+
+* :ref:`rb2.5:webapi2.0-search-resource` now always provides a maximum number
+  of results, preventing the server from being swamped.
+
+* E-mail addresses are now accepted as usernames when authenticating with the
+  API.
+
+  We already allow using an e-mail address to log in to Review Board, but the
+  API still required the official username. Now an e-mail address is
+  considered a valid login credential as well.
+
+  Note that if the e-mail address is claimed by more than one user, it will
+  not be allowed.
+
+* :ref:`rb2.5:webapi2.0-review-request-resource` no longer silently ignores
+  malformed timestamps in the filtering query arguments.
+
+  Before, passing a malformed timestamp for a query argument (like
+  ``?time-added-from=abc123``) would simply be ignored. Now it will return an
+  error instead.
+
+* :ref:`rb2.5:webapi2.0-review-request-resource` no longer breaks when using
+  timestamps that exist during the hour after the transition from daylight
+  savings to standard time.
+
+* :ref:`rb2.5:webapi2.0-user-resource` no longer crashes when using
+  ``?only-fields=...`` and serializing users with private profiles enabled.
+
+
+Usability Improvements
+======================
+
+* Reduced the hover delay for presenting the diff expansion controls for diff
+  comments on a review.
+
+* Fixed the mouse cursor shown when hovering over empty areas of a text field.
+  (:bug:`4432`)
+
+  Patch by John Larmie.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed crashes that would occur when storing diffs in the database on MySQL
+  when adding ``DEBUG=True`` in :file:`settings_local.py`. (:bug:`4007`)
+
+  Django sends binary data to MySQL in a way that triggers Unicode validation
+  warnings. While harmless, these warnings would be interpreted as fatal
+  errors when running in debug mode (which should not be enabled for
+  production usage). We now work around these to always send binary data in
+  the way expected by MySQL.
+
+* Fixed errors that could occur with Unicode passwords and API tokens for
+  GitLab and other services. (:bug:`4069`, :bug:`4472`)
+
+
+Review Requests
+---------------
+
+* Updating a review request with an invalid diff and then trying again with a
+  valid diff no longer creates a brand new review request. (:bug:`4404`)
+
+  Patch by Connor Yoshimoto.
+
+* Fixed change numbers/commit IDs not appearing on review requests.
+  (:bug:`4484`)
+
+  This could also impact updating existing changes on Perforce.
+
+* The :guilabel:`Files` header no longer appears after removing all file
+  attachments. (:bug:`4451`)
+
+  Patch by Dominic Kuang.
+
+* Diffs of changed text fields on review requests no longer highlight
+  incorrectly when encountering HTML entities. (:bug:`3909`)
+
+
+New Review Request Page
+-----------------------
+
+* Fixed applying default reviewers when posting changes for review using the
+  New Review Request page.
+
+* Fixed the diff being attached to the review request instead of the draft
+  when posting changes for review using the New Review Request page.
+
+
+Review Dialog
+-------------
+
+* Clicking :guilabel:`Ship It!` no longer causes the header text field to
+  disappear. (:bug:`4414`)
+
+  Previously the field would seem to disappear, but could be re-shown by
+  clicking :guilabel:`Add Header`.
+
+
+Diff Viewer
+-----------
+
+* Fixed problems when matching up files between two diff revisions when
+  viewing interdiffs.
+
+  Interdiffs containing parent diffs that deleted files resulted in some
+  failures to match up files, causing files to appear as new (and possibly
+  resulting in duplicate file entries).
+
+* Fixed crashes when attempting to download the source for a file shown in the
+  diff viewer when that file no longer exists in the repository.
+
+
+Administration
+--------------
+
+* Greatly improved validation for cache settings, preventing possible
+  breakages.
+
+  It was possible to set some bad cache settings that would result in the
+  cache backend failing to load and Apache processes taking on the burden,
+  eventually causing slowdowns and crashes.
+
+  We've made significant improvements to the cache validation to ensure that
+  all cache information is valid when set.
+
+* Fixed crashes that could occur if failing to close an invalid cache backend.
+
+* Removed 404 errors and Permission Denied errors from the Review Board log
+  file.
+
+  These would often appear as errors with tracebacks, which was unnecessary
+  and led to clutter.
+
+* Fixed localization issues with some fields in the administration settings
+  forms. (:bug:`4512`)
+
+  Patch by Raman Dhatt.
+
+* Fixed missing UI for adding custom administration dashboard widgets.
+
+
+WebHooks
+--------
+
+* Fixed dispatching WebHooks with non-ASCII content. (:bug:`4494`)
+
+  Patch by Jean Hominal.
+
+
+CVS
+---
+
+* Fixed parsing binary file diffs in CVS.
+
+  Entries for binary files in CVS diffs are now properly recognized and
+  flagged as binary. This shows up in the diff viewer with a special message.
+  Previously, these were either ignored or, in more recent releases, could
+  cause a crash during parsing.
+
+* Fixed syntax highlighting for files in CVS. (:bug:`4022`)
+
+
+Bitbucket
+---------
+
+* Fixed breakages when normalizing diffs containing non-ASCII characters.
+
+
+GitHub
+------
+
+* Fixed posting existing commits containing renamed files for review.
+
+  When posting existing commits for review in the New Review Request page,
+  posting would fail for commits containing renamed files.
+
+
+Jira
+----
+
+* Fixed validation of bug tracker URLs.
+
+  Invalid URLs could lead to crashes when trying to link bugs. We now check to
+  ensure the URL entered will be safe when saving the repository.
+
+
+VersionOne
+----------
+
+* Fixed validation of bug tracker URLs.
+
+  Invalid URLs could lead to crashes when trying to link bugs. We now check to
+  ensure the URL entered will be safe when saving the repository.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* Connor Yoshimoto
+* David Trowbridge
+* Dominic Kuang
+* Erik Johansson
+* Griffin Myers
+* Jean Hominal
+* John Larmie
+* Raman Dhatt

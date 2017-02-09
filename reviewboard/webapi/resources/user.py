@@ -121,7 +121,12 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             # his/her profile is private).
             if not obj.is_profile_visible(request.user):
                 for field in self.hidden_fields:
-                    del data[field]
+                    try:
+                        del data[field]
+                    except KeyError:
+                        # The caller may be using ?only-fields. We can ignore
+                        # this.
+                        pass
 
         return data
 
