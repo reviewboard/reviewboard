@@ -328,7 +328,6 @@ $(document).ready(function() {
                 selectedIndex,
                 account,
                 $authForm,
-                $twoFactorAuthRows,
                 $selectedOption;
 
             $hostingAuthForms.hide();
@@ -352,10 +351,8 @@ $(document).ready(function() {
                      * Hide any fields required for 2FA unless explicitly
                      * needed.
                      */
-                    $twoFactorAuthRows =
-                        $authForm.find('[data-required-for-2fa]')
-                        .closest('.form-row')
-                            .setVisible(hostingInfo.needs_two_factor_auth_code);
+                    $authForm.find('[data-required-for-2fa]').closest('.form-row')
+                        .setVisible(hostingInfo.needs_two_factor_auth_code);
 
                     if ($hostingAccount.val() === '') {
                         /* Present fields for linking a new account. */

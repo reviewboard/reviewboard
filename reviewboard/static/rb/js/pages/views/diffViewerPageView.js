@@ -141,14 +141,11 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * Renders the page and begins loading all diffs.
      */
     render: function() {
-        var $reviewRequest,
-            numDiffs = this.model.get('numDiffs'),
+        var numDiffs = this.model.get('numDiffs'),
             revisionModel = this.model.get('revision'),
             $diffs = $('#diffs');
 
         _super(this).render.call(this);
-
-        $reviewRequest = this.$('.review-request');
 
         this._$controls = $('#view_controls');
 

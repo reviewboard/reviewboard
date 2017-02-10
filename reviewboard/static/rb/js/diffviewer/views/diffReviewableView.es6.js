@@ -391,7 +391,6 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
             /* Calculate the widths and state of the filename columns. */
             $cells = $(this._$filenameRow[0].cells);
-            cellPadding = $cells.eq(0).getExtents('p', 'lr');
             this._numFilenameColumns = $cells.length;
             this._filenameReservedWidths = containerExtents +
                                            2 * this._numFilenameColumns;

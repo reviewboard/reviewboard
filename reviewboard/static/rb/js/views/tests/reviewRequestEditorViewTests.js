@@ -79,7 +79,6 @@ suite('rb/views/ReviewRequestEditorView', function() {
             ' <a class="delete">X</a>',
             '</div>'
         ].join('')),
-        $warning,
         $filesContainer,
         $screenshotsContainer;
 
@@ -104,7 +103,6 @@ suite('rb/views/ReviewRequestEditorView', function() {
             model: editor
         });
 
-        $warning = $testsScratch.find('#review-request-warning');
         $filesContainer = $testsScratch.find('#file-list');
         $screenshotsContainer = $testsScratch.find('#screenshot-thumbnails');
 
