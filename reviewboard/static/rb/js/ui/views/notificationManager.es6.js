@@ -104,8 +104,8 @@ RB.NotificationManager = Backbone.View.extend({
         const notification = this._notification;
 
         this._notification.onclick = function() {
-            if (_.isFunction(data.onClick)) {
-                data.onclick();
+            if (_.isFunction(options.onClick)) {
+                options.onclick();
             }
 
             notification.close();

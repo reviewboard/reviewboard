@@ -380,7 +380,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
 
                         $('<a class="commentflag" />')
                             .click(onClick)
-                            .appendTo(cell);
+                            .appendTo(startCell);
 
                         selector._onMouseOver({
                             target: startCell

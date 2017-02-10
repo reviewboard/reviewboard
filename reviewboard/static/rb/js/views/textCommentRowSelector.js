@@ -730,7 +730,7 @@ RB.TextCommentRowSelector = Backbone.View.extend({
             target = document.elementFromPoint(firstTouch.pageX,
                                                firstTouch.pageY),
             $node = this._getActualLineNumCell($(target)),
-            $row = node.parent();
+            $row = $node.parent();
 
         if (   this._lastSeenIndex !== $row[0].rowIndex
             && this._isLineNumCell($node[0])) {
