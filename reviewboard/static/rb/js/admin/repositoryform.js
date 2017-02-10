@@ -20,8 +20,10 @@ function updateFormDisplay(id, tools_info) {
     }
 
     for (field in oldInfo.help_text) {
-        $('#row-' + field).find('p.help')
-            .remove();
+        if (oldInfo.help_text.hasOwnProperty(field)) {
+            $('#row-' + field).find('p.help')
+                .remove();
+        }
     }
 
     for (i = 0; i < newInfo.fields.length; i++) {

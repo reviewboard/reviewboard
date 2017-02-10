@@ -319,16 +319,16 @@ RB.IssueSummaryTableView = Backbone.View.extend({
     _uncollapseTarget: function() {
         var hash = window.location.hash,
             commentName,
-            targetBox;
+            $targetBox;
 
-        if (hash.indexOf("comment") > 0) {
+        if (hash.indexOf('comment') !== -1) {
             commentName = hash.toString().substring(1);
-            targetBox = $('a[name=' + commentName + ']').closest(".box");
+            $targetBox = $('a[name=' + commentName + ']').closest('.box');
 
-            if (targetBox.hasClass('collapsed')) {
-                targetBox.removeClass('collapsed');
+            if ($targetBox.hasClass('collapsed')) {
+                $targetBox.removeClass('collapsed');
                 // Scroll down to the targeted comment box
-                window.location = window.location;
+                window.location.hash = hash;
             }
         }
     },
