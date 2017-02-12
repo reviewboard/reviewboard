@@ -37,7 +37,6 @@ class ScreenshotComment(BaseComment):
         return '<img src="%s" width="%s" height="%s" alt="%s" />' % \
             (self.get_image_url(), self.w, self.h, escape(self.text))
 
-    class Meta:
-        app_label = 'reviews'
+    class Meta(BaseComment.Meta):
         verbose_name = _('screenshot comment')
         verbose_name_plural = _('screenshot comments')

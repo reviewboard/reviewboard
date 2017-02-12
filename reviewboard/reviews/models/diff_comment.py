@@ -42,7 +42,6 @@ class Comment(BaseComment):
             revision_path, self.filediff.id, self.filediff.id,
             self.first_line)
 
-    class Meta:
-        app_label = 'reviews'
+    class Meta(BaseComment.Meta):
         verbose_name = _('comment')
         verbose_name_plural = _('comments')

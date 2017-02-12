@@ -70,7 +70,6 @@ class FileAttachmentComment(BaseComment):
         else:
             return self.file_attachment.filename
 
-    class Meta:
-        app_label = 'reviews'
+    class Meta(BaseComment.Meta):
         verbose_name = _('file attachment comment')
         verbose_name_plural = _('file attachment comments')
