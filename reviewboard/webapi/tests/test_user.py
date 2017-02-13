@@ -56,6 +56,40 @@ class ResourceListTests(SpyAgency, BaseWebAPITestCase):
                 user_list_mimetype,
                 items)
 
+    @webapi_test_template
+    def test_get_filter_inactive(self):
+        """Testing the GET <URL> API filters out inactive users by default"""
+        dopey = User.objects.get(username='dopey')
+        dopey.is_active = False
+        dopey.save()
+
+        rsp = self.api_get(get_user_list_url(),
+                           expected_mimetype=user_list_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        user_pks = [user['id'] for user in rsp['users']]
+        returned_users = set(User.objects.filter(pk__in=user_pks))
+        expected_users = set(User.objects.filter(is_active=True))
+        self.assertEqual(returned_users, expected_users)
+
+    @webapi_test_template
+    def test_get_include_inactive(self):
+        """Testing the GET <URL>/?include-inactive=1 API includes inactive
+        users
+        """
+        dopey = User.objects.get(username='dopey')
+        dopey.is_active = False
+        dopey.save()
+
+        rsp = self.api_get(get_user_list_url(), {'include-inactive': '1'},
+                           expected_mimetype=user_list_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        user_pks = [user['id'] for user in rsp['users']]
+        returned_users = set(User.objects.filter(pk__in=user_pks))
+        expected_users = set(User.objects.all())
+        self.assertEqual(returned_users, expected_users)
+
     def test_get_with_q(self):
         """Testing the GET users/?q= API"""
         rsp = self.api_get(get_user_list_url(), {'q': 'gru'},
@@ -336,3 +370,16 @@ class ResourceItemTests(AvatarServicesTestMixin, BaseWebAPITestCase):
         self.assertNotIn('first_name', rsp['user'])
         self.assertNotIn('last_name', rsp['user'])
         self.assertNotIn('email', rsp['user'])
+
+    @webapi_test_template
+    def test_get_inactive_user(self):
+        """Testing the GET <URL> API for an inactive user"""
+        dopey = User.objects.get(username='dopey')
+        dopey.is_active = False
+        dopey.save()
+
+        rsp = self.api_get(get_user_item_url('dopey'),
+                           expected_mimetype=user_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['user']['is_active'], False)

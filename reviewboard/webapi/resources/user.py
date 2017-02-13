@@ -52,6 +52,13 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             'description': 'The URLs for an avatar representing the user.',
             'added_in': '3.0',
         },
+        'is_active': {
+            'type': bool,
+            'description': 'Whether or not the user is active. Inactive users'
+                           'are not able to log in or make changes to Review '
+                           'Board.',
+            'added_in': '2.5.8',
+        },
     }, **DjbletsUserResource.fields)
 
     allowed_methods = ('GET', 'POST')
@@ -60,6 +67,12 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
     def get_queryset(self, request, local_site_name=None, *args, **kwargs):
         search_q = request.GET.get('q', None)
+        include_inactive = request.GET.get('include-inactive', 0)
+
+        try:
+            include_inactive = int(include_inactive) != 0
+        except ValueError:
+            include_inactive = False
 
         for backend in get_enabled_auth_backends():
             try:
@@ -77,9 +90,12 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         # and review requests from non-members won't be 404. The list is still
         # restricted to members of the site to avoid leaking information.
         if local_site and (is_list or not local_site.public):
-            query = local_site.users.filter(is_active=True)
+            query = local_site.users.all()
         else:
-            query = self.model.objects.filter(is_active=True)
+            query = self.model.objects.all()
+
+        if is_list and not include_inactive:
+            query = query.filter(is_active=True)
 
         if search_q:
             q = None
@@ -196,6 +212,9 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         For example, accessing ``/api/users/?q=bo&fullname=1`` will list
         any users with a username, first name or last name starting with
         ``bo``.
+
+        Inactive users will not be returned by default. However by providing
+        ``?include-inactive=1`` they will be returned.
         """
         try:
             return super(UserResource, self).get_list(*args, **kwargs)

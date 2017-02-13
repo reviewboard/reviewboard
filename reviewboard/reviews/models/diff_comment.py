@@ -42,8 +42,7 @@ class Comment(BaseComment):
             revision_path, self.filediff.id, self.filediff.id,
             self.first_line)
 
-    class Meta:
-        app_label = 'reviews'
+    class Meta(BaseComment.Meta):
         db_table = 'reviews_comment'
         verbose_name = _('Diff Comment')
         verbose_name_plural = _('Diff Comments')
