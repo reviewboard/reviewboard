@@ -119,7 +119,8 @@ class AvatarSettingsForm(DjbletsAvatarSettingsForm):
             bool:
             Whether or not to show the avatar settings form.
         """
-        return self.avatar_service_registry.avatars_enabled
+        return (self.avatar_service_registry.avatars_enabled and
+                len(self.avatar_service_registry.enabled_services) > 0)
 
 
 class APITokensForm(AccountPageForm):
