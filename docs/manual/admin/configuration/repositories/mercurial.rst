@@ -95,6 +95,9 @@ If your repository is protected by Basic HTTP Auth, you can supply credentials
 in the :guilabel:`Username` and :guilabel:`Password` fields. They will be used
 any time Review Board accesses your hgweb instance.
 
+If you use the post-commit review request feature with hgweb, you need to use
+at least Mercurial 3.9.
+
 
 .. _Mercurial's documentation on hgweb:
    https://www.mercurial-scm.org/wiki/PublishingRepositories#hgweb

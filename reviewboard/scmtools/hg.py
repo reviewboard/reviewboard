@@ -1,14 +1,17 @@
 from __future__ import unicode_literals
 
+import json
 import logging
+from datetime import datetime
 
 from django.utils import six
 from django.utils.six.moves.urllib.parse import quote as urllib_quote, urlparse
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
-from reviewboard.scmtools.core import (FileNotFoundError, SCMClient, SCMTool,
-                                       HEAD, PRE_CREATION, UNKNOWN)
+from reviewboard.scmtools.core import (Branch, Commit, FileNotFoundError, HEAD,
+                                       PRE_CREATION, SCMClient, SCMTool,
+                                       UNKNOWN)
 from reviewboard.scmtools.errors import SCMError
 from reviewboard.scmtools.git import GitDiffParser
 
@@ -16,6 +19,7 @@ from reviewboard.scmtools.git import GitDiffParser
 class HgTool(SCMTool):
     name = "Mercurial"
     diffs_use_absolute_paths = True
+    supports_post_commit = True
     dependencies = {
         'modules': ['mercurial'],
     }
@@ -54,6 +58,46 @@ class HgTool(SCMTool):
             revision = UNKNOWN
         return file_str, revision
 
+    def get_branches(self):
+        """Return open/inactive branches from repository.
+
+        Returns:
+            list of reviewboard.scmtools.core.Branch:
+            The list of the branches.
+        """
+        return self.client.get_branches()
+
+    def get_commits(self, branch=None, start=None):
+        """Return changesets from repository.
+
+        Args:
+            branch (unicode, optional):
+                An identifier name of branch.
+
+            start (unicode, optional):
+                An optional changeset revision to start with.
+
+        Returns:
+            reviewboard.scmtools.core.Commit:
+            The commit object.
+        """
+        return self.client.get_commits(branch, start)
+
+    def get_change(self, revision):
+        """Return detailed information about a changeset.
+
+        Receive changeset data and patch from repository.
+
+        Args:
+            revision (unicode):
+                An identifier of changeset.
+
+        Returns:
+            reviewboard.scmtools.core.Commit:
+            The commit object.
+        """
+        return self.client.get_change(revision)
+
     def get_parser(self, data):
         hg_position = data.find(b'diff -r')
         git_position = data.find(b'diff --git')
@@ -63,6 +107,21 @@ class HgTool(SCMTool):
             return HgGitDiffParser(data)
         else:
             return HgDiffParser(data)
+
+    @classmethod
+    def date_tuple_to_iso8601(self, data):
+        """Return isoformat date from JSON tuple date.
+
+        Args:
+            data (tuple of int):
+                 A 2-tuple, where the first item is a unix timestamp
+                 and the second is the timezone offset.
+
+        Returns:
+            unicode:
+            Date of given data in ISO 8601 format.
+        """
+        return datetime.fromtimestamp(data[0] + (data[1] * -1)).isoformat()
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,
@@ -201,6 +260,7 @@ class HgWebClient(SCMClient):
         super(HgWebClient, self).__init__(path, username=username,
                                           password=password)
 
+        self.path_stripped = self.path.rstrip('/')
         logging.debug('Initialized HgWebClient with url=%r, username=%r',
                       self.path, self.username)
 
@@ -218,7 +278,7 @@ class HgWebClient(SCMClient):
         for rawpath in ["raw-file", "raw", "hg-history"]:
             try:
                 url = self.FULL_FILE_URL % {
-                    'url': self.path.rstrip('/'),
+                    'url': self.path_stripped,
                     'rawpath': rawpath,
                     'revision': rev,
                     'quoted_path': urllib_quote(path.lstrip('/')),
@@ -231,8 +291,149 @@ class HgWebClient(SCMClient):
 
         raise FileNotFoundError(path, rev)
 
+    def get_branches(self):
+        """Return open/inactive branches from hgweb in JSON.
+
+        Returns:
+            list of reviewboard.scmtools.core.Branch:
+            A list of the branches.
+        """
+        results = []
+
+        try:
+            url = '%s/json-branches' % self.path_stripped
+            contents = self.get_file_http(url, '', '')
+        except Exception as e:
+            logging.exception('Cannot load branches from hgweb: %s', e)
+            return results
+
+        if contents:
+            results = [
+                Branch(
+                    id=data['branch'],
+                    commit=data['node'],
+                    default=(data['branch'] == 'default'))
+                for data in json.loads(contents)['branches']
+                if data['status'] != 'closed'
+            ]
+
+        return results
+
+    def _get_commit(self, revision):
+        """Return detailed information about a single changeset.
+
+        Receive changeset from hgweb in JSON format.
+
+        Args:
+            revision (unicode):
+                An identifier of changeset.
+
+        Returns:
+            reviewboard.scmtools.core.Commit:
+            The commit object.
+        """
+        try:
+            url = '%s/json-rev/%s' % (self.path_stripped, revision)
+            contents = self.get_file_http(url, '', '')
+        except Exception as e:
+            logging.exception('Cannot load detail of changeset from hgweb: %s',
+                              e)
+            return None
+
+        if contents:
+            data = json.loads(contents)
+            parent = data['parents'][0]
+            return Commit(id=data['node'],
+                          message=data['desc'],
+                          author_name=data['user'],
+                          date=HgTool.date_tuple_to_iso8601(data['date']),
+                          parent=parent,
+                          base_commit_id=parent)
+
+        return None
+
+    def get_commits(self, branch=None, start=None):
+        """Return detailed information about a changeset.
+
+        Receive changeset from hgweb in JSON format.
+
+        Args:
+            branch (unicode, optional):
+                An optional branch name to filter by.
+
+            start (unicode, optional):
+                An optional changeset revision to start with.
+
+        Returns:
+            list of reviewboard.scmtools.core.Commit:
+            The list of commit objects.
+        """
+        query_parts = []
+
+        if start:
+            query_parts.append('ancestors(%s)' % start)
+
+        query_parts.append('branch(%s)' % (branch or '.'))
+
+        query = '+and+'.join(query_parts)
+
+        try:
+            url = '%s/json-log/?rev=%s' % (self.path_stripped, query)
+            contents = self.get_file_http(url, '', '')
+        except Exception as e:
+            logging.exception('Cannot load commits from hgweb: %s', e)
+            return []
+
+        results = []
+
+        if contents:
+            for data in json.loads(contents)['entries']:
+                parent = data['parents'][0]
+                iso8601 = HgTool.date_tuple_to_iso8601(data['date'])
+                changeset = Commit(id=data['node'],
+                                   message=data['desc'],
+                                   author_name=data['user'],
+                                   date=iso8601,
+                                   parent=parent,
+                                   base_commit_id=parent)
+                results.append(changeset)
+
+        return results
+
+    def get_change(self, revision):
+        """Return detailed information about a changeset.
+
+        This method retrieves the patch in JSON format from hgweb.
+
+        Args:
+            revision (unicode):
+                An identifier of changeset
+
+        Returns:
+            reviewboard.scmtools.core.Commit:
+            The commit object.
+        """
+        try:
+            url = '%s/raw-rev/%s' % (self.path_stripped, revision)
+            contents = self.get_file_http(url, '', '')
+        except Exception as e:
+            logging.exception('Cannot load patch from hgweb: %s', e)
+            raise SCMError('Cannot load patch from hgweb')
+
+        if contents:
+            changeset = self._get_commit(revision)
+
+            if changeset:
+                changeset.diff = contents
+                return changeset
+
+        logging.error('Cannot load changeset %s from hgweb', revision)
+        raise SCMError('Cannot load changeset %s from hgweb' % revision)
+
 
 class HgClient(SCMClient):
+    COMMITS_PAGE_LIMIT = '31'
+
     def __init__(self, path, local_site):
         super(HgClient, self).__init__(path)
         self.default_args = None
@@ -262,6 +463,120 @@ class HgClient(SCMClient):
                 return contents
 
         raise FileNotFoundError(path, rev)
+
+    def get_branches(self):
+        """Return open/inactive branches from repository in JSON.
+
+        Returns:
+            list of reviewboard.scmtools.core.Branch:
+            The list of the branches.
+        """
+        p = self._run_hg(['branches', '--template', 'json'])
+
+        if p.wait() != 0:
+            raise SCMError('Cannot load branches: %s' % p.stderr.read())
+
+        results = [
+            Branch(
+                id=data['branch'],
+                commit=data['node'],
+                default=(data['branch'] == 'default'))
+            for data in json.load(p.stdout)
+            if not data['closed']
+        ]
+
+        return results
+
+    def _get_commits(self, revset):
+        """Return a list of commit objects.
+
+        This method calls the given revset and parses the returned
+        JSON data to retrieve detailed information about changesets.
+
+        Args:
+            revset (list of unicode):
+                Hg command line that will be executed with JSON
+                template as log command.
+
+        Returns:
+            list of reviewboard.scmtools.core.Commit:
+            The list of commit objects.
+        """
+        cmd = ['log'] + revset + ['--template', 'json']
+        p = self._run_hg(cmd)
+
+        if p.wait() != 0:
+            raise SCMError('Cannot load commits: %s' % p.stderr.read())
+
+        results = []
+
+        for data in json.load(p.stdout):
+            p = data['parents'][0]
+            results.append(Commit(
+                id=data['node'],
+                message=data['desc'],
+                author_name=data['user'],
+                date=HgTool.date_tuple_to_iso8601(data['date']),
+                parent=p,
+                base_commit_id=p))
+
+        return results
+
+    def get_commits(self, branch=None, start=None):
+        """Return changesets from repository in JSON.
+
+        Args:
+            branch (unicode, optional):
+                An identifier name of branch.
+
+            start (unicode, optional):
+                An optional changeset revision to start with.
+
+        Returns:
+            list of reviewboard.scmtools.core.Commit:
+            The list of commit objects.
+        """
+        revisions = ''
+
+        if start:
+            revisions = '-r%s:0' % start
+
+        revset = [revisions, '-l', self.COMMITS_PAGE_LIMIT]
+
+        if branch:
+            revset.extend(('-b', branch))
+
+        return self._get_commits(revset)
+
+    def get_change(self, revision):
+        """Return detailed information about a changeset.
+
+        Receive changeset data and patch from repository in JSON.
+
+        Args:
+            revision (unicode):
+                An identifier of changeset.
+
+        Returns:
+            reviewboard.scmtools.core.Commit:
+            The commit object.
+        """
+        revset = ['-r', revision]
+        changesets = self._get_commits(revset)
+
+        if changesets:
+            commit = changesets[0]
+            cmd = ['diff', '-c', revision]
+            p = self._run_hg(cmd)
+
+            if p.wait() != 0:
+                e = p.stderr.read()
+                raise SCMError('Cannot load patch %s: %s' % (revision, e))
+
+            commit.diff = p.stdout.read()
+            return commit
+
+        raise SCMError('Cannot load changeset %s' % revision)
 
     def _calculate_default_args(self):
         self.default_args = [
