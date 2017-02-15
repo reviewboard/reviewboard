@@ -8,6 +8,8 @@ from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.errors import PublishError
 from reviewboard.reviews.models import (Comment, ReviewRequest,
                                         ReviewRequestDraft)
+from reviewboard.reviews.signals import (review_request_reopened,
+                                         review_request_reopening)
 from reviewboard.scmtools.core import ChangeSet
 from reviewboard.testing import TestCase
 
@@ -41,6 +43,72 @@ class ReviewRequestTests(SpyAgency, TestCase):
         review_request.close(ReviewRequest.DISCARDED)
 
         self.assertIsNone(review_request.commit_id)
+
+    def test_reopen_from_discarded(self):
+        """Testing ReviewRequest.reopen from discarded review request"""
+        review_request = self.create_review_request(publish=True)
+        self.assertTrue(review_request.public)
+
+        review_request.close(ReviewRequest.DISCARDED)
+
+        self.spy_on(review_request_reopened.send)
+        self.spy_on(review_request_reopening.send)
+
+        review_request.reopen(user=review_request.submitter)
+
+        self.assertFalse(review_request.public)
+        self.assertEqual(review_request.status, ReviewRequest.PENDING_REVIEW)
+
+        draft = review_request.get_draft()
+        changedesc = draft.changedesc
+        self.assertEqual(changedesc.fields_changed['status']['old'][0],
+                         ReviewRequest.DISCARDED)
+        self.assertEqual(changedesc.fields_changed['status']['new'][0],
+                         ReviewRequest.PENDING_REVIEW)
+
+        # Test that the signals were emitted correctly.
+        self.assertTrue(review_request_reopening.send.spy.last_called_with(
+            sender=ReviewRequest,
+            user=review_request.submitter,
+            review_request=review_request))
+        self.assertTrue(review_request_reopened.send.spy.last_called_with(
+            sender=ReviewRequest,
+            user=review_request.submitter,
+            review_request=review_request,
+            old_status=ReviewRequest.DISCARDED,
+            old_public=True))
+
+    def test_reopen_from_submitted(self):
+        """Testing ReviewRequest.reopen from submitted review request"""
+        review_request = self.create_review_request(publish=True)
+        self.assertTrue(review_request.public)
+
+        review_request.close(ReviewRequest.SUBMITTED)
+
+        self.spy_on(review_request_reopened.send)
+        self.spy_on(review_request_reopening.send)
+
+        review_request.reopen(user=review_request.submitter)
+
+        self.assertTrue(review_request.public)
+        self.assertEqual(review_request.status, ReviewRequest.PENDING_REVIEW)
+
+        changedesc = review_request.changedescs.latest()
+        self.assertEqual(changedesc.fields_changed['status']['old'][0],
+                         ReviewRequest.SUBMITTED)
+        self.assertEqual(changedesc.fields_changed['status']['new'][0],
+                         ReviewRequest.PENDING_REVIEW)
+
+        self.assertTrue(review_request_reopening.send.spy.last_called_with(
+            sender=ReviewRequest,
+            user=review_request.submitter,
+            review_request=review_request))
+        self.assertTrue(review_request_reopened.send.spy.last_called_with(
+            sender=ReviewRequest,
+            user=review_request.submitter,
+            review_request=review_request,
+            old_status=ReviewRequest.SUBMITTED,
+            old_public=True))
 
     def test_changenum_against_changenum_and_commit_id(self):
         """Testing create ReviewRequest with changenum against both changenum
