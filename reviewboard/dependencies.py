@@ -36,7 +36,7 @@ package_dependencies = {
     'Pygments': '>=1.6',
     'python-dateutil': '==1.5',
     'python-memcached': '',
-    'pytz': '',
+    'pytz': '>=2015.2',
     'recaptcha-client': '',
     'Whoosh': '>=2.6',
 }
