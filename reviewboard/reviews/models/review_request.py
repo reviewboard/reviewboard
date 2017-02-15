@@ -829,7 +829,10 @@ class ReviewRequest(BaseReviewRequestDetails):
             not user.has_perm("reviews.can_change_status", self.local_site)):
             raise PermissionError
 
-        if self.status != self.PENDING_REVIEW:
+        old_status = self.status
+        old_public = self.public
+
+        if old_status != self.PENDING_REVIEW:
             # The reopening signal is only fired when actually making a status
             # change since the main consumers (extensions) probably only care
             # about changes.
@@ -839,10 +842,10 @@ class ReviewRequest(BaseReviewRequestDetails):
 
             changedesc = ChangeDescription(user=user or self.submitter)
             status_field = get_review_request_field('status')(self)
-            status_field.record_change_entry(changedesc, self.status,
+            status_field.record_change_entry(changedesc, old_status,
                                              self.PENDING_REVIEW)
 
-            if self.status == self.DISCARDED:
+            if old_status == self.DISCARDED:
                 # A draft is needed if reopening a discarded review request.
                 self.public = False
                 changedesc.save()
@@ -858,7 +861,9 @@ class ReviewRequest(BaseReviewRequestDetails):
             self.save(update_counts=True)
 
         review_request_reopened.send(sender=self.__class__, user=user,
-                                     review_request=self)
+                                     review_request=self,
+                                     old_status=old_status,
+                                     old_public=old_public)
 
     def publish(self, user, trivial=False):
         """Publishes the current draft attached to this review request.

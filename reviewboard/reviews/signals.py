@@ -88,8 +88,17 @@ review_request_reopening = Signal(providing_args=['user', 'review_request'])
 #:
 #:     review_request (reviewboard.reviews.models.ReviewRequest):
 #:         The review request that was reopened.
-review_request_reopened = Signal(providing_args=['user', 'review_request'])
-
+#:
+#:     old_status (unicode):
+#:         The old status for the review request. This will be
+#:         :py:attr:`~reviewboard.reviews.models.ReviewRequest.PENDING_REVIEW`,
+#:         :py:attr:`~reviewboard.reviews.models.ReviewRequest.SUBMITTED`, or
+#:         :py:attr:`~reviewboard.reviews.models.ReviewRequest.DISCARDED`.
+#:
+#:     old_public (bool):
+#:         The old public state for the review request.
+review_request_reopened = Signal(providing_args=['user', 'review_request',
+                                                 'old_status', 'old_public'])
 
 #: Emitted when a review is being published.
 #:
