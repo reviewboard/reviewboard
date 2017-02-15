@@ -531,10 +531,57 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
                              starred_public=1,
                              group_incoming=1)
 
+    def test_counts_with_reassignment(self):
+        """Testing counters when changing review request ownership"""
+        self._check_counters(total_outgoing=1, pending_outgoing=1)
+
+        new_user = User.objects.create(username='test2', password='')
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.owner = new_user
+        draft.save()
+        self.review_request.publish(self.user)
+
+        self._check_counters(total_outgoing=0, pending_outgoing=0,
+                             starred_public=1)
+
+        site_profile = LocalSiteProfile.objects.get(
+            user=new_user, local_site=self.review_request.local_site)
+
+        self._check_counters_on_profile(site_profile, total_outgoing=1,
+                                        pending_outgoing=1)
+
     def _check_counters(self, total_outgoing=0, pending_outgoing=0,
                         direct_incoming=0, total_incoming=0,
                         starred_public=0, group_incoming=0,
                         with_local_site=False):
+        """Check that the counters match the expected values.
+
+        Args:
+            total_outgoing (int):
+                The expected number of total outgoing review requests.
+
+            pending_outgoing (int):
+                The expected number of pending outgoing review requests.
+
+            direct_incoming (int):
+                The expected number of review requests assigned directly to the
+                user.
+
+            total_incoming (int):
+                The expected number of review requests assigned either directly
+                or indirectly to the user.
+
+            starred_public (int):
+                The expected number of public review requests starred by the
+                user.
+
+            group_incoming (int):
+                The expected number of review requests assigned to the test
+                group.
+
+            with_local_site (bool):
+                Whether to run the test for a local site.
+        """
         self._reload_objects()
 
         if with_local_site:
@@ -544,25 +591,52 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
             main_site_profile = self.site_profile
             unused_site_profile = self.site_profile2
 
-        self.assertEqual(main_site_profile.total_outgoing_request_count,
-                         total_outgoing)
-        self.assertEqual(main_site_profile.pending_outgoing_request_count,
-                         pending_outgoing)
-        self.assertEqual(main_site_profile.direct_incoming_request_count,
-                         direct_incoming)
-        self.assertEqual(main_site_profile.total_incoming_request_count,
-                         total_incoming)
-        self.assertEqual(main_site_profile.starred_public_request_count,
-                         starred_public)
+        self._check_counters_on_profile(main_site_profile, total_outgoing,
+                                        pending_outgoing, direct_incoming,
+                                        total_incoming, starred_public)
         self.assertEqual(self.group.incoming_request_count, group_incoming)
 
-        # These should never be affected by the updates on the main
-        # LocalSite we're working with, so they should always be 0.
-        self.assertEqual(unused_site_profile.total_outgoing_request_count, 0)
-        self.assertEqual(unused_site_profile.pending_outgoing_request_count, 0)
-        self.assertEqual(unused_site_profile.direct_incoming_request_count, 0)
-        self.assertEqual(unused_site_profile.total_incoming_request_count, 0)
-        self.assertEqual(unused_site_profile.starred_public_request_count, 0)
+        # These should never be affected by updates on the main LocalSite we're
+        # working with, so they should always be 0.
+        self._check_counters_on_profile(unused_site_profile)
+
+    def _check_counters_on_profile(self, profile, total_outgoing=0,
+                                   pending_outgoing=0, direct_incoming=0,
+                                   total_incoming=0, starred_public=0):
+        """Check that the counters match the expected values.
+
+        Args:
+            profile (reviewboard.accounts.models.LocalSiteProfile):
+                The profile object to test counts on.
+
+            total_outgoing (int):
+                The expected number of total outgoing review requests.
+
+            pending_outgoing (int):
+                The expected number of pending outgoing review requests.
+
+            direct_incoming (int):
+                The expected number of review requests assigned directly to the
+                user.
+
+            total_incoming (int):
+                The expected number of review requests assigned either directly
+                or indirectly to the user.
+
+            starred_public (int):
+                The expected number of public review requests starred by the
+                user.
+        """
+        self.assertEqual(profile.total_outgoing_request_count,
+                         total_outgoing)
+        self.assertEqual(profile.pending_outgoing_request_count,
+                         pending_outgoing)
+        self.assertEqual(profile.direct_incoming_request_count,
+                         direct_incoming)
+        self.assertEqual(profile.total_incoming_request_count,
+                         total_incoming)
+        self.assertEqual(profile.starred_public_request_count,
+                         starred_public)
 
     def _reload_objects(self):
         self.test_site = LocalSite.objects.get(pk=self.test_site.pk)
