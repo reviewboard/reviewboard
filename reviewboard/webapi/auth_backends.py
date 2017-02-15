@@ -41,20 +41,21 @@ class WebAPIBasicAuthBackend(DjbletsWebAPIBasicAuthBackend):
         credentials = super(WebAPIBasicAuthBackend, self).get_credentials(
             request)
 
-        user_exists = (
-            User.objects
-            .filter(username=credentials['username'])
-            .exists()
-        )
-
-        if not user_exists and '@' in credentials['username']:
-            users = (
+        if credentials and 'username' in credentials:
+            user_exists = (
                 User.objects
-                .filter(email=credentials['username'])
-                .values_list('username', flat=True)
+                .filter(username=credentials['username'])
+                .exists()
             )
 
-            if users:
-                credentials['username'] = users[0]
+            if not user_exists and '@' in credentials['username']:
+                users = (
+                    User.objects
+                    .filter(email=credentials['username'])
+                    .values_list('username', flat=True)
+                )
+
+                if users:
+                    credentials['username'] = users[0]
 
         return credentials

@@ -40,7 +40,7 @@ package_dependencies = {
     'Pygments': '>=2.1',
     'python-dateutil': '==1.5',
     'python-memcached': '',
-    'pytz': '',
+    'pytz': '>=2015.2',
     'Whoosh': '>=2.6',
 }
 
