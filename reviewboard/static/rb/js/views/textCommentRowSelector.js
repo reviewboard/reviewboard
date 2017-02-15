@@ -503,12 +503,33 @@ RB.TextCommentRowSelector = Backbone.View.extend({
     _copySelectionToClipboard: function(clipboardData) {
         var sel = window.getSelection(),
             s = '',
+            excludeTBodyClass,
             tdClass,
             range,
             doc,
             nodes,
             i,
             j;
+
+        function findPreTags(result, parentEl, tdClass, excludeTBodyClass) {
+            var node,
+                i;
+
+            for (i = 0; i < parentEl.children.length; i++) {
+                node = parentEl.children[i];
+
+                if (node.nodeType == Node.ELEMENT_NODE) {
+                    if (node.tagName === 'PRE') {
+                        result.push(node);
+                    } else if ((node.tagName !== 'TD' ||
+                                $(node).hasClass(tdClass)) &&
+                               (node.tagName !== 'TBODY' ||
+                                !$(node).hasClass(excludeTBodyClass))) {
+                        findPreTags(result, node, tdClass, excludeTBodyClass);
+                    }
+                }
+            }
+        }
 
         if (this._newlineChar === null) {
             /*
@@ -526,8 +547,10 @@ RB.TextCommentRowSelector = Backbone.View.extend({
 
         if (this._selectedCellIndex === 3 || this.$el.hasClass('newfile')) {
             tdClass = 'r';
+            excludeTBodyClass = 'delete';
         } else {
             tdClass = 'l';
+            excludeTBodyClass = 'insert';
         }
 
         for (i = 0; i < sel.rangeCount; i++) {
@@ -537,14 +560,15 @@ RB.TextCommentRowSelector = Backbone.View.extend({
                 continue;
             }
 
+            nodes = [];
             doc = range.cloneContents();
-            nodes = doc.querySelectorAll('td.' + tdClass + ' pre');
+            findPreTags(nodes, doc, tdClass, excludeTBodyClass);
 
-            /*
-             * The selection spans multiple rows. Find the blocks of text
-             * in the column we want, and copy those to the clipboard.
-             */
             if (nodes.length > 0) {
+                /*
+                 * The selection spans multiple rows. Find the blocks of text
+                 * in the column we want, and copy those to the clipboard.
+                 */
                 for (j = 0; j < nodes.length; j++) {
                     s += nodes[j].textContent;
 
@@ -564,7 +588,7 @@ RB.TextCommentRowSelector = Backbone.View.extend({
                         s += this._newlineChar;
                     }
                 }
-            } else if (sel.rangeCount === 1) {
+            } else {
                 /*
                  * If we're here, then we selected a subset of a single
                  * cell. There was only one Range, and no <pre> tags as
@@ -573,7 +597,7 @@ RB.TextCommentRowSelector = Backbone.View.extend({
                  * (We don't really need to break here, but we're going to
                  * in order to be clear that we're completely done.)
                  */
-                s = $(doc).text();
+                s += $(doc).text();
                 break;
             }
         }
