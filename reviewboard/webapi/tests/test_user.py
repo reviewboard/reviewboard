@@ -83,9 +83,25 @@ class ResourceListTests(SpyAgency, BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'ok')
         user_pks = [user['id'] for user in rsp['users']]
-        returned_users = set(User.objects.filter(pk__in=user_pks))
-        expected_users = set(User.objects.all())
-        self.assertEqual(returned_users, expected_users)
+        self.assertEqual(set(User.objects.filter(pk__in=user_pks)),
+                         set(User.objects.all()))
+
+    @webapi_test_template
+    def test_get_include_inactive_true(self):
+        """Testing the GET <URL>/?include-inactive=true API includes inactive
+        users
+        """
+        dopey = User.objects.get(username='dopey')
+        dopey.is_active = False
+        dopey.save()
+
+        rsp = self.api_get(get_user_list_url(), {'include-inactive': 'true'},
+                           expected_mimetype=user_list_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        user_pks = [user['id'] for user in rsp['users']]
+        self.assertEqual(set(User.objects.filter(pk__in=user_pks)),
+                         set(User.objects.all()))
 
     def test_get_with_q(self):
         """Testing the GET users/?q= API"""
