@@ -1,0 +1,72 @@
+=================================
+Review Board 2.0.27 Release Notes
+=================================
+
+**Release date**: February 15, 2017
+
+
+Upgrade Instructions
+====================
+
+To upgrade to Review Board 2.0.27, run::
+
+    pip install ReviewBoard==2.0.27 Djblets==0.8.29
+
+or::
+
+    easy_install ReviewBoard==2.0.27 Djblets==0.8.29
+
+
+Packaging
+=========
+
+* pytz_ 2015.1 or higher is now required. (:bug:`4519`)
+
+  Newer versions are recommended. If older versions are required for packaging
+  purposes, check to be sure there's a :py:mod:`pytz.exceptions` module
+  available.
+
+
+.. _pytz: https://pypi.python.org/pypi/pytz
+
+
+Web API
+=======
+
+* Fixed a regression with the default ordering of results in comment-based
+  resources.
+
+
+Extensions
+==========
+
+* Fixed the My Account page not respecting the visibility of custom forms.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed a crash that could occur when calling certain logging statements on
+  older versions of Python. (:bug:`4523`)
+
+
+Reviews
+-------
+
+* Fixed a regression with the ordering of draft comments in the review dialog.
+
+
+Diff Viewer
+-----------
+
+* Fixed problems copying text from the diff viewer in Firefox. (:bug:`4518`)
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
