@@ -50,7 +50,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             'description': 'Whether or not the user is active. Inactive users'
                            'are not able to log in or make changes to Review '
                            'Board.',
-            'added_in': '2.5.8',
+            'added_in': '2.5.9',
         },
     }, **DjbletsUserResource.fields)
 
