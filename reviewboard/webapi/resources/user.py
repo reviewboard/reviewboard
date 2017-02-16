@@ -57,7 +57,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             'description': 'Whether or not the user is active. Inactive users'
                            'are not able to log in or make changes to Review '
                            'Board.',
-            'added_in': '2.5.8',
+            'added_in': '2.5.9',
         },
     }, **DjbletsUserResource.fields)
 
@@ -67,12 +67,8 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
     def get_queryset(self, request, local_site_name=None, *args, **kwargs):
         search_q = request.GET.get('q', None)
-        include_inactive = request.GET.get('include-inactive', 0)
-
-        try:
-            include_inactive = int(include_inactive) != 0
-        except ValueError:
-            include_inactive = False
+        include_inactive = \
+            request.GET.get('include-inactive', '0').lower() in ('1', 'true')
 
         for backend in get_enabled_auth_backends():
             try:
