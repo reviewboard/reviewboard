@@ -10,11 +10,11 @@ Upgrade Instructions
 
 To upgrade to Review Board 2.0.27, run::
 
-    pip install ReviewBoard==2.0.27
+    pip install ReviewBoard==2.0.27 Djblets==0.8.29
 
 or::
 
-    easy_install ReviewBoard==2.0.27
+    easy_install ReviewBoard==2.0.27 Djblets==0.8.29
 
 
 Packaging
