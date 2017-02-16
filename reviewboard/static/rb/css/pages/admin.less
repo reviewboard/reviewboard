@@ -515,6 +515,20 @@ div.breadcrumbs {
   padding: 0 0 @page-container-padding @page-container-padding;
 }
 
+.popup {
+  #page-container #content_container {
+    margin-left: 0 !important;
+  }
+
+  #content {
+    padding: 0;
+  }
+
+  #topbar > * {
+    display: none;
+  }
+}
+
 h1.title {
   border: 1px @box-border-color solid;
   box-shadow: @box-shadow;
@@ -583,14 +597,6 @@ h1.title {
     margin-left: -19em;
     margin-right: 0;
   }
-}
-
-.popup .colM {
-  width: 95%;
-}
-
-.popup #content.colM, .popup .flex, .login #content.colM {
-  margin-left: 20px !important;
 }
 
 .subcol {

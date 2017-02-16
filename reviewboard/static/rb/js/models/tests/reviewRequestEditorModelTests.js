@@ -252,15 +252,13 @@ suite('rb/models/ReviewRequestEditor', function() {
                         it('For Markdown', function() {
                             testCloseDescription(
                                 RB.ReviewRequest.CLOSE_DISCARDED,
-                                true,
-                                'markdown');
+                                true);
                         });
 
                         it('For plain text', function() {
                             testCloseDescription(
                                 RB.ReviewRequest.CLOSE_DISCARDED,
-                                false,
-                                'plain');
+                                false);
                         });
                     });
 
@@ -268,15 +266,13 @@ suite('rb/models/ReviewRequestEditor', function() {
                         it('For Markdown', function() {
                             testCloseDescription(
                                 RB.ReviewRequest.CLOSE_SUBMITTED,
-                                true,
-                                'markdown');
+                                true);
                         });
 
                         it('For plain text', function() {
                             testCloseDescription(
                                 RB.ReviewRequest.CLOSE_SUBMITTED,
-                                false,
-                                'plain');
+                                false);
                         });
                     });
                 });

@@ -1,0 +1,90 @@
+================================
+Review Board 2.5.9 Release Notes
+================================
+
+**Release date**: February 15, 2017
+
+
+Packaging
+=========
+
+* pytz_ 2015.1 or higher is now required. (:bug:`4519`)
+
+  Newer versions are recommended. If older versions are required for packaging
+  purposes, check to be sure there's a :py:mod:`pytz.exceptions` module
+  available.
+
+
+.. _pytz: https://pypi.python.org/pypi/pytz
+
+
+New Features
+============
+
+* Added support for browsing commits on Mercurial repositories in the New
+  Review Request page. (:bug:`4032`)
+
+  This requires Mercurial 3.9 or higher.
+
+  Patch by André Klitzing.
+
+
+Extensions
+==========
+
+* Added additional information to the
+  :py:data:`rb2.5:reviewboard.reviews.signals.review_request_reopened`
+  signal.
+
+  Signal handlers can now make use of the ``old_status`` and ``old_public``
+  arguments to determine what the state of the review request was before
+  it was reopened.
+
+* Fixed the My Account page not respecting the visibility of custom forms.
+
+
+Web API
+=======
+
+* The :ref:`rb2.5:webapi2.0-user-resource` now allows for displaying users
+  who have been disabled (marked as "inactive").
+
+  To display these users, pass ``?include-inactive=1`` in the query. By
+  default, these users are not returned, but can be accessed directly.
+
+  Each user also now has a ``is_active`` field indicating this status.
+
+* Fixed a regression with logging in to Review Board using an API token.
+
+* Fixed a regression with the default ordering of results in comment-based
+  resources.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed a crash that could occur when calling certain logging statements on
+  older versions of Python. (:bug:`4523`)
+
+
+Reviews
+-------
+
+* Fixed a regression with the ordering of draft comments in the review dialog.
+
+
+Diff Viewer
+-----------
+
+* Fixed problems copying text from the diff viewer in Firefox. (:bug:`4518`)
+
+
+Contributors
+============
+
+* André Klitzing
+* Barret Rennie
+* Christian Hammond

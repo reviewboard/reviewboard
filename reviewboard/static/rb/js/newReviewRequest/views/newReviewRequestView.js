@@ -157,14 +157,12 @@ RB.NewReviewRequestView = Backbone.View.extend({
      */
     _onResize: function() {
         var $window,
-            windowWidth,
             windowHeight,
             elTop,
             height;
 
         if (this._rendered) {
             $window = $(window);
-            windowWidth = $window.width();
             windowHeight = $window.height();
             elTop = this.$el.offset().top;
             height = windowHeight - elTop - 14;

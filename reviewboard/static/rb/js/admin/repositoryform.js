@@ -20,8 +20,10 @@ function updateFormDisplay(id, tools_info) {
     }
 
     for (field in oldInfo.help_text) {
-        $('#row-' + field).find('p.help')
-            .remove();
+        if (oldInfo.help_text.hasOwnProperty(field)) {
+            $('#row-' + field).find('p.help')
+                .remove();
+        }
     }
 
     for (i = 0; i < newInfo.fields.length; i++) {
@@ -328,7 +330,6 @@ $(document).ready(function() {
                 selectedIndex,
                 account,
                 $authForm,
-                $twoFactorAuthRows,
                 $selectedOption;
 
             $hostingAuthForms.hide();
@@ -352,10 +353,8 @@ $(document).ready(function() {
                      * Hide any fields required for 2FA unless explicitly
                      * needed.
                      */
-                    $twoFactorAuthRows =
-                        $authForm.find('[data-required-for-2fa]')
-                        .closest('.form-row')
-                            .setVisible(hostingInfo.needs_two_factor_auth_code);
+                    $authForm.find('[data-required-for-2fa]').closest('.form-row')
+                        .setVisible(hostingInfo.needs_two_factor_auth_code);
 
                     if ($hostingAccount.val() === '') {
                         /* Present fields for linking a new account. */

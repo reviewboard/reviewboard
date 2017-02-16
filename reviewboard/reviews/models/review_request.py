@@ -700,9 +700,9 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return self._blocks
 
-    def save(self, update_counts=False, **kwargs):
+    def save(self, update_counts=False, old_submitter=None, **kwargs):
         if update_counts or self.id is None:
-            self._update_counts()
+            self._update_counts(old_submitter)
 
         if self.status != self.PENDING_REVIEW:
             # If this is not a pending review request now, delete any
@@ -875,6 +875,7 @@ class ReviewRequest(BaseReviewRequestDetails):
             raise PermissionError
 
         draft = get_object_or_none(self.draft)
+        old_submitter = self.submitter
 
         review_request_publishing.send(sender=self.__class__, user=user,
                                        review_request_draft=draft)
@@ -913,7 +914,7 @@ class ReviewRequest(BaseReviewRequestDetails):
             self.time_added = timezone.now()
 
         self.public = True
-        self.save(update_counts=True)
+        self.save(update_counts=True, old_submitter=old_submitter)
 
         review_request_published.send(sender=self.__class__, user=user,
                                       review_request=self, trivial=trivial,
@@ -952,8 +953,11 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return self.submitter
 
-    def _update_counts(self):
+    def _update_counts(self, old_submitter):
         from reviewboard.accounts.models import Profile, LocalSiteProfile
+
+        submitter_changed = (old_submitter is not None and
+                             old_submitter != self.submitter)
 
         profile, profile_is_new = \
             Profile.objects.get_or_create(user=self.submitter)
@@ -984,14 +988,31 @@ class ReviewRequest(BaseReviewRequestDetails):
             old_status = r.status
             old_public = r.public
 
+            if submitter_changed:
+                if not site_profile_is_new:
+                    site_profile.increment_total_outgoing_request_count()
+
+                    if self.status == self.PENDING_REVIEW:
+                        site_profile.increment_pending_outgoing_request_count()
+
+                try:
+                    old_profile = LocalSiteProfile.objects.get(
+                        user=old_submitter, local_site=local_site)
+                    old_profile.decrement_total_outgoing_request_count()
+
+                    if old_status == self.PENDING_REVIEW:
+                        old_profile.decrement_pending_outgoing_request_count()
+                except LocalSiteProfile.DoesNotExist:
+                    pass
+
         if self.status == self.PENDING_REVIEW:
-            if old_status != self.status:
+            if old_status != self.status and not submitter_changed:
                 site_profile.increment_pending_outgoing_request_count()
 
             if self.public and self.id is not None:
                 self._increment_reviewer_counts()
         elif old_status == self.PENDING_REVIEW:
-            if old_status != self.status:
+            if old_status != self.status and not submitter_changed:
                 site_profile.decrement_pending_outgoing_request_count()
 
             if old_public:

@@ -82,13 +82,15 @@ RB.UploadAttachmentView = Backbone.View.extend({
         if (rsp.fields) {
             /* Invalid form data */
             for (fieldName in rsp.fields) {
-                $errorList = this.$(".errorlist")
-                    .css("display", "block")[nameToRow[fieldName]];
+                if (rsp.fields.hasOwnProperty(fieldName)) {
+                    $errorList = this.$(".errorlist")
+                        .css("display", "block")[nameToRow[fieldName]];
 
-                for (i = 0; i < rsp.fields[fieldName].length; i++) {
-                    $("<li/>")
-                        .html(rsp.fields[fieldName][i])
-                        .appendTo($errorList);
+                    for (i = 0; i < rsp.fields[fieldName].length; i++) {
+                        $("<li/>")
+                            .html(rsp.fields[fieldName][i])
+                            .appendTo($errorList);
+                    }
                 }
             }
         }

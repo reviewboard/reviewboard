@@ -846,8 +846,6 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
 
         _.bindAll(this, '_adjustPos');
 
-        const scale = this.model.get('scale');
-
         this._activeSelection = {};
         this._diffModeSelectors = {};
         this._diffModeViews = {};

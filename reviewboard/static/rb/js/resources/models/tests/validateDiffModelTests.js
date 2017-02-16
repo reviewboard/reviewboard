@@ -24,7 +24,7 @@ suite('rb/resources/models/ValidateDiffModel', function() {
 
             model.set('repository', 123);
             data = model.toJSON();
-            expect(model.get('repository')).toBe(123);
+            expect(data.repository).toBe(123);
         });
     });
 });
