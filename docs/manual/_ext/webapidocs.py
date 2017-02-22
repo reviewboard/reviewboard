@@ -142,6 +142,28 @@ class ResourceDirective(Directive):
 
         # Main section
         main_section += nodes.title(text=resource_title)
+
+        for attr_name, text_fmt in (('added_in', 'Added in %s'),
+                                    ('deprecated_in', 'Deprecated in %s'),
+                                    ('removed_in', 'Removed in %s')):
+            version = getattr(resource, attr_name, None)
+
+            if not version:
+                if is_list:
+                    prefix = 'list_resource'
+                else:
+                    prefix = 'item_resource'
+
+                version = getattr(resource, '%s_%s' % (prefix, attr_name),
+                                  None)
+
+            if version:
+                paragraph = nodes.paragraph()
+                paragraph += nodes.emphasis(text=text_fmt % version,
+                                            classes=['resource-versioning'])
+
+                main_section += paragraph
+
         main_section += parse_text(
             self, inspect.getdoc(resource),
             where='%s class docstring' % self.options['classname'])
