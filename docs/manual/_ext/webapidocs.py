@@ -19,7 +19,7 @@ from djblets.webapi.resources import get_resource_from_class, WebAPIResource
 from djblets.webapi.responses import WebAPIResponseError
 from docutils import nodes
 from docutils.parsers.rst import directives
-from docutils.statemachine import ViewList
+from docutils.statemachine import ViewList, string2lines
 from reviewboard import initialize
 from reviewboard.webapi.resources import resources
 from sphinx import addnodes
@@ -318,7 +318,8 @@ class ResourceDirective(Directive):
 
             paragraph += nodes.inline(text=" - ")
             paragraph += parse_text(
-                self, doc_summary, nodes.inline,
+                self, doc_summary,
+                wrapper_node_type=nodes.inline,
                 where='HTTP %s handler summary for %s'
                       % (http_method, self.options['classname']))
 
@@ -567,7 +568,9 @@ class ResourceDirective(Directive):
 
         # Description text
         returned_nodes = [
-            parse_text(self, doc, where='HTTP %s doc' % http_method)
+            parse_text(self, doc,
+                       wrapper_node_type=nodes.paragraph,
+                       where='HTTP %s doc' % http_method),
         ]
 
         # Request Parameters section
@@ -828,19 +831,42 @@ class ErrorDirective(Directive):
             raise ErrorNotFound(self, name)
 
 
-def parse_text(directive, text, node_type=nodes.paragraph,
-               where=None):
-    """Parses text in ReST format and returns a node with the content."""
+def parse_text(directive, text, wrapper_node_type=None, where=None):
+    """Parse text in ReST format and return a node with the content.
+
+    Args:
+        directive (docutils.parsers.rst.Directive):
+            The directive that will contain the resulting nodes.
+
+        text (unicode):
+            The text to parse.
+
+        wrapper_node_type (docutils.nodes.Node, optional):
+            An optional node type used to contain the children.
+
+        where (unicode, optional):
+            Information on the location being parsed in case there's a
+            failure.
+
+    Returns:
+        list of docutils.nodes.Node:
+        The resulting list of parsed nodes.
+    """
     assert text is not None, 'Missing text during parse_text in %s' % where
 
-    vl = ViewList()
-
-    for line in text.split('\n'):
-        vl.append(line, line)
+    if wrapper_node_type:
+        node_type = wrapper_node_type
+    else:
+        node_type = nodes.container
 
     node = node_type(rawsource=text)
-    directive.state.nested_parse(vl, 0, node)
-    return node
+    directive.state.nested_parse(ViewList(string2lines(text), source=''),
+                                 0, node)
+
+    if wrapper_node_type:
+        return node
+    else:
+        return node.children
 
 
 def get_from_module(name):
