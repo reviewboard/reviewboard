@@ -1,4 +1,4 @@
-/*
+/**
  * Manages a comment's issue status bar.
  *
  * The buttons on the bar will update the comment's issue status on the server
@@ -19,43 +19,48 @@ RB.CommentIssueBarView = Backbone.View.extend({
     statusInfo: {
         open: {
             visibleButtons: ['.drop', '.resolve'],
-            text: gettext('An issue was opened.')
+            text: gettext('An issue was opened.'),
         },
         resolved: {
             visibleButtons: ['.reopen'],
-            text: gettext('The issue has been resolved.')
+            text: gettext('The issue has been resolved.'),
         },
         dropped: {
             visibleButtons: ['.reopen'],
-            text: gettext('The issue has been dropped.')
+            text: gettext('The issue has been dropped.'),
         }
     },
 
-    template: _.template([
-        '<div class="issue-state">',
-        ' <div class="issue-container">',
-        '  <span class="rb-icon"></span>',
-        '  <span class="issue-details">',
-        '   <span class="issue-message"></span>',
-        '<% if (interactive) { %>',
-        '   <span class="issue-actions">',
-        '    <input type="button" class="issue-button resolve" ',
-        '           value="<%- fixedLabel %>" />',
-        '    <input type="button" class="issue-button drop" ',
-        '           value="<%- dropLabel %>" />',
-        '    <input type="button" class="issue-button reopen" ',
-        '           value="<%- reopenLabel %>" />',
-        '   </span>',
-        '<% } %>',
-        '  </span>',
-        ' </div>',
-        '</div>'
-    ].join('')),
+    template: _.template(dedent`
+        <div class="issue-state">
+         <div class="issue-container">
+          <span class="rb-icon"></span>
+          <span class="issue-details">
+           <span class="issue-message"></span>
+           <% if (interactive) { %>
+            <span class="issue-actions">
+             <input type="button" class="issue-button resolve"
+                    value="<%- fixedLabel %>">
+             <input type="button" class="issue-button drop"
+                    value="<%- dropLabel %>">
+             <input type="button" class="issue-button reopen"
+                    value="<%- reopenLabel %>">
+            </span>
+           <% } %>
+          </span>
+         </div>
+        </div>
+    `),
 
-    initialize: function() {
-        this._manager = this.options.commentIssueManager ||
-                        RB.PageManager.getPage().reviewRequestEditor
-                            .get('commentIssueManager');
+    /**
+     * Initialize the view.
+     */
+    initialize() {
+        const page = RB.PageManager.getPage();
+
+        this._manager = (
+            this.options.commentIssueManager ||
+            page.reviewRequestEditor.get('commentIssueManager'));
         this._issueStatus = this.options.issueStatus;
         this._$buttons = null;
         this._$state = null;
@@ -63,16 +68,20 @@ RB.CommentIssueBarView = Backbone.View.extend({
         this._$message = null;
     },
 
-    /*
-     * Renders the issue status bar.
+    /**
+     * Render the issue status bar.
+     *
+     * Returns:
+     *     RB.CommentIssueBarView:
+     *     This object, for chaining.
      */
-    render: function() {
+    render() {
         if (this.$el.children().length === 0) {
             this.$el.append(this.template({
                 interactive: this.options.interactive,
                 fixedLabel: gettext('Fixed'),
                 dropLabel: gettext('Drop'),
-                reopenLabel: gettext('Re-open')
+                reopenLabel: gettext('Re-open'),
             }));
         }
 
@@ -89,10 +98,15 @@ RB.CommentIssueBarView = Backbone.View.extend({
         return this;
     },
 
-    /*
-     * Sets the issue status of the comment on the server.
+    /**
+     * Set the issue status of the comment on the server.
+     *
+     * Args:
+     *     issueStatus (string):
+     *         The new issue status (one of ``open``, ``resolved``, or
+     *         ``dropped``).
      */
-    _setStatus: function(issueStatus) {
+    _setStatus(issueStatus) {
         this._$buttons.prop('disabled', true);
         this._manager.setCommentState(this.options.reviewID,
                                       this.options.commentID,
@@ -100,14 +114,19 @@ RB.CommentIssueBarView = Backbone.View.extend({
                                       issueStatus);
     },
 
-    /*
-     * Shows the current issue status of the comment.
+    /**
+     * Show the current issue status of the comment.
      *
      * This will affect the button visibility and the text of the bar.
+     *
+     * Args:
+     *     issueStatus (string):
+     *         The issue status to show (one of ``open``, ``resolved``, or
+     *         ``dropped``).
      */
-    _showStatus: function(issueStatus) {
-        var statusInfo = this.statusInfo[issueStatus],
-            prevStatus = this._issueStatus;
+    _showStatus(issueStatus) {
+        const statusInfo = this.statusInfo[issueStatus];
+        const prevStatus = this._issueStatus;
 
         this._issueStatus = issueStatus;
 
@@ -116,8 +135,8 @@ RB.CommentIssueBarView = Backbone.View.extend({
             .addClass(issueStatus);
 
         this._$icon
-            .removeClass('rb-icon-issue-' + prevStatus)
-            .addClass('rb-icon-issue-' + issueStatus);
+            .removeClass(`rb-icon-issue-${prevStatus}`)
+            .addClass(`rb-icon-issue-${issueStatus}`);
 
         this._$buttons.hide();
         this._$message.text(statusInfo.text);
@@ -130,41 +149,45 @@ RB.CommentIssueBarView = Backbone.View.extend({
         this.trigger('statusChanged', issueStatus);
     },
 
-    /*
+    /**
      * Handler for when "Re-open" is clicked.
      *
      * Reopens the issue.
      */
-    _onReopenClicked: function() {
+    _onReopenClicked() {
         this._setStatus(this.STATUS_OPEN);
     },
 
-    /*
+    /**
      * Handler for when "Fixed" is clicked.
      *
      * Marks the issue as fixed.
      */
-    _onResolveClicked: function() {
+    _onResolveClicked() {
         this._setStatus(this.STATUS_FIXED);
     },
 
-    /*
+    /**
      * Handler for when "Drop" is clicked.
      *
      * Marks the issue as dropped.
      */
-    _onDropClicked: function() {
+    _onDropClicked() {
         this._setStatus(this.STATUS_DROPPED);
     },
 
-    /*
+    /**
      * Handler for when the issue status for the comment changes.
      *
      * Updates the dispaly to reflect the issue's current status.
+     *
+     * Args:
+     *     comment (RB.BaseComment):
+     *         The comment model which was updated.
      */
-    _onIssueStatusUpdated: function(comment) {
+    _onIssueStatusUpdated(comment) {
         if (comment.id === this.options.commentID) {
             this._showStatus(comment.get('issueStatus'));
         }
-    }
+    },
 });

@@ -1,4 +1,4 @@
-/*
+/**
  * A banner that represents a pending draft review.
  *
  * The banner displays at the top of the page and provides buttons for
@@ -9,41 +9,26 @@
 RB.DraftReviewBannerView = Backbone.View.extend({
     events: {
         'click #review-banner-edit': '_onEditReviewClicked',
-        'click #review-banner-discard': '_onDiscardClicked'
+        'click #review-banner-discard': '_onDiscardClicked',
     },
 
-    /*
-     * Returns the height of the banner.
+    /**
+     * Render the view.
+     *
+     * Returns:
+     *     RB.DraftReviewBannerView:
+     *     This object, for chaining.
      */
-    getHeight: function() {
-        return this._$banner.outerHeight();
-    },
-
-    remove: function() {
-        if (this._publishButton) {
-            this._publishButton.remove();
-        }
-
-        _super(this).remove.call(this);
-    },
-
-    render: function() {
-        var model = this.model;
-
+    render() {
         this._$buttons = this.$('input');
         this._$banner = this.$('.banner');
 
-        model.on('saving destroying', function() {
-            this._$buttons.prop('disabled', true);
-        }, this);
-
-        model.on('saved destroyed', function() {
-            this._$buttons.prop('disabled', false);
-        }, this);
-
-        model.on('publishError', function(errorText) {
-            alert(errorText);
-        });
+        const model = this.model;
+        this.listenTo(model, 'saving destroying',
+                      () => this._$buttons.prop('disabled', true));
+        this.listenTo(model, 'saved destroyed',
+                      () => this._$buttons.prop('disabled', false));
+        this.listenTo(model, 'publishError', errorText => alert(errorText));
 
         this._publishButton = new RB.SplitButtonView({
             el: $('#review-banner-publish-container'),
@@ -55,9 +40,9 @@ RB.DraftReviewBannerView = Backbone.View.extend({
                 {
                     text: gettext('... to Submitter Only'),
                     click: _.bind(this._onPublishClicked, this),
-                    id: 'review-banner-publish-submitter-only'
-                }
-            ]
+                    id: 'review-banner-publish-submitter-only',
+                },
+            ],
 
         });
 
@@ -67,11 +52,11 @@ RB.DraftReviewBannerView = Backbone.View.extend({
     },
 
     /*
-     * Shows the banner.
+     * Show the banner.
      *
      * The banner will appear to slide down from the top of the page.
      */
-    show: function() {
+    show() {
         if (this.$el.is(':hidden')) {
             this.$el.slideDown();
             this._$banner
@@ -81,13 +66,13 @@ RB.DraftReviewBannerView = Backbone.View.extend({
     },
 
     /*
-     * Hides the banner.
+     * Hide the banner.
      *
      * The banner will slide up to the top of the page.
      *
      * A callback can be provided for after the banner is hidden.
      */
-    hide: function(onDone, context) {
+    hide(onDone, context) {
         this.$el.slideUp();
         this._$banner.slideUp();
 
@@ -96,13 +81,13 @@ RB.DraftReviewBannerView = Backbone.View.extend({
         }
     },
 
-    /*
-     * Hides the banner and reloads the page.
+    /**
+     * Hide the banner and reloads the page.
      *
      * XXX Remove this function when we make the pages more dynamic.
      */
-    hideAndReload: function() {
-        this.hide(function() {
+    hideAndReload() {
+        this.hide(() => {
             /*
              * hideAndReload might have been called from within a $.funcQueue.
              * With Firefox, later async functions that are queued in the
@@ -111,76 +96,110 @@ RB.DraftReviewBannerView = Backbone.View.extend({
              * scheduled. We defer changing the location until the next tick
              * of the event loop to let any teardown occur.
              */
-            _.defer(_.bind(function() {
+            _.defer(() => {
                 window.location = this.model.get('parentObject').get('reviewURL');
-            }, this));
-        }, this);
+            });
+        });
     },
 
-    /*
+    /**
+     * Return the height of the banner.
+     *
+     * Returns:
+     *     number:
+     *     The height of the banner.
+     */
+    getHeight() {
+        return this._$banner.outerHeight();
+    },
+
+    /**
+     * Remove the banner from the page.
+     */
+    remove() {
+        if (this._publishButton) {
+            this._publishButton.remove();
+        }
+
+        _super(this).remove.call(this);
+    },
+
+    /**
      * Handler for the Edit Review button.
      *
      * Displays the review editor dialog.
+     *
+     * Returns:
+     *     boolean:
+     *     false, always.
      */
-    _onEditReviewClicked: function() {
+    _onEditReviewClicked() {
         RB.ReviewDialogView.create({
             review: this.model,
-            reviewRequestEditor: this.options.reviewRequestEditor
+            reviewRequestEditor: this.options.reviewRequestEditor,
         });
 
         return false;
     },
 
-    /*
+    /**
      * Handler for the Publish button.
      *
      * Publishes the review.
+     *
+     * Returns:
+     *     boolean:
+     *     false, always.
      */
-    _onPublishClicked: function() {
+    _onPublishClicked() {
         this.model.publish({
-            attrs: ['public']
+            attrs: ['public'],
         });
         return false;
     },
 
-    /*
+    /**
      * Handler for the Discard button.
      *
      * Prompts the user to confirm that they want the review discarded.
      * If they confirm, the review will be discarded.
+     *
+     * Returns:
+     *     boolean:
+     *     false, always.
      */
-    _onDiscardClicked: function() {
-        var model = this.model;
-
+    _onDiscardClicked() {
         $('<p/>')
             .text(gettext('If you discard this review, all related comments will be permanently deleted.'))
             .modalBox({
                 title: gettext('Are you sure you want to discard this review?'),
                 buttons: [
-                    $('<input type="button" />')
+                    $('<input type="button">')
                         .val(gettext('Cancel')),
-                    $('<input type="button" />')
+                    $('<input type="button">')
                         .val(gettext('Discard'))
-                        .click(function() {
-                            model.destroy();
-                        })
-                ]
+                        .click(() => this.model.destroy()),
+                ],
             });
 
         return false;
-    }
+    },
 }, {
     instance: null,
 
-    /*
-     * Creates the draft review banner singleton.
+    /**
+     * Create the draft review banner singleton.
+     *
+     * Returns:
+     *     RB.DraftReviewBannerView:
+     *     The banner view.
      */
-    create: function(options) {
+    create(options) {
         if (!this.instance) {
             this.instance = new RB.DraftReviewBannerView(options);
             this.instance.render();
         }
 
         return this.instance;
-    }
+    },
 });
