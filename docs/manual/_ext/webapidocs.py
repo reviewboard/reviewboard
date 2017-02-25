@@ -1,30 +1,30 @@
-"""
-Sphinx plugins for web API docs.
-"""
+"""Sphinx plugins for web API docs."""
+
+import ast
 import inspect
+import json
 import logging
 import re
 import sys
 
-try:
-    import json
-except ImportError:
-    import simplejson as json
-
+from beanbag_docutils.sphinx.ext.http_role import (
+    DEFAULT_HTTP_STATUS_CODES_URL, HTTP_STATUS_CODES)
 from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.template.defaultfilters import title
+from django.utils import six
 from djblets.util.http import is_mimetype_a
 from djblets.webapi.resources import get_resource_from_class, WebAPIResource
 from djblets.webapi.responses import WebAPIResponseError
 from docutils import nodes
-from docutils.parsers.rst import directives
-from docutils.statemachine import ViewList, string2lines
+from docutils.parsers.rst import DirectiveError, directives
+from docutils.statemachine import StringList, ViewList, string2lines
 from reviewboard import initialize
 from reviewboard.webapi.resources import resources
 from sphinx import addnodes
 from sphinx.util import docname_join
 from sphinx.util.compat import Directive
+from sphinx.util.docstrings import prepare_docstring
 
 
 # Mapping of mimetypes to language names for syntax highlighting.
@@ -107,15 +107,6 @@ class ResourceDirective(Directive):
         'application/json',
         'application/xml',
     ]
-
-    type_mapping = {
-        int: 'Integer',
-        str: 'String',
-        unicode: 'String',
-        bool: 'Boolean',
-        dict: 'Dictionary',
-        file: 'Uploaded File',
-    }
 
     def run(self):
         try:
@@ -393,111 +384,32 @@ class ResourceDirective(Directive):
 
         return table
 
-    def build_fields_table(self, fields, required_fields={},
-                           show_requirement_labels=False):
-        def get_type_name(field_type):
-            # We may be dealing with a forward-declared class.
-            if isinstance(field_type, basestring) and field_type is not str:
-                field_type = self.get_resource_class(field_type)
+    def build_fields_table(self, fields, required_field_names=None):
+        """Build a table representing a list of fields.
 
-            if type(field_type) is list:
-                return [nodes.inline(text='List of ')] + \
-                       get_type_name(field_type[0])
-            elif type(field_type) is tuple:
-                value_nodes = []
+        Args:
+            fields (dict):
+                The fields to display.
 
-                for value in field_type:
-                    if value_nodes:
-                        value_nodes.append(nodes.inline(text=', '))
+            required_field_names (set of unicode, optional):
+                The field names that are required.
 
-                    value_nodes.append(nodes.literal(text=value))
+        Returns:
+            list of docutils.nodes.Node:
+            The resulting list of nodes for the fields table.
+        """
+        options = {
+            'fields': fields,
+        }
 
-                return [nodes.inline(text='One of ')] + value_nodes
-            elif (inspect.isclass(field_type) and
-                  issubclass(field_type, WebAPIResource)):
-                return [get_ref_to_resource(field_type, False)]
-            elif field_type in self.type_mapping:
-                return [nodes.inline(text=self.type_mapping[field_type])]
-            else:
-                print "Unknown type %s" % (field_type,)
-                assert False
+        if required_field_names is not None:
+            options.update({
+                'show-requirement-labels': True,
+                'required-field-names': set(required_field_names),
+            })
 
-        table = nodes.table(classes=['resource-fields'])
-
-        tgroup = nodes.tgroup(cols=3)
-        table += tgroup
-
-        tgroup += nodes.colspec(colwidth=15, classes=['field'])
-        tgroup += nodes.colspec(colwidth=25, classes=['type'])
-        tgroup += nodes.colspec(colwidth=60, classes=['description'])
-
-        thead = nodes.thead()
-        tgroup += thead
-        append_row(thead, ['Field', 'Type', 'Description'])
-
-        tbody = nodes.tbody()
-        tgroup += tbody
-
-        if isinstance(fields, dict):
-            for field in sorted(fields.iterkeys()):
-                info = fields[field]
-
-                name_node = nodes.inline()
-                name_node += nodes.strong(text=field)
-
-                if show_requirement_labels:
-                    if field in required_fields:
-                        name_node += nodes.inline(text=" (required)")
-                    else:
-                        name_node += nodes.inline(text=" (optional)")
-
-                type_node = nodes.inline()
-
-                if info.get('supports_text_types'):
-                    type_node += get_ref_to_doc('webapi2.0-text-fields',
-                                                'Rich Text')
-                else:
-                    type_node += get_type_name(info['type'])
-
-                description_node = parse_text(
-                    self, info['description'],
-                    where='%s field description' % field)
-
-                if 'added_in' in info:
-                    paragraph = nodes.paragraph()
-                    paragraph += nodes.emphasis(
-                        text='Added in %s\n' % info['added_in'],
-                        classes=['field-versioning'])
-                    description_node += paragraph
-
-                if 'deprecated_in' in info:
-                    paragraph = nodes.paragraph()
-                    paragraph += nodes.emphasis(
-                        text='Deprecated in %s\n' % info['deprecated_in'],
-                        classes=['field-versioning'])
-                    description_node += paragraph
-
-                if 'removed_in' in info:
-                    paragraph = nodes.paragraph()
-                    paragraph += nodes.emphasis(
-                        text='Removed in %s\n' % info['removed_in'],
-                        classes=['field-versioning'])
-                    description_node += paragraph
-
-                append_row(tbody, [name_node, type_node, description_node])
-        else:
-            for field in sorted(fields):
-                name = field
-
-                if show_requirement_labels:
-                    if field in required_fields:
-                        name += " (required)"
-                    else:
-                        name += " (optional)"
-
-                append_row(tbody, [name, "", ""])
-
-        return table
+        return run_directive(self, 'webapi-resource-field-list',
+                             options=options)
 
     def build_links_table(self, resource):
         is_list = 'is-list' in self.options
@@ -586,9 +498,9 @@ class ResourceDirective(Directive):
 
             fields_section += nodes.title(text='Request Parameters')
 
-            table = self.build_fields_table(all_fields,
-                                            required_fields=required_fields,
-                                            show_requirement_labels=True)
+            table = self.build_fields_table(
+                all_fields,
+                required_field_names=set(six.iterkeys(required_fields)))
             fields_section += table
 
         # Errors section
@@ -599,20 +511,55 @@ class ResourceDirective(Directive):
             returned_nodes.append(errors_section)
 
             errors_section += nodes.title(text='Errors')
-
-            bullet_list = nodes.bullet_list()
-            errors_section += bullet_list
-
-            for error in sorted(errors, key=lambda x: x.code):
-                item = nodes.list_item()
-                bullet_list += item
-
-                paragraph = nodes.paragraph()
-                item += paragraph
-
-                paragraph += get_ref_to_error(error)
+            errors_section += self.build_errors_table(errors)
 
         return returned_nodes
+
+    def build_errors_table(self, errors):
+        """Build a table representing a list of errors.
+
+        Args:
+            errors (list of djblets.webapi.errors.WebAPIError):
+                The errors to display.
+
+        Returns:
+            list of docutils.nodes.Node:
+            The resulting list of nodes for the errors table.
+        """
+        table = nodes.table(classes=['api-errors'])
+
+        tgroup = nodes.tgroup(cols=2)
+        table += tgroup
+
+        tgroup += nodes.colspec(colwidth=25)
+        tgroup += nodes.colspec(colwidth=75)
+
+        tbody = nodes.tbody()
+        tgroup += tbody
+
+        for error in sorted(errors, key=lambda x: x.code):
+            http_code = nodes.inline(classes=['http-error'])
+            http_code += nodes.reference(
+                text='HTTP %s - %s' % (error.http_status,
+                                       HTTP_STATUS_CODES[error.http_status]),
+                refuri=(DEFAULT_HTTP_STATUS_CODES_URL
+                        % error.http_status)),
+
+            error_code = nodes.inline(classes=['api-error'])
+            error_code += get_ref_to_error(error)
+
+            error_info = nodes.inline()
+            error_info += error_code
+            error_info += http_code
+
+            append_row(
+                tbody,
+                [
+                    error_info,
+                    nodes.inline(text=error.msg),
+                ])
+
+        return table
 
     def fetch_resource_data(self, resource, mimetype):
         kwargs = {}
@@ -662,6 +609,351 @@ class ResourceDirective(Directive):
             set(resource.allowed_methods).intersection(possible_http_methods))
 
 
+class ResourceFieldListDirective(Directive):
+    """Directive for listing fields in a resource.
+
+    This directive can be used to list the fields belonging to a resource,
+    the fields within part of a resource's payload, or fields accepted by
+    an operation on a resource.
+
+    The fields can be provided directly (if being called by Python code)
+    through the ``fields`` and ``required-field-names`` options. Otherwise,
+    this will parse the content of the directive for any
+    ``webapi-resource-field`` directives and use those instead.
+    """
+
+    has_content = True
+    option_spec = {
+        'fields': directives.unchanged,
+        'required-field-names': directives.unchanged,
+    }
+
+    def run(self):
+        """Run the directive and render the resulting fields.
+
+        Returns:
+            list of docutils.nodes.Node:
+            The resulting nodes.
+        """
+        fields = self.options.get('fields')
+        required_fields = self.options.get('required-field-names')
+
+        table = nodes.table(classes=['resource-fields'])
+
+        tgroup = nodes.tgroup(cols=3)
+        table += tgroup
+
+        tgroup += nodes.colspec(colwidth=15, classes=['field'])
+        tgroup += nodes.colspec(colwidth=85, classes=['description'])
+
+        tbody = nodes.tbody()
+        tgroup += tbody
+
+        if fields is not None:
+            assert isinstance(fields, dict)
+
+            if required_fields is not None:
+                field_keys = sorted(
+                    fields.iterkeys(),
+                    key=lambda field: (field not in required_fields, field))
+            else:
+                field_keys = sorted(fields.iterkeys())
+
+            for field in field_keys:
+                info = fields[field]
+
+                options = {
+                    'name': field,
+                    'type': info['type'],
+                }
+
+                if info.get('supports_text_types'):
+                    options['supports-text-types'] = True
+
+                if required_fields is not None and field in required_fields:
+                    options['show-required'] = True
+
+                if info.get('added_in'):
+                    options['added-in'] = info['added_in']
+
+                if info.get('deprecated_in'):
+                    options['deprecated-in'] = info['deprecated_in']
+
+                if info.get('removed_in'):
+                    options['removed-in'] = info['removed_in']
+
+                field_row = run_directive(
+                    self,
+                    'webapi-resource-field',
+                    content='\n'.join(prepare_docstring(info['description'])),
+                    options=options)
+
+                tbody += field_row
+        elif self.content:
+            node = nodes.Element()
+            self.state.nested_parse(self.content, self.content_offset,
+                                    node)
+
+            # ResourceFieldDirective outputs two fields (two table cells) per
+            # field. We want to loop through and grab each.
+            tbody += node.children
+
+        return [table]
+
+
+class ResourceFieldDirective(Directive):
+    """Directive for displaying information on a field in a resource.
+
+    This directive can be used to display details about a specific field
+    belonging to a resource, a part of a resource's payload, or a field
+    accepted by an operation on a resource.
+
+    This is expected to be added into a ``webapi-resource-field-list``
+    directive. The resulting node is a table row.
+    """
+
+    has_content = True
+    option_spec = {
+        'name': directives.unchanged_required,
+        'type': directives.unchanged_required,
+        'show-required': directives.flag,
+        'supports-text-types': directives.flag,
+        'added-in': directives.unchanged,
+        'deprecated-in': directives.unchanged,
+        'removed-in': directives.unchanged,
+    }
+
+    type_mapping = {
+        int: 'Integer',
+        str: 'String',
+        unicode: 'String',
+        bool: 'Boolean',
+        dict: 'Dictionary',
+        list: 'List',
+        file: 'Uploaded File',
+    }
+
+    type_name_mapping = {
+        'int': int,
+        'str': str,
+        'unicode': unicode,
+        'bool': bool,
+        'dict': dict,
+        'file': file,
+        'list': list,
+    }
+
+    def run(self):
+        """Run the directive and render the resulting fields.
+
+        Returns:
+            list of docutils.nodes.Node:
+            The resulting nodes.
+        """
+        self.assert_has_content()
+
+        name = self.options['name']
+
+        # Field/type information
+        field_node = nodes.inline()
+        field_node += nodes.strong(text=name, classes=['field-name'])
+
+        type_node = nodes.inline(classes=['field-type'])
+        field_node += type_node
+
+        if 'supports-text-types' in self.options:
+            type_node += get_ref_to_doc('webapi2.0-text-fields', 'Rich Text')
+        else:
+            type_node += self._get_type_name(self.options['type'])
+
+        # Description/required/versioning information
+        description_node = nodes.inline()
+
+        if 'show-required' in self.options:
+            description_node += nodes.inline(text='Required',
+                                             classes=['field-required'])
+
+        if 'deprecated-in' in self.options:
+            description_node += nodes.inline(text='Deprecated',
+                                             classes=['field-deprecated'])
+
+        if isinstance(self.content, StringList):
+            description = '\n'.join(self.content)
+        else:
+            description = self.content
+
+        description_node += parse_text(self, description)
+
+        if 'added-in' in self.options:
+            paragraph = nodes.paragraph()
+            paragraph += nodes.emphasis(
+                text='Added in %s\n' % self.options['added-in'],
+                classes=['field-versioning'])
+            description_node += paragraph
+
+        if 'deprecated-in' in self.options:
+            paragraph = nodes.paragraph()
+            paragraph += nodes.emphasis(
+                text='Deprecated in %s\n' % self.options['deprecated-in'],
+                classes=['field-versioning'])
+            description_node += paragraph
+
+        if 'removed-in' in self.options:
+            paragraph = nodes.paragraph()
+            paragraph += nodes.emphasis(
+                text='Removed in %s\n' % self.options['removed-in'],
+                classes=['field-versioning'])
+            description_node += paragraph
+
+        row = nodes.row()
+
+        entry = nodes.entry()
+        entry += field_node
+        row += entry
+
+        entry = nodes.entry()
+        entry += description_node
+        row += entry
+
+        return [row]
+
+    def _get_type_name(self, field_type, nested=False):
+        """Return the displayed name for a given type.
+
+        This will attempt to take a type (either a string representation or
+        a Python structure) and return a string that can be used for display
+        in the API docs.
+
+        This may also be provided a Python class path for a resource.
+
+        Args:
+            field_type (object):
+                The type of field (as a Python structure), a string
+                representing a Python structure, or the class path to a
+                resource.
+
+            nested (bool, optional):
+                Whether this call is nested within another call to this
+                function.
+
+        Returns:
+            unicode:
+            The resulting string used for display.
+
+        Raises:
+            ResourceNotFound:
+                A resource path appeared to be provided, but a resource was
+                not found.
+
+            ValueError:
+                The type is unsupported.
+        """
+        if isinstance(field_type, basestring) and field_type is not str:
+            # First see if this is a string name for a type. This would be
+            # coming from a docstring.
+            try:
+                field_type = self.type_name_mapping[field_type]
+            except KeyError:
+                if '.' in field_type:
+                    # We may be dealing with a forward-declared class.
+                    try:
+                        field_type = get_from_module(field_type)
+                    except ImportError:
+                        raise ResourceNotFound(self, field_type)
+                else:
+                    # Maybe we can parse this?
+                    field_type = self._parse_type_string(field_type)
+
+        if type(field_type) is list:
+            result = []
+
+            if not nested:
+                result.append(nodes.inline(text='List of '))
+
+            if len(field_type) > 1:
+                result.append(nodes.inline(text='['))
+
+            first = True
+
+            for item in field_type:
+                if not first:
+                    result.append(nodes.inline(text=', '))
+
+                result += self._get_type_name(item, nested=True)
+
+                first = False
+
+            if len(field_type) > 1:
+                result.append(nodes.inline(text=']'))
+
+            return result
+        elif type(field_type) is tuple:
+            value_nodes = []
+
+            for value in field_type:
+                if value_nodes:
+                    value_nodes.append(nodes.inline(text=', '))
+
+                value_nodes.append(nodes.literal(text=value))
+
+            return [nodes.inline(text='One of ')] + value_nodes
+        elif (inspect.isclass(field_type) and
+              issubclass(field_type, WebAPIResource)):
+            return [get_ref_to_resource(field_type, False)]
+        elif field_type in self.type_mapping:
+            return [nodes.inline(text=self.type_mapping[field_type])]
+        else:
+            raise ValueError('Unsupported type %r' % (field_type,))
+
+    def _parse_type_string(self, type_str):
+        """Parse a string representing a given type.
+
+        The string can represent a simple Python primitive (``list``, ``dict``,
+        etc.) or a nested structure (``list[dict]``, ``list[[int, unicode]]``,
+        etc.).
+
+        Args:
+            type_str (unicode):
+                The string to parse.
+
+        Returns:
+            object
+            The resulting Python structure for the given type string.
+
+        Raises:
+            ValueError:
+                The type is unsupported.
+        """
+        def _parse_node(node):
+            if isinstance(node, ast.Str):
+                return node.s
+            elif isinstance(node, ast.Num):
+                return node.n
+            elif isinstance(node, ast.Tuple):
+                return tuple(_parse_node(item) for item in node.elts)
+            elif isinstance(node, ast.List):
+                return list(_parse_node(item) for item in node.elts)
+            elif isinstance(node, ast.Dict):
+                return dict(
+                    (_parse_node(key), _parse_node(value))
+                    for key, value in six.iteritems(node.elts)
+                )
+            elif isinstance(node, ast.Name):
+                try:
+                    return self.type_name_mapping[node.id]
+                except KeyError:
+                    raise ValueError(
+                        'Unsupported node name "%s" for type string %r'
+                        % (node.id, type_str))
+            elif isinstance(node, ast.Subscript):
+                return _parse_node(node.value)([_parse_node(node.slice.value)])
+
+            raise ValueError('Unsupported node type %r for type string %r'
+                             % (node, type_str))
+
+        return _parse_node(ast.parse(type_str, mode='eval').body)
+
+
 class ResourceTreeDirective(Directive):
     has_content = True
 
@@ -709,7 +1001,6 @@ class ErrorDirective(Directive):
 
     MIMETYPES = [
         'application/json',
-        'application/xml',
     ]
 
     def run(self):
@@ -869,6 +1160,58 @@ def parse_text(directive, text, wrapper_node_type=None, where=None):
         return node.children
 
 
+def run_directive(parent_directive, name, content='', options={}):
+    """Run and render a directive.
+
+    Args:
+        parent_directive (docutils.parsers.rst.Directive):
+            The directive running another directive.
+
+        name (unicode):
+            The name of the directive to run.
+
+        content (unicode, optional):
+            The content to pass to the directive.
+
+        options (dict, optional):
+            The options to pass to the directive.
+
+    Returns:
+        list of docutils.nodes.Node:
+        The resulting list of nodes from the directive.
+    """
+    state = parent_directive.state
+    directive_class, messages = directives.directive(name,
+                                                     state.memo.language,
+                                                     state.document)
+    state.parent += messages
+
+    if not directive_class:
+        return state.unknown_directive(name)
+
+    state_machine = state.state_machine
+    lineno = state_machine.abs_line_number()
+
+    directive = directive_class(
+        name=name,
+        arguments=[],
+        options=options,
+        content=content,
+        lineno=lineno,
+        content_offset=0,
+        block_text='',
+        state=parent_directive.state,
+        state_machine=state_machine)
+
+    try:
+        return directive.run()
+    except DirectiveError as e:
+        return [
+            parent_directive.reporter.system_message(e.level, e.msg,
+                                                     line=lineno),
+        ]
+
+
 def get_from_module(name):
     i = name.rfind('.')
     module, attr = name[:i], name[i + 1:]
@@ -966,9 +1309,10 @@ def get_ref_to_resource(resource, is_list):
                           get_resource_docname(resource, is_list))
 
 
-def get_ref_to_error(error):
+def get_ref_to_error(error, title=''):
     """Returns a node that links to an error's documentation."""
-    return get_ref_to_doc('webapi2.0-error-%s' % error.code)
+    return get_ref_to_doc('webapi2.0-error-%s' % error.code,
+                          title=title)
 
 
 def get_resource_uri_template(resource, include_child):
@@ -1059,6 +1403,8 @@ def fetch_response_data(response_class, mimetype, request=None, **kwargs):
 
 def setup(app):
     app.add_directive('webapi-resource', ResourceDirective)
+    app.add_directive('webapi-resource-field-list', ResourceFieldListDirective)
+    app.add_directive('webapi-resource-field', ResourceFieldDirective)
     app.add_directive('webapi-resource-tree', ResourceTreeDirective)
     app.add_directive('webapi-error', ErrorDirective)
     app.add_crossref_type('webapi2.0', 'webapi2.0', 'single: %s',

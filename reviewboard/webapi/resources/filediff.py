@@ -210,127 +210,139 @@ class FileDiffResource(WebAPIResource):
         under a top-level ``diff_data`` element and contains the following
         information:
 
-        .. list-table::
-           :header-rows: 1
-           :widths: 10 15 75
+        .. webapi-resource-field-list::
 
-           * - Field
-             - Type
-             - Description
+           .. webapi-resource-field::
+              :name: binary
+              :type: bool
 
-           * - **binary**
-             - Boolean
-             - Whether or not the file is a binary file. Binary files
-               won't have any diff content to display.
+              Whether or not the file is a binary file. Binary files won't
+              have any diff content to display.
 
-           * - **chunks**
-             - List of Dictionary
-             - A list of chunks. These are used to render the diff. See below.
+           .. webapi-resource-field::
+              :name: changed_chunk_indexes
+              :type: list[int]
 
-           * - **changed_chunk_indexes**
-             - List of Integer
-             - The list of chunks in the diff that have actual changes
-               (inserts, deletes, or replaces).
+              The list of chunks in the diff that have actual changes
+              (inserts, deletes, or replaces).
 
-           * - **new_file**
-             - Boolean
-             - Whether or not this is a newly added file, rather than an
-               existing file in the repository.
+           .. webapi-resource-field::
+              :name: chunks
+              :type: list[dict]
 
-           * - **num_changes**
-             - Integer
-             - The number of changes made in this file (chunks of adds,
-               removes, or deletes).
+              A list of chunks. These are used to render the diff. See
+              below.
+
+           .. webapi-resource-field::
+              :name: new_file
+              :type: bool
+
+              Whether or not this is a newly added file, rather than an
+              existing file in the repository.
+
+           .. webapi-resource-field::
+              :name: num_changes
+              :type: int
+
+              The number of changes made in this file (chunks of adds,
+              removes, or deletes).
 
         Each chunk contains the following fields:
 
-        .. list-table::
-           :header-rows: 1
-           :widths: 10 15 75
+        .. webapi-resource-field-list::
 
-           * - Field
-             - Type
-             - Description
+           .. webapi-resource-field::
+              :name: change
+              :type: ('equal', 'delete', 'insert', 'replace')
 
-           * - **change**
-             - One of ``equal``, ``delete``, ``insert``, ``replace``
-             - The type of change on this chunk. The type influences what
-               sort of information is available for the chunk.
+              The type of change on this chunk. The type influences what
+              sort of information is available for the chunk.
 
-           * - **collapsable**
-             - Boolean
-             - Whether or not this chunk is collapseable. A collapseable chunk
-               is one that is hidden by default in the diff viewer, but can
-               be expanded. These will always be ``equal`` chunks, but not
-               every ``equal`` chunk is necessarily collapseable (as they
-               may be there to provide surrounding context for the changes).
+           .. webapi-resource-field::
+              :name: collapsable
+              :type: bool
 
-           * - **index**
-             - Integer
-             - The index of the chunk. This is 0-based.
+              Whether or not this chunk is collapseable. A collapseable
+              chunk is one that is hidden by default in the diff viewer,
+              but can be expanded. These will always be ``equal`` chunks,
+              but not every ``equal`` chunk is necessarily collapseable (as
+              they may be there to provide surrounding context for the
+              changes).
 
-           * - **lines**
-             - List of List
-             - The list of rendered lines for a side-by-side diff. Each
-               entry in the list is itself a list with 8 items:
+           .. webapi-resource-field::
+              :name: index
+              :type: int
 
-               1. Row number of the line in the combined side-by-side diff.
-               2. The line number of the line in the left-hand file, as an
-                  integer (for ``replace``, ``delete``, and ``equal`` chunks)
-                  or an empty string (for ``insert``).
-               3. The text for the line in the left-hand file.
-               4. The indexes within the text for the left-hand file that
-                  have been replaced by text in the right-hand side. Each
-                  index is a list of ``start, end`` positions, 0-based.
-                  This is only available for ``replace`` lines. Otherwise the
-                  list is empty.
-               5. The line number of the line in the right-hand file, as an
-                  integer (for ``replace``, ``insert`` and ``equal`` chunks)
-                  or an empty string (for ``delete``).
-               6. The text for the line in the right-hand file.
-               7. The indexes within the text for the right-hand file that
-                  are replacements for text in the left-hand file. Each
-                  index is a list of ``start, end`` positions, 0-based.
-                  This is only available for ``replace`` lines. Otherwise the
-                  list is empty.
-               8. A boolean that indicates if the line contains only
-                  whitespace changes.
+              The index of the chunk. This is 0-based.
 
-           * - **meta**
-             - Dictionary
-             - Additional information about the chunk. See below for more
-               information.
+           .. webapi-resource-field::
+              :name: lines
+              :type: list[list]
 
-           * - **numlines**
-             - Integer
-             - The number of lines in the chunk.
+              The list of rendered lines for a side-by-side diff. Each
+              entry in the list is itself a list with 8 items:
+
+              1. Row number of the line in the combined side-by-side diff.
+              2. The line number of the line in the left-hand file, as an
+                 integer (for ``replace``, ``delete``, and ``equal``
+                 chunks) or an empty string (for ``insert``).
+              3. The text for the line in the left-hand file.
+              4. The indexes within the text for the left-hand file that
+                 have been replaced by text in the right-hand side. Each
+                 index is a list of ``start, end`` positions, 0-based.
+                 This is only available for ``replace`` lines. Otherwise
+                 the list is empty.
+              5. The line number of the line in the right-hand file, as an
+                 integer (for ``replace``, ``insert`` and ``equal`` chunks)
+                 or an empty string (for ``delete``).
+              6. The text for the line in the right-hand file.
+              7. The indexes within the text for the right-hand file that
+                 are replacements for text in the left-hand file. Each
+                 index is a list of ``start, end`` positions, 0-based.
+                 This is only available for ``replace`` lines. Otherwise
+                 the list is empty.
+              8. A boolean that indicates if the line contains only
+                 whitespace changes.
+
+           .. webapi-resource-field::
+              :name: meta
+              :type: dict
+
+              Additional information about the chunk. See below for more
+              information.
+
+           .. webapi-resource-field::
+              :name: numlines
+              :type: int
+
+              The number of lines in the chunk.
 
         A chunk's meta information contains:
 
-        .. list-table::
-           :header-rows: 1
-           :widths: 25 15 60
+        .. webapi-resource-field-list::
 
-           * - Field
-             - Type
-             - Description
+           .. webapi-resource-field::
+              :name: headers
+              :type: list[[unicode, unicode]]
 
-           * - **headers**
-             - List of (String, String)
-             - Class definitions, function definitions, or other useful
-               headers that should be displayed before this chunk. This helps
-               users to identify where in a file they are and what the current
-               chunk may be a part of.
+              Class definitions, function definitions, or other useful
+              headers that should be displayed before this chunk. This helps
+              users to identify where in a file they are and what the current
+              chunk may be a part of.
 
-           * - **whitespace_chunk**
-             - Boolean
-             - Whether or not the entire chunk consists only of whitespace
-               changes.
+           .. webapi-resource-field::
+              :name: whitespace_chunk
+              :type: bool
 
-           * - **whitespace_lines**
-             - List of (Integer, Integer)
-             - A list of ``start, end`` row indexes in the lins that contain
-               whitespace-only changes. These are 1-based.
+              Whether or not the entire chunk consists only of whitespace
+              changes.
+
+           .. webapi-resource-field::
+              :name: whitespace_lines
+              :type: list[[int, int]]
+
+              A list of ``(start, end)`` row indexes in the lins that contain
+              whitespace-only changes. These are 1-based.
 
         Other meta information may be available, but most is intended for
         internal use and shouldn't be relied upon.
