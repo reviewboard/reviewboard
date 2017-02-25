@@ -8,6 +8,8 @@ from djblets.webapi.responses import WebAPIResponsePaginated
 
 from reviewboard.hostingsvcs.repository import RemoteRepository
 from reviewboard.webapi.base import WebAPIResource
+from reviewboard.webapi.decorators import (webapi_check_local_site,
+                                           webapi_check_login_required)
 from reviewboard.webapi.resources import resources
 
 
@@ -149,6 +151,12 @@ class RemoteRepositoryResource(WebAPIResource):
         return super(RemoteRepositoryResource, self).get_serializer_for_object(
             obj)
 
+    # NOTE: We're not augmenting from any resources, because we don't want to
+    #       include ?counts-only= or ?max-results=, and we have a different
+    #       ?start=. Because of this, we need to be careful to apply our own
+    #       decorators.
+    @webapi_check_login_required
+    @webapi_check_local_site
     @webapi_request_fields(
         optional={
             'owner': {
@@ -178,7 +186,6 @@ class RemoteRepositoryResource(WebAPIResource):
         },
         allow_unknown=True
     )
-    @augment_method_from(WebAPIResource)
     def get_list(self, request, *args, **kwargs):
         """Returns the list of remote repositories on the hosting service.
 

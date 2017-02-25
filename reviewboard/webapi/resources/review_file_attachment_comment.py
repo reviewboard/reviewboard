@@ -49,8 +49,8 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
             'diff_against_file_attachment_id': {
                 'type': int,
                 'description': 'The ID of the file attachment that '
-                               'file_attachment_id is diffed. The comment '
-                               'applies to the diff between these two '
+                               '``file_attachment_id`` is diffed against. The '
+                               'comment applies to the diff between these two '
                                'attachments.',
                 'added_in': '2.0',
             },

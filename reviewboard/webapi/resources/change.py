@@ -22,36 +22,6 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
     names of the fields, and the values are details on that particular
     change to the field.
 
-    For ``summary``, ``description``, ``testing_done`` and ``branch`` fields,
-    the following detail keys will be available:
-
-    * ``old``: The old value of the field.
-    * ``new``: The new value of the field.
-
-    For ``diff`` fields:
-
-    * ``added``: The diff that was added.
-
-    For ``bugs_closed`` fields:
-
-    * ``old``: A list of old bugs.
-    * ``new``: A list of new bugs.
-    * ``removed``: A list of bugs that were removed, if any.
-    * ``added``: A list of bugs that were added, if any.
-
-    For ``file_attachments``, ``screenshots``, ``target_people`` and
-    ``target_groups`` fields:
-
-    * ``old``: A list of old items.
-    * ``new``: A list of new items.
-    * ``removed``: A list of items that were removed, if any.
-    * ``added``: A list of items that were added, if any.
-
-    For ``screenshot_captions`` and ``file_captions`` fields:
-
-    * ``old``: The old caption.
-    * ``new``: The new caption.
-    * ``screenshot``: The screenshot that was updated.
     """
     added_in = '1.6'
 
@@ -64,7 +34,43 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
         },
         'fields_changed': {
             'type': dict,
-            'description': 'The fields that were changed.',
+            'description': """
+                The fields that were changed. Each key is the name of a
+                changed field, and each value is a dictionary of details on
+                that change.
+
+                For ``summary``, ``description``, ``testing_done`` and
+                ``branch`` fields, the following detail keys will be
+                available:
+
+                * ``old``: The old value of the field.
+                * ``new``: The new value of the field.
+
+                For ``diff`` fields:
+
+                * ``added``: The diff that was added.
+
+                For ``bugs_closed`` fields:
+
+                * ``old``: A list of old bugs.
+                * ``new``: A list of new bugs.
+                * ``removed``: A list of bugs that were removed, if any.
+                * ``added``: A list of bugs that were added, if any.
+
+                For ``file_attachments``, ``screenshots``, ``target_people``
+                and ``target_groups`` fields:
+
+                * ``old``: A list of old items.
+                * ``new``: A list of new items.
+                * ``removed``: A list of items that were removed, if any.
+                * ``added``: A list of items that were added, if any.
+
+                For ``screenshot_captions`` and ``file_captions`` fields:
+
+                * ``old``: The old caption.
+                * ``new``: The new caption.
+                * ``screenshot``: The screenshot that was updated.
+            """,
         },
         'text': {
             'type': six.text_type,
@@ -80,7 +86,7 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
         'timestamp': {
             'type': six.text_type,
             'description': 'The date and time that the change was made '
-                           '(in YYYY-MM-DD HH:MM:SS format).',
+                           '(in ``YYYY-MM-DD HH:MM:SS`` format).',
         },
     }
     uri_object_key = 'change_id'

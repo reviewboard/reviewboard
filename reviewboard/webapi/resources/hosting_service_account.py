@@ -96,22 +96,19 @@ class HostingServiceAccountResource(WebAPIResource):
         return links
 
     @webapi_check_local_site
+    @webapi_request_fields(optional={
+        'username': {
+            'type': six.text_type,
+            'description': 'Filter accounts by username.',
+            'added_in': '2.5',
+        },
+        'service': {
+            'type': six.text_type,
+            'description': 'Filter accounts by the hosting service ID.',
+            'added_in': '2.5',
+        },
+    })
     @augment_method_from(WebAPIResource)
-    @webapi_request_fields(
-        optional=dict({
-            'username': {
-                'type': six.text_type,
-                'description': 'Filter accounts by username.',
-                'added_in': '2.5',
-            },
-            'service': {
-                'type': six.text_type,
-                'description': 'Filter accounts by the hosting service ID.',
-                'added_in': '2.5',
-            },
-        }, **WebAPIResource.get_list.optional_fields),
-        required=WebAPIResource.get_list.required_fields
-    )
     def get_list(self, request, *args, **kwargs):
         """Retrieves the list of accounts on the server.
 

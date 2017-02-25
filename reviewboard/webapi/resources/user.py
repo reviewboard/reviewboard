@@ -150,6 +150,18 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                             USER_QUERY_ERROR)
     @webapi_request_fields(
         optional={
+            'fullname': {
+                'type': bool,
+                'description': 'Specifies whether ``q`` should also match '
+                               'the beginning of the first name or last name. '
+                               'Ignored if ``q`` is not set.',
+            },
+            'include-inactive': {
+                'type': bool,
+                'description': 'If set, users who are marked as inactive '
+                               '(their accounts have been disabled) will be '
+                               'included in the list.',
+            },
             'q': {
                 'type': six.text_type,
                 'description': 'The string that the username (or the first '
@@ -157,14 +169,10 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                                'must start with in order to be included in '
                                'the list. This is case-insensitive.',
             },
-            'fullname': {
-                'type': bool,
-                'description': 'Specifies whether ``q`` should also match '
-                               'the beginning of the first name or last name.',
-            },
         },
         allow_unknown=True
     )
+    @augment_method_from(WebAPIResource)
     def get_list(self, *args, **kwargs):
         """Retrieves the list of users on the site.
 
@@ -237,9 +245,15 @@ class UserResource(WebAPIResource, DjbletsUserResource):
         })
     def create(self, request, username, email, password, first_name='',
                last_name='', local_site=None, *args, **kwargs):
-        """Create a user
+        """Create a new user.
 
-        This functionality is limited to superusers.
+        The user will be allowed to authenticate into Review Board with the
+        given username and password.
+
+        Only administrators or those with the ``auth.add_user`` permission
+        will be able to create users.
+
+        This API cannot be used on :term:`Local Sites`.
         """
         if (not request.user.is_superuser and
             not request.user.has_perm('auth.add_user')):
