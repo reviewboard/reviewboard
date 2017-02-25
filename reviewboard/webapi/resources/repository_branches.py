@@ -17,24 +17,9 @@ from reviewboard.webapi.resources import resources
 class RepositoryBranchesResource(WebAPIResource):
     """Provides information on the branches in a repository.
 
-    Returns an array of objects with the following fields:
-
-        'id' is the ID of the branch.
-
-        'name' is simply the name of the branch.
-
-        'commit' is a string representing the revision identifier of the
-        commit, and the format depends on the repository type (it may contain
-        an integer, SHA-1 hash, or other type). This should be treated as a
-        relatively opaque value, but can be used as the "start" parameter to
-        the repositories/<id>/commits/ resource.
-
-        'default' will be true for exactly one of the results, and false for
-        all the others. This represents whichever branch is considered the tip
-        (such as "master" for git repositories, or "trunk" for subversion).
-
-    This is not available for all types of repositories.
+    Data on branches will not be available for all types of repositories.
     """
+
     added_in = '2.0'
 
     name = 'branches'
@@ -42,6 +27,40 @@ class RepositoryBranchesResource(WebAPIResource):
     singleton = True
     allowed_methods = ('GET',)
     mimetype_item_resource_name = 'repository-branches'
+
+    # For this resource, the fields dictionary is not used for any
+    # serialization. It's used solely for documentation.
+    fields = {
+        'id': {
+            'type': six.text_type,
+            'description': 'The ID of the branch. This is specific to the '
+                           'type of repository.',
+        },
+        'name': {
+            'type': six.text_type,
+            'description': 'The name of the branch.',
+        },
+        'commit': {
+            'type': six.text_type,
+            'description': 'The revision identifier of the commit.\n\n'
+                           'The format depends on the repository type (it may '
+                           'be a number, SHA-1 hash, or some other type). '
+                           'This should be treated as a relatively opaque '
+                           'value, but can be used as the ``start`` '
+                           'parameter to the '
+                           ':ref:`webapi2.0-repository-commits-resource`.',
+        },
+        'default': {
+            'type': bool,
+            'description': 'If set, this branch is considered the "tip" of '
+                           'the repository. It would represent "master" '
+                           'for Git repositories, "trunk" for Subversion, '
+                           'etc.\n'
+                           '\n'
+                           'This will be ``true`` for exactly one of the '
+                           'results only. All others will be ``false``.'
+        },
+    }
 
     @webapi_check_local_site
     @webapi_check_login_required

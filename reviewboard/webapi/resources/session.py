@@ -50,7 +50,13 @@ class SessionResource(WebAPIResource):
     @webapi_check_local_site
     @webapi_login_required
     def delete(self, request, *args, **kwargs):
-        """Deletes a Session, returns confirmation."""
+        """Clears the user's client session and the session cookie.
+
+        This is equivalent to logging out a user. The existing session cookie
+        will be invalidated and will no longer be accepted.
+
+        This will return a :http:`204`.
+        """
         logout(request)
 
         return 204, {}

@@ -41,7 +41,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         'body_bottom_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
-                           'body_bottom field.',
+                           '``body_bottom`` field.',
             'added_in': '2.0.12',
         },
         'body_top': {
@@ -52,7 +52,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         'body_top_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
-                           'body_top field.',
+                           '``body_top`` field.',
             'added_in': '2.0.12',
         },
         'extra_data': {
@@ -79,15 +79,15 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'Formerly responsible for indicating the text '
                            'type for text fields. Replaced by '
-                           'body_top_text_type and body_bottom_text_type '
-                           'in 2.0.12.',
+                           '``body_top_text_type`` and '
+                           '``body_bottom_text_type`` in 2.0.12.',
             'added_in': '2.0',
             'deprecated_in': '2.0.12',
         },
         'timestamp': {
             'type': six.text_type,
             'description': 'The date and time that the review was posted '
-                           '(in YYYY-MM-DD HH:MM:SS format).',
+                           '(in ``YYYY-MM-DD HH:MM:SS`` format).',
         },
         'user': {
             'type': UserResource,
@@ -109,7 +109,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         },
         'body_top_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
-            'description': 'The text type used for the body_top '
+            'description': 'The text type used for the ``body_top`` '
                            'field.',
             'added_in': '2.0.12',
         },
@@ -120,7 +120,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         },
         'body_bottom_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
-            'description': 'The text type used for the body_bottom '
+            'description': 'The text type used for the ``body_bottom`` '
                            'field.',
             'added_in': '2.0.12',
         },
@@ -140,12 +140,12 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         },
         'text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
-            'description': 'The mode for the body_top and body_bottom '
+            'description': 'The mode for the ``body_top`` and ``body_bottom`` '
                            'text fields.\n'
                            '\n'
                            'This is deprecated. Please use '
-                           'body_top_text_type and '
-                           'body_bottom_text_type instead.',
+                           '``body_top_text_type`` and '
+                           '``body_bottom_text_type`` instead.',
             'added_in': '2.0',
             'deprecated_in': '2.0.12',
         },

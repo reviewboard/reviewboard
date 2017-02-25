@@ -18,32 +18,13 @@ from reviewboard.webapi.resources import resources
 class RepositoryCommitsResource(WebAPIResource):
     """Provides information on the commits in a repository.
 
-    Get a single page of commit history from the repository. This will usually
-    be 30 items, but the exact count is dependent on the repository type. The
-    'start' parameter is the id of the most recent commit to start fetching log
-    information from.
+    This will fetch a page of commits from the repository. Each page will
+    usually be 30 items, but the exact count is dependent on the repository
+    type. To paginate results, provide a ``start`` parameter with a value of
+    the commit ID to start from. Usually this will be set to the ``parent``
+    field from the last commit.
 
-    Successive pages of commit history can be fetched by using the 'parent'
-    field of the last entry as the 'start' parameter for another request.
-
-    Returns an array of objects with the following fields:
-
-        'author_name' is a string with the author's real name or user name,
-        depending on the repository type.
-
-        'id' is a string representing the revision identifier of the commit,
-        and the format depends on the repository type (it may contain an
-        integer, SHA-1 hash, or other type).
-
-        'date' is an ISO8601-formatted string.
-
-        'message' is a string with the commit message, if any.
-
-        'parent' is a string with the id of the parent revision. This may be
-        the empty string for the first revision in the commit history. The
-        parent
-
-    This is not available for all types of repositories.
+    Data on commits will not be available for all types of repositories.
     """
     added_in = '2.0'
 
@@ -52,6 +33,38 @@ class RepositoryCommitsResource(WebAPIResource):
     singleton = True
     allowed_methods = ('GET',)
     mimetype_item_resource_name = 'repository-commits'
+
+    # For this resource, the fields dictionary is not used for any
+    # serialization. It's used solely for documentation.
+    fields = {
+        'id': {
+            'type': six.text_type,
+            'description': 'The revision identifier of the commit.\n\n'
+                           'The format depends on the repository type (it may '
+                           'be a number, SHA-1 hash, or some other type). '
+                           'This should be treated as a relatively opaque.',
+        },
+        'author_name': {
+            'type': six.text_type,
+            'description': 'The real name or username of the author who made '
+                           'the commit.',
+        },
+        'date': {
+            'type': six.text_type,
+            'description': 'The timestamp of the commit. This will be in '
+                           'ISO8601 format.',
+        },
+        'message': {
+            'type': six.text_type,
+            'description': 'The commit message, if any.',
+        },
+        'parent': {
+            'type': six.text_type,
+            'description': 'The revision of the parent commit. This may be '
+                           'an empty string if this is the first revision in '
+                           'the commit history for a repository or branch.',
+        },
+    }
 
     @webapi_check_local_site
     @webapi_check_login_required

@@ -68,7 +68,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         'last_updated': {
             'type': six.text_type,
             'description': 'The date and time that the draft was last updated '
-                           '(in YYYY-MM-DD HH:MM:SS format).',
+                           '(in ``YYYY-MM-DD HH:MM:SS`` format).',
             'mutable': False,
         },
         'branch': {
@@ -97,7 +97,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         'changedescription_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
-                           'changedescription field.',
+                           '``changedescription`` field.',
             'added_in': '2.0.12',
         },
         'commit_id': {
@@ -114,7 +114,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         'description_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
-                           'description field.',
+                           '``description`` field.',
             'added_in': '2.0.12',
         },
         'extra_data': {
@@ -156,16 +156,16 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         'testing_done_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
-                           'testing_done field.',
+                           '``testing_done`` field.',
             'added_in': '2.0.12',
         },
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'Formerly responsible for indicating the text '
                            'type for text fields. Replaced by '
-                           'changedescription_text_type, '
-                           'description_text_type, and '
-                           'testing_done_text_type in 2.0.12.',
+                           '``changedescription_text_type``, '
+                           '``description_text_type``, and '
+                           '``testing_done_text_type`` in 2.0.12.',
             'added_in': '2.0',
             'deprecated_in': '2.0.12',
         },
@@ -207,7 +207,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         },
         'changedescription_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
-            'description': 'The text type used for the changedescription '
+            'description': 'The text type used for the ``changedescription`` '
                            'field.',
             'added_in': '2.0.12',
         },
@@ -218,7 +218,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         },
         'description_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
-            'description': 'The text type used for the description '
+            'description': 'The text type used for the ``description`` '
                            'field.',
             'added_in': '2.0.12',
         },
@@ -262,19 +262,19 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         },
         'testing_done_text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
-            'description': 'The text type used for the testing_done '
+            'description': 'The text type used for the ``testing_done`` '
                            'field.',
             'added_in': '2.0.12',
         },
         'text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
-            'description': 'The mode for the changedescription, description, '
-                           'and testing_done fields.\n'
+            'description': 'The mode for the ``changedescription``, '
+                           '``description``, and ``testing_done`` fields.\n'
                            '\n'
                            'This is deprecated. Please use '
-                           'changedescription_text_type, '
-                           'description_text_type, and '
-                           'testing_done_text_type instead.',
+                           '``changedescription_text_type``, '
+                           '``description_text_type``, and '
+                           '``testing_done_text_type`` instead.',
             'added_in': '2.0',
             'deprecated_in': '2.0.12',
         },
