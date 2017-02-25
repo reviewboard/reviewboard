@@ -35,7 +35,7 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
         'timestamp': {
             'type': six.text_type,
             'description': 'The timestamp of this most recent update '
-                           '(YYYY-MM-DD HH:MM:SS format).',
+                           '(``YYYY-MM-DD HH:MM:SS`` format).',
         },
         'type': {
             'type': ('review-request', 'diff', 'reply', 'review'),
@@ -48,7 +48,8 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
         },
         'user': {
             'type': six.text_type,
-            'description': 'The user who made the last update.',
+            'description': 'The username for the user who made the last '
+                           'update.',
         },
     }
 

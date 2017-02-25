@@ -65,8 +65,8 @@ class DiffContextResource(WebAPIResource):
         diff, pagination information, and other data which is used to render
         the diff viewer page.
 
-        Note that in versions 2.0.0 through 2.0.6, the 'interdiff-revision'
-        parameter was named 'interdiff_revision'. Because of the internal
+        Note that in versions 2.0.0 through 2.0.6, the ``interdiff-revision``
+        parameter was named ``interdiff_revision``. Because of the internal
         nature of this API, this was changed without adding backwards
         compatibility for 2.0.7.
         """

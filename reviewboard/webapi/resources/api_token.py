@@ -46,12 +46,12 @@ class APITokenResource(WebAPIResource):
         'time_added': {
             'type': six.text_type,
             'description': 'The date and time that the token was added '
-                           '(in YYYY-MM-DD HH:MM:SS format).',
+                           '(in ``YYYY-MM-DD HH:MM:SS`` format).',
         },
         'last_updated': {
             'type': six.text_type,
             'description': 'The date and time that the token was last '
-                           'updated (in YYYY-MM-DD HH:MM:SS format).',
+                           'updated (in ``YYYY-MM-DD HH:MM:SS`` format).',
         },
         'note': {
             'type': six.text_type,
@@ -216,6 +216,17 @@ class APITokenResource(WebAPIResource):
         return 200, {
             self.item_result_key: token,
         }
+
+    @augment_method_from(WebAPIResource)
+    def delete(self, *args, **kwargs):
+        """Delete the API token, invalidating all clients using it.
+
+        The API token will be removed from the user's account, and will no
+        longer be usable for authentication.
+
+        After deletion, this will return a :http:`204`.
+        """
+        pass
 
     @webapi_check_local_site
     @augment_method_from(WebAPIResource)
