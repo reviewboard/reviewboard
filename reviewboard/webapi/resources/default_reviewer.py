@@ -125,28 +125,32 @@ class DefaultReviewerResource(WebAPIResource):
         return default_reviewer.is_mutable_by(request.user)
 
     @webapi_check_local_site
+    @webapi_request_fields(optional={
+        'groups': {
+            'type': six.text_type,
+            'description': 'A comma-separated list of group names that each '
+                           'resulting default reviewer must apply to review '
+                           'requests.',
+        },
+        'repositories': {
+            'type': six.text_type,
+            'description': 'A comma-separated list of IDs of repositories '
+                           'that each resulting default reviewer must match '
+                           'against.'
+        },
+        'users': {
+            'type': six.text_type,
+            'description': 'A comma-separated list of usernames that each '
+                           'resulting default reviewer must apply to review '
+                           'requests.',
+        },
+    })
     @augment_method_from(WebAPIResource)
     def get_list(self, request, *args, **kwargs):
         """Retrieves the list of default reviewers on the server.
 
         By default, this lists all default reviewers. This list can be
-        further filtered down by one or more of the following arguments
-        in the URL:
-
-          * ``repositories``
-              - A comma-separated list of IDs of repositories that the default
-                reviewer matches against. Only default reviewers that match
-                every specified repository will be returned.
-
-          * ``users``
-              - A comma-separated list of usernames that the default reviewer
-                applies. Only default reviewers that apply each of these users
-                will be returned.
-
-          * ``groups``
-              - A comma-separated list of group names that the default reviewer
-                applies. Only default reviewers that apply each of these groups
-                will be returned.
+        further filtered down through the query arguments.
         """
         pass
 

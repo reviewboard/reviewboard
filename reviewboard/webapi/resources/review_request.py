@@ -117,7 +117,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         'close_description_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
-                           'close_description field.',
+                           '``close_description`` field.',
             'added_in': '2.0.12',
         },
         'depends_on': {
@@ -156,20 +156,20 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         'time_added': {
             'type': six.text_type,
             'description': 'The date and time that the review request was '
-                           'added (in YYYY-MM-DD HH:MM:SS format).',
+                           'added (in ``YYYY-MM-DD HH:MM:SS`` format).',
         },
         'last_updated': {
             'type': six.text_type,
             'description': 'The date and time that the review request was '
-                           'last updated (in YYYY-MM-DD HH:MM:SS format).',
+                           'last updated (in ``YYYY-MM-DD HH:MM:SS`` format).',
         },
         'text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'Formerly responsible for indicating the text '
                            'type for text fields. Replaced by '
-                           'close_description_text_type, '
-                           'description_text_type, and '
-                           'testing_done_text_type in 2.0.12.',
+                           '``close_description_text_type``, '
+                           '``description_text_type``, and '
+                           '``testing_done_text_type`` in 2.0.12.',
             'added_in': '2.0',
             'deprecated_in': '2.0.12',
         },
@@ -223,7 +223,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         'description_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
-                           'description field.',
+                           '``description`` field.',
             'added_in': '2.0.12',
         },
         'testing_done': {
@@ -235,7 +235,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         'testing_done_text_type': {
             'type': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
-                           'testing_done field.',
+                           '``testing_done`` field.',
             'added_in': '2.0.12',
         },
         'bugs_closed': {
@@ -548,7 +548,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'description': 'The optional user to submit the review '
                                'request as. This requires that the actual '
                                'logged in user is either a superuser or has '
-                               'the "reviews.can_submit_as_another_user" '
+                               'the ``reviews.can_submit_as_another_user`` '
                                'permission.',
             },
         },
@@ -760,7 +760,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'of the update field.\n'
                                '\n'
                                'This is deprecated. Please use '
-                               'close_description_text_type instead.',
+                               '``close_description_text_type`` instead.',
                 'added_in': '2.0',
                 'deprecated_in': '2.0.12',
             },
@@ -982,91 +982,91 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'aded_in': '2.0.8',
             },
             'issue-dropped-count': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have exactly the '
                                'provided number of dropped issues.',
                 'added_in': '2.0',
             },
             'issue-dropped-count-lt': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have less than the '
                                'provided number of dropped issues.',
                 'added_in': '2.0',
             },
             'issue-dropped-count-lte': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have at most the '
                                'provided number of dropped issues.',
                 'added_in': '2.0',
             },
             'issue-dropped-count-gt': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have more than the '
                                'provided number of dropped issues.',
                 'added_in': '2.0',
             },
             'issue-dropped-count-gte': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have at least the '
                                'provided number of dropped issues.',
                 'added_in': '2.0',
             },
             'issue-open-count': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have exactly the '
                                'provided number of open issues.',
                 'added_in': '2.0',
             },
             'issue-open-count-lt': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have less than the '
                                'provided number of open issues.',
                 'added_in': '2.0',
             },
             'issue-open-count-lte': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have at most the '
                                'provided number of open issues.',
                 'added_in': '2.0',
             },
             'issue-open-count-gt': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have more than the '
                                'provided number of open issues.',
                 'added_in': '2.0',
             },
             'issue-open-count-gte': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have at least the '
                                'provided number of open issues.',
                 'added_in': '2.0',
             },
             'issue-resolved-count': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have exactly the '
                                'provided number of resolved issues.',
                 'added_in': '2.0',
             },
             'issue-resolved-count-lt': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have less than the '
                                'provided number of resolved issues.',
                 'added_in': '2.0',
             },
             'issue-resolved-count-lte': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have at most the '
                                'provided number of resolved issues.',
                 'added_in': '2.0',
             },
             'issue-resolved-count-gt': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have more than the '
                                'provided number of resolved issues.',
                 'added_in': '2.0',
             },
             'issue-resolved-count-gte': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have at least the '
                                'provided number of resolved issues.',
                 'added_in': '2.0',
@@ -1080,31 +1080,31 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'deprecated_in': '2.0',
             },
             'ship-it-count': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have exactly the '
                                'provided number of Ship Its.',
                 'added_in': '2.0',
             },
             'ship-it-count-lt': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have less than the '
                                'provided number of Ship Its.',
                 'added_in': '2.0',
             },
             'ship-it-count-lte': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have at most the '
                                'provided number of Ship Its.',
                 'added_in': '2.0',
             },
             'ship-it-count-gt': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have more than the '
                                'provided number of Ship Its.',
                 'added_in': '2.0',
             },
             'ship-it-count-gte': {
-                'type': bool,
+                'type': int,
                 'description': 'The review request must have at least the '
                                'provided number of Ship Its.',
                 'added_in': '2.0',

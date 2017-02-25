@@ -58,7 +58,7 @@ class DiffResource(WebAPIResource):
         'timestamp': {
             'type': six.text_type,
             'description': 'The date and time that the diff was uploaded '
-                           '(in YYYY-MM-DD HH:MM:SS format).',
+                           '(in ``YYYY-MM-DD HH:MM:SS`` format).',
         },
         'repository': {
             'type': 'reviewboard.webapi.resources.repository.'

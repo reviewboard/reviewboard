@@ -80,7 +80,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         'text_type': {
             'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The content type for the comment text field. '
-                           'The default is "plain".',
+                           'The default is ``plain``.',
         },
     }
 

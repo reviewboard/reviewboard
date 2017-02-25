@@ -11,7 +11,6 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
 
 from reviewboard.reviews.models import Group
-from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.errors import INVALID_USER
 from reviewboard.webapi.resources import resources
@@ -204,7 +203,18 @@ class ReviewGroupUserResource(UserResource):
         return 204, {}
 
     @webapi_check_local_site
-    @augment_method_from(WebAPIResource)
+    @webapi_request_fields(optional={
+        'fullname': {
+            'type': bool,
+            'description': ''
+        },
+        'q': {
+            'type': six.text_type,
+            'description': 'Limit the results to usernames starting with the '
+                           'provided value. This is case-insensitive.',
+        },
+    })
+    @augment_method_from(UserResource)
     def get_list(self, *args, **kwargs):
         """Retrieves the list of users belonging to a specific review group.
 
