@@ -115,7 +115,7 @@ class BaseDiffCommentResource(BaseCommentResource):
             'order-by': {
                 'type': six.text_type,
                 'description': 'Comma-separated list of fields to order by.',
-                'added_in': '1.7.10'
+                'added_in': '1.7.10',
             },
         },
         allow_unknown=True
