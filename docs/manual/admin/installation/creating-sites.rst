@@ -222,8 +222,16 @@ try going to your site.
 
    On Fedora and Red Hat-derived systems, the following commands
    should be run (as root) to avoid SELinux denials::
-   $ setsebool -P httpd_can_sendmail 1
-   $ setsebool -P httpd_can_network_memcache 1
+
+      $ setsebool -P httpd_can_sendmail 1
+      $ setsebool -P httpd_can_network_memcache 1
+      $ setsebool -P httpd_can_network_connect_db 1
+      $ setsebool -P httpd_unified 1
+
+   These lighten the SELinux enforcement to allow the web server
+   process to be able to send email, access the caching server,
+   connect to a remote database server and support uploading diffs,
+   respectively.
 
 lighttpd
 --------
