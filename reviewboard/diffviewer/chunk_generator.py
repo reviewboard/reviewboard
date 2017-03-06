@@ -410,22 +410,52 @@ class DiffChunkGenerator(object):
 
         moved_info = {}
 
-        if old_line_num and old_line_num in meta.get('moved-to', {}):
-            moved_info['to'] = (
-                meta['moved-to'][old_line_num],
-                old_line_num - 1 not in meta['moved-to'],
-            )
+        # Record all the moved line numbers, carefully making note of the
+        # start of each range. Ranges start when the previous line number is
+        # either not in a move range or does not immediately precede this
+        # line.
+        for direction, moved_line_num in (('to', old_line_num),
+                                          ('from', new_line_num)):
+            moved_meta = meta.get('moved-%s' % direction, {})
+            direction_move_info = self._get_move_info(moved_line_num,
+                                                      moved_meta)
 
-        if new_line_num and new_line_num in meta.get('moved-from', {}):
-            moved_info['from'] = (
-                meta['moved-from'][new_line_num],
-                new_line_num - 1 not in meta['moved-from'],
-            )
+            if direction_move_info is not None:
+                moved_info[direction] = direction_move_info
 
         if moved_info:
             result.append(moved_info)
 
         return result
+
+    def _get_move_info(self, line_num, moved_meta):
+        """Return information for a moved line.
+
+        This will return a tuple containing the line number on the other end
+        of the move for a line, and whether this is the beginning of a move
+        range.
+
+        Args:
+            line_num (int):
+                The line number that was part of a move.
+
+            moved_meta (dict):
+                Information on the move.
+
+        Returns:
+            tuple:
+            A tuple of ``(other_line, is_first_in_range)``.
+        """
+        if not line_num or line_num not in moved_meta:
+            return None
+
+        other_line_num = moved_meta[line_num]
+
+        return (
+            other_line_num,
+            (line_num - 1 not in moved_meta or
+             other_line_num != moved_meta[line_num - 1] + 1)
+        )
 
     def _highlight_indentation(self, old_markup, new_markup, is_indent,
                                raw_indent_len, norm_indent_len_diff):

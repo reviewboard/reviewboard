@@ -2149,6 +2149,61 @@ class DiffChunkGeneratorTests(TestCase):
 
         self.assertEqual(len(self.generator.get_chunks()), 1)
 
+    def test_get_move_info_with_new_range_no_preceding(self):
+        """Testing RawDiffChunkGenerator._get_move_info with new move range and
+        no adjacent preceding move range
+        """
+        generator = RawDiffChunkGenerator([], [], 'file1', 'file2')
+
+        self.assertEqual(
+            generator._get_move_info(10, {
+                8: 100,
+                10: 200,
+                11: 201,
+            }),
+            (200, True))
+
+    def test_get_move_info_with_new_range_preceding(self):
+        """Testing RawDiffChunkGenerator._get_move_info with new move range and
+        adjacent preceding move range
+        """
+        generator = RawDiffChunkGenerator([], [], 'file1', 'file2')
+
+        self.assertEqual(
+            generator._get_move_info(10, {
+                8: 100,
+                9: 101,
+                10: 200,
+                11: 201,
+            }),
+            (200, True))
+
+    def test_get_move_info_with_existing_range(self):
+        """Testing RawDiffChunkGenerator._get_move_info with existing move
+        range
+        """
+        generator = RawDiffChunkGenerator([], [], 'file1', 'file2')
+
+        self.assertEqual(
+            generator._get_move_info(11, {
+                8: 100,
+                9: 101,
+                10: 200,
+                11: 201,
+            }),
+            (201, False))
+
+    def test_get_move_info_with_no_move(self):
+        """Testing RawDiffChunkGenerator._get_move_info with no move range"""
+        generator = RawDiffChunkGenerator([], [], 'file1', 'file2')
+
+        self.assertIsNone(generator._get_move_info(500, {
+            8: 100,
+            9: 101,
+            10: 200,
+            11: 201,
+        }))
+
     def test_indent_spaces(self):
         """Testing DiffChunkGenerator._serialize_indentation with spaces"""
         self.assertEqual(
