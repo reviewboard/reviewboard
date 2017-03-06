@@ -10,10 +10,12 @@
 {% block scripts-post %}
 {{block.super}}
 {%  javascript 'widgets' %}
+{%  block admin_scripts_post %}{% endblock %}
 {% endblock %}
 
 {% block extrahead %}
 {% block blockbots %}<meta name="robots" content="NONE,NOARCHIVE" />{% endblock %}
+{{block.super}}
 {% endblock %}
 
 {% block css %}
@@ -53,7 +55,7 @@
 {{content}}
 {%  endblock %}
 {%  block sidebar %}{% endblock %}
-{% endblock %}
+{% endblock main_content %}
 
 {% block navbar %}
 {%  if user.is_authenticated %}
