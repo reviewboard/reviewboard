@@ -95,6 +95,10 @@
 
  <div id="file-list-container" class="review-request-section clearfix"{% if not file_attachments %} style="display: none;"{% endif %}>
   <label class="review-request-section-label">{% trans "Files" %}</label>
+  <div id="review-request-files-placeholder">
+   <span class="fa fa-spinner fa-pulse" aria-hidden="true"></span>
+   {% trans "Loading file attachments..." %}
+  </div>
   <div id="file-list">
    <br clear="both" />
   </div>

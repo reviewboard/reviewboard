@@ -832,6 +832,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 this.issueSummaryTableView.render();
             }
 
+            $("#review-request-files-placeholder").remove();
+
             fileAttachments.each(function(fileAttachment) {
                 this.buildFileAttachmentThumbnail(
                     fileAttachment, fileAttachments, { noAnimation: true });
