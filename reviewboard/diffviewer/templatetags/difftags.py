@@ -279,8 +279,9 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
                     cell_2_classes.append('moved-from-start')
                     moved_from = {
                         'class': 'moved-flag',
-                        'line': mark_safe(moved_from_linenum),
-                        'target': mark_safe(linenum2),
+                        'line': mark_safe('moved-from-%s'
+                                          % moved_from_linenum),
+                        'target': mark_safe('moved-to-%s' % linenum2),
                         'text': _('Moved from line %s') % moved_from_linenum,
                     }
 
@@ -296,8 +297,8 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
                     cell_1_classes.append('moved-to-start')
                     moved_to = {
                         'class': 'moved-flag',
-                        'line': mark_safe(moved_to_linenum),
-                        'target': mark_safe(linenum1),
+                        'line': mark_safe('moved-to-%s' % moved_to_linenum),
+                        'target': mark_safe('moved-from-%s' % linenum1),
                         'text': _('Moved to line %s') % moved_to_linenum,
                     }
 
