@@ -202,7 +202,7 @@
   </tr>
  </tbody>
 {% else %}
-{%  if file.whitespace_only %}
+{%  if file.whitespace_only and not standalone %}
  <tbody class="whitespace-file">
   <tr>
    <td colspan="4">{% trans "This file contains only whitespace changes." %}</td>

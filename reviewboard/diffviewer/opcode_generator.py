@@ -317,6 +317,7 @@ class DiffOpcodeGenerator(object):
         i_move_cur = ij1
         i_move_range = MoveRange(i_move_cur, i_move_cur)
         r_move_ranges = {}  # key -> (start, end, group)
+        r_move_indexes_used = set()
         move_key = None
 
         is_replace = (itag == 'replace')
@@ -347,7 +348,13 @@ class DiffOpcodeGenerator(object):
                 #
                 # If there isn't any move information for this line, we'll
                 # simply add it to the move ranges.
-                for ri, rgroup, rgroup_index in self.removes.get(iline, []):
+                for ri, rgroup, rgroup_index in self.removes[iline]:
+                    # Ignore any lines that have already been processed as
+                    # part of a move, so we don't end up with incorrect blocks
+                    # of lines being matched.
+                    if ri in r_move_indexes_used:
+                        continue
+
                     r_move_range = r_move_ranges.get(move_key)
 
                     if not r_move_range or ri != r_move_range.end + 1:
@@ -480,6 +487,14 @@ class DiffOpcodeGenerator(object):
 
                         imeta.setdefault('moved-from', {}).update(
                             dict(zip(i_range, r_range)))
+
+                        # Record each of the positions in the removed range
+                        # as used, so that they're not factored in again when
+                        # determining possible ranges for future moves.
+                        #
+                        # We'll use the r_range above, but normalize back to
+                        # 0-based indexes.
+                        r_move_indexes_used.update(r - 1 for r in r_range)
 
                 # Reset the state for the next range.
                 move_key = None

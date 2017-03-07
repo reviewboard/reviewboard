@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import bz2
+import os
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.http import HttpResponse
@@ -925,6 +926,90 @@ class DiffParserTest(TestCase):
                     6: 2,
                 },
             ]
+        )
+
+    def test_move_detection_similar_blocks(self):
+        """Testing diff viewer move detection with multiple blocks of similar
+        moved lines
+        """
+        # See https://hellosplat.com/s/beanbag/tickets/4371/ for a description
+        # of the bug.
+        testdata_path = os.path.abspath(
+            os.path.join(__file__, '..', 'testdata', 'move_detection'))
+
+        with open(os.path.join(testdata_path, 'bug-4371-old.js'), 'r') as fp:
+            old = fp.readlines()
+
+        with open(os.path.join(testdata_path, 'bug-4371-new.js'), 'r') as fp:
+            new = fp.readlines()
+
+        self._test_move_detection(
+            old,
+            new,
+            [{
+                2633: 16,
+                2634: 17,
+                2635: 18,
+                2636: 19,
+                2637: 20,
+                2638: 21,
+                2639: 22,
+                2640: 23,
+                2642: 24,
+                2643: 25,
+                2644: 26,
+                2645: 27,
+                2646: 28,
+                2649: 31,
+                2650: 32,
+                2651: 33,
+                2652: 34,
+                2653: 35,
+                2654: 36,
+                2655: 37,
+                2656: 38,
+                2657: 39,
+                2658: 40,
+                2659: 41,
+                2660: 42,
+                2661: 43,
+                2662: 44,
+                2663: 45,
+                2664: 46,
+                2665: 47,
+            }],
+            [{
+                16: 2633,
+                17: 2634,
+                18: 2635,
+                19: 2636,
+                20: 2637,
+                21: 2638,
+                22: 2639,
+                23: 2640,
+                24: 2642,
+                25: 2643,
+                26: 2644,
+                27: 2645,
+                28: 2646,
+                31: 2649,
+                32: 2650,
+                33: 2651,
+                34: 2652,
+                35: 2653,
+                36: 2654,
+                37: 2655,
+                38: 2656,
+                39: 2657,
+                40: 2658,
+                41: 2659,
+                42: 2660,
+                43: 2661,
+                44: 2662,
+                45: 2663,
+                46: 2664,
+                47: 2665,
+            }]
         )
 
     def test_line_counts(self):
@@ -2345,6 +2430,61 @@ class RawDiffChunkGeneratorTests(TestCase):
         self.assertEqual(chunks[1]['change'], 'delete')
         self.assertEqual(chunks[2]['change'], 'equal')
         self.assertEqual(chunks[3]['change'], 'replace')
+
+    def test_get_move_info_with_new_range_no_preceding(self):
+        """Testing RawDiffChunkGenerator._get_move_info with new move range and
+        no adjacent preceding move range
+        """
+        generator = RawDiffChunkGenerator([], [], 'file1', 'file2')
+
+        self.assertEqual(
+            generator._get_move_info(10, {
+                8: 100,
+                10: 200,
+                11: 201,
+            }),
+            (200, True))
+
+    def test_get_move_info_with_new_range_preceding(self):
+        """Testing RawDiffChunkGenerator._get_move_info with new move range and
+        adjacent preceding move range
+        """
+        generator = RawDiffChunkGenerator([], [], 'file1', 'file2')
+
+        self.assertEqual(
+            generator._get_move_info(10, {
+                8: 100,
+                9: 101,
+                10: 200,
+                11: 201,
+            }),
+            (200, True))
+
+    def test_get_move_info_with_existing_range(self):
+        """Testing RawDiffChunkGenerator._get_move_info with existing move
+        range
+        """
+        generator = RawDiffChunkGenerator([], [], 'file1', 'file2')
+
+        self.assertEqual(
+            generator._get_move_info(11, {
+                8: 100,
+                9: 101,
+                10: 200,
+                11: 201,
+            }),
+            (201, False))
+
+    def test_get_move_info_with_no_move(self):
+        """Testing RawDiffChunkGenerator._get_move_info with no move range"""
+        generator = RawDiffChunkGenerator([], [], 'file1', 'file2')
+
+        self.assertIsNone(generator._get_move_info(500, {
+            8: 100,
+            9: 101,
+            10: 200,
+            11: 201,
+        }))
 
     def test_indent_spaces(self):
         """Testing RawDiffChunkGenerator._serialize_indentation with spaces"""
