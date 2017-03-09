@@ -207,7 +207,8 @@ class RemoteRepositoryResource(WebAPIResource):
         Callers should always use the ``next`` and ``prev`` links for
         navigation, and should not build page indexes themselves.
         """
-        pass
+        return super(RemoteRepositoryResource, self).get_list(
+            request, *args, **kwargs)
 
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):
