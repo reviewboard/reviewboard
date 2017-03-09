@@ -33,6 +33,8 @@ class PerforceTests(SCMTestCase):
 
         self.repository = Repository(name='Perforce.com',
                                      path='public.perforce.com:1666',
+                                     username='anonymous',
+                                     encoding='none',
                                      tool=Tool.objects.get(name='Perforce'))
 
         try:
@@ -69,6 +71,7 @@ class PerforceTests(SCMTestCase):
         """Testing PerforceTool.get_changeset with a specified encoding"""
         repo = Repository(name='Perforce.com',
                           path='public.perforce.com:1666',
+                          username='anonymous',
                           tool=Tool.objects.get(name='Perforce'),
                           encoding='utf8')
         tool = repo.get_scmtool()
@@ -91,7 +94,8 @@ class PerforceTests(SCMTestCase):
                           path='public.perforce.com:1666',
                           tool=Tool.objects.get(name='Perforce'),
                           username='samwise',
-                          password='bogus')
+                          password='bogus',
+                          encoding='none')
 
         try:
             tool = repo.get_scmtool()
@@ -125,6 +129,7 @@ class PerforceTests(SCMTestCase):
         """Testing Perforce client initialization with a custom P4HOST"""
         repo = Repository(name='Perforce.com',
                           path='public.perforce.com:1666',
+                          username='anonymous',
                           tool=Tool.objects.get(name='Perforce'),
                           encoding='utf8')
         repo.extra_data['p4_host'] = 'my-custom-host'
@@ -323,6 +328,8 @@ class PerforceStunnelTests(SCMTestCase):
 
         self.repository = Repository(name='Perforce.com - secure',
                                      path=path,
+                                     username='anonymous',
+                                     encoding='none',
                                      tool=Tool.objects.get(name='Perforce'))
 
         try:
