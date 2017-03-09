@@ -923,7 +923,7 @@ class BitbucketTests(ServiceTests):
                 return b'{}', {}
             else:
                 error = HTTPError(url, 404, 'Not Found', {}, None)
-                error.read = lambda: error.reason
+                error.read = lambda: error.msg
                 raise error
 
         account = self._get_hosting_account()
