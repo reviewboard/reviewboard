@@ -3789,7 +3789,7 @@ class MarkdownRenderTests(TestCase):
                 '\n'
                 'done.'),
             ('<p>begin:</p>\n'
-             '<div class="codehilite"><pre>if (1) {}\n'
+             '<div class="codehilite"><pre><span></span>if (1) {}\n'
              '</pre></div>\n'
              '<p>done.</p>'))
 
@@ -3808,7 +3808,7 @@ class MarkdownRenderTests(TestCase):
                 'done.'),
             ('<p>begin:</p>\n'
              '<p></p>\n'
-             '<div class="codehilite"><pre>if (1) {}\n'
+             '<div class="codehilite"><pre><span></span>if (1) {}\n'
              '</pre></div>\n'
              '<p></p>\n'
              '<p>done.</p>'))
@@ -3831,7 +3831,7 @@ class MarkdownRenderTests(TestCase):
             ('<p>begin:</p>\n'
              '<p></p>\n'
              '<p></p>\n'
-             '<div class="codehilite"><pre>if (1) {}\n'
+             '<div class="codehilite"><pre><span></span>if (1) {}\n'
              '</pre></div>\n'
              '<p></p>\n'
              '<p></p>\n'
@@ -3858,7 +3858,7 @@ class MarkdownRenderTests(TestCase):
              '<p></p>\n'
              '<p></p>\n'
              '<p></p>\n'
-             '<div class="codehilite"><pre>if (1) {}\n'
+             '<div class="codehilite"><pre><span></span>if (1) {}\n'
              '</pre></div>\n'
              '<p></p>\n'
              '<p></p>\n'

@@ -33,7 +33,7 @@ package_dependencies = {
     'mimeparse': '>=0.1.3',
     'paramiko': '>=1.12',
     'pycrypto': '>=2.6',
-    'Pygments': '>=1.6',
+    'Pygments': '>=2.1',
     'python-dateutil': '==1.5',
     'python-memcached': '',
     'pytz': '>=2015.2',
