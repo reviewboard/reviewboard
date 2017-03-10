@@ -7,7 +7,6 @@ import inspect
 import logging
 import os
 import subprocess
-import sys
 import warnings
 
 from django.utils import six
@@ -864,8 +863,6 @@ class SCMTool(object):
 
         if local_site_name:
             env[b'RB_LOCAL_SITE'] = local_site_name.encode('utf-8')
-
-        env[b'PYTHONPATH'] = (':'.join(sys.path)).encode('utf-8')
 
         return subprocess.Popen(command,
                                 env=env,
