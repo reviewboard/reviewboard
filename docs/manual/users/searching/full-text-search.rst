@@ -48,7 +48,7 @@ mentioned here), see `The default query language`_.
 
 
 .. _`The default query language`:
-   http://pythonhosted.org/Whoosh/querylang.html
+   https://whoosh.readthedocs.io/en/latest/querylang.html
 
 
 Fields
