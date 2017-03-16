@@ -1137,4 +1137,57 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
         });
     });
+
+    describe('beforeUnload event handler', function() {
+        /*
+         * The components in ReviewablePageView uses editCount to determine how
+         * many fields are being modified at the time, whereas editable/
+         * statusEditable is only used in ReviewRequestEditorView.
+         * So test both editable/statusEditable states to catch regressions
+         * where onBeforeUnload becomes tied to editable/statusEditable states.
+         */
+        describe('editable=true', function() {
+            beforeEach(function() {
+                editor.set('statusEditable', true);
+                editor.set('editable', true);
+
+                expect(editor.get('statusEditable')).toBe(true);
+                expect(editor.get('editable')).toBe(true);
+                expect(editor.get('editCount')).toBe(0);
+            });
+
+            it('Warn user beforeUnload when editing', function() {
+                view.model.incr('editCount');
+                expect(editor.get('editCount')).toBe(1);
+
+                expect(view._onBeforeUnload($.Event('beforeunload'))).toBeDefined();
+            });
+
+            it("Don't warn user beforeUnload when not editing", function() {
+                expect(view._onBeforeUnload($.Event('beforeunload'))).toBeUndefined();
+            });
+        })
+
+        describe('editable=false', function() {
+            beforeEach(function() {
+                editor.set('statusEditable', false);
+                editor.set('editable', false);
+
+                expect(editor.get('statusEditable')).toBe(false);
+                expect(editor.get('editable')).toBe(false);
+                expect(editor.get('editCount')).toBe(0);
+            });
+
+            it('Warn user beforeUnload when editing', function() {
+                view.model.incr('editCount');
+                expect(editor.get('editCount')).toBe(1);
+
+                expect(view._onBeforeUnload($.Event('beforeunload'))).toBeDefined();
+            });
+
+            it("Don't warn user beforeUnload when not editing", function() {
+                expect(view._onBeforeUnload($.Event('beforeunload'))).toBeUndefined();
+            });
+        })
+    });
 });
