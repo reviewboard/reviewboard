@@ -12,12 +12,13 @@ from django.template import RequestContext
 from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
-from django.utils.six.moves.urllib.parse import quote
+from django.utils.six.moves.urllib.parse import quote, urlencode
 from django.utils.translation import ugettext_lazy as _, ugettext
 from django.views.decorators.http import require_POST
 
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
+                                            HostingServiceAPIError,
                                             HostingServiceError,
                                             InvalidPlanError,
                                             RepositoryError)
@@ -219,7 +220,8 @@ class Bitbucket(HostingService):
 
     DEFAULT_PLAN = 'personal'
 
-    def check_repository(self, plan=DEFAULT_PLAN, *args, **kwargs):
+    def check_repository(self, plan=DEFAULT_PLAN, tool_name=None,
+                         *args, **kwargs):
         """Checks the validity of a repository.
 
         This will perform an API request against Bitbucket to get
@@ -239,15 +241,27 @@ class Bitbucket(HostingService):
                 '".git".'))
 
         try:
-            self._api_get_repository(
-                self._get_repository_owner_raw(plan, kwargs),
-                self._get_repository_name_raw(plan, kwargs))
+            rsp = self._api_get(self._build_api_url(
+                'repositories/%s/%s'
+                % (self._get_repository_owner_raw(plan, kwargs),
+                   self._get_repository_name_raw(plan, kwargs)),
+                query={
+                    'fields': 'scm',
+                }))
         except HostingServiceError as e:
             if six.text_type(e) == 'Resource not found':
                 raise RepositoryError(
                     ugettext('A repository with this name was not found.'))
 
             raise
+
+        scm = rsp['scm']
+
+        if ((scm == 'git' and tool_name != 'Git') or
+            (scm == 'hg' and tool_name != 'Mercurial')):
+            raise RepositoryError(
+                ugettext('The Bitbucket repository being configured does not '
+                         'match the type of repository you have selected.'))
 
     def authorize(self, username, password, *args, **kwargs):
         """Authorizes the Bitbucket repository.
@@ -352,54 +366,110 @@ class Bitbucket(HostingService):
         Returns:
             unicode: The name of the default branch.
         """
-        url = self._build_repository_api_url(repository, 'main-branch/')
+        repository_rsp = self._api_get(self._build_repository_api_url(
+            repository,
+            query={
+                'fields': 'mainbranch.name',
+            }))
 
-        rsp = self._api_get(url)
-
-        return rsp['name']
+        try:
+            return repository_rsp['mainbranch']['name']
+        except KeyError:
+            # No default branch was set in this repository. It may be an
+            # empty repository.
+            return None
 
     def get_branches(self, repository):
+        """Return all upstream branches in the repository.
+
+        This will paginate through all the results, 100 entries at a time,
+        returning all branches listed in the repository.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to retrieve branches from.
+
+        Returns:
+            list of reviewboard.scmtools.core.Branch:
+            The list of branches found in the repository.
+        """
         default_branch_name = self._get_default_branch_name(repository)
-
-        url = self._build_repository_api_url(repository, 'branches/')
-
-        rsp = self._api_get(url)
-
+        found_default_branch = False
         branches = []
 
-        for branch_name, branch in six.iteritems(rsp):
-            branches.append(
-                Branch(id=branch_name,
-                       commit=branch['raw_node'],
-                       default=(branch_name == default_branch_name)))
+        branches_url = self._build_repository_api_url(
+            repository,
+            'refs/branches',
+            query={
+                'pagelen': '100',
+                'fields': 'values.name,values.target.hash,next',
+            })
+
+        while branches_url:
+            branches_rsp = self._api_get(branches_url)
+
+            for branch_info in branches_rsp['values']:
+                try:
+                    branch_name = branch_info['name']
+                    is_default = (branch_name == default_branch_name)
+
+                    if is_default:
+                        found_default_branch = True
+
+                    branches.append(Branch(
+                        id=branch_name,
+                        commit=branch_info['target']['hash'],
+                        default=is_default))
+                except KeyError as e:
+                    logging.error('Missing "%s" key in Bitbucket branch '
+                                  'definition %r for repository %s. Skipping '
+                                  'branch.',
+                                  e, branch_info, repository.pk)
+
+            # If there's a "next", it will automatically include any ?fields=
+            # entries we specified above.
+            branches_url = branches_rsp.get('next')
+
+        if not found_default_branch:
+            branches[0].default = True
 
         return branches
 
     def get_commits(self, repository, branch=None, start=None):
-        url = self._build_repository_api_url(repository,
-                                             'changesets/?limit=20')
+        """Return a page of commits in the repository.
 
+        This will return 20 commits at a time. The list of commits can start
+        on a given branch (for branch filtering) or commit (for pagination).
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to retrieve branches from.
+
+            branch (unicode, optional):
+                The branch to retrieve commits from.
+
+            start (unicode, optional):
+                The first commit to retrieve in the page, for pagination.
+
+        Returns:
+            list of reviewboard.scmtools.core.Commit:
+            The list of commits found in the repository.
+        """
+        path = 'commits'
         start = start or branch
 
         if start:
-            url += '&start=%s' % start
+            path += '/%s' % start
 
-        results = []
+        url = self._build_repository_api_url(repository, path, query={
+            'pagelen': 20,
+            'fields': self._get_commit_fields_query('values.'),
+        })
 
-        # The API returns them in order from oldest to newest.
-        for changeset in reversed(self._api_get(url)['changesets']):
-            commit = Commit(
-                author_name=changeset['author'],
-                id=changeset['raw_node'],
-                date=self._parse_timestamp(changeset['utctimestamp']),
-                message=changeset['message'])
-
-            if changeset['parents']:
-                commit.parent = changeset['parents'][0]
-
-            results.append(commit)
-
-        return results
+        return [
+            self._build_commit_from_rsp(commit_rsp)
+            for commit_rsp in self._api_get(url)['values']
+        ]
 
     def get_change(self, repository, revision):
         # We try to pull the commit's metadata out of the cache. The diff API
@@ -410,12 +480,19 @@ class Bitbucket(HostingService):
         if not commit:
             # However, if it is not in the cache, we have to hit the API to
             # get the metadata.
-            commit = self.get_commits(repository, revision)[0]
+            commit_rsp = self._api_get(self._build_repository_api_url(
+                repository,
+                'commit/%s' % revision,
+                query={
+                    'fields': self._get_commit_fields_query(),
+                }))
+            commit = self._build_commit_from_rsp(commit_rsp)
 
-        url = self._build_repository_api_url(repository, 'diff/%s' % revision,
-                                             version='2.0')
-
-        diff = self._api_get(url, raw_content=True)
+        # Now fetch the diff and normalize it to always end with a newline,
+        # so patch is happy.
+        diff_url = self._build_repository_api_url(repository,
+                                                  'diff/%s' % revision)
+        diff = self._api_get(diff_url, raw_content=True)
 
         if not diff.endswith(b'\n'):
             diff += b'\n'
@@ -427,35 +504,79 @@ class Bitbucket(HostingService):
                       diff=diff,
                       parent=commit.parent)
 
-    def _build_repository_api_url(self, repository, url='', version='1.0'):
+    def _get_commit_fields_query(self, prefix=''):
+        """Return the fields needed in a query string for commit parsing.
+
+        This is needed by APIs that want to limit the fields in the payload
+        and need to parse commits.
+
+        Args:
+            prefix (unicode, optional):
+                An optional prefix for each field.
+
+        Returns:
+            unicode:
+            The fields to include in a ``?fields=`` query string.
+        """
+        return ','.join(
+            prefix + name
+            for name in ('author.user.display_name', 'hash', 'date',
+                         'message', 'parents.hash')
+        )
+
+    def _build_commit_from_rsp(self, commit_rsp):
+        """Return a Commit from an API reesponse.
+
+        This will parse a response from the API and return a structured
+        commit.
+
+        Args:
+            commit_rsp (dict):
+                The API payload for a commit.
+
+        Returns:
+            reviewboard.scmtools.core.Commit:
+            A commit based on the payload.
+        """
+        commit = Commit(
+            author_name=commit_rsp['author']['user']['display_name'],
+            id=commit_rsp['hash'],
+            date=commit_rsp['date'],
+            message=commit_rsp['message'])
+
+        if commit_rsp['parents']:
+            commit.parent = commit_rsp['parents'][0]['hash']
+
+        return commit
+
+    def _build_repository_api_url(self, repository, path='', **kwargs):
         """Build an API URL for the given repository.
+
+        This is a wrapper around :py:meth:`_build_api_url` for
+        repository-based APIs.
 
         Args:
             repository (reviewboard.scmtools.models.Repository):
                 The repository.
 
-            url (unicode):
-                Extra url components to add to the end of the generated URL.
+            path (unicode, optional):
+                Optional extra path relative to the resource for this
+                repository. If left blank, the repository's resource URL
+                will be returned.
 
-            version (unicode):
-                The API version to use.
+            **kwargs (dict):
+                Extra positional argument to pass to :py:meth:`_build_api_url`.
 
         Returns:
             unicode:
-                The API URL.
+            The API URL.
         """
         username = self._get_repository_owner(repository)
         repo_name = self._get_repository_name(repository)
 
         return self._build_api_url('repositories/%s/%s/%s'
-                                   % (username, repo_name, url),
-                                   version=version)
-
-    def _api_get_repository(self, username, repo_name):
-        url = self._build_api_url('repositories/%s/%s'
-                                  % (username, repo_name))
-
-        return self._api_get(url)
+                                   % (quote(username), quote(repo_name), path),
+                                   **kwargs)
 
     def _api_get_src(self, repository, path, revision, base_commit_id):
         # If a base commit ID is provided, use it. It may not be provided,
@@ -475,12 +596,13 @@ class Bitbucket(HostingService):
                        'this file was not provided. Use RBTools 0.5.2 or '
                        'newer.')
 
-        url = self._build_api_url(
-            'repositories/%s/%s/raw/%s/%s'
-            % (quote(self._get_repository_owner(repository)),
-               quote(self._get_repository_name(repository)),
-               quote(revision),
-               quote(path)))
+        # NOTE: As of this writing, the 2.0 API does not support fetching
+        #       the raw contents of files. We have to use the 1.0 API for
+        #       this instead.
+        url = self._build_repository_api_url(
+            repository,
+            'raw/%s/%s' % (quote(revision), quote(path)),
+            version='1.0')
 
         try:
             return self._api_get(url, raw_content=True)
@@ -488,8 +610,33 @@ class Bitbucket(HostingService):
             raise FileNotFoundError(path, revision=revision,
                                     base_commit_id=base_commit_id)
 
-    def _build_api_url(self, url, version='1.0'):
-        return 'https://bitbucket.org/api/%s/%s' % (version, url)
+    def _build_api_url(self, path, query={}, version=None):
+        """Return the URL for an API.
+
+        By default, this uses the 2.0 API. The version can be overridden
+        if the 1.0 API is needed.
+
+        Args:
+            path (unicode):
+                The path relative to the root of the API.
+
+            query (dict, optional):
+                Optional query arguments for the request.
+
+            version (unicode, optional):
+                The optional custom API version to use. If not specified,
+                the 2.0 API will be used.
+
+        Returns:
+            unicode:
+            The absolute URL for the API.
+        """
+        url = 'https://bitbucket.org/api/%s/%s' % (version or '2.0', path)
+
+        if query:
+            url += '?%s' % urlencode(query)
+
+        return url
 
     def _get_repository_plan(self, repository):
         return (repository.extra_data.get('repository_plan') or
@@ -568,28 +715,13 @@ class Bitbucket(HostingService):
             # _api_get_src.
             raise FileNotFoundError('')
         else:
-            raise HostingServiceError(
+            raise HostingServiceAPIError(
                 message or (
                     ugettext('Unexpected HTTP %s error when talking to '
                              'Bitbucket')
                     % e.code),
-                http_code=e.code)
-
-    def _parse_timestamp(self, timestamp):
-        """Parse a timestamp given by BitBucket's API into the correct format.
-
-        BitBucket gives timestamps in the form ``YYYY-MM-DD HH:MM:SS+ZZZZ``,
-        but JavaScript's ``Date`` cannot parse them in this format; it expects
-        the format ``YYYY-MM-DDTHH:MM:SS+ZZZZ`` (where T is a literal T).
-
-        Args:
-            timestamp (unicode):
-                A string representing a UTC timestamp.
-
-        Returns:
-            unicode: A string representing a UTC timestamp in ISO 8601 format.
-        """
-        return timestamp.replace(' ', 'T')
+                http_code=e.code,
+                rsp=e)
 
     def _raise_auth_error(self, message=None):
         raise AuthorizationError(

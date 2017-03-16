@@ -4,6 +4,7 @@ import json
 
 from django.utils.six.moves import cStringIO as StringIO
 from django.utils.six.moves.urllib.error import HTTPError
+from django.utils.six.moves.urllib.parse import parse_qs, urlparse
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -72,8 +73,13 @@ class BitbucketTests(ServiceTests):
         def _http_get(service, url, *args, **kwargs):
             self.assertEqual(
                 url,
-                'https://bitbucket.org/api/1.0/repositories/myuser/myrepo')
-            return b'{}', {}
+                'https://bitbucket.org/api/2.0/repositories/myuser/myrepo'
+                '?fields=scm')
+            return (
+                json.dumps({
+                    'scm': 'git',
+                }),
+                {})
 
         account = self._get_hosting_account()
         account.data['password'] = encrypt_password('abc123')
@@ -82,7 +88,8 @@ class BitbucketTests(ServiceTests):
         self.spy_on(service.client.http_get, call_fake=_http_get)
 
         service.check_repository(bitbucket_repo_name='myrepo',
-                                 plan='personal')
+                                 plan='personal',
+                                 tool_name='Git')
         self.assertTrue(service.client.http_get.called)
 
     def test_team_repo_field_values_git(self):
@@ -131,8 +138,13 @@ class BitbucketTests(ServiceTests):
         def _http_get(service, url, *args, **kwargs):
             self.assertEqual(
                 url,
-                'https://bitbucket.org/api/1.0/repositories/myteam/myrepo')
-            return b'{}', {}
+                'https://bitbucket.org/api/2.0/repositories/myteam/myrepo'
+                '?fields=scm')
+            return (
+                json.dumps({
+                    'scm': 'git',
+                }),
+                {})
 
         account = self._get_hosting_account()
         service = account.service
@@ -143,6 +155,7 @@ class BitbucketTests(ServiceTests):
 
         service.check_repository(bitbucket_team_name='myteam',
                                  bitbucket_team_repo_name='myrepo',
+                                 tool_name='Git',
                                  plan='team')
         self.assertTrue(service.client.http_get.called)
 
@@ -193,8 +206,13 @@ class BitbucketTests(ServiceTests):
         def _http_get(service, url, *args, **kwargs):
             self.assertEqual(
                 url,
-                'https://bitbucket.org/api/1.0/repositories/someuser/myrepo')
-            return b'{}', {}
+                'https://bitbucket.org/api/2.0/repositories/someuser/myrepo'
+                '?fields=scm')
+            return (
+                json.dumps({
+                    'scm': 'git',
+                }),
+                {})
 
         account = self._get_hosting_account()
         service = account.service
@@ -205,7 +223,8 @@ class BitbucketTests(ServiceTests):
 
         service.check_repository(bitbucket_other_user_username='someuser',
                                  bitbucket_other_user_repo_name='myrepo',
-                                 plan='other-user')
+                                 plan='other-user',
+                                 tool_name='Git')
         self.assertTrue(service.client.http_get.called)
 
     def test_check_repository_with_slash(self):
@@ -235,6 +254,49 @@ class BitbucketTests(ServiceTests):
                 bitbucket_team_name='myteam',
                 bitbucket_team_repo_name='myrepo.git',
                 plan='team'))
+
+    def test_check_repository_with_type_mismatch(self):
+        """Testing Bitbucket check_repository with type mismatch"""
+        error_message = (
+            'The Bitbucket repository being configured does not match the '
+            'type of repository you have selected.'
+        )
+        repository_type = 'git'
+
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(
+                url,
+                'https://bitbucket.org/api/2.0/repositories/myteam/myrepo'
+                '?fields=scm')
+            return (
+                json.dumps({
+                    'scm': repository_type,
+                }),
+                {})
+
+        account = self._get_hosting_account()
+        service = account.service
+        account.data['password'] = encrypt_password('abc123')
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        # Check Git repositories.
+        with self.assertRaisesMessage(RepositoryError, error_message):
+            service.check_repository(
+                bitbucket_team_name='myteam',
+                bitbucket_team_repo_name='myrepo',
+                plan='team',
+                tool_name='Mercurial')
+
+        # Now check Mercurial repositories.
+        repository_type = 'hg'
+
+        with self.assertRaisesMessage(RepositoryError, error_message):
+            service.check_repository(
+                bitbucket_team_name='myteam',
+                bitbucket_team_repo_name='myrepo',
+                plan='team',
+                tool_name='Git')
 
     def test_authorize(self):
         """Testing Bitbucket authorization"""
@@ -381,29 +443,240 @@ class BitbucketTests(ServiceTests):
             expected_revision='456',
             expected_found=False)
 
+    def test_get_branches(self):
+        """Testing Bitbucket get_branches"""
+        branches_api_response_1 = json.dumps({
+            'next': ('https://bitbucket.org/api/2.0/repositories/myuser/'
+                     'myrepo/refs/branches?pagelen=100&page=2&'
+                     'fields=values.name%2Cvalues.target.hash%2Cnext'),
+            'values': [
+                {
+                    'name': 'branch1',
+                    'target': {
+                        'hash': '1c44b461cebe5874a857c51a4a13a849a4d1e52d',
+                    },
+                },
+                {
+                    'name': 'branch2',
+                    'target': {
+                        'hash': '44568f7d33647d286691517e6325fea5c7a21d5e',
+                    },
+                },
+            ],
+        })
+
+        branches_api_response_2 = json.dumps({
+            'values': [
+                {
+                    'name': 'branch3',
+                    'target': {
+                        'hash': 'e5874a857c51a4a13a849a4d1e52d1c44b461ceb',
+                    },
+                },
+                {
+                    'name': 'branch4',
+                    'target': {
+                        'hash': 'd286691517e6325fea5c7a21d5e44568f7d33647',
+                    },
+                },
+            ],
+        })
+
+        get_repository_api_response = json.dumps({
+            'mainbranch': {
+                'name': 'branch3',
+            },
+        })
+
+        def _http_get(service, url, *args, **kwargs):
+            url_parts = urlparse(url)
+            path = url_parts.path
+            query = parse_qs(url_parts.query)
+
+            if path == '/api/2.0/repositories/myuser/myrepo/':
+                self.assertEqual(
+                    query,
+                    {
+                        'fields': ['mainbranch.name'],
+                    })
+
+                return get_repository_api_response, None
+            elif path == '/api/2.0/repositories/myuser/myrepo/refs/branches':
+                if 'page' in query:
+                    self.assertEqual(
+                        query,
+                        {
+                            'fields': ['values.name,values.target.hash,next'],
+                            'pagelen': ['100'],
+                            'page': ['2'],
+                        })
+
+                    return branches_api_response_2, None
+                else:
+                    self.assertEqual(
+                        query,
+                        {
+                            'fields': ['values.name,values.target.hash,next'],
+                            'pagelen': ['100'],
+                        })
+
+                    return branches_api_response_1, None
+            else:
+                self.fail('Unexpected URL %s' % url)
+
+        account = self._get_hosting_account()
+        service = account.service
+        repository = Repository(hosting_account=account,
+                                tool=Tool.objects.get(name='Git'))
+        repository.extra_data = {
+            'bitbucket_repo_name': 'myrepo',
+        }
+
+        account.data['password'] = encrypt_password('abc123')
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        branches = service.get_branches(repository)
+        self.assertEqual(len(branches), 4)
+
+        branch = branches[0]
+        self.assertEqual(branch.name, 'branch1')
+        self.assertEqual(branch.commit,
+                         '1c44b461cebe5874a857c51a4a13a849a4d1e52d')
+        self.assertFalse(branch.default)
+
+        branch = branches[1]
+        self.assertEqual(branch.name, 'branch2')
+        self.assertEqual(branch.commit,
+                         '44568f7d33647d286691517e6325fea5c7a21d5e')
+        self.assertFalse(branch.default)
+
+        branch = branches[2]
+        self.assertEqual(branch.name, 'branch3')
+        self.assertEqual(branch.commit,
+                         'e5874a857c51a4a13a849a4d1e52d1c44b461ceb')
+        self.assertTrue(branch.default)
+
+        branch = branches[3]
+        self.assertEqual(branch.name, 'branch4')
+        self.assertEqual(branch.commit,
+                         'd286691517e6325fea5c7a21d5e44568f7d33647')
+        self.assertFalse(branch.default)
+
+    def test_get_commits(self):
+        """Testing Bitbucket get_commits"""
+        commits_api_response = json.dumps({
+            'values': [
+                {
+                    'hash': '1c44b461cebe5874a857c51a4a13a849a4d1e52d',
+                    'author': {
+                        'user': {
+                            'display_name': 'Some User 1',
+                        },
+                    },
+                    'date': '2017-01-24T13:11:22+00:00',
+                    'message': 'This is commit 1.',
+                    'parents': [
+                        {
+                            'hash': '44568f7d33647d286691517e6325fea5c7a21d5e',
+                        },
+                    ],
+                },
+                {
+                    'hash': '44568f7d33647d286691517e6325fea5c7a21d5e',
+                    'author': {
+                        'user': {
+                            'display_name': 'Some User 2',
+                        },
+                    },
+                    'date': '2017-01-23T08:09:10+00:00',
+                    'message': 'This is commit 2.',
+                    'parents': [
+                        {
+                            'hash': 'e5874a857c51a4a13a849a4d1e52d1c44b461ceb',
+                        },
+                    ],
+                },
+            ],
+        })
+
+        def _http_get(service, url, *args, **kwargs):
+            url_parts = urlparse(url)
+            path = url_parts.path
+            query = parse_qs(url_parts.query)
+
+            if path == '/api/2.0/repositories/myuser/myrepo/commits':
+                self.assertEqual(
+                    query,
+                    {
+                        'pagelen': ['20'],
+                        'fields': ['values.author.user.display_name,'
+                                   'values.hash,values.date,values.message,'
+                                   'values.parents.hash'],
+                    })
+
+                return commits_api_response, None
+            else:
+                self.fail('Unexpected URL %s' % url)
+
+        account = self._get_hosting_account()
+        service = account.service
+        repository = Repository(hosting_account=account,
+                                tool=Tool.objects.get(name='Git'))
+        repository.extra_data = {
+            'bitbucket_repo_name': 'myrepo',
+        }
+
+        account.data['password'] = encrypt_password('abc123')
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        commits = service.get_commits(repository)
+        self.assertEqual(len(commits), 2)
+
+        commit = commits[0]
+        self.assertEqual(commit.id, '1c44b461cebe5874a857c51a4a13a849a4d1e52d')
+        self.assertEqual(commit.author_name, 'Some User 1')
+        self.assertEqual(commit.message, 'This is commit 1.')
+        self.assertEqual(commit.date, '2017-01-24T13:11:22+00:00')
+        self.assertEqual(commit.parent,
+                         '44568f7d33647d286691517e6325fea5c7a21d5e')
+        self.assertIsNone(commit.diff)
+
+        commit = commits[1]
+        self.assertEqual(commit.id, '44568f7d33647d286691517e6325fea5c7a21d5e')
+        self.assertEqual(commit.author_name, 'Some User 2')
+        self.assertEqual(commit.message, 'This is commit 2.')
+        self.assertEqual(commit.date, '2017-01-23T08:09:10+00:00')
+        self.assertEqual(commit.parent,
+                         'e5874a857c51a4a13a849a4d1e52d1c44b461ceb')
+        self.assertIsNone(commit.diff)
+
     def test_get_change(self):
         """Testing BitBucket get_change"""
         commit_sha = '1c44b461cebe5874a857c51a4a13a849a4d1e52d'
         parent_sha = '44568f7d33647d286691517e6325fea5c7a21d5e'
 
         commits_api_response = json.dumps({
-            'changesets': [
-                {
-                    'raw_node': commit_sha,
-                    'author': 'Some User',
-                    'utctimestamp': '2017-01-24 13:11:22+0000',
-                    'message': 'This is a message.',
-                    'parents': [parent_sha],
+            'hash': commit_sha,
+            'author': {
+                'user': {
+                    'display_name': 'Some User',
                 },
-            ]
+            },
+            'date': '2017-01-24T13:11:22+00:00',
+            'message': 'This is a message.',
+            'parents': [{'hash': parent_sha}],
         })
 
         diff_api_response = b'This is a test \xc7.'
         norm_diff_api_response = b'This is a test \xc7.\n'
 
         def _http_get(service, url, *args, **kwargs):
-            if url == ('https://bitbucket.org/api/1.0/repositories/'
-                       'myuser/myrepo/changesets/?limit=20&start=%s'
+            if url == ('https://bitbucket.org/api/2.0/repositories/'
+                       'myuser/myrepo/commit/%s?'
+                       'fields=author.user.display_name%%2Chash%%2Cdate%%2C'
+                       'message%%2Cparents.hash'
                        % commit_sha):
                 return commits_api_response, None
             elif url == ('https://bitbucket.org/api/2.0/repositories/'
@@ -428,7 +701,7 @@ class BitbucketTests(ServiceTests):
         self.assertEqual(commit.id, commit_sha)
         self.assertEqual(commit.author_name, 'Some User')
         self.assertEqual(commit.message, 'This is a message.')
-        self.assertEqual(commit.date, '2017-01-24T13:11:22+0000')
+        self.assertEqual(commit.date, '2017-01-24T13:11:22+00:00')
         self.assertEqual(commit.parent, parent_sha)
         self.assertEqual(commit.diff, norm_diff_api_response)
 
