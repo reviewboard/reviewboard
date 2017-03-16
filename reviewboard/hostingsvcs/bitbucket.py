@@ -520,8 +520,8 @@ class Bitbucket(HostingService):
         """
         return ','.join(
             prefix + name
-            for name in ('author.user.display_name', 'hash', 'date',
-                         'message', 'parents.hash')
+            for name in ('author.raw', 'hash', 'date', 'message',
+                         'parents.hash')
         )
 
     def _build_commit_from_rsp(self, commit_rsp):
@@ -539,7 +539,7 @@ class Bitbucket(HostingService):
             A commit based on the payload.
         """
         commit = Commit(
-            author_name=commit_rsp['author']['user']['display_name'],
+            author_name=commit_rsp['author']['raw'],
             id=commit_rsp['hash'],
             date=commit_rsp['date'],
             message=commit_rsp['message'])

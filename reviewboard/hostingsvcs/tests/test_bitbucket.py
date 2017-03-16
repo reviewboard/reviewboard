@@ -570,9 +570,7 @@ class BitbucketTests(ServiceTests):
                 {
                     'hash': '1c44b461cebe5874a857c51a4a13a849a4d1e52d',
                     'author': {
-                        'user': {
-                            'display_name': 'Some User 1',
-                        },
+                        'raw': 'Some User 1 <user1@example.com>',
                     },
                     'date': '2017-01-24T13:11:22+00:00',
                     'message': 'This is commit 1.',
@@ -585,9 +583,7 @@ class BitbucketTests(ServiceTests):
                 {
                     'hash': '44568f7d33647d286691517e6325fea5c7a21d5e',
                     'author': {
-                        'user': {
-                            'display_name': 'Some User 2',
-                        },
+                        'raw': 'Some User 2 <user2@example.com>',
                     },
                     'date': '2017-01-23T08:09:10+00:00',
                     'message': 'This is commit 2.',
@@ -610,8 +606,8 @@ class BitbucketTests(ServiceTests):
                     query,
                     {
                         'pagelen': ['20'],
-                        'fields': ['values.author.user.display_name,'
-                                   'values.hash,values.date,values.message,'
+                        'fields': ['values.author.raw,values.hash,'
+                                   'values.date,values.message,'
                                    'values.parents.hash'],
                     })
 
@@ -636,7 +632,7 @@ class BitbucketTests(ServiceTests):
 
         commit = commits[0]
         self.assertEqual(commit.id, '1c44b461cebe5874a857c51a4a13a849a4d1e52d')
-        self.assertEqual(commit.author_name, 'Some User 1')
+        self.assertEqual(commit.author_name, 'Some User 1 <user1@example.com>')
         self.assertEqual(commit.message, 'This is commit 1.')
         self.assertEqual(commit.date, '2017-01-24T13:11:22+00:00')
         self.assertEqual(commit.parent,
@@ -645,7 +641,7 @@ class BitbucketTests(ServiceTests):
 
         commit = commits[1]
         self.assertEqual(commit.id, '44568f7d33647d286691517e6325fea5c7a21d5e')
-        self.assertEqual(commit.author_name, 'Some User 2')
+        self.assertEqual(commit.author_name, 'Some User 2 <user2@example.com>')
         self.assertEqual(commit.message, 'This is commit 2.')
         self.assertEqual(commit.date, '2017-01-23T08:09:10+00:00')
         self.assertEqual(commit.parent,
@@ -660,9 +656,7 @@ class BitbucketTests(ServiceTests):
         commits_api_response = json.dumps({
             'hash': commit_sha,
             'author': {
-                'user': {
-                    'display_name': 'Some User',
-                },
+                'raw': 'Some User <user@example.com>',
             },
             'date': '2017-01-24T13:11:22+00:00',
             'message': 'This is a message.',
@@ -675,7 +669,7 @@ class BitbucketTests(ServiceTests):
         def _http_get(service, url, *args, **kwargs):
             if url == ('https://bitbucket.org/api/2.0/repositories/'
                        'myuser/myrepo/commit/%s?'
-                       'fields=author.user.display_name%%2Chash%%2Cdate%%2C'
+                       'fields=author.raw%%2Chash%%2Cdate%%2C'
                        'message%%2Cparents.hash'
                        % commit_sha):
                 return commits_api_response, None
@@ -699,7 +693,7 @@ class BitbucketTests(ServiceTests):
 
         commit = service.get_change(repository, commit_sha)
         self.assertEqual(commit.id, commit_sha)
-        self.assertEqual(commit.author_name, 'Some User')
+        self.assertEqual(commit.author_name, 'Some User <user@example.com>')
         self.assertEqual(commit.message, 'This is a message.')
         self.assertEqual(commit.date, '2017-01-24T13:11:22+00:00')
         self.assertEqual(commit.parent, parent_sha)
