@@ -875,30 +875,41 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         reviewRequest.on('closed reopened', this._refreshPage, this);
         draft.on('destroyed', this._refreshPage, this);
 
-        /*
-         * Warn the user if they try to navigate away with unsaved comments.
-         */
-        window.onbeforeunload = _.bind(function(evt) {
-            if ((this.model.get('editable') ||
-                 this.model.get('statusEditable')) &&
-                this.model.get('editCount') > 0) {
-                /*
-                 * On IE, the text must be set in evt.returnValue.
-                 *
-                 * On Firefox, it must be returned as a string.
-                 *
-                 * On Chrome, it must be returned as a string, but you
-                 * can't set it on evt.returnValue (it just ignores it).
-                 */
-                var msg = gettext("You have unsaved changes that will be lost if you navigate away from this page.");
-                evt = evt || window.event;
-
-                evt.returnValue = msg;
-                return msg;
-            }
-        }, this);
+        window.onbeforeunload = _.bind(this._onBeforeUnload, this);
 
         return this;
+    },
+
+    /**
+     * Warn the user if they try to navigate away with unsaved comments.
+     *
+     * Args:
+     *     evt (Event):
+     *         The event that triggered the handler.
+     *
+     * Returns:
+     *     string:
+     *     The warning message.
+     *
+     */
+    _onBeforeUnload: function(evt) {
+        var msg;
+
+        if (this.model.get('editCount') > 0) {
+            /*
+             * On IE, the text must be set in evt.returnValue.
+             *
+             * On Firefox, it must be returned as a string.
+             *
+             * On Chrome, it must be returned as a string, but you
+             * can't set it on evt.returnValue (it just ignores it).
+             */
+            msg = gettext('You have unsaved changes that will be lost if you navigate away from this page.');
+            evt = evt || window.event;
+
+            evt.returnValue = msg;
+            return msg;
+        }
     },
 
     /*
