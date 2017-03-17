@@ -2,7 +2,9 @@ from __future__ import unicode_literals
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
-from django.utils.translation import ugettext as _
+from django.forms.fields import CharField
+from django.utils.translation import ugettext_lazy as _, ugettext
+from djblets.util.compat.django.core.validators import URLValidator
 
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.scmtools.models import Repository
@@ -10,6 +12,12 @@ from reviewboard.scmtools.models import Repository
 
 class WebHookTargetForm(forms.ModelForm):
     """A form for creating and updating WebHookTargets."""
+
+    url = CharField(
+        label=_('URL'),
+        validators=[URLValidator()],
+        widget=forms.widgets.URLInput(attrs={'size': 100})
+    )
 
     def clean_extra_data(self):
         """Ensure that extra_data is a valid value.
@@ -52,7 +60,7 @@ class WebHookTargetForm(forms.ModelForm):
             for repository in queryset:
                 if repository.local_site != local_site:
                     errors.append(
-                        _('Repository with ID %(id)s is invalid.')
+                        ugettext('Repository with ID %(id)s is invalid.')
                         % {'id': repository.pk})
 
             if errors:
@@ -65,7 +73,6 @@ class WebHookTargetForm(forms.ModelForm):
         model = WebHookTarget
         widgets = {
             'apply_to': forms.widgets.RadioSelect(),
-            'url': forms.widgets.TextInput(attrs={'size': 100}),
             'repositories': FilteredSelectMultiple(_('Repositories'),
                                                    is_stacked=False),
         }

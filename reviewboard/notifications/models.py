@@ -4,6 +4,7 @@ from django.db import models
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
+from djblets.util.compat.django.core.validators import URLValidator
 from multiselectfield import MultiSelectField
 
 from reviewboard.notifications.managers import WebHookTargetManager
@@ -128,6 +129,19 @@ class WebHookTarget(models.Model):
                     'request.'))
 
     objects = WebHookTargetManager()
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the model.
+
+        Args:
+            *args (tuple):
+                Positional arguments to pass through to the Model constructor.
+
+            **kwargs (dict):
+                Keyword arguments to pass through to the Model constructor.
+        """
+        super(WebHookTarget, self).__init__(*args, **kwargs)
+        self._meta.get_field('url').validators = [URLValidator()]
 
     def is_accessible_by(self, user, local_site=None):
         """Return if the webhook can be accessed or modified by the user.
