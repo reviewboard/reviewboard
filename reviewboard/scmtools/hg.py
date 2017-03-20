@@ -307,7 +307,7 @@ class HgWebClient(SCMClient):
 
         try:
             url = '%s/json-branches' % self.path_stripped
-            contents = self.get_file_http(url, '', '')
+            contents = self.get_file_http(url, '', '', 'application/json')
         except Exception as e:
             logging.exception('Cannot load branches from hgweb: %s', e)
             return results
@@ -339,7 +339,7 @@ class HgWebClient(SCMClient):
         """
         try:
             url = '%s/json-rev/%s' % (self.path_stripped, revision)
-            contents = self.get_file_http(url, '', '')
+            contents = self.get_file_http(url, '', '', 'application/json')
         except Exception as e:
             logging.exception('Cannot load detail of changeset from hgweb: %s',
                               e)
@@ -384,14 +384,14 @@ class HgWebClient(SCMClient):
 
         try:
             url = '%s/json-log/?rev=%s' % (self.path_stripped, query)
-            contents = self.get_file_http(url, '', '')
+            contents = self.get_file_http(url, '', '', 'application/json')
         except Exception as e:
             logging.exception('Cannot load commits from hgweb: %s', e)
             return []
 
         results = []
 
-        if contents:
+        if contents and contents != '"not yet implemented"':
             for data in json.loads(contents)['entries']:
                 parent = data['parents'][0]
                 iso8601 = HgTool.date_tuple_to_iso8601(data['date'])
