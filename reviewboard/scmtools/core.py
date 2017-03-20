@@ -1069,7 +1069,7 @@ class SCMClient(object):
         self.username = username
         self.password = password
 
-    def get_file_http(self, url, path, revision):
+    def get_file_http(self, url, path, revision, mime_type=None):
         """Return the contents of a file from an HTTP(S) URL.
 
         This is a convenience for looking up the contents of files that are
@@ -1088,9 +1088,13 @@ class SCMClient(object):
             revision (Revision):
                 The revision of the file, as referenced in the diff.
 
+            mime_type (unicode):
+                The expected content type of the file. If not specified,
+                this will default to accept everything.
+
         Returns:
             bytes:
-            The contents of the file.
+            The contents of the file if content type matched, otherwise None.
 
         Raises:
             reviewboard.scmtools.errors.FileNotFoundError:
@@ -1110,7 +1114,12 @@ class SCMClient(object):
                                                           self.password))
                 request.add_header('Authorization', 'Basic %s' % auth_string)
 
-            return urlopen(request).read()
+            response = urlopen(request)
+
+            if mime_type is None or response.info().gettype() == mime_type:
+                return response.read()
+
+            return None
         except HTTPError as e:
             if e.code == 404:
                 logging.error('404')
