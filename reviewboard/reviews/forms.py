@@ -97,7 +97,7 @@ class DefaultReviewerForm(forms.ModelForm):
 
 class GroupForm(forms.ModelForm):
     users = forms.ModelMultipleChoiceField(
-        queryset=User.objects.filter(is_active=True),
+        queryset=User.objects.all(),
         label=_('Users'),
         required=False,
         widget=RelatedUserWidget())

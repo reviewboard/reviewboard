@@ -21,7 +21,7 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.auth.signals import user_registered
 
 from reviewboard.accounts.models import ReviewRequestVisit
-from reviewboard.admin.server import get_server_url
+from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.models import Group, ReviewRequest, Review
 from reviewboard.reviews.signals import (review_request_published,
@@ -989,6 +989,47 @@ def mail_webapi_token(webapi_token, op):
         logging.exception("Error sending API Token e-mail with subject '%s' "
                           "from '%s' to '%s': %s",
                           subject, settings.SERVER_EMAIL, user_email, e)
+
+
+def mail_password_changed(user):
+    """Send an e-mail when a user's password changes.
+
+    Args:
+        user (django.contrib.auth.model.User):
+            The user whose password changed.
+    """
+    api_token_url = (
+        '%s#api-tokens'
+        % build_server_url(reverse('user-preferences'))
+    )
+    server_url = get_server_url()
+
+    context = {
+        'api_token_url': api_token_url,
+        'has_api_tokens': user.webapi_tokens.exists(),
+        'server_url': server_url,
+        'user': user,
+    }
+
+    user_email = build_email_address_for_user(user)
+    text_body = render_to_string('notifications/password_changed.txt', context)
+    html_body = render_to_string('notifications/password_changed.html',
+                                 context)
+
+    message = EmailMessage(
+        subject='Password changed for user "%s" on %s' % server_url,
+        text_body=text_body,
+        html_body=html_body,
+        from_email=settings.SERVER_EMAIL,
+        sender=settings.SERVER_EMAIL,
+        to=user_email,
+    )
+
+    try:
+        message.send()
+    except Exception as e:
+        logging.exception('Failed to send password changed email to %s: %s',
+                          user.username, e)
 
 
 def filter_email_recipients_from_hooks(to_field, cc_field, signal, **kwargs):

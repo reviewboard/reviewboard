@@ -31,7 +31,7 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
     (and only once) in a PUT request.
     """
 
-    name = 'file_attachment'
+    name = 'user_file_attachment'
     model_parent_key = 'user'
 
     added_in = '3.0'
@@ -155,7 +155,8 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
         file_attachment = form.create(request.user, local_site)
 
         return 201, {
-            self.item_result_key: file_attachment
+            self.item_result_key: self.serialize_object(
+                file_attachment, request=request, *args, **kwargs),
         }
 
     @webapi_check_local_site

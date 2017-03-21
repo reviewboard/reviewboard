@@ -14,6 +14,9 @@ urlpatterns = patterns(
     url(r'^preferences/$',
         MyAccountView.as_view(),
         name="user-preferences"),
+    url(r'^preferences/preview-email/password-changed/$',
+        'preview_password_changed_email',
+        name='preview-password-change-email')
 )
 
 urlpatterns += patterns(
