@@ -47,6 +47,13 @@ from reviewboard.site.urlresolvers import local_site_reverse
 
 
 class GitHubPublicForm(HostingServiceForm):
+
+    github_public_repo_access = forms.ChoiceField(
+        label=_('Access Type'),
+        required=True,
+        choices=(('git', 'Git',), ('https', 'Https',)),
+        help_text=_('The access protocol for this repository: git or https'))
+
     github_public_repo_name = forms.CharField(
         label=_('Repository name'),
         max_length=64,
@@ -69,6 +76,13 @@ class GitHubPrivateForm(HostingServiceForm):
 
 
 class GitHubPublicOrgForm(HostingServiceForm):
+
+    github_public_org_access = forms.ChoiceField(
+        label=_('Access Type'),
+        required=True,
+        choices=(('git', 'Git',), ('https', 'Https',)),
+        help_text=_('The access protocol for this repository: git or https'))
+
     github_public_org_name = forms.CharField(
         label=_('Organization name'),
         max_length=64,
@@ -406,12 +420,12 @@ class GitHub(HostingService, BugTracker):
             'form': GitHubPublicForm,
             'repository_fields': {
                 'Git': {
-                    'path': 'git://github.com/%(hosting_account_username)s/'
+                    'path': '%(github_public_repo_access)s://github.com/%(hosting_account_username)s/'
                             '%(github_public_repo_name)s.git',
                     'mirror_path': 'git@github.com:'
                                    '%(hosting_account_username)s/'
                                    '%(github_public_repo_name)s.git',
-                }
+                },
             },
             'bug_tracker_field': 'http://github.com/'
                                  '%(hosting_account_username)s/'
@@ -423,11 +437,11 @@ class GitHub(HostingService, BugTracker):
             'form': GitHubPublicOrgForm,
             'repository_fields': {
                 'Git': {
-                    'path': 'git://github.com/%(github_public_org_name)s/'
+                    'path': '%(github_public_org_access)s://github.com/%(github_public_org_name)s/'
                             '%(github_public_org_repo_name)s.git',
                     'mirror_path': 'git@github.com:%(github_public_org_name)s/'
                                    '%(github_public_org_repo_name)s.git',
-                }
+                },
             },
             'bug_tracker_field': 'http://github.com/'
                                  '%(github_public_org_name)s/'
