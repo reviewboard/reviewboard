@@ -5,6 +5,8 @@ from reviewboard.testing import TestCase
 
 
 class FileDiffMigrationTests(TestCase):
+    """Unit tests for FileDiff migration."""
+
     fixtures = ['test_scmtools']
 
     def setUp(self):
@@ -17,7 +19,8 @@ class FileDiffMigrationTests(TestCase):
             b'+++ README\n'
             b'@@ -2 +2 @@\n'
             b'-blah..\n'
-            b'+blah blah\n')
+            b'+blah blah\n'
+        )
 
         repository = self.create_repository(tool_name='Test')
         diffset = DiffSet.objects.create(name='test',
@@ -27,43 +30,43 @@ class FileDiffMigrationTests(TestCase):
                                  dest_file='README',
                                  diffset=diffset,
                                  diff64='',
-                                 parent_diff64='')
+                                 parent_diff64=b'')
 
     def test_migration_by_diff(self):
         """Testing FileDiffData migration accessing FileDiff.diff"""
         self.filediff.diff64 = self.DEFAULT_GIT_FILEDIFF_DATA
 
-        self.assertEqual(self.filediff.diff_hash, None)
-        self.assertEqual(self.filediff.parent_diff_hash, None)
+        self.assertIsNone(self.filediff.diff_hash)
+        self.assertIsNone(self.filediff.parent_diff_hash)
 
-        # This should prompt the migration
+        # This should prompt the migration.
         diff = self.filediff.diff
 
-        self.assertEqual(self.filediff.parent_diff_hash, None)
-        self.assertNotEqual(self.filediff.diff_hash, None)
+        self.assertIsNone(self.filediff.parent_diff_hash)
+        self.assertIsNotNone(self.filediff.diff_hash)
 
         self.assertEqual(diff, self.DEFAULT_GIT_FILEDIFF_DATA)
-        self.assertEqual(self.filediff.diff64, '')
+        self.assertEqual(self.filediff.diff64, b'')
         self.assertEqual(self.filediff.diff_hash.binary,
                          self.DEFAULT_GIT_FILEDIFF_DATA)
         self.assertEqual(self.filediff.diff, diff)
-        self.assertEqual(self.filediff.parent_diff, None)
-        self.assertEqual(self.filediff.parent_diff_hash, None)
+        self.assertIsNone(self.filediff.parent_diff)
+        self.assertIsNone(self.filediff.parent_diff_hash)
 
     def test_migration_by_parent_diff(self):
         """Testing FileDiffData migration accessing FileDiff.parent_diff"""
         self.filediff.diff64 = self.DEFAULT_GIT_FILEDIFF_DATA
         self.filediff.parent_diff64 = self.parent_diff
 
-        self.assertEqual(self.filediff.parent_diff_hash, None)
+        self.assertIsNone(self.filediff.parent_diff_hash)
 
-        # This should prompt the migration
+        # This should prompt the migration.
         parent_diff = self.filediff.parent_diff
 
-        self.assertNotEqual(self.filediff.parent_diff_hash, None)
+        self.assertIsNotNone(self.filediff.parent_diff_hash)
 
         self.assertEqual(parent_diff, self.parent_diff)
-        self.assertEqual(self.filediff.parent_diff64, '')
+        self.assertEqual(self.filediff.parent_diff64, b'')
         self.assertEqual(self.filediff.parent_diff_hash.binary,
                          self.parent_diff)
         self.assertEqual(self.filediff.parent_diff, self.parent_diff)
@@ -72,12 +75,12 @@ class FileDiffMigrationTests(TestCase):
         """Testing FileDiffData migration accessing FileDiff.delete_count"""
         self.filediff.diff64 = self.DEFAULT_GIT_FILEDIFF_DATA
 
-        self.assertEqual(self.filediff.diff_hash, None)
+        self.assertIsNone(self.filediff.diff_hash)
 
-        # This should prompt the migration
+        # This should prompt the migration.
         counts = self.filediff.get_line_counts()
 
-        self.assertNotEqual(self.filediff.diff_hash, None)
+        self.assertIsNotNone(self.filediff.diff_hash)
         self.assertEqual(counts['raw_delete_count'], 1)
         self.assertEqual(self.filediff.diff_hash.delete_count, 1)
 
@@ -85,12 +88,12 @@ class FileDiffMigrationTests(TestCase):
         """Testing FileDiffData migration accessing FileDiff.insert_count"""
         self.filediff.diff64 = self.DEFAULT_GIT_FILEDIFF_DATA
 
-        self.assertEqual(self.filediff.diff_hash, None)
+        self.assertIsNone(self.filediff.diff_hash)
 
-        # This should prompt the migration
+        # This should prompt the migration.
         counts = self.filediff.get_line_counts()
 
-        self.assertNotEqual(self.filediff.diff_hash, None)
+        self.assertIsNotNone(self.filediff.diff_hash)
         self.assertEqual(counts['raw_insert_count'], 1)
         self.assertEqual(self.filediff.diff_hash.insert_count, 1)
 
@@ -98,13 +101,13 @@ class FileDiffMigrationTests(TestCase):
         """Testing FileDiffData migration calling FileDiff.set_line_counts"""
         self.filediff.diff64 = self.DEFAULT_GIT_FILEDIFF_DATA
 
-        self.assertEqual(self.filediff.diff_hash, None)
+        self.assertIsNone(self.filediff.diff_hash)
 
         # This should prompt the migration, but with our line counts.
         self.filediff.set_line_counts(raw_insert_count=10,
                                       raw_delete_count=20)
 
-        self.assertNotEqual(self.filediff.diff_hash, None)
+        self.assertIsNotNone(self.filediff.diff_hash)
 
         counts = self.filediff.get_line_counts()
         self.assertEqual(counts['raw_insert_count'], 10)

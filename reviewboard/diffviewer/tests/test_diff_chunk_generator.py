@@ -7,6 +7,7 @@ from reviewboard.testing import TestCase
 
 class DiffChunkGeneratorTests(TestCase):
     """Unit tests for DiffChunkGenerator."""
+
     fixtures = ['test_scmtools']
 
     def setUp(self):

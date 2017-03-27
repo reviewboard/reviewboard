@@ -13,6 +13,7 @@ from reviewboard.testing import TestCase
 
 class DiffRendererTests(SpyAgency, TestCase):
     """Unit tests for DiffRenderer."""
+
     def test_construction_with_invalid_chunks(self):
         """Testing DiffRenderer construction with invalid chunks"""
         diff_file = {

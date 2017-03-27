@@ -8,6 +8,7 @@ from reviewboard.testing import TestCase
 
 class DiffSetManagerTests(SpyAgency, TestCase):
     """Unit tests for DiffSetManager."""
+
     fixtures = ['test_scmtools']
 
     def test_creating_with_diff_data(self):
