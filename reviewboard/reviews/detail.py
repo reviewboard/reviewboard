@@ -511,7 +511,7 @@ class StatusUpdatesEntryMixin(object):
         if self.state_counts[StatusUpdate.ERROR] > 0:
             summary_parts.append(
                 _('%s failed with error')
-                % self.state_counts[StatusUpdate.PENDING])
+                % self.state_counts[StatusUpdate.ERROR])
 
         if self.state_counts[StatusUpdate.TIMEOUT] > 0:
             summary_parts.append(
