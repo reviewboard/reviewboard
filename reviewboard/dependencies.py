@@ -38,7 +38,7 @@ package_dependencies = {
     'paramiko': '>=1.12',
     'pycrypto': '>=2.6',
     'Pygments': '>=2.1',
-    'python-dateutil': '==1.5',
+    'python-dateutil': '>=1.5',
     'python-memcached': '',
     'pytz': '>=2015.2',
     'Whoosh': '>=2.6',

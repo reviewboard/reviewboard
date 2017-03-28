@@ -3,7 +3,9 @@
 
 var BannerView,
     ClosedBannerView,
-    DraftBannerView;
+    DiscardedBannerView,
+    DraftBannerView,
+    SubmittedBannerView;
 
 
 /*
