@@ -63,6 +63,7 @@ suite('rb/views/ReviewDialogView', function() {
                 review_url: '/review-ui/'
             }
         }, baseCommentPayload),
+        origGeneralCommentsEnabled = RB.EnabledFeatures.generalComments,
         reviewRequestEditor,
         review,
         dlg;
@@ -109,10 +110,14 @@ suite('rb/views/ReviewDialogView', function() {
         /* Prevent these from being called. */
         spyOn(RB.DiffFragmentQueueView.prototype, 'queueLoad');
         spyOn(RB.DiffFragmentQueueView.prototype, 'loadFragments');
+
+        /* By default, general comments should be enabled. */
+        RB.EnabledFeatures.generalComments = true;
     });
 
     afterEach(function() {
         RB.ReviewDialogView._instance = null;
+        RB.EnabledFeatures.generalComments = origGeneralCommentsEnabled;
     });
 
     describe('Class methods', function() {
@@ -312,11 +317,10 @@ suite('rb/views/ReviewDialogView', function() {
                 });
 
                 describe('General comments', function() {
-                    function testLoadGeneralComments(){
-                        generalCommentsPayload.total_results = 1;
-                        generalCommentsPayload.general_comments = [
-                            generalCommentPayload
-                        ];
+                    it('Disabled', function() {
+                        var $button;
+
+                        RB.EnabledFeatures.generalComments = false;
 
                         dlg = RB.ReviewDialogView.create({
                             review: review,
@@ -324,74 +328,112 @@ suite('rb/views/ReviewDialogView', function() {
                             reviewRequestEditor: reviewRequestEditor
                         });
 
+                        $button = dlg._$buttons.find(
+                            'input[value="Add Comment"]');
+                        expect($button.length).toBe(0);
+
                         expect($.ajax).toHaveBeenCalled();
-                        expect($.ajax.calls.argsFor(0)[0].url).toBe(
+                        expect($.ajax.calls.argsFor(0)[0].url).not.toBe(
                             '/general-comments/');
-                        ajaxData = $.ajax.calls.argsFor(0)[0].data;
 
-                        expect(dlg._commentViews.length).toBe(1);
-
-                        commentView = dlg._commentViews[0];
-                        expect(commentView.$editor.text())
-                            .toBe(generalCommentPayload.text);
-                        expect(commentView.$issueOpened.prop('checked')).toBe(
-                        generalCommentPayload.issue_opened);
-
-                        expect(dlg._bodyBottomView.$el.is(':visible')).toBe(true);
-                        expect(dlg._$spinner).toBe(null);
-                    }
-
-                    it('With defaultUseRichText=true', function() {
-                        RB.UserSession.instance.set('defaultUseRichText', true);
-
-                        testLoadGeneralComments();
-
-                        expect(ajaxData).toEqual({
-                            'api_format': 'json',
-                            'max-results': 50,
-                            'force-text-type': 'html',
-                            'include-text-types': 'raw,markdown'
-                        });
+                        expect(dlg._commentViews.length).toBe(0);
                     });
 
-                    it('With defaultUseRichText=false', function() {
-                        RB.UserSession.instance.set('defaultUseRichText',
-                                                    false);
+                    describe('Enabled', function() {
+                        function testLoadGeneralComments(){
+                            var $button;
 
-                        testLoadGeneralComments();
+                            generalCommentsPayload.total_results = 1;
+                            generalCommentsPayload.general_comments = [
+                                generalCommentPayload
+                            ];
 
-                        expect(ajaxData).toEqual({
-                            'api_format': 'json',
-                            'max-results': 50,
-                            'force-text-type': 'html',
-                            'include-text-types': 'raw'
+                            dlg = RB.ReviewDialogView.create({
+                                review: review,
+                                container: $testsScratch,
+                                reviewRequestEditor: reviewRequestEditor
+                            });
+
+                            $button = dlg._$buttons.find(
+                                'input[value="Add Comment"]');
+                            expect($button.length).toBe(1);
+
+                            expect($.ajax).toHaveBeenCalled();
+                            expect($.ajax.calls.argsFor(0)[0].url).toBe(
+                                '/general-comments/');
+                            ajaxData = $.ajax.calls.argsFor(0)[0].data;
+
+                            expect(dlg._commentViews.length).toBe(1);
+
+                            commentView = dlg._commentViews[0];
+                            expect(commentView.$editor.text())
+                                .toBe(generalCommentPayload.text);
+                            expect(commentView.$issueOpened.prop('checked'))
+                                .toBe(
+                            generalCommentPayload.issue_opened);
+
+                            expect(dlg._bodyBottomView.$el.is(':visible'))
+                                .toBe(true);
+                            expect(dlg._$spinner).toBe(null);
+                        }
+
+                        it('With defaultUseRichText=true', function() {
+                            RB.UserSession.instance.set('defaultUseRichText',
+                                                        true);
+
+                            testLoadGeneralComments();
+
+                            expect(ajaxData).toEqual({
+                                'api_format': 'json',
+                                'max-results': 50,
+                                'force-text-type': 'html',
+                                'include-text-types': 'raw,markdown'
+                            });
                         });
-                    });
 
-                     it('Deleting comment', function() {
-                        spyOn(window, 'confirm').and.callFake(function() {
-                            return true;
+                        it('With defaultUseRichText=false', function() {
+                            RB.UserSession.instance.set('defaultUseRichText',
+                                                        false);
+
+                            testLoadGeneralComments();
+
+                            expect(ajaxData).toEqual({
+                                'api_format': 'json',
+                                'max-results': 50,
+                                'force-text-type': 'html',
+                                'include-text-types': 'raw'
+                            });
                         });
 
-                        testLoadGeneralComments();
+                        it('Deleting comment', function() {
+                            spyOn(window, 'confirm').and.callFake(function() {
+                                return true;
+                            });
 
-                        expect(dlg._generalCommentsCollection.length).toBe(1);
+                            testLoadGeneralComments();
 
-                        dlg.$('.delete-comment').click();
-                        expect(dlg._generalCommentsCollection.length).toBe(0);
-                    });
+                            expect(dlg._generalCommentsCollection.length)
+                                .toBe(1);
 
-                    it('Deleting comment and cancelling', function() {
-                        spyOn(window, 'confirm').and.callFake(function() {
-                            return false;
+                            dlg.$('.delete-comment').click();
+                            expect(dlg._generalCommentsCollection.length)
+                                .toBe(0);
                         });
 
-                        testLoadGeneralComments();
+                        it('Deleting comment and cancelling', function() {
+                            spyOn(window, 'confirm').and.callFake(function() {
+                                return false;
+                            });
 
-                        expect(dlg._generalCommentsCollection.length).toBe(1);
+                            testLoadGeneralComments();
 
-                        dlg.$('.delete-comment').click();
-                        expect(dlg._generalCommentsCollection.length).toBe(1);
+                            expect(dlg._generalCommentsCollection.length)
+                                .toBe(1);
+
+                            dlg.$('.delete-comment').click();
+                            expect(dlg._generalCommentsCollection.length)
+                                .toBe(1);
+                        });
                     });
                 });
 
