@@ -5,6 +5,8 @@ from reviewboard.testing import TestCase
 
 
 class InterestingLinesTest(TestCase):
+    """Unit tests for interesting lines scanner in differ."""
+
     def test_csharp(self):
         """Testing interesting lines scanner with a C# file"""
         a = (b'public class HelloWorld {\n'
@@ -284,7 +286,5 @@ class InterestingLinesTest(TestCase):
         # Begin the scan.
         list(differ.get_opcodes())
 
-        result = (differ.get_interesting_lines('header', False),
-                  differ.get_interesting_lines('header', True))
-
-        return result
+        return (differ.get_interesting_lines('header', False),
+                differ.get_interesting_lines('header', True))
