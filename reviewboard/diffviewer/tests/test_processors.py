@@ -5,8 +5,8 @@ from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
 from reviewboard.testing import TestCase
 
 
-class ProcessorsTests(TestCase):
-    """Unit tests for diff processors."""
+class FilterInterdiffOpcodesTests(TestCase):
+    """Unit tests for filter_interdiff_opcodes."""
 
     def test_filter_interdiff_opcodes(self):
         """Testing filter_interdiff_opcodes"""
@@ -311,6 +311,25 @@ class ProcessorsTests(TestCase):
         ])
         self._sanity_check_opcodes(new_opcodes)
 
+    def _sanity_check_opcodes(self, opcodes):
+        prev_i2 = None
+        prev_j2 = None
+
+        for tag, i1, i2, j1, j2 in opcodes:
+            if tag == 'replace':
+                self.assertEqual((i2 - i1), (j2 - j1))
+
+            if prev_i2 is not None and prev_j2 is not None:
+                self.assertEqual(i1, prev_i2)
+                self.assertEqual(j1, prev_j2)
+
+            prev_i2 = i2
+            prev_j2 = j2
+
+
+class PostProcessFilteredEqualsTests(TestCase):
+    """Unit tests for post_process_filtered_equals."""
+
     def test_post_process_filtered_equals(self):
         """Testing post_process_filtered_equals"""
         opcodes = [
@@ -399,18 +418,3 @@ class ProcessorsTests(TestCase):
                 }),
                 ('equal', 40, 50, 30, 40, {}),
             ])
-
-    def _sanity_check_opcodes(self, opcodes):
-        prev_i2 = None
-        prev_j2 = None
-
-        for tag, i1, i2, j1, j2 in opcodes:
-            if tag == 'replace':
-                self.assertEqual((i2 - i1), (j2 - j1))
-
-            if prev_i2 is not None and prev_j2 is not None:
-                self.assertEqual(i1, prev_i2)
-                self.assertEqual(j1, prev_j2)
-
-            prev_i2 = i2
-            prev_j2 = j2

@@ -6,6 +6,7 @@ from reviewboard.testing import TestCase
 
 class FileDiffTests(TestCase):
     """Unit tests for FileDiff."""
+
     fixtures = ['test_scmtools']
 
     def setUp(self):
@@ -22,15 +23,15 @@ class FileDiffTests(TestCase):
             b'+blah!!\n'
         )
 
-        repository = self.create_repository(tool_name='Test')
-        diffset = DiffSet.objects.create(name='test',
-                                         revision=1,
-                                         repository=repository)
+        self.repository = self.create_repository(tool_name='Test')
+        self.diffset = DiffSet.objects.create(name='test',
+                                              revision=1,
+                                              repository=self.repository)
         self.filediff = FileDiff(source_file='README',
                                  dest_file='README',
-                                 diffset=diffset,
+                                 diffset=self.diffset,
                                  diff64=diff,
-                                 parent_diff64='')
+                                 parent_diff64=b'')
 
     def test_get_line_counts_with_defaults(self):
         """Testing FileDiff.get_line_counts with default values"""
@@ -80,30 +81,18 @@ class FileDiffTests(TestCase):
         self.assertEqual(diff_hash.delete_count, 2)
 
     def test_long_filenames(self):
-        """Testing using long filenames (1024 characters) in FileDiff."""
+        """Testing FileDiff with long filenames (1024 characters)"""
         long_filename = 'x' * 1024
 
-        repository = self.create_repository()
-        diffset = DiffSet.objects.create(name='test',
-                                         revision=1,
-                                         repository=repository)
-        filediff = FileDiff(source_file=long_filename,
-                            dest_file='foo',
-                            diffset=diffset)
-        filediff.save()
-
-        filediff = FileDiff.objects.get(pk=filediff.id)
+        filediff = FileDiff.objects.create(source_file=long_filename,
+                                           dest_file='foo',
+                                           diffset=self.diffset)
         self.assertEqual(filediff.source_file, long_filename)
 
     def test_diff_hashes(self):
-        """Testing that uploading two of the same diff will result in only
-        one database entry
+        """Testing FileDiff with multiple entries and same diff data
+        deduplicates data
         """
-        repository = self.create_repository()
-        diffset = DiffSet.objects.create(name='test',
-                                         revision=1,
-                                         repository=repository)
-
         data = (
             b'diff -rcN orig_src/foo.c new_src/foo.c\n'
             b'*** orig_src/foo.c\t2007-01-24 02:11:31.000000000 -0800\n'
@@ -125,7 +114,7 @@ class FileDiffTests(TestCase):
             b'! \treturn 0;\n'
             b'  }\n')
 
-        filediff1 = FileDiff.objects.create(diff=data, diffset=diffset)
-        filediff2 = FileDiff.objects.create(diff=data, diffset=diffset)
+        filediff1 = FileDiff.objects.create(diff=data, diffset=self.diffset)
+        filediff2 = FileDiff.objects.create(diff=data, diffset=self.diffset)
 
         self.assertEqual(filediff1.diff_hash, filediff2.diff_hash)
