@@ -41,6 +41,7 @@ package_dependencies = {
     'python-dateutil': '>=1.5',
     'python-memcached': '',
     'pytz': '>=2015.2',
+    'rbintegrations': '>=0.5b1',
     'Whoosh': '>=2.6',
 }
 
