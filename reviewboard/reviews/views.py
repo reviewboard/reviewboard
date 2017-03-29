@@ -378,6 +378,13 @@ def review_detail(request,
     last_activity_time, updated_object = \
         review_request.get_last_activity(data.diffsets, data.reviews)
 
+    etag_timestamp = last_activity_time
+
+    if status_updates_enabled:
+        for status_update in data.status_updates:
+            if status_update.timestamp > etag_timestamp:
+                etag_timestamp = status_update.timestamp
+
     if data.draft:
         draft_timestamp = data.draft.last_updated
     else:
@@ -388,7 +395,7 @@ def review_detail(request,
     # Find out if we can bail early. Generate an ETag for this.
     etag = encode_etag(
        '%s:%s:%s:%s:%s:%s:%s:%s:%s:%s' %
-       (request.user, last_activity_time, draft_timestamp,
+       (request.user, etag_timestamp, draft_timestamp,
         data.latest_review_timestamp,
         review_request.last_review_activity_timestamp,
         is_rich_text_default_for_user(request.user),

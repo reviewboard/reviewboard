@@ -64,7 +64,7 @@ class StatusUpdate(models.Model):
         null=True)
 
     #: The timestamp of the status update.
-    timestamp = models.DateTimeField(_('Timestamp'), default=timezone.now)
+    timestamp = models.DateTimeField(_('Timestamp'), auto_now=True)
 
     #: A user-visible short summary of the status update.
     #:

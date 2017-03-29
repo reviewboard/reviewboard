@@ -178,6 +178,12 @@ class ReviewRequestPageData(object):
         self.diffsets = self.review_request.get_diffsets()
         self.diffsets_by_id = self._build_id_map(self.diffsets)
 
+        # Get all status updates.
+        if status_updates_feature.is_enabled(request=self.request):
+            self.status_updates = list(
+                self.review_request.status_updates.all()
+                .select_related('review'))
+
     def query_data_post_etag(self):
         """Perform remaining queries for the page.
 
@@ -255,12 +261,6 @@ class ReviewRequestPageData(object):
             screenshot._comments = []
 
         review_ids = self.reviews_by_id.keys()
-
-        # Get all status updates.
-        if status_updates_feature.is_enabled(request=self.request):
-            self.status_updates = list(
-                self.review_request.status_updates.all()
-                .select_related('review'))
 
         self.comments = []
         self.issues = []
