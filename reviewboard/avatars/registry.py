@@ -2,12 +2,12 @@ from __future__ import unicode_literals
 
 from djblets.avatars.registry import (
     AvatarServiceRegistry as DjbletsAvatarServiceRegistry)
-from djblets.avatars.services import (FileUploadService,
-                                      GravatarService,
+from djblets.avatars.services import (GravatarService,
                                       URLAvatarService)
 from djblets.registries.mixins import ExceptionFreeGetterMixin
 from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.avatars.services import FileUploadService
 from reviewboard.avatars.settings import UserProfileAvatarSettingsManager
 
 

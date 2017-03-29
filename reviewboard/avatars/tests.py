@@ -1,18 +1,22 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import AnonymousUser, User
-from django.test.client import RequestFactory
+from django.core.files.storage import get_storage_class
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.template import RequestContext, Template
+from django.test.client import RequestFactory
 from django.utils.html import escape
-from djblets.avatars.services import (FileUploadService,
-                                      GravatarService,
+from djblets.avatars.services import (GravatarService,
                                       URLAvatarService)
 from djblets.avatars.tests import DummyAvatarService, DummyHighDPIAvatarService
 from djblets.siteconfig.models import SiteConfiguration
+from kgb import SpyAgency
 
+from reviewboard.accounts.forms.pages import AvatarSettingsForm
 from reviewboard.accounts.models import Profile
 from reviewboard.avatars import avatar_services
 from reviewboard.avatars.registry import AvatarServiceRegistry
+from reviewboard.avatars.services import FileUploadService
 from reviewboard.avatars.testcase import AvatarServicesTestMixin
 from reviewboard.testing.testcase import TestCase
 
@@ -299,3 +303,51 @@ class TemplateTagTests(AvatarServicesTestMixin, TestCase):
             ' height="32" srcset="http://example.com/avatar.png 1x"'
             ' class="avatar">\n'
             % escaped_user)
+
+
+class FileUploadServiceTests(SpyAgency, AvatarServicesTestMixin, TestCase):
+    fixtures = ['test_users']
+
+    @classmethod
+    def setUpClass(cls):
+        super(FileUploadServiceTests, cls).setUpClass()
+
+        cls.request_factory = RequestFactory()
+
+    def test_absolute_urls(self):
+        """Testing FileUploadService.get_avatar_urls_uncached returns absolute
+        URLs
+        """
+        user = User.objects.get(username='doc')
+        avatar = SimpleUploadedFile('filename.png', content=b' ',
+                                    content_type='image/png')
+
+        service = avatar_services.get_avatar_service(
+            FileUploadService.avatar_service_id)
+        storage_cls = get_storage_class()
+
+        self.spy_on(storage_cls.save,
+                    call_fake=lambda self, filename, data: filename)
+
+        form = AvatarSettingsForm(
+            page=None,
+            request=self.request_factory.post('/'),
+            user=user,
+            data={
+                'avatar_service_id': FileUploadService.avatar_service_id,
+            })
+
+        service_form = \
+            form.avatar_service_forms[FileUploadService.avatar_service_id]
+
+        form.files = service_form.files = {
+            service_form.add_prefix('avatar_upload'): avatar,
+        }
+
+        self.assertTrue(form.is_valid())
+        form.save()
+
+        file_path = storage_cls.save.spy.last_call.args[0]
+
+        self.assertEqual(service.get_avatar_urls_uncached(user, None),
+                         {'1x': 'http://example.com/media/%s' % file_path})
