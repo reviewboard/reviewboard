@@ -2,7 +2,7 @@
 Review Board 3.0 Beta 1 Release Notes
 =====================================
 
-**Release date**: TBD
+**Release date**: March 29, 2017
 
 
 This release contains all bug fixes and features from Review Board version
@@ -15,13 +15,18 @@ Installation
 To install this release, run the following::
 
     $ sudo pip install \
+        --trusted-host downloads.reviewboard.org \
+        -f http://downloads.reviewboard.org/releases/Djblets/0.10/ \
         -f http://downloads.reviewboard.org/releases/ReviewBoard/3.0/ \
-        -U ReviewBoard
+        -f http://downloads.reviewboard.org/releases/rbintegrations/0.5/ \
+        --pre -U ReviewBoard
 
 Or::
 
     $ sudo easy_install \
+        -f http://downloads.reviewboard.org/releases/Djblets/0.10/ \
         -f http://downloads.reviewboard.org/releases/ReviewBoard/3.0/ \
+        -f http://downloads.reviewboard.org/releases/rbintegrations/0.5/ \
         -U ReviewBoard
 
 We **do not** recommend upgrading a production server with this version of
