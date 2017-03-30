@@ -29,7 +29,7 @@ RB.UserFileAttachment = RB.BaseResource.extend({
         }, RB.BaseResource.prototype.defaults());
     },
 
-    rspNamespace: 'file_attachment',
+    rspNamespace: 'user_file_attachment',
     payloadFileKeys: ['path'],
 
     attrToJsonMap: {
@@ -61,7 +61,7 @@ RB.UserFileAttachment = RB.BaseResource.extend({
      */
     url() {
         const username = this.get('userName');
-        const url = `${SITE_ROOT}api/users/${username}/file-attachments/`;
+        const url = `${SITE_ROOT}api/users/${username}/user-file-attachments/`;
 
         return this.isNew() ? url : `${url}${this.id}/`;
     }

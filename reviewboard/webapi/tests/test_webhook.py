@@ -43,7 +43,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
 
     resource = resources.webhook
 
-    sample_api_url = 'api/webhooks/'
+    sample_api_url = 'webhooks/'
 
     basic_get_use_admin = True
     basic_post_use_admin = True
@@ -317,7 +317,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
     resource = resources.webhook
 
-    sample_api_url = 'api/webhooks/<id>/'
+    sample_api_url = 'webhooks/<id>/'
 
     basic_get_use_admin = True
     basic_delete_use_admin = True

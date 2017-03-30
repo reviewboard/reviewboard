@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-{% load avatars djblets_deco djblets_extensions djblets_utils i18n pipeline staticfiles %}
+{% load avatars djblets_deco djblets_extensions djblets_utils features i18n pipeline staticfiles %}
 
 <html>
  <head>
@@ -136,6 +136,10 @@
         loginURL: "{% url 'login' %}"
 {% endif %}
     });
+
+    RB.EnabledFeatures = {
+        generalComments: {% if_feature_enabled 'reviews.general_comments' %}true{% else %}false{% endif_feature_enabled %}
+    };
 
     new RB.HeaderView({ el: $('#headerbar') });
   </script>

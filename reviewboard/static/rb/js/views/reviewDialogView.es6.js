@@ -961,11 +961,18 @@ RB.ReviewDialogView = Backbone.View.extend({
      */
     _loadComments() {
         const collections = [
-            this._generalCommentsCollection,
             this._screenshotCommentsCollection,
             this._fileAttachmentCommentsCollection,
             this._diffCommentsCollection
         ];
+
+        if (RB.EnabledFeatures.generalComments) {
+            /*
+             * Prepend the General Comments so they're fetched and shown
+             * first.
+             */
+            collections.unshift(this._generalCommentsCollection);
+        }
 
         this._loadCommentsFromCollection(collections, () => {
             this._$spinner.remove();
@@ -1063,7 +1070,7 @@ RB.ReviewDialogView = Backbone.View.extend({
     _renderDialog() {
         const buttons = [];
 
-        if (this.options.generalCommentsEnabled) {
+        if (RB.EnabledFeatures.generalComments) {
             buttons.push(
                 $('<input type="button" />')
                     .val(gettext('Add Comment'))
@@ -1311,9 +1318,6 @@ RB.ReviewDialogView = Backbone.View.extend({
      *     container (jQuery):
      *         The DOM container to attach the dialog to.
      *
-     *     generalCommentsEnabled (bool):
-     *         Whether general comments are enabled.
-     *
      *     review (RB.Review):
      *         The review to show in this dialog.
      *
@@ -1329,7 +1333,6 @@ RB.ReviewDialogView = Backbone.View.extend({
             container: options.container,
             model: options.review,
             reviewRequestEditor: options.reviewRequestEditor,
-            generalCommentsEnabled: options.generalCommentsEnabled,
         });
         RB.ReviewDialogView._instance = dialog;
 

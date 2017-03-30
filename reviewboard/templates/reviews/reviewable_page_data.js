@@ -1,4 +1,4 @@
-{% load djblets_js djblets_utils features reviewtags %}
+{% load djblets_js djblets_utils reviewtags %}
         el: document.body,
         reviewRequestData: {
             bugTrackerURL: "{% if review_request.repository.bug_tracker %}{% url 'bug_url' review_request.display_id '--bug_id--' %}{% endif %}",
@@ -16,7 +16,6 @@
             closeDescriptionRichText: {{close_description_rich_text|yesno:'true,false'}},
             description: "{% normalize_text_for_edit review_request_details.description review_request_details.description_rich_text True %}",
             descriptionRichText: {{review_request_details.description_rich_text|yesno:'true,false'}},
-            generalCommentsEnabled: {% if_feature_enabled 'reviews.general_comments' %}'true'{% else %}'false'{% endif_feature_enabled %},
             hasDraft: {{draft|yesno:'true,false'}},
             lastUpdatedTimestamp: {{review_request.last_updated|json_dumps}},
             public: {{review_request.public|yesno:'true,false'}},

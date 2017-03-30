@@ -354,8 +354,6 @@ RB.ReviewablePageView = Backbone.View.extend({
      */
     _onEditReviewClicked() {
         RB.ReviewDialogView.create({
-            generalCommentsEnabled:
-                this.options.reviewRequestData.generalCommentsEnabled,
             review: this.pendingReview,
             reviewRequestEditor: this.reviewRequestEditor,
         });
