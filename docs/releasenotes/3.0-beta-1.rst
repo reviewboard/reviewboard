@@ -67,8 +67,8 @@ Compatibility Changes
 * Review Board 3.0 requires Python 2.7 or higher.
 
 
-New User Features
-=================
+New Features
+============
 
 General Comments
 ----------------
