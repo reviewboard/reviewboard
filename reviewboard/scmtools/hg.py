@@ -17,7 +17,7 @@ class HgTool(SCMTool):
     name = "Mercurial"
     supports_authentication = True
     dependencies = {
-        'modules': ['mercurial'],
+        'executables': ['hg'],
     }
 
     def __init__(self, repository):

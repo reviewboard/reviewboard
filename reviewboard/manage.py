@@ -67,7 +67,7 @@ def check_dependencies(settings):
         dependency_warning('p4python (>=07.3) not found. Perforce integration '
                            'will not work.')
 
-    if not has_module('mercurial'):
+    if not is_exe_in_path('hg'):
         dependency_warning('hg not found. Mercurial integration will not '
                            'work.')
 
