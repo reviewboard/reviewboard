@@ -37,7 +37,6 @@ package_dependencies = {
     'markdown': '>=2.4.0,<2.4.999',
     'mimeparse': '>=0.1.3',
     'paramiko': '>=1.12',
-    'pycrypto': '>=2.6',
     'Pygments': '>=2.1',
     'python-dateutil': '>=1.5',
     'python-memcached': '',
