@@ -236,20 +236,36 @@ class SCMTool(object):
         return patch
 
     @classmethod
-    def popen(cls, command, local_site_name=None):
-        """Launches an application, capturing output.
+    def popen(cls, command, local_site_name=None, env={}):
+        """Launch an application, capturing output.
 
-        This wraps subprocess.Popen to provide some common parameters and
-        to pass environment variables that may be needed by rbssh, if
-        indirectly invoked.
+        This wraps :py:class:`subprocess.Popen` to provide some common
+        parameters and to pass environment variables that may be needed by
+        :command:`rbssh`, if indirectly invoked.
+
+        Args:
+            command (unicode):
+                The command to run.
+
+            local_site_name (unicode, optional):
+                The name of the Local Site invoking the command, if any.
+
+            env (dict, optional):
+                Extra environment variables to provide. Each key and value
+                must be byte strings.
+
+        Returns:
+            subprocess.Popen:
+            The resulting handle for the process.
         """
-        env = os.environ.copy()
+        new_env = os.environ.copy()
+        new_env.update(env)
 
         if local_site_name:
-            env[b'RB_LOCAL_SITE'] = local_site_name.encode('utf-8')
+            new_env[b'RB_LOCAL_SITE'] = local_site_name.encode('utf-8')
 
         return subprocess.Popen(command,
-                                env=env,
+                                env=new_env,
                                 stderr=subprocess.PIPE,
                                 stdout=subprocess.PIPE,
                                 close_fds=(os.name != 'nt'))
