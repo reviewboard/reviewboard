@@ -11,7 +11,7 @@ from django.utils.timezone import utc
 from reviewboard.scmtools.core import SCMClient, SCMTool, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import (FileNotFoundError,
                                          InvalidRevisionFormatError,
-                                         RepositoryNotFoundError)
+                                         RepositoryNotFoundError, SCMError)
 from reviewboard.ssh import utils as sshutils
 
 try:
@@ -290,10 +290,18 @@ class BZRClient(SCMClient):
             bool:
             ``True`` if information on the repository could be found.
             ``False`` if not.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                There was an error talking to Bazaar.
         """
         p = self._run_bzr(['info', self._build_repo_path(self.path)])
+        errmsg = p.stderr.read()
+        ret_code = p.wait()
 
-        return p.wait() == 0
+        self._check_error(errmsg)
+
+        return ret_code == 0
 
     def get_file(self, path, revspec):
         """Return the contents of a file.
@@ -323,6 +331,8 @@ class BZRClient(SCMClient):
         errmsg = six.text_type(p.stderr.read())
         failure = p.wait()
 
+        self._check_error(errmsg)
+
         if failure:
             raise FileNotFoundError(path=path,
                                     revision=revspec,
@@ -349,8 +359,12 @@ class BZRClient(SCMClient):
         """
         path = self._build_repo_path(path)
         p = self._run_bzr(['cat', '-r', revspec, path])
+        errmsg = six.text_type(p.stderr.read())
+        ret_code = p.wait()
 
-        return p.wait() == 0
+        self._check_error(errmsg)
+
+        return ret_code == 0
 
     def _run_bzr(self, args):
         """Run a Bazaar command.
@@ -369,8 +383,8 @@ class BZRClient(SCMClient):
         if not BZRClient._bzr_plugin_path:
             BZRClient._bzr_plugin_path = (
                 '%s:%s' % (
-                    os.path.join(os.path.dirname(__file__), 'plugins', 'bzrlib',
-                                 'plugins'),
+                    os.path.join(os.path.dirname(__file__), 'plugins',
+                                 'bzrlib', 'plugins'),
                     os.environ.get(b'BZR_PLUGIN_PATH', ''))
             ).encode('utf-8')
 
@@ -381,6 +395,32 @@ class BZRClient(SCMClient):
                 b'BZR_PLUGIN_PATH': BZRClient._bzr_plugin_path,
                 b'BZR_SSH': b'rbssh',
             })
+
+    def _check_error(self, errmsg):
+        """Check an error message from bzr and raise an exception if needed.
+
+        If the error is an internal error, it will be raised, without the
+        exception. If it's a known error that we can report better information
+        on, then that information will be raised.
+
+        Args:
+            errmsg (unicode):
+                The error message.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                A suitable error message, if an internal error was hit.
+        """
+        if 'Bazaar has encountered an internal error' in errmsg:
+            if 'prefetch() takes exactly 2 arguments (1 given)' in errmsg:
+                errmsg = ('Installed bzr and paramiko modules are '
+                          'incompatible. See '
+                          'https://bugs.launchpad.net/bzr/+bug/1524066')
+            else:
+                errmsg = errmsg.split(
+                    'Traceback (most recent call last):')[0].strip()
+
+            raise SCMError(errmsg)
 
     def _build_repo_path(self, path):
         """Return a path for a repository or file within a repository.
