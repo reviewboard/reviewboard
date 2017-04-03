@@ -839,14 +839,12 @@ class SCMTool(object):
         return patch
 
     @classmethod
-    def popen(cls, command, local_site_name=None):
+    def popen(cls, command, local_site_name=None, env={}):
         """Launch an application and return its output.
 
         This wraps :py:func:`subprocess.Popen` to provide some common
         parameters and to pass environment variables that may be needed by
-        :command:`rbssh` (if used). It also ensures the :envvar:`PYTHONPATH`
-        environment variable is set correctly, so that Review Board's expected
-        modules are used.
+        :command:`rbssh` (if used).
 
         Args:
             command (list of unicode):
@@ -854,6 +852,10 @@ class SCMTool(object):
 
             local_site_name (unicode, optional):
                 The name of the Local Site being used, if any.
+
+            env (dict, optional):
+                Extra environment variables to provide. Each key and value
+                must be byte strings.
 
         Returns:
             bytes:
@@ -864,13 +866,14 @@ class SCMTool(object):
                 Error when invoking the command. See the
                 :py:func:`subprocess.Popen` documentation for more details.
         """
-        env = os.environ.copy()
+        new_env = os.environ.copy()
+        new_env.update(env)
 
         if local_site_name:
-            env[b'RB_LOCAL_SITE'] = local_site_name.encode('utf-8')
+            new_env[b'RB_LOCAL_SITE'] = local_site_name.encode('utf-8')
 
         return subprocess.Popen(command,
-                                env=env,
+                                env=new_env,
                                 stderr=subprocess.PIPE,
                                 stdout=subprocess.PIPE,
                                 close_fds=(os.name != 'nt'))

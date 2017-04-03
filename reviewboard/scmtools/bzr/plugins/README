@@ -1,0 +1,3 @@
+The plugins under this directory are invoked by bzr, and are not used
+directly by Review Board. They are effectively a separate source tree,
+and cannot be imported under the "reviewboard" namespace.

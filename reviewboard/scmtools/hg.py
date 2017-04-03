@@ -20,7 +20,7 @@ class HgTool(SCMTool):
     name = "Mercurial"
     supports_post_commit = True
     dependencies = {
-        'modules': ['mercurial'],
+        'executables': ['hg'],
     }
 
     def __init__(self, repository):
