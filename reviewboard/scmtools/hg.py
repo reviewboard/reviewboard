@@ -21,7 +21,7 @@ class HgTool(SCMTool):
     diffs_use_absolute_paths = True
     supports_post_commit = True
     dependencies = {
-        'modules': ['mercurial'],
+        'executables': ['hg'],
     }
 
     def __init__(self, repository):
