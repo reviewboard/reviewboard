@@ -153,16 +153,33 @@ class DiffParser(object):
         The line number returned is the line after the special header,
         which can be multiple lines long.
         """
-        if linenum + 1 < len(self.lines) and \
-           self.lines[linenum].startswith(b"Index: ") and \
-           self.lines[linenum + 1] == self.INDEX_SEP:
-            # This is an Index: header, which is common in CVS and Subversion,
-            # amongst other systems.
-            try:
-                info['index'] = self.lines[linenum].split(None, 1)[1]
-            except ValueError:
-                raise DiffParserError("Malformed Index line", linenum)
-            linenum += 2
+        if (linenum + 1 < len(self.lines) and
+            self.lines[linenum].startswith(b'Index: ')):
+
+            # Try to find the "====" line.
+            temp_linenum = linenum + 1
+
+            while temp_linenum + 1 < len(self.lines):
+                line = self.lines[temp_linenum]
+
+                if line == self.INDEX_SEP:
+                    # We found the line. This is looking like a valid diff
+                    # for CVS, Subversion, and other systems. Try to parse
+                    # the data from the line.
+                    try:
+                        info['index'] = self.lines[linenum].split(None, 1)[1]
+                    except ValueError:
+                        raise DiffParserError('Malformed Index line', linenum)
+
+                    linenum = temp_linenum + 1
+                    break
+                elif line.startswith((b'---', b'+++')):
+                    # We never found that line, but we did hit the start of
+                    # a diff file. We can't treat the "Index:" line as special
+                    # in this case.
+                    break
+
+                temp_linenum += 1
 
         return linenum
 
