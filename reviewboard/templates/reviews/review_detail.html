@@ -117,8 +117,8 @@
 
 {%  if request.GET.reply_id and request.GET.reply_type %}
     RB.PageManager.ready(function(page) {
-        page.openCommentEditor("{{request.GET.reply_type}}",
-                               {{request.GET.reply_id}});
+        page.openCommentEditor("{{request.GET.reply_type|escapejs}}",
+                               parseInt("{{request.GET.reply_id|escapejs}}", 10));
     });
 {%  endif %}
 </script>
