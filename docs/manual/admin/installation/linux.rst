@@ -122,25 +122,27 @@ setuptools available::
    https://pip.pypa.io/en/stable/installing/
 
 
-Installing Python Development Headers
-=====================================
+Installing Required Dependencies
+================================
 
-You will need to install the Python development headers for your distribution.
+You will need to install a handful of dependencies required by Review Board.
+Some of these are required to install Review Board's dependencies, and some
+are required at runtime.
 
 To install on Debian_, Ubuntu_, or another Debian-based distribution, type::
 
-    $ apt-get install python-dev
+    $ apt-get install build-essential python-dev libffi-dev libssl-dev patch
 
 
 To install on a `RedHat Enterprise`_, Fedora_, CentOS_, or another
 RedHat-based distribution, type::
 
-    $ yum install python-devel
+    $ yum install gcc python-devel libffi-devel openssl-devel patch
 
 
 .. index:: memcached
 
-Installing memcached
+Installing Memcached
 ====================
 
 Memcached
@@ -167,22 +169,6 @@ python-memcached
 You'll need to install python-memcached. You can install this by typing::
 
     $ pip install python-memcached
-
-
-Installing patch
-================
-
-:command:`patch` is required for Review Board's diff viewer to work.
-All distributions should provide this. We recommend using patch version 2.7 or
-newer.
-
-To install on Debian_ or Ubuntu_, type::
-
-    $ apt-get install patch
-
-To install on `RedHat Enterprise`_, Fedora_ or CentOS_, type::
-
-    $ yum install patch
 
 
 Installing Review Board
