@@ -3,11 +3,12 @@ from __future__ import unicode_literals
 import os
 
 import nose
+from django.utils import six
 from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.scmtools.errors import (FileNotFoundError,
                                          InvalidRevisionFormatError,
-                                         RepositoryNotFoundError)
+                                         RepositoryNotFoundError, SCMError)
 from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.scmtools.tests.testcases import SCMTestCase
 
@@ -54,7 +55,15 @@ class BZRTests(SCMTestCase):
 
     def test_sftp(self):
         """Testing BZRTool with a SFTP-backed repository"""
-        self._test_ssh(self.bzr_sftp_path, 'README')
+        try:
+            self._test_ssh(self.bzr_sftp_path, 'README')
+        except SCMError as e:
+            err = six.text_type(e)
+
+            if 'Installed bzr and paramiko modules are incompatible' in err:
+                raise nose.SkipTest(err)
+
+            raise
 
     def test_get_file(self):
         """Testing BZRTool.get_file"""
