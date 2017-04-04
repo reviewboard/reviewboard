@@ -71,7 +71,7 @@ MIDDLEWARE_CLASSES = [
     # Keep these first, in order
     'django.middleware.gzip.GZipMiddleware',
     'reviewboard.admin.middleware.InitReviewBoardMiddleware',
-
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.http.ConditionalGetMiddleware',
@@ -127,6 +127,7 @@ STATICFILES_FINDERS = (
 STATICFILES_STORAGE = 'pipeline.storage.PipelineCachedStorage'
 
 RB_BUILTIN_APPS = [
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -149,6 +150,7 @@ RB_BUILTIN_APPS = [
     'djblets.siteconfig',
     'djblets.util',
     'haystack',
+    'oauth2_provider',
     'pipeline',  # Must be after djblets.pipeline
     'reviewboard',
     'reviewboard.accounts',
@@ -161,6 +163,7 @@ RB_BUILTIN_APPS = [
     'reviewboard.hostingsvcs',
     'reviewboard.integrations',
     'reviewboard.notifications',
+    'reviewboard.oauth',
     'reviewboard.reviews',
     'reviewboard.scmtools',
     'reviewboard.site',
@@ -468,3 +471,8 @@ ABSOLUTE_URL_OVERRIDES = {
 }
 
 FEATURE_CHECKER = 'reviewboard.features.checkers.RBFeatureChecker'
+
+OAUTH2_PROVIDER = {
+    'APPLICATION_MODEL': 'oauth.Application',
+    'SCOPES': {},
+}
