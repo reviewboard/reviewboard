@@ -220,6 +220,22 @@ class FileDiff(models.Model):
     def is_new(self):
         return self.source_revision == PRE_CREATION
 
+    @property
+    def status_string(self):
+        """The FileDiff's status as a human-readable string."""
+        if self.status == FileDiff.COPIED:
+            return 'copied'
+        elif self.status == FileDiff.DELETED:
+            return 'deleted'
+        elif self.status == FileDiff.MODIFIED:
+            return 'modified'
+        elif self.status == FileDiff.MOVED:
+            return 'moved'
+        else:
+            logging.error('Unknown FileDiff status %r for FileDiff %s',
+                          self.status, self.pk)
+            return 'unknown'
+
     def _get_diff(self):
         if self._needs_diff_migration():
             self._migrate_diff_data()

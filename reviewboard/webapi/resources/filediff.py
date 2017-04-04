@@ -81,6 +81,12 @@ class FileDiffResource(WebAPIResource):
                            "a binary file.",
             'added_in': '2.0',
         },
+        'status': {
+            'type': six.text_type,
+            'description': 'The status of the file. This is one of copied, '
+                           'deleted, modified, moved, or unknown.',
+            'added_in': '2.5.10',
+        }
     }
     item_child_resources = [
         resources.filediff_comment,
@@ -114,6 +120,23 @@ class FileDiffResource(WebAPIResource):
                                                            modified=True)
         except FileAttachment.DoesNotExist:
             return None
+
+    def serialize_status_field(self, filediff, **kwargs):
+        """Serialize the status field.
+
+        The status field is stored on the model as a single character. This
+        method serializes the field to the string status that the character
+        represents.
+
+        Args:
+            filediff (reviewboard.diffviewer.models.FileDiff):
+                The FileDiff whose status field is to be serialized.
+
+        Returns:
+            unicode:
+            The serialized status field.
+        """
+        return filediff.status_string
 
     def get_last_modified(self, request, obj, *args, **kwargs):
         return obj.diffset.timestamp
