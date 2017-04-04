@@ -862,7 +862,8 @@ def comment_diff_fragments(
                 comment_template_name,
                 error_template_name,
                 lines_of_context=lines_of_context,
-                show_controls='draft' not in container_prefix))
+                show_controls=(container_prefix and
+                               'draft' not in container_prefix)))
 
         page_content = render_to_string(template_name, context)
 

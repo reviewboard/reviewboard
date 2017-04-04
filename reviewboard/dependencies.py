@@ -29,9 +29,11 @@ djblets_version = '>=0.10b1,<=0.10.999'
 package_dependencies = {
     'cryptography': '>=1.8.1',
     'Django': django_version,
+    'django-cors-headers': '>=1.1.0,<1.1.999',
     'django_evolution': '>=0.7.6,<=0.7.999',
     'django-haystack': '>=2.3.1,<=2.4.999',
     'django-multiselectfield': '',
+    'django-oauth-toolkit': '>=0.9.0,<0.9.999',
     'Djblets': djblets_version,
     'docutils': '',
     'markdown': '>=2.4.0,<2.4.999',
