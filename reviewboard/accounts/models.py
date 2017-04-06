@@ -442,18 +442,22 @@ def _get_profile(self):
 
     The profile will be cached, preventing queries for future lookups.
     """
-    if not hasattr(self, '_profile'):
-        self._profile = Profile.objects.get_or_create(user=self)[0]
-        self._profile.user = self
+    # Note that we use the same cache variable that a select_related() call
+    # would use, ensuring that we benefit from Django's caching when possible.
+    profile = getattr(self, '_profile_set_cache', None)
+
+    if profile is None:
+        profile = Profile.objects.get_or_create(user=self)[0]
+        profile.user = self
+        self._profile_set_cache = profile
 
     # While modern versions of Review Board set this to an empty dictionary,
     # old versions would initialize this to None. Since we don't want to litter
     # our code with extra None checks everywhere we use it, normalize it here.
-    if self._profile.extra_data is None:
-        self._profile.extra_data = {}
+    if profile.extra_data is None:
+        profile.extra_data = {}
 
-    return self._profile
-
+    return profile
 
 def _get_site_profile(self, local_site):
     """Get the LocalSiteProfile for a given LocalSite for the User.
