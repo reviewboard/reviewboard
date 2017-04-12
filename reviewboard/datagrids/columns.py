@@ -573,10 +573,16 @@ class DiffSizeColumn(Column):
             *args, **kwargs)
 
     def render_data(self, state, review_request):
-        try:
-            diffset = review_request.diffset_history.diffsets.latest()
-        except ObjectDoesNotExist:
+        """Return the rendered contents of the column."""
+        if review_request.repository_id is None:
             return ''
+
+        diffsets = list(review_request.diffset_history.diffsets.all())
+
+        if not diffsets:
+            return ''
+
+        diffset = diffsets[-1]
 
         counts = diffset.get_total_line_counts()
         insert_count = counts.get('raw_insert_count')
@@ -595,3 +601,25 @@ class DiffSizeColumn(Column):
             return '&nbsp;'.join(result)
 
         return ''
+
+    def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset.
+
+        This will prefetch the diffsets and filediffs needed to perform the
+        line calculations.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
+        # TODO: Update this to fetch only the specific fields when we move
+        #       to a newer version of Django.
+        return queryset.prefetch_related('diffset_history__diffsets',
+                                         'diffset_history__diffsets__files')
