@@ -5,15 +5,17 @@
 <div class="box-main">
  <p>
 {% blocktrans %}
-  Your Review Board installation does not have a {{MEDIA_ROOT}}/uploaded/images directory.
+  Your Review Board installation does not have a
+  <code>{{MEDIA_ROOT}}/uploaded/images</code> directory.
 {% endblocktrans %}
  </p>
  <h3>{% trans "If this is a new installation..." %}</h3>
  <p>
 {% blocktrans %}
-  Create both <tt>{{MEDIA_ROOT}}/uploaded</tt> and
-  <tt>{{MEDIA_ROOT}}/uploaded/images</tt> on the server and make both directories writable by the web
-  server. You can do so with the following commands:
+  Create both <code>{{MEDIA_ROOT}}/uploaded</code> and
+  <code>{{MEDIA_ROOT}}/uploaded/images</code> on the server and make both
+  directories writable by the web server. You can do so with the following
+  commands:
 {% endblocktrans %}
  </p>
  <pre>

@@ -44,7 +44,7 @@ fields. Since there's no name=, nothing will be sent to the server.
 
 {%  if adminform.form.errors and adminform.form.hosting_account_linked %}
 <div class="confirmation">
- <p><b>{% trans "Account successfully linked." %}</b></p>
+ <p><strong>{% trans "Account successfully linked." %}</strong></p>
  <p>{% blocktrans %}
   Your hosting account was successfully linked. You will not need to
   link it again when fixing the remaining errors.
@@ -54,7 +54,7 @@ fields. Since there's no name=, nothing will be sent to the server.
 
 {%  if adminform.form.public_key %}
 <p>
- <b>{% trans "Note:" %}</b>
+ <strong>{% trans "Note:" %}</strong>
 {% blocktrans %}
  If your provider or repository requires an SSH key for access, you can click
  "Show SSH Public Key" to the right.

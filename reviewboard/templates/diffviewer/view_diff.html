@@ -18,7 +18,7 @@
 {%  if error %}
 {%   errorbox %}
 <h2>{% trans "There was an internal error displaying the diff." %}</h2>
-<p><b>{% blocktrans %}Details:</b> {{error}}{% endblocktrans %}</p>
+<p><strong>{% blocktrans %}Details:</strong> {{error}}{% endblocktrans %}</p>
 {%    if request.user.is_superuser %}
 {%     if trace %}<pre>{{trace|escape}}</pre>{% endif %}
 {%    endif %}
