@@ -21,7 +21,7 @@
 <div>By {{review_request.submitter|realname}}.</div>
 
 {%  if review_request.email_message_id %}
-<p style="color: grey;"><i>Updated {{review_request.time_emailed}}</i></p>
+<p style="color: grey;"><em>Updated {{review_request.time_emailed}}</em></p>
 {%  endif %}
 
 {%  if change_text %}
@@ -48,7 +48,7 @@
 
 {%  if review_request.bugs_closed != "" %}
 <div style="margin-top: 1.5em;">
- <b style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Bugs: </b>
+ <strong style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Bugs: </strong>
 {%   if review_request.repository.bug_tracker == "" %}
 {{review_request.get_bug_list|join:", "}}
 {%   else %}
@@ -61,7 +61,7 @@
 
 {%  if review_request.repository %}
 <div style="margin-top: 1.5em;">
- <b style="color: #575012; font-size: 10pt;">Repository: </b>
+ <strong style="color: #575012; font-size: 10pt;">Repository: </strong>
 {{review_request.repository.name}}
 </div>
 {%  endif %}

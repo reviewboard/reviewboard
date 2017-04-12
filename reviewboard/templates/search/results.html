@@ -12,17 +12,19 @@
  </div>
 
 {%  if hits_returned == 0 %}
-{%   trans "No review requests matching your query" %}: <b>{{query}}</b>
+{%   blocktrans %}
+ No review requests matching your query: <strong>{{query}}</strong>
+{%   endblocktrans %}
 {%  else %}
  <div class="search-results-stats">
 {%   blocktrans count hits_returned=hits_returned %}
- <b>{{hits_returned}}</b> result for <b>{{query}}</b>
+ <strong>{{hits_returned}}</strong> result for <strong>{{query}}</strong>
 {%   plural %}
- <b>{{hits_returned}}</b> results for <b>{{query}}</b>
+ <strong>{{hits_returned}}</strong> results for <strong>{{query}}</strong>
 {%   endblocktrans %}
  </div>
 {%  endif %}
- <br /><br />
+ <br><br>
  <form method="get" action=".">
 {%  for result in page.object_list %}
 {%   if result.content_type == "reviews.reviewrequest" %}
@@ -43,7 +45,7 @@
 
 {%   for pagenum in page_numbers %}
 {%    if page.number == pagenum %}
-   <b>{{pagenum}}</b>
+   <strong>{{pagenum}}</strong>
 {%    else %}
    <a href="?q={{query}}&amp;page={{pagenum}}">{{pagenum}}</a>
 {%    endif %}

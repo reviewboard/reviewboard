@@ -6,7 +6,7 @@
 {% if reply.body_top %}
 {%  if review.body_top %}
 <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
- <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
+ <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <strong>{{review.user|user_displayname}}</strong> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   <pre style="{{precss}}">{{review.body_top|markdown_email_html:review.body_top_rich_text}}</pre>
  </blockquote>
@@ -14,7 +14,7 @@
 {%  for reply_review in review.public_replies %}
 {%   if reply_review.body_top %}
 {%    if reply_review != reply %}
- <p>On {{reply_review.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_review.user|user_displayname}}</b> wrote:</p>
+ <p>On {{reply_review.timestamp|date:"F jS, Y, P T"}}, <strong>{{reply_review.user|user_displayname}}</strong> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   <pre style="{{precss}}">{{reply_review.body_top|markdown_email_html:reply_review.body_top_rich_text}}</pre>
  </blockquote>
@@ -30,7 +30,7 @@
 
 {% for comment in reply.file_attachment_comments.all %}
 <blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
- <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
+ <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <strong>{{review.user|user_displayname}}</strong> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
   {# Prevents a display glitch on the table in Outlook 2007 #}
   <br style="display: none;" />
@@ -55,7 +55,7 @@
 {%  for reply_comment in comment.reply_to.public_replies %}
 {%   if reply_comment.text %}
 {%    if reply_comment != comment %}
- <p>On {{reply_comment.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
+ <p>On {{reply_comment.timestamp|date:"F jS, Y, P T"}}, <strong>{{reply_comment.review.get.user|user_displayname}}</strong> wrote:</p>
  <blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
   <pre style="{{precss}}">{{reply_comment.text|markdown_email_html:reply_comment.rich_text}}</pre>
  </blockquote>
@@ -69,7 +69,7 @@
 
 {% for comment in reply.general_comments.all %}
 <blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
- <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
+ <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <strong>{{review.user|user_displayname}}</strong> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
   {# Prevents a display glitch on the table in Outlook 2007 #}
   <br style="display: none;" />
@@ -78,7 +78,7 @@
 {%  for reply_comment in comment.reply_to.public_replies %}
 {%   if reply_comment.text %}
 {%    if reply_comment != comment %}
- <p>On {{reply_comment.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
+ <p>On {{reply_comment.timestamp|date:"F jS, Y, P T"}}, <strong>{{reply_comment.review.get.user|user_displayname}}</strong> wrote:</p>
  <blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
   <pre style="{{precss}}">{{reply_comment.text|markdown_email_html:reply_comment.rich_text}}</pre>
  </blockquote>
@@ -92,7 +92,7 @@
 
 {% for comment in reply.screenshot_comments.all %}
 <blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
- <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
+ <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <strong>{{review.user|user_displayname}}</strong> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
   {# Prevents a display glitch on the table in Outlook 2007 #}
   <br style="display: none;" />
@@ -110,7 +110,7 @@
 {%  for reply_comment in comment.reply_to.public_replies %}
 {%   if reply_comment.text %}
 {%    if reply_comment != comment %}
- <p>On {{reply_comment.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
+ <p>On {{reply_comment.timestamp|date:"F jS, Y, P T"}}, <strong>{{reply_comment.review.get.user|user_displayname}}</strong> wrote:</p>
  <blockquote style="margin: 1em 0 0 1em; border-left: 2px solid #d0d0d0; padding: 0 0 0 1em;">
   <pre style="{{precss}}">{{reply_comment.text|markdown_email_html:reply_comment.rich_text}}</pre>
  </blockquote>
@@ -124,7 +124,7 @@
 
 {% for entry in comment_entries %}
 <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
- <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
+ <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <strong>{{review.user|user_displayname}}</strong> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   {{entry.html|safe}}
   <pre style="{{precss}}">{{entry.comment.reply_to.text|markdown_email_html:entry.comment.reply_to.rich_text}}</pre>
@@ -132,7 +132,7 @@
 {%  for reply_comment in entry.comment.reply_to.public_replies %}
 {%   if reply_comment.text %}
 {%    if reply_comment != entry.comment %}
- <p>On {{reply_comment.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_comment.review.get.user|user_displayname}}</b> wrote:</p>
+ <p>On {{reply_comment.timestamp|date:"F jS, Y, P T"}}, <strong>{{reply_comment.review.get.user|user_displayname}}</strong> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   <pre style="{{precss}}">{{reply_comment.text|markdown_email_html:reply_comment.rich_text}}</pre>
  </blockquote>
@@ -147,7 +147,7 @@
 {% if reply.body_bottom %}
 {%  if review.body_bottom %}
 <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
- <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <b>{{review.user|user_displayname}}</b> wrote:</p>
+ <p style="margin-top: 0;">On {{review.time_emailed|date:"F jS, Y, P T"}}, <strong>{{review.user|user_displayname}}</strong> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   <pre style="{{precss}}">{{review.body_bottom|markdown_email_html:review.body_bottom_rich_text}}</pre>
  </blockquote>
@@ -155,7 +155,7 @@
 {%  for reply_review in review.public_replies %}
 {%   if reply_review.body_bottom %}
 {%    if reply_review != reply %}
- <p>On {{reply_review.timestamp|date:"F jS, Y, P T"}}, <b>{{reply_review.user|user_displayname}}</b> wrote:</p>
+ <p>On {{reply_review.timestamp|date:"F jS, Y, P T"}}, <strong>{{reply_review.user|user_displayname}}</strong> wrote:</p>
  <blockquote style="margin-left: 1em; border-left: 2px solid #d0d0d0; padding-left: 10px;">
   <pre style="{{precss}}">{{reply_review.body_bottom|markdown_email_html:reply_review.body_bottom_rich_text}}</pre>
  </blockquote>

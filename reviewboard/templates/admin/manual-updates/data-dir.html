@@ -14,16 +14,16 @@
  <p>
 {% blocktrans %}
   The current data directory wasn't able to be found. Please ensure you
-  have a <tt>data</tt> directory inside your site's directory, and that it
+  have a <code>data</code> directory inside your site's directory, and that it
   is writable by the web server. Then ensure that your web server's
-  configuration has the <tt>HOME</tt> environment variable set to the
+  configuration has the <code>HOME</code> environment variable set to the
   data directory.
 {% endblocktrans %}
  </p>
 {% else %}
  <p>
 {% blocktrans %}
-  Your data directory is currently at: <tt>{{data_dir}}</tt>
+  Your data directory is currently at: <code>{{data_dir}}</code>
 {% endblocktrans %}
  </p>
 {%  if expected_data_dir != data_dir %}
@@ -31,8 +31,8 @@
  <p>
 {% blocktrans %}
   The data directory is not where we expect it. Unless you have a very
-  custom setup, it should probably be at <tt>{{expected_data_dir}}</tt>.
-  You may need to set the <tt>$HOME</tt> environment variable in the data
+  custom setup, it should probably be at <code>{{expected_data_dir}}</code>.
+  You may need to set the <code>$HOME</code> environment variable in the data
   directory.
 {% endblocktrans %}
  </p>
@@ -53,9 +53,9 @@
 </pre>
  <p>
 {% blocktrans %}
-  If using fastcgi or wsgi, you want to check the <tt>reviewboard.fcgi</tt> or
-  <tt>reviewboard.wsgi</tt> file in your site's <tt>htdocs</tt> directory
-  and add the following if missing:
+  If using fastcgi or wsgi, you want to check the <code>reviewboard.fcgi</code>
+  or <code>reviewboard.wsgi</code> file in your site's <code>htdocs</code>
+  directory and add the following if missing:
 {% endblocktrans %}
  </p>
 <pre>
@@ -86,7 +86,7 @@
  <p>
 {% blocktrans %}
   On Windows, right-click the data directory and change the ownership to
-  <tt>{{server_user}}</tt> and restart the server.
+  <code>{{server_user}}</code> and restart the server.
 {% endblocktrans %}
  </p>
 {% endif %}
