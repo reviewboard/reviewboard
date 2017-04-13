@@ -84,8 +84,8 @@ class ResourceListTests(BaseWebAPITestCase):
         )
 
     def check_post_result(self, user, rsp, caption):
-        self.assertIn('file_attachment', rsp)
-        item_rsp = rsp['file_attachment']
+        self.assertIn('user_file_attachment', rsp)
+        item_rsp = rsp['user_file_attachment']
 
         attachment = FileAttachment.objects.get(pk=item_rsp['id'])
         self.compare_item(item_rsp, attachment)
