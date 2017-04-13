@@ -5,7 +5,7 @@ import logging
 from collections import defaultdict
 
 from django import forms
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.template import RequestContext
 from django.template.loader import render_to_string
@@ -29,6 +29,104 @@ class GoogleCodeForm(HostingServiceForm):
         widget=forms.TextInput(attrs={'size': '60'}))
 
 
+class GoogleCodeHookViews(object):
+    """Container class for hook views."""
+
+    @staticmethod
+    @require_POST
+    def post_receive_hook_close_submitted(request, local_site_name=None,
+                                          repository_id=None,
+                                          hosting_service_id=None,
+                                          hooks_uuid=None):
+        """Close review requests as submitted automatically after a push.
+
+        Args:
+            request (django.http.HttpRequest):
+                The request from the Bitbucket webhook.
+
+            local_site_name (unicode):
+                The local site name, if available.
+
+            repository_id (int):
+                The pk of the repository, if available.
+
+            hosting_service_id (unicode):
+                The name of the hosting service.
+
+            hooks_uuid (unicode):
+                The UUID of the configured webhook.
+
+        Returns:
+            django.http.HttpResponse:
+            A response for the request.
+        """
+        repository = get_repository_for_hook(repository_id, hosting_service_id,
+                                             local_site_name, hooks_uuid)
+
+        try:
+            payload = json.loads(request.body)
+        except ValueError as e:
+            logging.error('The payload is not in JSON format: %s', e,
+                          exc_info=1)
+            return HttpResponseBadRequest('Invalid payload format')
+
+        server_url = get_server_url(request=request)
+        review_request_id_to_commits_map = \
+            GoogleCodeHookViews._get_review_request_id_to_commits_map(
+                payload, server_url)
+
+        if review_request_id_to_commits_map:
+            close_all_review_requests(review_request_id_to_commits_map,
+                                      local_site_name, repository,
+                                      hosting_service_id)
+
+        return HttpResponse()
+
+    @staticmethod
+    def _get_review_request_id_to_commits_map(payload, server_url):
+        """Return a mapping of review request ID to a list of commits.
+
+        Args:
+            payload (dict):
+                The decoded webhook payload.
+
+            server_url (unicode):
+                The URL of the Review Board server.
+
+        Returns:
+            dict:
+            A mapping from review request ID to a list of matching commits from
+            the payload.
+
+        """
+        # The Google Code payload is the same for SVN and Mercurial
+        # repositories. There is no information in the payload as to
+        # which SCM tool was used for the commit. That's why the only way
+        # to close a review request through this hook is by adding the review
+        # request id in the commit message.
+        review_request_id_to_commits_map = defaultdict(list)
+        branch_name = payload.get('repository_path')
+
+        if not branch_name:
+            return review_request_id_to_commits_map
+
+        revisions = payload.get('revisions', [])
+
+        for revision in revisions:
+            revision_id = revision.get('revision')
+
+            if len(revision_id) > 7:
+                revision_id = revision_id[:7]
+
+            commit_message = revision.get('message')
+            review_request_id = get_review_request_id(commit_message,
+                                                      server_url)
+            review_request_id_to_commits_map[review_request_id].append(
+                '%s (%s)' % (branch_name, revision_id))
+
+        return review_request_id_to_commits_map
+
+
 class GoogleCode(HostingService):
     name = 'Google Code'
     form = GoogleCodeForm
@@ -37,14 +135,11 @@ class GoogleCode(HostingService):
     supports_bug_trackers = True
     has_repository_hook_instructions = True
 
-    repository_url_patterns = patterns(
-        '',
-
+    repository_url_patterns = [
         url(r'^hooks/(?P<hooks_uuid>[a-z0-9]+)/close-submitted/$',
-            'reviewboard.hostingsvcs.googlecode'
-            '.post_receive_hook_close_submitted',
+            GoogleCodeHookViews.post_receive_hook_close_submitted,
             name='googlecode-hooks-close-submitted'),
-    )
+    ]
 
     repository_fields = {
         'Mercurial': {
@@ -96,59 +191,3 @@ class GoogleCode(HostingService):
                 'add_webhook_url': add_webhook_url,
                 'webhook_endpoint_url': webhook_endpoint_url,
             }))
-
-
-@require_POST
-def post_receive_hook_close_submitted(request, local_site_name=None,
-                                      repository_id=None,
-                                      hosting_service_id=None,
-                                      hooks_uuid=None):
-    """Closes review requests as submitted automatically after a push."""
-    repository = get_repository_for_hook(repository_id, hosting_service_id,
-                                         local_site_name, hooks_uuid)
-
-    try:
-        payload = json.loads(request.body)
-    except ValueError as e:
-        logging.error('The payload is not in JSON format: %s', e, exc_info=1)
-        return HttpResponseBadRequest('Invalid payload format')
-
-    server_url = get_server_url(request=request)
-    review_request_id_to_commits_map = \
-        close_review_requests(payload, server_url)
-
-    if review_request_id_to_commits_map:
-        close_all_review_requests(review_request_id_to_commits_map,
-                                  local_site_name, repository,
-                                  hosting_service_id)
-
-    return HttpResponse()
-
-
-def close_review_requests(payload, server_url):
-    """Closes all review requests for the Google Code repository."""
-    # The Google Code payload is the same for SVN and Mercurial
-    # repositories. There is no information in the payload as to
-    # which SCM tool was used for the commit. That's why the only way
-    # to close a review request through this hook is by adding the review
-    # request id in the commit message.
-    review_request_id_to_commits_map = defaultdict(list)
-    branch_name = payload.get('repository_path')
-
-    if not branch_name:
-        return review_request_id_to_commits_map
-
-    revisions = payload.get('revisions', [])
-
-    for revision in revisions:
-        revision_id = revision.get('revision')
-
-        if len(revision_id) > 7:
-            revision_id = revision_id[:7]
-
-        commit_message = revision.get('message')
-        review_request_id = get_review_request_id(commit_message, server_url)
-        review_request_id_to_commits_map[review_request_id].append(
-            '%s (%s)' % (branch_name, revision_id))
-
-    return review_request_id_to_commits_map

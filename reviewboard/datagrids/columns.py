@@ -556,7 +556,9 @@ class ReviewSubmitterColumn(BaseSubmitterColumn):
 
     def augment_queryset(self, state, queryset):
         """Add additional queries to the queryset."""
-        return queryset.select_related('review_request')
+        return queryset.select_related('review_request',
+                                       'review_request__submitter',
+                                       'review_request__submitter__profile')
 
 
 class ShipItColumn(Column):
@@ -605,7 +607,7 @@ class SubmitterColumn(BaseSubmitterColumn):
 
     def augment_queryset(self, state, queryset):
         """Add additional queries to the queryset."""
-        return queryset.select_related('submitter')
+        return queryset.select_related('submitter', 'submitter__profile')
 
 
 class SummaryColumn(Column):
@@ -767,10 +769,15 @@ class DiffSizeColumn(Column):
 
     def render_data(self, state, review_request):
         """Return the rendered contents of the column."""
-        try:
-            diffset = review_request.diffset_history.diffsets.latest()
-        except ObjectDoesNotExist:
+        if review_request.repository_id is None:
             return ''
+
+        diffsets = list(review_request.diffset_history.diffsets.all())
+
+        if not diffsets:
+            return ''
+
+        diffset = diffsets[-1]
 
         counts = diffset.get_total_line_counts()
         insert_count = counts.get('raw_insert_count')
@@ -789,3 +796,25 @@ class DiffSizeColumn(Column):
             return '&nbsp;'.join(result)
 
         return ''
+
+    def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset.
+
+        This will prefetch the diffsets and filediffs needed to perform the
+        line calculations.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
+        # TODO: Update this to fetch only the specific fields when we move
+        #       to a newer version of Django.
+        return queryset.prefetch_related('diffset_history__diffsets',
+                                         'diffset_history__diffsets__files')

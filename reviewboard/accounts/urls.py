@@ -1,53 +1,59 @@
 from __future__ import unicode_literals
 
-from django.conf.urls import patterns, url
+from django.conf.urls import url
+from django.contrib.auth import views as auth_views
 
 from reviewboard.accounts.forms.auth import AuthenticationForm
-from reviewboard.accounts.views import MyAccountView
+from reviewboard.accounts import views as accounts_views
 
 
-urlpatterns = patterns(
-    "reviewboard.accounts.views",
-
-    url(r'^register/$', 'account_register',
-        {'next_url': 'dashboard'}, name="register"),
-    url(r'^preferences/$',
-        MyAccountView.as_view(),
-        name="user-preferences"),
-    url(r'^preferences/preview-email/password-changed/$',
-        'preview_password_changed_email',
-        name='preview-password-change-email')
-)
-
-urlpatterns += patterns(
-    "django.contrib.auth.views",
-
-    url(r'^login/$', 'login',
-        {
+urlpatterns = [
+    url(r'^login/$',
+        auth_views.login,
+        kwargs={
             'template_name': 'accounts/login.html',
             'authentication_form': AuthenticationForm,
         },
         name='login'),
-    url(r'^logout/$', 'logout_then_login', name='logout'),
-
+    url(r'^logout/$',
+        auth_views.logout_then_login,
+        name='logout'),
+    url(r'^preferences/$',
+        accounts_views.MyAccountView.as_view(),
+        name='user-preferences'),
+    url(r'^register/$',
+        accounts_views.account_register,
+        kwargs={
+            'next_url': 'dashboard',
+        },
+        name='register'),
     url(r'^recover/$',
-        'password_reset',
-        {
+        auth_views.password_reset,
+        kwargs={
             'template_name': 'accounts/password_reset.html',
             'email_template_name': 'accounts/password_reset_email.txt'
         },
         name='recover'),
     url(r'^recover/done/$',
-        'password_reset_done',
-        {'template_name': 'accounts/password_reset_done.html'},
+        auth_views.password_reset_done,
+        kwargs={
+            'template_name': 'accounts/password_reset_done.html',
+        },
         name='password_reset_done'),
     url(r'^reset/(?P<uidb64>[0-9A-Za-z_\-]+)/'
-        '(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
-        'password_reset_confirm',
-        {'template_name': 'accounts/password_reset_confirm.html'},
+        r'(?P<token>[0-9A-Za-z]{1,13}-[0-9A-Za-z]{1,20})/$',
+        auth_views.password_reset_confirm,
+        kwargs={
+            'template_name': 'accounts/password_reset_confirm.html',
+        },
         name='password_reset_confirm'),
     url(r'^reset/done/$',
-        'password_reset_complete',
-        {'template_name': 'accounts/password_reset_complete.html'},
+        auth_views.password_reset_complete,
+        kwargs={
+            'template_name': 'accounts/password_reset_complete.html',
+        },
         name='password_reset_complete'),
-)
+    url(r'^preferences/preview-email/password-changed/$',
+        accounts_views.preview_password_changed_email,
+        name='preview-password-change-email')
+]

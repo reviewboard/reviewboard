@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 from django.core.urlresolvers import NoReverseMatch
 from django.http import HttpResponse
 from djblets.registries.errors import AlreadyRegisteredError, ItemLookupError
@@ -26,12 +26,11 @@ class HostingServiceRegistrationTests(TestCase):
     class DummyServiceWithURLs(HostingService):
         name = 'DummyServiceWithURLs'
 
-        repository_url_patterns = patterns(
-            '',
-
-            url(r'^hooks/pre-commit/$', hosting_service_url_test_view,
+        repository_url_patterns = [
+            url(r'^hooks/pre-commit/$',
+                hosting_service_url_test_view,
                 name='dummy-service-post-commit-hook'),
-        )
+        ]
 
     def tearDown(self):
         super(HostingServiceRegistrationTests, self).tearDown()

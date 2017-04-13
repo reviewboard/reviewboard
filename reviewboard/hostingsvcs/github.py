@@ -10,7 +10,7 @@ from collections import defaultdict
 
 from django import forms
 from django.conf import settings
-from django.conf.urls import patterns, url
+from django.conf.urls import url
 from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
@@ -398,6 +398,123 @@ class GitHubClient(HostingServiceClient):
             raise HostingServiceError(six.text_type(e), http_code=e.code)
 
 
+class GitHubHookViews(object):
+    """Container class for hook views."""
+
+    @staticmethod
+    @require_POST
+    def post_receive_hook_close_submitted(request, local_site_name=None,
+                                          repository_id=None,
+                                          hosting_service_id=None):
+        """Close review requests as submitted automatically after a push.
+
+        Args:
+            request (django.http.HttpRequest):
+                The request from the Bitbucket webhook.
+
+            local_site_name (unicode):
+                The local site name, if available.
+
+            repository_id (int):
+                The pk of the repository, if available.
+
+            hosting_service_id (unicode):
+                The name of the hosting service.
+
+        Returns:
+            django.http.HttpResponse:
+            A response for the request.
+        """
+        hook_event = request.META.get('HTTP_X_GITHUB_EVENT')
+
+        if hook_event == 'ping':
+            # GitHub is checking that this hook is valid, so accept the request
+            # and return.
+            return HttpResponse()
+        elif hook_event != 'push':
+            return HttpResponseBadRequest(
+                'Only "ping" and "push" events are supported.')
+
+        repository = get_repository_for_hook(repository_id, hosting_service_id,
+                                             local_site_name)
+
+        # Validate the hook against the stored UUID.
+        m = hmac.new(bytes(repository.get_or_create_hooks_uuid()),
+                     request.body, hashlib.sha1)
+
+        sig_parts = request.META.get('HTTP_X_HUB_SIGNATURE').split('=')
+
+        if sig_parts[0] != 'sha1' or len(sig_parts) != 2:
+            # We don't know what this is.
+            return HttpResponseBadRequest('Unsupported HTTP_X_HUB_SIGNATURE')
+
+        if m.hexdigest() != sig_parts[1]:
+            return HttpResponseBadRequest('Bad signature.')
+
+        try:
+            payload = json.loads(request.body)
+        except ValueError as e:
+            logging.error('The payload is not in JSON format: %s', e)
+            return HttpResponseBadRequest('Invalid payload format')
+
+        server_url = get_server_url(request=request)
+        review_request_id_to_commits = \
+            GitHubHookViews._get_review_request_id_to_commits_map(
+                payload, server_url, repository)
+
+        if review_request_id_to_commits:
+            close_all_review_requests(review_request_id_to_commits,
+                                      local_site_name, repository,
+                                      hosting_service_id)
+
+        return HttpResponse()
+
+    @staticmethod
+    def _get_review_request_id_to_commits_map(payload, server_url, repository):
+        """Return a mapping of review request ID to a list of commits.
+
+        If a commit's commit message does not contain a review request ID,
+        we append the commit to the key None.
+
+        Args:
+            payload (dict):
+                The decoded webhook payload.
+
+            server_url (unicode):
+                The URL of the Review Board server.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object.
+
+        Returns:
+            dict:
+            A mapping from review request ID to a list of matching commits from
+            the payload.
+        """
+        review_request_id_to_commits_map = defaultdict(list)
+
+        ref_name = payload.get('ref')
+        if not ref_name:
+            return None
+
+        branch_name = get_git_branch_name(ref_name)
+        if not branch_name:
+            return None
+
+        commits = payload.get('commits', [])
+
+        for commit in commits:
+            commit_hash = commit.get('id')
+            commit_message = commit.get('message')
+            review_request_id = get_review_request_id(
+                commit_message, server_url, commit_hash, repository)
+
+            review_request_id_to_commits_map[review_request_id].append(
+                '%s (%s)' % (branch_name, commit_hash[:7]))
+
+        return review_request_id_to_commits_map
+
+
 class GitHub(HostingService, BugTracker):
     name = _('GitHub')
     plans = [
@@ -478,13 +595,11 @@ class GitHub(HostingService, BugTracker):
 
     client_class = GitHubClient
 
-    repository_url_patterns = patterns(
-        '',
-
+    repository_url_patterns = [
         url(r'^hooks/close-submitted/$',
-            'reviewboard.hostingsvcs.github.post_receive_hook_close_submitted',
+            GitHubHookViews.post_receive_hook_close_submitted,
             name='github-hooks-close-submitted')
-    )
+    ]
 
     # This should be the prefix for every field on the plan forms.
     plan_field_prefix = 'github'
@@ -1039,82 +1154,3 @@ class GitHub(HostingService, BugTracker):
 
     def _get_repository_name_raw(self, plan, extra_data):
         return self.get_plan_field(plan, extra_data, 'repo_name')
-
-
-@require_POST
-def post_receive_hook_close_submitted(request, local_site_name=None,
-                                      repository_id=None,
-                                      hosting_service_id=None):
-    """Closes review requests as submitted automatically after a push."""
-    hook_event = request.META.get('HTTP_X_GITHUB_EVENT')
-
-    if hook_event == 'ping':
-        # GitHub is checking that this hook is valid, so accept the request
-        # and return.
-        return HttpResponse()
-    elif hook_event != 'push':
-        return HttpResponseBadRequest(
-            'Only "ping" and "push" events are supported.')
-
-    repository = get_repository_for_hook(repository_id, hosting_service_id,
-                                         local_site_name)
-
-    # Validate the hook against the stored UUID.
-    m = hmac.new(bytes(repository.get_or_create_hooks_uuid()), request.body,
-                 hashlib.sha1)
-
-    sig_parts = request.META.get('HTTP_X_HUB_SIGNATURE').split('=')
-
-    if sig_parts[0] != 'sha1' or len(sig_parts) != 2:
-        # We don't know what this is.
-        return HttpResponseBadRequest('Unsupported HTTP_X_HUB_SIGNATURE')
-
-    if m.hexdigest() != sig_parts[1]:
-        return HttpResponseBadRequest('Bad signature.')
-
-    try:
-        payload = json.loads(request.body)
-    except ValueError as e:
-        logging.error('The payload is not in JSON format: %s', e)
-        return HttpResponseBadRequest('Invalid payload format')
-
-    server_url = get_server_url(request=request)
-    review_request_id_to_commits = \
-        _get_review_request_id_to_commits_map(payload, server_url, repository)
-
-    if review_request_id_to_commits:
-        close_all_review_requests(review_request_id_to_commits,
-                                  local_site_name, repository,
-                                  hosting_service_id)
-
-    return HttpResponse()
-
-
-def _get_review_request_id_to_commits_map(payload, server_url, repository):
-    """Returns a dictionary, mapping a review request ID to a list of commits.
-
-    If a commit's commit message does not contain a review request ID,
-    we append the commit to the key None.
-    """
-    review_request_id_to_commits_map = defaultdict(list)
-
-    ref_name = payload.get('ref')
-    if not ref_name:
-        return None
-
-    branch_name = get_git_branch_name(ref_name)
-    if not branch_name:
-        return None
-
-    commits = payload.get('commits', [])
-
-    for commit in commits:
-        commit_hash = commit.get('id')
-        commit_message = commit.get('message')
-        review_request_id = get_review_request_id(commit_message, server_url,
-                                                  commit_hash, repository)
-
-        review_request_id_to_commits_map[review_request_id].append(
-            '%s (%s)' % (branch_name, commit_hash[:7]))
-
-    return review_request_id_to_commits_map

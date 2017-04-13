@@ -1,131 +1,137 @@
 from __future__ import unicode_literals
 
-from django.conf.urls import include, patterns, url
+from django.conf.urls import include, url
 
-from reviewboard.reviews.views import (ReviewsDiffFragmentView,
-                                       ReviewsDiffViewerView,
-                                       ReviewsDownloadPatchErrorBundleView)
+from reviewboard.reviews import views
 
 
-download_diff_urls = patterns(
-    'reviewboard.reviews.views',
+download_diff_urls = [
+    url(r'^orig/$',
+        views.download_orig_file,
+        name='download-orig-file'),
 
-    url(r'^orig/$', 'download_orig_file', name='download-orig-file'),
-    url(r'^new/$', 'download_modified_file', name='download-modified-file'),
-)
+    url(r'^new/$',
+        views.download_modified_file,
+        name='download-modified-file'),
+]
 
-diff_fragment_urls = patterns(
-    '',
 
-    url('^$', ReviewsDiffFragmentView.as_view(),
+diff_fragment_urls = [
+    url(r'^$', views.ReviewsDiffFragmentView.as_view(),
         name='view-diff-fragment'),
-    url('^patch-error-bundle/$',
-        ReviewsDownloadPatchErrorBundleView.as_view(),
+
+    url(r'^patch-error-bundle/$',
+        views.ReviewsDownloadPatchErrorBundleView.as_view(),
         name='patch-error-bundle'),
-)
+]
 
-diffviewer_revision_urls = patterns(
-    'reviewboard.reviews.views',
 
+diffviewer_revision_urls = [
     url(r'^$',
-        ReviewsDiffViewerView.as_view(),
+        views.ReviewsDiffViewerView.as_view(),
         name="view-diff-revision"),
 
     url(r'^raw/$',
-        'raw_diff',
+        views.raw_diff,
         name='raw-diff-revision'),
 
-    url(r'^fragment/(?P<filediff_id>[0-9]+)/'
-        r'(chunk/(?P<chunk_index>[0-9]+)/)?',
+    url(r'^fragment/(?P<filediff_id>\d+)/(chunk/(?P<chunk_index>\d+)/)?',
         include(diff_fragment_urls)),
 
-    url(r'^download/(?P<filediff_id>[0-9]+)/', include(download_diff_urls)),
-)
+    url(r'^download/(?P<filediff_id>\d+)/',
+        include(download_diff_urls)),
+]
 
-diffviewer_interdiff_urls = patterns(
-    'reviewboard.reviews.views',
 
+diffviewer_interdiff_urls = [
     url(r'^$',
-        ReviewsDiffViewerView.as_view(),
+        views.ReviewsDiffViewerView.as_view(),
         name="view-interdiff"),
 
-    url(r'^fragment/(?P<filediff_id>[0-9]+)(-(?P<interfilediff_id>[0-9]+))?/'
-        r'(chunk/(?P<chunk_index>[0-9]+)/)?',
+    url(r'^fragment/(?P<filediff_id>\d+)(-(?P<interfilediff_id>\d+))?/'
+        r'(chunk/(?P<chunk_index>\d+)/)?',
         include(diff_fragment_urls)),
-)
+]
 
-diffviewer_urls = patterns(
-    'reviewboard.reviews.views',
 
-    url(r'^$', ReviewsDiffViewerView.as_view(), name="view-diff"),
-    url(r'^raw/$', 'raw_diff', name='raw-diff'),
+diffviewer_urls = [
+    url(r'^$', views.ReviewsDiffViewerView.as_view(), name='view-diff'),
 
-    url(r'^(?P<revision>[0-9]+)/', include(diffviewer_revision_urls)),
-    url(r'^(?P<revision>[0-9]+)-(?P<interdiff_revision>[0-9]+)/',
+    url(r'^raw/$', views.raw_diff, name='raw-diff'),
+
+    url(r'^(?P<revision>\d+)/',
+        include(diffviewer_revision_urls)),
+
+    url(r'^(?P<revision>\d+)-(?P<interdiff_revision>\d+)/',
         include(diffviewer_interdiff_urls)),
-)
+]
 
-bugs_urls = patterns(
-    'reviewboard.reviews.views',
 
-    url(r'^infobox/$', 'bug_infobox', name='bug_infobox'),
-    url(r'^$', 'bug_url', name='bug_url'),
-)
+bugs_urls = [
+    url(r'^$', views.bug_url, name='bug_url'),
 
-review_request_urls = patterns(
-    'reviewboard.reviews.views',
+    url(r'^infobox/$', views.bug_infobox, name='bug_infobox'),
+]
 
+
+review_request_urls = [
     # Review request detail
-    url(r'^$', 'review_detail', name="review-request-detail"),
+    url(r'^$',
+        views.review_detail,
+        name='review-request-detail'),
 
     # Review request diffs
     url(r'^diff/', include(diffviewer_urls)),
 
     # Fragments
-    url(r'^fragments/diff-comments/(?P<comment_ids>[0-9,]+)/$',
-        'comment_diff_fragments'),
+    url(r'^fragments/diff-comments/(?P<comment_ids>[\d,]+)/$',
+        views.comment_diff_fragments),
 
     # File attachments
-    url(r'^file/(?P<file_attachment_id>[0-9]+)/$',
-        'review_file_attachment',
+    url(r'^file/(?P<file_attachment_id>\d+)/$',
+        views.review_file_attachment,
         name='file-attachment'),
-    url(r'^file/(?P<file_attachment_diff_id>[0-9]+)'
-        r'-(?P<file_attachment_id>[0-9]+)/$',
-        'review_file_attachment',
+
+    url(r'^file/(?P<file_attachment_diff_id>\d+)'
+        r'-(?P<file_attachment_id>\d+)/$',
+        views.review_file_attachment,
         name='file-attachment'),
 
     # Screenshots
-    url(r'^s/(?P<screenshot_id>[0-9]+)/$',
-        'view_screenshot',
+    url(r'^s/(?P<screenshot_id>\d+)/$',
+        views.view_screenshot,
         name='screenshot'),
 
     # Bugs
-    url(r'^bugs/(?P<bug_id>[A-Za-z0-9\-_.]+)/', include(bugs_urls)),
+    url(r'^bugs/(?P<bug_id>[\w\.-]+)/', include(bugs_urls)),
 
     # E-mail previews
     url(r'^preview-email/(?P<format>(text|html))/$',
-        'preview_review_request_email',
+        views.preview_review_request_email,
         name='preview-review-request-email'),
 
-    url(r'^changes/(?P<changedesc_id>[0-9]+)/preview-email/'
+    url(r'^changes/(?P<changedesc_id>\d+)/preview-email/'
         r'(?P<format>(text|html))/$',
-        'preview_review_request_email',
+        views.preview_review_request_email,
         name='preview-review-request-email'),
 
-    url(r'^reviews/(?P<review_id>[0-9]+)/preview-email/'
+    url(r'^reviews/(?P<review_id>\d+)/preview-email/'
         r'(?P<format>(text|html))/$',
-        'preview_review_email',
+        views.preview_review_email,
         name='preview-review-email'),
 
-    url(r'^reviews/(?P<review_id>[0-9]+)/replies/(?P<reply_id>[0-9]+)/'
+    url(r'^reviews/(?P<review_id>\d+)/replies/(?P<reply_id>\d+)/'
         r'preview-email/(?P<format>(text|html))/$',
-        'preview_reply_email',
+        views.preview_reply_email,
         name='preview-review-reply-email'),
-)
+]
 
-urlpatterns = patterns(
-    'reviewboard.reviews.views',
 
-    url(r'^new/$', 'new_review_request', name="new-review-request"),
-    url(r'^(?P<review_request_id>[0-9]+)/', include(review_request_urls)),
-)
+urlpatterns = [
+    url(r'^new/$',
+        views.new_review_request,
+        name='new-review-request'),
+
+    url(r'^(?P<review_request_id>\d+)/',
+        include(review_request_urls)),
+]

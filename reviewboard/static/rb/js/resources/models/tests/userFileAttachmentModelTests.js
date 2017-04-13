@@ -42,7 +42,7 @@ suite('rb/resources/models/UserFileAttachment', function() {
         it('API payloads', function() {
             var data = model.parse({
                 stat: 'ok',
-                file_attachment: {
+                user_file_attachment: {
                     id: 42,
                     caption: 'caption',
                     absolute_url: 'downloadURL',

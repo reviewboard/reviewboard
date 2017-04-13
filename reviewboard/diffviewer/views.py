@@ -341,7 +341,8 @@ class DiffFragmentView(View):
             url_kwargs = {
                 key: kwargs[key]
                 for key in ('chunk_index', 'interfilediff_id',
-                            'review_request_id', 'filediff_id', 'revision')
+                            'review_request_id', 'filediff_id',
+                            'revision', 'interdiff_revision')
                 if key in kwargs and kwargs[key] is not None
             }
             bundle_url = local_site_reverse('patch-error-bundle',

@@ -6,7 +6,7 @@ import logging
 import mimetools
 import re
 
-from django.conf.urls import include, patterns, url
+from django.conf.urls import include, url
 from django.dispatch import receiver
 from django.utils import six
 from django.utils.six.moves.urllib.parse import urlparse
@@ -556,11 +556,11 @@ class HostingServiceRegistry(EntryPointRegistry):
         super(HostingServiceRegistry, self).register(service)
 
         if service.repository_url_patterns:
-            cls_urlpatterns = patterns(
-                '',
+            cls_urlpatterns = [
                 url(r'^(?P<hosting_service_id>%s)/'
                     % re.escape(service.hosting_service_id),
-                    include(service.repository_url_patterns)))
+                    include(service.repository_url_patterns)),
+            ]
 
             self._url_patterns[service.hosting_service_id] = cls_urlpatterns
             hostingsvcs_urls.dynamic_urls.add_patterns(cls_urlpatterns)

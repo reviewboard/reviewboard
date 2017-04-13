@@ -1,15 +1,18 @@
 from __future__ import unicode_literals
 
 from django.conf import settings
-from django.conf.urls import patterns, include, url
+from django.conf.urls import include, url
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.views.generic import TemplateView
+from djblets.util.views import cached_javascript_catalog
 
+from reviewboard.admin import views as admin_views
+from reviewboard.attachments import views as attachments_views
 from reviewboard.datagrids.urls import urlpatterns as datagrid_urlpatterns
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.hostingsvcs.urls import urlpatterns as hostingsvcs_urlpatterns
-from reviewboard.search.urls import urlpatterns as search_urlpatterns
+from reviewboard.reviews import views as reviews_views
 from reviewboard.webapi.resources import resources
 
 
@@ -46,20 +49,24 @@ if not admin.site._registry:
 
 
 # URLs global to all modes
-urlpatterns = patterns(
-    '',
-
-    (r'^admin/extensions/', include('djblets.extensions.urls'),
-     {'extension_manager': extension_manager}),
-    (r'^admin/', include('reviewboard.admin.urls')),
-
-    url(r'^jsi18n/', 'djblets.util.views.cached_javascript_catalog',
-        {'packages': ('reviewboard', 'djblets')},
-        name='js-catalog')
-)
+urlpatterns = [
+    url(r'^admin/extensions/',
+        include('djblets.extensions.urls'),
+        kwargs={
+            'extension_manager': extension_manager,
+        }),
+    url(r'^admin/', include('reviewboard.admin.urls')),
+    url(r'^jsi18n/',
+        cached_javascript_catalog,
+        kwargs={
+            'packages': ('reviewboard', 'djblets'),
+        },
+        name='js-catalog'),
+]
 
 
 urlpatterns += extension_manager.get_url_patterns()
+
 
 # Add static media if running in DEBUG mode on a non-production host.
 if settings.DEBUG and not settings.PRODUCTION:
@@ -70,63 +77,55 @@ if settings.DEBUG and not settings.PRODUCTION:
                           document_root=settings.MEDIA_ROOT,
                           show_indexes=True)
 
-    urlpatterns += patterns(
-        '',
-
+    urlpatterns += [
         url(r'^js-tests/$',
             TemplateView.as_view(template_name='js/tests.html'),
             name='js-tests'),
-
         url(r'^js-tests/extensions/$',
             TemplateView.as_view(template_name='js/extension_tests.html'),
             name='js-extensions-tests'),
-    )
+    ]
 
-user_urlpatterns = patterns(
-    '',
 
-    # User info box
-    url(r'^infobox/$',
-        'reviewboard.reviews.views.user_infobox', name='user-infobox'),
+localsite_urlpatterns = [
+    url(r'^$', reviews_views.root, name='root'),
 
-    # User file attachments
-    url(r'file-attachments/(?P<file_attachment_uuid>[a-zA-Z0-9\-]+)/$',
-        'reviewboard.attachments.views.user_file_attachment',
-        name='user-file-attachment'),
-)
-
-localsite_urlpatterns = patterns(
-    '',
-
-    url(r'^$', 'reviewboard.reviews.views.root', name='root'),
-
-    (r'^api/', include(resources.root.get_url_patterns())),
-    (r'^r/', include('reviewboard.reviews.urls')),
+    url(r'^api/', include(resources.root.get_url_patterns())),
+    url(r'^r/', include('reviewboard.reviews.urls')),
 
     # Support
     url(r'^support/$',
-        'reviewboard.admin.views.support_redirect', name='support'),
+        admin_views.support_redirect,
+        name='support'),
 
     # Users
-    (r'^users/(?P<username>[A-Za-z0-9@_\-\.\'\+]+)/',
-     include(user_urlpatterns)),
+    url(r'^users/(?P<username>[\w.@+-]+)/', include([
+        # User info box
+        url(r'^infobox/$',
+            reviews_views.user_infobox,
+            name='user-infobox'),
+
+        # User file attachments
+        url(r'file-attachments/(?P<file_attachment_uuid>[a-zA-Z0-9-]+)/$',
+            attachments_views.user_file_attachment,
+            name='user-file-attachment'),
+    ])),
 
     # Search
-    url(r'^search/', include(search_urlpatterns)),
-)
+    url(r'^search/', include('reviewboard.search.urls')),
+]
+
 
 localsite_urlpatterns += datagrid_urlpatterns
 localsite_urlpatterns += hostingsvcs_urlpatterns
 
 
 # Main includes
-urlpatterns += patterns(
-    '',
+urlpatterns += [
+    url(r'^account/', include('reviewboard.accounts.urls')),
+    url(r'^s/(?P<local_site_name>[\w\.-]+)/',
+        include(localsite_urlpatterns)),
+]
 
-    (r'^account/', include('reviewboard.accounts.urls')),
-
-    (r'^s/(?P<local_site_name>[A-Za-z0-9\-_.]+)/',
-     include(localsite_urlpatterns)),
-)
 
 urlpatterns += localsite_urlpatterns
