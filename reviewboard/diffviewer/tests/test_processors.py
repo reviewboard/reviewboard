@@ -12,12 +12,12 @@ class FilterInterdiffOpcodesTests(TestCase):
         """Testing filter_interdiff_opcodes"""
         opcodes = [
             ('insert', 0, 0, 0, 1),
-            ('equal', 0, 5, 1, 5),
-            ('delete', 5, 10, 5, 5),
-            ('equal', 10, 25, 5, 20),
-            ('replace', 25, 26, 20, 21),
-            ('equal', 26, 40, 21, 35),
-            ('insert', 40, 40, 35, 45),
+            ('equal', 0, 5, 1, 6),
+            ('delete', 5, 10, 6, 6),
+            ('equal', 10, 25, 6, 21),
+            ('replace', 25, 26, 21, 22),
+            ('equal', 26, 40, 22, 36),
+            ('insert', 40, 40, 36, 46),
         ]
         self._sanity_check_opcodes(opcodes)
 
@@ -32,13 +32,13 @@ class FilterInterdiffOpcodesTests(TestCase):
 
         self.assertEqual(new_opcodes, [
             ('filtered-equal', 0, 0, 0, 1),
-            ('filtered-equal', 0, 5, 1, 5),
-            ('filtered-equal', 5, 10, 5, 5),
-            ('equal', 10, 25, 5, 20),
-            ('replace', 25, 26, 20, 21),
-            ('equal', 26, 28, 21, 23),
-            ('filtered-equal', 28, 40, 23, 35),
-            ('filtered-equal', 40, 40, 35, 45),
+            ('filtered-equal', 0, 5, 1, 6),
+            ('filtered-equal', 5, 10, 6, 6),
+            ('equal', 10, 25, 6, 21),
+            ('replace', 25, 26, 21, 22),
+            ('equal', 26, 28, 22, 24),
+            ('filtered-equal', 28, 40, 24, 36),
+            ('filtered-equal', 40, 40, 36, 46),
         ])
         self._sanity_check_opcodes(new_opcodes)
 
@@ -254,9 +254,30 @@ class FilterInterdiffOpcodesTests(TestCase):
         prev_i2 = None
         prev_j2 = None
 
-        for tag, i1, i2, j1, j2 in opcodes:
-            if tag == 'replace':
-                self.assertEqual((i2 - i1), (j2 - j1))
+        for index, opcode in enumerate(opcodes):
+            tag, i1, i2, j1, j2 = opcode
+
+            if tag in ('equal', 'replace'):
+                i_range = i2 - i1
+                j_range = j2 - j1
+
+                self.assertEqual(
+                    (i2 - i1), (j2 - j1),
+                    'Ranges are not equal for opcode index %s: %r. Got '
+                    'i_range=%s, j_range=%s'
+                    % (index, opcode, i_range, j_range))
+            elif tag == 'insert':
+                self.assertEqual(
+                    i1, i2,
+                    'i range should not change for opcode index %s: %r. Got '
+                    'i1=%s, i2=%s'
+                    % (index, opcode, i1, i2))
+            elif tag == 'delete':
+                self.assertEqual(
+                    j1, j2,
+                    'j range should not change for opcode index %s: %r. Got '
+                    'j1=%s, j2=%s'
+                    % (index, opcode, j1, j2))
 
             if prev_i2 is not None and prev_j2 is not None:
                 self.assertEqual(i1, prev_i2)
