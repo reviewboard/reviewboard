@@ -19,8 +19,10 @@ class DiffSetManagerTests(SpyAgency, TestCase):
                     call_fake=lambda *args, **kwargs: True)
 
         diffset = DiffSet.objects.create_from_data(
-            repository, 'diff', self.DEFAULT_GIT_FILEDIFF_DATA, None, None,
-            None, '/', None)
+            repository=repository,
+            diff_file_name='diff',
+            diff_file_contents=self.DEFAULT_GIT_FILEDIFF_DATA,
+            basedir='/')
 
         self.assertEqual(diffset.files.count(), 1)
 
@@ -34,8 +36,10 @@ class DiffSetManagerTests(SpyAgency, TestCase):
                     call_fake=lambda *args, **kwargs: True)
 
         diffset = DiffSet.objects.create_from_data(
-            repository, 'diff', self.DEFAULT_GIT_FILEDIFF_DATA, None, None,
-            None, 'trunk/', None)
+            repository=repository,
+            diff_file_name='diff',
+            diff_file_contents=self.DEFAULT_GIT_FILEDIFF_DATA,
+            basedir='trunk/')
 
         self.assertEqual(diffset.files.count(), 1)
 
@@ -53,8 +57,10 @@ class DiffSetManagerTests(SpyAgency, TestCase):
                     call_fake=lambda *args, **kwargs: True)
 
         diffset = DiffSet.objects.create_from_data(
-            repository, 'diff', self.DEFAULT_GIT_FILEDIFF_DATA, None, None,
-            None, '/trunk/', None)
+            repository=repository,
+            diff_file_name='diff',
+            diff_file_contents=self.DEFAULT_GIT_FILEDIFF_DATA,
+            basedir='/trunk/')
 
         self.assertEqual(diffset.files.count(), 1)
 
@@ -62,18 +68,21 @@ class DiffSetManagerTests(SpyAgency, TestCase):
         self.assertEqual(filediff.source_file, 'trunk/README')
         self.assertEqual(filediff.dest_file, 'trunk/README')
 
-    def test_create_from_data_with_save_false(self):
-        """Testing DiffSetManager.create_from_data with save=False"""
+    def test_create_from_data_with_validate_only_true(self):
+        """Testing DiffSetManager.create_from_data with validate_only=True"""
         repository = self.create_repository(tool_name='Test')
 
         self.spy_on(repository.get_file_exists,
                     call_fake=lambda *args, **kwargs: True)
 
         with self.assertNumQueries(0):
-            DiffSet.objects.create_from_data(
-                repository, 'diff', self.DEFAULT_GIT_FILEDIFF_DATA, None,
-                None, None, '/', None,
-                save=False)
+            diffset = DiffSet.objects.create_from_data(
+                repository=repository,
+                diff_file_name='diff',
+                diff_file_contents=self.DEFAULT_GIT_FILEDIFF_DATA,
+                basedir='/',
+                validate_only=True)
 
+        self.assertIsNone(diffset)
         self.assertEqual(DiffSet.objects.count(), 0)
         self.assertEqual(FileDiff.objects.count(), 0)
