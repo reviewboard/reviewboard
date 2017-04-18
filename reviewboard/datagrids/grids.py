@@ -31,12 +31,11 @@ from reviewboard.datagrids.columns import (BugsColumn,
                                            ReviewRequestCheckboxColumn,
                                            ReviewRequestIDColumn,
                                            ReviewRequestStarColumn,
-                                           ReviewSubmitterColumn,
                                            ReviewSummaryColumn,
                                            ShipItColumn,
-                                           SubmitterColumn,
                                            SummaryColumn,
-                                           ToMeColumn)
+                                           ToMeColumn,
+                                           UsernameColumn)
 from reviewboard.datagrids.sidebar import Sidebar, DataGridSidebarMixin
 from reviewboard.datagrids.builtin_items import (IncomingSection,
                                                  OutgoingSection,
@@ -132,7 +131,8 @@ class ReviewRequestDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
     star = ReviewRequestStarColumn()
     ship_it = ShipItColumn()
     summary = SummaryColumn()
-    submitter = SubmitterColumn()
+    submitter = UsernameColumn(label=_('Submitter'),
+                               user_relation=['submitter'])
 
     branch = Column(
         label=_('Branch'),
@@ -242,7 +242,8 @@ class ReviewDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
         label=_('Date Reviewed'),
         format='F jS, Y',
         shrink=True)
-    submitter = ReviewSubmitterColumn()
+    submitter = UsernameColumn(label=_('Submitter'),
+                               user_relation=['review_request', 'submitter'])
     review_summary = ReviewSummaryColumn()
 
     status_query_field = 'review_request__status'
@@ -407,7 +408,7 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
 class UsersDataGrid(AlphanumericDataGrid):
     """A datagrid showing a list of users registered on Review Board."""
 
-    username = Column(_('Username'), link=True, sortable=True)
+    username = UsernameColumn(label=_('Username'))
     fullname = Column(_('Full Name'), field_name='get_full_name',
                       link=True, expand=True)
     pending_count = PendingCountColumn(_('Open Review Requests'),

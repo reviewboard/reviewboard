@@ -45,51 +45,117 @@ class BaseStarColumn(Column):
         return render_star(state.datagrid.request.user, obj)
 
 
-class BaseSubmitterColumn(Column):
-    """Base class for the Submitter column.
+class UsernameColumn(Column):
+    """A column for showing a username and the user's avatar.
 
-    We have two versions of this column: One for review request datagrids,
-    and one for review datagrids. This columns contains all the common
-    rendering logic between the two.
+    The username and avatar will link to the user's profile page and will
+    show basic profile information when hovering over the link.
+
+    When constructing an instance of this column, the relation between the
+    object being represented in the datagrid and the user can be specified
+    as a tuple or list of field names forming a path to the user field.
     """
 
     AVATAR_SIZE = 24
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        super(BaseSubmitterColumn, self).__init__(
-            label=_('Submitter'),
-            field_name='review_request',
+    def __init__(self, label=_('Username'), user_relation=[], *args, **kwargs):
+        """Initialize the column.
+
+        Args:
+            label (unicode, optional):
+                The label for the column.
+
+            user_relation (list of unicode, optional):
+                A list of fields forming a relation path to the user. This can
+                be left blank if representing the user.
+
+            *args (tuple):
+                Additional positional arguments to pass to the column.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the column.
+        """
+        self._user_relation = user_relation
+
+        super(UsernameColumn, self).__init__(
+            label=label,
+            db_field='__'.join(user_relation + ['username']),
             css_class='submitter-column',
             shrink=True,
             sortable=True,
             link=True,
             *args, **kwargs)
 
-    def render_user(self, state, user):
-        """Render the user's name and avatar as HTML."""
-        siteconfig = SiteConfiguration.objects.get_current()
+    def render_data(self, state, obj):
+        """Render the user's name and avatar as HTML.
 
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            obj (django.db.models.Model):
+                The object being rendered in the datagrid.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The HTML for the column.
+        """
+        # Look up the user in the provided obj by traversing the relation.
+        # If _user_relation is empty, then obj is the user.
+        user = obj
+
+        for field_name in self._user_relation:
+            user = getattr(user, field_name)
+
+        # If avatars are eanbled, we'll want to include that in the resulting
+        # HTML.
+        siteconfig = SiteConfiguration.objects.get_current()
+        request = state.datagrid.request
         avatar_html = ''
 
         if siteconfig.get(avatar_services.AVATARS_ENABLED_KEY):
             avatar_service = avatar_services.for_user(user)
 
             if avatar_service:
-                avatar_html = avatar_service.render(
-                    request=state.datagrid.request,
-                    user=user,
-                    size=self.AVATAR_SIZE)
+                avatar_html = avatar_service.render(request=request,
+                                                    user=user,
+                                                    size=self.AVATAR_SIZE)
 
-        request = state.datagrid.request
-
+        # Render the link to the user page, using the avatar and username.
+        username = user.username
         user_url = local_site_reverse('user', request=request, kwargs={
-            'username': user.username,
+            'username': username,
         })
 
         return format_html(
             '<a class="user" href="{0}">{1}{2}</a>',
-            user_url, avatar_html, user.username)
+            user_url, avatar_html, username)
+
+    def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset.
+
+        This will select fields for the user and the user's profile, to
+        help with query performance.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
+        user_field = '__'.join(self._user_relation)
+
+        if user_field:
+            fields = [user_field, '%s__profile' % user_field]
+        else:
+            fields = ['profile']
+
+        return queryset.select_related(*fields)
 
 
 class BugsColumn(Column):
@@ -547,20 +613,6 @@ class ReviewRequestStarColumn(BaseStarColumn):
         return queryset
 
 
-class ReviewSubmitterColumn(BaseSubmitterColumn):
-    """Shows the submitter of the review request for a review."""
-
-    def render_data(self, state, review):
-        """Return the rendered contents of the column."""
-        return self.render_user(state, review.review_request.submitter)
-
-    def augment_queryset(self, state, queryset):
-        """Add additional queries to the queryset."""
-        return queryset.select_related('review_request',
-                                       'review_request__submitter',
-                                       'review_request__submitter__profile')
-
-
 class ShipItColumn(Column):
     """Shows the "Ship It" count for a review request."""
 
@@ -590,24 +642,6 @@ class ShipItColumn(Column):
                 (self.image_alt, review_request.shipit_count)
         else:
             return ''
-
-
-class SubmitterColumn(BaseSubmitterColumn):
-    """Shows the username of the user who submitted the review request."""
-
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        super(SubmitterColumn, self).__init__(
-            db_field='submitter__username',
-            *args, **kwargs)
-
-    def render_data(self, state, review_request):
-        """Return the rendered contents of the column."""
-        return self.render_user(state, review_request.submitter)
-
-    def augment_queryset(self, state, queryset):
-        """Add additional queries to the queryset."""
-        return queryset.select_related('submitter', 'submitter__profile')
 
 
 class SummaryColumn(Column):
