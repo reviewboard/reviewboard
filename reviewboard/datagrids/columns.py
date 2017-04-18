@@ -104,10 +104,15 @@ class BugsColumn(Column):
 
     def __init__(self, *args, **kwargs):
         """Initialize the column."""
+        # Note that we're enabling linking but overriding the link function
+        # to return None. This is to disable the automatic linking to the
+        # review request, so that the cell isn't generally clickable,
+        # preventing visual and interaction issues with the bug links.
         super(BugsColumn, self).__init__(
             label=_('Bugs'),
             css_class='bugs',
-            link=False,
+            link=True,
+            link_func=lambda *args: None,
             shrink=True,
             sortable=False,
             *args, **kwargs)
@@ -127,6 +132,7 @@ class BugsColumn(Column):
 
         if repository and repository.bug_tracker:
             links = []
+
             for bug in bugs:
                 try:
                     url = local_site_reverse(
@@ -134,13 +140,18 @@ class BugsColumn(Column):
                         local_site_name=local_site_name,
                         args=[review_request.display_id, bug])
                     links.append(
-                        format_html('<a href="{0}">{1}</a>', url, bug))
+                        format_html('<a class="bug" href="{0}">{1}</a>',
+                                    url, bug))
                 except NoReverseMatch:
                     links.append(escape(bug))
 
             return ', '.join(links)
 
-        return ', '.join(bugs)
+        return format_html_join(
+            ', ',
+            '<span class="bug">{0}</span>',
+            ((bug,) for bug in bugs)
+        )
 
 
 class ReviewRequestCheckboxColumn(CheckboxColumn):
