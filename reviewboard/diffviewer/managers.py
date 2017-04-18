@@ -500,6 +500,7 @@ class DiffSetManager(models.Manager):
             diffset.save()
 
         encoding_list = repository.get_encoding_list()
+        filediffs = []
 
         for f in files:
             parent_file = None
@@ -538,8 +539,6 @@ class DiffSetManager(models.Manager):
                 dest_file=parser.normalize_diff_filename(dest_file),
                 source_revision=smart_unicode(orig_rev),
                 dest_detail=f.newInfo,
-                diff=f.data,
-                parent_diff=parent_content,
                 binary=f.binary,
                 status=status)
 
@@ -549,11 +548,19 @@ class DiffSetManager(models.Manager):
                 parent_file.delete_count == 0):
                 filediff.extra_data = {'parent_moved': True}
 
-            filediff.set_line_counts(raw_insert_count=f.insert_count,
-                                     raw_delete_count=f.delete_count)
-
             if save:
-                filediff.save()
+                # This state all requires making modifications to the database.
+                # We only want to do this if we're saving.
+                filediff.diff = f.data
+                filediff.parent_diff = parent_content
+
+                filediff.set_line_counts(raw_insert_count=f.insert_count,
+                                         raw_delete_count=f.delete_count)
+
+                filediffs.append(filediff)
+
+        if filediffs:
+            FileDiff.objects.bulk_create(filediffs)
 
         return diffset
 
