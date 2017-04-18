@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.reviews.models import (DefaultReviewer, ReviewRequest,
                                         ReviewRequestDraft)
 from reviewboard.scmtools.errors import ChangeNumberInUseError
@@ -108,18 +109,20 @@ class ReviewRequestManagerTests(TestCase):
         repository = self.create_repository()
 
         self.assertEqual(local_site.review_requests.count(), 0)
+        self.assertEqual(DiffSetHistory.objects.count(), 0)
+        self.assertEqual(ReviewRequestDraft.objects.count(), 0)
 
-        ReviewRequest.objects.create(
-            user, repository,
-            commit_id='123',
-            local_site=local_site,
-            create_from_commit_id=True)
+        with self.assertRaises(NotImplementedError):
+            ReviewRequest.objects.create(
+                user, repository,
+                commit_id='123',
+                local_site=local_site,
+                create_from_commit_id=True)
 
-        # Make sure that entry doesn't exist in the database.
-        self.assertEqual(local_site.review_requests.count(), 1)
-        review_request = local_site.review_requests.get()
-        self.assertEqual(review_request.local_id, 1)
-        self.assertEqual(review_request.commit_id, '123')
+        # Make sure that entry and related objects don't exist in the database.
+        self.assertEqual(local_site.review_requests.count(), 0)
+        self.assertEqual(DiffSetHistory.objects.count(), 0)
+        self.assertEqual(ReviewRequestDraft.objects.count(), 0)
 
     @add_fixtures(['test_scmtools'])
     def test_create_with_create_from_commit_id(self):

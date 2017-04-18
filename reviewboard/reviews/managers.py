@@ -133,34 +133,45 @@ class ReviewRequestManager(ConcurrencyManager):
             except (ObjectDoesNotExist, TypeError, ValueError):
                 pass
 
-        diffset_history = DiffSetHistory()
-        diffset_history.save()
-
+        # Create the review request. We're not going to actually save this
+        # until we're confident we have all the data we need.
         review_request = self.model(
             submitter=user,
             status='P',
             public=False,
             repository=repository,
-            diffset_history=diffset_history,
+            diffset_history=DiffSetHistory(),
             local_site=local_site)
 
         if commit_id:
             review_request.commit = commit_id
 
         review_request.validate_unique()
-        review_request.save()
+
+        draft = None
 
         if commit_id and create_from_commit_id:
             try:
-                draft = ReviewRequestDraft.objects.create(
-                    review_request=review_request)
+                draft = ReviewRequestDraft(review_request=review_request)
                 draft.update_from_commit_id(commit_id)
-                draft.save()
-                draft.add_default_reviewers()
             except Exception as e:
-                logging.error('Unable to update new review request from '
-                              'commit ID %s: %s',
-                              commit_id, e, exc_info=1)
+                logging.exception('Unable to update new review request from '
+                                  'commit ID %s on repository ID=%s: %s',
+                                  commit_id, repository.pk, e)
+                raise
+
+        # Now that we've guaranteed we have everything needed for this review
+        # request, we can save all related objects and re-attach (since the
+        # "None" IDs are cached).
+        review_request.diffset_history.save()
+        review_request.diffset_history = review_request.diffset_history
+        review_request.save()
+
+        if draft:
+            draft.review_request = review_request
+            draft.save()
+
+            draft.add_default_reviewers()
 
         if local_site:
             # We want to atomically set the local_id to be a monotonically
@@ -190,7 +201,10 @@ class ReviewRequestManager(ConcurrencyManager):
             cursor.close()
             transaction.commit()
 
-            review_request = ReviewRequest.objects.get(pk=review_request.pk)
+            review_request.local_id = (
+                ReviewRequest.objects.filter(pk=review_request.pk)
+                .values_list('local_id', flat=True)[0]
+            )
 
         return review_request
 
