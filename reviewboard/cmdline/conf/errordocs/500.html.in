@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+
+<html>
+ <head>
+  <title>HTTP 500 - Review Board is taking a nap</title>
+  <meta http-equiv="refresh" content="60" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <style>
+   body {
+     background-color: #222950;
+     color: #DDD;
+     font-family: Verdana, Arial, Helvetica, Sans-Serif;
+     font-size: 8pt;
+     text-align: center;
+     padding: 10em 2em;
+   }
+
+   h1 {
+     color: white;
+     font-size: 250%;
+     font-weight: normal;
+   }
+
+   img {
+     float: left;
+     margin-right: 3em;
+   }
+
+   p {
+    text-align: justify;
+    font-size: 160%;
+   }
+
+   #explanation {
+     display: inline-block;
+     max-width: 50em;
+     overflow-y: hidden;
+     padding-top: 4em;
+     text-align: left;
+   }
+
+   #wrapper {
+    display: inline-block;
+    text-align: center;
+   }
+
+   @media screen and (max-width: 720px),
+          screen and (max-device-width: 720px) and (orientation: landscape) {
+     body {
+       padding: 2em;
+     }
+
+     img {
+       float: none;
+       margin-right: 0;
+       text-align: center;
+       max-width: 75%;
+       height: auto;
+     }
+
+     p {
+       text-align: left;
+     }
+
+     #explanation {
+       padding-top: 2em;
+     }
+   }
+  </style>
+ </head>
+ <body>
+  <div id="wrapper">
+   <img src="@siteroot_noslash@/static/rb/images/500/zzz.png"
+        srcset="@siteroot_noslash@/static/rb/images/500/zzz@2x.png 1x
+                @siteroot_noslash@/static/rb/images/500/zzz@2x.png 2x"
+        width="296" height="254" alt="" />
+
+   <div id="explanation">
+    <h1>Shhh... Review Board is taking a nap.</h1>
+    <p>
+     You hit a HTTP 500 error, which means something might be wrong.
+     If this is a temporary outage, Review Board should wake up soon.
+    </p>
+    <p>
+     Or maybe you've found a bug. If so, good job! Please report it to your
+     admins. They'll be able to help you out.
+    </p>
+   </div>
+  </div>
+ </body>
+</html>

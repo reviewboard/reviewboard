@@ -186,6 +186,7 @@ class Site(object):
     def rebuild_site_directory(self):
         """Rebuild the site hierarchy."""
         htdocs_dir = os.path.join(self.install_dir, "htdocs")
+        errordocs_dir = os.path.join(htdocs_dir, 'errordocs')
         media_dir = os.path.join(htdocs_dir, "media")
         static_dir = os.path.join(htdocs_dir, "static")
 
@@ -199,6 +200,7 @@ class Site(object):
         self.mkdir(os.path.join(self.install_dir, "data"))
 
         self.mkdir(htdocs_dir)
+        self.mkdir(errordocs_dir)
         self.mkdir(media_dir)
         self.mkdir(static_dir)
 
@@ -229,10 +231,15 @@ class Site(object):
                 # they'll have to do this manually later.
                 pass
 
-        self.link_pkg_dir(
-            "reviewboard",
-            "htdocs/errordocs",
-            os.path.join(self.install_dir, "htdocs", "errordocs"))
+        # Process the error docs templates and add them where the web server
+        # can get to them.
+        if os.path.exists(errordocs_dir) and os.path.islink(errordocs_dir):
+            # This is from an older install where errordocs was linked to
+            # the versions shipped in the package.
+            os.unlink(errordocs_dir)
+
+        self.process_template('cmdline/conf/errordocs/500.html.in',
+                              os.path.join(errordocs_dir, '500.html'))
 
         self.link_pkg_dir("reviewboard",
                           "htdocs/static/lib",
