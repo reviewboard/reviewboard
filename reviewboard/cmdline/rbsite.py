@@ -178,7 +178,7 @@ class Site(object):
 
     def get_default_site_path(self, install_dir):
         """Return the default site path."""
-        if os.path.isabs(install_dir):
+        if os.path.isabs(install_dir) or os.sep in install_dir:
             return install_dir
 
         return os.path.join(INSTALLED_SITE_PATH, install_dir)
