@@ -375,7 +375,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         if (this._startAtAnchorName) {
             /* See if we've loaded the anchor the user wants to start at. */
-            $anchor = $('a[name="' + this._startAtAnchorName + '"]');
+            $anchor = $(document.getElementsByName(this._startAtAnchorName));
 
             /*
              * Some anchors are added by the template (such as those at
@@ -460,16 +460,18 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * Selects an anchor by name.
      */
     selectAnchorByName: function(name, scroll) {
-        return this.selectAnchor($('a[name="' + name + '"]'), scroll);
+        return this.selectAnchor($(document.getElementsByName(name)),
+                                 scroll);
     },
 
     /*
      * Highlights a chunk bound to an anchor element.
      */
     _highlightAnchor: function($anchor) {
-        this._highlightedChunk = $anchor.parents('tbody:first, thead:first');
-        this._chunkHighlighter.highlight(
-            $anchor.parents('tbody:first, thead:first'));
+        this._highlightedChunk =
+            $anchor.closest('tbody')
+            .add($anchor.closest('thead'));
+        this._chunkHighlighter.highlight(this._highlightedChunk);
     },
 
     /*
@@ -480,7 +482,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * If no anchor is selected, we'll try to select the first one.
      */
     _updateAnchors: function($table) {
-        this._$anchors = this._$anchors.add($table.find('a[name]'));
+        this._$anchors = this._$anchors.add($table.find('tbody th a[name]'));
 
         /* Skip over the change index to the first item. */
         if (this._selectedAnchorIndex === -1 && this._$anchors.length > 0) {
@@ -507,7 +509,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
              i += dir) {
             $anchor = $(this._$anchors[i]);
 
-            if ($anchor.parents('tr').hasClass('dimmed')) {
+            if ($anchor.closest('tr').hasClass('dimmed')) {
                 continue;
             }
 

@@ -92,10 +92,10 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         _super(this).render.call(this);
 
-        $thead = this.$('thead');
+        $thead = $(this.el.tHead);
 
-        this._$revisionRow = $thead.find('.revision-row');
-        this._$filenameRow = $thead.find('.filename-row');
+        this._$revisionRow = $thead.children('.revision-row');
+        this._$filenameRow = $thead.children('.filename-row');
         this._$css = $('<style/>').appendTo(this.$el);
 
         this._selector.render();
@@ -274,7 +274,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         for (i = 0; i < len; i++) {
             $button = $(this._$collapseButtons[i]);
-            $tbody = $button.parents('tbody');
+            $tbody = $button.closest('tbody');
             parentOffset = $tbody.offset();
             parentTop = parentOffset.top;
             parentHeight = $tbody.height();
@@ -349,7 +349,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             linesOfContext: linesOfContext
         }, {
             success: function(html) {
-                var $tbody = $btn.parents('tbody'),
+                var $tbody = $btn.closest('tbody'),
                     $scrollAnchor,
                     tbodyID,
                     scrollAnchorID,
@@ -454,7 +454,8 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
             /* Calculate the widths and state of the diff columns. */
             $cells = $(this._$revisionRow[0].cells);
-            cellPadding = this.$('pre:first').parent().andSelf()
+            cellPadding = $(this.el.querySelector('pre'))
+                .parent().andSelf()
                 .getExtents('p', 'lr');
 
             this._colReservedWidths = $cells.eq(0).outerWidth() + cellPadding +
@@ -589,13 +590,13 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
          * The user clicked somewhere else. Move the anchor point here
          * if it's part of the diff.
          */
-        $tbody = $(node).parents('tbody:first');
+        $tbody = $(node).closest('tbody');
 
         if ($tbody.length > 0 &&
             ($tbody.hasClass('delete') ||
              $tbody.hasClass('insert') ||
              $tbody.hasClass('replace'))) {
-            this.trigger('chunkClicked', $tbody.find('a:first').attr('name'));
+            this.trigger('chunkClicked', $tbody[0].querySelector('a').name);
         }
     },
 
@@ -611,7 +612,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         if (!$target.hasClass('diff-expand-btn')) {
             /* We clicked an image inside the link. Find the parent. */
-            $target = $target.parents('.diff-expand-btn');
+            $target = $target.closest('.diff-expand-btn');
         }
 
         e.preventDefault();
@@ -629,7 +630,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         if (!$target.hasClass('diff-collapse-btn')) {
             /* We clicked an image inside the link. Find the parent. */
-            $target = $target.parents('.diff-collapse-btn');
+            $target = $target.closest('.diff-collapse-btn');
         }
 
         e.preventDefault();
