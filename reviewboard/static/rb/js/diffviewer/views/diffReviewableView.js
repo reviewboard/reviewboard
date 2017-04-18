@@ -489,7 +489,8 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * causing the other column to shrink too small.
      */
     _updateColumnSizes: function() {
-        var fullWidth,
+        var $parent = this._$parent,
+            fullWidth,
             contentWidth,
             filenameWidth;
 
@@ -497,7 +498,16 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             return;
         }
 
-        fullWidth = this._$parent.width();
+        if (!$parent.is(':visible')) {
+            /*
+             * We're still in diff loading mode, and the parent is hidden. We
+             * can get the width we need from the parent. It should be the same,
+             * or at least close enough for the first stab at column sizes.
+             */
+            $parent = $parent.parent();
+        }
+
+        fullWidth = $parent.width();
 
         /* Calculate the desired widths of the diff columns. */
         contentWidth = fullWidth - this._colReservedWidths;

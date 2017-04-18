@@ -313,8 +313,22 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             } else {
                 diffReviewable.getRenderedDiff({
                     complete: function(xhr) {
-                        $('#file_container_' + fileDiffID)
-                            .replaceWith(xhr.responseText);
+                        var $container = $('#file_container_' + fileDiffID)
+                            .parent()
+                            .hide();
+
+                        /*
+                         * jQuery's html() and replaceWith() perform checks of
+                         * the HTML, looking for things like <script> tags to
+                         * determine how best to set the HTML, and possibly
+                         * manipulating the string to do some normalization of
+                         * for cases we don't need to worry about. While this
+                         * is all fine for most HTML fragments, this can be
+                         * slow for diffs, given their size, and is
+                         * unnecessary. It's much faster to just set innerHTML
+                         * directly.
+                         */
+                        $container[0].innerHTML = xhr.responseText;
                         this._renderFileDiff(diffReviewable);
                     }
                 }, this);
@@ -357,6 +371,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._diffReviewableViews.push(diffReviewableView);
         diffReviewableView.render();
+        diffReviewableView.$el.parent().show();
 
         this.listenTo(diffReviewableView, 'fileClicked', function() {
             this.selectAnchorByName(diffReviewable.get('fileIndex'));
