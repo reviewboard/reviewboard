@@ -341,21 +341,34 @@ RB.IssueSummaryTableView = Backbone.View.extend({
      * Updates the display of the table to reflect the state of that issue.
      */
     _onIssueStatusChanged: function(comment, oldStatus, lastUpdated) {
-        var entry = $('#summary-table-entry-' + comment.id),
+        var $entry = $('#summary-table-entry-' + comment.id),
             newStatus = comment.get('issueStatus'),
-            oldHeight = this.$el.height();
+            oldHeight = this.$el.height(),
+            oldScrollTop = window.pageYOffset;
 
-        this.updateStatus(entry, oldStatus, newStatus);
+        this.updateStatus($entry, oldStatus, newStatus);
         this.updateCounters(oldStatus, newStatus);
-        this.updateTimeStamp(entry, lastUpdated);
+        this.updateTimeStamp($entry, lastUpdated);
 
         /*
          * Update the scroll position to counteract the addition/deletion
          * of the entry in the issue summary table, so the page doesn't
          * appear to jump.
+         *
+         * Ideally we would update the DOM and set the scroll position at
+         * exactly the same time, synchronized, so there would never be a jump
+         * in the page. Chrome and Firefox are pretty good at not jumping, but
+         * Safari (as of 10.1), Internet Explorer (as of 11), and Edge (as of
+         * 38.14393) will jump.
+         *
+         * We can minimize that jump by performing the scroll update during an
+         * animation frame, getting it as close as possible to DOM layout
+         * update.
          */
-        $(window).scrollTop($(window).scrollTop() + this.$el.height() -
-                            oldHeight);
+        requestAnimationFrame(_.bind(function() {
+            window.scrollTo(window.pageXOffset,
+                            oldScrollTop + this.$el.height() - oldHeight);
+        }, this));
     },
 
     /*
