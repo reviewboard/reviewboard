@@ -133,6 +133,15 @@
     line-height: 140%;
     margin: 0;
     padding-left: 2px;
+
+    /*
+     * overflow-wrap is the modern name, but some browsers need word-break
+     * to work right. Edge, IE, and Safari, for instance, do not support this or
+     * treat it correctly at the time of this writing (April 11, 2017). Guides
+     * suggest specifying both, so we're specifying both.
+     */
+    overflow-wrap: break-all;
+    word-break: break-all;
   }
 
   .indent {
