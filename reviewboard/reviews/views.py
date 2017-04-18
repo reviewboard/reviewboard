@@ -1410,10 +1410,10 @@ def preview_review_request_email(
 
     if format == 'text':
         template_name = text_template_name
-        mimetype = 'text/plain'
+        mimetype = 'text/plain; charset=utf-8'
     elif format == 'html':
         template_name = html_template_name
-        mimetype = 'text/html'
+        mimetype = 'text/html; charset=utf-8'
     else:
         raise Http404
 
