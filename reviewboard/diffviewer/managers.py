@@ -434,7 +434,7 @@ class DiffSetManager(models.Manager):
     def create_from_data(self, repository, diff_file_name, diff_file_contents,
                          parent_diff_file_name, parent_diff_file_contents,
                          diffset_history, basedir, request,
-                         base_commit_id=None, save=True):
+                         base_commit_id=None, check_existence=True, save=True):
         """Create a DiffSet from raw diff data.
 
         The diff_file_contents and parent_diff_file_contents parameters are
@@ -453,7 +453,7 @@ class DiffSetManager(models.Manager):
             repository,
             base_commit_id,
             request,
-            check_existence=(not parent_diff_file_contents)))
+            check_existence=check_existence and not parent_diff_file_contents))
 
         # Parse the diff
         if len(files) == 0:
@@ -479,7 +479,7 @@ class DiffSetManager(models.Manager):
             # later apply each of the files that are in the main diff
             for f in self._process_files(parent_parser, basedir,
                                          repository, base_commit_id, request,
-                                         check_existence=True,
+                                         check_existence=check_existence,
                                          limit_to=diff_filenames):
                 parent_files[f.newFile] = f
 
@@ -505,7 +505,6 @@ class DiffSetManager(models.Manager):
             parent_file = None
             orig_rev = None
             parent_content = b''
-
 
             if f.origFile in parent_files:
                 parent_file = parent_files[f.origFile]

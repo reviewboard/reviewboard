@@ -349,7 +349,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             diffset_history=None,
             basedir='/',
             request=None,
-            base_commit_id=commit.parent)
+            base_commit_id=commit.parent,
+            check_existence=False)
 
         # Compute a suitable revision for the diffset.
         self.diffset.update_revision_from_history(
