@@ -41,7 +41,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     initialize: function() {
         _super(this).initialize.call(this);
 
-        _.bindAll(this, '_updateCollapseButtonPos', '_onWindowResize');
+        _.bindAll(this, '_updateCollapseButtonPos');
 
         this._selector = new RB.TextCommentRowSelector({
             el: this.el,
@@ -78,8 +78,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     remove: function() {
         RB.AbstractReviewableView.prototype.remove.call(this);
 
-        this._$window.off('scroll', this._updateCollapseButtonPos);
-        this._$window.off('resize', this._onWindowResize);
+        this._$window.off('scroll.' + this.cid);
 
         this._selector.remove();
     },
@@ -117,8 +116,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         this._precalculateContentWidths();
         this._updateColumnSizes();
 
-        this._$window.on('scroll', this._updateCollapseButtonPos);
-        this._$window.on('resize', this._onWindowResize);
+        this._$window.on('scroll.' + this.cid, this._updateCollapseButtonPos);
 
         return this;
     },
@@ -537,7 +535,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * Updates the sizes of the diff columns, and the location of the
      * collapse buttons (if one or more are visible).
      */
-    _onWindowResize: function() {
+    updateLayout: function() {
         this._updateColumnSizes();
         this._updateCollapseButtonPos();
     },

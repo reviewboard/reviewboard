@@ -1424,9 +1424,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      * This will only trigger a layout resize after the stack has unwound,
      * and only once every 100 milliseconds at most.
      */
-    _scheduleResizeLayout: _.throttle(function() {
-        _.defer(this._checkResizeLayout);
-    }, 100),
+    _scheduleResizeLayout: _.throttleLayout(function() {
+        this._checkResizeLayout();
+    }, {
+        defer: true
+    }),
 
     /*
      * Formats the contents of a field.

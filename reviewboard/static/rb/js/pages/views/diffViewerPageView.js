@@ -45,6 +45,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         _super(this).initialize.call(this);
 
         this._selectedAnchorIndex = -1;
+        this._$window = $(window);
         this._$anchors = $();
         this._$controls = null;
         this._diffReviewableViews = [];
@@ -135,6 +136,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     remove: function() {
         _super(this).remove.call(this);
 
+        this._$window.off('resize.' + this.cid);
         this._diffFileIndexView.remove();
     },
 
@@ -217,6 +219,9 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this._chunkHighlighter.render().$el.prependTo($diffs);
 
         $('#diff-details').removeClass('loading');
+
+        this._$window.on('resize.' + this.cid,
+                         _.throttleLayout(_.bind(this._onWindowResize, this)));
 
         return this;
     },
@@ -441,7 +446,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                 scrollAmount += RB.DraftReviewBannerView.instance.getHeight();
             }
 
-            $(window).scrollTop($anchor.offset().top - scrollAmount);
+            this._$window.scrollTop($anchor.offset().top - scrollAmount);
         }
 
         this._highlightAnchor($anchor);
@@ -636,6 +641,21 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         RB.UserSession.instance.toggleAttr('diffsShowExtraWhitespace');
 
         return false;
+    },
+
+    /*
+     * Handler for when the window resizes.
+     *
+     * Triggers a relayout of all the diffs and the chunk highlighter.
+     */
+    _onWindowResize: function() {
+        var i;
+
+        for (i = 0; i < this._diffReviewableViews.length; i++) {
+            this._diffReviewableViews[i].updateLayout();
+        }
+
+        this._chunkHighlighter.updateLayout();
     },
 
     /*
