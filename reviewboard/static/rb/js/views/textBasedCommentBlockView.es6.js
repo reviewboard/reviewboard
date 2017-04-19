@@ -26,8 +26,11 @@ RB.TextBasedCommentBlockView = RB.AbstractCommentBlockView.extend({
     initialize() {
         this.$beginRow = null;
         this.$endRow = null;
+        this._$window = $(window);
 
-        _.bindAll(this, '_updateSize');
+        this._prevCommentHeight = null;
+        this._prevWindowWidth = null;
+        this._resizeRegistered = false;
     },
 
     /**
@@ -50,8 +53,6 @@ RB.TextBasedCommentBlockView = RB.AbstractCommentBlockView.extend({
             .bindProperty('text', this.model, 'count', {
                 elementToModel: false,
             });
-
-        $(window).on('resize', this._updateSize);
     },
 
     /**
@@ -64,7 +65,9 @@ RB.TextBasedCommentBlockView = RB.AbstractCommentBlockView.extend({
          */
         Backbone.View.prototype.remove.call(this);
 
-        $(window).off('resize', this._updateSize);
+        if (this._resizeRegistered) {
+            this._$window.off('resize.' + this.cid);
+        }
     },
 
     /**
@@ -84,7 +87,25 @@ RB.TextBasedCommentBlockView = RB.AbstractCommentBlockView.extend({
         this.$beginRow = $beginRow;
         this.$endRow = $endRow;
 
-        this._updateSize();
+        /*
+         * We need to set the sizes and show the element after other layout
+         * operations and the DOM have settled.
+         */
+        _.defer(_.bind(function() {
+            this._updateSize();
+            this.$el.show();
+        }, this));
+
+        if ($beginRow && $endRow) {
+            if (!this._resizeRegistered) {
+                this._$window.on('resize.' + this.cid,
+                                 _.bind(this._updateSize, this));
+            }
+        } else {
+            if (this._resizeRegistered) {
+                this._$window.off('resize.' + this.cid);
+            }
+        }
     },
 
     /**
@@ -100,7 +121,7 @@ RB.TextBasedCommentBlockView = RB.AbstractCommentBlockView.extend({
     positionCommentDlg(commentDlg) {
         commentDlg.$el.css({
             left: $(document).scrollLeft() +
-                  ($(window).width() - commentDlg.$el.width()) / 2,
+                  (this._$window.width() - commentDlg.$el.width()) / 2,
             top: this.$endRow.offset().top + this.$endRow.height(),
         });
     },
@@ -136,15 +157,26 @@ RB.TextBasedCommentBlockView = RB.AbstractCommentBlockView.extend({
      * Update the size of the comment flag.
      */
     _updateSize() {
-        if (this.$beginRow && this.$endRow) {
-            /*
-             * On IE and Safari, the marginTop in getExtents may be wrong.
-             * We force a value that ends up working for us.
-             */
-            this.$el.height(this.$endRow.offset().top +
-                            this.$endRow.outerHeight() -
-                            this.$beginRow.offset().top -
-                            (this.$el.getExtents('m', 't') || -4));
+        const windowWidth = this._$window.width();
+
+        if (this._prevWindowWidth === windowWidth) {
+            return;
+        }
+
+        this._prevWindowWidth = windowWidth;
+
+        /*
+         * On IE and Safari, the marginTop in getExtents may be wrong.
+         * We force a value that ends up working for us.
+         */
+        const commentHeight = this.$endRow.offset().top +
+                              this.$endRow.outerHeight() -
+                              this.$beginRow.offset().top -
+                              (this.$el.getExtents('m', 't') || -4);
+
+        if (commentHeight !== this._prevCommentHeight) {
+            this.$el.height(commentHeight);
+            this._prevCommentHeight = commentHeight;
         }
     },
 });

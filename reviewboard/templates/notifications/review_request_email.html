@@ -46,15 +46,15 @@
 </table>
 {%  endif %}{% endif %}
 
-{%  if review_request.bugs_closed != "" %}
+{%  if review_request.bugs_closed %}
 <div style="margin-top: 1.5em;">
  <strong style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Bugs: </strong>
-{%   if review_request.repository.bug_tracker == "" %}
-{{review_request.get_bug_list|join:", "}}
-{%   else %}
+{%   if review_request.repository and review_request.repository.bug_tracker %}
 {%    for bug in review_request.get_bug_list %}
  <a href="{{bug|bug_url:review_request}}">{{bug}}</a>{% if not forloop.last %}, {% endif %}
 {%    endfor %}
+{%   else %}
+{{review_request.get_bug_list|join:", "}}
 {%   endif %}
 </div>
 {%  endif %}

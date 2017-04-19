@@ -12,6 +12,8 @@
  * delete counts are available.
  */
 RB.DiffComplexityIconView = Backbone.View.extend({
+    ICON_SIZE: 20,
+
     /*
      * Initializes the view.
      *
@@ -30,7 +32,10 @@ RB.DiffComplexityIconView = Backbone.View.extend({
      */
     render: function() {
         var numTotal = this.numInserts + this.numDeletes + this.numReplaces,
-            minValue = numTotal * 0.15,
+            numInsertsPct = this.numInserts / numTotal,
+            numDeletesPct = this.numDeletes / numTotal,
+            numReplacesPct = this.numReplaces / numTotal,
+            minValue = 360 * 0.15,
             innerRadius = 0.5 *
                           (this.totalLines === null
                            ? 1
@@ -38,21 +43,21 @@ RB.DiffComplexityIconView = Backbone.View.extend({
             iconColors = RB.DiffComplexityIconView.getIconColors();
 
         this.$el
-            .width(20)
-            .height(20)
+            .width(this.ICON_SIZE)
+            .height(this.ICON_SIZE)
             .plot(
                 [
                     {
                         color: iconColors.insertColor,
-                        data: this._clampValue(this.numInserts, minValue)
+                        data: this._clampValue(numInsertsPct * 360, minValue)
                     },
                     {
                         color: iconColors.deleteColor,
-                        data: this._clampValue(this.numDeletes, minValue)
+                        data: this._clampValue(numDeletesPct * 360, minValue)
                     },
                     {
                         color: iconColors.replaceColor,
-                        data: this._clampValue(this.numReplaces, minValue)
+                        data: this._clampValue(numReplacesPct * 360, minValue)
                     }
                 ],
                 {
@@ -92,7 +97,9 @@ RB.DiffComplexityIconView = Backbone.View.extend({
         if (!this._iconColors) {
             this._iconColors = {};
 
-            $iconColor = $('<div/>').appendTo(document.body);
+            $iconColor = $('<div/>')
+                .hide()
+                .appendTo(document.body);
 
             $iconColor[0].className = 'diff-changes-icon-insert';
             this._iconColors.insertColor = $iconColor.css('color');

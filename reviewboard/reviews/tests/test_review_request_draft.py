@@ -163,20 +163,16 @@ class PostCommitTests(SpyAgency, TestCase):
 
             return commit
 
-        def get_file_exists(repository, path, revision, base_commit_id=None,
-                            request=None):
-            return (path, revision) in [('/readme', 'd6613f5')]
-
         review_request = ReviewRequest.objects.create(self.user,
                                                       self.repository)
         draft = ReviewRequestDraft.create(review_request)
 
         self.spy_on(draft.repository.get_change, call_fake=get_change)
-        self.spy_on(draft.repository.get_file_exists,
-                    call_fake=get_file_exists)
+        self.spy_on(draft.repository.get_file_exists)
 
         draft.update_from_commit_id(commit_id)
 
+        self.assertFalse(draft.repository.get_file_exists.called)
         self.assertEqual(review_request.summary, '')
         self.assertEqual(review_request.description, '')
         self.assertEqual(draft.summary, 'This is my commit message')
@@ -205,21 +201,17 @@ class PostCommitTests(SpyAgency, TestCase):
 
             return commit
 
-        def get_file_exists(repository, path, revision, base_commit_id=None,
-                            request=None):
-            return (path, revision) in [('/readme', 'd6613f5')]
-
         review_request = ReviewRequest.objects.create(self.user,
                                                       self.repository)
         draft = ReviewRequestDraft.create(review_request)
 
         self.spy_on(draft.repository.get_change, call_fake=get_change)
-        self.spy_on(draft.repository.get_file_exists,
-                    call_fake=get_file_exists)
+        self.spy_on(draft.repository.get_file_exists)
 
         draft.description_rich_text = True
         draft.update_from_commit_id('4')
 
+        self.assertFalse(draft.repository.get_file_exists.called)
         self.assertEqual(draft.summary, '* This is a summary')
         self.assertEqual(draft.description, '* This is a description.')
         self.assertFalse(draft.description_rich_text)

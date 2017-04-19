@@ -503,10 +503,16 @@ class SVNDiffParser(DiffParser):
         # 3) Property changes on: <path>
         # 4) -----------------------------------------------------
         # 5) Modified: <propname>
-        if (linenum + 4 < len(self.lines) and
-            self.lines[linenum].startswith(b'--- (') and
-            self.lines[linenum + 1].startswith(b'+++ (') and
-            self.lines[linenum + 2].startswith(b'Property changes on:')):
+        try:
+            is_property_change = (
+                self.lines[linenum].startswith(b'--- (') and
+                self.lines[linenum + 1].startswith(b'+++ (') and
+                self.lines[linenum + 2].startswith(b'Property changes on:')
+            )
+        except IndexError:
+            is_property_change = False
+
+        if is_property_change:
             # Subversion diffs with property changes have no really
             # parsable format. The content of a property can easily mimic
             # the property change headers. So we can't rely upon it, and
@@ -518,8 +524,12 @@ class SVNDiffParser(DiffParser):
             return linenum
         else:
             # Handle deleted empty files.
-            if b'index' in info and info['index'].endswith(b'\t(deleted)'):
-                info['deleted'] = True
+            try:
+                if info['index'].endswith(b'\t(deleted)'):
+                    info['deleted'] = True
+            except KeyError:
+                # There's no index information.
+                pass
 
             return super(SVNDiffParser, self).parse_diff_header(linenum, info)
 
@@ -533,17 +543,27 @@ class SVNDiffParser(DiffParser):
         linenum = super(SVNDiffParser, self).parse_special_header(
             linenum, info)
 
-        if 'index' in info and linenum != len(self.lines):
+        try:
+            file_index = info['index']
+        except KeyError:
+            return linenum
+
+        try:
             if self.lines[linenum] == self.BINARY_STRING:
                 # Skip this and the svn:mime-type line.
                 linenum += 2
-                info['binary'] = True
-                info['origFile'] = info['index']
-                info['newFile'] = info['index']
 
-                # We can't get the revision info from this diff header.
-                info['origInfo'] = '(unknown)'
-                info['newInfo'] = '(working copy)'
+                info.update({
+                    'binary': True,
+                    'origFile': file_index,
+                    'newFile': file_index,
+
+                    # We can't get the revision info from this diff header.
+                    'origInfo': '(unknown)',
+                    'newInfo': '(working copy)',
+                })
+        except IndexError:
+            pass
 
         return linenum
 
@@ -559,13 +579,15 @@ class SVNDiffParser(DiffParser):
         # 2) There's an actual section per-property, so we could parse these
         #    out in a usable form. We'd still need a way to display that
         #    sanely, though.
-        if (self.lines[linenum] == b'' and
-            linenum + 2 < len(self.lines) and
-            self.lines[linenum + 1].startswith(b'Property changes on:')):
-            # Skip over the next 3 lines (blank, "Property changes on:", and
-            # the "__________" divider.
-            info['skip'] = True
-            linenum += 3
+        try:
+            if (self.lines[linenum] == b'' and
+                self.lines[linenum + 1].startswith(b'Property changes on:')):
+                # Skip over the next 3 lines (blank, "Property changes on:",
+                # and the "__________" divider.
+                info['skip'] = True
+                linenum += 3
+        except IndexError:
+            pass
 
         return linenum
 

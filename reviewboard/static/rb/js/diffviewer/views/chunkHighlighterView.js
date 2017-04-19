@@ -15,11 +15,15 @@ RB.ChunkHighlighterView = Backbone.View.extend({
      * Initializes the highlighter.
      */
     initialize: function() {
-        this._resetState();
+        this._chunkEl = null;
+        this._chunkContainerEl = null;
         this._$pageContainer = null;
-        this._width = null;
+        this._$window = $(window);
+        this._prevWindowWidth = null;
+        this._prevTop = null;
+        this._prevHeight = null;
 
-        _.bindAll(this, '_updatePosition');
+        _.bindAll(this, 'updateLayout');
     },
 
     /*
@@ -29,20 +33,19 @@ RB.ChunkHighlighterView = Backbone.View.extend({
      * we want to keep around for further rendering.
      */
     render: function() {
-        $(window).on('resize.' + this.cid, _.throttle(_.bind(function() {
-            this._recalcGlobalSizes();
-            this._resetChunkSizes();
+        this._$window.on('resize.' + this.cid, _.bind(function() {
+            var windowWidth = this._$window.width();
 
-            /*
-             * Other operations may impact the size of the page, so do this
-             * after all resize handlers have been called.
-             */
-            _.defer(this._updatePosition);
-        }, this)));
+            if (windowWidth !== this._prevWindowWidth) {
+                this._prevWindowWidth = windowWidth;
+
+                this.updateLayout();
+            }
+        }, this));
 
         this._$pageContainer = $('#page-container');
 
-        this._recalcGlobalSizes();
+        this.updateLayout();
 
         return this;
     },
@@ -53,7 +56,7 @@ RB.ChunkHighlighterView = Backbone.View.extend({
     remove: function() {
         _super(this).remove.call(this);
 
-        $(window).off(this.cid);
+        this._$window.off(this.cid);
     },
 
     /*
@@ -63,96 +66,64 @@ RB.ChunkHighlighterView = Backbone.View.extend({
      * and size as the page updates.
      */
     highlight: function($chunk) {
-        this._resetState();
+        this._chunkEl = $chunk[0];
+        this._chunkContainerEl = $chunk.parents('.diff-container')[0];
 
-        this._$chunk = $chunk;
-        this._$chunkContainer = $chunk.parents('.diff-container');
-
-        this._updatePosition();
+        this.updateLayout();
     },
 
-    /*
-     * Resets the calculated state for a chunk.
+    /**
+     * Update of the position of the highlighter.
      */
-    _resetState: function() {
-        this._$chunk = null;
-        this._$chunkContainer = null;
+    updateLayout: function() {
+        var chunkEl = this._chunkEl,
+            changed = false,
+            css = {},
+            padding,
+            top,
+            height;
 
-        this._resetChunkSizes();
-    },
+        if (!chunkEl) {
+            return;
+        }
 
-    /*
-     * Resets the calculated offsets and sizes for a chunk.
-     */
-    _resetChunkSizes: function() {
-        this._top = null;
-        this._height = null;
-    },
+        /*
+         * NOTE: We're hard-coding the border widths (1px) so we don't have to
+         *       look them up. The borders aren't directly on the chunk (and
+         *       may not even be on a child of this chunk), and it's a bit
+         *       slow to look these up.
+         */
+        top = Math.floor(chunkEl.offsetTop +
+                         this._chunkContainerEl.offsetTop + 1);
+        height = chunkEl.clientHeight + 1;
 
-    /*
-     * Re-calculates the common sizes for the page container.
-     */
-    _recalcGlobalSizes: function() {
-        var oldWidth = this.$el.width();
+        if (top !== this._prevTop) {
+            css.top = top;
+            this._prevTop = top;
+            changed = true;
+        }
 
-        this._width = this._$pageContainer.outerWidth();
+        if (height !== this._prevHeight) {
+            css.height = height;
+            this._prevHeight = height;
+            changed = true;
+        }
 
-        this.$el.css({
-            left: -this._$pageContainer.getExtents('p', 'l'),
-            width: oldWidth
-        });
-    },
-
-    /*
-     * Updates the position of the borders, based on the chunk dimensions.
-     */
-    _updatePosition: function(e) {
-        var chunkPos;
-
-        if (e && e.target && e.target !== window &&
-            !e.target.getElementsByTagName) {
+        if (changed) {
             /*
-             * This is not a container. It might be a text node.
-             * Ignore it.
+             * If the positions of the chunk changed, then it's possible the
+             * page container's padding has also changed (zooming in/out), so
+             * be safe and recompute.
+             *
+             * Technically we should compute separately for the left and right
+             * sides, but in practice we apply even spacing. Save a
+             * calculation, since this happens in resize events.
              */
-            return;
+            padding = this._$pageContainer.getExtents('p', 'l');
+            css.left = -padding;
+            css.right = -padding;
+
+            this.$el.css(css);
         }
-
-        if (this._$chunk === null) {
-            return;
-        }
-
-        if (this._top === null) {
-            chunkPos = this._$chunk.position();
-
-            if (!chunkPos) {
-                /* The diff isn't yet loaded. */
-                return;
-            }
-
-            this._top = Math.floor(chunkPos.top +
-                                   this._$chunkContainer.position().top);
-        }
-
-        if (this._height === null) {
-            this._height = this._$chunk.outerHeight();
-        }
-
-        if (this._top === this._oldTop &&
-            this._width === this._oldWidth &&
-            this._height === this._oldHeight) {
-            /* The position and size haven't actually changed. */
-            return;
-        }
-
-        this.$el.css({
-            top: this._top,
-            height: this._height + 1,  // Compensate for the tbody border below.
-            width: this._width
-        });
-
-        this._oldTop = this._top;
-        this._oldWidth = this._width;
-        this._oldHeight = this._height;
     }
 });

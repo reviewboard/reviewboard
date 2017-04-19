@@ -33,11 +33,11 @@ Changes
 {{review_request.summary}}
 {% endif %}{% endif %}
 
-{% ifnotequal review_request.bugs_closed "" %}
-Bugs: {{ review_request.get_bug_list|humanize_list }}{% ifnotequal review_request.repository.bug_tracker "" %}{% for bug in review_request.get_bug_list %}
-    {{ bug|bug_url:review_request }}{% endfor %}
-{% endifnotequal %}
-{% endifnotequal %}
+{% if review_request.bugs_closed %}
+Bugs: {{review_request.get_bug_list|humanize_list}}{% if review_request.repository and review_request.repository.bug_tracker %}{% for bug in review_request.get_bug_list %}
+    {{bug|bug_url:review_request}}{% endfor %}
+{% endif %}
+{% endif %}
 
 {% if review_request.repository %}
 Repository: {{review_request.repository.name}}
