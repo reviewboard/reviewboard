@@ -6,13 +6,15 @@ import re
 import platform
 
 from django.utils import six
+from django.utils.six.moves import cStringIO as StringIO
 from django.utils.six.moves.urllib.parse import (quote as urlquote,
                                                  urlsplit as urlsplit,
                                                  urlunsplit as urlunsplit)
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.filesystem import is_exe_in_path
 
-from reviewboard.diffviewer.parser import DiffParser, DiffParserError, File
+from reviewboard.diffviewer.parser import (DiffParser, DiffParserError,
+                                           ParsedDiffFile)
 from reviewboard.scmtools.core import SCMClient, SCMTool, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import (FileNotFoundError,
                                          InvalidRevisionFormatError,
@@ -219,31 +221,42 @@ class GitDiffParser(DiffParser):
         """
         self.files = []
         i = 0
-        preamble = b''
+        preamble = StringIO()
 
         while i < len(self.lines):
             next_i, file_info, new_diff = self._parse_diff(i)
 
             if file_info:
+                if self.files:
+                    self.files[-1].finalize()
+
                 self._ensure_file_has_required_fields(file_info)
 
-                if preamble:
-                    file_info.data = preamble + file_info.data
-                    preamble = b''
+                file_info.prepend_data(preamble.getvalue())
+                preamble.close()
+                preamble = StringIO()
 
                 self.files.append(file_info)
             elif new_diff:
                 # We found a diff, but it was empty and has no file entry.
                 # Reset the preamble.
-                preamble = b''
+                preamble.close()
+                preamble = StringIO()
             else:
-                preamble += self.lines[i] + b'\n'
+                preamble.write(self.lines[i])
+                preamble.write(b'\n')
 
             i = next_i
 
-        if not self.files and preamble.strip() != b'':
-            # This is probably not an actual git diff file.
-            raise DiffParserError('This does not appear to be a git diff', 0)
+        try:
+            if self.files:
+                self.files[-1].finalize()
+            elif preamble.getvalue().strip() != b'':
+                # This is probably not an actual git diff file.
+                raise DiffParserError('This does not appear to be a git diff',
+                                      0)
+        finally:
+            preamble.close()
 
         return self.files
 
@@ -270,8 +283,9 @@ class GitDiffParser(DiffParser):
         # Now we have a diff we are going to use so get the filenames + commits
         diff_git_line = self.lines[linenum]
 
-        file_info = File()
-        file_info.data = diff_git_line + b'\n'
+        file_info = ParsedDiffFile()
+        file_info.append_data(diff_git_line)
+        file_info.append_data(b'\n')
         file_info.binary = False
 
         linenum += 1
@@ -288,14 +302,14 @@ class GitDiffParser(DiffParser):
         headers, linenum = self._parse_extended_headers(linenum)
 
         if self._is_new_file(headers):
-            file_info.data += headers[b'new file mode'][1]
+            file_info.append_data(headers[b'new file mode'][1])
             file_info.origInfo = PRE_CREATION
         elif self._is_deleted_file(headers):
-            file_info.data += headers[b'deleted file mode'][1]
+            file_info.append_data(headers[b'deleted file mode'][1])
             file_info.deleted = True
         elif self._is_mode_change(headers):
-            file_info.data += headers[b'old mode'][1]
-            file_info.data += headers[b'new mode'][1]
+            file_info.append_data(headers[b'old mode'][1])
+            file_info.append_data(headers[b'new mode'][1])
 
         if self._is_moved_file(headers):
             file_info.origFile = headers[b'rename from'][0]
@@ -303,20 +317,20 @@ class GitDiffParser(DiffParser):
             file_info.moved = True
 
             if b'similarity index' in headers:
-                file_info.data += headers[b'similarity index'][1]
+                file_info.append_data(headers[b'similarity index'][1])
 
-            file_info.data += headers[b'rename from'][1]
-            file_info.data += headers[b'rename to'][1]
+            file_info.append_data(headers[b'rename from'][1])
+            file_info.append_data(headers[b'rename to'][1])
         elif self._is_copied_file(headers):
             file_info.origFile = headers[b'copy from'][0]
             file_info.newFile = headers[b'copy to'][0]
             file_info.copied = True
 
             if b'similarity index' in headers:
-                file_info.data += headers[b'similarity index'][1]
+                file_info.append_data(headers[b'similarity index'][1])
 
-            file_info.data += headers[b'copy from'][1]
-            file_info.data += headers[b'copy to'][1]
+            file_info.append_data(headers[b'copy from'][1])
+            file_info.append_data(headers[b'copy to'][1])
 
         # Assume by default that the change is empty. If we find content
         # later, we'll clear this.
@@ -331,7 +345,7 @@ class GitDiffParser(DiffParser):
             if self.pre_creation_regexp.match(file_info.origInfo):
                 file_info.origInfo = PRE_CREATION
 
-            file_info.data += headers[b'index'][1]
+            file_info.append_data(headers[b'index'][1])
 
         # Get the changes
         while linenum < len(self.lines):
@@ -339,7 +353,8 @@ class GitDiffParser(DiffParser):
                 break
             elif self._is_binary_patch(linenum):
                 file_info.binary = True
-                file_info.data += self.lines[linenum] + b"\n"
+                file_info.append_data(self.lines[linenum])
+                file_info.append_data(b'\n')
                 empty_change = False
                 linenum += 1
                 break
@@ -380,8 +395,10 @@ class GitDiffParser(DiffParser):
                 else:
                     file_info.newFile = new_filename
 
-                file_info.data += orig_line + b'\n'
-                file_info.data += new_line + b'\n'
+                file_info.append_data(orig_line)
+                file_info.append_data(b'\n')
+                file_info.append_data(new_line)
+                file_info.append_data(b'\n')
                 linenum += 2
             else:
                 empty_change = False
@@ -483,7 +500,7 @@ class GitDiffParser(DiffParser):
         This is needed so that there aren't explosions higher up the chain when
         the web layer is expecting a string object.
         """
-        for attr in ('origInfo', 'newInfo', 'data'):
+        for attr in ('origInfo', 'newInfo'):
             if getattr(file_info, attr) is None:
                 setattr(file_info, attr, b'')
 

@@ -45,6 +45,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         _super(this).initialize.call(this, options);
 
         this._selectedAnchorIndex = -1;
+        this._$window = $(window);
         this._$anchors = $();
         this._$controls = null;
         this._diffReviewableViews = [];
@@ -134,6 +135,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     remove: function() {
         _super(this).remove.call(this);
 
+        this._$window.off('resize.' + this.cid);
         this._diffFileIndexView.remove();
     },
 
@@ -213,6 +215,9 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this._chunkHighlighter.render().$el.prependTo($diffs);
 
         $('#diff-details').removeClass('loading');
+
+        this._$window.on('resize.' + this.cid,
+                         _.throttleLayout(_.bind(this._onWindowResize, this)));
 
         return this;
     },
@@ -318,7 +323,22 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                 prefix = (options.showDeleted ? '#file' : '#file_container_');
                 diffReviewable.getRenderedDiff({
                     complete: function(xhr) {
-                        $(prefix + fileDiffID).replaceWith(xhr.responseText);
+                        const $container = $(prefix + fileDiffID)
+                            .parent()
+                            .hide();
+
+                        /*
+                         * jQuery's html() and replaceWith() perform checks of
+                         * the HTML, looking for things like <script> tags to
+                         * determine how best to set the HTML, and possibly
+                         * manipulating the string to do some normalization of
+                         * for cases we don't need to worry about. While this
+                         * is all fine for most HTML fragments, this can be
+                         * slow for diffs, given their size, and is
+                         * unnecessary. It's much faster to just set innerHTML
+                         * directly.
+                         */
+                        $container[0].innerHTML = xhr.responseText;
                         this._renderFileDiff(diffReviewable);
                     }
                 }, this, options);
@@ -361,6 +381,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._diffReviewableViews.push(diffReviewableView);
         diffReviewableView.render();
+        diffReviewableView.$el.parent().show();
 
         this.listenTo(diffReviewableView, 'fileClicked', function() {
             this.selectAnchorByName(diffReviewable.get('fileIndex'));
@@ -384,7 +405,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         if (this._startAtAnchorName) {
             /* See if we've loaded the anchor the user wants to start at. */
-            $anchor = $('a[name="' + this._startAtAnchorName + '"]');
+            $anchor = $(document.getElementsByName(this._startAtAnchorName));
 
             /*
              * Some anchors are added by the template (such as those at
@@ -455,7 +476,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                 scrollAmount += RB.DraftReviewBannerView.instance.getHeight();
             }
 
-            $(window).scrollTop($anchor.offset().top - scrollAmount);
+            this._$window.scrollTop($anchor.offset().top - scrollAmount);
         }
 
         this._highlightAnchor($anchor);
@@ -474,16 +495,18 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * Selects an anchor by name.
      */
     selectAnchorByName: function(name, scroll) {
-        return this.selectAnchor($('a[name="' + name + '"]'), scroll);
+        return this.selectAnchor($(document.getElementsByName(name)),
+                                 scroll);
     },
 
     /*
      * Highlights a chunk bound to an anchor element.
      */
     _highlightAnchor: function($anchor) {
-        this._highlightedChunk = $anchor.parents('tbody:first, thead:first');
-        this._chunkHighlighter.highlight(
-            $anchor.parents('tbody:first, thead:first'));
+        this._highlightedChunk =
+            $anchor.closest('tbody')
+            .add($anchor.closest('thead'));
+        this._chunkHighlighter.highlight(this._highlightedChunk);
     },
 
     /*
@@ -494,7 +517,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * If no anchor is selected, we'll try to select the first one.
      */
     _updateAnchors: function($table) {
-        this._$anchors = this._$anchors.add($table.find('a[name]'));
+        this._$anchors = this._$anchors.add($table.find('tbody th a[name]'));
 
         /* Skip over the change index to the first item. */
         if (this._selectedAnchorIndex === -1 && this._$anchors.length > 0) {
@@ -521,7 +544,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
              i += dir) {
             $anchor = $(this._$anchors[i]);
 
-            if ($anchor.parents('tr').hasClass('dimmed')) {
+            if ($anchor.closest('tr').hasClass('dimmed')) {
                 continue;
             }
 
@@ -648,6 +671,21 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         RB.UserSession.instance.toggleAttr('diffsShowExtraWhitespace');
 
         return false;
+    },
+
+    /*
+     * Handler for when the window resizes.
+     *
+     * Triggers a relayout of all the diffs and the chunk highlighter.
+     */
+    _onWindowResize: function() {
+        var i;
+
+        for (i = 0; i < this._diffReviewableViews.length; i++) {
+            this._diffReviewableViews[i].updateLayout();
+        }
+
+        this._chunkHighlighter.updateLayout();
     },
 
     /*

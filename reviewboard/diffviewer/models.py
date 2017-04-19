@@ -630,11 +630,19 @@ class DiffSet(models.Model):
         if self.revision not in (0, None):
             raise ValueError('The diffset already has a valid revision set.')
 
-        try:
-            latest_diffset = diffset_history.diffsets.only('revision').latest()
-            self.revision = latest_diffset.revision + 1
-        except DiffSet.DoesNotExist:
-            self.revision = 1
+        # Default this to revision 1. We'll use this if the DiffSetHistory
+        # isn't saved yet (which may happen when creating a new review request)
+        # or if there aren't yet any diffsets.
+        self.revision = 1
+
+        if diffset_history.pk:
+            try:
+                latest_diffset = \
+                    diffset_history.diffsets.only('revision').latest()
+                self.revision = latest_diffset.revision + 1
+            except DiffSet.DoesNotExist:
+                # Stay at revision 1.
+                pass
 
     def save(self, **kwargs):
         """Save this diffset.

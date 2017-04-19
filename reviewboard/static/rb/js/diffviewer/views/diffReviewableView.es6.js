@@ -14,18 +14,6 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
     commentBlockView: RB.DiffCommentBlockView,
     commentsListName: 'diff_comments',
 
-    cssTemplate: _.template([
-        '#<%= id %> td pre,',
-        '#<%= id %> .revision-row th.revision-col {',
-        '    min-width: <%= minColWidth %>px;',
-        '    max-width: <%= maxColWidth %>px;',
-        '}',
-        '#<%= id %> .filename-row th {',
-        '    min-width: <%= minFilenameWidth %>px;',
-        '    max-width: <%= maxFilenameWidth %>px;',
-        '}'
-    ].join('\n')),
-
     events: {
         'click .download-link': '_onDownloadLinkClicked',
         'click thead tr': '_onFileHeaderClicked',
@@ -53,12 +41,13 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
         /* State for keeping consistent column widths for diff content. */
         this._$filenameRow = null;
         this._$revisionRow = null;
-        this._$css = null;
         this._filenameReservedWidths = 0;
         this._colReservedWidths = 0;
         this._numColumns = 0;
         this._numFilenameColumns = 0;
         this._prevContentWidth = null;
+        this._prevFilenameWidth = null;
+        this._prevFullWidth = null;
 
         /*
          * Wrap this only once so we don't have to re-wrap every time
@@ -89,11 +78,10 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         this._centered = new RB.CenteredElementManager();
 
-        $thead = this.$('thead');
+        $thead = $(this.el.tHead);
 
-        this._$revisionRow = $thead.find('.revision-row');
-        this._$filenameRow = $thead.find('.filename-row');
-        this._$css = $('<style/>').appendTo(this.$el);
+        this._$revisionRow = $thead.children('.revision-row');
+        this._$filenameRow = $thead.children('.filename-row');
 
         this._selector.render();
 
@@ -267,7 +255,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             linesOfContext: linesOfContext
         }, {
             success: function(html) {
-                var $tbody = $btn.parents('tbody'),
+                var $tbody = $btn.closest('tbody'),
                     $scrollAnchor,
                     tbodyID,
                     scrollAnchorID,
@@ -367,16 +355,17 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * calculating the desired widths of the content areas.
      */
     _precalculateContentWidths: function() {
-        var $cells,
+        var cellPadding = 0,
             containerExtents,
-            cellPadding;
+            $cells;
 
         if (!this.$el.hasClass('diff-error') && this._$revisionRow.length > 0) {
             containerExtents = this.$el.getExtents('p', 'lr');
 
             /* Calculate the widths and state of the diff columns. */
             $cells = $(this._$revisionRow[0].cells);
-            cellPadding = this.$('pre:first').parent().andSelf()
+            cellPadding = $(this.el.querySelector('pre'))
+                .parent().andSelf()
                 .getExtents('p', 'lr');
 
             this._colReservedWidths = $cells.eq(0).outerWidth() + cellPadding +
@@ -411,7 +400,8 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      * causing the other column to shrink too small.
      */
     _updateColumnSizes: function() {
-        var fullWidth,
+        var $parent = this._$parent,
+            fullWidth,
             contentWidth,
             filenameWidth;
 
@@ -419,7 +409,22 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             return;
         }
 
-        fullWidth = this._$parent.width();
+        if (!$parent.is(':visible')) {
+            /*
+             * We're still in diff loading mode, and the parent is hidden. We
+             * can get the width we need from the parent. It should be the same,
+             * or at least close enough for the first stab at column sizes.
+             */
+            $parent = $parent.parent();
+        }
+
+        fullWidth = $parent.width();
+
+        if (fullWidth === this._prevFullWidth) {
+            return;
+        }
+
+        this._prevFullWidth = fullWidth;
 
         /* Calculate the desired widths of the diff columns. */
         contentWidth = fullWidth - this._colReservedWidths;
@@ -435,20 +440,35 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             filenameWidth /= 2;
         }
 
-        if (contentWidth !== this._prevContentWidth ||
-            filenameWidth !== this._prevFilenameWidth) {
-            /* The widths have changed, so force new minimums and maximums. */
-            this._$css.html(this.cssTemplate({
-                id: this.el.id,
-                minColWidth: Math.ceil(contentWidth * 0.66),
-                maxColWidth: Math.ceil(contentWidth),
-                minFilenameWidth: Math.ceil(filenameWidth * 0.66),
-                maxFilenameWidth: Math.ceil(filenameWidth)
-            }));
+        this.$el.width(fullWidth);
 
-            this._prevContentWidth = contentWidth;
+        /* Update the minimum and maximum widths, if they've changed. */
+        if (filenameWidth !== this._prevFilenameWidth) {
+            this._$filenameRow.children('th').css({
+                'min-width': Math.ceil(filenameWidth * 0.66),
+                'max-width': Math.ceil(filenameWidth)
+            });
             this._prevFilenameWidth = filenameWidth;
         }
+
+        if (contentWidth !== this._prevContentWidth) {
+            this._$revisionRow.children('.revision-col').css({
+                'min-width': Math.ceil(contentWidth * 0.66),
+                'max-width': Math.ceil(contentWidth)
+            });
+            this._prevContentWidth = contentWidth;
+        }
+    },
+
+    /*
+     * Handler for when the window resizes.
+     *
+     * Updates the sizes of the diff columns, and the location of the
+     * collapse buttons (if one or more are visible).
+     */
+    updateLayout() {
+        this._updateColumnSizes();
+        this._updateCollapseButtonPos();
     },
 
     /*
@@ -499,13 +519,13 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
          * The user clicked somewhere else. Move the anchor point here
          * if it's part of the diff.
          */
-        $tbody = $(node).parents('tbody:first');
+        $tbody = $(node).closest('tbody');
 
         if ($tbody.length > 0 &&
             ($tbody.hasClass('delete') ||
              $tbody.hasClass('insert') ||
              $tbody.hasClass('replace'))) {
-            this.trigger('chunkClicked', $tbody.find('a:first').attr('name'));
+            this.trigger('chunkClicked', $tbody[0].querySelector('a').name);
         }
     },
 
@@ -521,7 +541,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         if (!$target.hasClass('diff-expand-btn')) {
             /* We clicked an image inside the link. Find the parent. */
-            $target = $target.parents('.diff-expand-btn');
+            $target = $target.closest('.diff-expand-btn');
         }
 
         e.preventDefault();
@@ -539,7 +559,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
 
         if (!$target.hasClass('diff-collapse-btn')) {
             /* We clicked an image inside the link. Find the parent. */
-            $target = $target.parents('.diff-collapse-btn');
+            $target = $target.closest('.diff-collapse-btn');
         }
 
         e.preventDefault();

@@ -20,10 +20,17 @@ body.datagrid-page {
         clear: both;
       }
 
-      .datagrid td.bugs a {
-        text-decoration: underline;
-        color: @link-color;
-	white-space: nowrap;
+      .datagrid td.bugs {
+        cursor: text;
+
+        a.bug {
+          text-decoration: underline;
+          color: @link-color;
+        }
+
+        .bug {
+          white-space: nowrap;
+        }
       }
 
       .datagrid-body-container {

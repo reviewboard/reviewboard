@@ -4,6 +4,7 @@ import bz2
 import gc
 import hashlib
 import os
+import warnings
 
 from django.conf import settings
 from django.db import models, reset_queries, connection
@@ -391,14 +392,88 @@ class DiffSetManager(models.Manager):
     HEADER_EXTENSIONS = ["h", "H", "hh", "hpp", "hxx", "h++"]
     IMPL_EXTENSIONS = ["c", "C", "cc", "cpp", "cxx", "c++", "m", "mm", "M"]
 
-    def create_from_upload(self, repository, diff_file, parent_diff_file,
-                           diffset_history, basedir, request,
-                           base_commit_id=None, save=True):
+    def create_from_upload(self, repository, diff_file, parent_diff_file=None,
+                           diffset_history=None, basedir=None, request=None,
+                           base_commit_id=None, validate_only=False, **kwargs):
         """Create a DiffSet from a form upload.
 
-        The diff_file and parent_diff_file parameters are django forms
-        UploadedFile objects.
+        This parses a diff and optional parent diff covering one or more files,
+        validates, and constructs :py:class:`DiffSets
+        <reviewboard.diffviewer.models.DiffSet>` and :py:class:`FileDiffs
+        <reviewboard.diffviewer.models.FileDiff>` representing the diff.
+
+        This can optionally validate the diff without saving anything to the
+        database. In this case, no value will be returned. Instead, callers
+        should take any result as success.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository the diff applies to.
+
+            diff_file (django.core.files.uploadedfile.UploadedFile):
+                The diff file uploaded in the form.
+
+            parent_diff_file (django.core.files.uploadedfile.UploadedFile, optional):
+                The parent diff file uploaded in the form.
+
+            diffset_history (reviewboard.diffviewer.models.DiffSetHistory, optional):
+                The history object to associate the DiffSet with. This is
+                not required if using ``validate_only=True``.
+
+            basedir (unicode, optional):
+                The base directory to prepend to all file paths in the diff.
+
+            request (django.http.HttpRequest, optional):
+                The current HTTP request, if any. This will result in better
+                logging.
+
+            base_commit_id (unicode, optional):
+                The ID of the commit that the diff is based upon. This is
+                needed by some SCMs or hosting services to properly look up
+                files, if the diffs represent blob IDs instead of commit IDs
+                and the service doesn't support those lookups.
+
+            validate_only (bool, optional):
+                Whether to just validate and not save. If ``True``, then this
+                won't populate the database at all and will return ``None``
+                upon success. This defaults to ``False``.
+
+        Returns:
+            reviewboard.diffviewer.models.DiffSet:
+            The resulting DiffSet stored in the database, if processing
+            succeeded and ``validate_only=False``.
+
+        Raises:
+            reviewboard.diffviewer.errors.DiffParserError:
+                There was an error parsing the main diff or parent diff.
+
+            reviewboard.diffviewer.errors.DiffTooBigError:
+                The diff file was too big to be uploaded, based on the
+                configured maximum diff size in settings.
+
+            reviewboard.diffviewer.errors.EmptyDiffError:
+                The provided diff file did not contain any file changes.
+
+            reviewboard.scmtools.core.FileNotFoundError:
+                A file specified in the diff could not be found in the
+                repository.
+
+            reviewboard.scmtools.core.SCMError:
+                There was an error talking to the repository when validating
+                the existence of a file.
+
+            reviewboard.scmtools.git.ShortSHA1Error:
+                A SHA1 specified in the diff was in the short form, which
+                could not be used to look up the file. This is applicable only
+                to Git.
         """
+        if 'save' in kwargs:
+            warnings.warn('The save parameter to '
+                          'DiffSet.objects.create_from_upload is deprecated. '
+                          'Please set validate_only instead.',
+                          DeprecationWarning)
+            validate_only = not kwargs['save']
+
         siteconfig = SiteConfiguration.objects.get_current()
         max_diff_size = siteconfig.get('diffviewer_max_diff_size')
 
@@ -420,31 +495,113 @@ class DiffSetManager(models.Manager):
             parent_diff_file_name = None
             parent_diff_file_contents = None
 
-        return self.create_from_data(repository,
-                                     diff_file.name,
-                                     diff_file.read(),
-                                     parent_diff_file_name,
-                                     parent_diff_file_contents,
-                                     diffset_history,
-                                     basedir,
-                                     request,
-                                     base_commit_id=base_commit_id,
-                                     save=save)
+        return self.create_from_data(
+            repository=repository,
+            diff_file_name=diff_file.name,
+            diff_file_contents=diff_file.read(),
+            parent_diff_file_name=parent_diff_file_name,
+            parent_diff_file_contents=parent_diff_file_contents,
+            diffset_history=diffset_history,
+            basedir=basedir,
+            request=request,
+            base_commit_id=base_commit_id,
+            validate_only=validate_only)
 
     def create_from_data(self, repository, diff_file_name, diff_file_contents,
-                         parent_diff_file_name, parent_diff_file_contents,
-                         diffset_history, basedir, request,
-                         base_commit_id=None, save=True):
+                         parent_diff_file_name=None,
+                         parent_diff_file_contents=None,
+                         diffset_history=None, basedir=None, request=None,
+                         base_commit_id=None, check_existence=True,
+                         validate_only=False, **kwargs):
         """Create a DiffSet from raw diff data.
 
-        The diff_file_contents and parent_diff_file_contents parameters are
-        strings with the actual diff contents.
+        This parses a diff and optional parent diff covering one or more files,
+        validates, and constructs :py:class:`DiffSets
+        <reviewboard.diffviewer.models.DiffSet>` and :py:class:`FileDiffs
+        <reviewboard.diffviewer.models.FileDiff>` representing the diff.
+
+        This can optionally validate the diff without saving anything to the
+        database. In this case, no value will be returned. Instead, callers
+        should take any result as success.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository the diff applies to.
+
+            diff_file_name (unicode):
+                The filename of the main diff file.
+
+            diff_file_contents (bytes):
+                The contents of the main diff file.
+
+            parent_diff_file_name (unicode, optional):
+                The filename of the parent diff, if one is provided.
+
+            parent_diff_file_contents (bytes, optional):
+                The contents of the parent diff, if one is provided.
+
+            diffset_history (reviewboard.diffviewer.models.DiffSetHistory, optional):
+                The history object to associate the DiffSet with. This is
+                not required if using ``validate_only=True``.
+
+            basedir (unicode, optional):
+                The base directory to prepend to all file paths in the diff.
+
+            request (django.http.HttpRequest, optional):
+                The current HTTP request, if any. This will result in better
+                logging.
+
+            base_commit_id (unicode, optional):
+                The ID of the commit that the diff is based upon. This is
+                needed by some SCMs or hosting services to properly look up
+                files, if the diffs represent blob IDs instead of commit IDs
+                and the service doesn't support those lookups.
+
+            check_existence (bool, optional):
+                Whether to check for file existence as part of the validation
+                process. This defaults to ``True``.
+
+            validate_only (bool, optional):
+                Whether to just validate and not save. If ``True``, then this
+                won't populate the database at all and will return ``None``
+                upon success. This defaults to ``False``.
+
+        Returns:
+            reviewboard.diffviewer.models.DiffSet:
+            The resulting DiffSet stored in the database, if processing
+            succeeded and ``validate_only=False``.
+
+        Raises:
+            reviewboard.diffviewer.errors.DiffParserError:
+                There was an error parsing the main diff or parent diff.
+
+            reviewboard.diffviewer.errors.EmptyDiffError:
+                The provided diff file did not contain any file changes.
+
+            reviewboard.scmtools.core.FileNotFoundError:
+                A file specified in the diff could not be found in the
+                repository.
+
+            reviewboard.scmtools.core.SCMError:
+                There was an error talking to the repository when validating
+                the existence of a file.
+
+            reviewboard.scmtools.git.ShortSHA1Error:
+                A SHA1 specified in the diff was in the short form, which
+                could not be used to look up the file. This is applicable only
+                to Git.
         """
         from reviewboard.diffviewer.diffutils import convert_to_unicode
         from reviewboard.diffviewer.models import FileDiff
 
-        tool = repository.get_scmtool()
+        if 'save' in kwargs:
+            warnings.warn('The save parameter to '
+                          'DiffSet.objects.create_from_data is deprecated. '
+                          'Please set validate_only instead.',
+                          DeprecationWarning)
+            validate_only = not kwargs['save']
 
+        tool = repository.get_scmtool()
         parser = tool.get_parser(diff_file_contents)
 
         files = list(self._process_files(
@@ -453,7 +610,7 @@ class DiffSetManager(models.Manager):
             repository,
             base_commit_id,
             request,
-            check_existence=(not parent_diff_file_contents)))
+            check_existence=check_existence and not parent_diff_file_contents))
 
         # Parse the diff
         if len(files) == 0:
@@ -479,7 +636,7 @@ class DiffSetManager(models.Manager):
             # later apply each of the files that are in the main diff
             for f in self._process_files(parent_parser, basedir,
                                          repository, base_commit_id, request,
-                                         check_existence=True,
+                                         check_existence=check_existence,
                                          limit_to=diff_filenames):
                 parent_files[f.newFile] = f
 
@@ -496,10 +653,11 @@ class DiffSetManager(models.Manager):
             diffcompat=DiffCompatVersion.DEFAULT,
             base_commit_id=base_commit_id)
 
-        if save:
+        if not validate_only:
             diffset.save()
 
         encoding_list = repository.get_encoding_list()
+        filediffs = []
 
         for f in files:
             parent_file = None
@@ -538,8 +696,6 @@ class DiffSetManager(models.Manager):
                 dest_file=parser.normalize_diff_filename(dest_file),
                 source_revision=smart_unicode(orig_rev),
                 dest_detail=f.newInfo,
-                diff=f.data,
-                parent_diff=parent_content,
                 binary=f.binary,
                 status=status)
 
@@ -549,11 +705,22 @@ class DiffSetManager(models.Manager):
                 parent_file.delete_count == 0):
                 filediff.extra_data = {'parent_moved': True}
 
-            filediff.set_line_counts(raw_insert_count=f.insert_count,
-                                     raw_delete_count=f.delete_count)
+            if not validate_only:
+                # This state all requires making modifications to the database.
+                # We only want to do this if we're saving.
+                filediff.diff = f.data
+                filediff.parent_diff = parent_content
 
-            if save:
-                filediff.save()
+                filediff.set_line_counts(raw_insert_count=f.insert_count,
+                                         raw_delete_count=f.delete_count)
+
+                filediffs.append(filediff)
+
+        if validate_only:
+            return None
+
+        if filediffs:
+            FileDiff.objects.bulk_create(filediffs)
 
         return diffset
 
