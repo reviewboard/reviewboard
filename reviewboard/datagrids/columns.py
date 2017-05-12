@@ -619,7 +619,7 @@ class SubmitterColumn(BaseSubmitterColumn):
 
     def augment_queryset(self, state, queryset):
         """Add additional queries to the queryset."""
-        return queryset.select_related('submitter')
+        return queryset.select_related('submitter', 'submitter__profile')
 
 
 class SummaryColumn(Column):

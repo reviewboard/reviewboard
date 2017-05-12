@@ -24,7 +24,12 @@ class UserIndex(BaseSearchIndex, indexes.Indexable):
 
         All active users will be returned.
         """
-        return self.get_model().objects.filter(is_active=True)
+        return (
+            self.get_model().objects
+            .filter(is_active=True)
+            .select_related('profile')
+            .prefetch_related('review_groups', 'local_site')
+        )
 
     def prepare_groups(self, user):
         """Prepare a user's list of groups for the index.
@@ -32,5 +37,7 @@ class UserIndex(BaseSearchIndex, indexes.Indexable):
         Only publicly-accessible groups will be stored in the index.
         """
         return ','.join(
-            user.review_groups.filter(invite_only=False).values_list(
-                'name', flat=True))
+            review_group.name
+            for review_group in user.review_groups.all()
+            if not review_group.invite_only
+        )
