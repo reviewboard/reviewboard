@@ -18,7 +18,8 @@ RB.KeyBindingsMixin = {
         this.$el.on(`keypress.keybindings.${this.cid}`, _.bind(function(evt) {
             if (evt.altKey || evt.ctrlKey || evt.metaKey ||
                 evt.target.tagName === 'INPUT' ||
-                evt.target.tagName === 'TEXTAREA') {
+                evt.target.tagName === 'TEXTAREA' ||
+                evt.target.isContentEditable) {
                 /* These are all unsupported, and things we want to ignore. */
                 return;
             }

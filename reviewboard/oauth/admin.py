@@ -2,6 +2,8 @@
 
 from __future__ import unicode_literals
 
+import importlib
+
 from django.contrib import admin
 from django.utils.translation import ugettext_lazy as _
 
@@ -49,6 +51,10 @@ class ApplicationAdmin(admin.ModelAdmin):
     )
 
 
-# Override the default provided ModelAdmin class from oauth2_provider.
+# Ensure that the oauth2_provider admin modules is loaded so that we can
+# replace their admin registration with our own. If we do not do this, we can't
+# guarantee that it will be registered before we try to unregister it during
+# unit tests.
+importlib.import_module('oauth2_provider.admin')
 admin.site.unregister(Application)
 admin.site.register(Application, ApplicationAdmin)

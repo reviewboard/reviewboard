@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django import forms
 from django.utils.translation import ugettext_lazy as _
 
+from reviewboard.admin.server import get_hostname
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
@@ -33,9 +34,13 @@ class AssemblaForm(HostingServiceForm):
         super(AssemblaForm, self).save(repository)
 
         if repository.get_scmtool().name == 'Perforce':
+            project_id = self.cleaned_data['assembla_project_id']
+            client_name = Assembla.make_p4_client_name(project_id)
+
             repository.extra_data.update({
                 'use_ticket_auth': True,
-                'p4_host': self.cleaned_data['assembla_project_id'],
+                'p4_host': project_id,
+                'p4_client': client_name,
             })
 
 
@@ -72,6 +77,24 @@ class Assembla(HostingService):
         'https://www.assembla.com/spaces/%(assembla_project_id)s/'
         'tickets/%%s'
     )
+
+    @classmethod
+    def make_p4_client_name(cls, project_id):
+        """Return a new P4CLIENT value from the hostname and project ID.
+
+        The client name will consist of the Review Board server's hostname
+        and a sanitized version of the project ID.
+
+        Args:
+            project_id (unicode):
+                The project ID provided by Assembla. This is equivalent to the
+                P4HOST value for Perforce.
+
+        Returns:
+            unicode:
+            A new Perforce client name.
+        """
+        return '%s-%s' % (get_hostname(), project_id.replace('/', '-'))
 
     def check_repository(self, path, username, password, scmtool_class,
                          local_site_name, assembla_project_id=None,
@@ -118,7 +141,8 @@ class Assembla(HostingService):
                 username=username,
                 password=password,
                 local_site_name=local_site_name,
-                p4_host=assembla_project_id)
+                p4_host=assembla_project_id,
+                p4_client=self.make_p4_client_name(assembla_project_id))
         else:
             super(Assembla, self).check_repository(
                 path=path,

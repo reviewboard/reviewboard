@@ -330,9 +330,9 @@ class FileUploadServiceTests(SpyAgency, AvatarServicesTestMixin, TestCase):
                     call_fake=lambda self, filename, data: filename)
 
         form = AvatarSettingsForm(
-            page=None,
-            request=self.request_factory.post('/'),
-            user=user,
+            None,
+            self.request_factory.post('/'),
+            user,
             data={
                 'avatar_service_id': FileUploadService.avatar_service_id,
             })
