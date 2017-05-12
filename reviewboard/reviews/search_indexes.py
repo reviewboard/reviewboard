@@ -44,16 +44,20 @@ class ReviewRequestIndex(BaseSearchIndex, indexes.Indexable):
 
     def index_queryset(self, using=None):
         """Index only public pending and submitted review requests."""
-        queryset = self.get_model().objects.public(
-            status=None,
-            extra_query=Q(status='P') | Q(status='S'),
-            show_all_local_sites=True,
-            filter_private=False)
-        queryset = queryset.select_related('submitter', 'diffset_history')
-        queryset = queryset.prefetch_related(
-            'diffset_history__diffsets__files')
-
-        return queryset
+        return (
+            self.get_model().objects
+            .public(status=None,
+                    extra_query=Q(status='P') | Q(status='S'),
+                    show_all_local_sites=True,
+                    filter_private=False)
+            .select_related('diffset_history',
+                            'local_site',
+                            'repository',
+                            'submitter')
+            .prefetch_related('diffset_history__diffsets__files',
+                              'target_groups',
+                              'target_people')
+        )
 
     def prepare_file(self, obj):
         return set([
@@ -88,9 +92,11 @@ class ReviewRequestIndex(BaseSearchIndex, indexes.Indexable):
         returned. This allows queries to be performed that check that none
         of the groups are private, since we can't query against empty lists.
         """
-        queryset = review_request.target_groups.filter(invite_only=True)
-
-        return list(queryset.values_list('pk', flat=True)) or [0]
+        return [
+            group.pk
+            for group in review_request.target_groups.all()
+            if group.invite_only
+        ] or [0]
 
     def prepare_target_users(self, review_request):
         """Prepare the list of target users for the index.
@@ -99,9 +105,10 @@ class ReviewRequestIndex(BaseSearchIndex, indexes.Indexable):
         allows queries to be performed that check that there aren't any
         users in the list, since we can't query against empty lists.
         """
-        pks = list(review_request.target_people.values_list('pk', flat=True))
-
-        return pks or [0]
+        return [
+            user.pk
+            for user in review_request.target_people.all()
+        ] or [0]
 
     def prepare_user_display_name(self, obj):
         return user_displayname(obj.submitter)

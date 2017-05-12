@@ -60,5 +60,10 @@ class BaseSearchIndex(indexes.SearchIndex):
         else:
             # This is most likely a ManyToManyField. Anything else is an
             # error.
-            return (list(local_sites.values_list('pk', flat=True)) or
-                    [self.NO_LOCAL_SITE_ID])
+            #
+            # We want to loop through the actual entries and not the primary
+            # keys. The caller is responsible for doing a prefetch_related().
+            return [
+                local_site.pk
+                for local_site in local_sites.all()
+            ] or [self.NO_LOCAL_SITE_ID]

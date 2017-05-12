@@ -1,6 +1,9 @@
 from __future__ import unicode_literals
 
+import socket
+
 from django.contrib.sites.models import Site
+from django.utils import six
 from django.utils.six.moves.urllib.parse import urljoin
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -34,3 +37,13 @@ def build_server_url(*args, **kwargs):
     All additional arguments passed will be appended as paths to the URL.
     """
     return urljoin(get_server_url(**kwargs), *args)
+
+
+def get_hostname():
+    """Return the hostname for this Review Board server.
+
+    Returns:
+        unicode:
+        The hostname for the server.
+    """
+    return six.text_type(socket.gethostname())

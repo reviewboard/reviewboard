@@ -200,7 +200,6 @@ class Site(object):
         self.mkdir(os.path.join(self.install_dir, "data"))
 
         self.mkdir(htdocs_dir)
-        self.mkdir(errordocs_dir)
         self.mkdir(media_dir)
         self.mkdir(static_dir)
 
@@ -239,6 +238,7 @@ class Site(object):
             # the versions shipped in the package.
             os.unlink(errordocs_dir)
 
+        self.mkdir(errordocs_dir)
         self.process_template('cmdline/conf/errordocs/500.html.in',
                               os.path.join(errordocs_dir, '500.html'))
 

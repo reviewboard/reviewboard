@@ -166,13 +166,14 @@ class STunnelProxy(object):
 
 
 class PerforceClient(object):
-    def __init__(self, p4port, username, password, encoding, p4host=None,
-                 use_stunnel=False, use_ticket_auth=False):
-        self.p4port = p4port
+    def __init__(self, path, username, password, encoding='', host=None,
+                 client_name=None, use_stunnel=False, use_ticket_auth=False):
+        self.p4port = path
         self.username = username
         self.password = password
         self.encoding = encoding
-        self.p4host = p4host
+        self.p4host = host
+        self.client_name = client_name
         self.use_stunnel = use_stunnel
         self.use_ticket_auth = use_ticket_auth
         self.proxy = None
@@ -212,6 +213,9 @@ class PerforceClient(object):
 
         if self.p4host:
             self.p4.host = self.p4host.encode('utf-8')
+
+        if self.client_name:
+            self.p4.client = self.client_name.encode('utf-8')
 
         self.p4.connect()
 
@@ -310,16 +314,36 @@ class PerforceClient(object):
         """
         return self._run_worker(lambda: self._get_file(path, revision))
 
-    def _get_files_at_revision(self, revision_str):
-        return self.p4.run_files(revision_str)
+    def get_file_stat(self, path, revision):
+        """Return status information about a file in the repository.
 
-    def get_files_at_revision(self, revision_str):
+        This is equivalent to :command:`p4 fstat`.
+
+        Args:
+            path (unicode):
+                The depot path for the file.
+
+            revision (reviewboard.scmtools.core.Revision):
+                The revision number of the file.
+
+        Returns:
+            dict:
+            The status information, or ``None`` if there was none for the
+            given file and revision.
         """
-        Get a list of files at a specific revision. This is a simple interface
-        to 'p4 files'
-        """
-        return self._run_worker(
-            lambda: self._get_files_at_revision(revision_str))
+        if revision == PRE_CREATION:
+            return None
+        elif revision == HEAD:
+            depot_path = path
+        else:
+            depot_path = '%s#%s' % (path, revision)
+
+        res = self._run_worker(lambda: self.p4.run_fstat(depot_path))
+
+        if res:
+            return res[-1]
+
+        return None
 
 
 class PerforceTool(SCMTool):
@@ -348,21 +372,22 @@ class PerforceTool(SCMTool):
             username=six.text_type(credentials['username']),
             password=six.text_type(credentials['password'] or ''),
             encoding=six.text_type(repository.encoding),
-            host=six.text_type(repository.extra_data.get('p4_host', '')),
+            host=six.text_type(repository.extra_data.get('p4_host')),
+            client_name=six.text_type(repository.extra_data.get('p4_client')),
             use_ticket_auth=repository.extra_data.get('use_ticket_auth',
                                                       False))
 
     @staticmethod
-    def _create_client(path, username, password, encoding='', host=None,
-                       use_ticket_auth=False):
+    def _create_client(path, **kwargs):
         if path.startswith('stunnel:'):
             path = path[8:]
             use_stunnel = True
         else:
             use_stunnel = False
 
-        return PerforceClient(path, username, password, encoding, host,
-                              use_stunnel, use_ticket_auth)
+        return PerforceClient(path=path,
+                              use_stunnel=use_stunnel,
+                              **kwargs)
 
     @staticmethod
     def _convert_p4exception_to_scmexception(e):
@@ -376,7 +401,7 @@ class PerforceTool(SCMTool):
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,
-                         p4_host=None, local_site_name=None):
+                         p4_host=None, p4_client=None, local_site_name=None):
         """Perform checks on a repository to test its validity.
 
         This checks if a repository exists and can be connected to.
@@ -400,6 +425,10 @@ class PerforceTool(SCMTool):
                 The optional Perforce host name (equivalent to
                 :env:`P4HOST`).
 
+            p4_client (unicode):
+                The optional Perforce client name (equivalent to
+                :env:`P4CLIENT`).
+
             local_site_name (unicode):
                 The optional Local Site name.
 
@@ -422,10 +451,11 @@ class PerforceTool(SCMTool):
         # 'p4 info' will succeed even if the server requires ticket auth and we
         # don't run 'p4 login' first. We therefore don't go through all the
         # trouble of handling tickets here.
-        client = cls._create_client(six.text_type(path),
-                                    six.text_type(username),
-                                    six.text_type(password),
-                                    host=six.text_type(p4_host or ''))
+        client = cls._create_client(path=six.text_type(path),
+                                    username=six.text_type(username),
+                                    password=six.text_type(password),
+                                    host=six.text_type(p4_host or ''),
+                                    client_name=six.text_type(p4_client or ''))
         client.get_info()
 
     def get_changeset(self, changesetid, allow_empty=False):
@@ -439,12 +469,42 @@ class PerforceTool(SCMTool):
     def get_file(self, path, revision=HEAD, **kwargs):
         return self.client.get_file(path, revision)
 
+    def file_exists(self, path, revision=HEAD, **kwargs):
+        """Return whether a particular file exists in a repository.
+
+        Args:
+            path (unicode):
+                The depot path to the file in the repository.
+
+            revision (reviewboard.scmtools.core.Revision, optional):
+                The revision to fetch.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            bool:
+            ``True`` if the file exists in the repository. ``False`` if it
+            does not.
+        """
+        stat = self.client.get_file_stat(path, revision)
+
+        return stat is not None and 'headRev' in stat
+
     def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
-        # Perforce has this lovely idiosyncracy that diffs show revision #1
-        # both for pre-creation and when there's an actual revision.
         filename, revision = revision_str.rsplit('#', 1)
-        if len(self.client.get_files_at_revision(revision_str)) == 0:
+
+        # Older versions of Perforce had this lovely idiosyncracy that diffs
+        # show revision #1 both for pre-creation and when there's an actual
+        # revision. In this case, we need to check if the file already exists
+        # in the repository.
+        #
+        # Newer versions use #0, so it's quicker to check.
+        if (revision == '0' or
+            (revision == '1' and
+             not self.repository.get_file_exists(filename, revision))):
             revision = PRE_CREATION
+
         return filename, revision
 
     @staticmethod
