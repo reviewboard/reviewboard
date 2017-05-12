@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import nose
 
+from reviewboard.admin.server import get_hostname
 from reviewboard.hostingsvcs.tests.testcases import ServiceTests
 from reviewboard.scmtools.models import Repository, Tool
 
@@ -52,12 +53,49 @@ class AssemblaTests(ServiceTests):
                                     tool=Tool.objects.get(name='Perforce'))
 
             form = self._get_form(fields={'assembla_project_id': 'myproject'})
+            self.spy_on(get_hostname,
+                        call_fake=lambda: 'myhost.example.com')
+
             form.save(repository)
 
             self.assertIn('use_ticket_auth', repository.extra_data)
             self.assertTrue(repository.extra_data['use_ticket_auth'])
             self.assertIn('p4_host', repository.extra_data)
+            self.assertIn('p4_client', repository.extra_data)
             self.assertEqual(repository.extra_data['p4_host'], 'myproject')
+            self.assertEqual(repository.extra_data['p4_client'],
+                             'myhost.example.com-myproject')
+        except ImportError:
+            raise nose.SkipTest
+
+    def test_save_form_perforce_with_portfolio(self):
+        """Testing Assembla configuration form with Perforce with Assembla
+        portfolio IDs
+        """
+        try:
+            account = self._get_hosting_account()
+            service = account.service
+            service.authorize('myuser', 'abc123', None)
+
+            repository = Repository(hosting_account=account,
+                                    tool=Tool.objects.get(name='Perforce'))
+
+            form = self._get_form(fields={
+                'assembla_project_id': 'myportfolio/myproject',
+            })
+            self.spy_on(get_hostname,
+                        call_fake=lambda: 'myhost.example.com')
+
+            form.save(repository)
+
+            self.assertIn('use_ticket_auth', repository.extra_data)
+            self.assertTrue(repository.extra_data['use_ticket_auth'])
+            self.assertIn('p4_host', repository.extra_data)
+            self.assertIn('p4_client', repository.extra_data)
+            self.assertEqual(repository.extra_data['p4_host'],
+                             'myportfolio/myproject')
+            self.assertEqual(repository.extra_data['p4_client'],
+                             'myhost.example.com-myportfolio-myproject')
         except ImportError:
             raise nose.SkipTest
 

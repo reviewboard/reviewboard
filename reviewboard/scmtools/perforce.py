@@ -166,13 +166,14 @@ class STunnelProxy(object):
 
 
 class PerforceClient(object):
-    def __init__(self, p4port, username, password, encoding, p4host=None,
-                 use_stunnel=False, use_ticket_auth=False):
-        self.p4port = p4port
+    def __init__(self, path, username, password, encoding='', host=None,
+                 client_name=None, use_stunnel=False, use_ticket_auth=False):
+        self.p4port = path
         self.username = username
         self.password = password
         self.encoding = encoding
-        self.p4host = p4host
+        self.p4host = host
+        self.client_name = client_name
         self.use_stunnel = use_stunnel
         self.use_ticket_auth = use_ticket_auth
         self.proxy = None
@@ -212,6 +213,9 @@ class PerforceClient(object):
 
         if self.p4host:
             self.p4.host = self.p4host.encode('utf-8')
+
+        if self.client_name:
+            self.p4.client = self.client_name.encode('utf-8')
 
         self.p4.connect()
 
@@ -367,21 +371,22 @@ class PerforceTool(SCMTool):
             username=six.text_type(credentials['username']),
             password=six.text_type(credentials['password'] or ''),
             encoding=six.text_type(repository.encoding),
-            host=six.text_type(repository.extra_data.get('p4_host', '')),
+            host=six.text_type(repository.extra_data.get('p4_host')),
+            client_name=six.text_type(repository.extra_data.get('p4_client')),
             use_ticket_auth=repository.extra_data.get('use_ticket_auth',
                                                       False))
 
     @staticmethod
-    def _create_client(path, username, password, encoding='', host=None,
-                       use_ticket_auth=False):
+    def _create_client(path, **kwargs):
         if path.startswith('stunnel:'):
             path = path[8:]
             use_stunnel = True
         else:
             use_stunnel = False
 
-        return PerforceClient(path, username, password, encoding, host,
-                              use_stunnel, use_ticket_auth)
+        return PerforceClient(path=path,
+                              use_stunnel=use_stunnel,
+                              **kwargs)
 
     @staticmethod
     def _convert_p4exception_to_scmexception(e):
@@ -395,7 +400,7 @@ class PerforceTool(SCMTool):
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,
-                         p4_host=None, local_site_name=None):
+                         p4_host=None, p4_client=None, local_site_name=None):
         """Perform checks on a repository to test its validity.
 
         This checks if a repository exists and can be connected to.
@@ -419,6 +424,10 @@ class PerforceTool(SCMTool):
                 The optional Perforce host name (equivalent to
                 :env:`P4HOST`).
 
+            p4_client (unicode):
+                The optional Perforce client name (equivalent to
+                :env:`P4CLIENT`).
+
             local_site_name (unicode):
                 The optional Local Site name.
 
@@ -441,10 +450,11 @@ class PerforceTool(SCMTool):
         # 'p4 info' will succeed even if the server requires ticket auth and we
         # don't run 'p4 login' first. We therefore don't go through all the
         # trouble of handling tickets here.
-        client = cls._create_client(six.text_type(path),
-                                    six.text_type(username),
-                                    six.text_type(password),
-                                    host=six.text_type(p4_host or ''))
+        client = cls._create_client(path=six.text_type(path),
+                                    username=six.text_type(username),
+                                    password=six.text_type(password),
+                                    host=six.text_type(p4_host or ''),
+                                    client_name=six.text_type(p4_client or ''))
         client.get_info()
 
     def get_changeset(self, changesetid, allow_empty=False):
