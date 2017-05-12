@@ -22,6 +22,8 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         'mouseup': '_onMouseUp',
         'mouseover': '_onMouseOver',
         'mouseout': '_onMouseOut',
+        'touchstart': '_onTouchStart',
+        'touchend': '_onTouchEnd',
         'touchmove': '_onTouchMove',
         'touchcancel': '_onTouchCancel'
     },
@@ -720,29 +722,92 @@ RB.TextCommentRowSelector = Backbone.View.extend({
         }
     },
 
-    /*
-     * Handles touch move events.
+    /**
+     * Handle the beginning of a touch event.
      *
-     * Simulates mouse clicks/drags for line number selection.
+     * If the user is touching a line number, then this will begin tracking
+     * a new comment selection state, allowing them to either open an existing
+     * comment or create a new one.
+     *
+     * Args:
+     *     e (Event):
+     *         The ``touchstart`` event.
      */
-    _onTouchMove: function(e) {
+    _onTouchStart: function(e) {
         var firstTouch = e.originalEvent.targetTouches[0],
-            target = document.elementFromPoint(firstTouch.pageX,
-                                               firstTouch.pageY),
-            $node = this._getActualLineNumCell($(target)),
-            $row = node.parent();
+            $node = this._getActualLineNumCell($(firstTouch.target));
 
-        if (   this._lastSeenIndex !== $row[0].rowIndex
-            && this._isLineNumCell($node[0])) {
-            this._removeOldRows($row);
-            this._addRow($row);
+        if ($node !== null && this._isLineNumCell($node[0])) {
+            e.preventDefault();
+            this._begin($node.parent());
         }
     },
 
-    /*
-     * Handles touch cancel events.
+    /**
+     * Handle the end of a touch event.
      *
-     * Resets the line number selection.
+     * If the user ended on a line number, then this will either open an
+     * existing comment (if the result was a single-line selection on the
+     * line of an existing comment) or create a new comment spanning all
+     * selected lines.
+     *
+     * If they ended outside of the line numbers column, then this will
+     * simply reset the selection.
+     *
+     * Args:
+     *     e (Event):
+     *         The ``touchend`` event.
+     */
+    _onTouchEnd: function(e) {
+        var firstTouch = e.originalEvent.changedTouches[0],
+            target = document.elementFromPoint(firstTouch.clientX,
+                                               firstTouch.clientY),
+            $node = this._getActualLineNumCell($(target));
+
+        if ($node !== null && this._isLineNumCell($node[0])) {
+            e.preventDefault();
+            this._end($node.parent());
+        }
+
+        this._reset();
+    },
+
+    /**
+     * Handle touch movement events.
+     *
+     * If selecting up or down line numbers, this will update the selection
+     * to span all rows from the original line number first touched and the
+     * line number currently being touched.
+     *
+     * Args:
+     *     e (Event):
+     *         The ``touchmove`` event.
+     */
+    _onTouchMove: function(e) {
+        var firstTouch = e.originalEvent.targetTouches[0],
+            target = document.elementFromPoint(firstTouch.clientX,
+                                               firstTouch.clientY),
+            $node = this._getActualLineNumCell($(target)),
+            $row;
+
+        if ($node !== null) {
+            $row = $node.parent();
+
+            if (   this._lastSeenIndex !== $row[0].rowIndex
+                && this._isLineNumCell($node[0])) {
+                e.preventDefault();
+
+                this._removeOldRows($row);
+                this._addRow($row);
+            }
+        }
+    },
+
+    /**
+     * Handle touch cancellation events.
+     *
+     * This resets the line number selection. The user will need to begin the
+     * selection again.
      */
     _onTouchCancel: function() {
         this._reset();
