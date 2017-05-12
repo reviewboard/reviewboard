@@ -310,16 +310,36 @@ class PerforceClient(object):
         """
         return self._run_worker(lambda: self._get_file(path, revision))
 
-    def _get_files_at_revision(self, revision_str):
-        return self.p4.run_files(revision_str)
+    def get_file_stat(self, path, revision):
+        """Return status information about a file in the repository.
 
-    def get_files_at_revision(self, revision_str):
+        This is equivalent to :command:`p4 fstat`.
+
+        Args:
+            path (unicode):
+                The depot path for the file.
+
+            revision (reviewboard.scmtools.core.Revision):
+                The revision number of the file.
+
+        Returns:
+            dict:
+            The status information, or ``None`` if there was none for the
+            given file and revision.
         """
-        Get a list of files at a specific revision. This is a simple interface
-        to 'p4 files'
-        """
-        return self._run_worker(
-            lambda: self._get_files_at_revision(revision_str))
+        if revision == PRE_CREATION:
+            return None
+        elif revision == HEAD:
+            depot_path = path
+        else:
+            depot_path = '%s#%s' % (path, revision)
+
+        res = self._run_worker(lambda: self.p4.run_fstat(depot_path))
+
+        if res:
+            return res[-1]
+
+        return None
 
 
 class PerforceTool(SCMTool):
@@ -441,12 +461,42 @@ class PerforceTool(SCMTool):
     def get_file(self, path, revision=HEAD, **kwargs):
         return self.client.get_file(path, revision)
 
+    def file_exists(self, path, revision=HEAD, **kwargs):
+        """Return whether a particular file exists in a repository.
+
+        Args:
+            path (unicode):
+                The depot path to the file in the repository.
+
+            revision (reviewboard.scmtools.core.Revision, optional):
+                The revision to fetch.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            bool:
+            ``True`` if the file exists in the repository. ``False`` if it
+            does not.
+        """
+        stat = self.client.get_file_stat(path, revision)
+
+        return stat is not None and 'headRev' in stat
+
     def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
-        # Perforce has this lovely idiosyncracy that diffs show revision #1
-        # both for pre-creation and when there's an actual revision.
         filename, revision = revision_str.rsplit('#', 1)
-        if len(self.client.get_files_at_revision(revision_str)) == 0:
+
+        # Older versions of Perforce had this lovely idiosyncracy that diffs
+        # show revision #1 both for pre-creation and when there's an actual
+        # revision. In this case, we need to check if the file already exists
+        # in the repository.
+        #
+        # Newer versions use #0, so it's quicker to check.
+        if (revision == '0' or
+            (revision == '1' and
+             not self.repository.get_file_exists(filename, revision))):
             revision = PRE_CREATION
+
         return filename, revision
 
     @staticmethod

@@ -125,6 +125,21 @@ class PerforceTests(SCMTestCase):
                          '227bdd87b052fcad9369e65c7bf23fd0')
 
     @online_only
+    def test_file_exists(self):
+        """Testing PerforceTool.file_exists"""
+        self.assertTrue(self.tool.file_exists(
+            '//public/perforce/api/python/P4Client/p4.py', '1'))
+
+        self.assertFalse(self.tool.file_exists(
+            '//public/perforce/xxx-non-existent', '1'))
+
+    @online_only
+    def test_file_exists_with_pre_creation(self):
+        """Testing PerforceTool.file_exists"""
+        self.assertFalse(self.tool.file_exists('//depot/xxx-new-file',
+                                               PRE_CREATION))
+
+    @online_only
     def test_custom_host(self):
         """Testing Perforce client initialization with a custom P4HOST"""
         repo = Repository(name='Perforce.com',
@@ -138,6 +153,41 @@ class PerforceTests(SCMTestCase):
 
         with tool.client._connect():
             self.assertEqual(tool.client.p4.host, 'my-custom-host')
+
+    @online_only
+    def test_parse_diff_revision_with_revision_eq_0(self):
+        """Testing Perforce.parse_diff_revision with revision == 0"""
+        self.assertEqual(
+            self.tool.parse_diff_revision(
+                'xxx-foo.py', '//public/perforce/xxx-foo.py#0'),
+            ('//public/perforce/xxx-foo.py', PRE_CREATION))
+
+    @online_only
+    def test_parse_diff_revision_with_revision_eq_1_and_existing(self):
+        """Testing Perforce.parse_diff_revision with revision == 1 and existing
+        file
+        """
+        self.assertEqual(
+            self.tool.parse_diff_revision(
+                'p4.p', '//public/perforce/api/python/P4Client/p4.py#1'),
+            ('//public/perforce/api/python/P4Client/p4.py', '1'))
+
+    @online_only
+    def test_parse_diff_revision_with_revision_eq_1_and_new(self):
+        """Testing Perforce.parse_diff_revision with revision == 1 and new file
+        """
+        self.assertEqual(
+            self.tool.parse_diff_revision('xxx-newfile',
+                                          '//public/perforce/xxx-newfile#1'),
+            ('//public/perforce/xxx-newfile', PRE_CREATION))
+
+    @online_only
+    def test_parse_diff_revision_with_revision_gt_1(self):
+        """Testing Perforce.parse_diff_revision with revision > 1"""
+        self.assertEqual(
+            self.tool.parse_diff_revision('xxx-foo.py',
+                                          '//public/perforce/xxx-foo.py#2'),
+            ('//public/perforce/xxx-foo.py', '2'))
 
     def test_empty_diff(self):
         """Testing Perforce empty diff parsing"""
