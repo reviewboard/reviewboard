@@ -64,6 +64,15 @@ class Widget(object):
             lambda m: '-%s' % m.group(1).lower(),
             self.__class__.__name__)[1:]
 
+    def _wrapped_generate_data(self, request):
+        try:
+            return self.generate_data(request)
+        except Exception as e:
+            logging.error('Error when calling generate_data for Admin Widget '
+                          '%r: %s',
+                          self, e, exc_info=1)
+            raise
+
     def render(self, request):
         """Render the widget.
 
@@ -72,10 +81,27 @@ class Widget(object):
         """
         if self.has_data and self.data is None:
             if self.cache_data:
-                self.data = cache_memoize(self.generate_cache_key(request),
-                                          lambda: self.generate_data(request))
+                try:
+                    cache_key = self.generate_cache_key(request)
+                except Exception as e:
+                    logging.error('Error when calling generate_cache_key for '
+                                  'Admin Widget %r: %s',
+                                  self, e, exc_info=1)
+                    cache_key = None
+
+                try:
+                    self.data = cache_memoize(
+                        cache_key,
+                        lambda: self._wrapped_generate_data(request))
+                except Exception:
+                    pass
             else:
-                self.data = self.generate_data(request)
+                try:
+                    self.data = self.generate_data(request)
+                except Exception as e:
+                    logging.error('Error when calling generate_data for Admin '
+                                  'Widget %r: %s',
+                                  self, e, exc_info=1)
 
         return render_to_string('admin/admin_widget.html',
                                 RequestContext(request, {
