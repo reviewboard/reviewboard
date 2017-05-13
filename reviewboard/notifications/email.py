@@ -599,9 +599,6 @@ def send_review_mail(user, review_request, subject, in_reply_to,
             if filediff.is_new or filediff.copied or filediff.moved:
                 modified_files.add(filediff.dest_file)
 
-        for filename in modified_files:
-            headers.appendlist('X-ReviewBoard-Diff-For', filename)
-
     subject = subject.strip()
     to_field = list(to_field)
     cc_field = list(cc_field)
