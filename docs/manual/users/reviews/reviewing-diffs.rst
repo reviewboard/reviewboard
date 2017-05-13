@@ -209,7 +209,7 @@ Keyboard Shortcuts
 There are many keyboard shortcuts for navigating around the diff viewer:
 
 * Previous file:
-  :kbd:`a`, :kbd:`A`, :kbd:`K`, :kbd:`P`:, :kbd:`<`, or :kbd:`m`
+  :kbd:`a`, :kbd:`A`, :kbd:`K`, :kbd:`P`, :kbd:`<`, or :kbd:`m`
 * Next file:
   :kbd:`f`, :kbd:`F`, :kbd:`J`, :kbd:`N`, :kbd:`>`
 * Previous change:
