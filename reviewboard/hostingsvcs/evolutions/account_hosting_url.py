@@ -6,5 +6,5 @@ from django.db import models
 
 MUTATIONS = [
     AddField('HostingServiceAccount', 'hosting_url', models.CharField,
-             max_length=256, null=True)
+             max_length=255, null=True)
 ]
