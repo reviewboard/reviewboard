@@ -1,0 +1,5322 @@
+# Chinese/Simplified translation of reviewboard.
+# Copyright (C) 2016 Leslie Zhai <xiang.zhai@i-soft.com.cn>
+# This file is distributed under the same license as the reviewboard package.
+# Leslie Zhai <xiang.zhai@i-soft.com.cn>, 2016.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: 2.5.3\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2016-03-08 16:05+0800\n"
+"PO-Revision-Date: 2016-03-08 16:21+0800\n"
+"Last-Translator: Leslie Zhai <xiang.zhai@i-soft.com.cn>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: accounts/admin.py:16
+msgid ""
+"Required. 30 characters or fewer. Alphanumeric characters (letters, digits, "
+"underscores, and periods) and '@'."
+msgstr ""
+
+#: accounts/admin.py:19
+msgid ""
+"This value must contain only letters, numbers, underscores, periods and '@'."
+msgstr ""
+
+#: accounts/admin.py:27 accounts/admin.py:37 accounts/forms/auth.py:389
+#: admin/forms.py:503 datagrids/grids.py:410
+msgid "Username"
+msgstr "用户名"
+
+#: accounts/admin.py:49 accounts/forms/pages.py:35 accounts/pages.py:62
+msgid "Settings"
+msgstr "设置"
+
+#: accounts/admin.py:61
+msgid "Dashboard"
+msgstr "仪表盘"
+
+#: accounts/admin.py:72 reviews/admin.py:68 reviews/admin.py:99
+#: reviews/admin.py:136 reviews/admin.py:220
+msgid "State"
+msgstr "状态"
+
+#: accounts/admin.py:93
+msgid "Counters"
+msgstr ""
+
+#: accounts/backends.py:167
+msgid "Standard Registration"
+msgstr "标准注册"
+
+#: accounts/backends.py:302
+msgid "HTTP Digest Authentication"
+msgstr ""
+
+#: accounts/backends.py:305
+msgid "Use your standard username and password."
+msgstr ""
+
+#: accounts/backends.py:358
+msgid "NIS"
+msgstr ""
+
+#: accounts/backends.py:361
+msgid "Use your standard NIS username and password."
+msgstr ""
+
+#: accounts/backends.py:428
+msgid "LDAP"
+msgstr ""
+
+#: accounts/backends.py:431
+msgid "Use your standard LDAP username and password."
+msgstr ""
+
+#: accounts/backends.py:611
+msgid "Active Directory"
+msgstr "活动目录"
+
+#: accounts/backends.py:614
+msgid "Use your standard Active Directory username and password."
+msgstr ""
+
+#: accounts/backends.py:864
+msgid "X.509 Public Key"
+msgstr ""
+
+#: accounts/forms/auth.py:22
+msgid "Domain name"
+msgstr ""
+
+#: accounts/forms/auth.py:23
+msgid ""
+"Enter the domain name to use, (ie. example.com). This will be used to query "
+"for LDAP servers and to bind to the domain."
+msgstr ""
+
+#: accounts/forms/auth.py:30 accounts/forms/auth.py:230 admin/forms.py:512
+msgid "Use TLS for authentication"
+msgstr "使用TLS来认证"
+
+#: accounts/forms/auth.py:34
+msgid "Find DC from DNS"
+msgstr ""
+
+#: accounts/forms/auth.py:35
+msgid "Query DNS to find which domain controller to use"
+msgstr ""
+
+#: accounts/forms/auth.py:39
+msgid "Domain controller"
+msgstr ""
+
+#: accounts/forms/auth.py:40
+msgid ""
+"If not using DNS to find the DC, specify the domain controller(s) here (eg. "
+"ctrl1.example.com ctrl2.example.com:389)"
+msgstr ""
+
+#: accounts/forms/auth.py:47
+msgid "OU name"
+msgstr ""
+
+#: accounts/forms/auth.py:48
+msgid "Optionally restrict users to specified OU."
+msgstr ""
+
+#: accounts/forms/auth.py:53 hostingsvcs/kiln.py:37
+msgid "Group name"
+msgstr ""
+
+#: accounts/forms/auth.py:54
+msgid "Optionally restrict users to specified group."
+msgstr ""
+
+#: accounts/forms/auth.py:59
+msgid "Custom search root"
+msgstr ""
+
+#: accounts/forms/auth.py:60
+msgid ""
+"Optionally specify a custom search root, overriding the built-in computed "
+"search root. If set, \"OU name\" is ignored."
+msgstr ""
+
+#: accounts/forms/auth.py:67
+msgid "Recursion Depth"
+msgstr ""
+
+#: accounts/forms/auth.py:68
+msgid ""
+"Depth to recurse when checking group membership. 0 to turn off, -1 for "
+"unlimited."
+msgstr ""
+
+#: accounts/forms/auth.py:96
+msgid "Active Directory Authentication Settings"
+msgstr ""
+
+#: accounts/forms/auth.py:103
+msgid "Enable registration"
+msgstr "开启注册"
+
+#: accounts/forms/auth.py:104
+msgid "Allow users to register new accounts."
+msgstr "允许用户注册新帐号。"
+
+#: accounts/forms/auth.py:108
+msgid "Show a captcha for registration"
+msgstr "注册的时候显示一个验证码"
+
+#: accounts/forms/auth.py:110
+#, python-format
+msgid ""
+"Displays a captcha using <a href=\"%(recaptcha_url)s\">reCAPTCHA</a> on the "
+"registration page. To enable this, you will need to go <a href="
+"\"%(register_url)s\">here</A> to register an account and type in your new "
+"keys below."
+msgstr ""
+"使用 <a href=\"%(recaptcha_url)s\">reCAPTCHA</a> 來在注册页面上显示验证码。若"
+"要使用这个功能，您必须要到 <a href=\"%(register_url)s\">这里</a> 注册一个帐号"
+"并且在下方输入您新的 key。"
+
+#: accounts/forms/auth.py:122
+msgid "reCAPTCHA Public Key"
+msgstr "reCAPTCHA 公钥"
+
+#: accounts/forms/auth.py:127
+msgid "reCAPTCHA Private Key"
+msgstr "reCAPTCHA 私钥"
+
+#: accounts/forms/auth.py:136 accounts/forms/auth.py:145
+msgid "This field is required."
+msgstr ""
+
+#: accounts/forms/auth.py:150
+msgid "Basic Authentication Settings"
+msgstr "基本认证设置"
+
+#: accounts/forms/auth.py:157
+msgid ".htpasswd File location"
+msgstr ""
+
+#: accounts/forms/auth.py:158
+msgid ""
+"Location of the .htpasswd file which stores the usernames and passwords in "
+"digest format"
+msgstr ""
+
+#: accounts/forms/auth.py:163
+msgid "HTTP Digest Realm"
+msgstr ""
+
+#: accounts/forms/auth.py:164
+msgid "Realm used for HTTP Digest authentication"
+msgstr ""
+
+#: accounts/forms/auth.py:168
+msgid "HTTP Digest Authentication Settings"
+msgstr ""
+
+#: accounts/forms/auth.py:176
+msgid "LDAP Server"
+msgstr ""
+
+#: accounts/forms/auth.py:177
+msgid "The LDAP server to authenticate with. For example: ldap://localhost:389"
+msgstr ""
+
+#: accounts/forms/auth.py:182
+msgid "LDAP Base DN"
+msgstr ""
+
+#: accounts/forms/auth.py:183
+msgid ""
+"The LDAP Base DN for performing LDAP searches.  For example: ou=users,"
+"dc=example,dc=com"
+msgstr ""
+
+#: accounts/forms/auth.py:189
+msgid "Username Attribute"
+msgstr ""
+
+#: accounts/forms/auth.py:190
+msgid "The attribute in the LDAP server that stores a user's login name."
+msgstr ""
+
+#: accounts/forms/auth.py:195
+msgid "Given Name Attribute"
+msgstr ""
+
+#: accounts/forms/auth.py:197
+msgid "The attribute in the LDAP server that stores the user's given name."
+msgstr ""
+
+#: accounts/forms/auth.py:202
+msgid "Surname Attribute"
+msgstr ""
+
+#: accounts/forms/auth.py:204
+msgid "The attribute in the LDAP server that stores the user's surname."
+msgstr ""
+
+#: accounts/forms/auth.py:209
+msgid "Full Name Attribute"
+msgstr ""
+
+#: accounts/forms/auth.py:210
+msgid ""
+"The attribute in the LDAP server that stores the user's full name.  This "
+"takes precedence over the \"Given Name Attribute\" and \"Surname Attribute.\""
+msgstr ""
+
+#: accounts/forms/auth.py:216 accounts/forms/auth.py:325
+msgid "E-Mail Domain"
+msgstr ""
+
+#: accounts/forms/auth.py:217
+msgid ""
+"The domain name appended to the username to construct the user's e-mail "
+"address. This takes precedence over \"E-Mail LDAP Attribute.\""
+msgstr ""
+
+#: accounts/forms/auth.py:224
+msgid "E-Mail LDAP Attribute"
+msgstr ""
+
+#: accounts/forms/auth.py:225
+msgid ""
+"The attribute in the LDAP server that stores the user's e-mail address. For "
+"example: mail"
+msgstr ""
+
+#: accounts/forms/auth.py:234
+msgid "Custom LDAP User Search Filter"
+msgstr ""
+
+#: accounts/forms/auth.py:235
+#, python-format
+msgid ""
+"A custom LDAP search filter, corresponding to RFC 2254. If left unset, this "
+"option is equivalent to <tt>(usernameattribute=%(varname)s)</tt>. Use <tt>"
+"\"%(varname)s\"</tt> wherever the username would normally go. Specify this "
+"value only if the default cannot locate all users."
+msgstr ""
+
+#: accounts/forms/auth.py:246
+msgid "Review Board LDAP Bind Account"
+msgstr ""
+
+#: accounts/forms/auth.py:247
+msgid ""
+"The full distinguished name of a user account with sufficient access to "
+"perform lookups of users and groups in the LDAP server. If the LDAP server "
+"permits such lookups via anonymous bind, you may leave this field blank."
+msgstr ""
+
+#: accounts/forms/auth.py:256
+msgid "Review Board LDAP Bind Password"
+msgstr ""
+
+#: accounts/forms/auth.py:258
+msgid "The password for the Review Board LDAP Bind Account."
+msgstr ""
+
+#: accounts/forms/auth.py:284
+msgid "LDAP Authentication Settings"
+msgstr ""
+
+#: accounts/forms/auth.py:296
+msgid "Backends"
+msgstr ""
+
+#: accounts/forms/auth.py:297
+msgid ""
+"A comma-separated list of old-style custom auth backends. These are "
+"represented as Python module paths."
+msgstr ""
+
+#: accounts/forms/auth.py:317
+msgid "Legacy Authentication Module Settings"
+msgstr ""
+
+#: accounts/forms/auth.py:329
+msgid "NIS Authentication Settings"
+msgstr ""
+
+#: accounts/forms/auth.py:336
+msgid "Username Field"
+msgstr ""
+
+#: accounts/forms/auth.py:340
+msgid "DN (Distinguished Name)"
+msgstr ""
+
+#: accounts/forms/auth.py:341
+msgid "CN (Common Name)"
+msgstr ""
+
+#: accounts/forms/auth.py:342 accounts/forms/pages.py:247
+#: templates/accounts/password_reset.html:24
+msgid "E-mail address"
+msgstr ""
+
+#: accounts/forms/auth.py:344
+msgid ""
+"The X.509 certificate field from which the Review Board username will be "
+"extracted."
+msgstr ""
+
+#: accounts/forms/auth.py:349
+msgid "Username Regex"
+msgstr ""
+
+#: accounts/forms/auth.py:350
+msgid ""
+"Optional regex used to convert the selected X.509 certificate field to a "
+"usable Review Board username. For example, if using the e-mail field to "
+"retrieve the username, use this regex to get the username from an e-mail "
+"address: '(\\s+)@yoursite.com'. There must be only one group in the regex."
+msgstr ""
+
+#: accounts/forms/auth.py:360
+msgid "Automatically create new user accounts."
+msgstr ""
+
+#: accounts/forms/auth.py:361
+msgid ""
+"Enabling this option will cause new user accounts to be automatically "
+"created when a new user with an X.509 certificate accesses Review Board."
+msgstr ""
+
+#: accounts/forms/auth.py:378
+msgid "X.509 Client Certificate Authentication Settings"
+msgstr ""
+
+#: accounts/forms/pages.py:36
+msgid "Save Settings"
+msgstr ""
+
+#: accounts/forms/pages.py:39
+msgid "Time zone"
+msgstr ""
+
+#: accounts/forms/pages.py:41
+msgid "The time zone you're in."
+msgstr ""
+
+#: accounts/forms/pages.py:44
+msgid "Enable syntax highlighting in the diff viewer"
+msgstr ""
+
+#: accounts/forms/pages.py:47
+msgid "Always open an issue when comment box opens"
+msgstr ""
+
+#: accounts/forms/pages.py:51
+msgid "Get e-mail notification for review requests and reviews"
+msgstr ""
+
+#: accounts/forms/pages.py:55
+msgid "Get e-mail notifications for my own activity"
+msgstr ""
+
+#: accounts/forms/pages.py:59
+msgid "Always use Markdown for text fields"
+msgstr ""
+
+#: accounts/forms/pages.py:94
+msgid "Your settings have been saved."
+msgstr ""
+
+#: accounts/forms/pages.py:101 accounts/pages.py:70
+msgid "API Tokens"
+msgstr ""
+
+#: accounts/forms/pages.py:153 accounts/forms/pages.py:154
+msgid "Change Password"
+msgstr ""
+
+#: accounts/forms/pages.py:157
+msgid "Current password"
+msgstr ""
+
+#: accounts/forms/pages.py:161
+msgid "New password"
+msgstr ""
+
+#: accounts/forms/pages.py:165
+msgid "New password (confirm)"
+msgstr ""
+
+#: accounts/forms/pages.py:192
+msgid ""
+"Unexpected error when validating the password. Please contact the "
+"administrator."
+msgstr ""
+
+#: accounts/forms/pages.py:197
+msgid "This password is incorrect"
+msgstr ""
+
+#: accounts/forms/pages.py:208
+msgid "Passwords do not match"
+msgstr ""
+
+#: accounts/forms/pages.py:222
+msgid "Your password has been changed."
+msgstr ""
+
+#: accounts/forms/pages.py:228
+msgid ""
+"Unexpected error when changing your password. Please contact the "
+"administrator."
+msgstr ""
+
+#: accounts/forms/pages.py:237 accounts/pages.py:90
+msgid "Profile"
+msgstr ""
+
+#: accounts/forms/pages.py:238
+msgid "Save Profile"
+msgstr ""
+
+#: accounts/forms/pages.py:241
+msgid "First name"
+msgstr ""
+
+#: accounts/forms/pages.py:244
+msgid "Last name"
+msgstr ""
+
+#: accounts/forms/pages.py:251
+msgid "Keep profile information private"
+msgstr ""
+
+#: accounts/forms/pages.py:305
+msgid "Your profile has been saved."
+msgstr ""
+
+#: accounts/forms/pages.py:318 accounts/pages.py:98
+#: datagrids/builtin_items.py:149 datagrids/columns.py:251
+#: reviews/builtin_fields.py:719 templates/base/_mobile_navbar.html:29
+#: templates/base/navbar.html:11
+msgid "Groups"
+msgstr "组"
+
+#: accounts/forms/registration.py:63
+msgid "The text you entered didn't match what was displayed"
+msgstr ""
+
+#: accounts/forms/registration.py:69
+msgid "You need to respond to the captcha"
+msgstr ""
+
+#: accounts/models.py:50
+msgid "last visited"
+msgstr ""
+
+#: accounts/models.py:78
+msgid "first time setup done"
+msgstr ""
+
+#: accounts/models.py:79
+msgid ""
+"Indicates whether the user has already gone through the first time setup "
+"process by saving their user preferences."
+msgstr ""
+
+#: accounts/models.py:86
+msgid "send email"
+msgstr ""
+
+#: accounts/models.py:87
+msgid "Indicates whether the user wishes to receive emails."
+msgstr ""
+
+#: accounts/models.py:91
+msgid "receive emails about own actions"
+msgstr ""
+
+#: accounts/models.py:92
+msgid ""
+"Indicates whether the user wishes to receive emails about their own activity."
+msgstr ""
+
+#: accounts/models.py:97
+msgid "collapsed diffs"
+msgstr ""
+
+#: accounts/models.py:98
+msgid ""
+"Indicates whether diffs should be shown in their collapsed state by default."
+msgstr ""
+
+#: accounts/models.py:102 reviews/models/review.py:108
+msgid "This field is unused and will be removed in a future version."
+msgstr ""
+
+#: accounts/models.py:106
+msgid "syntax highlighting"
+msgstr ""
+
+#: accounts/models.py:107
+msgid ""
+"Indicates whether the user wishes to see syntax highlighting in the diffs."
+msgstr ""
+
+#: accounts/models.py:111
+msgid "profile private"
+msgstr ""
+
+#: accounts/models.py:112
+msgid "Indicates whether the user wishes to keep his/her profile private."
+msgstr ""
+
+#: accounts/models.py:116
+msgid "opens an issue"
+msgstr ""
+
+#: accounts/models.py:117
+msgid ""
+"Indicates whether the user wishes to default to opening an issue or not."
+msgstr ""
+
+#: accounts/models.py:122
+msgid "enable Markdown by default"
+msgstr "默认启用 Markdown"
+
+#: accounts/models.py:123
+msgid ""
+"Indicates whether new posts or comments should default to being in Markdown "
+"format."
+msgstr ""
+
+#: accounts/models.py:265
+msgid "direct incoming review request count"
+msgstr ""
+
+#: accounts/models.py:271
+msgid "total incoming review request count"
+msgstr ""
+
+#: accounts/models.py:277
+msgid "pending outgoing review request count"
+msgstr ""
+
+#: accounts/models.py:283
+msgid "total outgoing review request count"
+msgstr ""
+
+#: accounts/models.py:289
+msgid "starred public review request count"
+msgstr ""
+
+#: accounts/pages.py:82 templates/admin/widgets/w-actions.html:17
+msgid "Authentication"
+msgstr "认证"
+
+#: accounts/trophies.py:54
+msgid "Milestone Trophy"
+msgstr ""
+
+#: accounts/trophies.py:59
+#, python-format
+msgid "%(user)s got review request #%(rid)s!"
+msgstr ""
+
+#: accounts/trophies.py:82
+msgid "Fish Trophy"
+msgstr ""
+
+#: accounts/trophies.py:93
+#, python-format
+msgid "%(user)s got a fish trophy!"
+msgstr ""
+
+#: accounts/trophies.py:108
+msgid "Unknown Trophy"
+msgstr ""
+
+#: accounts/views.py:49
+msgid "My Account"
+msgstr ""
+
+#: admin/checks.py:223
+msgid ""
+"LDAP authentication requires the python-ldap library, which is not installed."
+msgstr ""
+
+#: admin/checks.py:234
+msgid ""
+"PyDNS, which is required to find the domain controller, is not installed."
+msgstr ""
+
+#: admin/checks.py:246
+msgid "Amazon S3 depends on django-storages, which is not installed"
+msgstr ""
+
+#: admin/checks.py:249
+#, python-format
+msgid "Amazon S3 backend failed to load: %s"
+msgstr ""
+
+#: admin/checks.py:259
+msgid "OpenStack Swift depends on django-storage-swift, which is not installed"
+msgstr ""
+
+#: admin/checks.py:263
+#, python-format
+msgid "OpenStack Swift backend failed to load: %s"
+msgstr ""
+
+#: admin/checks.py:272
+msgid "CouchDB depends on django-storages, which is not installed"
+msgstr ""
+
+#: admin/forms.py:60
+msgid "Memcached"
+msgstr ""
+
+#: admin/forms.py:61
+msgid "File cache"
+msgstr ""
+
+#: admin/forms.py:83
+msgid "Company/Organization"
+msgstr "公司/组织"
+
+#: admin/forms.py:84
+msgid ""
+"The optional name of your company or organization. This will be displayed on "
+"your support page."
+msgstr "你的公司或组织的可选名称。将在支持页显示。"
+
+#: admin/forms.py:90
+msgid "Server"
+msgstr "主机网址"
+
+#: admin/forms.py:91
+msgid ""
+"The URL of this Review Board server. This should not contain the "
+"subdirectory Review Board is installed in."
+msgstr "Review Board 主机的 URL。不要包含 Review Board 安装的子目录路径。"
+
+#: admin/forms.py:96
+msgid "Media URL"
+msgstr "媒体 URL"
+
+#: admin/forms.py:97
+msgid ""
+"The URL to the media files. Leave blank to use the default media path on "
+"this server."
+msgstr "媒体的 URL。若留白表示使用主机上的预设媒体路径。"
+
+#: admin/forms.py:103
+msgid "Administrator Name"
+msgstr "管理员用户名"
+
+#: admin/forms.py:107
+msgid "Administrator E-Mail"
+msgstr "管理员电子邮件"
+
+#: admin/forms.py:112
+msgid "Time Zone"
+msgstr "时区"
+
+#: admin/forms.py:114
+msgid "The time zone used for all dates on this server."
+msgstr "此时区适用这个网站上的所有时间。"
+
+#: admin/forms.py:117
+msgid "Enable search"
+msgstr "开启搜索"
+
+#: admin/forms.py:118
+msgid "Provides a search field for quickly searching through review requests."
+msgstr "提供一个搜索字段，以供快速地在评审请求中搜寻。"
+
+#: admin/forms.py:123
+msgid "Search results per page"
+msgstr "每页显示搜索结果"
+
+#: admin/forms.py:124
+msgid "Number of search results to show per page."
+msgstr "每页显示搜索结果的个数。"
+
+#: admin/forms.py:129
+msgid "Search index directory"
+msgstr "搜索索引目录"
+
+#: admin/forms.py:130
+msgid "The directory that search index data should be stored in."
+msgstr "存储搜索索引的目录。"
+
+#: admin/forms.py:136
+msgid "Cache Backend"
+msgstr "缓存后端"
+
+#: admin/forms.py:138
+msgid "The type of server-side caching to use."
+msgstr "服务端使用的缓存类型。"
+
+#: admin/forms.py:142
+msgid "Cache Path"
+msgstr "缓存路径"
+
+#: admin/forms.py:143
+msgid "The file location for the cache."
+msgstr "用于缓存的文件位置。"
+
+#: admin/forms.py:148
+msgid "Cache Hosts"
+msgstr "缓存主机"
+
+#: admin/forms.py:149
+msgid ""
+"The host or hosts used for the cache, in hostname:port form. Multiple hosts "
+"can be specified by separating them with a semicolon (;)."
+msgstr "用于缓存的主机，使用主机名:端口号的格式。多个主机之间可以用分号;隔开。"
+
+#: admin/forms.py:156
+msgid "Use Gravatar images"
+msgstr "使用 Gravatar 图片"
+
+#: admin/forms.py:157
+msgid "Use gravatar.com for user avatars"
+msgstr "使用 gravatar.com 作为用户头像"
+
+#: admin/forms.py:181
+msgid "Local memory cache"
+msgstr ""
+
+#: admin/forms.py:186
+msgid "Custom"
+msgstr ""
+
+#: admin/forms.py:268
+msgid "A valid cache host must be provided."
+msgstr ""
+
+#: admin/forms.py:278
+msgid "A valid cache path must be provided."
+msgstr ""
+
+#: admin/forms.py:293
+msgid "The search index path must be absolute."
+msgstr ""
+
+#: admin/forms.py:298
+msgid ""
+"The search index path is not writable. Make sure the web server has write "
+"access to it and its parent directory."
+msgstr ""
+
+#: admin/forms.py:305
+msgid "General Settings"
+msgstr "一般设置"
+
+#: admin/forms.py:311
+msgid "Site Settings"
+msgstr "站点设置"
+
+#: admin/forms.py:318
+msgid "Cache Settings"
+msgstr "缓存设置"
+
+#: admin/forms.py:323 templates/base/headerbar.html:16
+msgid "Search"
+msgstr "搜索"
+
+#: admin/forms.py:329
+msgid "Third-party Integrations"
+msgstr "第三方集成"
+
+#: admin/forms.py:339
+msgid "Legacy Authentication Module"
+msgstr ""
+
+#: admin/forms.py:342
+msgid "Allow anonymous read-only access"
+msgstr "允许匿名只读访问"
+
+#: admin/forms.py:343
+msgid ""
+"If checked, users will be able to view review requests and diffs without "
+"logging in."
+msgstr "如果勾选了，用户不用登入就可以浏览评审请求以及 diff"
+
+#: admin/forms.py:348
+msgid "Authentication Method"
+msgstr "认证方式"
+
+#: admin/forms.py:350
+msgid "The method Review Board should use for authenticating users."
+msgstr "Review Board 用來认证用户的方式。"
+
+#: admin/forms.py:458
+msgid "Authentication Settings"
+msgstr "认证设置"
+
+#: admin/forms.py:473
+msgid "Send e-mails for review requests and reviews"
+msgstr "当有评审请求和评审的时候发送电子邮件"
+
+#: admin/forms.py:476
+msgid "Send e-mails when review requests are closed"
+msgstr "当评审请求被关闭的时候发送电子邮件"
+
+#: admin/forms.py:479
+msgid "Send e-mails when new users register an account"
+msgstr "当新用户注册帐号的时候发送电子邮件"
+
+#: admin/forms.py:482
+msgid "Enable \"Auto-Submitted: auto-generated\" header"
+msgstr "开启 \"自动发布: 自动生成\" 头"
+
+#: admin/forms.py:483
+msgid ""
+"Marks outgoing e-mails as \"auto-generated\" to avoid auto-replies. Disable "
+"this if your mailing list rejects \"auto-generated\" e-mails."
+msgstr ""
+"将电子邮件标识为\"自动生成\"可以防止自动回复。如果你的邮件列表拒绝\"自动生成\""
+"电子邮件，禁用该项。"
+
+#: admin/forms.py:488
+msgid "Sender e-mail address"
+msgstr "发送者的电子邮件地址"
+
+#: admin/forms.py:489
+msgid ""
+"The e-mail address that all e-mails will be sent from. The \"Sender\" header "
+"will be used to make e-mails appear to come from the user triggering the e-"
+"mail."
+msgstr ""
+"所有的电子邮件将从这个地址被寄出。而电子邮件头部的 \"发送者\" 将会显示为"  
+"触动此次电子邮件寄送动作的使用者。"
+
+#: admin/forms.py:495
+msgid "Mail Server"
+msgstr "邮件服务器"
+
+#: admin/forms.py:499
+msgid "Port"
+msgstr "端口"
+
+#: admin/forms.py:509 scmtools/forms.py:118
+msgid "Password"
+msgstr ""
+
+#: admin/forms.py:516
+msgid "Send a test e-mail after saving"
+msgstr "保存之后发送一封测试电子邮件"
+
+#: admin/forms.py:517
+msgid "Send an e-mail to yourself using these server settings."
+msgstr "使用这些设置向自己发送一封电子邮件。"
+
+#: admin/forms.py:544
+msgid "E-mail settings test"
+msgstr ""
+
+#: admin/forms.py:545
+#, python-format
+msgid ""
+"This is a test of the e-mail settings for the Review Board server at %s."
+msgstr ""
+
+#: admin/forms.py:552
+msgid "E-Mail Settings"
+msgstr "电子邮件设置"
+
+#: admin/forms.py:558
+msgid "E-Mail Notification Settings"
+msgstr "电子邮件提醒设置"
+
+#: admin/forms.py:565
+msgid "E-Mail Delivery Settings"
+msgstr "电子邮件发送设置"
+
+#: admin/forms.py:571
+msgid "E-Mail Server Settings"
+msgstr "电子邮件服务器设置"
+
+#: admin/forms.py:583
+msgid "Show syntax highlighting"
+msgstr "显示语法高亮"
+
+#: admin/forms.py:587
+msgid "Syntax highlighting threshold"
+msgstr "语法高亮阈值"
+
+#: admin/forms.py:588
+msgid ""
+"Files with lines greater than this number will not have syntax "
+"highlighting.  Enter 0 for no limit."
+msgstr "多于该行数的文件将没有语法高亮。0表示没有限制。"
+
+#: admin/forms.py:594
+msgid "Show trailing whitespace"
+msgstr "显示尾部的空格"
+
+#: admin/forms.py:595
+msgid ""
+"Show excess trailing whitespace as red blocks. This helps to visualize when "
+"a text editor added unwanted whitespace to the end of a line."
+msgstr "用红色区块儿显示多余的尾部空格。有助于发现文本编辑器在一行的末尾添加了"
+"不想要的空格。"
+
+#: admin/forms.py:601
+msgid "Show all whitespace for"
+msgstr "显示空格"
+
+#: admin/forms.py:603
+msgid ""
+"A comma-separated list of file patterns for which all whitespace changes "
+"should be shown. (e.g., \"*.py, *.txt\")"
+msgstr "显示所有空格变更，用逗号隔开的文件格式列表。(例如，\"*.py, *.txt\")"
+
+#: admin/forms.py:609
+msgid "Lines of Context"
+msgstr "上下文行数"
+
+#: admin/forms.py:610
+msgid "The number of unchanged lines shown above and below changed lines."
+msgstr "显示变更的和未变更的行数。"
+
+#: admin/forms.py:616
+msgid "Paginate by"
+msgstr "分页"
+
+#: admin/forms.py:617
+msgid "The number of files to display per page in the diff viewer."
+msgstr "在diff浏览器中每页显示文件的个数。"
+
+#: admin/forms.py:623
+msgid "Paginate orphans"
+msgstr "分页"
+
+#: admin/forms.py:624
+msgid ""
+"The number of extra files required before adding another page to the diff "
+"viewer."
+msgstr "需要额外的文件的个数，足以向 diff 浏览器中添加另一页。"
+
+#: admin/forms.py:630
+msgid "Max diff size (bytes)"
+msgstr "最大 diff 大小(字节)"
+
+#: admin/forms.py:631
+msgid ""
+"The maximum size (in bytes) for any given diff. Enter 0 to disable size "
+"restrictions."
+msgstr "diff 的最大字节数。0表示没有限制。"
+
+#: admin/forms.py:650
+msgid "Diff Viewer Settings"
+msgstr "变更浏览器设置"
+
+#: admin/forms.py:661 admin/forms.py:753 notifications/admin.py:33
+msgid "Advanced"
+msgstr "高级"
+
+#: admin/forms.py:663
+msgid ""
+"These are advanced settings that control the behavior and display of the "
+"diff viewer. In general, these settings do not need to be changed."
+msgstr "这些高级设置控制变更浏览器的行为和呈现。通常，这些设置不需要被改变。"
+
+#: admin/forms.py:680
+msgid "Debug"
+msgstr "调式"
+
+#: admin/forms.py:681
+msgid "Info"
+msgstr "信息"
+
+#: admin/forms.py:682
+msgid "Warning"
+msgstr "警告"
+
+#: admin/forms.py:683
+msgid "Error"
+msgstr "错误"
+
+#: admin/forms.py:684
+msgid "Critical"
+msgstr "严重"
+
+#: admin/forms.py:688
+msgid "Enable logging"
+msgstr "开启日志"
+
+#: admin/forms.py:689
+msgid ""
+"Enables logging of Review Board operations. This is in addition to your web "
+"server's logging and does not log all page visits."
+msgstr "开启 Review Board 的操作日志。不同于网页服务器的日志，不会记录所有的"
+"页面访问。"
+
+#: admin/forms.py:695
+msgid "Log directory"
+msgstr "日志目录"
+
+#: admin/forms.py:696
+msgid ""
+"The directory where log files will be stored. This must be writable by the "
+"web server."
+msgstr "用于存储日志文件的目录。必须对网页服务可写。"
+
+#: admin/forms.py:702
+msgid "Log level"
+msgstr "日志等级"
+
+#: admin/forms.py:703
+msgid ""
+"Indicates the logging threshold. Please note that this may increase the size "
+"of the log files if a low threshold is selected."
+msgstr "暗示日志阈值。请注意如果选择了一个低阈值，可能增加日志文件的大小。"
+
+#: admin/forms.py:710
+msgid "Allow code profiling"
+msgstr "允许代码分析"
+
+#: admin/forms.py:711
+msgid ""
+"Logs the time spent on certain operations. This is useful for debugging but "
+"may greatly increase the size of log files."
+msgstr "记录某种操作花费的时间。对调式很有用但可能大大地增大日志文件的大小。"
+
+#: admin/forms.py:725
+msgid "This path does not exist."
+msgstr ""
+
+#: admin/forms.py:728
+msgid "This is not a directory."
+msgstr ""
+
+#: admin/forms.py:732
+msgid "This path is not writable by the web server."
+msgstr ""
+
+#: admin/forms.py:744
+msgid "Logging Settings"
+msgstr "日志设置"
+
+#: admin/forms.py:766
+msgid "Key file"
+msgstr ""
+
+#: admin/forms.py:780 admin/forms.py:793
+#, python-format
+msgid "Unable to write SSH key file: %s"
+msgstr ""
+
+#: admin/forms.py:785
+#, python-format
+msgid "Error generating SSH key: %s"
+msgstr ""
+
+#: admin/forms.py:798
+#, python-format
+msgid "Error uploading SSH key: %s"
+msgstr ""
+
+#: admin/forms.py:813
+#, python-format
+msgid "Unable to delete SSH key file: %s"
+msgstr ""
+
+#: admin/forms.py:818
+msgid "SSH Settings"
+msgstr "SSH 设置"
+
+#: admin/forms.py:825
+msgid "File storage method"
+msgstr "文件存储方式"
+
+#: admin/forms.py:827
+msgid "Host file system"
+msgstr "主机文件系统"
+
+#: admin/forms.py:828
+msgid "Amazon S3"
+msgstr "亚马逊 S3"
+
+#: admin/forms.py:829
+msgid "OpenStack Swift"
+msgstr "OpenStack Swift"
+
+#: admin/forms.py:833
+msgid ""
+"Storage method and location for uploaded files, such as screenshots and file "
+"attachments."
+msgstr ""
+"存储方式和上传文件的位置，例如截屏和文件附件。"
+
+#: admin/forms.py:838
+msgid "Amazon AWS access key"
+msgstr ""
+
+#: admin/forms.py:839
+msgid ""
+"Your Amazon AWS access key ID. This can be found in the \"Security "
+"Credentials\" section of the AWS site."
+msgstr ""
+
+#: admin/forms.py:845
+msgid "Amazon AWS secret access key"
+msgstr ""
+
+#: admin/forms.py:846
+msgid ""
+"Your Amazon AWS secret access ID. This can be found in the \"Security "
+"Credentials\" section of the AWS site."
+msgstr ""
+
+#: admin/forms.py:852
+msgid "S3 bucket name"
+msgstr ""
+
+#: admin/forms.py:853
+msgid "Bucket name inside Amazon S3."
+msgstr ""
+
+#: admin/forms.py:858
+msgid "Amazon AWS calling format"
+msgstr ""
+
+#: admin/forms.py:864
+msgid "Calling format for AWS requests."
+msgstr ""
+
+#: admin/forms.py:879
+msgid "Swift auth URL"
+msgstr ""
+
+#: admin/forms.py:880
+msgid "The URL for the auth server, e.g. http://127.0.0.1:5000/v2.0"
+msgstr ""
+
+#: admin/forms.py:886
+msgid "Swift username"
+msgstr ""
+
+#: admin/forms.py:887
+msgid "The username to use to authenticate, e.g. system:root"
+msgstr ""
+
+#: admin/forms.py:893
+msgid "Swift key"
+msgstr ""
+
+#: admin/forms.py:894
+msgid "The key (password) to use to authenticate."
+msgstr ""
+
+#: admin/forms.py:899
+msgid "Swift auth version"
+msgstr ""
+
+#: admin/forms.py:901
+msgid "1.0"
+msgstr ""
+
+#: admin/forms.py:902
+msgid "2.0"
+msgstr ""
+
+#: admin/forms.py:904
+msgid "The version of the authentication protocol to use."
+msgstr ""
+
+#: admin/forms.py:908
+msgid "Swift container name"
+msgstr ""
+
+#: admin/forms.py:909
+msgid ""
+"The container in which to store the files. This container must be publicly "
+"readable."
+msgstr ""
+
+#: admin/forms.py:915
+msgid "Default server"
+msgstr ""
+
+#: admin/forms.py:916
+msgid "For example, \"http://couchdb.local:5984\""
+msgstr ""
+
+#: admin/forms.py:982
+msgid "File Storage Settings"
+msgstr "文件存储设置"
+
+#: admin/forms.py:992
+msgid "Amazon S3 Settings"
+msgstr "亚马逊 S3 设置"
+
+#: admin/forms.py:1001
+msgid "OpenStack Swift Settings"
+msgstr "OpenStack Swift 设置"
+
+#: admin/forms.py:1011
+msgid "CouchDB Settings"
+msgstr "CouchDB 设置"
+
+#: admin/forms.py:1021
+msgid "Install key"
+msgstr ""
+
+#: admin/forms.py:1022
+msgid "The installation key to provide when purchasing a support contract."
+msgstr ""
+
+#: admin/forms.py:1031
+msgid "Custom Support URL"
+msgstr ""
+
+#: admin/forms.py:1032
+msgid ""
+"The location of your organization's own Review Board support page. Leave "
+"blank to use the default support page."
+msgstr ""
+
+#: admin/forms.py:1039
+msgid "Send support-related usage statistics"
+msgstr ""
+
+#: admin/forms.py:1040
+msgid ""
+"Basic usage information will be sent to us at times to help with some "
+"support issues and to provide a more personalized support page for your "
+"users. <i>No information is ever given to a third party.</i>"
+msgstr ""
+
+#: admin/forms.py:1052
+msgid "Support Settings"
+msgstr ""
+
+#: admin/security_checks.py:52
+msgid "Checking that uploaded files won't be executed by the server"
+msgstr "检查上传的文件不会被服务器执行"
+
+#: admin/security_checks.py:53
+msgid ""
+"A misconfiguration in the web server can cause files attached to review "
+"requests to be executed as code. The file types checked in this test are: ."
+"html, .htm, .shtml, .php, .php3, .php4, .php5, .phps, .asp, .pl, .py, ."
+"fcgi, .cgi, .phtml, .phtm, .pht, .jsp, .sh, and .rb."
+msgstr ""
+"网页服务器的错误配置会让附在审查请求上的文件当作代码被执行．该测试检查的文件"
+"类型: .html, .htm, .shtml, .php, .php3, .php4, .php5, .phps, .asp, .pl, .py, ."
+"fcgi, .cgi, .phtml, .phtm, .pht, .jsp, .sh, and .rb."
+
+#: admin/security_checks.py:58
+msgid ""
+"For instructions on how to fix this problem, please visit <a href=\"http://"
+"support.beanbaginc.com/support/solutions/articles/110173-securing-file-"
+"attachments\">http://support.beanbaginc.com/support/solutions/"
+"articles/110173-securing-file-attachments</a>"
+msgstr ""
+
+#: admin/security_checks.py:160
+#, python-format
+msgid "Uncaught exception during test: %s"
+msgstr ""
+
+#: admin/security_checks.py:168
+#, python-format
+msgid "The web server incorrectly executed these file types: %s"
+msgid_plural "The web server incorrectly executed this file type: %s"
+msgstr[0] ""
+msgstr[1] ""
+
+#: admin/security_checks.py:171
+msgid ", "
+msgstr ""
+
+#: admin/security_checks.py:219
+msgid "Checking ALLOWED_HOSTS setting"
+msgstr "检查 ALLOWED_HOSTS 设置"
+
+#: admin/security_checks.py:220
+msgid ""
+"ALLOWED_HOSTS is a list containing the host/domain names that Review Board "
+"will consider valid for this server to serve. This is a security measure to "
+"prevent an attacker from poisoning cache and password reset e-mails with "
+"links to malicious hosts by submitting requests with a fake HTTP Host "
+"header, which is possible even under many seemingly-safe web server "
+"configurations."
+msgstr "ALLOWED_HOSTS 列表包含 Review Board 认为安全的主机/域名．这是安全衡量"
+"以防来自缓存和重置密码的攻击，伪造一个 HTTP 主机头发送请求．"
+
+#: admin/security_checks.py:227
+msgid ""
+"To fix this, edit the settings_local.py in the site's conf directory and add "
+"a line like this with your site's URL: <pre>ALLOWED_HOSTS = ['example.com']</"
+"pre>"
+msgstr ""
+
+#: admin/security_checks.py:242
+msgid "ALLOWED_HOSTS is empty."
+msgstr ""
+
+#: admin/security_checks.py:246
+msgid ""
+"ALLOWED_HOSTS contains '*', which means that the server will respond to any "
+"host."
+msgstr ""
+
+#: admin/validation.py:24
+#, python-format
+msgid ""
+"%s has invalid format specification type(s). Use only one '%%s' to mark the "
+"location of the bug id. If the URL contains encoded values (e.g. '%%20'), "
+"prepend the encoded values with an additional '%%'."
+msgstr ""
+
+#: admin/validation.py:38
+#, python-format
+msgid ""
+"The URL '%s' is not valid because it contains a format character. For bug "
+"trackers other than 'Custom Bug Tracker', use the base URL of the server. If "
+"you need a '%%' character, prepend it with an additional '%%'."
+msgstr ""
+
+#: admin/views.py:91 templates/admin/base_site.html:55
+msgid "Admin Dashboard"
+msgstr "管理仪表盘"
+
+#: admin/views.py:115 admin/widgets.py:280
+#: templates/admin/widgets/w-actions.html:72
+msgid "Server Cache"
+msgstr "服务缓存"
+
+#: admin/views.py:127 templates/admin/widgets/w-actions.html:128
+msgid "Security Checklist"
+msgstr "安全测试"
+
+#: admin/widgets.py:136
+msgid "User Activity"
+msgstr ""
+
+#: admin/widgets.py:142 admin/widgets.py:216 admin/widgets.py:262
+#: templates/admin/change_form.html:24 templates/admin/database.html:26
+#: templates/admin/index.html:26 templates/admin/widgets/w-actions.html:36
+#: templates/admin/widgets/w-actions.html:41
+#: templates/admin/widgets/w-actions.html:46
+#: templates/admin/widgets/w-actions.html:51
+#: templates/admin/widgets/w-actions.html:56
+#: templates/admin/widgets/w-actions.html:61
+msgid "Add"
+msgstr ""
+
+#: admin/widgets.py:146
+msgid "Manage Users"
+msgstr ""
+
+#: admin/widgets.py:185
+msgid "Request Statuses"
+msgstr ""
+
+#: admin/widgets.py:210 reviews/admin.py:45 reviews/forms.py:41
+#: reviews/forms.py:47 templates/admin/widgets/w-actions.html:49
+msgid "Repositories"
+msgstr "仓库"
+
+#: admin/widgets.py:220 admin/widgets.py:257
+msgid "View All"
+msgstr ""
+
+#: admin/widgets.py:252 templates/admin/widgets/w-actions.html:39
+msgid "Review Groups"
+msgstr "审查组"
+
+#: admin/widgets.py:293
+msgid "days"
+msgstr "天"
+
+#: admin/widgets.py:296
+msgid "hours"
+msgstr "小时"
+
+#: admin/widgets.py:299
+msgid "minutes"
+msgstr "分钟"
+
+#: admin/widgets.py:314
+msgid "Review Board News"
+msgstr ""
+
+#: admin/widgets.py:319
+msgid "More"
+msgstr ""
+
+#: admin/widgets.py:322
+msgid "Reload"
+msgstr ""
+
+#: admin/widgets.py:336
+msgid "Database Stats"
+msgstr ""
+
+#: admin/widgets.py:358 templates/admin/database.html:50
+#: templates/admin/index.html:50
+msgid "Recent Actions"
+msgstr ""
+
+#: admin/widgets.py:471
+msgid "Review Board Activity"
+msgstr ""
+
+#: admin/widgets.py:486 datagrids/columns.py:437 datagrids/grids.py:529
+#: templates/admin/widgets/w-stats.html:8
+#: templates/diffviewer/view_diff.html:35
+#: templates/reviews/review_detail.html:23 templates/reviews/ui/base.html:23
+msgid "Reviews"
+msgstr "评审"
+
+#: admin/widgets.py:491 templates/admin/widgets/w-stats.html:4
+msgid "Comments"
+msgstr "评论"
+
+#: admin/widgets.py:497 datagrids/grids.py:500 search/views.py:40
+msgid "Review Requests"
+msgstr "评审请求"
+
+#: admin/widgets.py:502
+msgid "Changes"
+msgstr ""
+
+#: attachments/admin.py:22 reviews/admin.py:25 reviews/admin.py:233
+#: reviews/admin.py:244 reviews/admin.py:256
+msgid "Review request ID"
+msgstr ""
+
+#: attachments/models.py:63 reviews/models/screenshot.py:25
+msgid "caption"
+msgstr ""
+
+#: attachments/models.py:64 reviews/models/screenshot.py:26
+msgid "draft caption"
+msgstr ""
+
+#: attachments/models.py:66
+msgid "original filename"
+msgstr ""
+
+#: attachments/models.py:68
+msgid "file"
+msgstr ""
+
+#: attachments/models.py:72
+msgid "mimetype"
+msgstr ""
+
+#: attachments/models.py:79
+msgid "repository file path"
+msgstr ""
+
+#: attachments/models.py:83
+msgid "repository file revision"
+msgstr ""
+
+#: changedescs/admin.py:20
+msgid "Change Description Text"
+msgstr ""
+
+#: changedescs/models.py:36 diffviewer/models.py:491 diffviewer/models.py:564
+#: reviews/models/base_comment.py:35 reviews/models/review.py:37
+msgid "timestamp"
+msgstr ""
+
+#: changedescs/models.py:37 reviews/models/review.py:38
+#: reviews/models/review_request.py:162
+msgid "public"
+msgstr ""
+
+#: changedescs/models.py:38
+msgid "change text"
+msgstr ""
+
+#: changedescs/models.py:39 reviews/models/base_comment.py:37
+#: reviews/models/base_review_request_details.py:45
+#: reviews/models/review.py:102
+msgid "rich text"
+msgstr ""
+
+#: changedescs/models.py:40
+msgid "fields changed"
+msgstr ""
+
+#: datagrids/builtin_items.py:21
+msgid "Outgoing"
+msgstr "发出的"
+
+#: datagrids/builtin_items.py:28
+msgid "All"
+msgstr "全部"
+
+#: datagrids/builtin_items.py:32 datagrids/builtin_items.py:65
+#: reviews/models/base_comment.py:20
+msgid "Open"
+msgstr "打开的"
+
+#: datagrids/builtin_items.py:57
+msgid "Incoming"
+msgstr "收到的"
+
+#: datagrids/builtin_items.py:70 datagrids/columns.py:721
+msgid "To Me"
+msgstr "给我的"
+
+#: datagrids/builtin_items.py:77 datagrids/columns.py:33
+#: datagrids/columns.py:34 reviews/templatetags/reviewtags.py:496
+msgid "Starred"
+msgstr "已加星"
+
+#: datagrids/columns.py:61 reviews/builtin_fields.py:245
+msgid "Submitter"
+msgstr "发布者"
+
+#: datagrids/columns.py:102 reviews/builtin_fields.py:279
+msgid "Bugs"
+msgstr "缺陷跟踪"
+
+#: datagrids/columns.py:178 datagrids/columns.py:204
+msgid "Diff Updated"
+msgstr ""
+
+#: datagrids/columns.py:252
+msgid "Target Groups"
+msgstr ""
+
+#: datagrids/columns.py:274 datagrids/columns.py:275
+msgid "My Comments"
+msgstr "我的评论"
+
+#: datagrids/columns.py:334
+msgid "Comments drafted"
+msgstr ""
+
+#: datagrids/columns.py:338
+msgid "Comments published. Ship it!"
+msgstr ""
+
+#: datagrids/columns.py:341
+msgid "Comments published"
+msgstr ""
+
+#: datagrids/columns.py:358 datagrids/columns.py:359
+msgid "New Updates"
+msgstr "新的变更"
+
+#: datagrids/columns.py:392 reviews/builtin_fields.py:731
+msgid "People"
+msgstr "人员"
+
+#: datagrids/columns.py:393
+msgid "Target People"
+msgstr ""
+
+#: datagrids/columns.py:414 reviews/builtin_fields.py:261
+msgid "Repository"
+msgstr "仓库"
+
+#: datagrids/columns.py:438
+msgid "Number of Reviews"
+msgstr ""
+
+#: datagrids/columns.py:497
+msgid "ID"
+msgstr ""
+
+#: datagrids/columns.py:498
+msgid "Review Request ID"
+msgstr ""
+
+#: datagrids/columns.py:561 datagrids/columns.py:562
+#: templates/reviews/review_request_actions_primary.html:4
+msgid "Ship It!"
+msgstr "发布它!"
+
+#: datagrids/columns.py:613 reviews/builtin_fields.py:213
+#: templates/reviews/review_request_box.html:4
+msgid "Summary"
+msgstr "概述"
+
+#: datagrids/columns.py:653 datagrids/columns.py:656
+msgid "Draft"
+msgstr "草稿"
+
+#: datagrids/columns.py:662 scmtools/models.py:134
+msgid "Archived"
+msgstr "归档"
+
+#: datagrids/columns.py:664
+msgid "Muted"
+msgstr "静音"
+
+#: datagrids/columns.py:667 reviews/models/review_request.py:142
+#: templates/reviews/review_request_actions_secondary.html:9
+msgid "Submitted"
+msgstr "发布"
+
+#: datagrids/columns.py:669 reviews/models/review_request.py:143
+#: templates/reviews/boxes/change.html:33
+#: templates/reviews/review_request_actions_secondary.html:11
+msgid "Discarded"
+msgstr "丢弃"
+
+#: datagrids/columns.py:678
+msgid "No Summary"
+msgstr "无概述"
+
+#: datagrids/columns.py:693
+msgid "Review Request Summary"
+msgstr ""
+
+#: datagrids/columns.py:722
+#, python-format
+msgid "%s To Me"
+msgstr ""
+
+#: datagrids/columns.py:755
+msgid "Diff Size"
+msgstr ""
+
+#: datagrids/grids.py:138 reviews/builtin_fields.py:273
+msgid "Branch"
+msgstr "分支"
+
+#: datagrids/grids.py:146 datagrids/grids.py:163
+msgid "Posted"
+msgstr "发布"
+
+#: datagrids/grids.py:147
+msgid "Posted Time"
+msgstr ""
+
+#: datagrids/grids.py:152 datagrids/grids.py:168
+#: templates/reviews/review_issue_summary_table.html:43
+msgid "Last Updated"
+msgstr "最后更新"
+
+#: datagrids/grids.py:164
+msgid "Posted Time (Relative)"
+msgstr ""
+
+#: datagrids/grids.py:169
+msgid "Last Updated (Relative)"
+msgstr ""
+
+#: datagrids/grids.py:174
+msgid "Diff Updated (Relative)"
+msgstr ""
+
+#: datagrids/grids.py:242
+msgid "Date Reviewed"
+msgstr ""
+
+#: datagrids/grids.py:334
+msgid "All Outgoing Review Requests"
+msgstr "全部发出的审查请求"
+
+#: datagrids/grids.py:338
+msgid "All My Review Requests"
+msgstr "我的全部审查请求"
+
+#: datagrids/grids.py:342
+msgid "Incoming Review Requests to Me"
+msgstr "发给我的审查请求"
+
+#: datagrids/grids.py:359
+#, python-format
+msgid "Incoming Review Requests to %s"
+msgstr "发给 %s 的审查请求"
+
+#: datagrids/grids.py:363
+msgid "All Incoming Review Requests to My Groups"
+msgstr "所有属于我的组收到的审查请求"
+
+#: datagrids/grids.py:367
+msgid "Starred Review Requests"
+msgstr "加星的审查请求"
+
+#: datagrids/grids.py:371
+msgid "All Incoming Review Requests"
+msgstr "全部收到的评审请求"
+
+#: datagrids/grids.py:411
+msgid "Full Name"
+msgstr "全名"
+
+#: datagrids/grids.py:413 datagrids/grids.py:451
+msgid "Open Review Requests"
+msgstr "打开的审查请求"
+
+#: datagrids/grids.py:419
+msgid "All users"
+msgstr "全部用户"
+
+#: datagrids/grids.py:448
+msgid "Group ID"
+msgstr "组 ID"
+
+#: datagrids/grids.py:449
+msgid "Group Name"
+msgstr "组名"
+
+#: datagrids/grids.py:455
+msgid "Members"
+msgstr "成员"
+
+#: datagrids/grids.py:459
+msgid "All groups"
+msgstr "全部组"
+
+#: datagrids/grids.py:516
+#, python-format
+msgid "%s's Review Requests"
+msgstr ""
+
+#: datagrids/grids.py:544
+#, python-format
+msgid "%s's Reviews"
+msgstr ""
+
+#: datagrids/views.py:36 templates/base/_mobile_navbar.html:27
+#: templates/base/navbar.html:9
+msgid "All Review Requests"
+msgstr "全部评审请求"
+
+#: datagrids/views.py:86
+#, python-format
+msgid "Review requests for %s"
+msgstr ""
+
+#: datagrids/views.py:120
+#, python-format
+msgid "Members of group %s"
+msgstr ""
+
+#: diffviewer/admin.py:20 scmtools/admin.py:78
+msgid "Internal State"
+msgstr "内部状态"
+
+#: diffviewer/admin.py:21 reviews/admin.py:137 scmtools/admin.py:79
+msgid ""
+"<p>This is advanced state that should not be modified unless something is "
+"wrong.</p>"
+msgstr ""
+"<p>这个是高级状态除非出错请不要修改．</p>"
+
+#: diffviewer/admin.py:34 diffviewer/forms.py:20 reviews/builtin_fields.py:448
+#: templates/diffviewer/view_diff.html:36
+#: templates/reviews/review_detail.html:25 templates/reviews/ui/base.html:26
+msgid "Diff"
+msgstr ""
+
+#: diffviewer/admin.py:39
+msgid "Parent diff"
+msgstr ""
+
+#: diffviewer/diffutils.py:67
+#, python-format
+msgid ""
+"Diff content couldn't be converted to unicode using the following encodings: "
+"%s"
+msgstr ""
+
+#: diffviewer/diffutils.py:161
+#, python-format
+msgid ""
+"The patch to '%(filename)s' didn't apply cleanly. The temporary files have "
+"been left in '%(tempdir)s' for debugging purposes.\n"
+"`patch` returned: %(output)s"
+msgstr ""
+
+#: diffviewer/diffutils.py:241 reviews/builtin_fields.py:496
+#, python-format
+msgid "Revision %s"
+msgstr ""
+
+#: diffviewer/diffutils.py:355 diffviewer/diffutils.py:361
+#, python-format
+msgid "Diff Revision %s"
+msgstr ""
+
+#: diffviewer/diffutils.py:358
+#, python-format
+msgid "Diff Revision %s - File Reverted"
+msgstr ""
+
+#: diffviewer/diffutils.py:366
+msgid "New File"
+msgstr ""
+
+#: diffviewer/diffutils.py:368
+msgid "New Change"
+msgstr "新变更"
+
+#: diffviewer/forms.py:16
+msgid "Base Directory"
+msgstr ""
+
+#: diffviewer/forms.py:17
+msgid "The absolute path in the repository the diff was generated in."
+msgstr ""
+
+#: diffviewer/forms.py:21
+msgid "The new diff to upload."
+msgstr ""
+
+#: diffviewer/forms.py:23
+msgid "Parent Diff"
+msgstr ""
+
+#: diffviewer/forms.py:24
+msgid ""
+"An optional diff that the main diff is based on. This is usually used for "
+"distributed revision control systems (Git, Mercurial, etc.)."
+msgstr ""
+
+#: diffviewer/forms.py:30
+msgid "Base Commit ID"
+msgstr ""
+
+#: diffviewer/forms.py:31 diffviewer/models.py:507
+msgid "The ID/revision this change is built upon."
+msgstr ""
+
+#: diffviewer/forms.py:58
+msgid "The \"Base Diff Path\" field is required"
+msgstr ""
+
+#: diffviewer/management/commands/condensediffs.py:31
+#, python-format
+msgid "%s remaining                                  "
+msgstr ""
+
+#: diffviewer/management/commands/condensediffs.py:33
+msgid "Calculating time remaining"
+msgstr ""
+
+#: diffviewer/management/commands/condensediffs.py:40
+msgid "All diffs have already been migrated.\n"
+msgstr ""
+
+#: diffviewer/management/commands/condensediffs.py:44
+#, python-format
+msgid ""
+"Processing %(count)d diffs for duplicates...\n"
+"\n"
+"This may take a while. It is safe to continue using Review Board while this "
+"is\n"
+"processing, but it may temporarily run slower.\n"
+"\n"
+msgstr ""
+
+#: diffviewer/management/commands/condensediffs.py:66
+#, python-format
+msgid ""
+"\n"
+"\n"
+"Condensed stored diffs from %(old_size)s bytes to %(new_size)s bytes "
+"(%(savings_pct)0.2f%% savings)\n"
+msgstr ""
+
+#: diffviewer/managers.py:393
+msgid "The supplied diff file is too large"
+msgstr ""
+
+#: diffviewer/managers.py:398
+msgid "The supplied parent diff file is too large"
+msgstr ""
+
+#: diffviewer/managers.py:445
+msgid "The diff file is empty"
+msgstr ""
+
+#: diffviewer/models.py:27 diffviewer/models.py:50
+msgid "hash"
+msgstr ""
+
+#: diffviewer/models.py:28
+msgid "base64"
+msgstr ""
+
+#: diffviewer/models.py:47
+msgid "BZip2-compressed"
+msgstr ""
+
+#: diffviewer/models.py:133
+msgid "Copied"
+msgstr ""
+
+#: diffviewer/models.py:134
+msgid "Deleted"
+msgstr "已删除"
+
+#: diffviewer/models.py:135
+msgid "Modified"
+msgstr ""
+
+#: diffviewer/models.py:136
+msgid "Moved"
+msgstr ""
+
+#: diffviewer/models.py:141 reviews/models/review_request_draft.py:47
+msgid "diff set"
+msgstr ""
+
+#: diffviewer/models.py:143
+msgid "source file"
+msgstr ""
+
+#: diffviewer/models.py:144
+msgid "destination file"
+msgstr ""
+
+#: diffviewer/models.py:145
+msgid "source file revision"
+msgstr ""
+
+#: diffviewer/models.py:147
+msgid "destination file details"
+msgstr ""
+
+#: diffviewer/models.py:149
+msgid "binary file"
+msgstr ""
+
+#: diffviewer/models.py:150 reviews/models/review_request.py:160
+msgid "status"
+msgstr ""
+
+#: diffviewer/models.py:153
+msgid "diff"
+msgstr ""
+
+#: diffviewer/models.py:170
+msgid "parent diff"
+msgstr ""
+
+#: diffviewer/models.py:489 diffviewer/models.py:563
+#: reviews/models/default_reviewer.py:31 reviews/models/group.py:36
+#: site/models.py:54
+msgid "name"
+msgstr "名称"
+
+#: diffviewer/models.py:490
+msgid "revision"
+msgstr ""
+
+#: diffviewer/models.py:492
+msgid "base directory"
+msgstr ""
+
+#: diffviewer/models.py:496 reviews/models/review_request.py:177
+msgid "diff set history"
+msgstr ""
+
+#: diffviewer/models.py:498 reviews/models/review_request.py:167
+msgid "repository"
+msgstr "仓库"
+
+#: diffviewer/models.py:500
+msgid "differ compatibility version"
+msgstr ""
+
+#: diffviewer/models.py:502
+msgid ""
+"The diff generator compatibility version to use. This can and should be "
+"ignored."
+msgstr ""
+
+#: diffviewer/models.py:506 reviews/models/base_review_request_details.py:39
+msgid "commit ID"
+msgstr ""
+
+#: diffviewer/models.py:566 reviews/models/review_request.py:159
+#: reviews/models/review_request_draft.py:44
+msgid "last updated"
+msgstr ""
+
+#: diffviewer/renderers.py:96
+#, python-format
+msgid "Invalid chunk index %s specified."
+msgstr ""
+
+#: diffviewer/templatetags/difftags.py:181
+#: reviews/templatetags/reviewtags.py:601
+msgid "Expand to header"
+msgstr ""
+
+#: diffviewer/templatetags/difftags.py:284
+#, python-format
+msgid "Moved from line %s"
+msgstr ""
+
+#: diffviewer/templatetags/difftags.py:301
+#, python-format
+msgid "Moved to line %s"
+msgstr ""
+
+#: diffviewer/views.py:383
+#, python-format
+msgid "Internal error. Unable to locate file record for filediff %s"
+msgstr ""
+
+#: extensions/management/commands/disable-extension.py:10
+msgid "Disables an extension."
+msgstr ""
+
+#: extensions/management/commands/disable-extension.py:15
+msgid "You must specify an extension ID to disable."
+msgstr ""
+
+#: extensions/management/commands/disable-extension.py:23
+#, python-format
+msgid "Unexpected error disabling extension: %s"
+msgstr ""
+
+#: extensions/management/commands/enable-extension.py:12
+msgid "Enables an extension."
+msgstr ""
+
+#: extensions/management/commands/enable-extension.py:17
+msgid "You must specify an extension ID to enable."
+msgstr ""
+
+#: extensions/management/commands/enable-extension.py:25
+#, python-format
+msgid "%s is not a valid extension ID."
+msgstr ""
+
+#: extensions/management/commands/enable-extension.py:29
+#, python-format
+msgid ""
+"Error enabling extension: %(message)s\n"
+"\n"
+"%(error)s"
+msgstr ""
+
+#: extensions/management/commands/enable-extension.py:34
+#, python-format
+msgid "Unexpected error enabling extension: %s"
+msgstr ""
+
+#: extensions/management/commands/list-extensions.py:11
+msgid "Lists available Review Board extensions."
+msgstr ""
+
+#: extensions/management/commands/list-extensions.py:18
+msgid "List only enabled extensions"
+msgstr ""
+
+#: extensions/management/commands/list-extensions.py:28
+#, python-format
+msgid "* Name: %s\n"
+msgstr ""
+
+#: extensions/management/commands/list-extensions.py:31
+msgid "  Status: enabled\n"
+msgstr ""
+
+#: extensions/management/commands/list-extensions.py:33
+msgid "  Status: disabled\n"
+msgstr ""
+
+#: extensions/management/commands/list-extensions.py:35
+#, python-format
+msgid "  ID: %s\n"
+msgstr ""
+
+#: hostingsvcs/assembla.py:14
+msgid "Project ID"
+msgstr ""
+
+#: hostingsvcs/assembla.py:19
+msgid ""
+"The project ID, as shown in the URL (https://www.assembla.com/spaces/<b>&lt;"
+"project_id&gt;</b>), or your Perforce repository's Depot Host."
+msgstr ""
+
+#: hostingsvcs/beanstalk.py:29
+msgid "Beanstalk account domain"
+msgstr ""
+
+#: hostingsvcs/beanstalk.py:33
+msgid "This is the <tt>domain</tt> part of <tt>domain.beanstalkapp.com</tt>"
+msgstr ""
+
+#: hostingsvcs/beanstalk.py:37 hostingsvcs/bitbucket.py:38
+#: hostingsvcs/bitbucket.py:55 hostingsvcs/fedorahosted.py:12
+#: hostingsvcs/github.py:51 hostingsvcs/github.py:62 hostingsvcs/github.py:82
+#: hostingsvcs/github.py:102 hostingsvcs/gitlab.py:29 hostingsvcs/gitlab.py:43
+#: hostingsvcs/gitorious.py:18 hostingsvcs/kiln.py:45
+#: hostingsvcs/rbgateway.py:29 hostingsvcs/unfuddle.py:41
+msgid "Repository name"
+msgstr "仓库名"
+
+#: hostingsvcs/bitbucket.py:46
+msgid "Team name"
+msgstr "团队名"
+
+#: hostingsvcs/bitbucket.py:50
+msgid ""
+"The name of the team. This is the &lt;team_name&gt; in https://bitbucket.org/"
+"&lt;team_name&gt;/&lt;repo_name&gt;/"
+msgstr ""
+
+#: hostingsvcs/bitbucket.py:89 hostingsvcs/gitlab.py:73
+msgid "Personal"
+msgstr ""
+
+#: hostingsvcs/bitbucket.py:114
+msgid "Team"
+msgstr ""
+
+#: hostingsvcs/bitbucket.py:153
+msgid "Please specify just the name of the repository, not a path."
+msgstr ""
+
+#: hostingsvcs/bitbucket.py:158
+msgid "Please specify just the name of the repository without \".git\"."
+msgstr ""
+
+#: hostingsvcs/bitbucket.py:168
+msgid "A repository with this name was not found."
+msgstr ""
+
+#: hostingsvcs/bitbucket.py:473
+msgid "Invalid Bitbucket username or password"
+msgstr ""
+
+#: hostingsvcs/bitbucket.py:480
+msgid "Unknown error when talking to Bitbucket"
+msgstr ""
+
+#: hostingsvcs/bugzilla.py:17
+msgid "Bugzilla URL"
+msgstr ""
+
+#: hostingsvcs/codebasehq.py:12 hostingsvcs/gitorious.py:12
+#: hostingsvcs/googlecode.py:26 hostingsvcs/kiln.py:29
+#: hostingsvcs/sourceforge.py:12
+msgid "Project name"
+msgstr ""
+
+#: hostingsvcs/codebasehq.py:18
+msgid "Codebase HQ domain name"
+msgstr ""
+
+#: hostingsvcs/codebasehq.py:22
+msgid "The subdomain used to access your Codebase account"
+msgstr ""
+
+#: hostingsvcs/codebasehq.py:25
+msgid "Repository short name"
+msgstr "仓库短名称"
+
+#: hostingsvcs/codebasehq.py:29
+msgid ""
+"The short name of your repository. This can be found in the \"Repository "
+"Admin/Properties\" page"
+msgstr ""
+
+#: hostingsvcs/codebasehq.py:33
+msgid "API username"
+msgstr ""
+
+#: hostingsvcs/codebasehq.py:38
+msgid ""
+"Your Codebase API Username. You can find this in the API Credentials section "
+"of the \"My Profile\" page at http://&lt;groupname&gt;.codebasehq.com/"
+"settings/profile/"
+msgstr ""
+
+#: hostingsvcs/codebasehq.py:43
+msgid "API key"
+msgstr ""
+
+#: hostingsvcs/fogbugz.py:12 hostingsvcs/kiln.py:21
+msgid "Account domain"
+msgstr ""
+
+#: hostingsvcs/fogbugz.py:15
+msgid ""
+"The domain used for your FogBugz site, as in https://&lt;domain&gt;.fogbugz."
+"com/"
+msgstr ""
+
+#: hostingsvcs/fogbugz.py:26
+msgid "FogBugz"
+msgstr ""
+
+#: hostingsvcs/github.py:55 hostingsvcs/github.py:66
+msgid ""
+"The name of the repository. This is the &lt;repo_name&gt; in http://github."
+"com/&lt;username&gt;/&lt;repo_name&gt;/"
+msgstr ""
+
+#: hostingsvcs/github.py:73 hostingsvcs/github.py:93
+msgid "Organization name"
+msgstr ""
+
+#: hostingsvcs/github.py:77 hostingsvcs/github.py:97
+msgid ""
+"The name of the organization. This is the &lt;org_name&gt; in http://github."
+"com/&lt;org_name&gt;/&lt;repo_name&gt;/"
+msgstr ""
+
+#: hostingsvcs/github.py:86 hostingsvcs/github.py:106
+msgid ""
+"The name of the repository. This is the &lt;repo_name&gt; in http://github."
+"com/&lt;org_name&gt;/&lt;repo_name&gt;/"
+msgstr ""
+
+#: hostingsvcs/github.py:389
+msgid ""
+"Enter your two-factor authentication code. This code will be sent to you by "
+"GitHub."
+msgstr ""
+
+#: hostingsvcs/github.py:402
+msgid "GitHub"
+msgstr ""
+
+#: hostingsvcs/github.py:405
+msgid "Public"
+msgstr ""
+
+#: hostingsvcs/github.py:422
+msgid "Public Organization"
+msgstr ""
+
+#: hostingsvcs/github.py:438
+msgid "Private"
+msgstr ""
+
+#: hostingsvcs/github.py:453
+msgid "Private Organization"
+msgstr ""
+
+#: hostingsvcs/github.py:527 hostingsvcs/gitlab.py:362
+msgid "A repository with this name was not found, or your user may not own it."
+msgstr ""
+
+#: hostingsvcs/github.py:531
+msgid "A repository with this organization or name was not found."
+msgstr ""
+
+#: hostingsvcs/github.py:535
+msgid ""
+"A repository with this organization or name was not found, or your user may "
+"not have access to it."
+msgstr ""
+
+#: hostingsvcs/github.py:546
+msgid "This is a private repository, but you have selected a public plan."
+msgstr ""
+
+#: hostingsvcs/github.py:550
+msgid "This is a public repository, but you have selected a private plan."
+msgstr ""
+
+#: hostingsvcs/github.py:615
+msgid ""
+"Enter your two-factor authentication code and re-enter your password to link "
+"your account. This code will be sent to you by GitHub."
+msgstr ""
+
+#: hostingsvcs/gitlab.py:37
+msgid "GitLab group name"
+msgstr ""
+
+#: hostingsvcs/gitlab.py:90
+msgid "Group"
+msgstr ""
+
+#: hostingsvcs/gitlab.py:141
+msgid "A GitLab server was not found at the provided URL."
+msgstr ""
+
+#: hostingsvcs/gitlab.py:145 hostingsvcs/rbgateway.py:83
+msgid "The username or password is incorrect."
+msgstr ""
+
+#: hostingsvcs/gitlab.py:377
+msgid ""
+"A repository with this name was not found on this group, or your user may "
+"not have access to it."
+msgstr ""
+
+#: hostingsvcs/gitlab.py:381
+msgid ""
+"A group with this name was not found, or your user may not have access to it."
+msgstr ""
+
+#: hostingsvcs/gitlab.py:515 hostingsvcs/rbgateway.py:252
+#: hostingsvcs/rbgateway.py:278 hostingsvcs/unfuddle.py:254
+msgid "The login or password is incorrect."
+msgstr ""
+
+#: hostingsvcs/jira.py:21
+msgid "JIRA URL"
+msgstr ""
+
+#: hostingsvcs/kiln.py:24
+msgid ""
+"The domain used for your Kiln site, as in https://&lt;domain&gt;.kilnhg.com/"
+msgstr ""
+
+#: hostingsvcs/kiln.py:33
+msgid "The Kiln project name. Defaults to \"Repositories\"."
+msgstr ""
+
+#: hostingsvcs/kiln.py:41
+msgid "The Kiln group name. Defaults to \"Group\"."
+msgstr ""
+
+#: hostingsvcs/kiln.py:187
+msgid "Kiln On Demand"
+msgstr ""
+
+#: hostingsvcs/kiln.py:232
+msgid ""
+"The repository with this project, group, and name was not found. Please "
+"verify that the information exactly matches the configuration on Kiln."
+msgstr ""
+
+#: hostingsvcs/management/commands/reset-github-tokens.py:16
+msgid "Resets associated GitHub tokens"
+msgstr ""
+
+#: hostingsvcs/management/commands/reset-github-tokens.py:23
+msgid "Answer yes to all questions"
+msgstr ""
+
+#: hostingsvcs/management/commands/reset-github-tokens.py:27
+msgid "Comma-separated list of Local Sites to filter by"
+msgstr ""
+
+#: hostingsvcs/management/commands/reset-github-tokens.py:52
+#, python-format
+msgid "Reset token for %(site_name)s (%(username)s) [Y/n] "
+msgstr ""
+
+#: hostingsvcs/management/commands/reset-github-tokens.py:58
+#, python-format
+msgid "Reset token for %s [Y/n] "
+msgstr ""
+
+#: hostingsvcs/management/commands/reset-github-tokens.py:74
+#, python-format
+msgid "Password for %s: "
+msgstr ""
+
+#: hostingsvcs/management/commands/reset-github-tokens.py:81
+#, python-format
+msgid "Successfully reset token for %s\n"
+msgstr ""
+
+#: hostingsvcs/management/commands/reset-github-tokens.py:90
+#, python-format
+msgid "Unexpected error: %s\n"
+msgstr ""
+
+#: hostingsvcs/models.py:22 scmtools/models.py:143
+msgid "Local site"
+msgstr "本地站点"
+
+#: hostingsvcs/rbgateway.py:33
+msgid ""
+"The name of the repository. This is the name specified in the configuration "
+"file for rb-gateway."
+msgstr ""
+
+#: hostingsvcs/rbgateway.py:79
+msgid "A Review Board Gateway server was not found at the provided URL."
+msgstr ""
+
+#: hostingsvcs/redmine.py:13
+msgid "Redmine URL"
+msgstr ""
+
+#: hostingsvcs/service.py:361 hostingsvcs/service.py:409
+#, python-format
+msgid ""
+"Internal error when generating %(field)s field (Missing key \"%(key)s\"). "
+"Please report this."
+msgstr ""
+
+#: hostingsvcs/trac.py:13
+msgid "Trac URL"
+msgstr ""
+
+#: hostingsvcs/unfuddle.py:22
+msgid "Unfuddle account domain"
+msgstr ""
+
+#: hostingsvcs/unfuddle.py:26
+msgid "This is the <tt>domain</tt> part of <tt>domain.unfuddle.com</tt>"
+msgstr ""
+
+#: hostingsvcs/unfuddle.py:30
+msgid "Unfuddle project ID"
+msgstr ""
+
+#: hostingsvcs/unfuddle.py:35
+msgid ""
+"This is the numeric project ID found in the URL on your Project page (for "
+"example, https://myaccount.unfuddle.com/a#/projects/<b>&lt;id&gt;</b>)"
+msgstr ""
+
+#: hostingsvcs/unfuddle.py:212
+msgid "A repository with this name was not found"
+msgstr ""
+
+#: hostingsvcs/versionone.py:12
+msgid "VersionOne URL"
+msgstr ""
+
+#: notifications/admin.py:25
+msgid "Payload"
+msgstr ""
+
+#: notifications/forms.py:46
+#, python-format
+msgid "Repository with ID %(id)s is invalid."
+msgstr ""
+
+#: notifications/forms.py:63
+#, python-format
+msgid "No such repository with ID %(value)s."
+msgstr ""
+
+#: notifications/forms.py:64
+#, python-format
+msgid "\"%(pk)s\" is an invalid repository ID."
+msgstr ""
+
+#: notifications/models.py:24
+msgid "All events"
+msgstr "全部事件"
+
+#: notifications/models.py:25
+msgid "Review request closed"
+msgstr "审查请求已关闭"
+
+#: notifications/models.py:26
+msgid "Review request published"
+msgstr "审查请求已发布"
+
+#: notifications/models.py:27
+msgid "Review request reopened"
+msgstr "审查请求已重新打开"
+
+#: notifications/models.py:28
+msgid "Review published"
+msgstr "审查已发布"
+
+#: notifications/models.py:29
+msgid "Reply published"
+msgstr "回复已发布"
+
+#: notifications/models.py:43
+msgid "JSON"
+msgstr ""
+
+#: notifications/models.py:44
+msgid "XML"
+msgstr ""
+
+#: notifications/models.py:45
+msgid "Form Data"
+msgstr ""
+
+#: notifications/models.py:53
+msgid "All review requests"
+msgstr "全部审查请求"
+
+#: notifications/models.py:55
+msgid "Only review requests on selected repositories"
+msgstr "仅在选中的仓库进行审查请求"
+
+#: notifications/models.py:57
+msgid ""
+"Only review requests not associated with a repository (file attachments only)"
+msgstr "和仓库无关的审查请求(仅为文件附件)"
+
+#: notifications/models.py:64
+msgid "events"
+msgstr "事件"
+
+#: notifications/models.py:66
+msgid "Select any or all events that should trigger this Webhook."
+msgstr ""
+
+#: notifications/models.py:71
+msgid ""
+"When the event is triggered, HTTP requests will be made against this URL."
+msgstr ""
+"当事件触发，发出该 URl 的　HTTP 请求．"
+
+#: notifications/models.py:75
+msgid "encoding"
+msgstr "编码"
+
+#: notifications/models.py:79
+msgid "Payload contents will be encoded in this format."
+msgstr ""
+
+#: notifications/models.py:83
+msgid "use custom payload content"
+msgstr ""
+
+#: notifications/models.py:87
+msgid "custom content"
+msgstr ""
+
+#: notifications/models.py:90
+msgid ""
+"You can override what is sent to the URL above. If left blank, the default "
+"payload will be sent."
+msgstr ""
+
+#: notifications/models.py:95
+msgid "HMAC secret"
+msgstr ""
+
+#: notifications/models.py:97
+msgid ""
+"If specified, the HMAC digest for the Webhook payload will be signed with "
+"the given secret."
+msgstr ""
+
+#: notifications/models.py:102
+msgid "apply to"
+msgstr "应用于"
+
+#: notifications/models.py:113
+msgid "If set, this Webhook will be limited to these repositories."
+msgstr ""
+
+#: notifications/models.py:121
+msgid "If set, this Webhook will be limited to this site."
+msgstr ""
+
+#: notifications/models.py:125
+msgid ""
+"Extra JSON data that can be tied to this Webhook registration. It will not "
+"be sent with the Webhook request."
+msgstr ""
+
+#: notifications/models.py:160
+msgid "webhook"
+msgstr ""
+
+#: reviews/admin.py:29
+msgid "Comment Text"
+msgstr ""
+
+#: reviews/admin.py:38 reviews/admin.py:60 reviews/admin.py:85
+#: reviews/admin.py:117 reviews/admin.py:203 scmtools/admin.py:25
+msgid "General Information"
+msgstr "常用信息"
+
+#: reviews/admin.py:42 reviews/admin.py:127 reviews/admin.py:212
+#: reviews/builtin_fields.py:777
+msgid "Reviewers"
+msgstr "评审者"
+
+#: reviews/admin.py:46
+msgid ""
+"<p>A default reviewer will cover all repositories, unless assigned one or "
+"more specific repositories below.</p>"
+msgstr ""
+"<p>一个默认的审查者将负责所有的仓库，除非指定一个或多个仓库．</p>"
+
+#: reviews/admin.py:64 scmtools/admin.py:70
+msgid "Access Control"
+msgstr "访问控制"
+
+#: reviews/admin.py:90 reviews/admin.py:130 reviews/admin.py:215
+msgid "Related Objects"
+msgstr ""
+
+#: reviews/admin.py:166
+msgid "Close selected review requests as submitted"
+msgstr ""
+
+#: reviews/admin.py:180
+msgid "Close selected review requests as discarded"
+msgstr ""
+
+#: reviews/admin.py:192
+msgid "Reopen selected review requests"
+msgstr ""
+
+#: reviews/builtin_fields.py:190
+msgid "Status"
+msgstr ""
+
+#: reviews/builtin_fields.py:226
+#: templates/reviews/review_issue_summary_table.html:41
+msgid "Description"
+msgstr "描述"
+
+#: reviews/builtin_fields.py:236
+msgid "Testing Done"
+msgstr "已测试"
+
+#: reviews/builtin_fields.py:326
+msgid "Depends On"
+msgstr "依赖于"
+
+#: reviews/builtin_fields.py:362
+msgid "Blocks"
+msgstr ""
+
+#: reviews/builtin_fields.py:393 templates/admin/database.html:32
+#: templates/admin/index.html:32
+msgid "Change"
+msgstr ""
+
+#: reviews/builtin_fields.py:407
+#, python-format
+msgid "%s (pending)"
+msgstr ""
+
+#: reviews/builtin_fields.py:422
+msgid "Commit"
+msgstr "提交"
+
+#: reviews/builtin_fields.py:497
+#, python-format
+msgid "%d files"
+msgstr ""
+
+#: reviews/builtin_fields.py:514
+msgid "Show changes"
+msgstr ""
+
+#: reviews/builtin_fields.py:561
+#, python-format
+msgid "%s more"
+msgstr ""
+
+#: reviews/builtin_fields.py:590
+#, python-format
+msgid "Diff r%s"
+msgstr ""
+
+#: reviews/builtin_fields.py:613
+msgid "File Captions"
+msgstr ""
+
+#: reviews/builtin_fields.py:629 templates/reviews/review_request_box.html:96
+msgid "Files"
+msgstr ""
+
+#: reviews/builtin_fields.py:640
+msgid "Removed Files"
+msgstr ""
+
+#: reviews/builtin_fields.py:647
+msgid "Added Files"
+msgstr ""
+
+#: reviews/builtin_fields.py:696
+msgid "Screenshot Captions"
+msgstr ""
+
+#: reviews/builtin_fields.py:712 templates/admin/widgets/w-stats.html:16
+#: templates/reviews/review_request_box.html:76
+msgid "Screenshots"
+msgstr ""
+
+#: reviews/builtin_fields.py:762
+msgid "Information"
+msgstr "信息"
+
+#: reviews/forms.py:28 templates/admin/widgets/w-repositories.html:7
+msgid "Name"
+msgstr "用户名"
+
+#: reviews/forms.py:33
+msgid "File regular expression"
+msgstr "文件正则表达式"
+
+#: reviews/forms.py:37 reviews/models/default_reviewer.py:35
+msgid ""
+"File paths are matched against this regular expression to determine if these "
+"reviewers should be added."
+msgstr "匹配该正则表达式的文件路径来决定是否添加这些审查者．"
+
+#: reviews/forms.py:44
+msgid ""
+"The list of repositories to specifically match this default reviewer for. If "
+"left empty, this will match all repositories."
+msgstr ""
+"与默认审查者匹配的仓库列表．如果左边为空，将匹配所有仓库．"
+
+#: reviews/forms.py:67
+#, python-format
+msgid "The repository '%s' doesn't exist on the local site."
+msgstr "仓库 '%s' 在本地站点上不存在．"
+
+#: reviews/models/base_comment.py:21
+msgid "Resolved"
+msgstr ""
+
+#: reviews/models/base_comment.py:22
+msgid "Dropped"
+msgstr ""
+
+#: reviews/models/base_comment.py:24
+msgid "issue opened"
+msgstr ""
+
+#: reviews/models/base_comment.py:25
+msgid "issue status"
+msgstr ""
+
+#: reviews/models/base_comment.py:34
+msgid "reply to"
+msgstr ""
+
+#: reviews/models/base_comment.py:36
+msgid "comment text"
+msgstr ""
+
+#: reviews/models/base_review_request_details.py:27
+msgid "description"
+msgstr ""
+
+#: reviews/models/base_review_request_details.py:29
+msgid "description in rich text"
+msgstr ""
+
+#: reviews/models/base_review_request_details.py:32
+msgid "testing done"
+msgstr ""
+
+#: reviews/models/base_review_request_details.py:34
+msgid "testing done in rich text"
+msgstr ""
+
+#: reviews/models/base_review_request_details.py:37
+msgid "bugs"
+msgstr ""
+
+#: reviews/models/base_review_request_details.py:38
+msgid "branch"
+msgstr ""
+
+#: reviews/models/base_review_request_details.py:305
+msgid "(no summary)"
+msgstr ""
+
+#: reviews/models/default_reviewer.py:33
+msgid "file regex"
+msgstr ""
+
+#: reviews/models/default_reviewer.py:38
+msgid "default groups"
+msgstr "默认组"
+
+#: reviews/models/default_reviewer.py:40
+msgid "default users"
+msgstr "默认用户"
+
+#: reviews/models/diff_comment.py:19
+msgid "file diff"
+msgstr ""
+
+#: reviews/models/diff_comment.py:22
+msgid "interdiff file"
+msgstr ""
+
+#: reviews/models/diff_comment.py:28
+msgid "first line"
+msgstr ""
+
+#: reviews/models/diff_comment.py:30
+msgid "number of lines"
+msgstr ""
+
+#: reviews/models/file_attachment_comment.py:20
+msgid "file attachment"
+msgstr "文件附件"
+
+#: reviews/models/file_attachment_comment.py:24
+msgid "diff against file attachment"
+msgstr ""
+
+#: reviews/models/group.py:37
+msgid "display name"
+msgstr ""
+
+#: reviews/models/group.py:39
+msgid "mailing list"
+msgstr "邮件列表"
+
+#: reviews/models/group.py:42
+msgid "The mailing list review requests and discussions are sent to."
+msgstr "审查请求和讨论会发给该邮件列表。"
+
+#: reviews/models/group.py:45
+msgid "send e-mail only to the mailing list"
+msgstr "仅向邮件列表发送电子邮件"
+
+#: reviews/models/group.py:47
+msgid ""
+"If a mailing list is specified and this option is checked, group members "
+"will not be individually included on e-mails, and only the mailing list will "
+"be used. This is highly recommended for large groups."
+msgstr "如果指定了邮件列表并且该选项已勾选，组成员将不会单独包含在电子邮件，而"
+"仅使用邮件列表。强烈推荐给大组。"
+
+#: reviews/models/group.py:54
+msgid "users"
+msgstr ""
+
+#: reviews/models/group.py:60
+msgid "add new users by default"
+msgstr "默认添加新用户"
+
+#: reviews/models/group.py:62
+msgid ""
+"If a local site is set, this will automatically add users to this group when "
+"those users are added to the local site. If there is no local site, users "
+"will be automatically added to this group when they are registered."
+msgstr "如果设置了本地站点，当用户添加到本地站点就会被自动添加到该组．如果没有"
+"本地站点，当新用户注册就会被自动添加到该组．"
+
+#: reviews/models/group.py:69
+msgid "incoming review request count"
+msgstr "接收的审查请求总数"
+
+#: reviews/models/group.py:73
+msgid "invite only"
+msgstr "仅邀请"
+
+#: reviews/models/group.py:75
+msgid ""
+"If checked, only the users listed below will be able to view review requests "
+"sent to this group."
+msgstr "如果勾选，只有下面的用户才能浏览发送给该组的审查请求．"
+
+#: reviews/models/group.py:141
+msgid "A group with this name already exists"
+msgstr ""
+
+#: reviews/models/group.py:147
+msgid "review group"
+msgstr "审查组"
+
+#: reviews/models/review.py:34 reviews/models/review_request_draft.py:41
+msgid "review request"
+msgstr ""
+
+#: reviews/models/review.py:35
+msgid "user"
+msgstr ""
+
+#: reviews/models/review.py:40
+msgid "ship it"
+msgstr ""
+
+#: reviews/models/review.py:42
+msgid "Indicates whether the reviewer thinks this code is ready to ship."
+msgstr ""
+
+#: reviews/models/review.py:49
+msgid "Base reply to"
+msgstr ""
+
+#: reviews/models/review.py:50
+msgid "The top-most review in the discussion thread for this review reply."
+msgstr ""
+
+#: reviews/models/review.py:52 reviews/models/review_request.py:170
+msgid "e-mail message ID"
+msgstr ""
+
+#: reviews/models/review.py:54 reviews/models/review_request.py:172
+msgid "time e-mailed"
+msgstr ""
+
+#: reviews/models/review.py:58
+msgid "body (top)"
+msgstr ""
+
+#: reviews/models/review.py:60
+msgid "The review text shown above the diff and screenshot comments."
+msgstr ""
+
+#: reviews/models/review.py:63
+msgid "body (top) in rich text"
+msgstr ""
+
+#: reviews/models/review.py:67
+msgid "body (bottom)"
+msgstr ""
+
+#: reviews/models/review.py:69
+msgid "The review text shown below the diff and screenshot comments."
+msgstr ""
+
+#: reviews/models/review.py:72
+msgid "body (bottom) in rich text"
+msgstr ""
+
+#: reviews/models/review.py:78
+msgid "body (top) reply to"
+msgstr ""
+
+#: reviews/models/review.py:79
+msgid "The review that the body (top) field is in reply to."
+msgstr ""
+
+#: reviews/models/review.py:83
+msgid "body (bottom) reply to"
+msgstr ""
+
+#: reviews/models/review.py:84
+msgid "The review that the body (bottom) field is in reply to."
+msgstr ""
+
+#: reviews/models/review.py:86
+msgid "comments"
+msgstr ""
+
+#: reviews/models/review.py:90
+msgid "screenshot comments"
+msgstr ""
+
+#: reviews/models/review.py:95
+msgid "file attachment comments"
+msgstr ""
+
+#: reviews/models/review_request.py:141
+msgid "Pending Review"
+msgstr ""
+
+#: reviews/models/review_request.py:153
+#: reviews/models/review_request_draft.py:35
+msgid "summary"
+msgstr ""
+
+#: reviews/models/review_request.py:156
+msgid "submitter"
+msgstr ""
+
+#: reviews/models/review_request.py:158
+msgid "time added"
+msgstr ""
+
+#: reviews/models/review_request.py:163
+msgid "change number"
+msgstr ""
+
+#: reviews/models/review_request.py:182
+#: reviews/models/review_request_draft.py:59
+msgid "target groups"
+msgstr ""
+
+#: reviews/models/review_request.py:186
+#: reviews/models/review_request_draft.py:63
+msgid "target people"
+msgstr ""
+
+#: reviews/models/review_request.py:192
+#: reviews/models/review_request_draft.py:69
+msgid "screenshots"
+msgstr ""
+
+#: reviews/models/review_request.py:196
+#: reviews/models/review_request_draft.py:73
+msgid "inactive screenshots"
+msgstr ""
+
+#: reviews/models/review_request.py:197
+msgid ""
+"A list of screenshots that used to be but are no longer associated with this "
+"review request."
+msgstr ""
+
+#: reviews/models/review_request.py:205
+#: reviews/models/review_request_draft.py:80
+msgid "file attachments"
+msgstr "文件附件"
+
+#: reviews/models/review_request.py:209
+msgid "inactive file attachments"
+msgstr ""
+
+#: reviews/models/review_request.py:210
+msgid ""
+"A list of file attachments that used to be but are no longer associated with "
+"this review request."
+msgstr ""
+
+#: reviews/models/review_request.py:217
+msgid "file attachment histories"
+msgstr ""
+
+#: reviews/models/review_request.py:222
+msgid "change descriptions"
+msgstr ""
+
+#: reviews/models/review_request.py:228
+#: reviews/models/review_request_draft.py:94
+msgid "Dependencies"
+msgstr ""
+
+#: reviews/models/review_request.py:236
+msgid "last review activity timestamp"
+msgstr ""
+
+#: reviews/models/review_request.py:241
+msgid "ship-it count"
+msgstr ""
+
+#: reviews/models/review_request.py:244
+msgid "open issue count"
+msgstr ""
+
+#: reviews/models/review_request.py:248
+msgid "resolved issue count"
+msgstr ""
+
+#: reviews/models/review_request.py:252
+msgid "dropped issue count"
+msgstr ""
+
+#: reviews/models/review_request_draft.py:53
+msgid "change description"
+msgstr ""
+
+#: reviews/models/review_request_draft.py:84
+msgid "inactive files"
+msgstr ""
+
+#: reviews/models/screenshot.py:28
+msgid "image"
+msgstr ""
+
+#: reviews/models/screenshot_comment.py:16
+msgid "screenshot"
+msgstr ""
+
+#: reviews/models/screenshot_comment.py:21
+msgid "sub-image X"
+msgstr ""
+
+#: reviews/models/screenshot_comment.py:22
+msgid "sub-image Y"
+msgstr ""
+
+#: reviews/models/screenshot_comment.py:23
+msgid "sub-image width"
+msgstr ""
+
+#: reviews/models/screenshot_comment.py:24
+msgid "sub-image height"
+msgstr ""
+
+#: reviews/templatetags/reviewtags.py:498
+msgid "Click to star"
+msgstr ""
+
+#: reviews/templatetags/reviewtags.py:654
+#, python-format
+msgid "(line %d)"
+msgstr ""
+
+#: reviews/templatetags/reviewtags.py:656
+#, python-format
+msgid "(lines %d - %d)"
+msgstr ""
+
+#: reviews/ui/markdownui.py:42
+#, python-format
+msgid "Error while rendering Markdown content: %s"
+msgstr ""
+
+#: reviews/views.py:298
+msgid "(None - File attachments only)"
+msgstr "(无 - 仅仅是文件附件)"
+
+#: reviews/views.py:1697
+msgid "Unable to find bug tracker service"
+msgstr ""
+
+#: reviews/views.py:1701
+#, python-format
+msgid "Bug tracker %s does not support metadata"
+msgstr ""
+
+#: reviews/views.py:1710
+#, python-format
+msgid "No bug metadata found for bug %(bug_id)s on bug tracker %(bug_tracker)s"
+msgstr ""
+
+#: scmtools/admin.py:29
+msgid "Repository Hosting"
+msgstr "仓库主机"
+
+#: scmtools/admin.py:74
+msgid "Advanced Settings"
+msgstr "高级设置"
+
+#: scmtools/admin.py:106
+msgid "Hooks"
+msgstr ""
+
+#: scmtools/admin.py:111
+msgid "RBTools Setup"
+msgstr ""
+
+#: scmtools/admin.py:122
+msgid "Show"
+msgstr ""
+
+#: scmtools/core.py:136
+msgid ""
+"The path to the repository. This will generally be the URL you would use to "
+"check out the repository."
+msgstr ""
+"仓库路径．将生成 URL 检出仓库．"
+
+#: scmtools/errors.py:30
+#, python-format
+msgid "Changeset %s is empty"
+msgstr ""
+
+#: scmtools/errors.py:36
+#, python-format
+msgid "The revision '%(revision)s' for '%(path)s' isn't in a valid format"
+msgstr ""
+
+#: scmtools/errors.py:60
+#, python-format
+msgid "The file '%s' could not be found in the repository"
+msgstr ""
+
+#: scmtools/errors.py:63
+#, python-format
+msgid ""
+"The file '%(path)s' (r%(revision)s, commit %(base_commit_id)s) could not be "
+"found in the repository"
+msgstr ""
+
+#: scmtools/errors.py:71
+#, python-format
+msgid ""
+"The file '%(path)s' (r%(revision)s) could not be found in the repository"
+msgstr ""
+
+#: scmtools/errors.py:91
+msgid "A repository was not found at the specified path."
+msgstr ""
+
+#: scmtools/errors.py:110
+msgid "A verified SSL certificate is required to connect to this repository."
+msgstr ""
+
+#: scmtools/forms.py:42
+msgid "Repository Information"
+msgstr "仓库信息"
+
+#: scmtools/forms.py:43
+msgid "Bug Tracker"
+msgstr "缺陷跟踪"
+
+#: scmtools/forms.py:44
+msgid "Review Board Server SSH Key"
+msgstr ""
+
+#: scmtools/forms.py:47
+msgid "(None - Custom Repository)"
+msgstr "(无 - 自定义仓库)"
+
+#: scmtools/forms.py:50
+msgid "(None)"
+msgstr "(无)"
+
+#: scmtools/forms.py:53
+msgid "(Custom Bug Tracker)"
+msgstr "(自定义缺陷跟踪)"
+
+#: scmtools/forms.py:58
+msgid "Default"
+msgstr "默认"
+
+#: scmtools/forms.py:62 templates/admin/repository_confirmations.html:59
+msgid "Re-edit repository"
+msgstr ""
+
+#: scmtools/forms.py:66 templates/admin/repository_confirmations.html:58
+msgid "I trust this host"
+msgstr ""
+
+#: scmtools/forms.py:71
+msgid "Hosting service"
+msgstr "主机服务"
+
+#: scmtools/forms.py:76
+msgid "Service URL"
+msgstr ""
+
+#: scmtools/forms.py:81
+msgid "Account"
+msgstr ""
+
+#: scmtools/forms.py:83
+msgid "<Link a new account>"
+msgstr ""
+
+#: scmtools/forms.py:84
+msgid ""
+"Link this repository to an account on the hosting service. This username may "
+"be used as part of the repository URL, depending on the hosting service and "
+"plan."
+msgstr ""
+
+#: scmtools/forms.py:91 scmtools/forms.py:159
+msgid "Account username"
+msgstr "帐号用户名"
+
+#: scmtools/forms.py:96
+msgid "Account password"
+msgstr "帐号密码"
+
+#: scmtools/forms.py:102
+msgid "Two-factor auth code"
+msgstr ""
+
+#: scmtools/forms.py:108
+msgid "Repository type"
+msgstr "仓库类型"
+
+#: scmtools/forms.py:112
+msgid "Repository plan"
+msgstr "仓库计划"
+
+#: scmtools/forms.py:114
+msgid ""
+"The plan for your repository on this hosting service. This must match what "
+"is set for your repository."
+msgstr ""
+
+#: scmtools/forms.py:129
+msgid "Associate my SSH key with the hosting service"
+msgstr ""
+
+#: scmtools/forms.py:131
+msgid ""
+"Add the Review Board public SSH key to the list of authorized SSH keys on "
+"the hosting service."
+msgstr ""
+
+#: scmtools/forms.py:134
+#, python-format
+msgid ""
+"This repository type supports SSH key association, but the Review Board "
+"server does not have an SSH key. <a href=\"%s\">Add an SSH key.</a>"
+msgstr ""
+
+#: scmtools/forms.py:140
+msgid "Use hosting service's bug tracker"
+msgstr "使用主机服务的缺陷跟踪"
+
+#: scmtools/forms.py:145 templates/admin/widgets/w-repositories.html:8
+msgid "Type"
+msgstr "类型"
+
+#: scmtools/forms.py:150
+msgid "URL"
+msgstr ""
+
+#: scmtools/forms.py:155
+msgid "Bug tracker plan"
+msgstr "缺陷跟踪计划"
+
+#: scmtools/forms.py:164 scmtools/models.py:115
+msgid "Bug tracker URL"
+msgstr "缺陷跟踪 URL"
+
+#: scmtools/forms.py:169
+#, python-format
+msgid ""
+"The optional path to the bug tracker for this repository. The path should "
+"resemble: http://www.example.com/issues?id=%%s, where %%s will be the bug "
+"number."
+msgstr ""
+
+#: scmtools/forms.py:180
+msgid "Use ticket-based authentication"
+msgstr ""
+
+#: scmtools/forms.py:564
+msgid "This tool is not supported on the given hosting service"
+msgstr ""
+
+#: scmtools/forms.py:586
+msgid "This account is not compatible with this hosting service configuration"
+msgstr ""
+
+#: scmtools/forms.py:594
+msgid "An account must be linked in order to use this hosting service"
+msgstr ""
+
+#: scmtools/forms.py:670
+#, python-format
+msgid "Unable to link the account: %s"
+msgstr ""
+
+#: scmtools/forms.py:675
+#, python-format
+msgid "Unknown error when linking the account: %s"
+msgstr ""
+
+#: scmtools/forms.py:718
+msgid "A hosting service must be chosen in order to use this"
+msgstr ""
+
+#: scmtools/forms.py:754
+msgid "This bug tracker type is not supported"
+msgstr ""
+
+#: scmtools/forms.py:1007
+msgid ""
+"Unable to associate SSH key with your hosting service. This is most often "
+"the result of a problem communicating with the hosting service. Please try "
+"again later or manually upload the SSH key to your hosting service."
+msgstr ""
+
+#: scmtools/forms.py:1064 scmtools/forms.py:1082
+msgid "Not a valid hosting service"
+msgstr ""
+
+#: scmtools/forms.py:1102
+#, python-format
+msgid ""
+"The Python module \"%s\" is not installed. You may need to restart the "
+"server after installing it."
+msgstr ""
+
+#: scmtools/forms.py:1113
+#, python-format
+msgid "The executable \"%s\" is not in the path."
+msgstr ""
+
+#: scmtools/forms.py:1348
+msgid "users with access"
+msgstr ""
+
+#: scmtools/forms.py:1350
+msgid "review groups with access"
+msgstr ""
+
+#: scmtools/git.py:50
+msgid ""
+"The SHA1 is too short. Make sure the diff is generated with `git diff --full-"
+"index`."
+msgstr ""
+
+#: scmtools/git.py:65
+msgid ""
+"For local Git repositories, this should be the path to a .git directory that "
+"Review Board can read from. For remote Git repositories, it should be the "
+"clone URL."
+msgstr ""
+"本地 Git 仓库，该路径必须是 Review Board 可以读到的 .git 目录．远程 Git 仓库，"
+"它必须是 clone URL．"
+
+#: scmtools/git.py:535
+#, python-format
+msgid "Permission denied accessing the local Git repository '%s'"
+msgstr ""
+
+#: scmtools/git.py:538
+msgid "Unable to retrieve information from local Git repository"
+msgstr ""
+
+#: scmtools/models.py:92
+msgid "Raw file URL mask"
+msgstr "元文件 URL 掩码"
+
+#: scmtools/models.py:95
+msgid ""
+"A URL mask used to check out a particular revision of a file using HTTP. "
+"This is needed for repository types that can't access remote files natively. "
+"Use <tt>&lt;revision&gt;</tt> and <tt>&lt;filename&gt;</tt> in the URL in "
+"place of the revision and filename parts of the path."
+msgstr ""
+
+#: scmtools/models.py:110
+msgid "Hosting service account"
+msgstr "主机服务帐号"
+
+#: scmtools/models.py:118
+#, python-format
+msgid ""
+"This should be the full path to a bug in the bug tracker for this "
+"repository, using '%s' in place of the bug ID."
+msgstr ""
+
+#: scmtools/models.py:123
+msgid ""
+"The encoding used for files in this repository. This is an advanced setting "
+"and should only be used if you're sure you need it."
+msgstr ""
+"这个仓库里的文件使用的编码．这是个高级设置请确认你真的需要设置它．"
+
+#: scmtools/models.py:127
+msgid "Show this repository"
+msgstr "显示这个仓库"
+
+#: scmtools/models.py:129
+msgid ""
+"Use this to control whether or not a repository is shown when creating new "
+"review requests. Existing review requests are unaffected."
+msgstr ""
+"使用这个来控制当创建新审查请求是否显示该仓库．已存在的审查请求不受影响．"
+
+#: scmtools/models.py:136
+msgid ""
+"Archived repositories do not show up in lists of repositories, and aren't "
+"open to new review requests."
+msgstr ""
+
+#: scmtools/models.py:147
+msgid "publicly accessible"
+msgstr "公开可访问"
+
+#: scmtools/models.py:149
+msgid ""
+"Review requests and files on public repositories are visible to anyone. "
+"Private repositories must explicitly list the users and groups that can "
+"access them."
+msgstr "公开仓库里的审查请求和文件对任何人均可见．私有仓库只对相关用户和组开放．"
+
+#: scmtools/models.py:158
+msgid "Users with access"
+msgstr ""
+
+#: scmtools/models.py:159
+msgid "A list of users with explicit access to the repository."
+msgstr ""
+
+#: scmtools/models.py:165
+msgid "Review groups with access"
+msgstr ""
+
+#: scmtools/models.py:166
+msgid ""
+"A list of invite-only review groups whose members have explicit access to "
+"the repository."
+msgstr ""
+
+#: scmtools/models.py:170
+msgid "Hooks UUID"
+msgstr ""
+
+#: scmtools/models.py:174
+msgid "Unique identifier used for validating incoming webhooks."
+msgstr "唯一的标识鉴别接收的 webhooks．"
+
+#: scmtools/models.py:639
+msgid "A repository with this name already exists"
+msgstr ""
+
+#: scmtools/models.py:644
+msgid "A repository with this path already exists"
+msgstr ""
+
+#: scmtools/perforce.py:170
+msgid ""
+"The specified Perforce port includes ssl:, but the p4python library was "
+"built without SSL support or the system library path is incorrect."
+msgstr ""
+
+#: scmtools/perforce.py:250
+msgid ""
+"The Perforce port identifier (P4PORT) for the repository. If your server is "
+"set up to use SSL (2012.1+), prefix the port with \"ssl:\". If your server "
+"connection is secured with stunnel (2011.x or older), prefix the port with "
+"\"stunnel:\"."
+msgstr ""
+
+#: scmtools/plastic.py:24
+msgid "The Plastic repository spec in the form of [repo]@[hostname]:[port]."
+msgstr ""
+
+#: scmtools/svn/__init__.py:380
+msgid "The certificate is not yet valid."
+msgstr ""
+
+#: scmtools/svn/__init__.py:383
+msgid "The certificate has expired."
+msgstr ""
+
+#: scmtools/svn/__init__.py:386
+msgid "The certificate hostname does not match."
+msgstr ""
+
+#: scmtools/svn/__init__.py:390
+msgid ""
+"The certificate is not issued by a trusted authority. Use the fingerprint to "
+"validate the certificate manually."
+msgstr ""
+
+#: scmtools/svn/__init__.py:441
+msgid "SVN integration requires either subvertpy or pysvn"
+msgstr ""
+
+#: scmtools/svn/__init__.py:461
+#, python-format
+msgid ""
+"Unable to create directory %(dirname)s, which is needed for the Subversion "
+"configuration. Create this directory and set the web server's user as the "
+"the owner."
+msgstr ""
+
+#: scmtools/svn/pysvn.py:78
+#, python-format
+msgid ""
+"HTTPS certificate not accepted.  Please ensure that the proper certificate "
+"exists in %s for the user that reviewboard is running as."
+msgstr ""
+
+#: scmtools/svn/pysvn.py:263 scmtools/svn/subvertpy.py:310
+#, python-format
+msgid "Unable to get diff revisions %s through %s: %s"
+msgstr ""
+
+#: search/views.py:30
+msgid "All Results"
+msgstr ""
+
+#: search/views.py:35 templates/admin/widgets/w-actions.html:34
+#: templates/base/_mobile_navbar.html:28 templates/base/navbar.html:10
+msgid "Users"
+msgstr "用户"
+
+#: site/models.py:57
+msgid ""
+"Allow people outside the team to access and post review requests and reviews."
+msgstr ""
+
+#: site/validation.py:21
+#, python-format
+msgid "The user %s is not a member of this site."
+msgstr ""
+
+#: site/validation.py:40
+#, python-format
+msgid "The review group %s does not exist."
+msgstr ""
+
+#: ssh/errors.py:18
+#, python-format
+msgid ""
+"Unable to create directory %(dirname)s, which is needed for the SSH host "
+"keys. Create this directory, set the web server's user as the the owner, and "
+"make it writable only by that user."
+msgstr ""
+
+#: ssh/errors.py:34
+#, python-format
+msgid ""
+"Unable to authenticate against this repository using one of the supported "
+"authentication types (%(allowed_types)s)."
+msgstr ""
+
+#: ssh/errors.py:40
+msgid ""
+"Unable to authenticate against this repository using one of the supported "
+"authentication types."
+msgstr ""
+
+#: ssh/errors.py:52
+msgid "This SSH key is not a valid RSA or DSS key."
+msgstr ""
+
+#: ssh/errors.py:73
+#, python-format
+msgid ""
+"Warning! The host key for server %(hostname)s does not match the expected "
+"key.\n"
+"It's possible that someone is performing a man-in-the-middle attack. It's "
+"also possible that the RSA host key has just been changed. Please contact "
+"your system administrator if you're not sure. Do not accept this host key "
+"unless you're certain it's safe!"
+msgstr ""
+
+#: ssh/errors.py:92
+#, python-format
+msgid ""
+"The authenticity of the host '%(hostname)s' (%(ip)s) could not be determined."
+msgstr ""
+
+#: ssh/errors.py:100
+#, python-format
+msgid "The authenticity of the host '%(hostname)s' could not be determined."
+msgstr ""
+
+#: ssh/errors.py:111
+#, python-format
+msgid ""
+"\"%s\" is not a valid port number. Please ensure the path has the correct "
+"port number specified."
+msgstr ""
+
+#: ssh/storage.py:172 ssh/storage.py:208
+#, python-format
+msgid "Unable to write host keys file %(filename)s: %(error)s"
+msgstr ""
+
+#: ssh/storage.py:191
+#, python-format
+msgid "Unable to read host keys file %(filename)s: %(error)s"
+msgstr ""
+
+#: templates/403.html:5
+msgid "Permission denied."
+msgstr ""
+
+#: templates/403.html:9
+msgid "You do not have permission to view this item."
+msgstr ""
+
+#: templates/403.html:12
+msgid ""
+"\n"
+"   This may be because you're not logged in. Try logging in and viewing the\n"
+"   page again. If you're still seeing this, talk to your administrator.\n"
+msgstr ""
+
+#: templates/403.html:17
+msgid ""
+"\n"
+"   This usually means your account hasn't been granted access to this page. "
+"If\n"
+"   you feel this is in error, talk to your administrator.\n"
+msgstr ""
+
+#: templates/accounts/login.html:4
+msgid "Log In"
+msgstr ""
+
+#: templates/accounts/login.html:10
+msgid "Log in to Review Board"
+msgstr "登录 Review Board"
+
+#: templates/accounts/login.html:39 templates/base/_mobile_navbar.html:15
+#: templates/base/_nav_support_menu.html:29
+msgid "Log in"
+msgstr ""
+
+#: templates/accounts/login.html:47
+msgid "Create an account"
+msgstr "新建帐号"
+
+#: templates/accounts/login.html:51
+msgid "Forgot your password?"
+msgstr "忘记密码?"
+
+#: templates/accounts/password_reset.html:4
+#: templates/accounts/password_reset.html:8
+#: templates/accounts/password_reset_confirm.html:4
+msgid "Recover Password"
+msgstr ""
+
+#: templates/accounts/password_reset.html:10
+msgid ""
+"\n"
+"  Forget your password? That's okay, just enter your e-mail\n"
+"  address and we'll get you going again.\n"
+msgstr ""
+
+#: templates/accounts/password_reset.html:31
+msgid "Recover"
+msgstr ""
+
+#: templates/accounts/password_reset_complete.html:4
+#: templates/accounts/password_reset_complete.html:8
+msgid "Password Reset Complete"
+msgstr ""
+
+#: templates/accounts/password_reset_complete.html:13
+#, python-format
+msgid ""
+"\n"
+" Your password has been set. You may go ahead and\n"
+" <a href=\"%(login_url)s\">log in</a> now.\n"
+msgstr ""
+
+#: templates/accounts/password_reset_confirm.html:9
+msgid "Change Your Password"
+msgstr ""
+
+#: templates/accounts/password_reset_confirm.html:11
+msgid ""
+"\n"
+"  Please enter your new password twice so we can verify it's correct.\n"
+msgstr ""
+
+#: templates/accounts/password_reset_confirm.html:21
+msgid "New password:"
+msgstr ""
+
+#: templates/accounts/password_reset_confirm.html:27
+msgid "Confirm password:"
+msgstr ""
+
+#: templates/accounts/password_reset_confirm.html:35
+msgid "Change my password"
+msgstr ""
+
+#: templates/accounts/password_reset_confirm.html:41
+msgid "Password Reset Unsuccessful"
+msgstr ""
+
+#: templates/accounts/password_reset_confirm.html:46
+#, python-format
+msgid ""
+"\n"
+" The password reset link was invalid, either because it expired or has "
+"already\n"
+" been used. Please <a href=\"%(recover_url)s\">request a new one</a>.\n"
+msgstr ""
+
+#: templates/accounts/password_reset_done.html:4
+#: templates/accounts/password_reset_done.html:8
+msgid "Password Reset Successful"
+msgstr ""
+
+#: templates/accounts/password_reset_done.html:12
+msgid ""
+"\n"
+" Check your e-mail. If all went well, you should find instructions on\n"
+" resetting your password.\n"
+msgstr ""
+
+#: templates/accounts/password_reset_done.html:18
+msgid ""
+"\n"
+" (You can probably close this tab now.)\n"
+msgstr ""
+
+#: templates/accounts/password_reset_email.txt:1
+#, python-format
+msgid ""
+"You're receiving this e-mail because you requested a password reset\n"
+"for your account at %(site_name)s.\n"
+"\n"
+"Please go to the following page and choose a new password:"
+msgstr ""
+
+#: templates/accounts/password_reset_email.txt:7
+#, python-format
+msgid "In case you've forgotten, your username is %(user)s"
+msgstr ""
+
+#: templates/accounts/password_reset_email.txt:9
+msgid "Thanks for using Review Board!"
+msgstr ""
+
+#: templates/accounts/register.html:4
+msgid "Register account"
+msgstr ""
+
+#: templates/accounts/register.html:10
+msgid "Register an account"
+msgstr ""
+
+#: templates/accounts/register.html:80 templates/base/_mobile_navbar.html:16
+#: templates/base/_nav_support_menu.html:33
+msgid "Register"
+msgstr "注册"
+
+#: templates/admin/authentication_settings.html:33
+#, python-format
+msgid ""
+"\n"
+"%(auth_name)s Authentication Settings\n"
+msgstr ""
+
+#: templates/admin/base_site.html:4 templates/admin/login.html:4
+msgid "Administration"
+msgstr ""
+
+#: templates/admin/base_site.html:56
+msgid "Database"
+msgstr "数据库"
+
+#: templates/admin/base_site.html:57
+msgid "Extensions"
+msgstr "扩展"
+
+#: templates/admin/cache_stats.html:28
+msgid "Memory usage:"
+msgstr ""
+
+#: templates/admin/cache_stats.html:34
+msgid "Keys in cache:"
+msgstr ""
+
+#: templates/admin/cache_stats.html:40
+msgid "Cache hits:"
+msgstr ""
+
+#: templates/admin/cache_stats.html:46
+msgid "Cache misses:"
+msgstr ""
+
+#: templates/admin/cache_stats.html:52
+msgid "Cache evictions:"
+msgstr ""
+
+#: templates/admin/cache_stats.html:58
+msgid "Cache traffic:"
+msgstr ""
+
+#: templates/admin/cache_stats.html:65
+msgid "Uptime:"
+msgstr ""
+
+#: templates/admin/cache_stats.html:73
+msgid "Statistics are not available for this backend."
+msgstr "该后端不支持状态统计．"
+
+#: templates/admin/change_form.html:21
+msgid "Home"
+msgstr ""
+
+#: templates/admin/change_form.html:33
+#: templates/admin/scmtools/repository/change_form.html:24
+msgid "History"
+msgstr ""
+
+#: templates/admin/change_form.html:44
+msgid "Please correct the error below."
+msgid_plural "Please correct the errors below."
+msgstr[0] ""
+msgstr[1] ""
+
+#: templates/admin/dashboard.html:23
+msgid "Add Large Widgets +"
+msgstr ""
+
+#: templates/admin/dashboard.html:31
+msgid "Add Small Widgets +"
+msgstr ""
+
+#: templates/admin/dashboard.html:37
+msgid "Add Large Widgets"
+msgstr ""
+
+#: templates/admin/dashboard.html:52
+msgid "You have added all available large widgets."
+msgstr ""
+
+#: templates/admin/dashboard.html:58
+msgid "Add Small Widgets"
+msgstr ""
+
+#: templates/admin/dashboard.html:79
+msgid "You have added all available small widgets."
+msgstr ""
+
+#: templates/admin/database.html:14 templates/admin/index.html:14
+#, python-format
+msgid "%(name)s"
+msgstr ""
+
+#: templates/admin/database.html:16 templates/admin/index.html:16
+#, python-format
+msgid "Models available in the %(name)s application."
+msgstr ""
+
+#: templates/admin/database.html:42 templates/admin/index.html:42
+msgid "You don't have permission to edit anything."
+msgstr ""
+
+#: templates/admin/database.html:51
+msgid "My Actions"
+msgstr ""
+
+#: templates/admin/database.html:54 templates/admin/index.html:53
+#: templates/admin/widgets/w-recent-actions.html:5
+msgid "None available"
+msgstr ""
+
+#: templates/admin/feed.html:4
+#, python-format
+msgid "<p class=\"feed-error\">Unable to load feed: %(error)s</p>"
+msgstr ""
+
+#: templates/admin/manual-updates/data-dir.html:3
+msgid "Data directory changes"
+msgstr ""
+
+#: templates/admin/manual-updates/data-dir.html:7
+msgid ""
+"\n"
+"  Your site's data directory isn't properly set up. This directory is where\n"
+"  Review Board will store various state and configuration needed to access\n"
+"  repositories.\n"
+msgstr ""
+
+#: templates/admin/manual-updates/data-dir.html:15
+msgid ""
+"\n"
+"  The current data directory wasn't able to be found. Please ensure you\n"
+"  have a <tt>data</tt> directory inside your site's directory, and that it\n"
+"  is writable by the web server. Then ensure that your web server's\n"
+"  configuration has the <tt>HOME</tt> environment variable set to the\n"
+"  data directory.\n"
+msgstr ""
+
+#: templates/admin/manual-updates/data-dir.html:25
+#, python-format
+msgid ""
+"\n"
+"  Your data directory is currently at: <tt>%(data_dir)s</tt>\n"
+msgstr ""
+
+#: templates/admin/manual-updates/data-dir.html:30
+msgid "Non-standard directory name used"
+msgstr ""
+
+#: templates/admin/manual-updates/data-dir.html:32
+#, python-format
+msgid ""
+"\n"
+"  The data directory is not where we expect it. Unless you have a very\n"
+"  custom setup, it should probably be at <tt>%(expected_data_dir)s</tt>.\n"
+"  You may need to set the <tt>$HOME</tt> environment variable in the data\n"
+"  directory.\n"
+msgstr ""
+
+#: templates/admin/manual-updates/data-dir.html:44
+msgid "Configuring $HOME"
+msgstr ""
+
+#: templates/admin/manual-updates/data-dir.html:46
+msgid ""
+"\n"
+"  If you're using mod_python and Apache, you may need to add this line\n"
+"  to your Apache configuration:\n"
+msgstr ""
+
+#: templates/admin/manual-updates/data-dir.html:55
+msgid ""
+"\n"
+"  If using fastcgi or wsgi, you want to check the <tt>reviewboard.fcgi</tt> "
+"or\n"
+"  <tt>reviewboard.wsgi</tt> file in your site's <tt>htdocs</tt> directory\n"
+"  and add the following if missing:\n"
+msgstr ""
+
+#: templates/admin/manual-updates/data-dir.html:65
+msgid ""
+"\n"
+"  If you're running this on Windows, you need to add the 'HOME' variable\n"
+"  to your environment variables. Set <strong>HOME</strong> to:\n"
+msgstr ""
+
+#: templates/admin/manual-updates/data-dir.html:76
+#: templates/admin/manual-updates/ext-dir.html:20
+msgid "Permission problems"
+msgstr ""
+
+#: templates/admin/manual-updates/data-dir.html:78
+msgid ""
+"\n"
+"  The data directory must be writable by the web server. On Linux/Unix/Mac,\n"
+"  you can fix this by typing:\n"
+msgstr ""
+
+#: templates/admin/manual-updates/data-dir.html:87
+#, python-format
+msgid ""
+"\n"
+"  On Windows, right-click the data directory and change the ownership to\n"
+"  <tt>%(server_user)s</tt> and restart the server.\n"
+msgstr ""
+
+#: templates/admin/manual-updates/database-error.html:3
+msgid "A database error occurred"
+msgstr ""
+
+#: templates/admin/manual-updates/database-error.html:7
+msgid ""
+"\n"
+"  There was an error in accessing data from the database. This could be\n"
+"  a configuration error, or a problem communicating with the database.\n"
+"  If this was previously working, please be sure that your database is\n"
+"  running and is not locked.\n"
+msgstr ""
+
+#: templates/admin/manual-updates/database-error.html:15
+msgid ""
+"\n"
+"  The error is as follows:\n"
+msgstr ""
+
+#: templates/admin/manual-updates/ext-dir.html:3
+msgid "Extensions static media directory changes"
+msgstr ""
+
+#: templates/admin/manual-updates/ext-dir.html:7
+msgid ""
+"\n"
+"  Your site's extensions static media directory isn't properly set up. This\n"
+"  directory is where Review Board will store various extension media files.\n"
+"\n"
+msgstr ""
+
+#: templates/admin/manual-updates/ext-dir.html:14
+#, python-format
+msgid ""
+"\n"
+"  Your extensions static media directory is currently at: <tt>%(ext_dir)s</"
+"tt>\n"
+msgstr ""
+
+#: templates/admin/manual-updates/ext-dir.html:22
+msgid ""
+"\n"
+"  The directory must be writable by the web server. On Linux/Unix/Mac,\n"
+"  you can fix this by typing:\n"
+msgstr ""
+
+#: templates/admin/manual-updates/ext-dir.html:31
+#, python-format
+msgid ""
+"\n"
+"  On Windows, right-click the data directory and change the ownership to\n"
+"  <tt>%(server_user)s</tt>.\n"
+msgstr ""
+
+#: templates/admin/manual-updates/install-patch.html:3
+#, python-format
+msgid "Install GNU %(binaryname)s"
+msgstr ""
+
+#: templates/admin/manual-updates/install-patch.html:7
+#, python-format
+msgid ""
+"\n"
+"  GNU %(binaryname)s must be in your executable search path for the diff "
+"viewer\n"
+"  to work. The current search path is:\n"
+msgstr ""
+
+#: templates/admin/manual-updates/install-patch.html:15
+#, python-format
+msgid ""
+"\n"
+"  You can install GNU %(binaryname)s by downloading and running the\n"
+"  <a href=\"http://gnuwin32.sourceforge.net/downlinks/patch.php\">installer</"
+"a>.\n"
+"  Then add the directory containing %(binaryname)s to the system PATH\n"
+"  (Start &gt; Control Panel &gt; Advanced &gt; Environment Variables &gt;\n"
+"   System Variables &gt; PATH).\n"
+msgstr ""
+
+#: templates/admin/manual-updates/install-patch.html:24
+#, python-format
+msgid ""
+"\n"
+"  %(binaryname)s should be installed on your system by default. Make sure\n"
+"  it's in the file path and accessible by your web server.\n"
+msgstr ""
+
+#: templates/admin/manual-updates/install-patch.html:30
+#, python-format
+msgid ""
+"\n"
+"  Most Linux/UNIX systems provide a native package containing "
+"%(binaryname)s,\n"
+"  which is usually installed by default. Check with your distribution for\n"
+"  the proper package to install.\n"
+"\n"
+msgstr ""
+
+#: templates/admin/manual-updates/media-upload-dir.html:3
+msgid "Media directory changes"
+msgstr ""
+
+#: templates/admin/manual-updates/media-upload-dir.html:7
+#, python-format
+msgid ""
+"\n"
+"  Your Review Board installation does not have a %(MEDIA_ROOT)s/uploaded/"
+"images directory.\n"
+msgstr ""
+
+#: templates/admin/manual-updates/media-upload-dir.html:11
+msgid "If this is a new installation..."
+msgstr ""
+
+#: templates/admin/manual-updates/media-upload-dir.html:13
+#, python-format
+msgid ""
+"\n"
+"  Create both <tt>%(MEDIA_ROOT)s/uploaded</tt> and\n"
+"  <tt>%(MEDIA_ROOT)s/uploaded/images</tt> on the server and make both "
+"directories writable by the web\n"
+"  server. You can do so with the following commands:\n"
+msgstr ""
+
+#: templates/admin/manual-updates/media-upload-dir.html:24
+msgid "If this is an existing installation..."
+msgstr ""
+
+#: templates/admin/manual-updates/media-upload-dir.html:26
+msgid ""
+"\n"
+"  Something may have changed with your filesystem. Please check that the\n"
+"  above directory structure exists and is accessible by the web server.\n"
+msgstr ""
+
+#: templates/admin/manual-updates/server-static-config.html:3
+msgid "Static media directory changes"
+msgstr ""
+
+#: templates/admin/manual-updates/server-static-config.html:7
+msgid ""
+"\n"
+"  The location of static media files (CSS, JavaScript, images) has changed.\n"
+"  You will need to make manual changes to your web server configuration.\n"
+msgstr ""
+
+#: templates/admin/manual-updates/server-static-config.html:12
+msgid "Apache"
+msgstr ""
+
+#: templates/admin/manual-updates/server-static-config.html:21
+msgid "lighttpd"
+msgstr ""
+
+#: templates/admin/manual-updates/server-static-config.html:23
+msgid ""
+"\n"
+"  Add the following to <tt>alias.url</tt>:\n"
+msgstr ""
+
+#: templates/admin/manual-updates/server-static-config.html:31
+msgid ""
+"\n"
+"  And this to <tt>url.rewrite-once</tt>:\n"
+msgstr ""
+
+#: templates/admin/manual-updates/server-static-config.html:39
+msgid ""
+"\n"
+"  These lines will look similar to the existing lines for the media files.\n"
+msgstr ""
+
+#: templates/admin/manual-updates/server-static-config.html:43
+msgid "Finishing up"
+msgstr ""
+
+#: templates/admin/manual-updates/server-static-config.html:45
+msgid ""
+"\n"
+"  Once you have made these changes, type the following to resolve this:\n"
+msgstr ""
+
+#: templates/admin/manual-updates/version-mismatch.html:3
+msgid "Review Board version mismatch"
+msgstr ""
+
+#: templates/admin/manual-updates/version-mismatch.html:7
+#, python-format
+msgid ""
+"\n"
+"  The version of Review Board running does not match the version the\n"
+"  site was last upgraded to. You are running <b>%(current_version)s</b> and\n"
+"  the site was last upgraded to <b>%(stored_version)s</b>.\n"
+msgstr ""
+
+#: templates/admin/manual-updates/version-mismatch.html:14
+msgid ""
+"\n"
+"  Please upgrade your site to fix this by running:\n"
+msgstr ""
+
+#: templates/admin/manual_updates_required.html:4
+#: templates/admin/manual_updates_required.html:11
+msgid "Manual server updates required"
+msgstr ""
+
+#: templates/admin/manual_updates_required.html:13
+msgid ""
+"\n"
+"  A recent upgrade requires manual updates to be made on this server. After\n"
+"  these changes are made, you should restart your web server.\n"
+msgstr ""
+
+#: templates/admin/manual_updates_required.html:19
+msgid ""
+"\n"
+"  If you have any questions or problems, please contact us on our\n"
+"  <a href=\"http://groups.google.com/group/reviewboard\">mailing list</a>.\n"
+msgstr ""
+
+#: templates/admin/repository_confirmations.html:4
+msgid "SSH Public Key:"
+msgstr ""
+
+#: templates/admin/repository_confirmations.html:27
+msgid "There were errors validating this certificate:"
+msgstr ""
+
+#: templates/admin/repository_confirmations.html:35
+msgid "Certificate information:"
+msgstr ""
+
+#: templates/admin/repository_confirmations.html:37
+msgid "Hostname:"
+msgstr ""
+
+#: templates/admin/repository_confirmations.html:40
+msgid "Valid:"
+msgstr ""
+
+#: templates/admin/repository_confirmations.html:41
+#, python-format
+msgid ""
+"\n"
+"   from %(valid_from)s until %(valid_until)s\n"
+msgstr ""
+
+#: templates/admin/repository_confirmations.html:47
+msgid "Issuer:"
+msgstr ""
+
+#: templates/admin/repository_confirmations.html:49
+#: templates/admin/ssh_settings.html:26
+msgid "Fingerprint:"
+msgstr ""
+
+#: templates/admin/repository_confirmations.html:53
+msgid ""
+"\n"
+"  Do you trust this host, or do you want to go back and edit the\n"
+"  repository information?\n"
+" "
+msgstr ""
+
+#: templates/admin/repository_confirmations.html:73
+#, python-format
+msgid ""
+"\n"
+" Review Board doesn't have a public key to send to the server. You can\n"
+" <a href=\"%(ssh_settings_url)s\" target=\"ssh_settings\">create one</a>, "
+"add it to the server,\n"
+" and then try again.\n"
+msgstr ""
+
+#: templates/admin/scmtools/repository/change_form.html:19
+msgid "Show SSH Public Key"
+msgstr ""
+
+#: templates/admin/scmtools/repository/change_form.html:27
+msgid "View on site"
+msgstr ""
+
+#: templates/admin/scmtools/repository/change_form.html:47
+msgid "Account successfully linked."
+msgstr ""
+
+#: templates/admin/scmtools/repository/change_form.html:48
+msgid ""
+"\n"
+"  Your hosting account was successfully linked. You will not need to\n"
+"  link it again when fixing the remaining errors.\n"
+" "
+msgstr ""
+
+#: templates/admin/scmtools/repository/change_form.html:57
+msgid "Note:"
+msgstr ""
+
+#: templates/admin/scmtools/repository/change_form.html:58
+msgid ""
+"\n"
+" If your provider or repository requires an SSH key for access, you can "
+"click\n"
+" \"Show SSH Public Key\" to the right.\n"
+msgstr ""
+
+#: templates/admin/scmtools/repository/rbtools_setup.html:3
+#, python-format
+msgid ""
+"\n"
+" To configure this repository with <a href=\"%(rbtools_url)s\">RBTools</a>, "
+"save the\n"
+" following in a <tt>.reviewboardrc</tt> file in the root of your checked "
+"out\n"
+" working copy and commit it:\n"
+msgstr ""
+
+#: templates/admin/scmtools/repository/rbtools_setup.html:14
+msgid ""
+"\n"
+"RBTools will then be able to find the correct server and repository when "
+"any\n"
+"developer posts changes using <tt>rbt post</tt>.\n"
+msgstr ""
+
+#: templates/admin/scmtools/repository/rbtools_setup.html:20
+#, python-format
+msgid ""
+"\n"
+"See the <a href=\"%(config_docs_url)s\">documentation</a> on configuring\n"
+"repositories in RBTools for more information.\n"
+msgstr ""
+
+#: templates/admin/security.html:18
+msgid "Test Passed!"
+msgstr ""
+
+#: templates/admin/security.html:20
+msgid "Test Failed!"
+msgstr ""
+
+#: templates/admin/ssh_settings.html:8
+msgid ""
+"\n"
+"   The SSH key configured here will be used for communication with any\n"
+"   SSH-backend repositories.\n"
+"  "
+msgstr ""
+"\n"
+"   这里配置的SSH 钥匙将用于SSH后端的仓库。\n"
+"  "
+
+#: templates/admin/ssh_settings.html:18
+msgid "Key type:"
+msgstr ""
+
+#: templates/admin/ssh_settings.html:22
+msgid "Bits:"
+msgstr ""
+
+#: templates/admin/ssh_settings.html:30
+msgid "Public key:"
+msgstr ""
+
+#: templates/admin/ssh_settings.html:38
+msgid "Delete Key"
+msgstr ""
+
+#: templates/admin/ssh_settings.html:45
+msgid "Generate an SSH Key"
+msgstr "生成 SSH 钥匙"
+
+#: templates/admin/ssh_settings.html:47
+msgid ""
+"\n"
+"   You can generate a brand new RSA key specific to this installation of\n"
+"   Review Board.\n"
+"  "
+msgstr ""
+"\n"
+"   你可以生成新的 RSA 钥匙特别用于 Review Board 的安装。\n"
+"  "
+
+#: templates/admin/ssh_settings.html:53
+msgid ""
+"\n"
+"   Note that generating a key may take some time. Don't click more than "
+"once.\n"
+"  "
+msgstr ""
+"\n"
+"   注意生成一个钥匙需要一些时间。不要点击太多次。\n"
+"  "
+
+#: templates/admin/ssh_settings.html:60
+msgid "Generate Key"
+msgstr "生成钥匙"
+
+#: templates/admin/ssh_settings.html:63
+msgid "Upload an SSH Key"
+msgstr "上传一个 SSH 钥匙"
+
+#: templates/admin/ssh_settings.html:65
+msgid ""
+"\n"
+"   If you already have an SSH key (<tt>id_dsa</tt> or <tt>id_rsa</tt> file)\n"
+"   you want to use, you can upload it. Note that this key will be readable\n"
+"   by the web server, so provide one you feel safe using.\n"
+"  "
+msgstr ""
+"\n"
+"   如果你已经有了 SSH 钥匙(<tt>id_dsa</tt> 或 <tt>id_rsa</tt>文件)\n"
+"   你可以上传它。注意这个钥匙将被网页服务器可读，所以提供一个你觉得安全的钥匙。\n"
+"  "
+
+#: templates/admin/ssh_settings.html:75
+msgid "Upload Key"
+msgstr "上传钥匙"
+
+#: templates/admin/widgets/w-actions.html:4
+msgid "Enabled"
+msgstr "已允许"
+
+#: templates/admin/widgets/w-actions.html:8
+msgid "Disabled"
+msgstr "已禁用"
+
+#: templates/admin/widgets/w-actions.html:13
+msgid "System Settings"
+msgstr "系统设置"
+
+#: templates/admin/widgets/w-actions.html:16
+msgid "General"
+msgstr "一般设置"
+
+#: templates/admin/widgets/w-actions.html:18
+msgid "E-Mail"
+msgstr "电子邮件"
+
+#: templates/admin/widgets/w-actions.html:19
+#: templates/diffviewer/view_diff.html:5
+msgid "Diff Viewer"
+msgstr "Diff 浏览器"
+
+#: templates/admin/widgets/w-actions.html:20
+msgid "Logging"
+msgstr "日志"
+
+#: templates/admin/widgets/w-actions.html:21
+msgid "SSH"
+msgstr ""
+
+#: templates/admin/widgets/w-actions.html:22
+msgid "File Storage"
+msgstr "文件存储"
+
+#: templates/admin/widgets/w-actions.html:23
+#: templates/base/_mobile_navbar.html:39
+#: templates/base/_nav_support_menu.html:4
+msgid "Support"
+msgstr "支持"
+
+#: templates/admin/widgets/w-actions.html:29
+msgid "Manage"
+msgstr "管理"
+
+#: templates/admin/widgets/w-actions.html:31
+msgid "Common management operations."
+msgstr ""
+
+#: templates/admin/widgets/w-actions.html:44
+msgid "Default Reviewers"
+msgstr "默认审查者"
+
+#: templates/admin/widgets/w-actions.html:54
+msgid "Webhooks"
+msgstr ""
+
+#: templates/admin/widgets/w-actions.html:59
+msgid "Hosting Accounts"
+msgstr "主机帐号"
+
+#: templates/admin/widgets/w-actions.html:69
+msgid "System Information"
+msgstr "系统信息"
+
+#: templates/admin/widgets/w-actions.html:79
+msgid "Public Read-only Access"
+msgstr "公开只读访问"
+
+#: templates/admin/widgets/w-actions.html:86
+msgid "Syntax Highlighting"
+msgstr "语法高亮"
+
+#: templates/admin/widgets/w-actions.html:93
+msgid "Server Log"
+msgstr "服务器日志"
+
+#: templates/admin/widgets/w-actions.html:100
+msgid "Log Profiling"
+msgstr "日志设置"
+
+#: templates/admin/widgets/w-actions.html:107
+msgid "Review E-mails"
+msgstr "审查的电子邮件"
+
+#: templates/admin/widgets/w-actions.html:114
+msgid "E-mail TLS Authentication"
+msgstr "电子邮件 TLS 认证"
+
+#: templates/admin/widgets/w-actions.html:121
+msgid "Indexed Search"
+msgstr "索引搜索"
+
+#: templates/admin/widgets/w-groups.html:12
+msgid "No Groups Available."
+msgstr ""
+
+#: templates/admin/widgets/w-news.html:5 templates/base.html:102
+msgid "Loading..."
+msgstr ""
+
+#: templates/admin/widgets/w-repositories.html:9
+msgid "Visible"
+msgstr "可视"
+
+#: templates/admin/widgets/w-repositories.html:29
+msgid "No Repositories available."
+msgstr ""
+
+#: templates/admin/widgets/w-repositories.html:30
+msgid "Add +"
+msgstr ""
+
+#: templates/admin/widgets/w-request-statuses.html:67
+msgid "No Data Available"
+msgstr ""
+
+#: templates/admin/widgets/w-server-cache.html:10
+msgid "Memory Usage"
+msgstr ""
+
+#: templates/admin/widgets/w-server-cache.html:14
+msgid "Keys in Cache"
+msgstr ""
+
+#: templates/admin/widgets/w-server-cache.html:18
+msgid "Cache Hits"
+msgstr ""
+
+#: templates/admin/widgets/w-server-cache.html:22
+msgid "Cache Misses"
+msgstr ""
+
+#: templates/admin/widgets/w-server-cache.html:26
+msgid "Cache Evictions"
+msgstr ""
+
+#: templates/admin/widgets/w-server-cache.html:30
+msgid "Cache Traffic"
+msgstr ""
+
+#: templates/admin/widgets/w-server-cache.html:35
+msgid "Uptime"
+msgstr ""
+
+#: templates/admin/widgets/w-server-cache.html:41
+msgid "Cache Offline or Unavailable"
+msgstr ""
+
+#: templates/admin/widgets/w-stats.html:12
+msgid "Request Drafts"
+msgstr ""
+
+#: templates/admin/widgets/w-stats.html:20
+msgid "Attachments"
+msgstr ""
+
+#: templates/admin/widgets/w-stats.html:24
+msgid "DiffSets"
+msgstr ""
+
+#: templates/admin/widgets/w-user-activity.html:56
+msgid "Total Users"
+msgstr ""
+
+#: templates/admin/widgets/w-user-activity.html:59
+msgid "You're the only one who logged in so far..."
+msgstr ""
+
+#: templates/admin/widgets/w-user-activity.html:60
+msgid "Add Users +"
+msgstr ""
+
+#: templates/base.html:78
+msgid "JavaScript is turned off"
+msgstr ""
+
+#: templates/base.html:79
+msgid ""
+"Review Board requires JavaScript in order to function.\n"
+"     Please turn it on in your browser preferences."
+msgstr ""
+
+#: templates/base.html:81
+msgid ""
+"Firefox users: if you prefer to turn on JavaScript only\n"
+"     for specific sites, we recommend the\n"
+"     <a href=\"https://addons.mozilla.org/en-US/firefox/"
+"addon/722\">NoScript\n"
+"     extension</a>."
+msgstr ""
+
+#: templates/base/_mobile_navbar.html:24 templates/base/navbar.html:7
+#: templates/reviews/new_review_request.html:4
+msgid "New Review Request"
+msgstr "新建评审请求"
+
+#: templates/base/_mobile_navbar.html:25 templates/base/navbar.html:6
+#: templates/datagrids/dashboard.html:4
+msgid "My Dashboard"
+msgstr "我的仪表盘"
+
+#: templates/base/_mobile_navbar.html:38
+msgid "Docs"
+msgstr ""
+
+#: templates/base/_mobile_navbar.html:41
+#: templates/base/_nav_support_menu.html:23
+msgid "Admin"
+msgstr "管理"
+
+#: templates/base/_nav_support_menu.html:6
+msgid "Documentation"
+msgstr ""
+
+#: templates/base/_nav_support_menu.html:7
+msgid "Get Support"
+msgstr "获得支持"
+
+#: templates/base/_nav_support_menu.html:21
+msgid "My account"
+msgstr "我的帐号"
+
+#: templates/base/_nav_support_menu.html:25
+msgid "Log out"
+msgstr ""
+
+#: templates/base/headerbar.html:16
+msgid "Jump to..."
+msgstr ""
+
+#: templates/datagrids/group_permission_denied.html:4
+#: templates/permission_denied.html:4 templates/permission_denied.html.py:9
+#: templates/reviews/review_request_permission_denied.html:4
+msgid "Permission Denied"
+msgstr ""
+
+#: templates/datagrids/group_permission_denied.html:8
+msgid "You don't have access to this group."
+msgstr ""
+
+#: templates/datagrids/group_permission_denied.html:10
+msgid ""
+"\n"
+" This group is invite-only. You must be a member of this group in order to "
+"see\n"
+" any review requests assigned to it. You can ask the administrator or group\n"
+" owner for access.\n"
+msgstr ""
+
+#: templates/datagrids/hideable_listview.html:7
+msgid "Hide archived"
+msgstr "隐藏归档"
+
+#: templates/datagrids/hideable_listview.html:9
+msgid "Show archived"
+msgstr "显示归档"
+
+#: templates/datagrids/review_request_listview.html:12
+msgid "Hide closed"
+msgstr "隐藏关闭"
+
+#: templates/datagrids/review_request_listview.html:14
+msgid "Show closed"
+msgstr "显示关闭"
+
+#: templates/datagrids/sidebar_user_info.html:27
+#, python-format
+msgid ""
+"\n"
+"  Last logged in %(last_login_date)s\n"
+msgstr ""
+
+#: templates/datagrids/sidebar_user_info.html:33
+#, python-format
+msgid ""
+"\n"
+"  Joined %(joined_date)s\n"
+msgstr ""
+
+#: templates/diffviewer/diff_file_fragment.html:32
+msgid "Collapse lines"
+msgstr "折叠行"
+
+#: templates/diffviewer/diff_file_fragment.html:84
+msgid " (moved)"
+msgstr ""
+
+#: templates/diffviewer/diff_file_fragment.html:84
+msgid " (copied)"
+msgstr ""
+
+#: templates/diffviewer/diff_file_fragment.html:95
+#: templates/diffviewer/diff_file_fragment.html:104
+msgid "Download"
+msgstr ""
+
+#: templates/diffviewer/diff_file_fragment.html:136
+#: templates/reviews/review_request_actions_primary.html:3
+msgid "Review"
+msgstr "评审"
+
+#: templates/diffviewer/diff_file_fragment.html:138
+msgid "New Comment"
+msgstr "新建评论"
+
+#: templates/diffviewer/diff_file_fragment.html:155
+#: templates/diffviewer/diff_file_fragment.html:167
+msgid "This is a binary file. The content cannot be displayed."
+msgstr ""
+
+#: templates/diffviewer/diff_file_fragment.html:161
+#: templates/diffviewer/diff_file_fragment.html:173
+msgid "No preview available."
+msgstr ""
+
+#: templates/diffviewer/diff_file_fragment.html:182
+msgid "No changes were made to this file."
+msgstr ""
+
+#: templates/diffviewer/diff_file_fragment.html:188
+msgid "This is an empty file."
+msgstr ""
+
+#: templates/diffviewer/diff_file_fragment.html:196
+msgid "This empty file was deleted. The content cannot be displayed."
+msgstr ""
+
+#: templates/diffviewer/diff_file_fragment.html:198
+msgid "This file was deleted. The content cannot be displayed."
+msgstr ""
+
+#: templates/diffviewer/diff_file_fragment.html:207
+msgid "This file contains only whitespace changes."
+msgstr ""
+
+#: templates/diffviewer/diff_file_fragment.html:221
+#: templates/reviews/diff_comment_fragment.html:31
+msgid "Show 20 more lines above"
+msgstr ""
+
+#: templates/diffviewer/diff_file_fragment.html:225
+#, python-format
+msgid "%(lines)s line"
+msgid_plural "%(lines)s lines"
+msgstr[0] "%(lines)s 行"
+msgstr[1] "%(lines)s 行"
+
+#: templates/diffviewer/diff_file_fragment.html:226
+#: templates/reviews/diff_comment_fragment.html:35
+#: templates/reviews/diff_comment_fragment.html:119
+msgid "Show all lines"
+msgstr "显示全部行"
+
+#: templates/diffviewer/diff_file_fragment.html:231
+#: templates/reviews/diff_comment_fragment.html:115
+msgid "Show 20 more lines below"
+msgstr "显示以下20多行"
+
+#: templates/diffviewer/diff_fragment_error.html:16
+#, python-format
+msgid ""
+"\n"
+"     (Diff revisions %(revision1)s - %(revision2)s)\n"
+msgstr ""
+
+#: templates/diffviewer/diff_fragment_error.html:20
+#, python-format
+msgid ""
+"\n"
+"     (Diff revision %(revision)s)\n"
+msgstr ""
+
+#: templates/diffviewer/diff_fragment_error.html:45
+msgid "There was an error displaying this diff."
+msgstr ""
+
+#: templates/diffviewer/diff_fragment_error.html:51
+msgid ""
+"\n"
+"     This may be a bug in the software, a temporary outage, or an issue\n"
+"     with the format of your diff.\n"
+msgstr ""
+
+#: templates/diffviewer/diff_fragment_error.html:58
+#, python-format
+msgid ""
+"\n"
+"     Please try again, and if you still have trouble,\n"
+"     <a href=\"%(support_url)s\">contact support</a>.\n"
+msgstr ""
+
+#: templates/diffviewer/diff_fragment_error.html:70
+msgid "Details"
+msgstr ""
+
+#: templates/diffviewer/view_diff.html:20
+msgid "There was an internal error displaying the diff."
+msgstr ""
+
+#: templates/diffviewer/view_diff.html:21
+#, python-format
+msgid "Details:</b> %(error)s"
+msgstr ""
+
+#: templates/diffviewer/view_diff.html:47
+#: templates/reviews/review_detail.html:47 templates/reviews/ui/base.html:38
+msgid "Download Diff"
+msgstr "下载 Diff"
+
+#: templates/diffviewer/view_diff.html:73
+msgid "Expand changes"
+msgstr "展开变更"
+
+#: templates/diffviewer/view_diff.html:75
+msgid "Collapse changes"
+msgstr "折叠变更"
+
+#: templates/diffviewer/view_diff.html:78
+msgid "Hide extra whitespace"
+msgstr "隐藏多余空格"
+
+#: templates/diffviewer/view_diff.html:79
+msgid "Show extra whitespace"
+msgstr "显示多余空格"
+
+#: templates/diffviewer/view_diff.html:81
+msgid "Hide whitespace changes"
+msgstr "隐藏空格变更"
+
+#: templates/diffviewer/view_diff.html:82
+msgid "Show whitespace changes"
+msgstr "显示空格变更"
+
+#: templates/extensions/extension_list.html:5
+msgid "Get more extensions"
+msgstr "获取更多扩展"
+
+#: templates/hostingsvcs/bitbucket/repo_hook_instructions.html:4
+#: templates/hostingsvcs/github/repo_hook_instructions.html:4
+#: templates/hostingsvcs/googlecode/repo_hook_instructions.html:4
+msgid ""
+"\n"
+" Review Board supports closing review requests that are referenced in\n"
+" commit messages for any changes pushed to this repository. These "
+"references\n"
+" are in the form of:\n"
+msgstr ""
+
+#: templates/hostingsvcs/bitbucket/repo_hook_instructions.html:11
+#: templates/hostingsvcs/github/repo_hook_instructions.html:11
+#: templates/hostingsvcs/googlecode/repo_hook_instructions.html:11
+msgid "Or:"
+msgstr ""
+
+#: templates/hostingsvcs/bitbucket/repo_hook_instructions.html:14
+#, python-format
+msgid ""
+"\n"
+" To configure this, simply\n"
+" <a href=\"%(add_webhook_url)s\" target=\"_blank\">click here</a>\n"
+" to add the new webhook. Then click <b>Save</b>. You're done!\n"
+msgstr ""
+
+#: templates/hostingsvcs/github/repo_hook_instructions.html:14
+#, python-format
+msgid ""
+"\n"
+" To configure this,\n"
+" <a href=\"%(add_webhook_url)s\" target=\"_blank\">add a new webhook</a>\n"
+" for your GitHub repository and set:\n"
+msgstr ""
+
+#: templates/hostingsvcs/github/repo_hook_instructions.html:35
+msgid ""
+"\n"
+" Then click <b>Add webhook</b>. You're done!\n"
+msgstr ""
+
+#: templates/hostingsvcs/googlecode/repo_hook_instructions.html:14
+#, python-format
+msgid ""
+"\n"
+" To configure this,\n"
+" <a href=\"%(add_webhook_url)s\" target=\"_blank\">fill in the post-commit "
+"webhook</a>\n"
+" for your Google Code repository (toward the bottom of the page) with the "
+"following\n"
+" URL:\n"
+msgstr ""
+
+#: templates/hostingsvcs/googlecode/repo_hook_instructions.html:23
+msgid ""
+"\n"
+" Then click <b>Save changes</b>. You're done!\n"
+msgstr ""
+
+#: templates/permission_denied.html:10
+msgid "You do not have permission to access this page."
+msgstr ""
+
+#: templates/reviews/boxes/change.html:21
+msgid "Review request changed"
+msgstr "审查请求变更"
+
+#: templates/reviews/boxes/change.html:22
+#: templates/reviews/boxes/review.html:34
+#: templates/reviews/review_reply.html:14
+#, python-format
+msgid ""
+"<time class=\"timesince\" datetime=\"%(timestamp_raw)s\">%(timestamp)s</time>"
+msgstr ""
+
+#: templates/reviews/boxes/change.html:28
+msgid "Status:"
+msgstr "状态:"
+
+#: templates/reviews/boxes/change.html:31
+msgid "Closed (submitted)"
+msgstr "关闭(已发布)"
+
+#: templates/reviews/boxes/change.html:35
+msgid "Re-opened"
+msgstr "重新打开"
+
+#: templates/reviews/boxes/change.html:42
+msgid "Change Summary:"
+msgstr "变更概述:"
+
+#: templates/reviews/boxes/review.html:18
+msgid "Ship it!"
+msgstr "发布它!"
+
+#: templates/reviews/boxes/review.html:21
+msgid "Fix it!"
+msgstr "修复它!"
+
+#: templates/reviews/boxes/review.html:89
+#, python-format
+msgid ""
+"\n"
+"         (Revisions %(revision1)s - %(revision2)s)\n"
+msgstr ""
+
+#: templates/reviews/boxes/review.html:93
+#, python-format
+msgid ""
+"\n"
+"          (Revision %(revision)s)\n"
+msgstr ""
+
+#: templates/reviews/comment_issue.html:17
+msgid "Show all issues"
+msgstr ""
+
+#: templates/reviews/review_detail.html:4
+msgid "Review Request"
+msgstr "评审请求"
+
+#: templates/reviews/review_detail.html:68
+msgid "Expand All"
+msgstr "全部展开"
+
+#: templates/reviews/review_detail.html:74
+msgid "Collapse All"
+msgstr "全部折叠"
+
+#: templates/reviews/review_issue_summary_table.html:6
+msgid "Issues"
+msgstr ""
+
+#: templates/reviews/review_issue_summary_table.html:10
+msgid "All Users"
+msgstr "全部用户"
+
+#: templates/reviews/review_issue_summary_table.html:14
+msgid "Open issues"
+msgstr ""
+
+#: templates/reviews/review_issue_summary_table.html:19
+msgid "Resolved issues"
+msgstr ""
+
+#: templates/reviews/review_issue_summary_table.html:24
+msgid "Dropped issues"
+msgstr ""
+
+#: templates/reviews/review_issue_summary_table.html:30
+msgid "All issues"
+msgstr ""
+
+#: templates/reviews/review_issue_summary_table.html:32
+msgid "All Issues"
+msgstr ""
+
+#: templates/reviews/review_issue_summary_table.html:42
+msgid "From"
+msgstr ""
+
+#: templates/reviews/review_reply_section.html:10
+msgid "Comment"
+msgstr "评论"
+
+#: templates/reviews/review_reply_section.html:10
+msgid "Reply"
+msgstr ""
+
+#: templates/reviews/review_request_actions_secondary.html:6
+msgid "Close"
+msgstr "关闭"
+
+#: templates/reviews/review_request_actions_secondary.html:13
+msgid "Delete Permanently"
+msgstr "永久性删除"
+
+#: templates/reviews/review_request_actions_secondary.html:22
+msgid "Update"
+msgstr "更新"
+
+#: templates/reviews/review_request_actions_secondary.html:25
+msgid "Update Diff"
+msgstr "更新 Diff"
+
+#: templates/reviews/review_request_actions_secondary.html:25
+msgid "Upload Diff"
+msgstr "上传 Diff"
+
+#: templates/reviews/review_request_actions_secondary.html:27
+msgid "Add File"
+msgstr "添加文件"
+
+#: templates/reviews/review_request_box.html:7
+#, python-format
+msgid ""
+"\n"
+"   Review Request <a href=\"%(review_request_url)s\">#%(review_request_id)s</"
+"a> -\n"
+msgstr ""
+
+#: templates/reviews/review_request_box.html:11
+#, python-format
+msgid ""
+"\n"
+"  Created %(dateadded)s and submitted\n"
+"  <time class=\"timesince\" datetime=\"%(lastupdatedraw)s\">%(lastupdated)s</"
+"time>\n"
+msgstr ""
+
+#: templates/reviews/review_request_box.html:16
+#, python-format
+msgid ""
+"\n"
+"  Created %(dateadded)s and discarded\n"
+"  <time class=\"timesince\" datetime=\"%(lastupdatedraw)s\">%(lastupdated)s</"
+"time>\n"
+msgstr ""
+
+#: templates/reviews/review_request_box.html:21
+#, python-format
+msgid ""
+"\n"
+"  Created %(dateadded)s and updated\n"
+"  <time class=\"timesince\" datetime=\"%(lastupdatedraw)s\">%(lastupdated)s</"
+"time>\n"
+msgstr ""
+"\n"
+"  创建于 %(dateadded)s 并更新了\n"
+"  <time class=\"timesince\" datetime=\"%(lastupdatedraw)s\">%(lastupdated)s</"
+"time>\n"
+
+#: templates/reviews/review_request_box.html:27
+#, python-format
+msgid ""
+"\n"
+"  - Latest diff uploaded\n"
+"  <time class=\"timesince\" datetime=\"%(lastdiffdateraw)s\">"
+"%(lastdiffdate)s</time>\n"
+msgstr ""
+
+#: templates/reviews/review_request_box.html:47
+msgid "This field is required"
+msgstr ""
+
+#: templates/reviews/review_request_box.html:85
+msgid "Delete Screenshot"
+msgstr "删除截图"
+
+#: templates/reviews/review_request_permission_denied.html:9
+msgid "You don't have access to this review request."
+msgstr ""
+
+#: templates/reviews/review_request_permission_denied.html:11
+msgid ""
+"\n"
+"   This review request is private. You must be a requested reviewer, either\n"
+"   directly or on a requested group, and have permission to access the\n"
+"   repository in order to view this review request.\n"
+msgstr ""
+
+#: templates/reviews/reviewable_base.html:28
+msgid "You have a pending review."
+msgstr ""
+
+#: templates/reviews/reviewable_base.html:29
+msgid "Edit Review"
+msgstr ""
+
+#: templates/reviews/reviewable_base.html:30
+msgid "Publish"
+msgstr ""
+
+#: templates/reviews/reviewable_base.html:31
+msgid "Discard"
+msgstr ""
+
+#: templates/reviews/ui/_text_rendered_table.html:18
+msgid ""
+"\n"
+"        These revisions cannot be compared because they are different\n"
+"        file types.\n"
+msgstr ""
+
+#: templates/reviews/ui/_text_table.html:47
+#, python-format
+msgid ""
+"\n"
+"     (revision %(diff_revision)s)\n"
+msgstr ""
+
+#: templates/reviews/ui/_text_table.html:57
+#, python-format
+msgid ""
+"\n"
+"     (revision %(revision)s)\n"
+msgstr ""
+
+#: templates/reviews/ui/base.html:24
+msgid "File"
+msgstr ""
+
+#: templates/reviews/ui/text.html:19
+msgid "Rendered"
+msgstr ""
+
+#: templates/reviews/ui/text.html:20
+msgid "Source"
+msgstr ""
+
+#: templates/search/_review_request.html:7
+#, python-format
+msgid ""
+"\n"
+"  Last updated <time class=\"timesince\" datetime=\"%(last_updated_raw)s\">"
+"%(last_updated)s ago</time>\n"
+"  by %(added_by)s\n"
+msgstr ""
+
+#: templates/search/_user.html:24
+msgid "A member of:"
+msgstr ""
+
+#: templates/search/results.html:4
+msgid "Search Review Requests"
+msgstr ""
+
+#: templates/search/results.html:15
+msgid "No review requests matching your query"
+msgstr ""
+
+#: templates/search/results.html:18
+#, python-format
+msgid ""
+"\n"
+" <b>%(hits_returned)s</b> result for <b>%(query)s</b>\n"
+msgid_plural ""
+"\n"
+" <b>%(hits_returned)s</b> results for <b>%(query)s</b>\n"
+msgstr[0] ""
+msgstr[1] ""
+
+#: templates/search/results.html:38
+msgid "First Page"
+msgstr ""
+
+#: templates/search/results.html:41
+msgid "Previous"
+msgstr ""
+
+#: templates/search/results.html:53
+msgid "Next"
+msgstr ""
+
+#: templates/search/results.html:56
+msgid "Last Page"
+msgstr ""
+
+#: templates/search/search_disabled.html:4
+msgid "Indexed searched not enabled"
+msgstr ""
+
+#: templates/search/search_disabled.html:8
+msgid "Indexed Search is not enabled"
+msgstr ""
+
+#: templates/search/search_disabled.html:9
+msgid ""
+"Enable Search under General Settings in the Administration UI, or contact "
+"your administrator."
+msgstr ""
+
+#: webapi/resources/api_token.py:246
+#, python-format
+msgid "The policy is not valid JSON: %s"
+msgstr ""
+
+#: webapi/resources/review_request_last_update.py:94
+msgid "Review request submitted"
+msgstr ""
+
+#: webapi/resources/review_request_last_update.py:96
+msgid "Review request discarded"
+msgstr ""
+
+#: webapi/resources/review_request_last_update.py:98
+msgid "Review request updated"
+msgstr ""
+
+#: webapi/resources/review_request_last_update.py:102
+msgid "Diff updated"
+msgstr ""
+
+#: webapi/resources/review_request_last_update.py:108
+msgid "New reply"
+msgstr ""
+
+#: webapi/resources/review_request_last_update.py:111
+msgid "New review"
+msgstr ""
