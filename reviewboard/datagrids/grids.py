@@ -20,6 +20,7 @@ from reviewboard.datagrids.columns import (BugsColumn,
                                            DiffUpdatedColumn,
                                            DiffUpdatedSinceColumn,
                                            GroupMemberCountColumn,
+                                           GroupMembersUsernamesColumn,
                                            GroupsColumn,
                                            MyCommentsColumn,
                                            NewUpdatesColumn,
@@ -485,6 +486,10 @@ class GroupDataGrid(DataGrid):
                                           field_name='members',
                                           shrink=True)
 
+    members_usernames = GroupMembersUsernamesColumn(_('Members Usernames'),
+                                          field_name='members',
+                                          shrink=True)
+
     def __init__(self, request, title=_('All groups'), *args, **kwargs):
         """Initialize the datagrid."""
         local_site = kwargs.pop('local_site', None)
@@ -498,7 +503,7 @@ class GroupDataGrid(DataGrid):
         self.profile_columns_field = 'group_columns'
         self.default_sort = ['name']
         self.default_columns = [
-            'star', 'name', 'displayname', 'pending_count'
+            'star', 'name', 'displayname', 'pending_count', 'members_usernames'
         ]
 
     @staticmethod
