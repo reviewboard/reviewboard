@@ -10,6 +10,7 @@ from django.contrib.auth.forms import \
 from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
+from djblets.auth.ratelimit import is_ratelimited
 from djblets.siteconfig.forms import SiteSettingsForm
 
 from reviewboard.admin.checks import get_can_enable_dns, get_can_enable_ldap
@@ -445,7 +446,10 @@ class AuthenticationForm(DjangoAuthenticationForm):
     """Form used for user logins.
 
     This extends Django's built-in AuthenticationForm implementation to allow
-    users to specify their e-mail address in place of their username.
+    users to specify their e-mail address in place of their username. In
+    addition, it also tracks the number of failed login attempts for a given
+    time frame, and informs the user whether the maximum number of attempts
+    have been exceeded.
     """
 
     username = forms.CharField(
@@ -468,3 +472,39 @@ class AuthenticationForm(DjangoAuthenticationForm):
                 pass
 
         return username
+
+    def clean(self):
+        """Validate the authentication form.
+
+        In case authentication has failed for the given user, Djblets's rate
+        limiting feature will increment the number of failed login attempts
+        until the maximum number of attempts have been reached. The user
+        will have to wait until the rate limit time period is over before
+        trying again.
+
+        Returns:
+            dict:
+            The cleaned data for all fields in the form.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                The data in the form was not valid.
+        """
+        request = self.request
+
+        # Check if the number of failed login attempts were already exceeded
+        # before authenticating.
+        if is_ratelimited(request, increment=False):
+            raise forms.ValidationError(
+                _('Maximum number of login attempts exceeded.'))
+
+        try:
+            self.cleaned_data = super(AuthenticationForm, self).clean()
+        except ValidationError:
+            # If authentication for a given user has failed (i.e.
+            # self.user_cache is None), increment the number of
+            # failed login attempts.
+            is_ratelimited(request, increment=True)
+            raise
+
+        return self.cleaned_data
