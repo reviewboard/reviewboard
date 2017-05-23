@@ -1586,10 +1586,12 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
     def test_review_published_email_hook(self):
         """Testing the ReviewPublishedEmailHook"""
         class DummyHook(ReviewPublishedEmailHook):
-            def get_to_field(self, to_field, review, user, review_request):
+            def get_to_field(self, to_field, review, user, review_request,
+                             to_submitter_only):
                 return set([user])
 
-            def get_cc_field(self, cc_field, review, user, review_request):
+            def get_cc_field(self, cc_field, review, user, review_request,
+                             to_submitter_only):
                 return set([user])
 
         hook = DummyHook(self.extension)
@@ -1605,6 +1607,7 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
             'user': admin,
             'review_request': review_request,
             'review': review,
+            'to_submitter_only': False,
         }
 
         with set_siteconfig_settings({'mail_send_review_mail': True}):
@@ -1752,7 +1755,8 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
             call_kwargs = {
                 'user': review.user,
                 'review': review,
-                'review_request': review_request
+                'review_request': review_request,
+                'to_submitter_only': False,
             }
 
             self.assertEqual(len(mail.outbox), 1)
@@ -1764,6 +1768,8 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
                              call_kwargs)
 
             reply.publish(reply.user)
+
+            call_kwargs.pop('to_submitter_only')
             call_kwargs['reply'] = reply
             call_kwargs['user'] = reply.user
 

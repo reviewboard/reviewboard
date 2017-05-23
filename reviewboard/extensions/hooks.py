@@ -1224,7 +1224,8 @@ class ReviewPublishedEmailHook(EmailHook):
             extension,
             signals=[review_published])
 
-    def get_to_field(self, to_field, review, user, review_request):
+    def get_to_field(self, to_field, review, user, review_request,
+                     to_submitter_only):
         """Return the To field for the e-mail.
 
         Args:
@@ -1242,16 +1243,21 @@ class ReviewPublishedEmailHook(EmailHook):
             review_request (reviewboard.reviews.models.ReviewRequest):
                 The review request that was reviewed.
 
+            to_submitter_only (bool):
+                Whether or not the review was marked as being targeted at only
+                the submitter.
+
         Returns:
             set: The desired To field.
         """
         return to_field
 
-    def get_cc_field(self, cc_field, review, user, review_request):
+    def get_cc_field(self, cc_field, review, user, review_request,
+                     to_submitter_only):
         """Return the CC field for the e-mail.
 
         Args:
-            to_field (set):
+            cc_field (set):
                 A set of :py:class:`Users <django.contrib.auth.models.User>`
                 and :py:class:`Groups <reviewboard.reviews.models.Group>`
                 that will receive a carbon copy of the e-mail.
@@ -1264,6 +1270,10 @@ class ReviewPublishedEmailHook(EmailHook):
 
             review_request (reviewboard.reviews.models.ReviewRequest):
                 The review request that was reviewed.
+
+            to_submitter_only (bool):
+                Whether or not the review was marked as being targeted at only
+                the submitter.
 
         Returns:
             set: The desired CC field.

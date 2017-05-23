@@ -468,7 +468,7 @@ def mail_review(review, user, to_submitter_only, request):
 
     to_field, cc_field = filter_email_recipients_from_hooks(
         to_field, cc_field, review_published, review=review, user=user,
-        review_request=review_request)
+        review_request=review_request, to_submitter_only=to_submitter_only)
 
     summary = _ensure_unicode(review_request.summary)
 
