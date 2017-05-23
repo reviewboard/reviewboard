@@ -12,7 +12,7 @@
   <p>Hi {{user|user_displayname}},</p>
   <p>
    A new API token has been added to your Review Board account on
-   <a href="{{domain_method}}://{{domain}}">{{domain_method}}://{{domain}}</a>.
+   <a href="{{site_url}}">{{site_url}}</a>.
   </p>
   <p>
    The API token ID starts with <code>{{partial_token}}</code> and was added
@@ -20,7 +20,7 @@
   </p>
   <p>
    If you did not create this token, you should revoke it on your
-   <a href="{{domain_method}}://{{domain}}{% url 'user-preferences' %}#api-tokens">API Tokens</a>
+   <a href="{{api_token_url}}">API Tokens</a>
    page, change your password, and talk to your administrator.
   </p>
  </body>

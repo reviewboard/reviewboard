@@ -6,7 +6,6 @@ import logging
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
 from django.template.loader import render_to_string
 from django.utils import six, timezone
@@ -197,7 +196,6 @@ def send_review_mail(user, review_request, subject, in_reply_to,
     Returns:
         unicode: The resulting e-mail message ID.
     """
-    current_site = Site.objects.get_current()
     local_site = review_request.local_site
     from_email = build_email_address_for_user(user)
 
@@ -213,15 +211,11 @@ def send_review_mail(user, review_request, subject, in_reply_to,
         # Nothing to send.
         return
 
-    siteconfig = current_site.config.get()
-    domain_method = siteconfig.get("site_domain_method")
-
     if not context:
         context = {}
 
     context['user'] = user
-    context['domain'] = current_site.domain
-    context['domain_method'] = domain_method
+    context['site_url'] = get_server_url()
     context['review_request'] = review_request
 
     if review_request.local_site:
@@ -554,15 +548,11 @@ def mail_new_user(user):
         user (django.contrib.auth.models.User):
             The user to send an e-mail about.
     """
-    current_site = Site.objects.get_current()
-    siteconfig = SiteConfiguration.objects.get_current()
-    domain_method = siteconfig.get("site_domain_method")
     subject = "New Review Board user registration for %s" % user.username
     from_email = build_email_address_for_user(user)
 
     context = {
-        'domain': current_site.domain,
-        'domain_method': domain_method,
+        'site_url': get_server_url(),
         'user': user,
         'user_url': reverse('admin:auth_user_change', args=(user.id,))
     }
@@ -623,16 +613,14 @@ def mail_webapi_token(webapi_token, op):
         raise ValueError('Unexpected op "%s" passed to mail_webapi_token.'
                          % op)
 
-    current_site = Site.objects.get_current()
-    siteconfig = SiteConfiguration.objects.get_current()
-    domain_method = siteconfig.get('site_domain_method')
     user = webapi_token.user
     user_email = build_email_address_for_user(user)
 
     context = {
         'api_token': webapi_token,
-        'domain': current_site.domain,
-        'domain_method': domain_method,
+        'site_url': get_server_url(),
+        'api_token_url': '%s#api-tokens'
+                         % build_server_url(reverse('user-preferences')),
         'partial_token': '%s...' % webapi_token.token[:10],
         'user': user,
     }

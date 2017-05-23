@@ -15,7 +15,7 @@
 {% for comment in reply.file_attachment_comments.all %}
 > On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
 > > File Attachment: {% if comment.file_attachment.caption %}{{comment.file_attachment.caption}} - {% endif %}{{comment.get_link_text}}
-> > <{{domain_method}}://{{domain}}{{comment.get_review_url}}>
+> > <{{site_url}}{{comment.get_review_url}}>
 > >
 {{comment.reply_to.text|markdown_email_text:comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  ifnotequal comment reply_comment %}
 > 
@@ -28,7 +28,7 @@
 {% endfor %}
 {% for comment in reply.general_comments.all %}
 > On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
-> > <{{domain_method}}://{{domain}}{{comment.get_review_url}}>
+> > <{{site_url}}{{comment.get_review_url}}>
 > >
 {{ comment.reply_to.text|markdown_email_text:comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  ifnotequal comment reply_comment %}
 >
@@ -42,7 +42,7 @@
 {% for comment in reply.screenshot_comments.all %}
 > On {{review.time_emailed}}, {{review.user|user_displayname}} wrote:
 > > Screenshot: {{ comment.screenshot.caption }}
-> > <{{domain_method}}://{{domain}}{{comment.get_review_url}}>
+> > <{{site_url}}{{comment.get_review_url}}>
 > >
 {{ comment.reply_to.text|markdown_email_text:comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in comment.reply_to.public_replies %}{%  ifnotequal comment reply_comment %}
 > 
@@ -59,7 +59,7 @@
 {%   definevar "lines_info" %}{% diff_comment_line_numbers entry.chunks entry.comment %}{% enddefinevar %}
 > > {{entry.comment.filediff.source_file_display}}
 {% if lines_info %}{{lines_info|quote_text:2}}{% endif %}
-> > <{{domain_method}}://{{domain}}{{entry.comment.get_absolute_url}}>
+> > <{{site_url}}{{entry.comment.get_absolute_url}}>
 {%  endcondense %}
 > >
 {{entry.comment.reply_to.text|markdown_email_text:entry.comment.reply_to.rich_text|indent|quote_text:2}}{% for reply_comment in entry.comment.reply_to.public_replies %}{%  ifnotequal entry.comment reply_comment %}
@@ -88,7 +88,7 @@ On {{review.time_emailed}}, {{review_request.submitter|user_displayname}} wrote:
 
 -----------------------------------------------------------
 This is an automatically generated e-mail. To reply, visit:
-{{domain_method}}://{{domain}}{{review.get_absolute_url}}
+{{site_url}}{{review.get_absolute_url}}
 -----------------------------------------------------------
 
 

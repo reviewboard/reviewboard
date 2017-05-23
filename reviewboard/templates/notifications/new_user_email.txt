@@ -3,7 +3,7 @@
 This is an automatically generated e-mail.
 ------------------------------------------
 
-{{user.username}} has registered on <{{domain_method}}://{{domain}}> on {{user.date_joined}}.
+{{user.username}} has registered on <{{site_url}}> on {{user.date_joined}}.
 
-If you want to grant certain permissions for this user, please visit <{{domain_method}}://{{domain}}{{user_url}}>.
+If you want to grant certain permissions for this user, please visit <{{user_url}}>.
 {% endautoescape %}

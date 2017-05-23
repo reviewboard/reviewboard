@@ -1,7 +1,7 @@
 {% autoescape off %}{% load djblets_email djblets_utils markdown_email reviewtags %}
 -----------------------------------------------------------
 This is an automatically generated e-mail. To reply, visit:
-{{domain_method}}://{{domain}}{{review_request.get_absolute_url}}
+{{site_url}}{{review_request.get_absolute_url}}
 -----------------------------------------------------------
 
 {% condense %}
@@ -57,9 +57,9 @@ Diffs{% if changes and changes.diff %} (updated){% endif %}
   {{ filediff.source_file_display }} {{ filediff.source_revision }} {% endfor %}
 
 {%   with latest_diffset.revision as rev %}
-Diff: {{domain_method}}://{{domain}}{% url 'view-diff-revision' review_request.display_id rev %}
+Diff: {{site_url}}{% url 'view-diff-revision' review_request.display_id rev %}
 {%    if rev > 1 and changes and changes.diff %}
-Changes: {{domain_method}}://{{domain}}{% url 'view-interdiff' review_request.display_id rev|add:"-1" rev %}
+Changes: {{site_url}}{% url 'view-interdiff' review_request.display_id rev|add:"-1" rev %}
 {%    endif %}
 {%   endwith %}
 {%  endif %}
@@ -85,7 +85,7 @@ Screenshots{% if changes and changes.screenshots %} (updated){% endif %}
 -----------
 {% for screenshot in review_request.screenshots.all %}
 {{ screenshot.caption }}
-  {{domain_method}}://{{domain}}{{ screenshot.get_absolute_url }}{% endfor %}
+  {{site_url}}{{ screenshot.get_absolute_url }}{% endfor %}
 
 {% endif %}
 

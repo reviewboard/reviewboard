@@ -1,7 +1,7 @@
 {% autoescape off %}{% load djblets_email djblets_extensions djblets_utils markdown_email rb_extensions reviewtags %}
 -----------------------------------------------------------
 This is an automatically generated e-mail. To reply, visit:
-{{domain_method}}://{{domain}}{{review.get_absolute_url}}
+{{site_url}}{{review.get_absolute_url}}
 -----------------------------------------------------------
 {% if review.ship_it %}
 {%  if has_issues %}
@@ -16,7 +16,7 @@ This is an automatically generated e-mail. To reply, visit:
 {% endif %}{% for comment in review.file_attachment_comments.all %}
 
 File Attachment: {% if comment.file_attachment.caption %}{{comment.file_attachment.caption}} - {% endif %}{{comment.get_link_text}}
-<{{domain_method}}://{{domain}}/{{comment.get_review_url}}>
+<{{site_url}}/{{comment.get_review_url}}>
 
 {% filter indent %}{% condense 2 %}
 {%  comment_detail_display_hook comment "text-email" %}
@@ -35,7 +35,7 @@ File Attachment: {% if comment.file_attachment.caption %}{{comment.file_attachme
 {% endfor %}{% for comment in review.screenshot_comments.all %}
 
 Screenshot: {{ comment.screenshot.caption }}
-<{{domain_method}}://{{domain}}/{{comment.get_review_url}}>
+<{{site_url}}/{{comment.get_review_url}}>
 
 {% filter indent %}{% condense 2 %}
 {%  comment_detail_display_hook comment "text-email" %}
@@ -48,7 +48,7 @@ Screenshot: {{ comment.screenshot.caption }}
 {% condense 1 %}
 {{entry.comment.filediff.source_file_display}}
 {% diff_comment_line_numbers entry.chunks entry.comment %}
-<{{domain_method}}://{{domain}}{{entry.comment.get_review_url}}>
+<{{site_url}}{{entry.comment.get_review_url}}>
 {% endcondense %}
 
 {% filter indent %}{% condense 2 %}
