@@ -49,6 +49,11 @@ from reviewboard.diffviewer.views import (DiffFragmentView,
                                           DownloadPatchErrorBundleView,
                                           exception_traceback_string)
 from reviewboard.hostingsvcs.bugtracker import BugTracker
+from reviewboard.notifications.email.decorators import preview_email
+from reviewboard.notifications.email.message import (
+    prepare_reply_published_mail,
+    prepare_review_published_mail,
+    prepare_review_request_mail)
 from reviewboard.reviews.ui.screenshot import LegacyScreenshotReviewUI
 from reviewboard.reviews.context import (comment_counts,
                                          diffsets_with_comments,
@@ -1145,75 +1150,41 @@ class ReviewsDownloadPatchErrorBundleView(DownloadPatchErrorBundleView,
 
 @check_login_required
 @check_local_site_access
-def preview_review_request_email(
-    request,
-    review_request_id,
-    message_format,
-    text_template_name='notifications/review_request_email.txt',
-    html_template_name='notifications/review_request_email.html',
-    changedesc_id=None,
-    local_site=None):
-    """
-    Previews the e-mail message that would be sent for an initial
-    review request or an update.
-
-    This is mainly used for debugging.
-    """
-    if not settings.DEBUG:
-        raise Http404
-
+@preview_email(prepare_review_request_mail)
+def preview_review_request_email(request, review_request_id,
+                                 changedesc_id=None, local_site=None):
     review_request, response = \
         _find_review_request(request, review_request_id, local_site)
 
     if not review_request:
         return response
 
-    extra_context = {}
+    close_type = None
 
     if changedesc_id:
         changedesc = get_object_or_404(review_request.changedescs,
                                        pk=changedesc_id)
-        extra_context['change_text'] = changedesc.text
-        extra_context['changes'] = changedesc.fields_changed
+        user = changedesc.get_user(review_request)
 
-    siteconfig = SiteConfiguration.objects.get_current()
-
-    if message_format == 'text':
-        template_name = text_template_name
-        mimetype = 'text/plain; charset=utf-8'
-    elif message_format == 'html':
-        template_name = html_template_name
-        mimetype = 'text/html; charset=utf-8'
+        if 'status' in changedesc.fields_changed:
+            close_type = changedesc.fields_changed['status']['new'][0]
     else:
-        raise Http404
+        changedesc = None
+        user = review_request.submitter
 
-    return HttpResponse(render_to_string(
-        template_name,
-        RequestContext(request, dict({
-            'review_request': review_request,
-            'user': request.user,
-            'domain': Site.objects.get_current().domain,
-            'domain_method': siteconfig.get("site_domain_method"),
-        }, **extra_context)),
-    ), content_type=mimetype)
+    return {
+        'user': user,
+        'review_request': review_request,
+        'changedesc': changedesc,
+        'close_type': close_type,
+    }
 
 
 @check_login_required
 @check_local_site_access
-def preview_review_email(request, review_request_id, review_id, message_format,
-                         text_template_name='notifications/review_email.txt',
-                         html_template_name='notifications/review_email.html',
-                         extra_context={},
+@preview_email(prepare_review_published_mail)
+def preview_review_email(request, review_request_id, review_id,
                          local_site=None):
-    """
-    Previews the e-mail message that would be sent for a review of a
-    review request.
-
-    This is mainly used for debugging.
-    """
-    if not settings.DEBUG:
-        raise Http404
-
     review_request, response = \
         _find_review_request(request, review_request_id, local_site)
 
@@ -1222,57 +1193,23 @@ def preview_review_email(request, review_request_id, review_id, message_format,
 
     review = get_object_or_404(Review, pk=review_id,
                                review_request=review_request)
-    siteconfig = SiteConfiguration.objects.get_current()
 
-    review.ordered_comments = \
-        review.comments.order_by('filediff', 'first_line')
-
-    if message_format == 'text':
-        template_name = text_template_name
-        mimetype = 'text/plain'
-    elif message_format == 'html':
-        template_name = html_template_name
-        mimetype = 'text/html'
-    else:
-        raise Http404
-
-    context = {
-        'review_request': review_request,
+    return {
+        'user': review.user,
         'review': review,
-        'user': request.user,
-        'domain': Site.objects.get_current().domain,
-        'domain_method': siteconfig.get("site_domain_method"),
+        'review_request': review_request,
+        'to_submitter_only': False,
+        'request': request,
     }
-    context.update(extra_context)
-
-    has_error, context['comment_entries'] = \
-        build_diff_comment_fragments(
-            review.ordered_comments, context,
-            "notifications/email_diff_comment_fragment.html")
-
-    return HttpResponse(
-        render_to_string(template_name, RequestContext(request, context)),
-        content_type=mimetype)
 
 
 @check_login_required
 @check_local_site_access
+@preview_email(prepare_reply_published_mail)
 def preview_reply_email(request, review_request_id, review_id, reply_id,
-                        message_format,
-                        text_template_name='notifications/reply_email.txt',
-                        html_template_name='notifications/reply_email.html',
                         local_site=None):
-    """
-    Previews the e-mail message that would be sent for a reply to a
-    review of a review request.
-
-    This is mainly used for debugging.
-    """
-    if not settings.DEBUG:
-        raise Http404
-
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site)
+    review_request, response = _find_review_request(request, review_request_id,
+                                                    local_site)
 
     if not review_request:
         return response
@@ -1280,37 +1217,13 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
     review = get_object_or_404(Review, pk=review_id,
                                review_request=review_request)
     reply = get_object_or_404(Review, pk=reply_id, base_reply_to=review)
-    siteconfig = SiteConfiguration.objects.get_current()
 
-    reply.ordered_comments = \
-        reply.comments.order_by('filediff', 'first_line')
-
-    if message_format == 'text':
-        template_name = text_template_name
-        mimetype = 'text/plain'
-    elif message_format == 'html':
-        template_name = html_template_name
-        mimetype = 'text/html'
-    else:
-        raise Http404
-
-    context = {
-        'review_request': review_request,
-        'review': review,
+    return {
+        'user': reply.user,
         'reply': reply,
-        'user': request.user,
-        'domain': Site.objects.get_current().domain,
-        'domain_method': siteconfig.get("site_domain_method"),
+        'review': review,
+        'review_request': review_request,
     }
-
-    has_error, context['comment_entries'] = \
-        build_diff_comment_fragments(
-            reply.ordered_comments, context,
-            "notifications/email_diff_comment_fragment.html")
-
-    return HttpResponse(
-        render_to_string(template_name, RequestContext(request, context)),
-        content_type=mimetype)
 
 
 @check_login_required

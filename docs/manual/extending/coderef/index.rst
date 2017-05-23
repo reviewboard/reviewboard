@@ -135,6 +135,7 @@ E-mail and WebHooks
 
    reviewboard.notifications
    reviewboard.notifications.email
+   reviewboard.notifications.email.decorators
    reviewboard.notifications.email.hooks
    reviewboard.notifications.email.message
    reviewboard.notifications.email.utils

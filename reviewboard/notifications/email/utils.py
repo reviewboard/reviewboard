@@ -269,3 +269,40 @@ def recipients_to_addresses(recipients, review_request_id=None):
                                                            review_request_id))
 
     return addresses
+
+
+def send_email(email_builder, **kwargs):
+    """Attempt to send an e-mail, logging any exceptions that occur.
+
+    Args:
+        email_builder (callable):
+            A function that generates an :py:class:`EmailMessage`.
+
+        **kwargs (dict):
+            Keyword arguments to provide to ``email_builder``.
+
+    Returns:
+        tuple:
+        A tuple of:
+
+        * The message that was generated (:py:class`EmailMessage`).
+        * Whether or not the message was sent successfully (:py:class:`bool`).
+    """
+    message = email_builder(**kwargs)
+
+    if message is None:
+        return None, False
+
+    try:
+        message.send()
+    except Exception:
+        logging.exception(
+            'Could not send e-mail message with subject "%s" from "%s" to '
+            '"%s"',
+            message.subject,
+            message.from_email,
+            message.to + (message.cc or []))
+
+        return message, False
+
+    return message, True
