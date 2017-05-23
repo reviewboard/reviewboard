@@ -260,7 +260,14 @@ class DefaultReviewerResource(WebAPIResource):
         form_data = {}
 
         if 'groups' in kwargs:
-            group_names = kwargs['groups'].split(',')
+            group_names = [
+                name
+                for name in (
+                    name.strip()
+                    for name in kwargs['groups'].split(',')
+                )
+                if name
+            ]
             group_ids = [
                 group['pk']
                 for group in Group.objects.filter(
@@ -280,7 +287,11 @@ class DefaultReviewerResource(WebAPIResource):
             try:
                 repo_ids = [
                     int(repo_id)
-                    for repo_id in kwargs['repositories'].split(',')
+                    for repo_id in (
+                        repo_id.strip()
+                        for repo_id in kwargs['repositories'].split(',')
+                    )
+                    if repo_id
                 ]
             except ValueError:
                 invalid_fields['repositories'] = [
@@ -299,7 +310,14 @@ class DefaultReviewerResource(WebAPIResource):
             form_data['repository'] = repo_ids
 
         if 'users' in kwargs:
-            usernames = kwargs['users'].split(',')
+            usernames = [
+                name
+                for name in (
+                    name.strip()
+                    for name in kwargs['users'].split(',')
+                )
+                if name
+            ]
 
             user_ids = [
                 user['pk']
