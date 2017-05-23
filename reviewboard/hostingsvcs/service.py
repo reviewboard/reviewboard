@@ -57,6 +57,26 @@ class URLRequest(BaseURLRequest):
         """
         return self.method
 
+    def add_basic_auth(self, username, password):
+        """Add basic authentication headers to the request.
+
+        Args:
+            username (unicode or bytes):
+                The username.
+
+            password (unicode or bytes):
+                The password.
+        """
+        if isinstance(username, six.text_type):
+            username = username.encode('utf-8')
+
+        if isinstance(password, six.text_type):
+            password = password.encode('utf-8')
+
+        auth = b'%s:%s' % (username, password)
+        self.add_header(HTTPBasicAuthHandler,
+                        b'Basic %s' % base64.b64encode(auth))
+
 
 class HostingServiceClient(object):
     """Client for communicating with a hosting service's API.
@@ -103,12 +123,17 @@ class HostingServiceClient(object):
         return self.http_request(url, body=body, headers=headers,
                                  method='POST', **kwargs)
 
-    def http_request(self, url, body=None, headers={}, method='GET', **kwargs):
+    def http_request(self, url, body=None, headers={}, method='GET',
+                     username=None, password=None):
         """Perform some HTTP operation on a given URL."""
-        r = self._build_request(url, body, headers, method=method, **kwargs)
-        u = urlopen(r)
+        request = URLRequest(url, body, headers, method=method)
 
-        return u.read(), u.headers
+        if username is not None and password is not None:
+            request.add_basic_auth(username, password)
+
+        response = urlopen(request)
+
+        return response.read(), response.headers
 
     #
     # JSON utility methods
@@ -138,25 +163,6 @@ class HostingServiceClient(object):
     #
     # Internal utilities
     #
-
-    def _build_request(self, url, body=None, headers={}, username=None,
-                       password=None, method='GET'):
-        """Build a URLRequest object, including HTTP Basic auth"""
-        r = URLRequest(url, body, headers, method=method)
-
-        if username is not None and password is not None:
-            if isinstance(username, six.text_type):
-                username = username.encode('utf-8')
-
-            if isinstance(password, six.text_type):
-                password = password.encode('utf-8')
-
-            auth_key = username + b':' + password
-            r.add_header(HTTPBasicAuthHandler.auth_header,
-                         b'Basic %s' %
-                         base64.b64encode(auth_key))
-
-        return r
 
     def _build_form_data(self, fields, files):
         """Encodes data for use in an HTTP POST."""
