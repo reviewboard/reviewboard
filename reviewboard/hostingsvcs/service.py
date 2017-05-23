@@ -160,28 +160,58 @@ class HostingServiceClient(object):
 
     def _build_form_data(self, fields, files):
         """Encodes data for use in an HTTP POST."""
-        BOUNDARY = mimetools.choose_boundary()
-        content = ""
+        boundary = mimetools.choose_boundary()
+        content_parts = []
 
-        for key in fields:
-            content += "--" + BOUNDARY + "\r\n"
-            content += "Content-Disposition: form-data; name=\"%s\"\r\n" % key
-            content += "\r\n"
-            content += six.text_type(fields[key]) + "\r\n"
+        for key, value in six.iteritems(fields):
+            if isinstance(key, six.text_type):
+                key = key.encode('utf-8')
 
-        for key in files:
-            filename = files[key]['filename']
-            value = files[key]['content']
-            content += "--" + BOUNDARY + "\r\n"
-            content += "Content-Disposition: form-data; name=\"%s\"; " % key
-            content += "filename=\"%s\"\r\n" % filename
-            content += "\r\n"
-            content += value + "\r\n"
+            if isinstance(value, six.text_type):
+                value = value.encode('utf-8')
 
-        content += "--" + BOUNDARY + "--\r\n"
-        content += "\r\n"
+            content_parts.append(
+                b'--%(boundary)s\r\n'
+                b'Content-Disposition: form-data; name="%(key)s"\r\n'
+                b'\r\n'
+                b'%(value)s\r\n'
+                % {
+                    'boundary': boundary,
+                    'key': key,
+                    'value': value,
+                }
+            )
 
-        content_type = "multipart/form-data; boundary=%s" % BOUNDARY
+        if files:
+            for key, data in six.iteritems(files):
+                filename = data['filename']
+                content = data['content']
+
+                if isinstance(key, six.text_type):
+                    key = key.encode('utf-8')
+
+                if isinstance(filename, six.text_type):
+                    filename = filename.encode('utf-8')
+
+                if isinstance(content, six.text_type):
+                    content = content.encode('utf-8')
+
+                content_parts.append(
+                    b'--%(boundary)s\r\n'
+                    b'Content-Disposition: form-data; name="%(key)s";'
+                    b' filename="%(filename)s"\r\n'
+                    b'\r\n'
+                    b'%(value)s\r\n'
+                    % {
+                        'boundary': boundary,
+                        'key': key,
+                        'filename': filename,
+                        'value': content,
+                    }
+                )
+
+        content = b''.join(content_parts)
+        content_type = b'multipart/form-data; boundary=%s' % boundary
 
         return content, content_type
 
