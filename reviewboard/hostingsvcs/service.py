@@ -1,3 +1,5 @@
+"""The base hosting service class and associated definitions."""
+
 from __future__ import unicode_literals
 
 import base64
@@ -508,6 +510,7 @@ class HostingService(object):
     service), along with configuration specific to the plan. These plans will
     be available when configuring the repository.
     """
+
     name = None
     plans = None
     supports_bug_trackers = False
@@ -534,48 +537,87 @@ class HostingService(object):
     bug_tracker_field = None
 
     def __init__(self, account):
+        """Initialize the hosting service.
+
+        Args:
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The account to use with the service.
+        """
         assert account
         self.account = account
 
         self.client = self.client_class(self)
 
     def is_authorized(self):
-        """Returns whether or not the account is currently authorized.
+        """Return whether or not the account is currently authorized.
 
         An account may no longer be authorized if the hosting service
         switches to a new API that doesn't match the current authorization
         records. This function will determine whether the account is still
         considered authorized.
+
+        Returns:
+            bool:
+            Whether or not the associated account is authorized.
         """
         return False
 
     def get_password(self):
-        """Returns the raw password for this hosting service.
+        """Return the raw password for this hosting service.
 
         Not all hosting services provide this, and not all would need it.
         It's primarily used when building a Subversion client, or other
         SCMTools that still need direct access to the repository itself.
+
+        Returns:
+            unicode:
+            The password.
         """
         return None
 
     def is_ssh_key_associated(self, repository, key):
-        """Returns whether or not the key is associated with the repository.
+        """Return whether or not the key is associated with the repository.
 
-        If the ``key`` (an instance of :py:mod:`paramiko.PKey`) is present
-        among the hosting service's deploy keys for a given ``repository`` or
-        account, then it is considered associated. If there is a problem
-        checking with the hosting service, an :py:exc:`SSHKeyAssociationError`
-        will be raised.
+        If the given key is present amongst the hosting service's deploy keys
+        for the given repository, then it is considered to be associated.
+
+        Sub-classes should implement this when the hosting service supports
+        SSH key association.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository the key must be associated with.
+
+            key (paramiko.PKey):
+                The key to check for association.
+
+        Returns:
+            bool:
+            Whether or not the key is associated with the repository.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.SSHKeyAssociationError:
+                If an error occured during communication with the hosting
+                service.
         """
         raise NotImplementedError
 
     def associate_ssh_key(self, repository, key):
-        """Associates an SSH key with a given repository
+        """Associate an SSH key with a given repository.
 
-        The ``key`` (an instance of :py:mod:`paramiko.PKey`) will be added to
-        the hosting service's list of deploy keys (if possible). If there
-        is a problem uploading the key to the hosting service, a
-        :py:exc:`SSHKeyAssociationError` will be raised.
+        Sub-classes should implement this when the hosting service supports
+        SSH key association.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to associate the key with.
+
+            key (paramiko.PKey):
+                The key to add to the repository's list of deploy keys.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.SSHKeyAssociationError:
+                If an error occured during key association.
         """
         raise NotImplementedError
 
@@ -637,33 +679,126 @@ class HostingService(object):
         raw credentials, as well as the SCMTool class being used, the
         LocalSite's name (if any), and all field data from the
         HostingServiceForm as keyword arguments.
+
+        Args:
+            path (unicode):
+                The repository URL.
+
+            username (unicode):
+                The username to use.
+
+            password (unicode):
+                The password to use.
+
+            scmtool_class (type):
+                The subclass of :py:class:`~reviewboard.scmtools.core.SCMTool`
+                that should be used.
+
+            local_site_name (unicode):
+                The name of the local site associated with the repository, or
+                ``None`.
+
+            *args (tuple):
+                Additional positional arguments, unique to each hosting
+                service.
+
+            **kwargs (dict):
+                Additional keyword arguments, unique to each hosting service.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.RepositoryError:
+                The repository is not valid.
         """
-        return scmtool_class.check_repository(path, username, password,
-                                              local_site_name)
+        scmtool_class.check_repository(path, username, password,
+                                       local_site_name)
 
     def get_file(self, repository, path, revision, *args, **kwargs):
+        """Return the requested file.
+
+        Files can only be returned from hosting services that support
+        repositories.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to retrieve the file from.
+
+            path (unicode):
+                The file path.
+
+            revision (unicode):
+                The revision the file should be retrieved from.
+
+            *args (tuple):
+                Ignored positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the SCMTool.
+
+        Returns:
+            bytes:
+            The contents of the file.
+
+        Raises:
+            NotImplementedError:
+                If this hosting service does not support repositories.
+        """
         if not self.supports_repositories:
             raise NotImplementedError
 
         return repository.get_scmtool().get_file(path, revision, **kwargs)
 
     def get_file_exists(self, repository, path, revision, *args, **kwargs):
+        """Return whether or not the given path exists in the repository.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to check for file existence.
+
+            path (unicode):
+                The file path.
+
+            revision (unicode):
+                The revision to check for file existence.
+
+            *args (tuple):
+                Ignored positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments to be passed to the SCMTool.
+
+        Returns:
+            bool:
+            Whether or not the file exists at the given revision in the
+            repository.
+
+        Raises:
+            NotImplementedError:
+                If this hosting service does not support repositories.
+        """
         if not self.supports_repositories:
             raise NotImplementedError
 
         return repository.get_scmtool().file_exists(path, revision, **kwargs)
 
     def get_branches(self, repository):
-        """Get a list of all branches in the repositories.
+        """Return a list of all branches in the repositories.
 
         This should be implemented by subclasses, and is expected to return a
         list of Branch objects. One (and only one) of those objects should have
         the "default" field set to True.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository for which branches should be returned.
+
+        Returns:
+            list of reviewboard.scmtools.core.Branch:
+            The branches.
         """
         raise NotImplementedError
 
     def get_commits(self, repository, branch=None, start=None):
-        """Get a list of commits backward in history from a given point.
+        """Return a list of commits backward in history from a given point.
 
         This should be implemented by subclasses, and is expected to return a
         list of Commit objects (usually 30, but this is flexible depending on
@@ -672,20 +807,77 @@ class HostingService(object):
         This can be called multiple times in succession using the "parent"
         field of the last entry as the start parameter in order to paginate
         through the history of commits in the repository.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to retrieve commits from.
+
+            branch (unicode, optional):
+                The branch to retrieve from. If this is not provided, the
+                default branch will be used.
+
+            start (unicode, optional):
+                An optional starting revision. If this is not provided, the
+                most recent commits will be returned.
+
+        Returns:
+            list of reviewboard.scmtools.core.Commit:
+            The retrieved commits.
         """
         raise NotImplementedError
 
     def get_change(self, repository, revision):
-        """Get an individual change.
+        """Return an individual change.
 
-        This should be implemented by subclasses, and is expected to return a
-        tuple of (commit message, diff), both strings.
+        This method should be implemented by subclasses.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to get the change from.
+
+            revision (unicode):
+                The revision to retrieve.
+
+        Returns:
+            reviewboard.scmtools.core.Commit:
+            The change.
         """
         raise NotImplementedError
 
     @classmethod
     def get_repository_fields(cls, username, hosting_url, plan, tool_name,
                               field_vars):
+        """Return the repository fields based on the given plan and tool.
+
+        If the ``plan`` argument is specified, that will be used to fill in
+        some tool-specific field values. Otherwise they will be retrieved from
+        the :py:class:`HostingService`'s defaults.
+
+        Args:
+            username (unicode):
+                The username.
+
+            hosting_url (unicode):
+                The URL of the repository.
+
+            plan (unicode):
+                The name of the plan.
+
+            tool_name (unicode):
+                The :py:attr:`~reviewboard.scmtools.core.SCMTool.name` of the
+                :py:class:`~reviewboard.scmtools.core.SCMTool`.
+
+            field_vars (dict):
+                The field values from the hosting service form.
+
+        Returns:
+            dict:
+            The filled in repository fields.
+
+        Raises:
+            KeyError:
+               The provided plan is not valid for the hosting service.
+        """
         if not cls.supports_repositories:
             raise NotImplementedError
 
@@ -724,20 +916,38 @@ class HostingService(object):
         return results
 
     def get_repository_hook_instructions(self, request, repository):
-        """Returns instructions for setting up incoming webhooks.
+        """Return instructions for setting up incoming webhooks.
 
         Subclasses can override this (and set
         `has_repository_hook_instructions = True` on the subclass) to provide
         instructions that administrators can see when trying to configure an
         incoming webhook for the hosting service.
 
-        This is expected to return HTML for the instructions. The function
-        is responsible for escaping any content.
+        Args:
+            request (django.http.HttpRequest):
+                The current HTTP request.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository for webhook setup instructions.
+
+        Returns:
+            django.utils.text.SafeText:
+            Rendered and escaped HTML for displaying to the user.
         """
         raise NotImplementedError
 
     @classmethod
     def get_bug_tracker_requires_username(cls, plan=None):
+        """Return whether or not the bug tracker requires usernames.
+
+        Args:
+            plan (unicode, optional):
+                The name of the plan associated with the account.
+
+        Raises:
+            NotImplementedError:
+                If the hosting service does not support bug tracking.
+        """
         if not cls.supports_bug_trackers:
             raise NotImplementedError
 
@@ -746,6 +956,23 @@ class HostingService(object):
 
     @classmethod
     def get_bug_tracker_field(cls, plan, field_vars):
+        """Return the bug tracker field for the given plan.
+
+        Args:
+            plan (unicode):
+                The name of the plan associated with the account.
+
+            field_vars (dict):
+                The field values from the hosting service form.
+
+        Returns:
+            unicode:
+            The value of the bug tracker field.
+
+        Raises
+            KeyError:
+               The provided plan is not valid for the hosting service.
+        """
         if not cls.supports_bug_trackers:
             raise NotImplementedError
 
@@ -771,6 +998,26 @@ class HostingService(object):
 
     @classmethod
     def _get_field(cls, plan, name, default=None):
+        """Return the value of the field for the given plan.
+
+        If ``plan`` is not ``None``, the field will be looked up in the plan
+        configuration for the service. Otherwise the hosting service's default
+        value will be used.
+
+        Args:
+            plan (unicode):
+                The plan name.
+
+            name (unicode):
+                The field name.
+
+            default (unicode, optional):
+                A default value if the field is not present.
+
+        Returns:
+            unicode:
+            The field value.
+        """
         if cls.plans:
             assert plan
 
