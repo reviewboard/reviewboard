@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
 from django.utils import six
+from django.utils.six.moves import zip
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import INVALID_FORM_DATA
 
@@ -456,31 +457,30 @@ class ResourceItemTests(BaseWebAPITestCase):
     resource = resources.default_reviewer
 
     def compare_item(self, item_rsp, default_reviewer):
-        self.assertEqual(default_reviewer.name, 'default1')
-        self.assertEqual(default_reviewer.file_regex, '.*')
-        self.assertEqual(item_rsp['name'], 'default1')
-        self.assertEqual(item_rsp['file_regex'], '.*')
+        self.assertEqual(default_reviewer.name, item_rsp['name'])
+        self.assertEqual(default_reviewer.file_regex, item_rsp['file_regex'])
 
-        user_rsps = item_rsp['users']
         users = list(default_reviewer.people.all())
-        self.assertEqual(len(user_rsps), 1)
-        self.assertEqual(len(users), 1)
-        self.assertEqual(user_rsps[0]['title'], 'doc')
-        self.assertEqual(users[0].username, user_rsps[0]['title'])
 
-        group_rsps = item_rsp['groups']
+        for user_rsp, user in zip(item_rsp['users'], users):
+            self.assertEqual(user_rsp['title'], user.username)
+
+        self.assertEqual(len(item_rsp['users']), len(users))
+
         groups = list(default_reviewer.groups.all())
-        self.assertEqual(len(group_rsps), 1)
-        self.assertEqual(len(groups), 1)
-        self.assertEqual(group_rsps[0]['title'], 'group1')
-        self.assertEqual(groups[0].name, group_rsps[0]['title'])
 
-        repo_rsps = item_rsp['repositories']
+        for group_rsp, group in zip(item_rsp['groups'], groups):
+            self.assertEqual(group_rsp['title'], group.name)
+
+        self.assertEqual(len(item_rsp['groups']), len(groups))
+
         repos = list(default_reviewer.repository.all())
-        self.assertEqual(len(repo_rsps), 1)
-        self.assertEqual(len(repos), 1)
-        self.assertEqual(repo_rsps[0]['title'], 'Test Repo')
-        self.assertEqual(repos[0].name, repo_rsps[0]['title'])
+
+        for repo_rsp, repo in zip(item_rsp['repositories'], repos):
+            self.assertEqual(repo_rsp['title'], repo.name)
+
+        self.assertEqual(len(item_rsp['repositories']), len(repos))
+
 
     #
     # HTTP DELETE tests
@@ -726,3 +726,173 @@ class ResourceItemTests(BaseWebAPITestCase):
 
         self.assertIn('fields', rsp)
         self.assertIn('repositories', rsp['fields'])
+
+    @add_fixtures(['test_users'])
+    def test_put_clear_groups(self):
+        """Testing PUT <URL> API with empty groups field"""
+        group = Group.objects.create(name='group1')
+        default_reviewer = DefaultReviewer.objects.create(name='default1',
+                                                          file_regex='.*')
+        default_reviewer.groups.add(group)
+
+        self._login_user(admin=True)
+
+        rsp = self.api_put(
+            get_default_reviewer_item_url(default_reviewer.pk),
+            {
+                'file_regex': '.*',
+                'name': 'default1',
+                'groups': ''
+            },
+            expected_mimetype=default_reviewer_item_mimetype)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        default_reviewer = DefaultReviewer.objects.get(pk=default_reviewer.pk)
+        self.assertEqual(list(default_reviewer.groups.all()), [])
+
+        self.assertIn('default_reviewer', rsp)
+        self.compare_item(rsp['default_reviewer'], default_reviewer)
+
+    @add_fixtures(['test_users'])
+    def test_put_groups_only_commas(self):
+        """Testing PUT <URL> API with groups field containing only commas"""
+        group = Group.objects.create(name='group1')
+        default_reviewer = DefaultReviewer.objects.create(name='default1',
+                                                          file_regex='.*')
+        default_reviewer.groups.add(group)
+
+        self._login_user(admin=True)
+
+        rsp = self.api_put(
+            get_default_reviewer_item_url(default_reviewer.pk),
+            {
+                'file_regex': '.*',
+                'name': 'default1',
+                'groups': ' , , , '
+            },
+            expected_mimetype=default_reviewer_item_mimetype)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        default_reviewer = DefaultReviewer.objects.get(pk=default_reviewer.pk)
+        self.assertEqual(list(default_reviewer.groups.all()), [])
+
+        self.assertIn('default_reviewer', rsp)
+        self.compare_item(rsp['default_reviewer'], default_reviewer)
+
+    @add_fixtures(['test_users'])
+    def test_put_clear_users(self):
+        """Testing PUT <URL> API with empty users field"""
+        doc = User.objects.get(username='doc')
+        default_reviewer = DefaultReviewer.objects.create(name='default1',
+                                                          file_regex='.*')
+        default_reviewer.people.add(doc)
+
+        self._login_user(admin=True)
+
+        rsp = self.api_put(
+            get_default_reviewer_item_url(default_reviewer.pk),
+            {
+                'file_regex': '.*',
+                'name': 'default1',
+                'users': ''
+            },
+            expected_mimetype=default_reviewer_item_mimetype)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        default_reviewer = DefaultReviewer.objects.get(pk=default_reviewer.pk)
+        self.assertEqual(list(default_reviewer.people.all()), [])
+
+        self.assertIn('default_reviewer', rsp)
+        self.compare_item(rsp['default_reviewer'], default_reviewer)
+
+    @add_fixtures(['test_users'])
+    def test_put_users_only_commas(self):
+        """Testing PUT <URL> API with users field containing only commas"""
+        doc = User.objects.get(username='doc')
+        default_reviewer = DefaultReviewer.objects.create(name='default1',
+                                                          file_regex='.*')
+        default_reviewer.people.add(doc)
+
+        self._login_user(admin=True)
+
+        rsp = self.api_put(
+            get_default_reviewer_item_url(default_reviewer.pk),
+            {
+                'file_regex': '.*',
+                'name': 'default1',
+                'users': ' , , , '
+            },
+            expected_mimetype=default_reviewer_item_mimetype)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        default_reviewer = DefaultReviewer.objects.get(pk=default_reviewer.pk)
+        self.assertEqual(list(default_reviewer.people.all()), [])
+
+        self.assertIn('default_reviewer', rsp)
+        self.compare_item(rsp['default_reviewer'], default_reviewer)
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_put_clear_repositories(self):
+        """Testing PUT <URL> API with empty repositories field"""
+        repository = self.create_repository()
+        default_reviewer = DefaultReviewer.objects.create(name='default1',
+                                                          file_regex='.*')
+        default_reviewer.repository.add(repository)
+
+        self._login_user(admin=True)
+
+        rsp = self.api_put(
+            get_default_reviewer_item_url(default_reviewer.pk),
+            {
+                'file_regex': '.*',
+                'name': 'default1',
+                'repositories': '',
+            },
+            expected_mimetype=default_reviewer_item_mimetype)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        default_reviewer = DefaultReviewer.objects.get(pk=default_reviewer.pk)
+        self.assertEqual(list(default_reviewer.repository.all()), [])
+
+        self.assertIn('default_reviewer', rsp)
+        self.compare_item(rsp['default_reviewer'], default_reviewer)
+
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_put_repositories_only_comma(self):
+        """Testing PUT <URL> API with repositories field containing only
+        commas
+        """
+        repository = self.create_repository()
+        default_reviewer = DefaultReviewer.objects.create(name='default1',
+                                                          file_regex='.*')
+        default_reviewer.repository.add(repository)
+
+        self._login_user(admin=True)
+
+        rsp = self.api_put(
+            get_default_reviewer_item_url(default_reviewer.pk),
+            {
+                'file_regex': '.*',
+                'name': 'default1',
+                'repositories': ' , , , ',
+            },
+            expected_mimetype=default_reviewer_item_mimetype)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        default_reviewer = DefaultReviewer.objects.get(pk=default_reviewer.pk)
+        self.assertEqual(list(default_reviewer.repository.all()), [])
+
+        self.assertIn('default_reviewer', rsp)
+        self.compare_item(rsp['default_reviewer'], default_reviewer)
