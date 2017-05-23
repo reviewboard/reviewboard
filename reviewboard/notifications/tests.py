@@ -19,10 +19,11 @@ from kgb import SpyAgency
 from reviewboard.accounts.models import Profile, ReviewRequestVisit
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.diffviewer.models import FileDiff
-from reviewboard.notifications.email import (build_recipients,
-                                             get_email_addresses_for_group,
-                                             recipients_to_addresses,
-                                             send_review_mail)
+from reviewboard.notifications.email.signal_handlers import send_review_mail
+from reviewboard.notifications.email.utils import (
+    build_recipients,
+    get_email_addresses_for_group,
+    recipients_to_addresses)
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.notifications.webhooks import (FakeHTTPRequest,
                                                 dispatch_webhook_event,

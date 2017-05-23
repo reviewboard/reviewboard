@@ -133,9 +133,15 @@ E-mail and WebHooks
 .. autosummary::
    :toctree: python
 
+   reviewboard.notifications
    reviewboard.notifications.email
+   reviewboard.notifications.email.hooks
+   reviewboard.notifications.email.message
+   reviewboard.notifications.email.utils
+   reviewboard.notifications.forms
    reviewboard.notifications.managers
    reviewboard.notifications.models
+   reviewboard.notifications.webhooks
 
 
 Review Requests and Reviews

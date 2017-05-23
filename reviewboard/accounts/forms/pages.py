@@ -15,7 +15,7 @@ from djblets.configforms.forms import ConfigPageForm
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.avatars import avatar_services
-from reviewboard.notifications.email import mail_password_changed
+from reviewboard.notifications.email.signal_handlers import mail_password_changed
 from reviewboard.reviews.models import Group
 from reviewboard.site.urlresolvers import local_site_reverse
 
