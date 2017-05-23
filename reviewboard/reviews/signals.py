@@ -33,19 +33,26 @@ review_request_published = Signal(providing_args=['user', 'review_request',
 #:     review_request (reviewboard.reviews.models.ReviewRequest):
 #:         The review request being closed.
 #:
-#:     type (unicode):
+#:     close_type (unicode):
 #:         Describes how the review request is being closed. It is one of
 #:         :py:data:`~reviewboard.reviews.models.ReviewRequest.SUBMITTED` or
 #:         :py:data:`~reviewboard.reviews.models.ReviewRequest.DISCARDED`.
+#:
+#:     type (unicode):
+#:         Identical to ``close_type``, but deprecated because ``type`` is a
+#:         built-in.
+#:
+#:         .. deprecated:: 3.0
+#:            Deprecated in favour of ``close_type``.
 #:
 #:     description (unicode):
 #:         The provided closing description.
 #:
 #:     rich_text (bool):
 #:         Whether or not the description is rich text (Markdown).
-review_request_closing = Signal(providing_args=['user', 'review_request',
-                                                'type', 'description',
-                                                'rich_text'])
+review_request_closing = Signal(providing_args=[
+    'user', 'review_request',  'close_type', 'type', 'description',
+    'rich_text'])
 
 #: Emitted when a review request has been closed.
 #:
@@ -56,10 +63,17 @@ review_request_closing = Signal(providing_args=['user', 'review_request',
 #:     review_request (reviewboard.reviews.models.ReviewRequest):
 #:         The review request that was closed.
 #:
-#:     type (unicode):
+#:     close_type (unicode):
 #:         Describes how the review request was closed. It is one of
 #:         :py:data:`~reviewboard.reviews.models.ReviewRequest.SUBMITTED` or
 #:         :py:data:`~reviewboard.reviews.models.ReviewRequest.DISCARDED`.
+#:
+#:     type (unicode):
+#:         Identical to ``close_type``, but deprecated because ``type`` is a
+#:         builtin.
+#:
+#:         .. deprecated:: 3.0
+#:            Deprecated in favour of ``close_type``.
 #:
 #:     description (unicode):
 #:         The provided closing description.

@@ -237,7 +237,7 @@ def _serialize_reply(reply, request):
     }
 
 
-def review_request_closed_cb(user, review_request, type, **kwargs):
+def review_request_closed_cb(user, review_request, close_type, **kwargs):
     event = 'review_request_closed'
     webhook_targets = WebHookTarget.objects.for_event(
         event, review_request.local_site_id, review_request.repository_id)
@@ -248,9 +248,9 @@ def review_request_closed_cb(user, review_request, type, **kwargs):
         local_site_name = None
 
     if webhook_targets:
-        if type == review_request.SUBMITTED:
+        if close_type == review_request.SUBMITTED:
             close_type = 'submitted'
-        elif type == review_request.DISCARDED:
+        elif close_type == review_request.DISCARDED:
             close_type = 'discarded'
         else:
             logging.error('Unexpected close type %s for review request %s '

@@ -44,7 +44,8 @@ def _ensure_unicode(text):
     return text
 
 
-def review_request_closed_cb(sender, user, review_request, type, **kwargs):
+def review_request_closed_cb(sender, user, review_request, close_type,
+                             **kwargs):
     """Send e-mail when a review request is closed.
 
     Listens to the
@@ -55,7 +56,7 @@ def review_request_closed_cb(sender, user, review_request, type, **kwargs):
     siteconfig = SiteConfiguration.objects.get_current()
 
     if siteconfig.get('mail_send_review_close_mail'):
-        mail_review_request(review_request, user, close_type=type)
+        mail_review_request(review_request, user, close_type=close_type)
 
 
 def review_request_published_cb(sender, user, review_request, trivial,
