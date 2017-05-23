@@ -58,7 +58,7 @@ class URLRequest(BaseURLRequest):
         return self.method
 
     def add_basic_auth(self, username, password):
-        """Add basic authentication headers to the request.
+        """Add HTTP Basic Authentication headers to the request.
 
         Args:
             username (unicode or bytes):
@@ -88,30 +88,149 @@ class HostingServiceClient(object):
     additional checking (such as GitHub's checking of rate limit headers), or
     add higher-level API functionality.
     """
+
     def __init__(self, hosting_service):
+        """Initialize the client.
+
+        This method is a no-op. Subclasses requiring access to the hosting
+        service or account should override this method.
+
+        Args:
+            hosting_service (HostingService):
+                The hosting service that is using this client.
+        """
         pass
 
     #
     # HTTP utility methods
     #
 
-    def http_delete(self, url, headers={}, *args, **kwargs):
-        """Perform an HTTP DELETE on the given URL."""
+    def http_delete(self, url, headers=None, *args, **kwargs):
+        """Perform an HTTP DELETE on the given URL.
+
+        Args:
+            url (unicode):
+                The URL to perform the request on.
+
+            headers (dict, optional):
+                Extra headers to include with the request.
+
+            *args (tuple):
+                Additional positional arguments to pass to
+                :py:meth:`http_request`.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to
+                :py:meth:`http_request`.
+
+        Returns:
+            tuple:
+            A tuple of:
+
+            * The response body (:py:class:`bytes`).
+            * The response headers (:py:class:`dict`).
+
+        Raises:
+            urllib2.HTTPError:
+                When the HTTP request fails.
+
+            urllib2.URLError:
+                When there is an error communicating with the URL.
+        """
         return self.http_request(url, headers=headers, method='DELETE',
                                  **kwargs)
 
-    def http_get(self, url, *args, **kwargs):
-        """Perform an HTTP GET on the given URL."""
-        return self.http_request(url, method='GET', **kwargs)
+    def http_get(self, url, headers=None, *args, **kwargs):
+        """Perform an HTTP GET on the given URL.
 
-    def http_post(self, url, body=None, fields={}, files={}, content_type=None,
-                  headers={}, *args, **kwargs):
-        """Perform an HTTP POST on the given URL."""
-        headers = headers.copy()
+        Args:
+            url (unicode):
+                The URL to perform the request on.
+
+            headers (dict, optional):
+                Extra headers to include with the request.
+
+            *args (tuple):
+                Additional positional arguments to pass to
+                :py:meth:`http_request`.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to
+                :py:meth:`http_request`.
+
+        Returns:
+            tuple:
+            A tuple of:
+
+            * The response body (:py:class:`bytes`)
+            * The response headers (:py:class:`dict`)
+
+        Raises:
+            urllib2.HTTPError:
+                When the HTTP request fails.
+
+            urllib2.URLError:
+                When there is an error communicating with the URL.
+        """
+        return self.http_request(url, headers=headers, method='GET', **kwargs)
+
+    def http_post(self, url, body=None, fields=None, files=None,
+                  content_type=None, headers=None, *args, **kwargs):
+        """Perform an HTTP POST on the given URL.
+
+        Args:
+            url (unicode):
+                The URL to perform the request on.
+
+            body (unicode, optional):
+                The request body. if not provided, it will be generated from
+                the ``fields`` and ``files`` arguments.
+
+            fields (dict, optional):
+                Form fields to use to generate the request body. This argument
+                will only be used if ``body`` is ``None``.
+
+            files (dict, optional):
+                Files to use to generate the request body. This argument will
+                only be used if ``body`` is ``None``.
+
+            content_type (unicode, optional):
+                The content type of the request. If provided, it will be
+                appended as the :mailheader:`Content-Type` header.
+
+            headers (dict, optional):
+                Extra headers to include with the request.
+
+            *args (tuple):
+                Additional positional arguments to pass to
+                :py:meth:`http_request`.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to
+                :py:meth:`http_request`.
+
+        Returns:
+            tuple:
+            A tuple of:
+
+            * The response body (:py:class:`bytes`)
+            * The response headers (:py:class:`dict`)
+
+        Raises:
+            urllib2.HTTPError:
+                When the HTTP request fails.
+
+            urllib2.URLError:
+                When there is an error communicating with the URL.
+        """
+        if headers:
+            headers = headers.copy()
+        else:
+            headers = {}
 
         if body is None:
             if fields is not None:
-                body, content_type = self._build_form_data(fields, files)
+                body, content_type = self.build_form_data(fields, files)
             else:
                 body = ''
 
@@ -123,9 +242,47 @@ class HostingServiceClient(object):
         return self.http_request(url, body=body, headers=headers,
                                  method='POST', **kwargs)
 
-    def http_request(self, url, body=None, headers={}, method='GET',
+    def http_request(self, url, body=None, headers=None, method='GET',
                      username=None, password=None):
-        """Perform some HTTP operation on a given URL."""
+        """Perform some HTTP operation on a given URL.
+
+        If the ``username`` and ``password`` arguments are provided, the
+        headers required for HTTP Basic Authentication will be added to
+        the request.
+
+        Args:
+            url (unicode):
+                The URL to open.
+
+            body (unicode, optional):
+                The request body.
+
+            headers (dict, optional):
+                Headers to include in the request.
+
+            method (unicode, optional):
+                The HTTP method to use to perform the request.
+
+            username (unicode, optional):
+                The username to use for HTTP Basic Authentication.
+
+            password (unicode, optional):
+                The password to use for HTTP Basic Authentication.
+
+        Returns:
+            tuple:
+            A tuple of:
+
+            * The response body (:py:class:`bytes`)
+            * The response headers (:py:class:`dict`)
+
+        Raises:
+            urllib2.HTTPError:
+                When the HTTP request fails.
+
+            urllib2.URLError:
+                When there is an error communicating with the URL.
+        """
         request = URLRequest(url, body, headers, method=method)
 
         if username is not None and password is not None:
@@ -140,19 +297,116 @@ class HostingServiceClient(object):
     #
 
     def json_delete(self, *args, **kwargs):
-        """Perform an HTTP DELETE and interpret the results as JSON."""
+        """Perform an HTTP DELETE and interpret the results as JSON.
+
+        Args:
+            *args (tuple):
+                Additional positional arguments to pass to
+                :py:meth:`http_delete`.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to
+                :py:meth:`http_delete`.
+
+        Returns:
+            tuple:
+            A tuple of:
+
+            * The JSON data (in the appropriate type)
+            * The response headers (:py:class:`dict`)
+
+        Raises:
+            urllib2.HTTPError:
+                When the HTTP request fails.
+
+            urllib2.URLError:
+                When there is an error communicating with the URL.
+        """
         return self._do_json_method(self.http_delete, *args, **kwargs)
 
     def json_get(self, *args, **kwargs):
-        """Perform an HTTP GET and interpret the results as JSON."""
+        """Perform an HTTP GET and interpret the results as JSON.
+
+        Args:
+            *args (tuple):
+                Additional positional arguments to pass to
+                :py:meth:`http_get`.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to
+                :py:meth:`http_get`.
+
+        Returns:
+            tuple:
+            A tuple of:
+
+            * The JSON data (in the appropriate type)
+            * The response headers (:py:class:`dict`)
+
+        Raises:
+            urllib2.HTTPError:
+                When the HTTP request fails.
+
+            urllib2.URLError:
+                When there is an error communicating with the URL.
+        """
         return self._do_json_method(self.http_get, *args, **kwargs)
 
     def json_post(self, *args, **kwargs):
-        """Perform an HTTP POST and interpret the results as JSON."""
+        """Perform an HTTP POST and interpret the results as JSON.
+
+        Args:
+            *args (tuple):
+                Additional positional arguments to pass to
+                :py:meth:`http_post`.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to
+                :py:meth:`http_post`.
+
+        Returns:
+            tuple:
+            A tuple of:
+
+            * The JSON data (in the appropriate type)
+            * The response headers (:py:class:`dict`)
+
+        Raises:
+            urllib2.HTTPError:
+                When the HTTP request fails.
+
+            urllib2.URLError:
+                When there is an error communicating with the URL.
+        """
         return self._do_json_method(self.http_post, *args, **kwargs)
 
     def _do_json_method(self, method, *args, **kwargs):
-        """Internal helper for JSON operations."""
+        """Parse the result of an HTTP operation as JSON.
+
+        Args:
+            method (callable):
+                The callable to use to execute the request.
+
+            *args (tuple):
+                Positional arguments to pass to ``method``.
+
+            **kwargs (dict):
+                Keyword arguments to pass to ``method``.
+
+        Returns:
+            tuple:
+            A tuple of:
+
+            * The JSON data (in the appropriate type)
+            * The response headers (:py:class:`dict`)
+
+        Raises:
+            urllib2.HTTPError:
+                When the HTTP request fails.
+
+            urllib2.URLError:
+                When there is an error communicating with the URL.
+        """
         data, headers = method(*args, **kwargs)
 
         if data:
@@ -164,8 +418,25 @@ class HostingServiceClient(object):
     # Internal utilities
     #
 
-    def _build_form_data(self, fields, files):
-        """Encodes data for use in an HTTP POST."""
+    @staticmethod
+    def build_form_data(fields, files=None):
+        """Encode data for use in an HTTP POST.
+
+        Args:
+            fields (dict):
+                A mapping of field names (:py:class:`unicode`) to values.
+
+            files (dict, optional):
+                A mapping of field names (:py:class:`unicode`) to files
+                (:py:class:`dict`).
+
+        Returns:
+            tuple:
+            A tuple of:
+
+            * The request content (:py:class:`unicode`).
+            * The request content type (:py:class:`unicode`).
+        """
         boundary = mimetools.choose_boundary()
         content_parts = []
 
