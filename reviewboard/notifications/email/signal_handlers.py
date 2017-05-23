@@ -165,7 +165,7 @@ def send_review_request_closed_mail(user, review_request, close_type,
     """
     siteconfig = SiteConfiguration.objects.get_current()
 
-    if not (not siteconfig.get('mail_send_review_close_mail') and
+    if not (siteconfig.get('mail_send_review_close_mail') and
             review_request.public):
         return
 
