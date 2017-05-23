@@ -1148,7 +1148,7 @@ class ReviewsDownloadPatchErrorBundleView(DownloadPatchErrorBundleView,
 def preview_review_request_email(
     request,
     review_request_id,
-    format,
+    message_format,
     text_template_name='notifications/review_request_email.txt',
     html_template_name='notifications/review_request_email.html',
     changedesc_id=None,
@@ -1178,10 +1178,10 @@ def preview_review_request_email(
 
     siteconfig = SiteConfiguration.objects.get_current()
 
-    if format == 'text':
+    if message_format == 'text':
         template_name = text_template_name
         mimetype = 'text/plain; charset=utf-8'
-    elif format == 'html':
+    elif message_format == 'html':
         template_name = html_template_name
         mimetype = 'text/html; charset=utf-8'
     else:
@@ -1200,7 +1200,7 @@ def preview_review_request_email(
 
 @check_login_required
 @check_local_site_access
-def preview_review_email(request, review_request_id, review_id, format,
+def preview_review_email(request, review_request_id, review_id, message_format,
                          text_template_name='notifications/review_email.txt',
                          html_template_name='notifications/review_email.html',
                          extra_context={},
@@ -1227,10 +1227,10 @@ def preview_review_email(request, review_request_id, review_id, format,
     review.ordered_comments = \
         review.comments.order_by('filediff', 'first_line')
 
-    if format == 'text':
+    if message_format == 'text':
         template_name = text_template_name
         mimetype = 'text/plain'
-    elif format == 'html':
+    elif message_format == 'html':
         template_name = html_template_name
         mimetype = 'text/html'
     else:
@@ -1258,7 +1258,7 @@ def preview_review_email(request, review_request_id, review_id, format,
 @check_login_required
 @check_local_site_access
 def preview_reply_email(request, review_request_id, review_id, reply_id,
-                        format,
+                        message_format,
                         text_template_name='notifications/reply_email.txt',
                         html_template_name='notifications/reply_email.html',
                         local_site=None):
@@ -1285,10 +1285,10 @@ def preview_reply_email(request, review_request_id, review_id, reply_id,
     reply.ordered_comments = \
         reply.comments.order_by('filediff', 'first_line')
 
-    if format == 'text':
+    if message_format == 'text':
         template_name = text_template_name
         mimetype = 'text/plain'
-    elif format == 'html':
+    elif message_format == 'html':
         template_name = html_template_name
         mimetype = 'text/html'
     else:

@@ -88,19 +88,19 @@ class MyAccountView(ConfigPagesView):
         return self.request.user.local_site.order_by('name')
 
 
+@login_required
 def preview_password_changed_email(
     request,
+    message_format,
     text_template_name='notifications/password_changed.txt',
     html_template_name='notifications/password_changed.html'):
     if not settings.DEBUG:
         raise Http404
 
-    format = request.GET.get('format', 'html')
-
-    if format == 'text':
+    if message_format == 'text':
         template_name = text_template_name
         mimetype = 'text/plain'
-    elif format == 'html':
+    elif message_format == 'html':
         template_name = html_template_name
         mimetype = 'text/html'
     else:
