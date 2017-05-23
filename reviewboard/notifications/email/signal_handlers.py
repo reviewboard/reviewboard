@@ -44,6 +44,25 @@ def _ensure_unicode(text):
     return text
 
 
+def _update_email_info(obj, message_id):
+    """Update the e-mail message information on the object.
+
+    The ``email_message_id`` and ``time_emailed`` fields of the model will be
+    updated.
+
+    Args:
+        obj (reviewboard.reviews.models.review.Review or
+             reviewboard.reviews.models.review_request.ReviewRequest):
+            The object for whiche-mail information will be updated.
+
+        message_id (unicode):
+            The new e-mail message ID.
+    """
+    obj.email_message_id = message_id
+    obj.time_emailed = timezone.now()
+    obj.save(update_fields=('email_message_id', 'time_emailed'))
+
+
 def review_request_closed_cb(sender, user, review_request, close_type,
                              **kwargs):
     """Send e-mail when a review request is closed.
@@ -399,14 +418,12 @@ def mail_review_request(review_request, from_user=None, changedesc=None,
         to_field, cc_field, signal, review_request=review_request,
         user=from_user, **extra_filter_kwargs)
 
-    review_request.time_emailed = timezone.now()
-    review_request.email_message_id = \
-        send_review_mail(from_user, review_request, subject,
-                         reply_message_id, to_field, cc_field,
-                         'notifications/review_request_email.txt',
-                         'notifications/review_request_email.html',
-                         extra_context)
-    review_request.save()
+    message_id = send_review_mail(from_user, review_request, subject,
+                                  reply_message_id, to_field, cc_field,
+                                  'notifications/review_request_email.txt',
+                                  'notifications/review_request_email.html',
+                                  extra_context)
+    _update_email_info(review_request, message_id)
 
 
 def mail_review(review, user, to_submitter_only, request):
@@ -473,7 +490,7 @@ def mail_review(review, user, to_submitter_only, request):
 
     summary = _ensure_unicode(review_request.summary)
 
-    review.email_message_id = send_review_mail(
+    message_id = send_review_mail(
         reviewer,
         review_request,
         ('Re: Review Request %d: %s'
@@ -486,8 +503,7 @@ def mail_review(review, user, to_submitter_only, request):
         extra_context,
         extra_headers=extra_headers)
 
-    review.time_emailed = timezone.now()
-    review.save()
+    _update_email_info(review, message_id)
 
 
 def mail_reply(reply, user):
@@ -526,7 +542,7 @@ def mail_reply(reply, user):
 
     summary = _ensure_unicode(review_request.summary)
 
-    reply.email_message_id = send_review_mail(
+    message_id = send_review_mail(
         user,
         review_request,
         ('Re: Review Request %d: %s'
@@ -538,8 +554,7 @@ def mail_reply(reply, user):
         'notifications/reply_email.html',
         extra_context)
 
-    reply.time_emailed = timezone.now()
-    reply.save()
+    _update_email_info(reply, message_id)
 
 
 def mail_new_user(user):
