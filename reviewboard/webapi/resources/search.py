@@ -58,6 +58,7 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
                                 'of 200.',
             },
         },
+        allow_unknown=True,
     )
     @webapi_check_local_site
     @webapi_check_login_required
