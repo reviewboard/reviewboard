@@ -222,9 +222,10 @@ class PerforceClient(object):
         if self.use_ticket_auth:
             self.p4.run_login()
 
-        yield
-
-        self._disconnect()
+        try:
+            yield
+        finally:
+            self._disconnect()
 
     def _disconnect(self):
         """
@@ -244,75 +245,126 @@ class PerforceClient(object):
                 pass
             self.proxy = None
 
-    @staticmethod
-    def _convert_p4exception_to_scmexception(e):
-        error = six.text_type(e)
+    @contextmanager
+    def _run_worker(self):
+        """Run a Perforce command from within a Perforce connection context.
 
-        if 'Perforce password' in error or 'Password must be set' in error:
-            raise AuthenticationError(msg=error)
-        elif 'SSL library must be at least version' in error:
-            raise SCMError(_('The specified Perforce port includes ssl:, but '
-                             'the p4python library was built without SSL '
-                             'support or the system library path is '
-                             'incorrect.'))
-        elif ('check $P4PORT' in error or
-              (error.startswith('[P4.connect()] TCP connect to') and
-               'failed.' in error)):
-            raise RepositoryNotFoundError
-        elif "To allow connection use the 'p4 trust' command" in error:
-            fingerprint = error.split('\\n')[3]
-            raise UnverifiedCertificateError(
-                Certificate(fingerprint=fingerprint))
-        else:
-            raise SCMError(error)
+        This will set up a Perforce connection for an operation, disconnecting
+        when the context is finished, and raising a suitable exception if
+        anything goes wrong.
 
-    def _run_worker(self, worker):
+        Yields:
+            The context in which to execute Perforce commands.
+
+        Raises:
+            reviewboard.scmtools.errors.AuthenticationError:
+                There was an error authenticating with Perforce. Credentials
+                may be incorrect. The exception message will have more details.
+
+            reviewboard.scmtools.errors.RepositoryNotFoundError:
+                The repository this was attempting to use could not be found.
+
+            reviewboard.scmtools.errors.SCMError:
+                There was a general error with talking to the repository or
+                executing a command. The exception message will have more
+                details.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate for the Perforce server could not be
+                verified. It may be self-signed. The certificate information
+                will be available in the exception.
+        """
         from P4 import P4Exception
+
         try:
             with self._connect():
-                return worker()
+                yield
         except P4Exception as e:
-            self._convert_p4exception_to_scmexception(e)
+            error = six.text_type(e)
 
-    def _get_changeset(self, changesetid):
-        changesetid = six.text_type(changesetid)
+            if 'Perforce password' in error or 'Password must be set' in error:
+                raise AuthenticationError(msg=error)
+            elif 'SSL library must be at least version' in error:
+                raise SCMError(_(
+                    'The specified Perforce port includes ssl:, but the '
+                    'p4python library was built without SSL support or the '
+                    'system library path is incorrect.'
+                ))
+            elif ('check $P4PORT' in error or
+                  (error.startswith('[P4.connect()] TCP connect to') and
+                   'failed.' in error)):
+                raise RepositoryNotFoundError
+            elif "To allow connection use the 'p4 trust' command" in error:
+                fingerprint = error.split(r'\n')[3]
 
-        try:
-            change = self.p4.run_change('-o', '-O', changesetid)
-            changesetid = change[0]['Change']
-        except Exception as e:
-            logging.warning('Failed to get updated changeset information for '
-                            'CLN %s (%s): %s',
-                            changesetid, self.p4port, e, exc_info=True)
+                raise UnverifiedCertificateError(
+                    Certificate(fingerprint=fingerprint))
+            else:
+                raise SCMError(error)
 
-        return self.p4.run_describe('-s', changesetid)
+    def get_changeset(self, changeset_id):
+        """Return information about a server-side changeset.
 
-    def get_changeset(self, changesetid):
+        Args:
+            changeset_id (int):
+                The Perforce changeset ID.
+
+        Returns:
+            dict:
+            Information about the changeset.
         """
-        Get the contents of a changeset description.
-        """
-        return self._run_worker(lambda: self._get_changeset(changesetid))
+        changeset_id = six.text_type(changeset_id)
+
+        with self._run_worker():
+            try:
+                change = self.p4.run_change('-o', '-O', changeset_id)
+                changeset_id = change[0]['Change']
+            except Exception as e:
+                logging.warning('Failed to get updated changeset information '
+                                'for CLN %s (%s): %s',
+                                changeset_id, self.p4port, e, exc_info=True)
+
+            return self.p4.run_describe('-s', changeset_id)
 
     def get_info(self):
-        return self._run_worker(self.p4.run_info)
+        """Return information on a Perforce server connection.
 
-    def _get_file(self, path, revision):
+        Returns:
+            list of dict:
+            A list of connection detail dictionaries.
+        """
+        with self._run_worker():
+            return self.p4.run_info()
+
+    def get_file(self, path, revision):
+        """Return the contents of a file at a specified revision.
+
+        Args:
+            path (unicode):
+                The Perforce depot path, without a revision.
+
+            revision (unicode):
+                The revision for the path.
+
+        Returns:
+            bytes:
+            The contents of the file.
+        """
         if revision == PRE_CREATION:
-            return ''
-        elif revision == HEAD:
+            return b''
+
+        if revision == HEAD:
             depot_path = path
         else:
             depot_path = '%s#%s' % (path, revision)
 
-        res = self.p4.run_print('-q', depot_path)
+        with self._run_worker():
+            res = self.p4.run_print('-q', depot_path)
+
         if res:
             return res[-1]
 
-    def get_file(self, path, revision):
-        """
-        Get the contents of a file, at a specific revision.
-        """
-        return self._run_worker(lambda: self._get_file(path, revision))
+        return b''
 
     def get_file_stat(self, path, revision):
         """Return status information about a file in the repository.
@@ -338,7 +390,8 @@ class PerforceClient(object):
         else:
             depot_path = '%s#%s' % (path, revision)
 
-        res = self._run_worker(lambda: self.p4.run_fstat(depot_path))
+        with self._run_worker():
+            res = self.p4.run_fstat(depot_path)
 
         if res:
             return res[-1]
@@ -387,16 +440,6 @@ class PerforceTool(SCMTool):
         return PerforceClient(path=path,
                               use_stunnel=use_stunnel,
                               **kwargs)
-
-    @staticmethod
-    def _convert_p4exception_to_scmexception(e):
-        error = six.text_type(e)
-        if 'Perforce password' in error or 'Password must be set' in error:
-            raise AuthenticationError(msg=error)
-        elif 'check $P4PORT' in error:
-            raise RepositoryNotFoundError
-        else:
-            raise SCMError(error)
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,
