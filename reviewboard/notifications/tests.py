@@ -19,10 +19,13 @@ from kgb import SpyAgency
 from reviewboard.accounts.models import Profile, ReviewRequestVisit
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.diffviewer.models import FileDiff
-from reviewboard.notifications.email import (build_recipients,
-                                             get_email_addresses_for_group,
-                                             recipients_to_addresses,
-                                             send_review_mail)
+from reviewboard.notifications.email.message import \
+    prepare_base_review_request_mail
+from reviewboard.notifications.email.utils import (
+    build_recipients,
+    get_email_addresses_for_group,
+    recipients_to_addresses,
+    send_email)
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.notifications.webhooks import (FakeHTTPRequest,
                                                 dispatch_webhook_event,
@@ -992,29 +995,27 @@ class ReviewRequestEmailTests(EmailTestHelper, DmarcDnsTestsMixin, SpyAgency,
         self.assertTrue('X-ReviewBoard-Diff-For' in message._headers)
         diff_headers = message._headers.getlist('X-ReviewBoard-Diff-For')
 
-        self.assertEqual(len(diff_headers), 3)
-        self.assertTrue(filediffs[0].source_file in diff_headers)
-        self.assertTrue(filediffs[0].dest_file in diff_headers)
-        self.assertTrue(filediffs[1].source_file in diff_headers)
-        self.assertFalse(filediffs[1].dest_file in diff_headers)
+        self.assertEqual(
+            set(diff_headers),
+            {
+                filediffs[0].source_file,
+                filediffs[0].dest_file,
+                filediffs[1].source_file,
+            })
 
     def test_extra_headers_dict(self):
         """Testing sending extra headers as a dict with an e-mail message"""
         review_request = self.create_review_request()
-
         submitter = review_request.submitter
-
-        send_review_mail(submitter,
-                         review_request,
-                         'Foo',
-                         None,
-                         [submitter],
-                         [],
-                         'notifications/review_request_email.txt',
-                         'notifications/review_request_email.html',
-                         extra_headers={
-                             'X-Foo': 'Bar'
-                         })
+        send_email(prepare_base_review_request_mail,
+                   user=submitter,
+                   review_request=review_request,
+                   subject='Foo',
+                   in_reply_to=None,
+                   to_field=[submitter],
+                   cc_field=[],
+                   template_name_base='notifications/review_request_email',
+                   extra_headers={'X-Foo': 'Bar'})
 
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
@@ -1027,22 +1028,17 @@ class ReviewRequestEmailTests(EmailTestHelper, DmarcDnsTestsMixin, SpyAgency,
         message
         """
         header_values = ['Bar', 'Baz']
-
         review_request = self.create_review_request()
-
         submitter = review_request.submitter
-
-        send_review_mail(review_request.submitter,
-                         review_request,
-                         'Foo',
-                         None,
-                         [submitter],
-                         [],
-                         'notifications/review_request_email.txt',
-                         'notifications/review_request_email.html',
-                         extra_headers=MultiValueDict({
-                             'X-Foo': header_values,
-                         }))
+        send_email(prepare_base_review_request_mail,
+                   user=review_request.submitter,
+                   review_request=review_request,
+                   subject='Foo',
+                   in_reply_to=None,
+                   to_field=[submitter],
+                   cc_field=[],
+                   template_name_base='notifications/review_request_email',
+                   extra_headers=MultiValueDict({'X-Foo': header_values}))
 
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]

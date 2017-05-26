@@ -46,6 +46,7 @@ extensions = [
     'beanbag_docutils.sphinx.ext.django_utils',
     'beanbag_docutils.sphinx.ext.extlinks',
     'beanbag_docutils.sphinx.ext.http_role',
+    'beanbag_docutils.sphinx.ext.intersphinx_utils',
     'beanbag_docutils.sphinx.ext.retina_images',
     'extralinks',
 ]
@@ -248,4 +249,5 @@ intersphinx_mapping = {
 extlinks = {
     'djangodoc': ('%s%%s.html' % django_doc_base_url, None),
     'backbonejs': ('http://backbonejs.org/#%s', 'Backbone.'),
+    'rbintegration': ('https://www.reviewboard.org/integrations/%s', ''),
 }

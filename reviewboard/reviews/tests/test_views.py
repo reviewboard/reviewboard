@@ -639,7 +639,7 @@ class ViewTests(TestCase):
                     'preview-review-request-email',
                     kwargs={
                         'review_request_id': review_request.pk,
-                        'format': 'text',
+                        'message_format': 'text',
                     }))
 
         self.assertEqual(response.status_code, 200)
@@ -654,7 +654,7 @@ class ViewTests(TestCase):
                     'preview-review-request-email',
                     kwargs={
                         'review_request_id': review_request.pk,
-                        'format': 'text',
+                        'message_format': 'text',
                     }))
 
         self.assertEqual(response.status_code, 404)
@@ -673,7 +673,7 @@ class ViewTests(TestCase):
                     'preview-review-request-email',
                     kwargs={
                         'review_request_id': review_request.pk,
-                        'format': 'text',
+                        'message_format': 'text',
                         'changedesc_id': review_request.changedescs.get().pk,
                     }))
 
@@ -694,7 +694,7 @@ class ViewTests(TestCase):
                     'preview-review-request-email',
                     kwargs={
                         'review_request_id': review_request.pk,
-                        'format': 'text',
+                        'message_format': 'text',
                         'changedesc_id': 100,
                     }))
 
@@ -712,7 +712,7 @@ class ViewTests(TestCase):
                     kwargs={
                         'review_request_id': review_request.pk,
                         'review_id': review.pk,
-                        'format': 'text',
+                        'message_format': 'text',
                     }))
 
         self.assertEqual(response.status_code, 200)
@@ -729,7 +729,7 @@ class ViewTests(TestCase):
                     kwargs={
                         'review_request_id': review_request.pk,
                         'review_id': review.pk,
-                        'format': 'text',
+                        'message_format': 'text',
                     }))
 
         self.assertEqual(response.status_code, 404)
@@ -748,7 +748,7 @@ class ViewTests(TestCase):
                         'review_request_id': review_request.pk,
                         'review_id': review.pk,
                         'reply_id': reply.pk,
-                        'format': 'text',
+                        'message_format': 'text',
                     }))
 
         self.assertEqual(response.status_code, 200)
@@ -767,7 +767,7 @@ class ViewTests(TestCase):
                         'review_request_id': review_request.pk,
                         'review_id': review.pk,
                         'reply_id': reply.pk,
-                        'format': 'text',
+                        'message_format': 'text',
                     }))
 
         self.assertEqual(response.status_code, 404)

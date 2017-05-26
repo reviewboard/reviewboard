@@ -15,7 +15,8 @@ from djblets.configforms.forms import ConfigPageForm
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.avatars import avatar_services
-from reviewboard.notifications.email import mail_password_changed
+from reviewboard.notifications.email.signal_handlers import \
+    send_password_changed_mail
 from reviewboard.reviews.models import Group
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -258,11 +259,8 @@ class ChangePasswordForm(AccountPageForm):
                                  _('Unexpected error when changing your '
                                    'password. Please contact the '
                                    'administrator.'))
-
-        siteconfig = SiteConfiguration.objects.get_current()
-
-        if siteconfig.get('mail_send_password_changed_mail'):
-            mail_password_changed(self.user)
+        else:
+            send_password_changed_mail(self.user)
 
 
 class ProfileForm(AccountPageForm):

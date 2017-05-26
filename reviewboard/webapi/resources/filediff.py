@@ -85,8 +85,8 @@ class FileDiffResource(WebAPIResource):
             'type': six.text_type,
             'description': 'The status of the file. This is one of copied, '
                            'deleted, modified, moved, or unknown.',
-            'added_in': '2.5.10',
-        }
+            'added_in': '2.5.11',
+        },
     }
     item_child_resources = [
         resources.filediff_comment,

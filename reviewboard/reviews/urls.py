@@ -106,22 +106,22 @@ review_request_urls = [
     url(r'^bugs/(?P<bug_id>[\w\.-]+)/', include(bugs_urls)),
 
     # E-mail previews
-    url(r'^preview-email/(?P<format>(text|html))/$',
+    url(r'^preview-email/(?P<message_format>(text|html))/$',
         views.preview_review_request_email,
         name='preview-review-request-email'),
 
     url(r'^changes/(?P<changedesc_id>\d+)/preview-email/'
-        r'(?P<format>(text|html))/$',
+        r'(?P<message_format>(text|html))/$',
         views.preview_review_request_email,
         name='preview-review-request-email'),
 
     url(r'^reviews/(?P<review_id>\d+)/preview-email/'
-        r'(?P<format>(text|html))/$',
+        r'(?P<message_format>(text|html))/$',
         views.preview_review_email,
         name='preview-review-email'),
 
     url(r'^reviews/(?P<review_id>\d+)/replies/(?P<reply_id>\d+)/'
-        r'preview-email/(?P<format>(text|html))/$',
+        r'preview-email/(?P<message_format>(text|html))/$',
         views.preview_reply_email,
         name='preview-review-reply-email'),
 ]

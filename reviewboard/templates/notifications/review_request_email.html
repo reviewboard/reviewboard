@@ -96,9 +96,9 @@
 </ul>
 
 {%    with latest_diffset.revision as rev %}
-<p><a href="{{domain_method}}://{{domain}}{% url 'view-diff-revision' review_request.display_id rev %}" style="margin-left: 3em;">View Diff</a></p>
+<p><a href="{{site_url}}{% url 'view-diff-revision' review_request.display_id rev %}" style="margin-left: 3em;">View Diff</a></p>
 {%     if rev > 1 and changes and changes.diff %}
-<p><a href="{{domain_method}}://{{domain}}{% url 'view-interdiff' review_request.display_id rev|add:"-1" rev %}" style="margin-left: 3em;">Show Changes</a></p>
+<p><a href="{{site_url}}{% url 'view-interdiff' review_request.display_id rev|add:"-1" rev %}" style="margin-left: 3em;">Show Changes</a></p>
 {%     endif %}
 {%    endwith %}
 {%   endif %}
@@ -119,7 +119,7 @@
 
 <div>
 {%   for screenshot in review_request.screenshots.all %}
- <a href="{{domain_method}}://{{domain}}{{screenshot.get_absolute_url}}"><img src="{{domain_method}}://{{domain}}{{screenshot.get_thumbnail_url}}" style="border: 1px black solid;" alt="{{screenshot.caption}}" /></a>
+ <a href="{{site_url}}{{screenshot.get_absolute_url}}"><img src="{{site_url}}{{screenshot.get_thumbnail_url}}" style="border: 1px black solid;" alt="{{screenshot.caption}}" /></a>
 {%   endfor %}
 </div>
 {%  endif %}

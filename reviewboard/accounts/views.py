@@ -1,11 +1,8 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.decorators import login_required
-from django.conf import settings
 from django.core.urlresolvers import reverse
-from django.http import Http404, HttpResponse, HttpResponseRedirect
-from django.template.context import RequestContext
-from django.template.loader import render_to_string
+from django.http import HttpResponseRedirect
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
@@ -18,7 +15,9 @@ from djblets.util.decorators import augment_method_from
 from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.accounts.forms.registration import RegistrationForm
 from reviewboard.accounts.pages import AccountPage
-from reviewboard.admin.server import build_server_url, get_server_url
+from reviewboard.notifications.email.decorators import preview_email
+from reviewboard.notifications.email.message import \
+    prepare_password_changed_mail
 
 
 @csrf_protect
@@ -88,36 +87,9 @@ class MyAccountView(ConfigPagesView):
         return self.request.user.local_site.order_by('name')
 
 
-def preview_password_changed_email(
-    request,
-    text_template_name='notifications/password_changed.txt',
-    html_template_name='notifications/password_changed.html'):
-    if not settings.DEBUG:
-        raise Http404
-
-    format = request.GET.get('format', 'html')
-
-    if format == 'text':
-        template_name = text_template_name
-        mimetype = 'text/plain'
-    elif format == 'html':
-        template_name = html_template_name
-        mimetype = 'text/html'
-    else:
-        raise Http404
-
-    api_token_url = (
-        '%s#api-tokens'
-        % build_server_url(reverse('user-preferences'))
-    )
-
-    return HttpResponse(
-        render_to_string(
-            template_name,
-            RequestContext(request, {
-                'api_token_url': api_token_url,
-                'has_api_tokens': request.user.webapi_tokens.exists(),
-                'server_url': get_server_url(),
-                'user': request.user,
-            })),
-        content_type=mimetype)
+@login_required
+@preview_email(prepare_password_changed_mail)
+def preview_password_changed_email(request):
+    return {
+        'user': request.user,
+    }

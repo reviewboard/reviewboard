@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import logging
+import warnings
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -33,6 +34,7 @@ from reviewboard.reviews.signals import (review_request_closed,
                                          review_request_reopened,
                                          review_request_reopening)
 from reviewboard.scmtools.models import Repository
+from reviewboard.signals import deprecated_signal_argument
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -739,11 +741,12 @@ class ReviewRequest(BaseReviewRequestDetails):
     def can_publish(self):
         return not self.public or get_object_or_none(self.draft) is not None
 
-    def close(self, type, user=None, description=None, rich_text=False):
+    def close(self, close_type=None, user=None, description=None,
+              rich_text=False, **kwargs):
         """Closes the review request.
 
         Args:
-            type (unicode):
+            close_type (unicode):
                 How the close occurs. This should be one of
                 :py:attr:`SUBMITTED` or :py:attr:`DISCARDED`.
 
@@ -756,26 +759,65 @@ class ReviewRequest(BaseReviewRequestDetails):
 
             rich_text (bool):
                 Indicates whether or not that the description is rich text.
+        
+        Raises:
+            ValueError:
+                The provided close type is not a valid value.
+            
+            PermissionError:
+                The user does not have permission to close the review request.
+            
+            TypeError:
+                Keyword arguments were supplied to the function.
+        
+        .. versionchanged:: 3.0
+           The ``type`` argument is deprecated: ``close_type`` should be used
+           instead.
+           
+           This method raises :py:exc:`ValueError` instead of
+           :py:exc:`AttributeError` when the ``close_type`` has an incorrect
+           value.
         """
+        if close_type is None:
+            try:
+                close_type = kwargs.pop('type')
+            except KeyError:
+                raise AttributeError('close_type must be provided')
+
+            warnings.warn(
+                'The "type" argument was deprecated in Review Board 3.0 and '
+                'will be removed in a future version. Use "close_type" '
+                'instead.'
+            )
+
+        if kwargs:
+            raise TypeError('close() does not accept keyword arguments.')
+
         if (user and not self.is_mutable_by(user) and
             not user.has_perm("reviews.can_change_status", self.local_site)):
             raise PermissionError
 
-        if type not in [self.SUBMITTED, self.DISCARDED]:
-            raise AttributeError("%s is not a valid close type" % type)
+        if close_type not in [self.SUBMITTED, self.DISCARDED]:
+            raise ValueError("%s is not a valid close type" % type)
 
-        review_request_closing.send(sender=self.__class__,
-                                    user=user,
-                                    review_request=self,
-                                    type=type,
-                                    description=description,
-                                    rich_text=rich_text)
+        review_request_closing.send(
+            sender=type(self),
+            user=user,
+            review_request=self,
+            close_type=close_type,
+            type=deprecated_signal_argument(
+                signal_name='review_request_closing',
+                old_name='type',
+                new_name='close_type',
+                value=close_type),
+            description=description,
+            rich_text=rich_text)
 
         draft = get_object_or_none(self.draft)
 
-        if self.status != type:
+        if self.status != close_type:
             if (draft is not None and
-                not self.public and type == self.DISCARDED):
+                not self.public and close_type == self.DISCARDED):
                 # Copy over the draft information if this is a private discard.
                 draft.copy_fields_to_request(self)
 
@@ -786,25 +828,33 @@ class ReviewRequest(BaseReviewRequestDetails):
                                            user=user or self.submitter)
 
             status_field = get_review_request_field('status')(self)
-            status_field.record_change_entry(changedesc, self.status, type)
+            status_field.record_change_entry(changedesc, self.status,
+                                             close_type)
             changedesc.save()
 
             self.changedescs.add(changedesc)
 
-            if type == self.SUBMITTED:
+            if close_type == self.SUBMITTED:
                 if not self.public:
                     raise PublishError("The draft must be public first.")
             else:
                 self.commit_id = None
 
-            self.status = type
+            self.status = close_type
             self.save(update_counts=True)
 
-            review_request_closed.send(sender=self.__class__, user=user,
-                                       review_request=self,
-                                       type=type,
-                                       description=description,
-                                       rich_text=rich_text)
+            review_request_closed.send(
+                sender=type(self),
+                user=user,
+                review_request=self,
+                close_type=close_type,
+                type=deprecated_signal_argument(
+                    signal_name='review_request_closed',
+                    old_name='type',
+                    new_name='close_type',
+                    value=close_type),
+                description=description,
+                rich_text=rich_text)
         else:
             # Update submission description.
             changedesc = self.changedescs.filter(public=True).latest()

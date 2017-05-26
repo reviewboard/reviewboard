@@ -6,7 +6,7 @@ This is an automatically generated e-mail.
 Hi {{user|user_displayname}},
 
 One of your API tokens has been deleted from your Review Board account on
-{{domain_method}}://{{domain}}.
+{{site_url}}.
 
 The API token ID was {{api_token.token}}. Any clients
 that were using this token will no longer be able to authenticate.

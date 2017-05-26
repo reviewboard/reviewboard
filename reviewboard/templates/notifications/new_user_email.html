@@ -18,9 +18,9 @@
    <table bgcolor="#f0f0f0" cellpadding="5" cellspacing="5" style="border: 1px solid #c0c0c0; margin-bottom: 10px; border-radius: 6px; -moz-border-radius: 6px; -webkit-border-radius: 6px;">
     <tr>
      <td>
-{{user.username}} has registered on <a href="{{domain_method}}://{{domain}}">{{domain_method}}://{{domain}}</a> on {{user.date_joined|date:"F jS, Y, P T"}}.
+{{user.username}} has registered on <a href="{{site_url}}">{{site_url}}</a> on {{user.date_joined|date:"F jS, Y, P T"}}.
 <br/>
-If you want to grant certain permissions for this user, please visit <a href="{{domain_method}}://{{domain}}{{user_url}}">{{domain_method}}://{{domain}}{{user_url}}</a>.
+If you want to grant certain permissions for this user, please visit <a href="{{user_url}}">{{user_url}}</a>.
      </td>
     </tr>
    </table>

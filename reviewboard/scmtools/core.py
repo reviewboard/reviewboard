@@ -1029,6 +1029,10 @@ class SCMTool(object):
         Returns:
             dict:
             Serialized information on the certificate.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                There was an error accepting the certificate.
         """
         raise NotImplementedError
 

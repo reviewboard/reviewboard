@@ -38,7 +38,7 @@
   <table bgcolor="#f0f0f0" cellpadding="5" cellspacing="5" style="border: 1px solid #c0c0c0; margin-bottom: 10px">
    <tr>
     <td>
-     <a href="{{domain_method}}://{{domain}}{{comment.get_absolute_url}}" style="color: black; font-weight: bold; font-size: 9pt;">{{comment.get_link_text}}</a>
+     <a href="{{site_url}}{{comment.get_absolute_url}}" style="color: black; font-weight: bold; font-size: 9pt;">{{comment.get_link_text}}</a>
 {% if comment.file_attachment.caption %}
      <p>{{comment.file_attachment.caption}}</p>
 {% endif %}
@@ -99,10 +99,10 @@
 
   <table bgcolor="#f0f0f0" cellpadding="5" cellspacing="5" style="border: 1px solid #c0c0c0; margin-bottom: 10px">
    <tr>
-    <td><a href="{{domain_method}}://{{domain}}{{comment.screenshot.get_absolute_url}}" style="color: black; font-weight: bold; font-size: 9pt;">{{comment.screenshot.image.name|basename}}</a></td>
+    <td><a href="{{site_url}}{{comment.screenshot.get_absolute_url}}" style="color: black; font-weight: bold; font-size: 9pt;">{{comment.screenshot.image.name|basename}}</a></td>
    </tr>
    <tr>
-    <td><a href="{{domain_method}}://{{domain}}{{comment.screenshot.get_absolute_url}}"><img src="{{domain_method}}://{{domain}}{{comment.get_image_url}}" style="border: 1px black solid;" alt="{{comment.screenshot.caption}}"></a></td>
+    <td><a href="{{site_url}}{{comment.screenshot.get_absolute_url}}"><img src="{{site_url}}{{comment.get_image_url}}" style="border: 1px black solid;" alt="{{comment.screenshot.caption}}"></a></td>
    </tr>
   </table>
   <pre style="{{precss}}">{{comment.reply_to.text}}</pre>
