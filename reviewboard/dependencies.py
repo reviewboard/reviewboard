@@ -23,13 +23,13 @@ djblets_doc_major_version = '0.9'
 django_version = '>=1.6.11,<1.6.999'
 
 #: The version range required for Djblets.
-djblets_version = '>=0.9.6,<=0.9.999'
+djblets_version = '>=0.9.7,<=0.9.999'
 
 #: All dependencies required to install Review Board.
 package_dependencies = {
     'cryptography': '>=1.8.1',
     'Django': django_version,
-    'django_evolution': '>=0.7.6,<=0.7.999',
+    'django_evolution': '>=0.7.7,<=0.7.999',
     'django-haystack': '>=2.3.1,<=2.4.999',
     'django-multiselectfield': '',
     'Djblets': djblets_version,
