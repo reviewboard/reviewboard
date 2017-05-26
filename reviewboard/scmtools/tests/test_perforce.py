@@ -13,7 +13,7 @@ from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          RepositoryNotFoundError, SCMError)
 from reviewboard.scmtools.models import Repository, Tool
-from reviewboard.scmtools.perforce import STunnelProxy, STUNNEL_SERVER
+from reviewboard.scmtools.perforce import STunnelProxy
 from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.testing import online_only
 
@@ -151,7 +151,7 @@ class PerforceTests(SCMTestCase):
 
         tool = repo.get_scmtool()
 
-        with tool.client._connect():
+        with tool.client.connect():
             self.assertEqual(tool.client.p4.host, 'my-custom-host')
 
     @online_only
@@ -370,7 +370,7 @@ class PerforceStunnelTests(SCMTestCase):
 
         cert = os.path.join(os.path.dirname(__file__),
                             '..', 'testdata', 'stunnel.pem')
-        self.proxy = STunnelProxy(STUNNEL_SERVER, 'public.perforce.com:1666')
+        self.proxy = STunnelProxy('public.perforce.com:1666')
         self.proxy.start_server(cert)
 
         # Find an available port to listen on
