@@ -187,7 +187,7 @@ class PerforceTests(SpyAgency, SCMTestCase):
         self.assertFalse(os.path.exists(os.path.join(
             settings.SITE_DATA_DIR, 'p4', 'p4tickets')))
 
-        with client._connect():
+        with client.connect():
             self.assertFalse(client.login.called)
             self.assertEqual(client.p4.ticket_file,
                              os.path.join(settings.SITE_DATA_DIR, 'p4',
@@ -216,7 +216,7 @@ class PerforceTests(SpyAgency, SCMTestCase):
 
         self.spy_on(client.login, call_original=False)
 
-        with client._connect():
+        with client.connect():
             self.assertIsNotNone(client.p4.ticket_file)
             self.assertTrue(client.login.called)
             self.assertEqual(client.p4.ticket_file,
@@ -241,7 +241,7 @@ class PerforceTests(SpyAgency, SCMTestCase):
         self.spy_on(client.get_ticket_status, call_fake=lambda *args: None)
         self.spy_on(client.login, call_original=False)
 
-        with client._connect():
+        with client.connect():
             self.assertTrue(client.login.called)
             self.assertEqual(client.p4.ticket_file,
                              os.path.join(settings.SITE_DATA_DIR, 'p4',
@@ -270,7 +270,7 @@ class PerforceTests(SpyAgency, SCMTestCase):
 
         self.spy_on(client.login, call_original=False)
 
-        with client._connect():
+        with client.connect():
             self.assertTrue(client.login.called)
             self.assertEqual(client.p4.ticket_file,
                              os.path.join(settings.SITE_DATA_DIR, 'p4',
@@ -300,7 +300,7 @@ class PerforceTests(SpyAgency, SCMTestCase):
 
         self.spy_on(client.login, call_original=False)
 
-        with client._connect():
+        with client.connect():
             self.assertFalse(client.login.called)
             self.assertEqual(client.p4.ticket_file,
                              os.path.join(settings.SITE_DATA_DIR, 'p4',
