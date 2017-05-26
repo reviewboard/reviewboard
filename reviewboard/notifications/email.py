@@ -33,6 +33,16 @@ from reviewboard.webapi.models import WebAPIToken
 # A mapping of signals to EmailHooks.
 _hooks = defaultdict(set)
 
+MAX_FILENAME_HEADERS_LENGTH = 8192
+
+#: The number of additional characters each ``X-ReviewBoard-Diff-For`` has.
+#:
+#: We calculate the length the value of each header at runtime. However,
+#: ``X-ReviewBoard-Diff-For: `` is present before the value, and the line
+#: terminates with a ``\r\n``.
+HEADER_ADDITIONAL_CHARACTERS_LENGTH = (len(b'\r\n') +
+                                       len(b'X-ReviewBoard-Diff-For: '))
+
 
 def _ensure_unicode(text):
     """Return a unicode object for the given text.
@@ -579,7 +589,25 @@ def send_review_mail(user, review_request, subject, in_reply_to,
             if filediff.is_new or filediff.copied or filediff.moved:
                 modified_files.add(filediff.dest_file)
 
+        # The following code segment deals with the case where the client adds
+        # a significant amount of files with large names. We limit the number
+        # of headers; when more than 8192 characters are reached, we stop
+        # adding filename headers.
+        current_header_length = 0
+
         for filename in modified_files:
+            current_header_length += (HEADER_ADDITIONAL_CHARACTERS_LENGTH +
+                                      len(filename))
+            if current_header_length > MAX_FILENAME_HEADERS_LENGTH:
+                logging.warning(
+                    'Unable to store all filenames in the '
+                    'X-ReviewBoard-Diff-For headers when sending e-mail for '
+                    'review request %s: The header size exceeds the limit of '
+                    '%s. Remaining headers have been omitted.',
+                    review_request.display_id,
+                    MAX_FILENAME_HEADERS_LENGTH)
+                break
+
             headers.appendlist('X-ReviewBoard-Diff-For', filename)
 
     subject = subject.strip()

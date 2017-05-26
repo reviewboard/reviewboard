@@ -866,6 +866,51 @@ class ReviewRequestEmailTests(EmailTestHelper, DmarcDnsTestsMixin, SpyAgency,
         self.assertTrue(filediff.dest_file in diff_headers)
 
     @add_fixtures(['test_scmtools'])
+    def test_review_request_email_with_added_files_over_header_limit(self):
+        """Testing sending a review request e-mail with added files in the
+        diffset such that the filename headers take up more than 8192
+        characters
+        """
+        self.spy_on(logging.warning)
+        self.maxDiff = None
+
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+        prefix = 'X' * 97
+
+        for i in range(400):
+            filename = '%s%#03d' % (prefix, i)
+            self.assertEqual(len(filename), 100)
+            self.create_filediff(diffset=diffset,
+                                 source_file=filename,
+                                 dest_file=filename,
+                                 source_revision=PRE_CREATION)
+
+        review_request.publish(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertTrue('X-ReviewBoard-Diff-For' in message._headers)
+        diff_headers = message._headers.getlist('X-ReviewBoard-Diff-For')
+
+        # Each filename is 100 characters long. For each header we add 26
+        # characters: the key, a ': ', and the terminating '\r\n'.
+        # 8192 / (100 + 26) rounds down to 65.
+        self.assertEqual(len(logging.warning.spy.calls), 1)
+        self.assertEqual(len(diff_headers), 65)
+
+        self.assertEqual(
+            logging.warning.spy.calls[0].args,
+            ('Unable to store all filenames in the X-ReviewBoard-Diff-For '
+             'headers when sending e-mail for review request %s: The header '
+             'size exceeds the limit of %s. Remaining headers have been '
+             'omitted.',
+             1,
+             8192))
+
+    @add_fixtures(['test_scmtools'])
     def test_review_request_email_with_deleted_file(self):
         """Testing sending a review request e-mail with deleted files in the
         diffset
