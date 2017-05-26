@@ -1,4 +1,4 @@
-beanbag-docutils>=1.2
+beanbag-docutils>=1.4
 bzr
 kgb
 mercurial

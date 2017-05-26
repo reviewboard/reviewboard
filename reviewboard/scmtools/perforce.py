@@ -1,3 +1,5 @@
+"""Repository support for Perforce."""
+
 from __future__ import unicode_literals
 
 import logging
@@ -12,6 +14,7 @@ import tempfile
 import time
 from contextlib import contextmanager
 
+from django.conf import settings
 from django.utils import six
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
@@ -23,21 +26,32 @@ from reviewboard.scmtools.core import (SCMTool, ChangeSet,
                                        HEAD, PRE_CREATION)
 from reviewboard.scmtools.errors import (SCMError, EmptyChangeSetError,
                                          AuthenticationError,
+                                         InvalidRevisionFormatError,
                                          RepositoryNotFoundError,
                                          UnverifiedCertificateError)
 
 
-STUNNEL_SERVER, STUNNEL_CLIENT = (0, 1)
-
-
 class STunnelProxy(object):
-    def __init__(self, mode, target):
+    """Secure Perforce communication proxy using stunnel.
+
+    This establishes a secure communication channel to a Perforce server
+    using `stunnel <https://www.stunnel.org/index.html>`_. This allows a
+    non-SSL-enabled Perforce server to be used across a public network
+    without risk of data leaks.
+
+    This proxy supports stunnel versions 3 and 4.
+    """
+
+    def __init__(self, target):
+        """Initialize the proxy.
+
+        Args:
+            target (unicode):
+                The target server to proxy to.
+        """
         if not is_exe_in_path('stunnel'):
             raise OSError('stunnel was not found in the exec path')
 
-        if mode not in (STUNNEL_SERVER, STUNNEL_CLIENT):
-            raise AttributeError
-        self.mode = mode
         self.target = target
         self.pid = None
 
@@ -60,12 +74,32 @@ class STunnelProxy(object):
             return False
 
     def start_server(self, certfile):
+        """Start stunnel as a server for clients to connect to.
+
+        Args:
+            certfile (unicode):
+                The SSL certificate to use for the connection.
+        """
         self._start(server=True, certfile=certfile)
 
     def start_client(self):
+        """Start stunnel as a client connecting to a server."""
         self._start(server=False)
 
     def _start(self, server, certfile=None):
+        """Start stunnel as a client or server.
+
+        This will determine the version of stunnel being used and invoke it
+        with the necessary configuration to run as either a client or a
+        server for the tunnel.
+
+        Args:
+            server (bool):
+                Whether to run as the server end of the tunnel.
+
+            certfile (unicode):
+                The SSL certificate to use for the connection.
+        """
         self.port = self._find_port()
 
         tempdir = tempfile.mkdtemp()
@@ -143,12 +177,22 @@ class STunnelProxy(object):
         shutil.rmtree(tempdir)
 
     def shutdown(self):
+        """Shut down the tunnel."""
         if self.pid:
             os.kill(self.pid, signal.SIGTERM)
             self.pid = None
 
     def _find_port(self):
-        """Find an available port."""
+        """Find an available port for the tunnel.
+
+        This will attempt to find an unused port in the range of 30000 and
+        60000 for the connection. It will continue trying until it finds a
+        port.
+
+        Returns:
+            int:
+            The unused port number.
+        """
         # This is slightly racy but shouldn't be too bad.
         while True:
             port = random.randint(30000, 60000)
@@ -166,47 +210,170 @@ class STunnelProxy(object):
 
 
 class PerforceClient(object):
+    """Client for talking to a Perforce server.
+
+    This manages Perforce connections to the server, and provides a set of
+    operations needed by :py:class:`PerforceTool`.
+    """
+
+    #: The max number of seconds remaining before renewing a ticket.
+    #:
+    #: If the ticket has less than this many seconds left before it expires,
+    #: a login call will be performed and the ticket renewed.
+    #:
+    #: We default this to 1 hour.
+    TICKET_RENEWAL_SECS = 1 * 60 * 60
+
     def __init__(self, path, username, password, encoding='', host=None,
-                 client_name=None, use_stunnel=False, use_ticket_auth=False):
+                 client_name=None, local_site_name=None,
+                 use_ticket_auth=False):
+        """Initialize the client.
+
+        Args:
+            path (unicode):
+                The path to the repository (equivalent to :envvar:`P4PORT`).
+
+            username (unicode):
+                The username for the connection.
+
+            password (unicode):
+                The password for the connection.
+
+            encoding (unicode, optional):
+                The encoding to use for the connection.
+
+            host (unicode, optional):
+                The client's host name to use for the connection (equivalent
+                to :envvar:`P4HOST`).
+
+            client_name (unicode, optional):
+                The name of the Perforce client (equivalent to
+                :envvar:`P4CLIENT`).
+
+            local_site_name (unicode, optional):
+                The name of the local site used for the repository.
+
+            use_ticket_auth (bool, optional):
+                Whether to use ticket-based authentication. By default, this
+                is not used.
+        """
+        if path.startswith('stunnel:'):
+            path = path[8:]
+            self.use_stunnel = True
+        else:
+            self.use_stunnel = False
+
         self.p4port = path
         self.username = username
         self.password = password
         self.encoding = encoding
         self.p4host = host
         self.client_name = client_name
-        self.use_stunnel = use_stunnel
+        self.local_site_name = local_site_name
         self.use_ticket_auth = use_ticket_auth
-        self.proxy = None
 
         import P4
         self.p4 = P4.P4()
 
-        if use_stunnel and not is_exe_in_path('stunnel'):
+        if self.use_stunnel and not is_exe_in_path('stunnel'):
             raise AttributeError('stunnel proxy was requested, but stunnel '
                                  'binary is not in the exec path.')
 
-    @contextmanager
-    def _connect(self):
-        """
-        Connect to the perforce server.
+    def get_ticket_status(self):
+        """Return the status of the current login ticket.
 
-        This connects p4python to the remote server, optionally using a stunnel
-        proxy.
+        Returns:
+            dict:
+            A dictionary containing the following keys:
+
+            ``user`` (:py:class:`unicode`):
+                The user owning the ticket.
+
+            ``expiration_secs`` (:py:class:`int`):
+                The number of seconds until the ticket expires.
+        """
+        from P4 import P4Exception
+
+        try:
+            status = self.p4.run_login('-s')[0]
+        except (IndexError, P4Exception):
+            return None
+
+        return {
+            'user': status['User'],
+            'expiration_secs': int(status['TicketExpiration']),
+        }
+
+    def check_refresh_ticket(self):
+        """Refreshes a ticket or re-authenticates if needed.
+
+        If the ticket has expired, is close to expiring, or the username has
+        changed, a login will be performed.
+        """
+        ticket_status = self.get_ticket_status()
+
+        if not ticket_status or ticket_status['user'] != self.username:
+            logging.info('Perforce ticket for host "%s" (user "%s") does not '
+                         'exist or has expired. Refreshing...',
+                         self.p4port, self.username)
+        elif ticket_status['expiration_secs'] < self.TICKET_RENEWAL_SECS:
+            logging.info('Perforce ticket for host "%s" (user "%s") will soon '
+                         'expire. Refreshing...',
+                         self.p4port, self.username)
+        else:
+            # The ticket is fine. We don't need to log in again.
+            return
+
+        self.login()
+
+    def login(self):
+        """Log into Perforce.
+
+        If there's an existing ticket, this will extend the ticket instead
+        of creating a new one.
+        """
+        logging.info('Logging into Perforce host "%s" (user "%s")',
+                     self.p4port, self.username)
+
+        self.p4.password = self.password.encode('utf-8')
+        self.p4.run_login()
+
+    @contextmanager
+    def connect(self):
+        """Connect to the Perforce server.
+
+        This is a context manager used to set up, open, and then close a
+        connection to the Perforce server. Generally, :py:meth:`run_worker`
+        should be used instead, as this will convert certain P4 exceptions to
+        Review Board exceptions.
+
+        Context:
+            The context for the connection. Once the context ends, the
+            connection will close.
+
+            No variables are passed to the context.
+
+        Example:
+            .. code-block:: python
+
+                with client.connect():
+                    ...
         """
         self.p4.user = self.username.encode('utf-8')
-        self.p4.password = self.password.encode('utf-8')
 
         if self.encoding:
             self.p4.charset = self.encoding.encode('utf-8')
 
+        # Exceptions will only be raised for errors, not warnings.
         self.p4.exception_level = 1
 
         if self.use_stunnel:
             # Spin up an stunnel client and then redirect through that
-            self.proxy = STunnelProxy(STUNNEL_CLIENT, self.p4port)
-            self.proxy.start_client()
-            p4_port = '127.0.0.1:%d' % self.proxy.port
+            proxy = STunnelProxy(self.p4port)
+            proxy.start_client()
+            p4_port = '127.0.0.1:%d' % proxy.port
         else:
+            proxy = None
             p4_port = self.p4port
 
         self.p4.port = p4_port.encode('utf-8')
@@ -217,102 +384,181 @@ class PerforceClient(object):
         if self.client_name:
             self.p4.client = self.client_name.encode('utf-8')
 
-        self.p4.connect()
-
         if self.use_ticket_auth:
-            self.p4.run_login()
+            # The repository is configured for ticket-based authentication.
+            # We're going to start by making sure there's an appropriate
+            # place to store these tickets, namespaced by Local Site if
+            # needed, and then set the ticket path for Perforce.
+            #
+            # If the ticket file exists and has a valid ticket, Perforce will
+            # automatically use that.
+            tickets_dir = os.path.join(settings.SITE_DATA_DIR, 'p4')
 
-        yield
+            if self.local_site_name:
+                tickets_dir = os.path.join(tickets_dir, self.local_site_name)
 
-        self._disconnect()
+            if not os.path.exists(tickets_dir):
+                try:
+                    os.makedirs(tickets_dir, 0700)
+                except Exception as e:
+                    logging.warning('Unable to create Perforce tickets '
+                                    'directory %s: %s',
+                                    tickets_dir, e)
+                    tickets_dir = None
 
-    def _disconnect(self):
-        """
-        Disconnect from the perforce server, and also shut down the stunnel
-        proxy (if it exists).
-        """
-        try:
-            if self.p4.connected():
-                self.p4.disconnect()
-        except AttributeError:
-            pass
-
-        if self.proxy:
-            try:
-                self.proxy.shutdown()
-            except:
-                pass
-            self.proxy = None
-
-    @staticmethod
-    def _convert_p4exception_to_scmexception(e):
-        error = six.text_type(e)
-
-        if 'Perforce password' in error or 'Password must be set' in error:
-            raise AuthenticationError(msg=error)
-        elif 'SSL library must be at least version' in error:
-            raise SCMError(_('The specified Perforce port includes ssl:, but '
-                             'the p4python library was built without SSL '
-                             'support or the system library path is '
-                             'incorrect.'))
-        elif ('check $P4PORT' in error or
-              (error.startswith('[P4.connect()] TCP connect to') and
-               'failed.' in error)):
-            raise RepositoryNotFoundError
-        elif "To allow connection use the 'p4 trust' command" in error:
-            fingerprint = error.split('\\n')[3]
-            raise UnverifiedCertificateError(
-                Certificate(fingerprint=fingerprint))
+            if tickets_dir:
+                self.p4.ticket_file = \
+                    os.path.join(tickets_dir, 'p4tickets').encode('utf-8')
         else:
-            raise SCMError(error)
+            # The repository does not use ticket-based authentication. We'll
+            # need to set the password that's provided.
+            self.p4.password = self.password.encode('utf-8')
 
-    def _run_worker(self, worker):
+        try:
+            with self.p4.connect():
+                if self.use_ticket_auth:
+                    # The ticket may not exist, may have expired, or may be
+                    # close to expiring. Check for those conditions and
+                    # possibly request/extend a ticket.
+                    self.check_refresh_ticket()
+
+                yield
+        finally:
+            if proxy:
+                try:
+                    proxy.shutdown()
+                except:
+                    pass
+
+    @contextmanager
+    def run_worker(self):
+        """Run a Perforce command from within a Perforce connection context.
+
+        This will set up a Perforce connection for an operation, disconnecting
+        when the context is finished, and raising a suitable exception if
+        anything goes wrong.
+
+        Context:
+            The context for the connection. Once the context ends, the
+            connection will close.
+
+            No variables are passed to the context.
+
+        Raises:
+            reviewboard.scmtools.errors.AuthenticationError:
+                There was an error authenticating with Perforce. Credentials
+                may be incorrect. The exception message will have more details.
+
+            reviewboard.scmtools.errors.RepositoryNotFoundError:
+                The repository this was attempting to use could not be found.
+
+            reviewboard.scmtools.errors.SCMError:
+                There was a general error with talking to the repository or
+                executing a command. The exception message will have more
+                details.
+
+            reviewboard.scmtools.errors.UnverifiedCertificateError:
+                The SSL certificate for the Perforce server could not be
+                verified. It may be self-signed. The certificate information
+                will be available in the exception.
+
+        Example:
+            .. code-block:: python
+
+                with client.run_worker():
+                    ...
+        """
         from P4 import P4Exception
+
         try:
-            with self._connect():
-                return worker()
+            with self.connect():
+                yield
         except P4Exception as e:
-            self._convert_p4exception_to_scmexception(e)
+            error = six.text_type(e)
 
-    def _get_changeset(self, changesetid):
-        changesetid = six.text_type(changesetid)
+            if 'Perforce password' in error or 'Password must be set' in error:
+                raise AuthenticationError(msg=error)
+            elif 'SSL library must be at least version' in error:
+                raise SCMError(_(
+                    'The specified Perforce port includes ssl:, but the '
+                    'p4python library was built without SSL support or the '
+                    'system library path is incorrect.'
+                ))
+            elif ('check $P4PORT' in error or
+                  (error.startswith('[P4.connect()] TCP connect to') and
+                   'failed.' in error)):
+                raise RepositoryNotFoundError
+            elif "To allow connection use the 'p4 trust' command" in error:
+                fingerprint = error.split(r'\n')[3]
 
-        try:
-            change = self.p4.run_change('-o', '-O', changesetid)
-            changesetid = change[0]['Change']
-        except Exception as e:
-            logging.warning('Failed to get updated changeset information for '
-                            'CLN %s (%s): %s',
-                            changesetid, self.p4port, e, exc_info=True)
+                raise UnverifiedCertificateError(
+                    Certificate(fingerprint=fingerprint))
+            else:
+                raise SCMError(error)
 
-        return self.p4.run_describe('-s', changesetid)
+    def get_changeset(self, changeset_id):
+        """Return information about a server-side changeset.
 
-    def get_changeset(self, changesetid):
+        Args:
+            changeset_id (int):
+                The Perforce changeset ID.
+
+        Returns:
+            dict:
+            Information about the changeset.
         """
-        Get the contents of a changeset description.
-        """
-        return self._run_worker(lambda: self._get_changeset(changesetid))
+        changeset_id = six.text_type(changeset_id)
+
+        with self.run_worker():
+            try:
+                change = self.p4.run_change('-o', '-O', changeset_id)
+                changeset_id = change[0]['Change']
+            except Exception as e:
+                logging.warning('Failed to get updated changeset information '
+                                'for CLN %s (%s): %s',
+                                changeset_id, self.p4port, e, exc_info=True)
+
+            return self.p4.run_describe('-s', changeset_id)
 
     def get_info(self):
-        return self._run_worker(self.p4.run_info)
+        """Return information on a Perforce server connection.
 
-    def _get_file(self, path, revision):
+        Returns:
+            list of dict:
+            A list of connection detail dictionaries.
+        """
+        with self.run_worker():
+            return self.p4.run_info()
+
+    def get_file(self, path, revision):
+        """Return the contents of a file at a specified revision.
+
+        Args:
+            path (unicode):
+                The Perforce depot path, without a revision.
+
+            revision (unicode):
+                The revision for the path.
+
+        Returns:
+            bytes:
+            The contents of the file.
+        """
         if revision == PRE_CREATION:
-            return ''
-        elif revision == HEAD:
+            return b''
+
+        if revision == HEAD:
             depot_path = path
         else:
             depot_path = '%s#%s' % (path, revision)
 
-        res = self.p4.run_print('-q', depot_path)
+        with self.run_worker():
+            res = self.p4.run_print('-q', depot_path)
+
         if res:
             return res[-1]
 
-    def get_file(self, path, revision):
-        """
-        Get the contents of a file, at a specific revision.
-        """
-        return self._run_worker(lambda: self._get_file(path, revision))
+        return b''
 
     def get_file_stat(self, path, revision):
         """Return status information about a file in the repository.
@@ -338,7 +584,8 @@ class PerforceClient(object):
         else:
             depot_path = '%s#%s' % (path, revision)
 
-        res = self._run_worker(lambda: self.p4.run_fstat(depot_path))
+        with self.run_worker():
+            res = self.p4.run_fstat(depot_path)
 
         if res:
             return res[-1]
@@ -347,7 +594,20 @@ class PerforceClient(object):
 
 
 class PerforceTool(SCMTool):
-    name = "Perforce"
+    """Repository support for Perforce.
+
+    Perforce is a centralized, enterprise-ready source code management
+    service that's installed within a network. It differs from many types
+    of repositories in that changes (commits) can be created before files
+    are even modified (set to a "pending" state) and are tracked by the
+    server. Files are "opened" (tracked by the server) before being
+    modified.
+
+    Perforce doesn't have a very comprehensive standard diff format, so we
+    make use of a custom format known by Review Board and RBTools.
+    """
+
+    name = 'Perforce'
     diffs_use_absolute_paths = True
     supports_ticket_auth = True
     supports_pending_changesets = True
@@ -363,41 +623,31 @@ class PerforceTool(SCMTool):
     }
 
     def __init__(self, repository):
-        SCMTool.__init__(self, repository)
+        """Initialize the Perforce tool.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository owning the instance of this tool.
+        """
+        super(PerforceTool, self).__init__(repository)
 
         credentials = repository.get_credentials()
 
-        self.client = self._create_client(
+        if repository.local_site_id:
+            local_site_name = repository.local_site.name
+        else:
+            local_site_name = None
+
+        self.client = PerforceClient(
             path=six.text_type(repository.mirror_path or repository.path),
             username=six.text_type(credentials['username']),
             password=six.text_type(credentials['password'] or ''),
             encoding=six.text_type(repository.encoding),
             host=six.text_type(repository.extra_data.get('p4_host')),
             client_name=six.text_type(repository.extra_data.get('p4_client')),
+            local_site_name=local_site_name,
             use_ticket_auth=repository.extra_data.get('use_ticket_auth',
                                                       False))
-
-    @staticmethod
-    def _create_client(path, **kwargs):
-        if path.startswith('stunnel:'):
-            path = path[8:]
-            use_stunnel = True
-        else:
-            use_stunnel = False
-
-        return PerforceClient(path=path,
-                              use_stunnel=use_stunnel,
-                              **kwargs)
-
-    @staticmethod
-    def _convert_p4exception_to_scmexception(e):
-        error = six.text_type(e)
-        if 'Perforce password' in error or 'Password must be set' in error:
-            raise AuthenticationError(msg=error)
-        elif 'check $P4PORT' in error:
-            raise RepositoryNotFoundError
-        else:
-            raise SCMError(error)
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,
@@ -413,7 +663,7 @@ class PerforceTool(SCMTool):
 
         Args:
             path (unicode):
-                The Perforce repository path (equivalent to :env:`P4PORT`).
+                The Perforce repository path (equivalent to :envvar:`P4PORT`).
 
             username (unicode):
                 The username used to authenticate.
@@ -423,11 +673,11 @@ class PerforceTool(SCMTool):
 
             p4_host (unicode):
                 The optional Perforce host name (equivalent to
-                :env:`P4HOST`).
+                :envvar:`P4HOST`).
 
             p4_client (unicode):
                 The optional Perforce client name (equivalent to
-                :env:`P4CLIENT`).
+                :envvar:`P4CLIENT`).
 
             local_site_name (unicode):
                 The optional Local Site name.
@@ -451,22 +701,71 @@ class PerforceTool(SCMTool):
         # 'p4 info' will succeed even if the server requires ticket auth and we
         # don't run 'p4 login' first. We therefore don't go through all the
         # trouble of handling tickets here.
-        client = cls._create_client(path=six.text_type(path),
-                                    username=six.text_type(username),
-                                    password=six.text_type(password),
-                                    host=six.text_type(p4_host or ''),
-                                    client_name=six.text_type(p4_client or ''))
+        client = PerforceClient(path=six.text_type(path),
+                                username=six.text_type(username),
+                                password=six.text_type(password),
+                                host=six.text_type(p4_host or ''),
+                                client_name=six.text_type(p4_client or ''),
+                                local_site_name=local_site_name)
         client.get_info()
 
-    def get_changeset(self, changesetid, allow_empty=False):
-        changeset = self.client.get_changeset(changesetid)
+    def get_changeset(self, changeset_id, allow_empty=False):
+        """Return information on a server-side changeset with the given ID.
+
+        Args:
+            changeset_id (unicode):
+                The server-side changeset ID.
+
+            allow_empty (bool, optional):
+                Whether or not an empty changeset (one containing no modified
+                files) can be returned.
+
+                If ``True``, the changeset will be returned with whatever
+                data could be provided. If ``False``, an
+                :py:exc:`~reviewboard.scmtools.errors.EmptyChangeSetError`
+                will be raised.
+
+                Defaults to ``False``.
+
+        Returns:
+            reviewboard.scmtools.core.ChangeSet:
+            The resulting changeset containing information on the commit
+            and modified files.
+
+        Raises:
+            reviewboard.scmtools.errors.EmptyChangeSetError:
+                The resulting changeset contained no file modifications (and
+                ``allow_empty`` was ``False``).
+        """
+        changeset = self.client.get_changeset(changeset_id)
+
         if changeset:
-            return self.parse_change_desc(changeset[0], changesetid,
-                                          allow_empty)
+            return self._parse_change_desc(changeset[0], changeset_id,
+                                           allow_empty)
         else:
             return None
 
     def get_file(self, path, revision=HEAD, **kwargs):
+        """Return the contents of a file in the repository.
+
+        Args:
+            path (unicode):
+                THe depot path to the file in the repository.
+
+            revision (reviewboard.scmtools.core.Revision, optional):
+                The revision to fetch.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            bytes:
+            The contents of the file.
+
+        Raises:
+            reviewboard.scmtools.errors.FileNotFoundError:
+                The file could not be found in the repository.
+        """
         return self.client.get_file(path, revision)
 
     def file_exists(self, path, revision=HEAD, **kwargs):
@@ -492,7 +791,44 @@ class PerforceTool(SCMTool):
         return stat is not None and 'headRev' in stat
 
     def parse_diff_revision(self, file_str, revision_str, *args, **kwargs):
+        """Return a parsed filename and revision as represented in a diff.
+
+        This will separate out the filename from the revision (separated by
+        a ``#``) and return the results.
+
+        If the revision is ``1``, this will have to query the repository for
+        the file's history. This is to work around behavior in older versions
+        of Perforce where a revision of ``1`` would be used for newly-created
+        files.
+
+        Args:
+            file_str (unicode):
+                The filename as represented in the diff.
+
+            revision_str (unicode):
+                The revision as represented in the diff.
+
+            **args (tuple):
+                Unused positional arguments.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            tuple:
+            A tuple containing two items: The normalized filename string, and
+            a :py:class:`~reviewboard.scmtools.core.Revision`.
+
+        Raises:
+            reviewboard.scmtools.errors.InvalidRevisionFormatError:
+                The ``revision`` was in an invalid format.
+        """
         filename, revision = revision_str.rsplit('#', 1)
+
+        try:
+            int(revision)
+        except ValueError:
+            raise InvalidRevisionFormatError(filename, revision)
 
         # Older versions of Perforce had this lovely idiosyncracy that diffs
         # show revision #1 both for pre-creation and when there's an actual
@@ -507,12 +843,128 @@ class PerforceTool(SCMTool):
 
         return filename, revision
 
-    @staticmethod
-    def parse_change_desc(changedesc, changenum, allow_empty=False):
+    def get_parser(self, data):
+        """Return a diff parser for Perforce.
+
+        Args:
+            data (bytes):
+                The diff contents.
+
+        Returns:
+            PerforceDiffParser:
+            The diff parser used to parse the diff.
+        """
+        return PerforceDiffParser(data)
+
+    @classmethod
+    def accept_certificate(cls, path, username=None, password=None,
+                           local_site_name=None, certificate=None):
+        """Accept the SSL certificate for the given repository path.
+
+        This is needed for repositories that support SSL-backed
+        repositories. It should mark an SSL certificate as accepted so that the
+        user won't see validation errors in the future.
+
+        The administration UI will call this after a user has seen and verified
+        the SSL certificate.
+
+        Args:
+            path (unicode):
+                The repository path.
+
+            username (unicode, optional):
+                The username provided for the repository.
+
+            password (unicode, optional):
+                The password provided for the repository.
+
+            local_site_name (unicode, optional):
+                The name of the Local Site used for the repository, if any.
+
+            certificate (reviewboard.scmtools.certs.Certificate):
+                The certificate to accept.
+
+        Returns:
+            dict:
+            Serialized information on the certificate.
+
+        Raises:
+            reviewboard.scmtools.errors.SCMError:
+                There was an error accepting the certificate.
+        """
+        p = subprocess.Popen(
+            ['p4', '-p', path, 'trust', '-i', certificate.fingerprint],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        errdata = p.communicate()[1]
+        failure = p.poll()
+
+        if failure:
+            raise SCMError(errdata)
+
+        return certificate.fingerprint
+
+    def normalize_patch(self, patch, filename, revision):
+        """Normalize a diff/patch file before it's applied.
+
+        This will take patch entries for files that represent unchanged, moved
+        files and return a blank diff instead. These types of patches aren't
+        otherwise handled well by GNU patch.
+
+        By default, this returns the contents as-is.
+
+        Args:
+            patch (bytes):
+                The diff/patch file to normalize.
+
+            filename (unicode):
+                The name of the file being changed in the diff.
+
+            revision (unicode):
+                The revision of the file being changed in the diff.
+
+        Returns:
+            bytes:
+            The resulting diff/patch file.
+        """
+        m = PerforceDiffParser.SPECIAL_REGEX.match(patch.strip())
+
+        if m and m.group(3) == b'MV':
+            return b''
+
+        return patch
+
+    def _parse_change_desc(self, changedesc, changenum, allow_empty=False):
+        """Parse the contents of a change description from Perforce.
+
+        This will attempt to grab details from the change description,
+        including the changeset ID, the list of files, change message,
+        and state.
+
+        Args:
+            changedesc (dict):
+                The change description dictionary from Perforce.
+
+            changenum (int):
+                THe change number.
+
+            allow_empty (bool, optional):
+                Whether an empty changeset (containing no files) is allowed.
+
+        Returns:
+            reviewboard.scmtools.core.ChangeSet:
+            The resulting changeset, or ``None`` if ``changedesc`` is empty.
+
+        Raises:
+            reviewboard.scmtools.errors.EmptyChangeSetError:
+                The resulting changeset contained no file modifications (and
+                ``allow_empty`` was ``False``).
+        """
         if not changedesc:
             return None
 
         changeset = ChangeSet()
+
         try:
             changeset.changenum = int(changedesc['change'])
         except ValueError:
@@ -548,8 +1000,9 @@ class PerforceTool(SCMTool):
             changeset.description = changedesc['desc'].decode('utf-8',
                                                               'replace')
 
-        if changedesc['status'] == "pending":
+        if changedesc['status'] == 'pending':
             changeset.pending = True
+
         try:
             changeset.files = changedesc['depotFile']
         except KeyError:
@@ -557,6 +1010,7 @@ class PerforceTool(SCMTool):
                 raise EmptyChangeSetError(changenum)
 
         split = changeset.description.find('\n\n')
+
         if split >= 0 and split < 100:
             changeset.summary = \
                 changeset.description.split('\n\n', 1)[0].replace('\n', ' ')
@@ -565,56 +1019,57 @@ class PerforceTool(SCMTool):
 
         return changeset
 
-    def get_parser(self, data):
-        return PerforceDiffParser(data)
-
-    @classmethod
-    def accept_certificate(cls, path, username=None, password=None,
-                           local_site_name=None, certificate=None):
-        """Accepts the certificate for the given repository path."""
-        args = ['p4', '-p', path, 'trust', '-i', certificate.fingerprint]
-        p = subprocess.Popen(args, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        _, errdata = p.communicate()
-        failure = p.poll()
-
-        if failure:
-            raise IOError(errdata)
-
-        return certificate.fingerprint
-
-    def normalize_patch(self, patch, filename, revision):
-        # The patch contents may represent an unchanged, moved file, which
-        # isn't technically a valid diff, and will make patch mad. So, look
-        # for this and return a blank diff instead.
-        m = PerforceDiffParser.SPECIAL_REGEX.match(patch.strip())
-
-        if m and m.group(3) == 'MV':
-            return ''
-
-        return patch
-
 
 class PerforceDiffParser(DiffParser):
-    SPECIAL_REGEX = re.compile("^==== ([^#]+)#(\d+) ==([AMD]|MV)== (.*) ====$")
+    """Diff parser for handling Perforce diffs.
 
-    def __init__(self, data):
-        DiffParser.__init__(self, data)
+    This accepts a custom variant on the Perforce diff format. This will
+    extract information added to the diff that represents operations like
+    file moves or copies, and normalizes the depot paths contained within.
+    """
+
+    SPECIAL_REGEX = re.compile(
+        r'^==== ([^#]+)#(\d+) ==([AMD]|MV)== (.*) ====$')
 
     def parse_diff_header(self, linenum, info):
+        """Parse a header in the diff.
+
+        This will look for a special header line and extract information
+        from it to determine the depot paths/revisions and the file
+        modification operation.
+
+        Args:
+            linenum (int):
+                The current 0-based line number.
+
+            info (dict):
+                The information dictionary to populate with any information
+                found.
+
+        Returns:
+            int:
+            The next line number to process.
+        """
         m = self.SPECIAL_REGEX.match(self.lines[linenum])
+
         if m:
-            info['origFile'] = m.group(1)
-            info['origInfo'] = "%s#%s" % (m.group(1), m.group(2))
-            info['newFile'] = m.group(4)
-            info['newInfo'] = ""
+            info.update({
+                'origFile': m.group(1),
+                'origInfo': '%s#%s' % (m.group(1), m.group(2)),
+                'newFile': m.group(4),
+                'newInfo': '',
+            })
             linenum += 1
 
-            if linenum < len(self.lines) and \
-               (self.lines[linenum].startswith(b"Binary files ") or
-                self.lines[linenum].startswith(b"Files ")):
-                info['binary'] = True
-                linenum += 1
+            try:
+                line = self.lines[linenum]
+
+                if line.startswith((b'Binary files ', b'Files ')):
+                    info['binary'] = True
+                    linenum += 1
+            except IndexError:
+                # We were at the end of the diff. Ignore this.
+                pass
 
             change_type = m.group(3)
 
@@ -631,22 +1086,51 @@ class PerforceDiffParser(DiffParser):
         return super(PerforceDiffParser, self).parse_diff_header(linenum, info)
 
     def parse_special_header(self, linenum, info):
+        """Parse a special information before the header in a diff.
+
+        This will look for move information before the diff header and store
+        it, if found.
+
+        Args:
+            linenum (int):
+                The current 0-based line number.
+
+            info (dict):
+                The information dictionary to populate with any information
+                found.
+
+        Returns:
+            int:
+            The next line number to process.
+        """
         linenum = super(PerforceDiffParser, self).parse_special_header(
             linenum, info)
 
-        if (linenum + 2 < len(self.lines) and
-            self.lines[linenum].startswith(b'Moved from:') and
-            self.lines[linenum + 1].startswith(b'Moved to:')):
-            info['moved'] = True
-            linenum += 2
+        try:
+            if (self.lines[linenum].startswith(b'Moved from:') and
+                self.lines[linenum + 1].startswith(b'Moved to:')):
+                info['moved'] = True
+                linenum += 2
+        except IndexError:
+            # We were at the end of the diff. Ignore this.
+            pass
 
         return linenum
 
     def normalize_diff_filename(self, filename):
         """Normalize filenames in diffs.
 
-        The default behavior of stripping off leading slashes doesn't work for
-        Perforce (because depot paths start with //), so this overrides it to
-        just return the filename un-molested.
+        The default behavior is to strip off leading slashes from filenames.
+        For Perforce, it's important to keep these, as they're needed to
+        resolve depot paths. This is a simple override function that preserves
+        the filenames as-is.
+
+        Args:
+            filename (unicode):
+                The filename in the diff.
+
+        Returns:
+            unicode:
+            The provided filename, unchanged.
         """
         return filename

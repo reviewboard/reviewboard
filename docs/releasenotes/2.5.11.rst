@@ -1,0 +1,190 @@
+.. default-intersphinx:: rb2.5
+
+
+=================================
+Review Board 2.5.11 Release Notes
+=================================
+
+**Release date**: May 25, 2017
+
+
+New Features
+============
+
+* Added touchscreen support for creating comments in the diff viewer.
+
+  You can now use the touchscreen on an iPad (or another tablet device) to
+  create multi-line comments in the diff viewer, or to view existing comments.
+  The comment dialog can also be resized.
+
+  The diff viewer is still not properly optimized for the screen sizes of
+  mouse smartphones, but the touchscreen should at least work there as well.
+
+* Added support for portfolio IDs when configuring :rbintegration:`Assembla`
+  repositories.
+
+  Portfolios are an organizational method used by Assembla for their
+  projects/repositories. We now support configuring repositories that include
+  a portfolio ID in the repository path.
+
+* Added an improved HTTP 500 page.
+
+  Our old HTTP 500 page, shown when something breaks, was not very helpful.
+  It listed some possible causes that were no longer relevant, and it just
+  wasn't very nice to look at.
+
+  We've introduced a new HTTP 500 page that's more pleasant and less
+  misleading.
+
+* Re-introduced support for passing relative paths to :program:`rb-site`.
+
+  The path provided no longer has to be absolute, but it does have to look
+  like a path (e.g., :file:`./reviewboard/`).
+
+
+Performance Improvements
+========================
+
+* Rewrote diff parsing and storage for faster uploads.
+
+  Our diff parsers have been rewritten to handle very large files, very fast,
+  with less memory usage. This will allow servers to handle much larger diffs
+  and make it faster to post changes for review.
+
+  We've also optimized storing information on the diffs in the database,
+  reducing the work needed on every upload.
+
+* Improved performance when posting existing commits for review.
+
+  Posting existing commits for review in the New Review Request page no longer
+  performs file existence checks for each file in the repository. Instead, the
+  files are now expected to be there, since the commit was valid. This greatly
+  decreases the time needed to post these changes for review.
+
+* Reduced database queries in the dashboard when using the Diff Size column.
+
+* Improved performance all around the diff viewer. (:bug:`4389`)
+
+  The diff viewer is now much faster. We've optimized much of the diff
+  viewer's more complicated logic, reduced the work needed by the browser
+  when resizing the page (and greatly improving the responsiveness in the
+  process), and sped up rendering of the diffs and complexity graphs.
+
+* Added faster file existence checks when posting Perforce changes for review.
+
+  When posting for review, the Perforce support would try to grab too much
+  information about the files in order to determine if the files existed in
+  the repository. Now existence checking is very fast.
+
+* Added improved Perforce ticket management, for faster communication.
+
+  Perforce ticket management has been rewritten to do a better job of reducing
+  the number of login attempts needed, and to communicate faster with
+  Perforce.
+
+* Massively reduced the time needed to generate a search index.
+
+  The search indexing code has been significantly optimized to reduce the
+  number of database queries needed, shaving off potentially thousands or more
+  queries per index and reducing the search indexing time by a couple orders
+  of magnitude.
+
+* Optimized communication with some hosting services.
+
+  Hosting services that use form data for their API requests will now see
+  small performance and memory improvements.
+
+
+Web API
+=======
+
+* :ref:`webapi2.0-file-diff-resource` now lists the ``status`` field of the
+  file.
+
+  This indicates whether the file is ``copied``, ``deleted``, ``modified``,
+  ``moved``, or ``unknown``.
+
+* :ref:`webapi2.0-default-reviewer-resource` now allows for unsetting the
+  repositories, groups, and users in an existing entry.
+
+  To unset these, simply set the appropriate fields to empty values.
+
+
+Bug Fixes
+=========
+
+Review Requests
+---------------
+
+* Fixed a crash when attempting to fetch the HTML for commented areas of a
+  diff when a certain query parameter wasn't included
+
+  This typically manifested on public servers when indexed by search engines.
+
+* Added precautions against inconsistent state when posting a review request
+  using an existing commit.
+
+  If there's an issue posting a new review request against an existing commit
+  (such as a timeout when talking to the repository), it was possible to end
+  up with a review request in a half-created state. This was particularly
+  problematic when using :term:`Local Sites`. The code has been rewritten to
+  guard against this.
+
+* Resolving or re-opening an issue in a review no longer causes the page to
+  jump.
+
+  We had logic before that attempted to prevent jumps, but it wasn't always
+  reliable (depending on the browser). The new logic should keep the page
+  firmly in place when clicking the button.
+
+
+Dashboard
+---------
+
+* Fixed the display of bug links for a review request when there's no
+  repository.
+
+  The links were appearing as clickable, but clicking them just took you to
+  the review request page. They no longer appear clickable.
+
+
+Diff Viewer
+-----------
+
+* Typing a comment on mobile devices no longer triggers keyboard bindings.
+
+
+E-Mail
+------
+
+* E-mails for review requests not associated with a repository no longer
+  say "None" in place of bug numbers.
+
+
+Search
+------
+
+* Fixed a regression with the search field's autocomplete.
+
+  The search field's autocomplete stopped working in a recent release, due to
+  overly-strict validation of a parameter. This has been fixed.
+
+
+LDAP
+----
+
+* Fixed a regression where users in LDAP weren't being imported into Review
+  Board when added in the reviewers list on a review request.
+
+  All other backends allow for importing the users once they're referenced for
+  the first time (if the user didn't have a matching account in Review Board
+  already). This broke in LDAP a while back. It's now possible once again to
+  add these users to the reviewers field.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge

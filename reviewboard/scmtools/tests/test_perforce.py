@@ -2,23 +2,28 @@
 from __future__ import unicode_literals
 
 import os
+import shutil
 from hashlib import md5
 
 import nose
+from django.conf import settings
 from django.utils import six
 from django.utils.six.moves import zip_longest
+from djblets.testing.decorators import add_fixtures
 from djblets.util.filesystem import is_exe_in_path
+from kgb import SpyAgency
 
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          RepositoryNotFoundError, SCMError)
 from reviewboard.scmtools.models import Repository, Tool
-from reviewboard.scmtools.perforce import STunnelProxy, STUNNEL_SERVER
+from reviewboard.scmtools.perforce import STunnelProxy
 from reviewboard.scmtools.tests.testcases import SCMTestCase
+from reviewboard.site.models import LocalSite
 from reviewboard.testing import online_only
 
 
-class PerforceTests(SCMTestCase):
+class PerforceTests(SpyAgency, SCMTestCase):
     """Unit tests for perforce.
 
     This uses the open server at public.perforce.com to test various
@@ -41,6 +46,10 @@ class PerforceTests(SCMTestCase):
             self.tool = self.repository.get_scmtool()
         except ImportError:
             raise nose.SkipTest('perforce/p4python is not installed')
+
+    def tearDown(self):
+        shutil.rmtree(os.path.join(settings.SITE_DATA_DIR, 'p4'),
+                      ignore_errors=True)
 
     @online_only
     def test_changeset(self):
@@ -151,8 +160,151 @@ class PerforceTests(SCMTestCase):
 
         tool = repo.get_scmtool()
 
-        with tool.client._connect():
+        with tool.client.connect():
             self.assertEqual(tool.client.p4.host, 'my-custom-host')
+
+    def test_ticket_login(self):
+        """Testing Perforce with ticket-based logins"""
+        repo = Repository(name='Perforce.com',
+                          path='public.perforce.com:1666',
+                          tool=Tool.objects.get(name='Perforce'),
+                          username='samwise',
+                          password='bogus')
+        repo.extra_data = {
+            'use_ticket_auth': True,
+        }
+
+        client = repo.get_scmtool().client
+        self.assertTrue(client.use_ticket_auth)
+
+        self.spy_on(client.get_ticket_status, call_fake=lambda *args: {
+            'user': 'samwise',
+            'expiration_secs': 100000,
+        })
+
+        self.spy_on(client.login, call_original=False)
+
+        self.assertFalse(os.path.exists(os.path.join(
+            settings.SITE_DATA_DIR, 'p4', 'p4tickets')))
+
+        with client._connect():
+            self.assertFalse(client.login.called)
+            self.assertEqual(client.p4.ticket_file,
+                             os.path.join(settings.SITE_DATA_DIR, 'p4',
+                                          'p4tickets'))
+
+    def test_ticket_login_with_expiring_ticket(self):
+        """Testing Perforce with ticket-based logins with ticket close to
+        expiring
+        """
+        repo = Repository(name='Perforce.com',
+                          path='public.perforce.com:1666',
+                          tool=Tool.objects.get(name='Perforce'),
+                          username='samwise',
+                          password='bogus')
+        repo.extra_data = {
+            'use_ticket_auth': True,
+        }
+
+        client = repo.get_scmtool().client
+        self.assertTrue(client.use_ticket_auth)
+
+        self.spy_on(client.get_ticket_status, call_fake=lambda *args: {
+            'user': 'samwise',
+            'expiration_secs': 99,
+        })
+
+        self.spy_on(client.login, call_original=False)
+
+        with client._connect():
+            self.assertIsNotNone(client.p4.ticket_file)
+            self.assertTrue(client.login.called)
+            self.assertEqual(client.p4.ticket_file,
+                             os.path.join(settings.SITE_DATA_DIR, 'p4',
+                                          'p4tickets'))
+
+    def test_ticket_login_with_no_valid_ticket(self):
+        """Testing Perforce with ticket-based logins without a valid ticket
+        """
+        repo = Repository(name='Perforce.com',
+                          path='public.perforce.com:1666',
+                          tool=Tool.objects.get(name='Perforce'),
+                          username='samwise',
+                          password='bogus')
+        repo.extra_data = {
+            'use_ticket_auth': True,
+        }
+
+        client = repo.get_scmtool().client
+        self.assertTrue(client.use_ticket_auth)
+
+        self.spy_on(client.get_ticket_status, call_fake=lambda *args: None)
+        self.spy_on(client.login, call_original=False)
+
+        with client._connect():
+            self.assertTrue(client.login.called)
+            self.assertEqual(client.p4.ticket_file,
+                             os.path.join(settings.SITE_DATA_DIR, 'p4',
+                                          'p4tickets'))
+
+    def test_ticket_login_with_different_user(self):
+        """Testing Perforce with ticket-based logins with ticket for a
+        different user
+        """
+        repo = Repository(name='Perforce.com',
+                          path='public.perforce.com:1666',
+                          tool=Tool.objects.get(name='Perforce'),
+                          username='samwise',
+                          password='bogus')
+        repo.extra_data = {
+            'use_ticket_auth': True,
+        }
+
+        client = repo.get_scmtool().client
+        self.assertTrue(client.use_ticket_auth)
+
+        self.spy_on(client.get_ticket_status, call_fake=lambda *args: {
+            'user': 'other-user',
+            'expiration_secs': 100000,
+        })
+
+        self.spy_on(client.login, call_original=False)
+
+        with client._connect():
+            self.assertTrue(client.login.called)
+            self.assertEqual(client.p4.ticket_file,
+                             os.path.join(settings.SITE_DATA_DIR, 'p4',
+                                          'p4tickets'))
+
+    @add_fixtures(['test_site'])
+    def test_ticket_login_with_local_site(self):
+        """Testing Perforce with ticket-based logins with Local Sites"""
+        repo = Repository(
+            name='Perforce.com',
+            path='public.perforce.com:1666',
+            tool=Tool.objects.get(name='Perforce'),
+            username='samwise',
+            password='bogus',
+            local_site=LocalSite.objects.get(name='local-site-1'))
+        repo.extra_data = {
+            'use_ticket_auth': True,
+        }
+
+        client = repo.get_scmtool().client
+        self.assertTrue(client.use_ticket_auth)
+
+        self.spy_on(client.get_ticket_status, call_fake=lambda *args: {
+            'user': 'samwise',
+            'expiration_secs': 100000,
+        })
+
+        self.spy_on(client.login, call_original=False)
+
+        with client._connect():
+            self.assertFalse(client.login.called)
+            self.assertEqual(client.p4.ticket_file,
+                             os.path.join(settings.SITE_DATA_DIR, 'p4',
+                                          'local-site-1', 'p4tickets'))
 
     @online_only
     def test_parse_diff_revision_with_revision_eq_0(self):
@@ -370,7 +522,7 @@ class PerforceStunnelTests(SCMTestCase):
 
         cert = os.path.join(os.path.dirname(__file__),
                             '..', 'testdata', 'stunnel.pem')
-        self.proxy = STunnelProxy(STUNNEL_SERVER, 'public.perforce.com:1666')
+        self.proxy = STunnelProxy('public.perforce.com:1666')
         self.proxy.start_server(cert)
 
         # Find an available port to listen on
