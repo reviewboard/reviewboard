@@ -1,3 +1,5 @@
+"""Definitions for review request fields."""
+
 from __future__ import unicode_literals
 
 import logging
@@ -40,6 +42,7 @@ class FieldSetRegistry(OrderedRegistry):
     }
 
     def __init__(self):
+        """Initialize the registry."""
         self._key_order = []
         super(FieldSetRegistry, self).__init__()
 
@@ -110,6 +113,7 @@ class FieldRegistry(Registry):
     }
 
     def populate(self):
+        """Populate the registry."""
         # Fields are only ever registered via the FieldSetRegistry, so we
         # ensure that it has been populated as well.
         fieldset_registry.populate()
@@ -130,6 +134,7 @@ class BaseReviewRequestFieldSet(object):
     "reviewers". Others can be added by subclassing and registering
     through ``register_review_request_fieldset``.
     """
+
     fieldset_id = None
     label = None
     show_required = False
@@ -137,11 +142,17 @@ class BaseReviewRequestFieldSet(object):
     tag_name = None
 
     def __init__(self, review_request_details):
+        """Initialize the field set.
+
+        Args:
+            review_request_details (reviewboard.reviews.models.base_review_request_details.BaseReviewRequestDetails):
+                The review request or draft.
+        """
         self.review_request_details = review_request_details
 
     @classmethod
     def is_empty(cls):
-        """Returns whether the fieldset is empty.
+        """Return whether the fieldset is empty.
 
         A fieldset is empty if there are no field classes registered.
         An empty fieldset will not be displayed on the page.
@@ -150,21 +161,29 @@ class BaseReviewRequestFieldSet(object):
 
     @classmethod
     def add_field(cls, field_cls):
-        """Adds a field class to this fieldset.
+        """Add a field class to this fieldset.
 
         The field will be rendered inside this fieldset on the page.
 
         A given field class can only be in one fieldset. Its ``field_id``
         must be unique.
+
+        Args:
+            field_cls (class):
+                The field class to add.
         """
         field_registry.register(field_cls)
         cls.field_classes.append(field_cls)
 
     @classmethod
     def remove_field(cls, field_cls):
-        """Removes a field class from this fieldset.
+        """Remove a field class from this fieldset.
 
         The field class must have been previously added to this fieldset.
+
+        Args:
+            field_cls (class):
+                The field class to remove.
         """
         cls.field_classes.remove(field_cls)
 
@@ -227,6 +246,7 @@ class BaseReviewRequestField(object):
     If the function takes a ``review_request_details`` parameter, it must
     use that instead.
     """
+
     field_id = None
     label = None
     is_editable = False
@@ -238,15 +258,29 @@ class BaseReviewRequestField(object):
     can_record_change_entry = property(lambda self: self.is_editable)
 
     def __init__(self, review_request_details, request=None):
+        """Initialize the field.
+
+        Args:
+            review_request_details (reviewboard.reviews.models.base_review_request_details.BaseReviewRequestDetails):
+                The review request or draft.
+
+            request (django.http.HttpRequest, optional):
+                The current HTTP request (used to check display preferences
+                for the logged-in user).
+        """
         self.review_request_details = review_request_details
         self.request = request
 
     @property
     def value(self):
-        """Returns the value loaded from the database.
+        """Return the value loaded from the database.
 
         This will fetch the value with the associated ReviewRequest or
         ReviewRequestDraft, and then cache it for future lookups.
+
+        Returns:
+            object:
+            The value of the field.
         """
         if not hasattr(self, '_value'):
             self._value = self.load_value(self.review_request_details)
@@ -254,18 +288,39 @@ class BaseReviewRequestField(object):
         return self._value
 
     def has_value_changed(self, old_value, new_value):
-        """Returns whether the value has changed.
+        """Return whether the value has changed.
 
         By default, it performs an inequality check on the values. This
         can be overridden to perform more specialized checks.
+
+        Args:
+            old_value (object):
+                The old value of the field.
+
+            new_value (object):
+                The new value of the field.
+
+        Returns:
+            bool:
+            Whether the value of the field has changed.
         """
         return old_value != new_value
 
     def record_change_entry(self, changedesc, old_value, new_value):
-        """Records information on the changed values in a ChangeDescription.
+        """Record information on the changed values in a ChangeDescription.
 
         By default, the values are stored as-is along with the field ID.
         This can be overridden to perform more specialized storage.
+
+        Args:
+            changedesc (reviewboard.changedescs.models.ChangeDescription):
+                The change description to record the entry in.
+
+            old_value (object):
+                The old value of the field.
+
+            new_value (object):
+                The new value of the field.
         """
         changedesc.record_field_change(self.field_id, old_value, new_value)
 
@@ -372,12 +427,22 @@ class BaseReviewRequestField(object):
         ])
 
     def get_change_entry_sections_html(self, info):
-        """Returns sections of change entries with titles and rendered HTML.
+        """Return sections of change entries with titles and rendered HTML.
 
         By default, this just returns a single section for the field, with
         the field's title and rendered change HTML.
 
         Subclasses can override this to provide more information.
+
+        Args:
+            info (dict):
+                A dictionary describing how the field has changed. This is
+                guaranteed to have ``new`` and ``old`` keys, but may also
+                contain ``added`` and ``removed`` keys as well.
+
+        Returns:
+            list of dict:
+            A list of the change entry sections.
         """
         return [{
             'title': self.label,
@@ -385,7 +450,7 @@ class BaseReviewRequestField(object):
         }]
 
     def render_change_entry_html(self, info):
-        """Renders a change entry to HTML.
+        """Render a change entry to HTML.
 
         By default, this returns a simple "changed from X to Y" using the old
         and new values. This can be overridden to generate more specialized
@@ -397,6 +462,16 @@ class BaseReviewRequestField(object):
 
         Subclasses can override ``render_change_entry_value_html`` to
         change how the value itself will be rendered in the string.
+
+        Args:
+            info (dict):
+                A dictionary describing how the field has changed. This is
+                guaranteed to have ``new`` and ``old`` keys, but may also
+                contain ``added`` and ``removed`` keys as well.
+
+        Returns:
+            unicode:
+            The HTML representation of the change entry.
         """
         old_value = ''
         new_value = ''
@@ -422,6 +497,19 @@ class BaseReviewRequestField(object):
         return ''.join(s)
 
     def render_change_entry_added_value_html(self, info, value):
+        """Render the change entry for an added value to HTML.
+
+        Args:
+            info (dict):
+                A dictionary describing how the field has changed.
+
+            value (object):
+                The value of the field.
+
+        Returns:
+            unicode:
+            The rendered change entry.
+        """
         value_html = self.render_change_entry_value_html(info, value)
 
         if value_html:
@@ -431,6 +519,19 @@ class BaseReviewRequestField(object):
             return ''
 
     def render_change_entry_removed_value_html(self, info, value):
+        """Render the change entry for a removed value to HTML.
+
+        Args:
+            info (dict):
+                A dictionary describing how the field has changed.
+
+            value (object):
+                The value of the field.
+
+        Returns:
+            unicode:
+            The rendered change entry.
+        """
         value_html = self.render_change_entry_value_html(info, value)
 
         if value_html:
@@ -440,15 +541,26 @@ class BaseReviewRequestField(object):
             return ''
 
     def render_change_entry_value_html(self, info, value):
-        """Renders the value for a change description string to HTML.
+        """Render the value for a change description string to HTML.
 
         By default, this just converts the value to text and escapes it.
         This can be overridden to customize how the value is displayed.
+
+        Args:
+            info (dict):
+                A dictionary describing how the field has changed.
+
+            value (object):
+                The value of the field.
+
+        Returns:
+            unicode:
+            The rendered change entry.
         """
         return escape(six.text_type(value or ''))
 
     def load_value(self, review_request_details):
-        """Loads a value from the review request or draft.
+        """Load a value from the review request or draft.
 
         By default, this loads the value as-is from the extra_data field.
         This can be overridden if you need to deserialize the value in some
@@ -456,15 +568,23 @@ class BaseReviewRequestField(object):
 
         This must use ``review_request_details`` instead of
         ``self.review_request_details``.
+
+        Args:
+            review_request_details (reviewboard.reviews.models.base_review_request_details.BaseReviewRequestDetails):
+                The review request or draft.
         """
         return review_request_details.extra_data.get(self.field_id)
 
     def save_value(self, value):
-        """Saves the value in the review request or draft.
+        """Save the value in the review request or draft.
 
         By default, this saves the value as-is in the extra_data field.
         This can be overridden if you need to serialize the value in some
         way.
+
+        Args:
+            value (object):
+                The new value for the field.
         """
         self.review_request_details.extra_data[self.field_id] = value
 
@@ -485,41 +605,57 @@ class BaseReviewRequestField(object):
         of the :py:attr:`review_request_details` attribute on the field.
 
         Args:
-            review_request_details (reviewboard.reviews.models.base_review_request_details):
+            review_request_details (reviewboard.reviews.models.base_review_request_details.BaseReviewRequestDetails):
                 The source review request or draft whose data is to be
                 propagated.
         """
         self.save_value(self.load_value(review_request_details))
 
     def render_value(self, value):
-        """Renders the value in the field.
+        """Render the value in the field.
 
         By default, this converts to text and escapes it. This can be
         overridden if you need to render it in a more specific way.
 
         This must use ``value`` instead of ``self.value``.
+
+        Args:
+            value (object):
+                The value to render.
+
+        Returns:
+            unicode:
+            The rendered value.
         """
         return escape(six.text_type(value or ''))
 
     def should_render(self, value):
-        """Returns whether the field should be rendered.
+        """Return whether the field should be rendered.
 
         By default, the field is always rendered, but this can be overridden
         if you only want to show under certain conditions (such as if it has
         a value).
 
         This must use ``value`` instead of ``self.value``.
+
+        Args:
+            value (object):
+                The value for the field.
         """
         return True
 
     def get_css_classes(self):
-        """Returns the list of CSS classes to apply to the element.
+        """Return the set of CSS classes to apply to the element.
 
         By default, this will include the contents of ``default_css_classes``,
         and ``required`` if it's a required field.
 
         This can be overridden to provide additional CSS classes, if they're
         not appropraite for ``default_css_classes``.
+
+        Returns:
+            set of unicode:
+            A set of the CSS classes to apply.
         """
         css_classes = set(self.default_css_classes)
 
@@ -529,17 +665,25 @@ class BaseReviewRequestField(object):
         return css_classes
 
     def get_data_attributes(self):
-        """Returns any data attributes to include in the element.
+        """Return any data attributes to include in the element.
 
         By default, this returns nothing.
+
+        Returns:
+            dict:
+            The data attributes to include in the element.
         """
         return {}
 
     def as_html(self):
-        """Returns the field rendered as HTML.
+        """Return the field rendered as HTML.
 
         By default, this just calls ``render_value`` with the value
         from the database.
+
+        Returns:
+            unicode:
+            The rendered field.
         """
         return self.render_value(self.value)
 
@@ -573,6 +717,7 @@ class BaseEditableField(BaseReviewRequestField):
 
     This simply marks the field as editable.
     """
+
     default_css_classes = ['editable']
     is_editable = True
 
@@ -588,17 +733,29 @@ class BaseCommaEditableField(BaseEditableField):
     on a per-item-basis. That's useful for showing links to items,
     for example.
     """
+
     default_css_classes = ['editable', 'comma-editable']
     order_matters = False
 
     one_line_per_change_entry = True
 
     def has_value_changed(self, old_value, new_value):
-        """Returns whether two values have changed.
+        """Return whether two values have changed.
 
-        If ``order_matters`` is set to ``True``, this will do a strict
-        list comparison. Otherwise, it will compare the items in both
-        lists without caring about the ordering.
+        If :py:attr:`order_matters` is set to ``True``, this will do a strict
+        list comparison. Otherwise, it will compare the items in both lists
+        without caring about the ordering.
+
+        Args:
+            old_value (object):
+                The old value of the field.
+
+            new_value (object):
+                The new value of the field.
+
+        Returns:
+            bool:
+            Whether the value of the field has changed.
         """
         if self.order_matters:
             return old_value != new_value
@@ -629,10 +786,18 @@ class BaseCommaEditableField(BaseEditableField):
             return self.serialize_change_entry_for_list(field_info)
 
     def render_value(self, values):
-        """Renders the list of items.
+        """Render the list of items.
 
         This will call out to ``render_item`` for every item. The list
         of rendered items will be separated by a comma and a space.
+
+        Args:
+            value (object):
+                The value to render.
+
+        Returns:
+            unicode:
+            The rendered value.
         """
         return ', '.join([
             self.render_item(value)
@@ -640,14 +805,22 @@ class BaseCommaEditableField(BaseEditableField):
         ])
 
     def render_item(self, item):
-        """Renders an item from the list.
+        """Render an item from the list.
 
         By default, this will convert the item to text and then escape it.
+
+        Args:
+            item (object):
+                The item to render.
+
+        Returns:
+            unicode:
+            The rendered item.
         """
         return escape(six.text_type(item or ''))
 
     def render_change_entry_html(self, info):
-        """Renders a change entry to HTML.
+        """Render a change entry to HTML.
 
         By default, this returns HTML containing a list of removed items,
         and a list of added items. This can be overridden to generate
@@ -656,6 +829,16 @@ class BaseCommaEditableField(BaseEditableField):
         This function is expected to return safe, valid HTML. Any values
         coming from a field or any other form of user input must be
         properly escaped.
+
+        Args:
+            info (dict):
+                A dictionary describing how the field has changed. This is
+                guaranteed to have ``new`` and ``old`` keys, but may also
+                contain ``added`` and ``removed`` keys as well.
+
+        Returns:
+            unicode:
+            The HTML representation of the change entry.
         """
         s = ['<table class="changed">']
 
@@ -688,11 +871,22 @@ class BaseCommaEditableField(BaseEditableField):
         return ''.join(s)
 
     def render_change_entry_value_html(self, info, values):
-        """Renders a list of items for change description HTML.
+        """Render a list of items for change description HTML.
 
         By default, this will call ``render_change_entry_item_html`` for every
         item in the list. The list of rendered items will be separated by a
         comma and a space.
+
+        Args:
+            info (dict):
+                A dictionary describing how the field has changed.
+
+            values (list):
+                The value of the field.
+
+        Returns:
+            unicode:
+            The rendered change entry.
         """
         return ', '.join([
             self.render_change_entry_item_html(info, item)
@@ -700,10 +894,21 @@ class BaseCommaEditableField(BaseEditableField):
         ])
 
     def render_change_entry_item_html(self, info, item):
-        """Renders an item for change description HTML.
+        """Render an item for change description HTML.
 
         By default, this just converts the value to text and escapes it.
         This can be overridden to customize how the value is displayed.
+
+        Args:
+            info (dict):
+                A dictionary describing how the field has changed.
+
+            item (object):
+                The value of the item.
+
+        Returns:
+            unicode:
+            The rendered change entry.
         """
         return escape(six.text_type(item[0]))
 
@@ -715,6 +920,7 @@ class BaseTextAreaField(BaseEditableField):
     Markdown is supported, but this can be changed by setting
     ``enable_markdown`` to ``False``.
     """
+
     default_css_classes = ['editable', 'field-text-area']
     enable_markdown = True
     always_render_markdown = False
@@ -722,17 +928,30 @@ class BaseTextAreaField(BaseEditableField):
 
     @cached_property
     def text_type_key(self):
-        """Return the text type key for the ``extra_data`` dictionary."""
+        """Return the text type key for the ``extra_data`` dictionary.
+
+        Returns:
+            unicode:
+            The key which stores the text type for the field.
+        """
         if self.field_id == 'text':
             return 'text_type'
         else:
             return '%s_text_type' % self.field_id
 
     def is_text_markdown(self, value):
-        """Returns whether the text is in Markdown format.
+        """Return whether the text is in Markdown format.
 
         This can be overridden if the field needs to check something else
         to determine if the text is in Markdown format.
+
+        Args:
+            value (unicode):
+                The value of the field.
+
+        Returns:
+            bool:
+            Whether the text should be interpreted as Markdown.
         """
         text_type = self.review_request_details.extra_data.get(
             self.text_type_key, 'plain')
@@ -748,7 +967,7 @@ class BaseTextAreaField(BaseEditableField):
         field.
 
         Args:
-            review_request_details (reviewboard.reviews.models.base_review_request_details):
+            review_request_details (reviewboard.reviews.models.base_review_request_details.BaseReviewRequestDetails):
                 The source review request or draft whose data is to be
                 propagated.
         """
@@ -762,10 +981,14 @@ class BaseTextAreaField(BaseEditableField):
                 source_text_type
 
     def get_css_classes(self):
-        """Returns the list of CSS classes.
+        """Return the list of CSS classes.
 
         If Markdown is enabled, and the text is in Markdown format,
         this will add a "rich-text" field.
+
+        Returns:
+            set of unicode:
+            A set of the CSS classes to apply.
         """
         css_classes = super(BaseTextAreaField, self).get_css_classes()
 
@@ -778,6 +1001,14 @@ class BaseTextAreaField(BaseEditableField):
         return css_classes
 
     def get_data_attributes(self):
+        """Return any data attributes to include in the element.
+
+        By default, this returns nothing.
+
+        Returns:
+            dict:
+            The data attributes to include in the element.
+        """
         attrs = super(BaseTextAreaField, self).get_data_attributes()
 
         if self.enable_markdown:
@@ -796,10 +1027,18 @@ class BaseTextAreaField(BaseEditableField):
         return attrs
 
     def render_value(self, text):
-        """Returns the value of the field.
+        """Return the value of the field.
 
         If Markdown is enabled, and the text is not in Markdown format,
         the text will be escaped.
+
+        Args:
+            text (unicode):
+                The value of the field.
+
+        Returns:
+            unicode:
+            The rendered value.
         """
         text = text or ''
 
@@ -809,14 +1048,40 @@ class BaseTextAreaField(BaseEditableField):
             return escape(text)
 
     def should_render_as_markdown(self, value):
-        """Returns whether the text should be rendered as Markdown.
+        """Return whether the text should be rendered as Markdown.
 
         By default, this checks if the field is set to always render
         any text as Markdown, or if the given text is in Markdown format.
+
+        Args:
+            value (unicode):
+                The value of the field.
+
+        Returns:
+            bool:
+            Whether the text should be rendered as Markdown.
         """
         return self.always_render_markdown or self.is_text_markdown(value)
 
     def render_change_entry_html(self, info):
+        """Render a change entry to HTML.
+
+        This will render a diff of the changed text.
+
+        This function is expected to return safe, valid HTML. Any values
+        coming from a field or any other form of user input must be
+        properly escaped.
+
+        Args:
+            info (dict):
+                A dictionary describing how the field has changed. This is
+                guaranteed to have ``new`` and ``old`` keys, but may also
+                contain ``added`` and ``removed`` keys as well.
+
+        Returns:
+            unicode:
+            The HTML representation of the change entry.
+        """
         old_value = ''
         new_value = ''
 
@@ -923,7 +1188,7 @@ def get_review_request_fields():
 
 def get_review_request_fieldsets(include_main=False,
                                  include_change_entries_only=False):
-    """Returns a list of all registered fieldset classes.
+    """Return a list of all registered fieldset classes.
 
     As an internal optimization, the "main" fieldset can be filtered out,
     to help with rendering the side of the review request page.
