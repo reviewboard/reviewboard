@@ -80,7 +80,7 @@ class URLRequest(BaseURLRequest):
             password = password.encode('utf-8')
 
         auth = b'%s:%s' % (username, password)
-        self.add_header(HTTPBasicAuthHandler,
+        self.add_header(HTTPBasicAuthHandler.auth_header,
                         b'Basic %s' % base64.b64encode(auth))
 
 

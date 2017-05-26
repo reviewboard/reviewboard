@@ -1,0 +1,33 @@
+.. default-intersphinx:: rb2.5
+
+
+=================================
+Review Board 2.5.12 Release Notes
+=================================
+
+**Release date**: May 26, 2017
+
+
+Bugs Fixed
+==========
+
+* Fixed a regression when communicating with repositories on some hosting
+  services.
+
+* Fixed a problem sending e-mails for diffs with a very large number of files.
+  (:bug:`4438`)
+
+  We send a :mailheader:`X-ReviewBoard-Diff-For` header containing a list of
+  files modified in a diff, to help with filtering. When this list is too
+  long, some mail servers refuse to deliver it. We now cap this to a safe
+  length.
+
+  Patch by Daniel Bak.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* Daniel Bak
