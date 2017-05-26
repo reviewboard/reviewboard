@@ -14,6 +14,7 @@ import tempfile
 import time
 from contextlib import contextmanager
 
+from django.conf import settings
 from django.utils import six
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
@@ -215,8 +216,17 @@ class PerforceClient(object):
     operations needed by :py:class:`PerforceTool`.
     """
 
+    #: The max number of seconds remaining before renewing a ticket.
+    #:
+    #: If the ticket has less than this many seconds left before it expires,
+    #: a login call will be performed and the ticket renewed.
+    #:
+    #: We default this to 1 hour.
+    TICKET_RENEWAL_SECS = 1 * 60 * 60
+
     def __init__(self, path, username, password, encoding='', host=None,
-                 client_name=None, use_ticket_auth=False):
+                 client_name=None, local_site_name=None,
+                 use_ticket_auth=False):
         """Initialize the client.
 
         Args:
@@ -240,9 +250,8 @@ class PerforceClient(object):
                 The name of the Perforce client (equivalent to
                 :envvar:`P4CLIENT`).
 
-            use_stunnel (bool, optional):
-                Whether to use :command:`stunnel` for this connection.
-                By default, this is not used.
+            local_site_name (unicode, optional):
+                The name of the local site used for the repository.
 
             use_ticket_auth (bool, optional):
                 Whether to use ticket-based authentication. By default, this
@@ -260,6 +269,7 @@ class PerforceClient(object):
         self.encoding = encoding
         self.p4host = host
         self.client_name = client_name
+        self.local_site_name = local_site_name
         self.use_ticket_auth = use_ticket_auth
 
         import P4
@@ -268,6 +278,65 @@ class PerforceClient(object):
         if self.use_stunnel and not is_exe_in_path('stunnel'):
             raise AttributeError('stunnel proxy was requested, but stunnel '
                                  'binary is not in the exec path.')
+
+    def get_ticket_status(self):
+        """Return the status of the current login ticket.
+
+        Returns:
+            dict:
+            A dictionary containing the following keys:
+
+            ``user`` (:py:class:`unicode`):
+                The user owning the ticket.
+
+            ``expiration_secs`` (:py:class:`int`):
+                The number of seconds until the ticket expires.
+        """
+        from P4 import P4Exception
+
+        try:
+            status = self.p4.run_login('-s')[0]
+        except (IndexError, P4Exception):
+            return None
+
+        return {
+            'user': status['User'],
+            'expiration_secs': int(status['TicketExpiration']),
+        }
+
+    def check_refresh_ticket(self):
+        """Refreshes a ticket or re-authenticates if needed.
+
+        If the ticket has expired, is close to expiring, or the username has
+        changed, a login will be performed.
+        """
+        ticket_status = self.get_ticket_status()
+
+        if not ticket_status or ticket_status['user'] != self.username:
+            logging.info('Perforce ticket for host "%s" (user "%s") does not '
+                         'exist or has expired. Refreshing...',
+                         self.p4port, self.username)
+        elif ticket_status['expiration_secs'] < self.TICKET_RENEWAL_SECS:
+            logging.info('Perforce ticket for host "%s" (user "%s") will soon '
+                         'expire. Refreshing...',
+                         self.p4port, self.username)
+        else:
+            # The ticket is fine. We don't need to log in again.
+            return
+
+        self.login()
+
+    def login(self):
+        """Log into Perforce.
+
+        If there's an existing ticket, this will extend the ticket instead
+        of creating a new one.
+        """
+        logging.info('Logging into Perforce host "%s" (user "%s")',
+                     self.p4port, self.username)
+
+        self.p4.password = self.password.encode('utf-8')
+        self.p4.run_login()
 
     @contextmanager
     def connect(self):
@@ -291,7 +360,6 @@ class PerforceClient(object):
                     ...
         """
         self.p4.user = self.username.encode('utf-8')
-        self.p4.password = self.password.encode('utf-8')
 
         if self.encoding:
             self.p4.charset = self.encoding.encode('utf-8')
@@ -316,10 +384,43 @@ class PerforceClient(object):
         if self.client_name:
             self.p4.client = self.client_name.encode('utf-8')
 
+        if self.use_ticket_auth:
+            # The repository is configured for ticket-based authentication.
+            # We're going to start by making sure there's an appropriate
+            # place to store these tickets, namespaced by Local Site if
+            # needed, and then set the ticket path for Perforce.
+            #
+            # If the ticket file exists and has a valid ticket, Perforce will
+            # automatically use that.
+            tickets_dir = os.path.join(settings.SITE_DATA_DIR, 'p4')
+
+            if self.local_site_name:
+                tickets_dir = os.path.join(tickets_dir, self.local_site_name)
+
+            if not os.path.exists(tickets_dir):
+                try:
+                    os.makedirs(tickets_dir, 0700)
+                except Exception as e:
+                    logging.warning('Unable to create Perforce tickets '
+                                    'directory %s: %s',
+                                    tickets_dir, e)
+                    tickets_dir = None
+
+            if tickets_dir:
+                self.p4.ticket_file = \
+                    os.path.join(tickets_dir, 'p4tickets').encode('utf-8')
+        else:
+            # The repository does not use ticket-based authentication. We'll
+            # need to set the password that's provided.
+            self.p4.password = self.password.encode('utf-8')
+
         try:
             with self.p4.connect():
                 if self.use_ticket_auth:
-                    self.p4.run_login()
+                    # The ticket may not exist, may have expired, or may be
+                    # close to expiring. Check for those conditions and
+                    # possibly request/extend a ticket.
+                    self.check_refresh_ticket()
 
                 yield
         finally:
@@ -531,6 +632,11 @@ class PerforceTool(SCMTool):
 
         credentials = repository.get_credentials()
 
+        if repository.local_site_id:
+            local_site_name = repository.local_site.name
+        else:
+            local_site_name = None
+
         self.client = PerforceClient(
             path=six.text_type(repository.mirror_path or repository.path),
             username=six.text_type(credentials['username']),
@@ -538,6 +644,7 @@ class PerforceTool(SCMTool):
             encoding=six.text_type(repository.encoding),
             host=six.text_type(repository.extra_data.get('p4_host')),
             client_name=six.text_type(repository.extra_data.get('p4_client')),
+            local_site_name=local_site_name,
             use_ticket_auth=repository.extra_data.get('use_ticket_auth',
                                                       False))
 
@@ -597,7 +704,8 @@ class PerforceTool(SCMTool):
                                 username=six.text_type(username),
                                 password=six.text_type(password),
                                 host=six.text_type(p4_host or ''),
-                                client_name=six.text_type(p4_client or ''))
+                                client_name=six.text_type(p4_client or ''),
+                                local_site_name=local_site_name)
         client.get_info()
 
     def get_changeset(self, changeset_id, allow_empty=False):
