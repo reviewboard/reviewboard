@@ -382,7 +382,8 @@ class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
 
     def render_item(self, item):
         rendered_item = format_html(
-            '<a href="{url}" title="{summary}">{id}</a>',
+            '<a href="{url}" title="{summary}"'
+            '   class="review-request-link">{id}</a>',
             url=item.get_absolute_url(),
             summary=item.summary,
             id=item.display_id)
@@ -409,7 +410,7 @@ class BlocksField(BuiltinFieldMixin, BaseReviewRequestField):
     def render_value(self, blocks):
         return format_html_join(
             ', ',
-            '<a href="{0}">{1}</a>',
+            '<a href="{0}" class="review-request-link">{1}</a>',
             [
                 (item.get_absolute_url(), item.display_id)
                 for item in blocks

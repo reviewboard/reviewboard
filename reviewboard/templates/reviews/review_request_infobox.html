@@ -1,0 +1,69 @@
+{% load avatars i18n %}
+
+<div class="review-request-infobox-content">
+ <div class="review-request-infobox-details">
+  <div class="review-request-infobox-header">
+   <h2><a href="{{review_request.get_absolute_url}}">Review Request #{{review_request_id}}</a>:
+    {{review_request_labels}} {{review_request.summary}}</h2>
+  </div>
+  <div class="review-request-infobox-section review-request-infobox-submitter">
+   {% trans "Submitter:" %}
+{% if show_profile and submitter.full_name %}
+   <a href="{% url 'user' submitter %}">{{submitter.full_name}}</a> <span class="username">({{submitter.username}})</span>
+{% else %}
+   <a href="{% url 'user' submitter %}">{{submitter.username}}</a>
+{% endif %}
+  </div>
+  <div class="review-request-infobox-section review-request-infobox-description">
+   {{review_request.description}}
+  </div>
+  <div class="review-request-infobox-section review-request-infobox-issue-summary">
+   {# Very similar code can be found in reviews/review_issue_summary_table.html #}
+   <ul class="issue-summary">
+    <li class="issue-summary-item" title="{% trans 'All issues' %}">
+{% blocktrans count total=review_request_issue_total_count %}
+     <span id="total-counter" class="issue-counter-value">{{review_request_issue_total_count}} issue:</span>
+{% plural %}
+     <span id="total-counter" class="issue-counter-value">{{review_request_issue_total_count}} issues:</span>
+{% endblocktrans %}
+    </li>
+    <li class="issue-summary-item" title="{% trans 'Open issues' %}">
+     <label><span class="rb-icon rb-icon-issue-open"></span></label>
+     <span id="open-counter" class="issue-counter-value">{{review_request.issue_open_count}}</span>
+    </li>
+    <li class="issue-summary-item" title="{% trans 'Resolved issues' %}">
+     <label><span class="rb-icon rb-icon-issue-resolved"></span></label>
+     <span id="resolved-counter" class="issue-counter-value">{{review_request.issue_resolved_count}}</span>
+    </li>
+    <li class="issue-summary-item" title="{% trans 'Dropped issues' %}">
+     <label><span class="rb-icon rb-icon-issue-dropped"></span></label>
+     <span id="dropped-counter" class="issue-counter-value">{{review_request.issue_dropped_count}}</span>
+    </li>
+   </ul>
+  </div>
+{% if review_request_latest_reviews %}
+  <div class="review-request-infobox-section review-request-infobox-latest">
+   <h3>Latest Reviews</h3>
+{%  for review in review_request_latest_reviews %}
+    <div class="review-request-latest-review">
+{%   if siteconfig_settings.avatars_enabled %}
+     <div class="review-request-latest-icon">
+      {% avatar review.user 48 %}
+     </div>
+{%   endif %}
+     <a href="{{review.get_absolute_url}}">
+      <div class="review-request-latest-summary">
+       <div class="review-request-latest-header">
+        <b>{{review.user.username}}</b>
+        <time class="review-request-latest-time" title="{{review.timestamp}}">
+         {{review.timestamp|timesince}}
+        </time>
+       </div>
+      </div>
+     </a>
+    </div>
+{%  endfor %}
+  </div>
+ </div>
+{% endif %}
+</div>

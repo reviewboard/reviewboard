@@ -124,6 +124,11 @@ review_request_urls = [
         r'preview-email/(?P<message_format>(text|html))/$',
         views.preview_reply_email,
         name='preview-review-reply-email'),
+
+    # Review Request infobox
+    url(r'^infobox/$',
+        views.review_request_infobox,
+        name='review-request-infobox'),
 ]
 
 

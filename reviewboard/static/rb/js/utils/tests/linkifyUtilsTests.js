@@ -28,8 +28,8 @@ suite('rb/utils/linkifyUtils', function() {
             RB.LinkifyUtils.linkifyChildren($el[0]);
 
             expect($el.html()).toBe(
-                '<span><a target="_blank" href="/r/123/">' +
-                '/r/123/</a></span>');
+                '<span><a target="_blank" href="/r/123/" ' +
+                'class="review-request-link">/r/123/</a></span>');
         });
 
         it('Skips <a> elements', function() {
@@ -116,26 +116,28 @@ suite('rb/utils/linkifyUtils', function() {
             describe('Review requests', function() {
                 it('/r/123', function() {
                     expect(RB.LinkifyUtils.linkifyText('/r/123')).toBe(
-                        '<a target="_blank" href="/r/123/">/r/123</a>');
+                        '<a target="_blank" href="/r/123/" ' +
+                        'class="review-request-link">/r/123</a>');
                 });
 
                 it('/r/123/', function() {
                     expect(RB.LinkifyUtils.linkifyText('/r/123/')).toBe(
-                        '<a target="_blank" href="/r/123/">/r/123/</a>');
+                        '<a target="_blank" href="/r/123/" ' +
+                        'class="review-request-link">/r/123/</a>');
                 });
             });
 
             describe('Diffs', function() {
                 it('/r/123/diff', function() {
                     expect(RB.LinkifyUtils.linkifyText('/r/123/diff')).toBe(
-                        '<a target="_blank" href="/r/123/diff/">' +
-                        '/r/123/diff</a>');
+                        '<a target="_blank" href="/r/123/diff/" ' +
+                        'class="review-request-link">/r/123/diff</a>');
                 });
 
                 it('/r/123/diff/', function() {
                     expect(RB.LinkifyUtils.linkifyText('/r/123/diff/')).toBe(
-                        '<a target="_blank" href="/r/123/diff/">' +
-                        '/r/123/diff/</a>');
+                        '<a target="_blank" href="/r/123/diff/" ' +
+                        'class="review-request-link">/r/123/diff/</a>');
                 });
             });
         });
@@ -143,22 +145,26 @@ suite('rb/utils/linkifyUtils', function() {
         describe('Surrounded by', function() {
             it('(...)', function() {
                 expect(RB.LinkifyUtils.linkifyText('(/r/123/)')).toBe(
-                       '(<a target="_blank" href="/r/123/">/r/123/</a>)');
+                       '(<a target="_blank" href="/r/123/" ' +
+                       'class="review-request-link">/r/123/</a>)');
             });
 
             it('[...]', function() {
                 expect(RB.LinkifyUtils.linkifyText('[/r/123/]')).toBe(
-                       '[<a target="_blank" href="/r/123/">/r/123/</a>]');
+                       '[<a target="_blank" href="/r/123/" ' +
+                       'class="review-request-link">/r/123/</a>]');
             });
 
             it('{...}', function() {
                 expect(RB.LinkifyUtils.linkifyText('{/r/123/}')).toBe(
-                       '{<a target="_blank" href="/r/123/">/r/123/</a>}');
+                       '{<a target="_blank" href="/r/123/" ' +
+                       'class="review-request-link">/r/123/</a>}');
             });
 
             it('<...>', function() {
                 expect(RB.LinkifyUtils.linkifyText('</r/123/>')).toBe(
-                       '&lt;<a target="_blank" href="/r/123/">/r/123/</a>&gt;');
+                       '&lt;<a target="_blank" href="/r/123/" ' +
+                       'class="review-request-link">/r/123/</a>&gt;');
             });
 
             it('text', function() {

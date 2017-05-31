@@ -16,42 +16,6 @@
  * Review-specific macros
  ****************************************************************************/
 
-/* Adds a left-facing arrow to the left-hand side of a box. */
-.left-arrow-callout(@color) {
-  position: relative;
-
-  &:before, &:after {
-    position: absolute;
-    left: -20px;
-    top: 12px;
-    right: 100%;
-    border: 1px transparent solid;
-    content: " ";
-    display: block;
-    width: 0;
-    height: 0;
-  }
-
-  &:before {
-    border-right-color: @box-border-color;
-    border-width: 10px;
-  }
-
-  &:after {
-    border-width: 9px;
-    border-right-color: @color;
-    margin-top: 1px;
-    margin-left: 2px;
-  }
-}
-
-/* Changes the color of an existing callout arrow. */
-.left-arrow-callout-color(@color) {
-  &:after {
-    border-right-color: @color;
-  }
-}
-
 .review-comments-inline() {
   .comment-author {
     margin-bottom: 1em;
