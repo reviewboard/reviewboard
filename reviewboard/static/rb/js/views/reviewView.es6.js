@@ -25,6 +25,12 @@ RB.ReviewView = Backbone.View.extend({
         this._replyEditors = [];
         this._replyEditorViews = [];
 
+        this._$reviewComments = null;
+        this._$bodyTop = null;
+        this._$bodyBottom = null;
+
+        this.model.set('includeTextTypes', 'html,raw,markdown');
+
         this._setupNewReply();
     },
 
@@ -36,7 +42,13 @@ RB.ReviewView = Backbone.View.extend({
      *     This object, for chaining.
      */
     render() {
-        _.each(this.$('.review-comments .issue-indicator'), el => {
+        this._$reviewComments = this.$('.review-comments');
+        this._$bodyTop = this._$reviewComments.find(
+            '.review-comment-thread .review-comment .body_top');
+        this._$bodyBottom = this._$reviewComments.find(
+            '.review-comment-thread .review-comment .body_bottom');
+
+        _.each(this._$reviewComments.find('.issue-indicator'), el => {
             const $issueState = $('.issue-state', el);
 
             /*
@@ -112,7 +124,66 @@ RB.ReviewView = Backbone.View.extend({
             RB.formatText($(el), { bugTrackerURL: bugTrackerURL });
         });
 
+        this.listenTo(this.model, 'change:bodyTop',
+                      this._onBodyTopChanged);
+        this.listenTo(this.model, 'change:bodyBottom',
+                      this._onBodyBottomChanged);
+        this.listenTo(this.model, 'change:bodyTopRichText',
+                      this._onBodyTopRichTextChanged);
+        this.listenTo(this.model, 'change:bodyBottomRichText',
+                      this._onBodyBottomRichTextChanged);
+
         return this;
+    },
+
+    /**
+     * Handler for when the Body Top field of a review changes.
+     *
+     * Updates the HTML for the field to show the new content.
+     */
+    _onBodyTopChanged() {
+        this._$bodyTop.html(this.model.get('htmlTextFields').bodyTop);
+    },
+
+    /**
+     * Handler for when the Body Top's Rich Text field of a review changes.
+     *
+     * Updates the class on the field to reflect the Rich Text state.
+     */
+    _onBodyTopRichTextChanged() {
+        if (this.model.get('bodyTopRichText')) {
+            this._$bodyTop.addClass('rich-text');
+        } else {
+            this._$bodyTop.removeClass('rich-text');
+        }
+    },
+
+    /**
+     * Handler for when the Body Bottom field of a review changes.
+     *
+     * Updates the HTML for the field to show the new content. The visibility
+     * of the body section will also be dependent on whether there is any
+     * content (mimicking the logic used when rendering the page).
+     */
+    _onBodyBottomChanged() {
+        const html = this.model.get('htmlTextFields').bodyBottom;
+
+        this._$bodyBottom
+            .html(html)
+            .closest('li').setVisible(html && html.length > 0);
+    },
+
+    /**
+     * Handler for when the Body Bottom's Rich Text field of a review changes.
+     *
+     * Updates the class on the field to reflect the Rich Text state.
+     */
+    _onBodyBottomRichTextChanged() {
+        if (this.model.get('bodyBottomRichText')) {
+            this._$bodyBottom.addClass('rich-text');
+        } else {
+            this._$bodyBottom.removeClass('rich-text');
+        }
     },
 
     /**

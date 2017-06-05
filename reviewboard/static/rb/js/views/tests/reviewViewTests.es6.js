@@ -1,41 +1,65 @@
 suite('rb/views/ReviewView', function() {
+    const template = _.template(dedent`
+        <div class="review review-request-page-entry">
+         <div class="review-request-page-entry-contents">
+          <div class="collapse-button"></div>
+          <div class="banners">
+           <input type="button" value="Publish" />
+           <input type="button" value="Discard" />
+          </div>
+          <div class="body">
+           <ol class="review-comments">
+            <li>
+             <div class="review-comment-thread">
+              <div class="review-comment">
+               <pre class="reviewtext body_top"></pre>
+              </div>
+              <div class="comment-section" data-context-type="body_top">
+               <a class="add_comment_link"></a>
+               <ul class="reply-comments">
+                <li class="draft" data-comment-id="456">
+                 <pre class="reviewtext"></pre>
+                </li>
+               </ul>
+              </div>
+             </div>
+            </li>
+            <li>
+             <div class="review-comment-thread">
+              <div class="comment-section" data-context-id="123"
+                   data-context-type="diff_comments">
+               <a class="add_comment_link"></a>
+               <ul class="reply-comments"></ul>
+              </div>
+             </div>
+            </li>
+            <li>
+             <div class="review-comment-thread">
+              <div class="review-comment">
+               <pre class="reviewtext body_bottom"></pre>
+              </div>
+              <div class="comment-section" data-context-type="body_bottom">
+               <a class="add_comment_link"></a>
+               <ul class="reply-comments"></ul>
+              </div>
+             </div>
+            </div>
+           </li>
+          </ol>
+         </div>
+        </div>
+    `);
     let view;
+    let review;
     let reviewReply;
-    const template = _.template([
-        '<div class="review review-request-page-entry">',
-        ' <div class="review-request-page-entry-contents">',
-        '  <div class="collapse-button"></div>',
-        '  <div class="banners">',
-        '   <input type="button" value="Publish" />',
-        '   <input type="button" value="Discard" />',
-        '  </div>',
-        '  <div class="comment-section" data-context-type="body_top">',
-        '   <a class="add_comment_link"></a>',
-        '   <ul class="reply-comments">',
-        '    <li class="draft" data-comment-id="456">',
-        '     <pre class="reviewtext"></pre>',
-        '    </li>',
-        '   </ul>',
-        '  </div>',
-        '  <div class="comment-section" data-context-id="123" ',
-        '       data-context-type="diff_comments">',
-        '   <a class="add_comment_link"></a>',
-        '   <ul class="reply-comments"></ul>',
-        '  </div>',
-        '  <div class="comment-section" data-context-type="body_bottom">',
-        '   <a class="add_comment_link"></a>',
-        '   <ul class="reply-comments"></ul>',
-        '  </div>',
-        ' </div>',
-        '</div>'
-    ].join(''));
 
     beforeEach(function() {
         const reviewRequest = new RB.ReviewRequest();
         const editor = new RB.ReviewRequestEditor({
             reviewRequest: reviewRequest,
         });
-        const review = reviewRequest.createReview({
+
+        review = reviewRequest.createReview({
             loaded: true,
             links: {
                 replies: {
@@ -43,6 +67,7 @@ suite('rb/views/ReviewView', function() {
                 },
             },
         });
+
         const $el = $(template()).appendTo($testsScratch);
 
         reviewReply = review.createReply();
@@ -58,6 +83,64 @@ suite('rb/views/ReviewView', function() {
         spyOn(view, 'trigger').and.callThrough();
 
         view.render();
+    });
+
+    describe('Model events', () => {
+        it('bodyTop changed', () => {
+            review.set({
+                bodyTop: 'new **body** top',
+                htmlTextFields: {
+                    bodyTop: '<p>new <strong>body</strong> top</p>',
+                },
+            });
+
+            expect(view._$bodyTop.html())
+                .toBe('<p>new <strong>body</strong> top</p>');
+        });
+
+        it('bodyBottom changed', () => {
+            review.set({
+                bodyBottom: 'new **body** bottom',
+                htmlTextFields: {
+                    bodyBottom: '<p>new <strong>body</strong> bottom</p>',
+                },
+            });
+
+            expect(view._$bodyBottom.html())
+                .toBe('<p>new <strong>body</strong> bottom</p>');
+        });
+
+        describe('bodyTopRichText changed', () => {
+            it('To true', () => {
+                expect(view._$bodyTop.hasClass('rich-text')).toBe(false);
+                review.set('bodyTopRichText', true);
+                expect(view._$bodyTop.hasClass('rich-text')).toBe(true);
+            });
+
+            it('To false', () => {
+                review.attributes.bodyTopRichText = true;
+                view._$bodyTop.addClass('rich-text');
+
+                review.set('bodyTopRichText', false);
+                expect(view._$bodyTop.hasClass('rich-text')).toBe(false);
+            });
+        });
+
+        describe('bodyBottomRichText changed', () => {
+            it('To true', () => {
+                expect(view._$bodyBottom.hasClass('rich-text')).toBe(false);
+                review.set('bodyBottomRichText', true);
+                expect(view._$bodyBottom.hasClass('rich-text')).toBe(true);
+            });
+
+            it('To false', () => {
+                review.attributes.bodyBottomRichText = true;
+                view._$bodyBottom.addClass('rich-text');
+
+                review.set('bodyBottomRichText', false);
+                expect(view._$bodyBottom.hasClass('rich-text')).toBe(false);
+            });
+        });
     });
 
     describe('Reply editors', function() {
