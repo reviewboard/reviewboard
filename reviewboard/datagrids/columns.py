@@ -6,6 +6,7 @@ from django.template.defaultfilters import date
 from django.utils import six
 from django.utils.html import (conditional_escape, escape, format_html,
                                format_html_join)
+from django.utils.safestring import mark_safe
 from django.utils.six.moves import reduce
 from django.utils.translation import ugettext_lazy as _, ugettext
 from djblets.datagrid.grids import CheckboxColumn, Column, DateTimeColumn
@@ -83,7 +84,7 @@ class UsernameColumn(Column):
             css_class='submitter-column',
             shrink=True,
             sortable=True,
-            link=True,
+            link=False,
             *args, **kwargs)
 
     def render_data(self, state, obj):
@@ -667,7 +668,7 @@ class SummaryColumn(Column):
         super(SummaryColumn, self).__init__(
             label=_('Summary'),
             expand=True,
-            link=True,
+            link=False,
             css_class='summary',
             sortable=True,
             *args, **kwargs)
@@ -698,8 +699,21 @@ class SummaryColumn(Column):
         })
 
     def render_data(self, state, review_request):
-        """Return the rendered contents of the column."""
+        """Return the rendered contents of the column.
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the datagrid.
+
+            review_request (reviewboard.reviews.models.review_request.ReviewRequest):
+                The review request.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The rendered column.
+        """
         summary = review_request.summary
+        url = review_request.get_absolute_url()
         labels = []
 
         if review_request.submitter_id == state.datagrid.request.user.id:
@@ -723,16 +737,20 @@ class SummaryColumn(Column):
         elif review_request.status == ReviewRequest.DISCARDED:
             labels.append(('label-discarded', _('Discarded')))
 
-        display_data = format_html_join(
-            '', '<label class="{0}">{1}</label>', labels)
+        result = [
+            format_html('<a class="review-request-link" href="{0}">', url),
+            format_html_join('', '<label class="{0}">{1}</label>', labels)
+        ]
 
         if summary:
-            display_data += format_html('<span>{0}</span>', summary)
+            result.append(format_html('<span>{0}</span>', summary))
         else:
-            display_data += format_html('<span class="no-summary">{0}</span>',
-                                        _('No Summary'))
+            result.append(format_html('<span class="no-summary">{0}</span>',
+                                      _('No Summary')))
 
-        return display_data
+        result.append('</a>')
+
+        return mark_safe(''.join(result))
 
 
 class ReviewSummaryColumn(SummaryColumn):

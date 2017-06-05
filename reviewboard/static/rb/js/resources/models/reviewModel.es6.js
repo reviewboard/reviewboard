@@ -31,21 +31,26 @@
  *     draftReply (RB.ReviewReply):
  *         The draft reply to this review, if any.
  *
+ *     htmlTextFields (object):
+ *         The contents of any HTML-rendered text fields, if the caller fetches
+ *         or posts with ``includeTextTypes=html``. The keys in this object are
+ *         the field names, and the values are the HTML versions of those
+ *         attributes.
+ *
  *     includeTextTypes (string):
  *         A comma-separated list of text types to include in the payload when
  *         syncing the model.
  *
  *     markdownTextFields (object):
- *         The source contents of any Markdown text fields, if forceTextType is
- *         used and the caller fetches or posts with includeTextTypes=markdown.
- *         The keys in this object are the field names, and the values are the
- *         Markdown source of those fields.
+ *         The source contents of any Markdown text fields, if the caller
+ *         fetches or posts with ``includeTextTypes=markdown``. The keys in
+ *         this object are the field names, and the values are the Markdown
+ *         source of those fields.
  *
  *     rawTextFields (object):
- *         The contents of the raw text fields, if forceTextType is used and
- *         the caller fetches or posts with includeTextTypes=raw. The keys in
- *         this object are the field names, and the values are the raw versions
- *         of those attributes.
+ *         The contents of the raw text fields, if the caller fetches or posts
+ *         with includeTextTypes=raw. The keys in this object are the field
+ *         names, and the values are the raw versions of those attributes.
  *
  *     timestamp (string):
  *         The timestamp of this review.
@@ -61,6 +66,7 @@ RB.Review = RB.BaseResource.extend({
             bodyBottom: null,
             bodyBottomRichText: false,
             draftReply: null,
+            htmlTextFields: {},
             includeTextTypes: null,
             markdownTextFields: {},
             rawTextFields: {},
@@ -141,6 +147,13 @@ RB.Review = RB.BaseResource.extend({
             data.markdownTextFields = {
                 bodyBottom: rsp.markdown_text_fields.body_bottom,
                 bodyTop: rsp.markdown_text_fields.body_top
+            };
+        }
+
+        if (rsp.html_text_fields) {
+            data.htmlTextFields = {
+                bodyBottom: rsp.html_text_fields.body_bottom,
+                bodyTop: rsp.html_text_fields.body_top,
             };
         }
 

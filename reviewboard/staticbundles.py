@@ -24,7 +24,7 @@ PIPELINE_JAVASCRIPT = dict({
             'lib/js/retina.js',
             'lib/js/selectize-0.12.1.js',
             'lib/js/ui.autocomplete.js',
-            'lib/js/codemirror-5.8.min.js',
+            'lib/js/codemirror-5.26.min.js',
         ),
         'output_filename': 'lib/js/3rdparty.min.js',
     },

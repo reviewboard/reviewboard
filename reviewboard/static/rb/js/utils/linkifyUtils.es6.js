@@ -72,7 +72,7 @@ RB.LinkifyUtils = {
 
                 const href = SITE_ROOT + url + (url.substr(-1) === '/' ? '' : '/');
 
-                return `${m1}<a target="_blank" href="${href}">/${url}</a>${extra}`;
+                return `${m1}<a target="_blank" href="${href}" class="review-request-link">/${url}</a>${extra}`;
             });
     },
 

@@ -137,8 +137,7 @@
 </li>
 {% endfor %}
 
-{% if review.body_bottom %}
-<li>
+<li{% if not review.body_bottom %} style="display: none;"{% endif %}>
  <div class="review-comment-thread">
   <div class="review-comment">
    <pre class="reviewtext body_bottom {% rich_text_classname review.body_bottom_rich_text %}">{{review.body_bottom|render_markdown:review.body_bottom_rich_text}}</pre>
@@ -147,4 +146,3 @@
   {% reply_section review '' 'body_bottom' 'rcbb' review.body_bottom %}
  </div>
 </li>
-{% endif %}

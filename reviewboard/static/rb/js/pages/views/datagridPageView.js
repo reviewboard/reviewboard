@@ -123,6 +123,7 @@ RB.DatagridPageView = Backbone.View.extend({
         this.$('time.timesince').timesince();
         this.$('.user').user_infobox();
         this.$('.bugs').find('a').bug_infobox();
+        this.$('.review-request-link').review_request_infobox();
 
         this.model.clearSelection();
 

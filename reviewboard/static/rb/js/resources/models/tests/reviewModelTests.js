@@ -37,13 +37,13 @@ suite('rb/resources/models/Review', function() {
             model.rspNamespace = 'my_review';
         });
 
-        it('API payloads', function() {
+        it('Common API payloads', function() {
             var data = model.parse({
                 stat: 'ok',
                 my_review: {
                     id: 42,
-                    body_top: 'foo',
-                    body_bottom: 'bar',
+                    body_top: 'my body top',
+                    body_bottom: 'my body bottom',
                     'public': false,
                     body_top_text_type: 'markdown',
                     body_bottom_text_type: 'plain',
@@ -53,12 +53,97 @@ suite('rb/resources/models/Review', function() {
 
             expect(data).not.toBe(undefined);
             expect(data.id).toBe(42);
-            expect(data.bodyTop).toBe('foo');
-            expect(data.bodyBottom).toBe('bar');
+            expect(data.bodyTop).toBe('my body top');
+            expect(data.bodyBottom).toBe('my body bottom');
             expect(data.public).toBe(false);
             expect(data.bodyTopRichText).toBe(true);
             expect(data.bodyBottomRichText).toBe(false);
             expect(data.shipIt).toBe(false);
+        });
+
+        it('With raw_text_fields', function() {
+            var data = model.parse({
+                stat: 'ok',
+                my_review: {
+                    body_top: 'my body top',
+                    body_bottom: 'my body bottom',
+                    body_top_text_type: 'markdown',
+                    body_bottom_text_type: 'plain',
+                    raw_text_fields: {
+                        body_top: 'raw body top',
+                        body_top_text_type: 'raw',
+                        body_bottom: 'raw body bottom',
+                        body_bottom_text_type: 'raw'
+                    }
+                }
+            });
+
+            expect(data).not.toBe(undefined);
+            expect(data.bodyTop).toBe('my body top');
+            expect(data.bodyBottom).toBe('my body bottom');
+            expect(data.bodyTopRichText).toBe(false);
+            expect(data.bodyBottomRichText).toBe(false);
+
+            expect(data.rawTextFields).toBeTruthy();
+            expect(data.rawTextFields.bodyTop).toBe('raw body top');
+            expect(data.rawTextFields.bodyBottom).toBe('raw body bottom');
+        });
+
+        it('With markdown_text_fields', function() {
+            var data = model.parse({
+                stat: 'ok',
+                my_review: {
+                    body_top: 'my body top',
+                    body_bottom: 'my body bottom',
+                    body_top_text_type: 'markdown',
+                    body_bottom_text_type: 'plain',
+                    markdown_text_fields: {
+                        body_top: 'Markdown body top',
+                        body_top_text_type: 'markdown',
+                        body_bottom: 'Markdown body bottom',
+                        body_bottom_text_type: 'markdown'
+                    }
+                }
+            });
+
+            expect(data).not.toBe(undefined);
+            expect(data.bodyTop).toBe('my body top');
+            expect(data.bodyBottom).toBe('my body bottom');
+            expect(data.bodyTopRichText).toBe(true);
+            expect(data.bodyBottomRichText).toBe(false);
+
+            expect(data.markdownTextFields).toBeTruthy();
+            expect(data.markdownTextFields.bodyTop).toBe('Markdown body top');
+            expect(data.markdownTextFields.bodyBottom)
+                .toBe('Markdown body bottom');
+        });
+
+        it('With html_text_fields', function() {
+            var data = model.parse({
+                stat: 'ok',
+                my_review: {
+                    body_top: 'my body top',
+                    body_bottom: 'my body bottom',
+                    body_top_text_type: 'markdown',
+                    body_bottom_text_type: 'plain',
+                    html_text_fields: {
+                        body_top: 'HTML body top',
+                        body_top_text_type: 'html',
+                        body_bottom: 'HTML body bottom',
+                        body_bottom_text_type: 'html'
+                    }
+                }
+            });
+
+            expect(data).not.toBe(undefined);
+            expect(data.bodyTop).toBe('my body top');
+            expect(data.bodyBottom).toBe('my body bottom');
+            expect(data.bodyTopRichText).toBe(true);
+            expect(data.bodyBottomRichText).toBe(false);
+
+            expect(data.htmlTextFields).toBeTruthy();
+            expect(data.htmlTextFields.bodyTop).toBe('HTML body top');
+            expect(data.htmlTextFields.bodyBottom).toBe('HTML body bottom');
         });
     });
 

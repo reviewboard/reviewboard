@@ -123,3 +123,50 @@
   line-height: 16px;
   vertical-align: top;
 }
+
+/* Adds a left-facing arrow to the left-hand side of a box. */
+.left-arrow-callout(@color) {
+  position: relative;
+
+  &:before, &:after {
+    border: 1px transparent solid;
+    content: " ";
+    display: block;
+    height: 0;
+    left: -20px;
+    position: absolute;
+    right: 100%;
+    top: 12px;
+    width: 0;
+  }
+
+  &:before {
+    border-right-color: @box-border-color;
+    border-width: 10px;
+  }
+
+  &:after {
+    border-right-color: @color;
+    border-width: 9px;
+    margin-left: 2px;
+    margin-top: 1px;
+  }
+}
+
+/* Changes the color of an existing callout arrow. */
+.left-arrow-callout-color(@color) {
+  &:after {
+    border-right-color: @color;
+  }
+}
+
+/* Styles the status label of a review request. */
+.review-request-label(@color, @border-color, @text-color) {
+  background-color: @color;
+  border: 1px @border-color solid;
+  border-radius: 5px;
+  color: @text-color;
+  font-size: 75%;
+  font-weight: normal;
+  padding: 0.1em 0.35em 0.25em 0.35em;
+}

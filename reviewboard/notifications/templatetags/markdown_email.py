@@ -14,16 +14,27 @@ def markdown_email_html(text, is_rich_text):
     if not is_rich_text:
         return text
 
-    marked = markdown.markdown(
+    # We use XHTML1 instead of HTML5 to ensure the results can be parsed by
+    # an XML parser. This is actually needed for the main Markdown renderer
+    # for the web UI, but consistency is good here.
+    return mark_safe(markdown.markdown(
         text,
+        output_format='xhtml1',
         extensions=[
-            'fenced_code', 'codehilite(noclasses=True)', 'tables',
+            'markdown.extensions.fenced_code',
+            'markdown.extensions.codehilite',
+            'markdown.extensions.tables',
+            'markdown.extensions.sane_lists',
+            'markdown.extensions.smart_strong',
+            'pymdownx.tilde',
+            'djblets.markdown.extensions.escape_html',
             'djblets.markdown.extensions.wysiwyg_email',
         ],
-        output_format='xhtml1',
-        safe_mode='escape')
-
-    return mark_safe(marked)
+        extension_configs={
+            'codehilite': {
+                'noclasses': True,
+            },
+        }))
 
 
 @register.filter

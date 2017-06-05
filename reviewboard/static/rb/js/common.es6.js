@@ -9,7 +9,7 @@ $.fn.infobox = function(id) {
     let $el = $(`.${id}`);
 
     if ($el.length === 0) {
-        $el = $('<div/>')
+        $el = $('<div class="infobox"/>')
             .addClass(id)
             .hide()
             .appendTo(document.body);
@@ -43,10 +43,16 @@ $.fn.bug_infobox = function() {
     return this;
 };
 
+$.fn.review_request_infobox = function() {
+    $(this).infobox('review_request_infobox');
+    return this;
+};
+
 
 $(document).ready(function() {
     $('.user').user_infobox();
     $('.bug').bug_infobox();
+    $('.review-request-link').review_request_infobox();
     $('time.timesince').timesince();
 
     $('.avatar').retinaAvatar();
