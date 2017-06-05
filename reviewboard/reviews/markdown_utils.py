@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import warnings
 
+import pymdownx.emoji
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Model
 from django.utils.html import escape
@@ -24,12 +25,19 @@ MARKDOWN_KWARGS = {
         'markdown.extensions.smart_strong',
         'markdown.extensions.nl2br',
         'pymdownx.tilde',
+        'pymdownx.emoji',
         'djblets.markdown.extensions.escape_html',
         'djblets.markdown.extensions.wysiwyg',
     ],
     'extension_configs': {
         'codehilite': {
             'guess_lang': False,
+        },
+        'pymdownx.emoji': {
+            'emoji_index': pymdownx.emoji.emojione,
+            'options': {
+                'classes': 'emoji',
+            },
         },
     },
 }

@@ -929,6 +929,10 @@
         img {
           width: auto;
           max-height: 100px;
+
+          &.emoji {
+            &:extend(.rich-text .emoji);
+          }
         }
       }
 
@@ -2296,6 +2300,11 @@
   padding: 0;
 
   .markdown-wysiwyg();
+
+  .emoji {
+    vertical-align: text-top;
+    width: 1rem;
+  }
 }
 
 
