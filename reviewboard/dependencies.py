@@ -36,7 +36,7 @@ package_dependencies = {
     'django-oauth-toolkit': '>=0.9.0,<0.9.999',
     'Djblets': djblets_version,
     'docutils': '',
-    'markdown': '>=2.4.0,<2.4.999',
+    'markdown': '>=2.6.8,<2.6.999',
     'mimeparse': '>=0.1.3',
     'paramiko': '>=1.12',
     'Pygments': '>=2.1',

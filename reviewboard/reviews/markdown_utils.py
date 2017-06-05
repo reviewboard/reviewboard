@@ -11,12 +11,19 @@ from markdown import markdown
 
 
 # Keyword arguments used when calling a Markdown renderer function.
+#
+# We use XHTML1 instead of HTML5 to ensure the results can be parsed by an
+# XML parser, needed for change descriptions and other parts of the web UI.
 MARKDOWN_KWARGS = {
-    'safe_mode': 'escape',
     'output_format': 'xhtml1',
     'lazy_ol': False,
     'extensions': [
-        'fenced_code', 'codehilite', 'sane_lists', 'smart_strong', 'nl2br',
+        'markdown.extensions.fenced_code',
+        'markdown.extensions.codehilite',
+        'markdown.extensions.sane_lists',
+        'markdown.extensions.smart_strong',
+        'markdown.extensions.nl2br',
+        'djblets.markdown.extensions.escape_html',
         'djblets.markdown.extensions.wysiwyg',
     ],
     'extension_configs': {

@@ -419,8 +419,11 @@ class MarkDownMimetype(TextMimetype):
         """Return html of the MarkDown file as produced by markdown."""
         # Use safe filtering against injection attacks
         return markdown.markdown(
-            force_unicode(data_string), safe_mode='escape',
-            enable_attributes=False)
+            force_unicode(data_string),
+            enable_attributes=False,
+            extensions=[
+                'djblets.markdown.extensions.escape_html',
+            ])
 
 
 # A mapping of mimetypes to icon names.
