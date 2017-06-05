@@ -23,6 +23,7 @@ MARKDOWN_KWARGS = {
         'markdown.extensions.sane_lists',
         'markdown.extensions.smart_strong',
         'markdown.extensions.nl2br',
+        'pymdownx.tilde',
         'djblets.markdown.extensions.escape_html',
         'djblets.markdown.extensions.wysiwyg',
     ],

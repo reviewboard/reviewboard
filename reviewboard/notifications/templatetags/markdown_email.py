@@ -24,6 +24,7 @@ def markdown_email_html(text, is_rich_text):
             'markdown.extensions.fenced_code',
             'markdown.extensions.codehilite',
             'markdown.extensions.tables',
+            'pymdownx.tilde',
             'djblets.markdown.extensions.escape_html',
             'djblets.markdown.extensions.wysiwyg_email',
         ],

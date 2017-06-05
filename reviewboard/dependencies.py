@@ -40,6 +40,7 @@ package_dependencies = {
     'mimeparse': '>=0.1.3',
     'paramiko': '>=1.12',
     'Pygments': '>=2.1',
+    'pymdown-extensions': '>=3.4,<3.999',
     'python-dateutil': '>=1.5',
     'python-memcached': '',
     'pytz': '>=2015.2',
