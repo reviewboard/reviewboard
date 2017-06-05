@@ -154,7 +154,7 @@ class ReviewRequestPageData(object):
             self.review_request.reviews
             .filter(reviews_query)
             .order_by('-timestamp')
-            .select_related('user')
+            .select_related('user', 'user__profile')
         )
 
         if len(self.reviews) == 0:
@@ -181,8 +181,7 @@ class ReviewRequestPageData(object):
         # Get all status updates.
         if status_updates_feature.is_enabled(request=self.request):
             self.status_updates = list(
-                self.review_request.status_updates.all()
-                .select_related('review'))
+                self.review_request.status_updates.all())
 
     def query_data_post_etag(self):
         """Perform remaining queries for the page.
@@ -196,6 +195,11 @@ class ReviewRequestPageData(object):
         self.body_top_replies = defaultdict(list)
         self.body_bottom_replies = defaultdict(list)
         self.latest_timestamps_by_review_id = {}
+
+        for status_update in self.status_updates:
+            review = self.reviews_by_id[status_update.review_id]
+            review.status_update = status_update
+            status_update.review = review
 
         for r in self.reviews:
             r._body_top_replies = []
@@ -223,6 +227,12 @@ class ReviewRequestPageData(object):
                 else:
                     self.latest_timestamps_by_review_id[parent_id] = \
                         new_timestamp
+
+            # We've already attached all the status updates above, but
+            # any reviews that don't have status updates can still result
+            # in a query. We want to null those out.
+            if not hasattr(r, '_status_update_cache'):
+                r._status_update_cache = None
 
         # Link up all the review body replies.
         for reply_id, replies in six.iteritems(self.body_top_replies):
@@ -316,6 +326,7 @@ class ReviewRequestPageData(object):
                 assert obj.review_id in self.reviews_by_id
                 review = self.reviews_by_id[obj.review_id]
                 comment.review_obj = review
+                comment._review = review
                 comment._review_request = self.review_request
 
                 # If the comment has an associated object (such as a file
