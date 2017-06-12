@@ -2,6 +2,8 @@
 
 from __future__ import unicode_literals
 
+from djblets.siteconfig.models import SiteConfiguration
+
 from reviewboard.registries.registry import Registry
 from reviewboard.search.search_backends.elasticsearch import \
     ElasticsearchBackend
@@ -43,3 +45,24 @@ class SearchBackendRegistry(Registry):
             WhooshBackend(),
             ElasticsearchBackend(),
         ]
+
+    @property
+    def on_the_fly_indexing_enabled(self):
+        """Whether or not on-the-fly indexing is enabled."""
+        siteconfig = SiteConfiguration.objects.get_current()
+        return siteconfig.get('search_on_the_fly_indexing')
+
+    @property
+    def search_enabled(self):
+        """Whether or not search is enabled."""
+        siteconfig = SiteConfiguration.objects.get_current()
+        return siteconfig.get('search_enable')
+
+    @property
+    def current_backend(self):
+        """The current search backend, or ``None`` if search is disabled."""
+        if not self.search_enabled:
+            return None
+
+        siteconfig = SiteConfiguration.objects.get_current()
+        return self.get_search_backend(siteconfig.get('search_backend_id'))

@@ -1245,6 +1245,15 @@ class SearchSettingsForm(SiteSettingsForm):
         label=_('Search backend'),
         required=False)
 
+    search_on_the_fly_indexing = forms.BooleanField(
+        label=_('On-the-fly indexing'),
+        required=False,
+        help_text=('If enabled, the search index will be updated dynamically '
+                   'when review requests or users change.<br>'
+                   '<strong>Note:</strong> This is not recommended for use '
+                   'with the Whoosh engine for large or multi-server '
+                   'installs.'))
+
     def __init__(self, siteconfig, data=None, *args, **kwargs):
         """Initialize the search engine settings form.
 

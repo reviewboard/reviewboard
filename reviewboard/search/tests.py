@@ -3,16 +3,20 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.management import call_command
+from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
+from haystack import signal_processor
+from kgb import SpyAgency
 
 from reviewboard.admin.server import build_server_url
 from reviewboard.admin.siteconfig import load_site_config
+from reviewboard.reviews.models import ReviewRequestDraft
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing.testcase import TestCase
 
 
-class SearchTests(TestCase):
+class SearchTests(SpyAgency, TestCase):
     """Unit tests for search functionality."""
 
     fixtures = ['test_users']
@@ -355,3 +359,92 @@ class SearchTests(TestCase):
             options['filter'] = filter_by
 
         return self.client.get(local_site_reverse('search'), options)
+
+    def test_on_the_fly_indexing_review_requests(self):
+        """Testing on-the-fly indexing for review requests"""
+        self.reindex()
+
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('search_on_the_fly_indexing', True)
+        siteconfig.save()
+
+        group = self.create_review_group()
+        invite_only_group = self.create_review_group(name='invite-only-group',
+                                                     invite_only=True)
+
+        grumpy = User.objects.get(username='grumpy')
+
+        try:
+            self.spy_on(signal_processor.handle_save)
+
+            review_request = self.create_review_request(summary='foo',
+                                                        publish=True)
+            self.assertTrue(signal_processor.handle_save.spy.called)
+
+            draft = ReviewRequestDraft.create(review_request)
+            draft.summary = 'Not foo whatsoever'
+            draft.save()
+            draft.target_people = [grumpy]
+            draft.target_groups = [group, invite_only_group]
+
+            review_request.publish(review_request.submitter)
+
+            rsp = self.search('Not foo')
+        finally:
+            siteconfig = SiteConfiguration.objects.get_current()
+            siteconfig.set('search_on_the_fly_indexing', False)
+            siteconfig.save()
+
+        # There will be one call from each publish.
+        self.assertEqual(len(signal_processor.handle_save.spy.calls), 2)
+        self.assertEqual(rsp.context['hits_returned'], 1)
+
+        result = rsp.context['result']
+        self.assertEqual(result.summary, 'Not foo whatsoever')
+        self.assertEqual(result.target_users, [six.text_type(grumpy.pk)])
+        self.assertEqual(result.private_target_groups,
+                         [six.text_type(invite_only_group.pk)])
+
+    def test_on_the_fly_indexing_users(self):
+        """Testing on-the-fly indexing for users"""
+        self.reindex()
+
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('search_on_the_fly_indexing', True)
+        siteconfig.save()
+
+        u = User.objects.get(username='doc')
+
+        group = self.create_review_group()
+        invite_only_group = self.create_review_group(name='invite-only-group',
+                                                     invite_only=True)
+
+        try:
+            self.spy_on(signal_processor.handle_save)
+
+            u.username = 'not_doc'
+            u.first_name = 'Not Doc'
+            u.last_name = 'Dwarf'
+            u.save()
+
+            u.review_groups = [group, invite_only_group]
+
+            rsp = self.search('not_doc')
+        finally:
+            siteconfig = SiteConfiguration.objects.get_current()
+            siteconfig.set('search_on_the_fly_indexing', False)
+            siteconfig.save()
+
+        # There should be three calls:
+        #  * one from each of the m2m_changed actions post_clear and post_add;
+        #    and
+        #  * one from User.save().
+        self.assertEqual(len(signal_processor.handle_save.spy.calls), 3)
+
+        self.assertEqual(rsp.context['hits_returned'], 1)
+        result = rsp.context['result']
+
+        self.assertEqual(result.groups, 'test-group')
+        self.assertEqual(result.url, '/users/not_doc/')
+        self.assertEqual(result.username, 'not_doc')
+        self.assertEqual(result.full_name, 'Not Doc Dwarf')

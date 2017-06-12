@@ -30,7 +30,7 @@ class ElasticsearchBackend(SearchBackend):
     search_backend_id = 'elasticsearch'
     name = _('Elasticsearch')
     haystack_backend_name = ('haystack.backends.elasticsearch_backend.'
-                        'ElasticsearchSearchEngine')
+                             'ElasticsearchSearchEngine')
     default_settings = {
         'URL': 'http://127.0.0.1:9200/',
         'INDEX_NAME': 'reviewboard',

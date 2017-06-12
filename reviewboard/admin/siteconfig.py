@@ -160,6 +160,7 @@ defaults.update({
     'search_results_per_page': 20,
     'search_backend_id': WhooshBackend.search_backend_id,
     'search_backend_settings': {},
+    'search_on_the_fly_indexing': False,
 
     # Overwrite this.
     'site_media_url': settings.SITE_ROOT + "media/",

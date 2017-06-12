@@ -374,13 +374,17 @@ ADMIN_MEDIA_ROOT = STATIC_ROOT + 'admin/'
 EXTENSIONS_STATIC_ROOT = os.path.join(MEDIA_ROOT, 'ext')
 
 # Haystack requires this to be defined here, otherwise it will throw errors.
-# The actual PATH will be loaded through load_site_config()
+# The actual HAYSTACK_CONNECTIONS settings will be loaded through
+# load_site_config().
 HAYSTACK_CONNECTIONS = {
     'default': {
         'ENGINE': 'haystack.backends.whoosh_backend.WhooshEngine',
         'PATH': os.path.join(SITE_DATA_DIR, 'search-index'),
     },
 }
+
+HAYSTACK_SIGNAL_PROCESSOR = \
+    'reviewboard.search.signal_processor.SignalProcessor'
 
 # Make sure that we have a staticfiles cache set up for media generation.
 # By default, we want to store this in local memory and not memcached or
