@@ -2,7 +2,7 @@
 
 const optionTemplate = _.template(dedent`
     <div>
-    <% if (useGravatars && avatarURL) { %>
+    <% if (useAvatars && avatarURL) { %>
      <img src="<%- avatarURL %>">
     <% } %>
     <% if (fullname) { %>
@@ -32,8 +32,8 @@ RB.RelatedUserSelectorView = RB.RelatedObjectSelectorView.extend({
      *     localSitePrefix (string):
      *         The URL prefix for the local site, if any.
      *
-     *     useGravatars (boolean):
-     *         Whether to show gravatars. Off by default.
+     *     useAvatars (boolean):
+     *         Whether to show avatars. Off by default.
      */
     initialize(options) {
         RB.RelatedObjectSelectorView.prototype.initialize.call(
@@ -50,7 +50,7 @@ RB.RelatedUserSelectorView = RB.RelatedObjectSelectorView.extend({
             }, options));
 
         this._localSitePrefix = options.localSitePrefix || '';
-        this._useGravatars = !!options.useGravatars;
+        this._useAvatars = !!options.useAvatars;
     },
 
     /**
@@ -65,12 +65,10 @@ RB.RelatedUserSelectorView = RB.RelatedObjectSelectorView.extend({
      *     HTML to insert into the drop-down menu.
      */
     renderOption(item) {
-        return optionTemplate({
-            useGravatars: this._useGravatars,
-            avatarURL: item.avatar_url,
-            fullname: item.fullname,
-            username: item.username,
-        });
+        return optionTemplate(_.extend(
+            { useAvatars: this._useAvatars },
+            item
+        ));
     },
 
     /**
@@ -88,7 +86,7 @@ RB.RelatedUserSelectorView = RB.RelatedObjectSelectorView.extend({
     loadOptions(query, callback) {
         const params = {
             fullname: 1,
-            'only-fields': 'avatar_url,fullname,id,username',
+            'only-fields': 'avatar_urls,fullname,id,username',
             'only-links': '',
         };
 
@@ -101,7 +99,12 @@ RB.RelatedUserSelectorView = RB.RelatedObjectSelectorView.extend({
             url: `${SITE_ROOT}${this._localSitePrefix}api/users/`,
             data: params,
             success(results) {
-                callback(results.users);
+                callback(results.users.map(u => ({
+                    avatarURL: u.avatar_urls && u.avatar_urls['1x'],
+                    fullname: u.fullname,
+                    id: u.id,
+                    username: u.username,
+                })));
             },
             error(...args) {
                 console.log('User query failed', args);
