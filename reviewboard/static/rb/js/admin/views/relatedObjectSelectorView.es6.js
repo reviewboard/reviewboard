@@ -9,11 +9,23 @@
 RB.RelatedObjectSelectorView = Backbone.View.extend({
     className: 'related-object-select',
 
-    _template: _.template([
-        '<select placeholder="<%- searchPlaceholderText %>" ',
-        '        class="related-object-options"></select>',
-        '<ul class="related-object-selected"></ul>'
-    ].join('')),
+    /**
+     * The search placeholder text.
+     *
+     * Subclasses should override this.
+     */
+    searchPlaceholderText: '',
+
+    /**
+     * The element template.
+     *
+     * Subclasses may override this to change rendering.
+     */
+    template: _.template(dedent`
+        <select placeholder="<%- searchPlaceholderText %>"
+                class="related-object-options"></select>
+        <ul class="related-object-selected"></ul>
+    `),
 
     /**
      * Initialize the view.
@@ -33,11 +45,13 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
      *     selectizeOptions (object):
      *          Additional options to pass in to $.selectize.
      */
-    initialize: function(options) {
+    initialize(options) {
         this.options = options;
         this._$input = options.$input;
         this._selectizeOptions = options.selectizeOptions;
         this._selectedIDs = {};
+
+        _.bindAll(this, 'renderOption');
     },
 
     /**
@@ -47,15 +61,12 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
      *     RB.RelatedObjectSelectorView:
      *     This object, for chaining.
      */
-    render: function() {
-        var self = this,
-            i,
-            item;
+    render() {
+        const self = this;
 
-        this.$el.html(this._template({
-            searchPlaceholderText: gettext('Search for users...')
+        this.$el.html(this.template({
+            searchPlaceholderText: this.searchPlaceholderText,
         }));
-
         this._$selected = this.$('.related-object-selected');
 
         this.$('select')
@@ -64,33 +75,30 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
                 dropdownParent: 'body',
                 preload: 'focus',
                 render: {
-                    item: function() {
-                        // Always return an empty string
-                        return '';
-                    },
-                    option: _.bind(this.renderOption, this)
+                    item: () => '', // Always render an empty string.
+                    option: this.renderOption,
                 },
-                load: function(query, callback) {
-                    self.loadOptions(query, function(data) {
-                        callback(data.filter(function(item) {
-                            return !self._selectedIDs.hasOwnProperty(item.id);
-                        }));
-                    });
+                load(query, callback) {
+                    self.loadOptions(
+                        query,
+                        data => callback(data.filter(
+                            item => !self._selectedIDs.hasOwnProperty(item.id)
+                        ))
+                    );
                 },
-                onChange: function(selected) {
+                onChange(selected) {
                     if (selected) {
                         self._onItemSelected(this.options[selected], true);
                         this.removeOption(selected);
                     }
 
                     this.clear();
-                }
+                },
             }));
 
-        for (i = 0; i < this.options.initialOptions.length; i++) {
-            item = this.options.initialOptions[i];
-            this._onItemSelected(item, false);
-        }
+        this.options.initialOptions.forEach(
+            item => this._onItemSelected(item, false)
+        );
 
         this._$input.after(this.$el);
         return this;
@@ -102,8 +110,8 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
      * This copies the list of selected item IDs into the form field which will
      * be submitted.
      */
-    _updateInput: function() {
-        this._$input.val(_.keys(this._selectedIDs).join(','));
+    _updateInput() {
+        this._$input.val(Object.keys(this._selectedIDs).join(','));
     },
 
     /**
@@ -121,23 +129,21 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
      *         value of the form field when the page is initially loaded, and
      *         ``true`` when adding items interactively.
      */
-    _onItemSelected: function(item, addToInput) {
-        var $li = $('<li>').html(this.renderOption(item)),
-            $items = this._$selected.children(),
-            text = $li.text(),
-            attached = false,
-            compareStrings = RB.RelatedObjectSelectorView.compareStrings,
-            i,
-            $item;
+    _onItemSelected(item, addToInput) {
+        const $li = $('<li>').html(this.renderOption(item));
+        const $items = this._$selected.children();
+        const text = $li.text();
 
         $('<span class="remove-item fa fa-close">')
-            .click(_.bind(this._onItemRemoved, this, $li, item))
+            .click(() => this._onItemRemoved($li, item))
             .appendTo($li);
 
-        for (i = 0; i < $items.length; i++) {
-            $item = $items.eq(i);
+        let attached = false;
 
-            if (compareStrings($item.text(), text) > 0) {
+        for (let i = 0; i < $items.length; i++) {
+           const $item = $items.eq(i);
+
+            if ($item.text().localeCompare(text) > 0) {
                 $item.before($li);
                 attached = true;
                 break;
@@ -165,7 +171,7 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
      *     item (object):
      *         The item being removed.
      */
-    _onItemRemoved: function($li, item) {
+    _onItemRemoved($li, item) {
         $li.remove();
         delete this._selectedIDs[item.id];
         this._updateInput();
@@ -184,7 +190,7 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
      *     string:
      *     HTML to insert into the drop-down menu.
      */
-    renderOption: function(/* item */) {
+    renderOption(/* item */) {
         return '';
     },
 
@@ -203,34 +209,7 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
      *         be passed an array of objects, each representing an option in
      *         the drop-down.
      */
-    loadOptions: function(query, callback) {
+    loadOptions(query, callback) {
         callback();
-    }
-}, {
-    /**
-     * Compare two strings.
-     *
-     * This method optimistically uses String.localeCompare, falling back to
-     * the operator-based comparison for browsers that don't implement it.
-     *
-     * Args:
-     *     a (string):
-     *         The first string to compare.
-     *
-     *     b (string):
-     *         The second string to compare.
-     *
-     * Returns:
-     *     number:
-     *     A number which is negative if ``a`` should be sorted before ``b``, 0
-     *     if they are equal, or positive if ``a`` should be sorted after
-     *     ``b``.
-     */
-    compareStrings: function(a, b) {
-        if (String.prototype.localeCompare !== undefined) {
-            return a.localeCompare(b);
-        } else {
-            return (a === b ? 0 : a < b ? -1 : 1);
-        }
-    }
+    },
 });

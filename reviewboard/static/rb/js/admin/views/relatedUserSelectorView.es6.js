@@ -1,20 +1,25 @@
+{
+
+const optionTemplate = _.template(dedent`
+    <div>
+    <% if (useGravatars && avatarURL) { %>
+     <img src="<%- avatarURL %>">
+    <% } %>
+    <% if (fullname) { %>
+     <span class="title"><%- fullname %></span>
+     <span class="description">(<%- username %>)</span>
+    <% } else { %>
+     <span class="title"><%- username %></span>
+    <% } %>
+    </div>
+`);
+
+
 /**
  * A widget to select related users using search and autocomplete.
  */
 RB.RelatedUserSelectorView = RB.RelatedObjectSelectorView.extend({
-    _optionTemplate: _.template([
-        '<div>',
-        '<% if (useGravatars && avatarURL) { %>',
-        ' <img src="<%- avatarURL %>">',
-        '<% } %>',
-        '<% if (fullname) { %>',
-        ' <span class="title"><%- fullname %></span>',
-        ' <span class="description">(<%- username %>)</span>',
-        '<% } else { %>',
-        ' <span class="title"><%- username %></span>',
-        '<% } %>',
-        '</div>'
-    ].join('')),
+    searchPlaceholderText: gettext('Search for users...'),
 
     /**
      * Initialize the view.
@@ -30,17 +35,17 @@ RB.RelatedUserSelectorView = RB.RelatedObjectSelectorView.extend({
      *     useGravatars (boolean):
      *         Whether to show gravatars. Off by default.
      */
-    initialize: function(options) {
+    initialize(options) {
         RB.RelatedObjectSelectorView.prototype.initialize.call(
             this,
             _.defaults({
                 selectizeOptions: {
                     searchField: ['fullname', 'username'],
                     sortField: [
-                        { field: 'fullname' },
-                        { field: 'username'}
+                        {field: 'fullname'},
+                        {field: 'username'},
                     ],
-                    valueField: 'username'
+                    valueField: 'username',
                 }
             }, options));
 
@@ -59,12 +64,12 @@ RB.RelatedUserSelectorView = RB.RelatedObjectSelectorView.extend({
      *     string:
      *     HTML to insert into the drop-down menu.
      */
-    renderOption: function(item) {
-        return this._optionTemplate({
+    renderOption(item) {
+        return optionTemplate({
             useGravatars: this._useGravatars,
             avatarURL: item.avatar_url,
             fullname: item.fullname,
-            username: item.username
+            username: item.username,
         });
     },
 
@@ -80,11 +85,11 @@ RB.RelatedUserSelectorView = RB.RelatedObjectSelectorView.extend({
      *         be passed an array of objects, each representing an option in
      *         the drop-down.
      */
-    loadOptions: function(query, callback) {
-        var params = {
+    loadOptions(query, callback) {
+        const params = {
             fullname: 1,
             'only-fields': 'avatar_url,fullname,id,username',
-            'only-links': ''
+            'only-links': '',
         };
 
         if (query.length !== 0) {
@@ -93,15 +98,18 @@ RB.RelatedUserSelectorView = RB.RelatedObjectSelectorView.extend({
 
         $.ajax({
             type: 'GET',
-            url: SITE_ROOT + this._localSitePrefix + 'api/users/',
+            url: `${SITE_ROOT}${this._localSitePrefix}api/users/`,
             data: params,
-            success: function(results) {
+            success(results) {
                 callback(results.users);
             },
-            error: function() {
-                console.log('User query failed', arguments);
+            error(...args) {
+                console.log('User query failed', args);
                 callback();
-            }
+            },
         });
-    }
+    },
 });
+
+
+}
