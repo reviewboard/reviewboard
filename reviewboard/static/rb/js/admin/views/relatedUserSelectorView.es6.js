@@ -32,6 +32,10 @@ RB.RelatedUserSelectorView = RB.RelatedObjectSelectorView.extend({
      *     localSitePrefix (string):
      *         The URL prefix for the local site, if any.
      *
+     *     multivalued (boolean):
+     *         Whether or not the widget should allow selecting multuple
+     *         values.
+     *
      *     useAvatars (boolean):
      *         Whether to show avatars. Off by default.
      */

@@ -32,10 +32,21 @@ class RelatedUserWidget(HiddenInput):
     # correctly.
     is_hidden = False
 
-    def __init__(self, local_site_name=None):
+    def __init__(self, local_site_name=None, multivalued=True):
+        """Initalize the RelatedUserWidget.
+
+        Args:
+            local_site_name (unicode, optional):
+                The name of the LocalSite where the widget is being rendered.
+
+            multivalued (bool, optional):
+                Whether or not the widget should allow selecting multiple
+                values.
+        """
         super(RelatedUserWidget, self).__init__()
 
         self.local_site_name = local_site_name
+        self.multivalued = multivalued
 
     def render(self, name, value, attrs=None):
         """Render the widget.
@@ -55,6 +66,9 @@ class RelatedUserWidget(HiddenInput):
             The rendered HTML.
         """
         if value:
+            if not self.multivalued:
+                value = [value]
+
             value = [v for v in value if v]
             input_value = ','.join(force_text(v) for v in value)
             existing_users = (
@@ -92,6 +106,7 @@ class RelatedUserWidget(HiddenInput):
         extra_html = render_to_string('admin/related_user_widget.html', {
             'input_id': final_attrs['id'],
             'local_site_name': self.local_site_name,
+            'multivalued': self.multivalued,
             'use_avatars': use_avatars,
             'users': user_data,
         })
@@ -117,9 +132,14 @@ class RelatedUserWidget(HiddenInput):
         """
         value = data.get(name)
 
-        if isinstance(value, list):
+        if self.multivalued:
+            if isinstance(value, list):
+                return value
+            elif isinstance(value, six.string_types):
+                return [v for v in value.split(',') if v]
+            else:
+                return None
+        elif value:
             return value
-        elif isinstance(value, six.string_types):
-            return [v for v in value.split(',') if v]
         else:
             return None

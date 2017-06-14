@@ -24,7 +24,9 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
     template: _.template(dedent`
         <select placeholder="<%- searchPlaceholderText %>"
                 class="related-object-options"></select>
+        <% if (multivalued) { %>
         <ul class="related-object-selected"></ul>
+        <% } %>
     `),
 
     /**
@@ -41,6 +43,10 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
      *
      *     initialOptions (Array of object):
      *         The initially selected options.
+     *
+     *     multivalued (boolean):
+     *         Whether or not the widget should allow selecting multiple
+     *         values.
      *
      *     selectizeOptions (object):
      *          Additional options to pass in to $.selectize.
@@ -66,39 +72,59 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
 
         this.$el.html(this.template({
             searchPlaceholderText: this.searchPlaceholderText,
+            multivalued: this.options.multivalued,
         }));
+
         this._$selected = this.$('.related-object-selected');
 
-        this.$('select')
-            .selectize(_.defaults(this._selectizeOptions, {
-                copyClassesToDropdown: true,
-                dropdownParent: 'body',
-                preload: 'focus',
-                render: {
-                    item: () => '', // Always render an empty string.
-                    option: this.renderOption,
-                },
-                load(query, callback) {
-                    self.loadOptions(
-                        query,
-                        data => callback(data.filter(
-                            item => !self._selectedIDs.hasOwnProperty(item.id)
-                        ))
-                    );
-                },
-                onChange(selected) {
-                    if (selected) {
-                        self._onItemSelected(this.options[selected], true);
+        const renderItem = this.options.multivalued
+                           ? () => ''
+                           : this.renderOption;
+
+        const selectizeOptions = _.defaults(this._selectizeOptions, {
+            copyClassesToDropdown: true,
+            dropdownParent: 'body',
+            preload: 'focus',
+            render: {
+                item: renderItem,
+                option: this.renderOption,
+            },
+            load(query, callback) {
+                self.loadOptions(
+                    query,
+                    data => callback(data.filter(
+                        item => !self._selectedIDs.hasOwnProperty(item.id)
+                    ))
+                );
+            },
+            onChange(selected) {
+                if (selected) {
+                    self._onItemSelected(this.options[selected], true);
+
+                    if (self.options.multivalued) {
                         this.removeOption(selected);
                     }
+                }
 
+                if (self.options.multivalued) {
                     this.clear();
-                },
-            }));
+                }
+            },
+        });
 
-        this.options.initialOptions.forEach(
-            item => this._onItemSelected(item, false)
-        );
+        if (!this.options.multivalued && this.options.initialOptions.length) {
+            const item = this.options.initialOptions[0];
+            selectizeOptions.options = this.options.initialOptions;
+            selectizeOptions.items = [item[selectizeOptions.valueField]];
+        }
+
+        this.$('select').selectize(selectizeOptions);
+
+        if (this.options.multivalued) {
+            this.options.initialOptions.forEach(
+                item => this._onItemSelected(item, false)
+            );
+        }
 
         this._$input.after(this.$el);
         return this;
@@ -130,33 +156,38 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
      *         ``true`` when adding items interactively.
      */
     _onItemSelected(item, addToInput) {
-        const $li = $('<li>').html(this.renderOption(item));
-        const $items = this._$selected.children();
-        const text = $li.text();
+        if (this.options.multivalued) {
+            const $li = $('<li>').html(this.renderOption(item));
+            const $items = this._$selected.children();
+            const text = $li.text();
 
-        $('<span class="remove-item fa fa-close">')
-            .click(() => this._onItemRemoved($li, item))
-            .appendTo($li);
+            $('<span class="remove-item fa fa-close">')
+                .click(() => this._onItemRemoved($li, item))
+                .appendTo($li);
 
-        let attached = false;
+            let attached = false;
 
-        for (let i = 0; i < $items.length; i++) {
-           const $item = $items.eq(i);
+            for (let i = 0; i < $items.length; i++) {
+                const $item = $items.eq(i);
 
-            if ($item.text().localeCompare(text) > 0) {
-                $item.before($li);
-                attached = true;
-                break;
+                if ($item.text().localeCompare(text) > 0) {
+                    $item.before($li);
+                    attached = true;
+                    break;
+                }
             }
-        }
 
-        if (!attached) {
-            $li.appendTo(this._$selected);
-        }
+            if (!attached) {
+                $li.appendTo(this._$selected);
+            }
 
-        this._selectedIDs[item.id] = item;
+            this._selectedIDs[item.id] = item;
 
-        if (addToInput) {
+            if (addToInput) {
+                this._updateInput();
+            }
+        } else {
+            this._selectedIds = {[item.id]: item};
             this._updateInput();
         }
     },

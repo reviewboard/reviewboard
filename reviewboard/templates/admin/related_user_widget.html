@@ -8,7 +8,8 @@ $(function() {
 {% if local_site_name %}
         localSitePrefix: 's/{{local_site_name|escapejs}}/',
 {% endif %}
-        useAvatars: {{use_avatars|yesno:'true,false'}}
+        useAvatars: {{use_avatars|yesno:'true,false'}},
+        multivalued: {{multivalued|yesno:'true,false'}}
     }).render();
 });
 </script>
