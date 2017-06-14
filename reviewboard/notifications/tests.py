@@ -8,7 +8,7 @@ from django.core import mail
 from django.template import TemplateSyntaxError
 from django.utils import six
 from django.utils.datastructures import MultiValueDict
-from django.utils.six.moves.urllib.request import urlopen
+from django.utils.six.moves.urllib.request import OpenerDirector
 from djblets.mail.testing import DmarcDnsTestsMixin
 from djblets.mail.utils import (build_email_address,
                                 build_email_address_for_user)
@@ -1539,7 +1539,7 @@ class WebHookPayloadTests(SpyAgency, TestCase):
     @add_fixtures(['test_scmtools', 'test_users'])
     def test_diffset_rendered(self):
         """Testing JSON-serializability of DiffSets in WebHook payloads"""
-        self.spy_on(urlopen, call_original=False)
+        self.spy_on(OpenerDirector.open, call_original=False)
         WebHookTarget.objects.create(url=self.ENDPOINT_URL,
                                      events='review_request_published')
 
@@ -1547,11 +1547,11 @@ class WebHookPayloadTests(SpyAgency, TestCase):
         self.create_diffset(review_request)
         review_request.publish(review_request.submitter)
 
-        self.assertTrue(urlopen.spy.called)
+        self.assertTrue(OpenerDirector.open.spy.called)
 
         self.create_diffset(review_request, draft=True)
         review_request.publish(review_request.submitter)
-        self.assertEqual(len(urlopen.spy.calls), 2)
+        self.assertEqual(len(OpenerDirector.open.spy.calls), 2)
 
 
 class WebHookCustomContentTests(TestCase):
@@ -1788,12 +1788,13 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                 custom_content=r'{% invalid_block_tag %}')
 
         self.spy_on(logging.exception)
-        self.spy_on(urlopen, call_fake=lambda *args, **kwargs: None)
+        self.spy_on(OpenerDirector.open,
+                    call_fake=lambda *args, **kwargs: None)
 
         dispatch_webhook_event(FakeHTTPRequest(None), [handler], 'my-event',
                                None)
 
-        self.assertFalse(urlopen.spy.called)
+        self.assertFalse(OpenerDirector.open.spy.called)
         self.assertTrue(logging.exception.spy.called)
         self.assertIsInstance(logging.exception.spy.last_call.args[1],
                               TemplateSyntaxError)
@@ -1807,33 +1808,34 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                                 encoding=WebHookTarget.ENCODING_JSON)
 
         self.spy_on(logging.exception)
-        self.spy_on(urlopen, call_fake=lambda *args, **kwargs: None)
+        self.spy_on(OpenerDirector.open,
+                    call_fake=lambda *args, **kwargs: None)
 
         dispatch_webhook_event(FakeHTTPRequest(None), [handler], 'my-event', {
             'unencodable': Unencodable(),
         })
 
-        self.assertFalse(urlopen.spy.called)
+        self.assertFalse(OpenerDirector.open.spy.called)
         self.assertTrue(logging.exception.spy.called)
         self.assertIsInstance(logging.exception.spy.last_call.args[1],
                               TypeError)
 
     def test_dispatch_cannot_open(self):
         """Testing dispatch_webhook_event with an unresolvable URL"""
-        def _urlopen(*args, **kwargs):
+        def _urlopen(opener, *args, **kwargs):
             raise IOError('')
 
         handler = WebHookTarget(events='my-event', url=self.ENDPOINT_URL,
                                 encoding=WebHookTarget.ENCODING_JSON)
 
         self.spy_on(logging.exception)
-        self.spy_on(urlopen, call_fake=_urlopen)
+        self.spy_on(OpenerDirector.open, call_fake=_urlopen)
 
         dispatch_webhook_event(FakeHTTPRequest(None), [handler, handler],
                                'my-event',
                                None)
 
-        self.assertEqual(len(urlopen.spy.calls), 2)
+        self.assertEqual(len(OpenerDirector.open.spy.calls), 2)
         self.assertTrue(len(logging.exception.spy.calls), 2)
         self.assertIsInstance(logging.exception.spy.calls[0].args[2], IOError)
         self.assertIsInstance(logging.exception.spy.calls[1].args[2], IOError)
@@ -1841,7 +1843,7 @@ class WebHookDispatchTests(SpyAgency, TestCase):
 
     def _test_dispatch(self, handler, event, payload, expected_content_type,
                        expected_data, expected_sig_header=None):
-        def _urlopen(request):
+        def _urlopen(opener, request):
             self.assertEqual(request.get_full_url(), self.ENDPOINT_URL)
             self.assertEqual(request.headers['X-reviewboard-event'], event)
             self.assertEqual(request.headers['Content-type'],
@@ -1866,7 +1868,7 @@ class WebHookDispatchTests(SpyAgency, TestCase):
 
             self.assertIsInstance(request.data, six.binary_type)
 
-        self.spy_on(urlopen, call_fake=_urlopen)
+        self.spy_on(OpenerDirector.open, call_fake=_urlopen)
 
         # We need to ensure that logging.exception is not called
         # in order to avoid silent swallowing of test assertion failures
