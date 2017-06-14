@@ -322,8 +322,8 @@ PIPELINE_JAVASCRIPT = dict({
     },
     'widgets': {
         'source_filenames': (
-            'rb/js/admin/views/relatedObjectSelectorView.js',
-            'rb/js/admin/views/relatedUserSelectorView.js',
+            'rb/js/admin/views/relatedObjectSelectorView.es6.js',
+            'rb/js/admin/views/relatedUserSelectorView.es6.js',
         ),
         'output_filename': 'rb/js/widgets.min.js',
     },

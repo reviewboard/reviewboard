@@ -19,10 +19,16 @@ review_request_publishing = Signal(providing_args=['user',
 #:     user (django.contrib.auth.models.User):
 #:         The user who published the review request.
 #:
-#:     review_request_draft (reviewboard.reviews.models.ReviewRequestDraft):
-#:         The review request draft that was published.
-review_request_published = Signal(providing_args=['user', 'review_request',
-                                                  'trivial', 'changedesc'])
+#:     review_request (reviewboard.reviews.models.ReviewRequest):
+#:         The review request that was published.
+#:
+#:     trivial (bool):
+#          Whether or not the review request was published trivially or not.
+#:
+#:     changedesc (reviewboard.changedescs.models.ChangeDescription):
+#:         The change description associated with the publish, if any.
+review_request_published = Signal(
+    providing_args=['user', 'review_request', 'trivial', 'changedesc'])
 
 #: Emitted when a review request is about to be closed.
 #:

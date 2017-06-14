@@ -52,7 +52,7 @@ class WhooshBackend(SearchBackend):
     haystack_backend_name = 'haystack.backends.whoosh_backend.WhooshEngine'
     config_form_class = WhooshConfigForm
     default_settings = {
-        'PATH': os.path.join(settings.SITE_DATA_DIR, 'search_index'),
+        'PATH': os.path.join(settings.SITE_DATA_DIR, 'search-index'),
     }
     form_field_map = {
         'search_index_file': 'PATH',

@@ -8,8 +8,8 @@ from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.encoding import force_text
 from django.utils.safestring import mark_safe
-from djblets.gravatars import get_gravatar_url
-from djblets.siteconfig.models import SiteConfiguration
+
+from reviewboard.avatars import avatar_services
 
 
 class RelatedUserWidget(HiddenInput):
@@ -71,19 +71,7 @@ class RelatedUserWidget(HiddenInput):
         input_html = super(RelatedUserWidget, self).render(
             name, input_value, attrs)
 
-        # The Gravatar API in Djblets currently uses the request to determine
-        # whether or not to use https://secure.gravatar.com or
-        # http://gravatar.com. Unfortunately, it's hard enough to get a copy of
-        # the request in a form, much less in a form widget. Instead, we fake
-        # the request here and just always use the HTTPS one. This will be
-        # dramatically better in 3.0+ with the new avatar services.
-        class FakeRequest(object):
-            def is_secure(self):
-                return True
-
-        fake_request = FakeRequest()
-        siteconfig = SiteConfiguration.objects.get_current()
-        use_gravatars = siteconfig.get('integration_gravatars')
+        use_avatars = avatar_services.avatars_enabled
         user_data = []
 
         for user in existing_users:
@@ -93,15 +81,18 @@ class RelatedUserWidget(HiddenInput):
                 'username': user.username,
             }
 
-            if use_gravatars:
-                data['avatar_url'] = get_gravatar_url(fake_request, user, 40)
+            if use_avatars:
+                data['avatarURL'] = (
+                    avatar_services.for_user(user)
+                    .get_avatar_urls_uncached(user, 40)
+                )['1x']
 
             user_data.append(data)
 
         extra_html = render_to_string('admin/related_user_widget.html', {
             'input_id': final_attrs['id'],
             'local_site_name': self.local_site_name,
-            'use_gravatars': use_gravatars,
+            'use_avatars': use_avatars,
             'users': user_data,
         })
 
