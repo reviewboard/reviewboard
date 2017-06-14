@@ -1,4 +1,3 @@
-beanbag-docutils>=1.4
 bzr
 kgb
 mercurial
@@ -6,6 +5,5 @@ mock
 nose
 p4python
 setuptools>=18.2
-Sphinx>=1.4.8
 subvertpy
 wheel
