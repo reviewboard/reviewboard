@@ -87,15 +87,21 @@ class DevelopCommand(develop):
     user_options = develop.user_options + [
         ('no-npm', None, "Don't install packages from npm"),
         ('use-npm-cache', None, 'Use npm-cache to install packages'),
+        ('with-doc-deps', None, 'Install documentation-related dependencies'),
     ]
 
-    boolean_options = develop.boolean_options + ['no-npm', 'use-npm-cache']
+    boolean_options = develop.boolean_options + [
+        'no-npm',
+        'use-npm-cache',
+        'with-doc-deps',
+    ]
 
     def initialize_options(self):
         """Initialize options for the command."""
         develop.initialize_options(self)
 
         self.no_npm = None
+        self.with_doc_deps = None
         self.use_npm_cache = None
 
     def install_for_development(self):
@@ -131,6 +137,9 @@ class DevelopCommand(develop):
 
         self._run_pip(['install', '-e', '.'])
         self._run_pip(['install', '-r', 'dev-requirements.txt'])
+
+        if self.with_doc_deps:
+            self._run_pip(['install', '-r', 'doc-requirements.txt'])
 
         if not self.no_npm:
             if self.use_npm_cache:
