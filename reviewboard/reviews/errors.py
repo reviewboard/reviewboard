@@ -37,6 +37,14 @@ class ReopenError(Exception):
             'Error reopening the review request: %s' % message)
 
 
+class RevokeShipItError(Exception):
+    """An error that occurs while attempting to revoke a Ship It."""
+
+    def __init__(self, message):
+        super(RevokeShipItError, self).__init__(
+            'Error revoking the Ship It: %s' % message)
+
+
 class NotModifiedError(PublishError):
     """An error that occurs when a review's state is not modified."""
 

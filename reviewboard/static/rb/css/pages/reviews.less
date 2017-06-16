@@ -281,7 +281,7 @@
   }
 
   .has-avatar & {
-    margin-left: 75px;
+    margin-left: 80px;
     width: auto;
 
     .left-arrow-callout(@base-entry-bg);
@@ -498,20 +498,20 @@
       transition: 0.2s linear all;
 
       &.has-issues {
+        &.revoking-ship-it,
+        &.ship-it:hover {
+          .ship-it-label {
+            top: 23px;
+          }
+        }
+
         .avatar-container {
           border-color: darken(@issue-opened-bg, 45%);
         }
       }
 
-      &.ship-it {
-        .avatar-container {
-          border-color: #6ebf20;
-        }
-
-        .fix-it-label {
-          -webkit-transition-delay: 0.2s;
-          transition-delay: 0.2s;
-        }
+      &.ship-it .avatar-container {
+        border-color: #6ebf20;
       }
 
       &.ship-it.has-issues {
@@ -524,7 +524,6 @@
         }
 
         .ship-it-label {
-          position: absolute;
           top: 3px;
           margin-left: 2px;
           padding-left: 2px;
@@ -539,7 +538,7 @@
         overflow: hidden;
         width: 48px;
         height: 48px;
-        margin: 0 5px;
+        margin: 0 9px;
         transition: border-color 0.4s ease-in-out;
 
         .on-mobile-medium-screen-720({
@@ -575,19 +574,40 @@
         position: absolute;
         left: 0;
         top: 0;
-        width: 4.5em;
+        width: 5.5em;
 
         .on-mobile-medium-screen-720({
           margin-bottom: 0;
         });
 
+        &.fix-it-label,
+        &.ship-it-label {
+          -webkit-transition-delay: 0.2s;
+          transition-delay: 0.2s;
+        }
+
         &.ship-it-label {
           border: 1px darken(#aeff60, 40%) solid;
           background: #aeff60;
+          position: absolute;
 
           transition: padding 0.2s ease-in-out,
                       top 0.2s ease-in-out,
-                      margin 0.2s ease-in-out;
+                      margin 0.2s ease-in-out,
+                      left 0.5s ease-in-out,
+                      opacity 0.8s ease;
+
+          .revoke-ship-it {
+            cursor: pointer;
+            font-size: 110%;
+            margin-left: 0.1em;
+            opacity: 0.35;
+            transition: opacity 0.2s ease;
+
+            &:hover {
+              opacity: 1;
+            }
+          }
         }
 
         &.fix-it-label {

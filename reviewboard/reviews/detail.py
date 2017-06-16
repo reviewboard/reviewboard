@@ -639,6 +639,11 @@ class ReviewEntry(BaseReviewRequestPageEntry):
             'general_comments': [],
         }
 
+    @property
+    def can_revoke_ship_it(self):
+        """Whether the Ship It can be revoked by the current user."""
+        return self.review.can_user_revoke_ship_it(self.request.user)
+
     def add_comment(self, comment_type, comment):
         """Add a comment to this entry.
 

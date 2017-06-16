@@ -166,3 +166,8 @@ REOPEN_ERROR = WebAPIError(
     231,
     'An error occurred while reopening the review request.',
     http_status=500)  # 500 Internal Server Error
+
+REVOKE_SHIP_IT_ERROR = WebAPIError(
+    232,
+    'An error occurred while revoking the Ship It for a review.',
+    http_status=500)  # 500 Internal Server Error

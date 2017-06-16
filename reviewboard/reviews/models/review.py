@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import logging
+
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q
@@ -11,6 +13,7 @@ from djblets.db.fields import CounterField, JSONField
 from djblets.db.query import get_object_or_none
 
 from reviewboard.diffviewer.models import DiffSet
+from reviewboard.reviews.errors import RevokeShipItError
 from reviewboard.reviews.managers import ReviewManager
 from reviewboard.reviews.models.base_comment import BaseComment
 from reviewboard.reviews.models.diff_comment import Comment
@@ -21,7 +24,9 @@ from reviewboard.reviews.models.review_request import (ReviewRequest,
                                                        fetch_issue_counts)
 from reviewboard.reviews.models.screenshot_comment import ScreenshotComment
 from reviewboard.reviews.signals import (reply_publishing, reply_published,
-                                         review_publishing, review_published)
+                                         review_publishing, review_published,
+                                         review_ship_it_revoking,
+                                         review_ship_it_revoked)
 
 
 @python_2_unicode_compatible
@@ -32,6 +37,7 @@ class Review(models.Model):
     # These are explicitly not marked for localization to prevent taking the
     # submitting user's local into account when generating the e-mail.
     SHIP_IT_TEXT = 'Ship It!'
+    REVOKED_SHIP_IT_TEXT = '~~Ship It!~~'
     FIX_IT_THEN_SHIP_IT_TEXT = 'Fix it, then Ship it!'
 
     review_request = models.ForeignKey(ReviewRequest,
@@ -135,6 +141,91 @@ class Review(models.Model):
                  self.body_top == Review.SHIP_IT_TEXT) and
                 not (self.body_bottom or
                      self.has_comments(only_issues=False)))
+
+    def can_user_revoke_ship_it(self, user):
+        """Return whether a given user can revoke a Ship It.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to check permissions for.
+
+        Returns:
+            bool:
+            ``True`` if the user has permissions to revoke a Ship It.
+            ``False`` if they don't.
+        """
+        return (user.is_authenticated() and
+                self.public and
+                (user.pk == self.user_id or
+                 user.is_superuser or
+                 (self.review_request.local_site and
+                  self.review_request.local_site.admins.filter(
+                      pk=user.pk).exists())) and
+                self.review_request.is_accessible_by(user))
+
+    def revoke_ship_it(self, user):
+        """Revoke the Ship It status on this review.
+
+        The Ship It status will be removed, and the
+        :py:data:`ReviewRequest.shipit_count
+        <reviewboard.reviews.models.review_request.ReviewRequest.shipit_count>`
+        counter will be decremented.
+
+        If the :py:attr:`body_top` text is equal to :py:attr:`SHIP_IT_TEXT`,
+        then it will replaced with :py:attr:`REVOKED_SHIP_IT_TEXT`.
+
+        Callers are responsible for checking whether the user has permission
+        to revoke Ship Its by using :py:meth:`can_user_revoke_ship_it`.
+
+        Raises:
+            reviewboard.reviews.errors.RevokeShipItError:
+                The Ship It could not be revoked. Details will be in the
+                error message.
+        """
+        if not self.ship_it:
+            raise RevokeShipItError('This review is not marked Ship It!')
+
+        # This may raise a RevokeShipItError.
+        try:
+            review_ship_it_revoking.send(sender=self.__class__,
+                                         user=user,
+                                         review=self)
+        except RevokeShipItError:
+            raise
+        except Exception as e:
+            logging.exception('Unexpected error notifying listeners before '
+                              'revoking a Ship It for review ID=%d: %s',
+                              self.pk, e)
+            raise RevokeShipItError(e)
+
+        if self.extra_data is None:
+            self.extra_data = {}
+
+        self.extra_data['revoked_ship_it'] = True
+        self.ship_it = False
+
+        update_fields = ['extra_data', 'ship_it']
+
+        if self.body_top == self.SHIP_IT_TEXT:
+            self.body_top = self.REVOKED_SHIP_IT_TEXT
+            self.body_top_rich_text = True
+            update_fields += ['body_top', 'body_top_rich_text']
+
+        self.save(update_fields=update_fields)
+
+        self.review_request.decrement_shipit_count()
+        self.review_request.last_review_activity_timestamp = timezone.now()
+        self.review_request.save(
+            update_fields=['last_review_activity_timestamp'])
+
+        try:
+            review_ship_it_revoked.send(sender=self.__class__,
+                                        user=user,
+                                        review=self)
+        except Exception as e:
+            logging.exception('Unexpected error notifying listeners after '
+                              'revoking a Ship It for review ID=%d: %s',
+                              self.pk, e)
 
     def get_participants(self):
         """Returns a list of participants in a review's discussion."""
