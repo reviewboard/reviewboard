@@ -1848,7 +1848,7 @@ def parse_options(args):
             '%%prog %s\n'
             'Python %s\n'
             'Installed to %s'
-            % (VERSION, sys.version, os.os.path.dirname(reviewboard.__file__))
+            % (VERSION, sys.version, os.path.dirname(reviewboard.__file__))
         ))
 
     parser.add_option("-d", "--debug",
