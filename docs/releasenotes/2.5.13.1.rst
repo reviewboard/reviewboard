@@ -11,7 +11,7 @@ Review Board 2.5.13.1 Release Notes
 .. note::
 
    This is a patch release fixing a last-minute breaking bug in 2.5.13.
-   Please see :doc:`2.5.13 release notes <2.5.13>` for important security
+   Please see the :doc:`2.5.13 release notes <2.5.13>` for important security
    updates and other fixes.
 
 
