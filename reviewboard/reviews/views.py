@@ -1050,7 +1050,22 @@ def comment_diff_fragments(
     of these diff fragments based on filediffs, since they may not be cached
     and take time to generate.
     """
-    comments = get_list_or_404(Comment, pk__in=comment_ids.split(","))
+    review_request, response = \
+        _find_review_request(request, review_request_id, local_site)
+
+    if not review_request:
+        return response
+
+    q = (Q(pk__in=comment_ids.split(',')) &
+         Q(review__review_request=review_request))
+
+    if request.user.is_authenticated():
+        q &= (Q(review__public=True) | Q(review__user=request.user))
+    else:
+        q &= Q(review__public=True)
+
+    comments = get_list_or_404(Comment, q)
+
     latest_timestamp = get_latest_timestamp(comment.timestamp
                                             for comment in comments)
 
@@ -1061,14 +1076,6 @@ def comment_diff_fragments(
     if etag_if_none_match(request, etag):
         response = HttpResponseNotModified()
     else:
-        # While we don't actually need the review request, we still want to do
-        # this lookup in order to get the permissions checking.
-        review_request, response = \
-            _find_review_request(request, review_request_id, local_site)
-
-        if not review_request:
-            return response
-
         lines_of_context = request.GET.get('lines_of_context', '0,0')
         container_prefix = request.GET.get('container_prefix')
 

@@ -9,6 +9,7 @@ from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.urlresolvers import reverse
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.testing.decorators import add_fixtures
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.extensions.tests import TestService
@@ -1139,6 +1140,259 @@ class ViewTests(TestCase):
                 return context[varname]
 
         return None
+
+
+class CommentDiffFragmentsViewTests(TestCase):
+    """Unit tests for the comment_diff_fragments view."""
+
+    fixtures = ['test_users', 'test_scmtools']
+
+    def test_get_with_unpublished_review_request_not_owner(self):
+        """Testing comment_diff_fragments with unpublished review request and
+        user is not the owner
+        """
+        user = User.objects.create(username='reviewer')
+
+        review_request = self.create_review_request(create_repository=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+
+        review = self.create_review(review_request, user=user)
+        comment1 = self.create_diff_comment(review, filediff)
+        comment2 = self.create_diff_comment(review, filediff)
+        review.publish()
+
+        response = self.client.get(
+            '/r/%d/fragments/diff-comments/%d,%d/'
+            % (review_request.pk, comment1.pk, comment2.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_get_with_unpublished_review_request_owner(self):
+        """Testing comment_diff_fragments with unpublished review request and
+        user is the owner
+        """
+        user = User.objects.create_user(username='test-user',
+                                        password='test-user')
+
+        review_request = self.create_review_request(create_repository=True,
+                                                    submitter=user)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+
+        review = self.create_review(review_request, user=user)
+        comment1 = self.create_diff_comment(review, filediff)
+        comment2 = self.create_diff_comment(review, filediff)
+        review.publish()
+
+        self.assertTrue(self.client.login(username='test-user',
+                                          password='test-user'))
+
+        response = self.client.get(
+            '/r/%d/fragments/diff-comments/%d,%d/'
+            % (review_request.pk, comment1.pk, comment2.pk))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['comment_entries']), 2)
+        self.assertEqual(response.context['comment_entries'][0]['comment'],
+                         comment1)
+        self.assertEqual(response.context['comment_entries'][1]['comment'],
+                         comment2)
+
+    @add_fixtures(['test_site'])
+    def test_get_with_published_review_request_local_site_access(self):
+        """Testing comment_diff_fragments with published review request on
+        a Local Site the user has access to
+        """
+        user = User.objects.create_user(username='test-user',
+                                        password='test-user')
+
+        review_request = self.create_review_request(create_repository=True,
+                                                    with_local_site=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+
+        review = self.create_review(review_request)
+        comment1 = self.create_diff_comment(review, filediff)
+        comment2 = self.create_diff_comment(review, filediff)
+        review.publish()
+
+        review_request.local_site.users.add(user)
+
+        self.assertTrue(self.client.login(username='test-user',
+                                          password='test-user'))
+
+        response = self.client.get(
+            '/s/local-site-1/r/%d/fragments/diff-comments/%d,%d/'
+            % (review_request.display_id, comment1.pk, comment2.pk))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['comment_entries']), 2)
+        self.assertEqual(response.context['comment_entries'][0]['comment'],
+                         comment1)
+        self.assertEqual(response.context['comment_entries'][1]['comment'],
+                         comment2)
+
+    @add_fixtures(['test_site'])
+    def test_get_with_published_review_request_local_site_no_access(self):
+        """Testing comment_diff_fragments with published review request on
+        a Local Site the user does not have access to
+        """
+        User.objects.create_user(username='test-user',
+                                 password='test-user')
+
+        review_request = self.create_review_request(create_repository=True,
+                                                    with_local_site=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+
+        review = self.create_review(review_request)
+        comment1 = self.create_diff_comment(review, filediff)
+        comment2 = self.create_diff_comment(review, filediff)
+        review.publish()
+
+        self.assertTrue(self.client.login(username='test-user',
+                                          password='test-user'))
+
+        response = self.client.get(
+            '/s/local-site-1/r/%d/fragments/diff-comments/%d,%d/'
+            % (review_request.display_id, comment1.pk, comment2.pk))
+        self.assertEqual(response.status_code, 403)
+
+    def test_get_with_valid_comment_ids(self):
+        """Testing comment_diff_fragments with valid comment ID"""
+        user = User.objects.create(username='reviewer')
+
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+
+        review = self.create_review(review_request, user=user)
+        comment1 = self.create_diff_comment(review, filediff)
+        comment2 = self.create_diff_comment(review, filediff)
+        review.publish()
+
+        response = self.client.get(
+            '/r/%d/fragments/diff-comments/%d,%d/'
+            % (review_request.pk, comment1.pk, comment2.pk))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['comment_entries']), 2)
+        self.assertEqual(response.context['comment_entries'][0]['comment'],
+                         comment1)
+        self.assertEqual(response.context['comment_entries'][1]['comment'],
+                         comment2)
+
+    def test_get_with_valid_and_invalid_comment_ids(self):
+        """Testing comment_diff_fragments with mix of valid comment IDs and
+        comment IDs not found in database
+        """
+        user = User.objects.create(username='reviewer')
+
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset)
+
+        review = self.create_review(review_request, user=user)
+        comment = self.create_diff_comment(review, filediff)
+        review.publish()
+
+        response = self.client.get(
+            '/r/%d/fragments/diff-comments/999,%d/'
+            % (review_request.pk, comment.pk))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['comment_entries']), 1)
+        self.assertEqual(response.context['comment_entries'][0]['comment'],
+                         comment)
+
+    def test_get_with_no_valid_comment_ids(self):
+        """Testing comment_diff_fragments with no valid comment IDs"""
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+
+        response = self.client.get(
+            '/r/%d/fragments/diff-comments/100,200,300/'
+            % review_request.pk)
+        self.assertEqual(response.status_code, 404)
+
+    def test_get_with_comment_ids_from_other_review_request(self):
+        """Testing comment_diff_fragments with comment ID from another review
+        request
+        """
+        user = User.objects.create(username='reviewer')
+
+        # Create the first review request and review.
+        review_request1 = self.create_review_request(create_repository=True,
+                                                     publish=True)
+        diffset = self.create_diffset(review_request1)
+        filediff = self.create_filediff(diffset)
+
+        review = self.create_review(review_request1, user=user)
+        comment1 = self.create_diff_comment(review, filediff)
+        review.publish()
+
+        # Create the second review request and review.
+        review_request2 = self.create_review_request(create_repository=True,
+                                                     publish=True)
+        diffset = self.create_diffset(review_request2)
+        filediff = self.create_filediff(diffset)
+
+        review = self.create_review(review_request2, user=user)
+        comment2 = self.create_diff_comment(review, filediff)
+        review.publish()
+
+        response = self.client.get(
+            '/r/%d/fragments/diff-comments/%d,%d/'
+            % (review_request1.pk, comment1.pk, comment2.pk))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['comment_entries']), 1)
+        self.assertEqual(response.context['comment_entries'][0]['comment'],
+                         comment1)
+
+    def test_get_with_comment_ids_from_draft_review_owner(self):
+        """Testing comment_diff_fragments with comment ID from draft review,
+        accessed by the review's owner
+        """
+        user = User.objects.create_user(username='reviewer',
+                                        password='reviewer')
+
+        review_request1 = self.create_review_request(create_repository=True,
+                                                     publish=True)
+        diffset = self.create_diffset(review_request1)
+        filediff = self.create_filediff(diffset)
+
+        review = self.create_review(review_request1, user=user)
+        comment = self.create_diff_comment(review, filediff)
+
+        self.assertTrue(self.client.login(username='reviewer',
+                                          password='reviewer'))
+
+        response = self.client.get(
+            '/r/%d/fragments/diff-comments/%d/'
+            % (review_request1.pk, comment.pk))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['comment_entries']), 1)
+        self.assertEqual(response.context['comment_entries'][0]['comment'],
+                         comment)
+
+    def test_get_with_comment_ids_from_draft_review_not_owner(self):
+        """Testing comment_diff_fragments with comment ID from draft review,
+        accessed by someone other than the review's owner
+        """
+        user = User.objects.create(username='reviewer')
+
+        review_request1 = self.create_review_request(create_repository=True,
+                                                     publish=True)
+        diffset = self.create_diffset(review_request1)
+        filediff = self.create_filediff(diffset)
+
+        review = self.create_review(review_request1, user=user)
+        comment = self.create_diff_comment(review, filediff)
+
+        response = self.client.get(
+            '/r/%d/fragments/diff-comments/%d/'
+            % (review_request1.pk, comment.pk))
+        self.assertEqual(response.status_code, 404)
 
 
 class DownloadFileTests(TestCase):
