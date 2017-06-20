@@ -22,6 +22,7 @@ from django.utils.encoding import force_str
 from django.utils.six.moves import input
 from django.utils.six.moves.urllib.request import urlopen
 
+import reviewboard
 from reviewboard import get_manual_url, get_version_string
 from reviewboard.rb_platform import (SITELIST_FILE_UNIX,
                                      DEFAULT_FS_CACHE_PATH,
@@ -1841,8 +1842,14 @@ COMMANDS = {
 def parse_options(args):
     global options
 
-    parser = OptionParser(usage="%prog command [options] path",
-                          version="%prog " + VERSION)
+    parser = OptionParser(
+        usage='%prog command [options] path',
+        version=(
+            '%%prog %s\n'
+            'Python %s\n'
+            'Installed to %s'
+            % (VERSION, sys.version, os.os.path.dirname(reviewboard.__file__))
+        ))
 
     parser.add_option("-d", "--debug",
                       action="store_true", dest="debug", default=DEBUG,

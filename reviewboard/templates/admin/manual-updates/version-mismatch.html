@@ -25,4 +25,42 @@
     $ rb-site upgrade {{site_dir}}
 </pre>
 {% endif %}
+ <p>
+{% blocktrans %}
+  Then restart the web server.
+{% endblocktrans %}
+ </p>
+
+ <h2>{% trans "If that does not work..." %}</h2>
+ <h3>{% trans "Check the Python version" %}</h3>
+ <p>
+{% blocktrans %}
+  Your web server is running Python <strong>{{python_ver}}</strong>. You may
+  have installed Review Board using a different version of Python. To find out,
+  run:
+{% endblocktrans %}
+ </p>
+ <pre>
+   $ rb-site --version
+</pre>
+
+ <h3>{% trans "Your installation method might have changed" %}</h3>
+ <p>
+{% blocktrans %}
+  Review Board can be installed using a Python package manager
+  (<code>pip</code> or <code>easy_install</code>) or through a system package
+  manager (such as <code>yum</code>). If you previously installed using one
+  package manager but have since installed with another, you might need to
+  uninstall/erase the old packages and re-install using the new one.
+{% endblocktrans %}
+ </p>
+ <p>
+{% blocktrans %}
+  This version of Review Board was installed to <code>{{package_path}}</code>.
+  You can see where the new version was installed to by running:
+{% endblocktrans %}
+ </p>
+ <pre>
+   $ rb-site --version
+</pre>
 </div>
