@@ -1,6 +1,9 @@
+"""Signals related to review requests, reviews, and replies."""
+
 from __future__ import unicode_literals
 
 from django.dispatch import Signal
+
 
 #: Emitted when a review request is publishing.
 #:
@@ -12,6 +15,7 @@ from django.dispatch import Signal
 #:         The review request draft being published.
 review_request_publishing = Signal(providing_args=['user',
                                                    'review_request_draft'])
+
 
 #: Emitted when a review request is published.
 #:
@@ -29,6 +33,7 @@ review_request_publishing = Signal(providing_args=['user',
 #:         The change description associated with the publish, if any.
 review_request_published = Signal(
     providing_args=['user', 'review_request', 'trivial', 'changedesc'])
+
 
 #: Emitted when a review request is about to be closed.
 #:
@@ -60,6 +65,7 @@ review_request_closing = Signal(providing_args=[
     'user', 'review_request',  'close_type', 'type', 'description',
     'rich_text'])
 
+
 #: Emitted when a review request has been closed.
 #:
 #: Args:
@@ -90,6 +96,7 @@ review_request_closed = Signal(providing_args=['user', 'review_request',
                                                'type', 'description',
                                                'rich_text'])
 
+
 #: Emitted when a review request is about to be reopened.
 #:
 #: Args:
@@ -99,6 +106,7 @@ review_request_closed = Signal(providing_args=['user', 'review_request',
 #:     review_request (reviewboard.reviews.models.ReviewRequest):
 #:         The review request being reopened.
 review_request_reopening = Signal(providing_args=['user', 'review_request'])
+
 
 #: Emitted when a review request has been reopened.
 #:
@@ -120,6 +128,7 @@ review_request_reopening = Signal(providing_args=['user', 'review_request'])
 review_request_reopened = Signal(providing_args=['user', 'review_request',
                                                  'old_status', 'old_public'])
 
+
 #: Emitted when a review is being published.
 #:
 #: Args:
@@ -134,6 +143,33 @@ review_request_reopened = Signal(providing_args=['user', 'review_request',
 #:         submitter.
 review_publishing = Signal(providing_args=['user', 'review',
                                            'to_submitter_only'])
+
+
+#: Emitted when a Ship It is about to be revoked from a review.
+#:
+#: Listeners can raise a
+#: :py:exc:`~reviewboard.reviews.errors.RevokeShipItError` to stop the Ship It
+#: from being revoking.
+#:
+#: Args:
+#:     user (django.contrib.auth.models.User):
+#:         The user who requested to revoke the Ship It.
+#:
+#:     review (reviewboard.reviews.models.review.Review):
+#:         The review that will have its Ship It revoked.
+review_ship_it_revoking = Signal(providing_args=['user', 'review'])
+
+
+#: Emitted when a Ship It has been revoked from a review.
+#:
+#: Args:
+#:     user (django.contrib.auth.models.User):
+#:         The user who revoked the Ship It.
+#:
+#:     review (reviewboard.reviews.models.review.Review):
+#:         The review that had its Ship It revoked.
+review_ship_it_revoked = Signal(providing_args=['user', 'review'])
+
 
 #: Emitted when a review has been published.
 #:
@@ -152,6 +188,7 @@ review_publishing = Signal(providing_args=['user', 'review',
 #:         The request object if the review was published from an HTTP request.
 review_published = Signal(
     providing_args=['user', 'review', 'to_submitter_only', 'request'])
+
 
 #: Emitted when a reply to a review is being published.
 #:

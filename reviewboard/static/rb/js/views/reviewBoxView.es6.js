@@ -5,6 +5,10 @@
  * comments, screenshots, and file attachments.
  */
 RB.ReviewBoxView = RB.CollapsableBoxView.extend({
+    events: _.defaults({
+        'click .revoke-ship-it': '_revokeShipIt',
+    }, RB.CollapsableBoxView.prototype.events),
+
     /**
      * Initialize the view.
      *
@@ -26,6 +30,7 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         this._draftBannerShown = false;
         this._$boxStatus = null;
         this._$fixItLabel = null;
+        this._$shipItLabel = null;
     },
 
     /**
@@ -55,6 +60,7 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
 
         this._$boxStatus = this.$('.box-status');
         this._$fixItLabel = this._$boxStatus.find('.fix-it-label');
+        this._$shipItLabel = this._$boxStatus.find('.ship-it-label');
 
         this.listenTo(this._reviewView, 'hasDraftChanged',
                       hasDraft => this.$el.toggleClass('has-draft', hasDraft));
@@ -99,20 +105,102 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
      * once the issues are resolved.
      */
     _updateLabels() {
-        if (this._reviewView.hasOpenIssues()) {
-            this._$boxStatus.addClass('has-issues');
-            this._$fixItLabel
+        this._updateLabel(this._$fixItLabel,
+                          this._reviewView.hasOpenIssues(),
+                          'has-issues');
+        this._updateLabel(this._$shipItLabel,
+                          this.model.get('shipIt'),
+                          'ship-it');
+    },
+
+    /**
+     * Update the visibility of a label.
+     *
+     * The label's position and opacity will be set based on whether the
+     * label is intended to be visible. The label status box's CSS classes will
+     * also be updated based on the visibility and the provided CSS class name.
+     *
+     * Combined with CSS rules, the label will transition the opacity and
+     * the position.
+     *
+     * Args:
+     *     $label (jQuery):
+     *         The label element.
+     *
+     *     visible (boolean):
+     *         Whether the label should be shown as visible.
+     *
+     *     boxClassName (string):
+     *         The CSS class to add to or remove from the status box.
+     */
+    _updateLabel($label, visible, boxClassName) {
+        if (visible) {
+            this._$boxStatus.addClass(boxClassName);
+            $label
                 .show()
                 .css({
                     opacity: 1,
                     left: 0,
                 });
         } else {
-            this._$fixItLabel.css({
+            $label.css({
                 opacity: 0,
                 left: '-100px',
             });
-            this._$boxStatus.removeClass('has-issues');
+            this._$boxStatus.removeClass(boxClassName);
         }
+    },
+
+    /**
+     * Revoke the Ship It on the review.
+     *
+     * This will first confirm that the user does want to revoke the Ship It.
+     * If they confirm, the Ship It will be removed via an API call.
+     */
+    _revokeShipIt() {
+        this._$boxStatus.addClass('revoking-ship-it');
+
+        if (!confirm(RB.ReviewBoxView.strings.revokeShipItConfirm)) {
+            this._clearRevokingShipIt();
+            return;
+        }
+
+        this.model.ready({
+            ready: () => {
+                this.model.set('shipIt', false);
+                this.model.save({
+                    attrs: ['shipIt', 'includeTextTypes'],
+                    success: () => {
+                        this._updateLabels();
+
+                        /*
+                         * Add a delay before removing this, so that the
+                         * animation won't be impacted. This will encompass
+                         * the length of the animation.
+                         */
+                        setTimeout(() => this._clearRevokingShipIt(), 900);
+                    },
+                    error: (model, xhr) => {
+                        this.model.set('shipIt', true);
+                        this._clearRevokingShipIt();
+
+                        alert(xhr.responseJSON.err.msg);
+                    },
+                });
+            },
+        });
+    },
+
+    /**
+     * Clear the Revoke Ship It state.
+     *
+     * This will clear the CSS classes related to the revokation.
+     */
+    _clearRevokingShipIt() {
+        this._$boxStatus.removeClass('revoking-ship-it');
+    },
+}, {
+    strings: {
+        revokeShipItConfirm: gettext('Are you sure you want to revoke this Ship It?\n\nThis cannot be undone.'),
     },
 });

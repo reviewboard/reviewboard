@@ -3,9 +3,13 @@ from __future__ import unicode_literals
 from django.core import mail
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
-from djblets.webapi.errors import DOES_NOT_EXIST, PERMISSION_DENIED
+from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
+                                   PERMISSION_DENIED)
+from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.reviews.models import Review
+from reviewboard.reviews.signals import review_ship_it_revoking
+from reviewboard.webapi.errors import REVOKE_SHIP_IT_ERROR
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (review_list_mimetype,
@@ -262,8 +266,111 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
 
         self.api_put(
             get_review_item_url(review_request, review.id),
-            {'ship_it': True},
+            {'body_top': 'foo'},
             expected_status=403)
+
+    @webapi_test_template
+    def test_put_with_public_and_ship_it_true(self):
+        """Testing the PUT <URL> API with pre-published review and
+        ship_it=true
+        """
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request,
+                                    user=self.user,
+                                    publish=True)
+
+        rsp = self.api_put(
+            get_review_item_url(review_request, review.pk),
+            {'ship_it': True},
+            expected_status=400)
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+        self.assertEqual(rsp['fields'], {
+            'ship_it': 'Published reviews cannot be updated with ship_it=true',
+        })
+
+    @webapi_test_template
+    def test_put_with_revoke_ship_it(self):
+        """Testing the PUT <URL> API with revoking Ship It
+        """
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request,
+                                    user=self.user,
+                                    body_top=Review.SHIP_IT_TEXT,
+                                    ship_it=True,
+                                    publish=True)
+
+        rsp = self.api_put(
+            get_review_item_url(review_request, review.pk),
+            {'ship_it': False},
+            expected_mimetype=review_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['review']['body_top'],
+                         Review.REVOKED_SHIP_IT_TEXT)
+        self.assertFalse(rsp['review']['ship_it'])
+        self.assertTrue(rsp['review']['extra_data'].get('revoked_ship_it'))
+
+    @webapi_test_template
+    def test_put_with_revoke_ship_it_and_no_permission(self):
+        """Testing the PUT <URL> API with revoking Ship It and no permission"""
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request,
+                                    ship_it=True,
+                                    publish=True)
+        self.assertNotEqual(review.user, self.user)
+
+        rsp = self.api_put(
+            get_review_item_url(review_request, review.pk),
+            {'ship_it': False},
+            expected_status=403)
+        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+
+    @webapi_test_template
+    def test_put_with_revoke_ship_it_and_not_ship_it(self):
+        """Testing the PUT <URL> API with revoking Ship It on a review not
+        marked Ship It
+        """
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request,
+                                    user=self.user,
+                                    publish=True)
+
+        rsp = self.api_put(
+            get_review_item_url(review_request, review.pk),
+            {'ship_it': False},
+            expected_status=400)
+        self.assertEqual(rsp['err']['code'], INVALID_FORM_DATA.code)
+        self.assertEqual(rsp['fields'], {
+            'ship_it': 'This review is not marked Ship It!',
+        })
+
+    @webapi_test_template
+    def test_put_with_revoke_ship_it_and_revoke_error(self):
+        """Testing the PUT <URL> API with revoking Ship It and handling a
+        revokation error
+        """
+        def on_revoking(**kwargs):
+            raise Exception('oh no')
+
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request,
+                                    user=self.user,
+                                    ship_it=True,
+                                    publish=True)
+
+        try:
+            review_ship_it_revoking.connect(on_revoking)
+
+            rsp = self.api_put(
+                get_review_item_url(review_request, review.pk),
+                {'ship_it': False},
+                expected_status=500)
+        finally:
+            review_ship_it_revoking.disconnect(on_revoking)
+
+        self.assertEqual(rsp['err']['code'], REVOKE_SHIP_IT_ERROR.code)
+        self.assertEqual(rsp['err']['msg'],
+                         'Error revoking the Ship It: oh no')
 
     @add_fixtures(['test_site'])
     def test_put_publish(self):

@@ -1,0 +1,60 @@
+.. default-intersphinx:: rb2.5
+
+
+=================================
+Review Board 2.5.13 Release Notes
+=================================
+
+**Release date**: June 13, 2017
+
+
+Security Updates
+================
+
+This release addresses a vulnerability found in-house that affects standalone
+Review Board servers where a URL could be crafted that would display portions
+of a diff that has been commented on from another review request, even from
+those posted to invite-only groups, private repositories, or other
+:term:`Local Sites` that the user otherwise doesn't have access to.
+
+If you're not making use of these access controls, this bug won't impact you,
+but for those that do, we recommend upgrading to stay secure.
+
+
+Reporting Security Vulnerabilities
+----------------------------------
+
+Security vulnerabilities can be reported by `filing a bug`_ and choosing
+:guilabel:`Security issue` or by e-mailing security@beanbaginc.com. Patches
+can be sent by posting a review request to https://reviews.reviewboard.org and
+choosing *only* the "security" review group. These methods ensure security
+vulnerabilities are sent safely and confidentially to the Review Board team.
+
+
+.. _filing a bug: https://hellosplat.com/s/beanbag/tickets/new/
+
+
+New Features
+============
+
+* WebHook URLs can now contain inline credentials.
+
+  This allows WebHooks to be used with password-protected endpoints using
+  HTTP Basic Auth.
+
+* Added Python version and install path information to :command:`rb-site
+  --version` and the Version Mismatch error page.
+
+  This information, along with some helpful resolution steps in the Version
+  Mismatch page, should help users who have ended up in a broken state after
+  an upgrade. Version mismatches are often caused by running two different
+  versions of Python or having an older version of a package taking precedence
+  due to its installation method. It's now easier to determine the cause and
+  to fix the problem.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge

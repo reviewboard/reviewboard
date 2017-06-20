@@ -28,12 +28,14 @@ from reviewboard.webapi.errors import (CLOSE_ERROR, INVALID_REPOSITORY,
                                        PUBLISH_ERROR, REOPEN_ERROR)
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
-from reviewboard.webapi.tests.mimetypes import (review_request_item_mimetype,
+from reviewboard.webapi.tests.mimetypes import (review_item_mimetype,
+                                                review_request_item_mimetype,
                                                 review_request_list_mimetype)
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
                                                         ExtraDataListMixin)
 from reviewboard.webapi.tests.urls import (get_repository_item_url,
+                                           get_review_item_url,
                                            get_review_request_draft_url,
                                            get_review_request_item_url,
                                            get_review_request_list_url,
@@ -592,6 +594,25 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
                                          status='P',
                                          extra_query=Q(shipit_count__gt=0))
         self.assertEqual(len(rsp['review_requests']), q.count())
+
+    # Tests for determining if ship it counter works with removable ship-its
+    def _setup_removable_ship_it_count_tests(self):
+        review_request = self.create_review_request(publish=True)
+        review = self.create_review(review_request, user=self.user,
+                                    ship_it=True, publish=True)
+        self.api_put(
+            get_review_item_url(review_request, review.id),
+            {'ship_it': False},
+            expected_mimetype=review_item_mimetype)
+        self.create_review(review_request, ship_it=True, publish=True)
+
+    def test_get_with_removable_ship_it_count_equals(self):
+        """Testing the GET review-requests/?ship-it-count= API
+           with removable ship it"""
+        self._setup_removable_ship_it_count_tests()
+        self._test_get_with_field_count('ship-it-count', 2, 0)
+        self._test_get_with_field_count('ship-it-count', 1, 1)
+
 
     def test_get_with_time_added_from(self):
         """Testing the GET review-requests/?time-added-from= API"""

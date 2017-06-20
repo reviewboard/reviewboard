@@ -16,7 +16,12 @@
    </div>
    <div class="labels-container">
 {%  if review.ship_it %}
-    <label class="ship-it-label">{% trans "Ship it!" %}</label>
+    <label class="ship-it-label">
+     {% trans "Ship it!" %}
+{%   if entry.can_revoke_ship_it %}
+     <span class="revoke-ship-it fa fa-close" title="{% trans 'Revoke the Ship It' %}"></span>
+{%   endif %}
+    </label>
 {%  endif %}
 {%  if entry.has_issues %}
     <label class="fix-it-label"{% if entry.issue_open_count == 0 %} style="display: none;"{% endif %}>{% trans "Fix it!" %}</label>

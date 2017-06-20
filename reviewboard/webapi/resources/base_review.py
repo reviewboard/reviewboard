@@ -236,7 +236,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             # redirect the user to the right place.
             status_code = 303  # See Other
 
-        result = self._update_review(request, review, *args, **kwargs)
+        result = self.update_review(request, review, *args, **kwargs)
 
         if not isinstance(result, tuple) or result[0] != 200:
             return result
@@ -260,7 +260,8 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
 
         The only special field is ``public``, which, if set to true, will
         publish the review. The review will then be made publicly visible. Once
-        public, the review cannot be modified or made private again.
+        public, the review cannot be modified or made private again
+        with the exception of removing a ship it from review.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)
@@ -268,7 +269,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        return self._update_review(request, review, *args, **kwargs)
+        return self.update_review(request, review, *args, **kwargs)
 
     @webapi_check_local_site
     @augment_method_from(WebAPIResource)
@@ -295,17 +296,17 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         """
         pass
 
-    def _update_review(self, request, review, public=None,
-                       publish_to_submitter_only=False, extra_fields={},
-                       *args, **kwargs):
+    def update_review(self, request, review, public=None,
+                      publish_to_submitter_only=False, extra_fields={},
+                      ship_it=None, *args, **kwargs):
         """Common function to update fields on a draft review."""
         if not self.has_modify_permissions(request, review):
             # Can't modify published reviews or those not belonging
             # to the user.
             return self.get_no_access_error(request)
 
-        if 'ship_it' in kwargs:
-            review.ship_it = kwargs['ship_it']
+        if ship_it is not None:
+            review.ship_it = ship_it
 
         self.set_text_fields(review, 'body_top', **kwargs)
         self.set_text_fields(review, 'body_bottom', **kwargs)
