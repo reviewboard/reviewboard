@@ -40,6 +40,7 @@ from django.utils.translation import ugettext as _
 from djblets.util.filesystem import is_exe_in_path
 from djblets.siteconfig.models import SiteConfiguration
 
+import reviewboard
 from reviewboard import get_version_string
 from reviewboard.admin.import_utils import has_module
 
@@ -92,6 +93,8 @@ def check_updates_required():
                     'stored_version': siteconfig.version,
                     'site_dir': site_dir,
                     'devel_install': devel_install,
+                    'python_ver': '%s.%s.%s' % sys.version_info[:3],
+                    'package_path': os.path.dirname(reviewboard.__file__),
                 }
             ))
 
