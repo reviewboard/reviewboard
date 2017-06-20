@@ -5,7 +5,7 @@
 Review Board 2.5.13 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: June 13, 2017
 
 
 Security Updates
