@@ -1,0 +1,40 @@
+.. default-intersphinx:: rb2.0
+
+
+===================================
+Review Board 2.0.29.1 Release Notes
+===================================
+
+**Release date**: June 20, 2017
+
+
+.. note::
+
+   This is a patch release fixing a last-minute breaking bug in 2.0.29.
+   Please see :doc:`2.0.29 release notes <2.0.29>` for important security
+   updates and other fixes.
+
+
+Upgrade Instructions
+====================
+
+To upgrade to Review Board 2.0.29.1, run::
+
+    pip install ReviewBoard==2.0.29.1
+
+or::
+
+    easy_install ReviewBoard==2.0.29.1
+
+
+Bug Fixes
+=========
+
+* Fixed a breaking bug in the new :command:`rb-site --version` code from
+  2.0.29.
+
+
+Contributors
+============
+
+* Christian Hammond
