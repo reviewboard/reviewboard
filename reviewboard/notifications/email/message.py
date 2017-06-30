@@ -13,7 +13,7 @@ from django.utils.datastructures import MultiValueDict
 from djblets.mail.message import EmailMessage as DjbletsEmailMessage
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.accounts.pages import APITokensPage
+from reviewboard.accounts.pages import AuthenticationPage
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.notifications.email.hooks import \
     filter_email_recipients_from_hooks
@@ -242,7 +242,7 @@ def prepare_password_changed_mail(user):
     server_url = get_server_url()
 
     context = {
-        'api_token_url': APITokensPage.get_absolute_url(),
+        'api_token_url': AuthenticationPage.get_absolute_url(),
         'has_api_tokens': user.webapi_tokens.exists(),
         'server_url': server_url,
         'user': user,
@@ -556,7 +556,7 @@ def prepare_webapi_token_mail(webapi_token, op):
 
     context = {
         'api_token': webapi_token,
-        'api_tokens_url': APITokensPage.get_absolute_url(),
+        'api_tokens_url': AuthenticationPage.get_absolute_url(),
         'partial_token': '%s...' % webapi_token.token[:10],
         'user': user,
         'site_url': get_server_url(),
