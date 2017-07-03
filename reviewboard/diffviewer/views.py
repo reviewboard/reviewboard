@@ -21,6 +21,7 @@ from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.diffviewer.renderers import (get_diff_renderer,
                                               get_diff_renderer_class)
+from reviewboard.scmtools.errors import FileNotFoundError
 
 
 def get_collapse_diff(request):
@@ -298,15 +299,16 @@ class DiffFragmentView(View):
                 *args, **kwargs)
             response = renderer.render_to_response(request)
         except Exception as e:
-            logging.exception('%s.get: Error when rendering diffset for '
-                              'filediff ID=%s, interfilediff ID=%s, '
-                              'chunkindex=%s: %s',
-                              self.__class__.__name__,
-                              kwargs.get('filediff_id'),
-                              kwargs.get('interfilediff_id'),
-                              kwargs.get('chunkindex'),
-                              e,
-                              request=request)
+            if not isinstance(e, FileNotFoundError):
+                logging.exception('%s.get: Error when rendering diffset for '
+                                  'filediff ID=%s, interfilediff ID=%s, '
+                                  'chunkindex=%s: %s',
+                                  self.__class__.__name__,
+                                  kwargs.get('filediff_id'),
+                                  kwargs.get('interfilediff_id'),
+                                  kwargs.get('chunkindex'),
+                                  e,
+                                  request=request)
 
             return exception_traceback(
                 self.request, e, self.error_template_name,
