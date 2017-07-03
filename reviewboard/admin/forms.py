@@ -31,6 +31,7 @@ import os
 import re
 
 from django import forms
+from django.contrib import messages
 from django.contrib.sites.models import Site
 from django.conf import settings
 from django.core.cache import get_cache
@@ -635,13 +636,18 @@ class EMailSettingsForm(SiteSettingsForm):
             else:
                 to_user = siteconfig.get('site_admin_email')
 
-            send_mail(ugettext('E-mail settings test'),
-                      ugettext('This is a test of the e-mail settings '
-                               'for the Review Board server at %s.')
-                      % site_url,
-                      siteconfig.get('mail_default_from'),
-                      [to_user],
-                      fail_silently=True)
+            try:
+                send_mail(ugettext('E-mail settings test'),
+                          ugettext('This is a test of the e-mail settings '
+                                   'for the Review Board server at %s.')
+                          % site_url,
+                          siteconfig.get('mail_default_from'),
+                          [to_user],
+                          fail_silently=False)
+            except:
+                messages.error(self.request,
+                               ugettext('Failed to send test e-mail.'))
+                logging.exception('Failed to send test e-mail.')
 
     class Meta:
         title = _("E-Mail Settings")
