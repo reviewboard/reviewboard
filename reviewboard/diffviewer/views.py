@@ -31,6 +31,7 @@ from reviewboard.diffviewer.errors import PatchError, UserVisibleError
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.diffviewer.renderers import (get_diff_renderer,
                                               get_diff_renderer_class)
+from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
@@ -366,15 +367,16 @@ class DiffFragmentView(View):
                     'rejects': mark_safe(rejects),
                 })))
         except Exception as e:
-            logging.exception(
-                '%s.get: Error when rendering diffset for filediff ID=%s, '
-                'interfilediff ID=%s, chunk_index=%s: %s',
-                self.__class__.__name__,
-                filediff_id,
-                interfilediff_id,
-                chunk_index,
-                e,
-                request=request)
+            if not isinstance(e, FileNotFoundError):
+                logging.exception('%s.get: Error when rendering diffset for '
+                                  'filediff ID=%s, interfilediff ID=%s, '
+                                  'chunkindex=%s: %s',
+                                  self.__class__.__name__,
+                                  filediff_id,
+                                  interfilediff_id,
+                                  chunk_index,
+                                  e,
+                                  request=request)
 
             return exception_traceback(
                 self.request, e, self.error_template_name,
