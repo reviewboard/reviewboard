@@ -15,8 +15,6 @@ from djblets.configforms.forms import ConfigPageForm
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.avatars import avatar_services
-from reviewboard.notifications.email.signal_handlers import \
-    send_password_changed_mail
 from reviewboard.reviews.models import Group
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -242,6 +240,9 @@ class ChangePasswordForm(AccountPageForm):
 
     def save(self):
         """Save the form."""
+        from reviewboard.notifications.email.signal_handlers import \
+            send_password_changed_mail
+
         backend = get_enabled_auth_backends()[0]
 
         try:

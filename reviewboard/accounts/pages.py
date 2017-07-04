@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import logging
 from warnings import warn
 
+from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 from djblets.configforms.mixins import DynamicConfigPageMixin
 from djblets.configforms.pages import ConfigPage
@@ -10,6 +11,7 @@ from djblets.configforms.registry import ConfigPageRegistry
 from djblets.registries.errors import ItemLookupError
 from djblets.registries.mixins import ExceptionFreeGetterMixin
 
+from reviewboard.admin.server import build_server_url
 from reviewboard.accounts.forms.pages import (AccountSettingsForm,
                                               AvatarSettingsForm,
                                               APITokensForm,
@@ -63,6 +65,20 @@ class AccountPage(DynamicConfigPageMixin, ConfigPage):
     """
 
     registry = AccountPageRegistry()
+
+    @classmethod
+    def get_absolute_url(cls):
+        """Return the absolute URL of the page.
+
+        Returns:
+            unicode:
+            The absolute URL of the page.
+        """
+        return (
+            '%s#%s'
+            % (build_server_url(reverse('user-preferences')),
+               cls.page_id)
+        )
 
 
 class AccountSettingsPage(AccountPage):
