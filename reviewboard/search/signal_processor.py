@@ -198,7 +198,7 @@ class SignalProcessor(BaseSignalProcessor):
             # groups so we know to reindex them.
             if not reverse:
                 self._pending_user_changes.data[instance.pk] = list(
-                    instance.values_list('pk', flat=True))
+                    instance.users.values_list('pk', flat=True))
         elif action == 'post_clear':
             if reverse:
                 # When ``reverse`` is ``True``, we just have to reindex a

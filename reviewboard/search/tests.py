@@ -428,6 +428,7 @@ class SearchTests(SpyAgency, TestCase):
             u.save()
 
             u.review_groups = [group, invite_only_group]
+            invite_only_group.users = [u]
 
             rsp = self.search('not_doc')
         finally:
@@ -435,11 +436,11 @@ class SearchTests(SpyAgency, TestCase):
             siteconfig.set('search_on_the_fly_indexing', False)
             siteconfig.save()
 
-        # There should be three calls:
-        #  * one from each of the m2m_changed actions post_clear and post_add;
-        #    and
-        #  * one from User.save().
-        self.assertEqual(len(signal_processor.handle_save.spy.calls), 3)
+        # There should be five calls:
+        #  * two from each of the m2m_changed actions post_clear and
+        #    post_add; and
+        #  * and one from User.save().
+        self.assertEqual(len(signal_processor.handle_save.spy.calls), 5)
 
         self.assertEqual(rsp.context['hits_returned'], 1)
         result = rsp.context['result']
