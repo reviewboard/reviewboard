@@ -55,7 +55,7 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
         this.options = options;
         this._$input = options.$input;
         this._selectizeOptions = options.selectizeOptions;
-        this._selectedIDs = {};
+        this._selectedIDs = new Map();
 
         _.bindAll(this, 'renderOption');
     },
@@ -93,7 +93,7 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
                 self.loadOptions(
                     query,
                     data => callback(data.filter(
-                        item => !self._selectedIDs.hasOwnProperty(item.id)
+                        item => !self._selectedIDs.has(item.id)
                     ))
                 );
             },
@@ -137,7 +137,7 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
      * be submitted.
      */
     _updateInput() {
-        this._$input.val(Object.keys(this._selectedIDs).join(','));
+        this._$input.val(Array.from(this._selectedIDs.keys()).join(','));
     },
 
     /**
@@ -181,13 +181,13 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
                 $li.appendTo(this._$selected);
             }
 
-            this._selectedIDs[item.id] = item;
+            this._selectedIDs.set(item.id, item);
 
             if (addToInput) {
                 this._updateInput();
             }
         } else {
-            this._selectedIds = {[item.id]: item};
+            this._selectedIDs = new Map([[item.id, item]]);
             this._updateInput();
         }
     },
@@ -204,7 +204,7 @@ RB.RelatedObjectSelectorView = Backbone.View.extend({
      */
     _onItemRemoved($li, item) {
         $li.remove();
-        delete this._selectedIDs[item.id];
+        this._selectedIDs.delete(item.id);
         this._updateInput();
     },
 
