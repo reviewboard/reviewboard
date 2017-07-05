@@ -77,7 +77,7 @@ bugs_urls = [
 review_request_urls = [
     # Review request detail
     url(r'^$',
-        views.review_detail,
+        views.ReviewRequestDetailView.as_view(),
         name='review-request-detail'),
 
     # Review request diffs
