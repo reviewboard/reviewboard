@@ -80,6 +80,14 @@ input[type="submit"] {
   }
 }
 
+/*
+ * Force Firefox to render our buttons with our chosen font. Otherwise it will
+ * be overridden (on macOS at least) with the system font.
+ */
+input[type="button"],
+input[type="submit"] {
+  font-family: @font-family;
+}
 
 // Help Firefox not be a jerk about adding extra padding to buttons
 button.btn,
