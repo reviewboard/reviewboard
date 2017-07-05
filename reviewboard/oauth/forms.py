@@ -3,11 +3,12 @@
 from __future__ import unicode_literals
 
 from django import forms
-from django.forms import widgets
 from django.core.exceptions import ValidationError
-from django.core.validators import URLValidator
 from django.utils.translation import ugettext, ugettext_lazy as _
+from djblets.forms.widgets import CopyableTextInput, ListEditWidget
+from oauth2_provider.validators import URIValidator
 
+from reviewboard.admin.form_widgets import RelatedUserWidget
 from reviewboard.oauth.models import Application
 
 
@@ -18,8 +19,17 @@ class ApplicationForm(forms.ModelForm):
     providing help text for all fields.
     """
 
+    def clean_extra_data(self):
+        """Prevent ``extra_data`` from being an empty string.
+
+        Returns:
+            unicode:
+            Either a non-zero length string of JSON-encoded data or ``None``.
+        """
+        return self.cleaned_data['extra_data'] or None
+
     def clean_redirect_uris(self):
-        """Clean the redirect_uris field.
+        """Clean the ``redirect_uris`` field.
 
         This method will ensure that all the URIs are valid by validating
         each of them, as well as removing unnecessary whitespace.
@@ -32,7 +42,7 @@ class ApplicationForm(forms.ModelForm):
             django.core.exceptions.ValidationError:
                 Raised when one or more URIs are invalid.
         """
-        validator = URLValidator()
+        validator = URIValidator()
         redirect_uris = self.cleaned_data.get('redirect_uris', '').split()
         errors = []
 
@@ -71,24 +81,27 @@ class ApplicationForm(forms.ModelForm):
             dict:
             The cleaned form data.
         """
-        self.cleaned_data = super(ApplicationForm, self).clean()
+        super(ApplicationForm, self).clean()
 
         grant_type = self.cleaned_data.get('authorization_grant_type')
 
-        if (not self.cleaned_data.get('redirect_uris') or
+        # redirect_uris will not be present in cleaned_data if validation
+        # failed.
+        redirect_uris = self.cleaned_data.get('redirect_uris')
+
+        if (redirect_uris is not None and
+            len(redirect_uris) == 0 and
             grant_type in (Application.GRANT_AUTHORIZATION_CODE,
                            Application.GRANT_IMPLICIT)):
             # This is unfortunately not publicly exposed in Django 1.6, but it
             # is exposed in later versions (as add_error).
-            error = ValidationError(
+            self._errors['redirect_uris'] = self.error_class([
                 ugettext(
                     'The "redirect_uris" field may not be blank when '
                     '"authorization_grant_type" is %s"'
                 )
                 % self.cleaned_data.get('authorization-grant_type')
-            )
-            self._errors.setdefault('redirect_uris', self.error_class)
-            self._errors['redirect_uris'].append(error)
+            ])
 
             self.cleaned_data.pop('redirect_uris')
 
@@ -102,7 +115,8 @@ class ApplicationForm(forms.ModelForm):
                 'How the authorization is granted to the application.'
             ),
             'client_id': _(
-                'The client ID.'
+                'The client ID. Your application will use this in OAuth2 '
+                'authentication to identify itself.',
             ),
             'client_secret': _(
                 'The client secret. This should only be known to Review Board '
@@ -116,7 +130,7 @@ class ApplicationForm(forms.ModelForm):
                 'The application name.'
             ),
             'redirect_uris': _(
-                'A line-separated list of allowed URIs to redirect to.'
+                'A list of allowed URIs to redirect to.',
             ),
             'skip_authorization': _(
                 'Whether or not users will be prompted for authentication. '
@@ -129,5 +143,25 @@ class ApplicationForm(forms.ModelForm):
         }
 
         widgets = {
-            'redirect_uris': widgets.Textarea(),
+            'client_id': CopyableTextInput(attrs={
+                'readonly': True,
+                'size': 100,
+            }),
+            'client_secret': CopyableTextInput(attrs={
+                'readonly':  True,
+                'size': 100,
+            }),
+            'redirect_uris': ListEditWidget(attrs={'size': 60}, sep=' '),
+            'user': RelatedUserWidget(multivalued=False),
+        }
+
+        labels = {
+            'authorization_grant_type': _('Authorization Grant Type'),
+            'client_id': _('Client ID'),
+            'client_secret': _('Client Secret'),
+            'client_type': _('Client Type'),
+            'name': _('Name'),
+            'redirect_uris': _('Redirect URIs'),
+            'skip_authorization': _('Skip Authorization'),
+            'user': _('User'),
         }

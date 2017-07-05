@@ -58,6 +58,19 @@ class Application(AbstractApplication):
         """
         return not self.enabled and self.original_user_id is not None
 
+    def clean(self):
+        """Validate the application.
+
+        We do the validation for this in :py:meth:`ApplicationForm.clean()
+        <reviewboard.oauth.forms.ApplicationForm.clean` so that we can have
+        errors for ``authorization_grant_type`` and ``redirect_uris`` conflicts
+        show up on the appropriate field. The parent class does the same
+        validation, but as a result it will have form-wide errors instead of
+        per-field errors for the above two fields when they are in conflict.
+        Therefore we avoid that validation by making this a no-op.
+        """
+        pass
+
     class Meta:
         db_table = 'reviewboard_oauth_application'
         verbose_name = _('OAuth Application')
