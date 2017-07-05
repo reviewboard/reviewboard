@@ -5,7 +5,10 @@ import logging
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core import mail
+from django.http import Http404
 from django.template import TemplateSyntaxError
+from django.test.client import RequestFactory
+from django.test.utils import override_settings
 from django.utils import six
 from django.utils.datastructures import MultiValueDict
 from django.utils.six.moves.urllib.request import OpenerDirector
@@ -20,12 +23,13 @@ from reviewboard.accounts.models import Profile, ReviewRequestVisit
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.notifications.email.message import \
-    prepare_base_review_request_mail
+    EmailMessage, prepare_base_review_request_mail
 from reviewboard.notifications.email.utils import (
     build_recipients,
     get_email_addresses_for_group,
     recipients_to_addresses,
     send_email)
+from reviewboard.notifications.email.views import BasePreviewEmailView
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.notifications.webhooks import (FakeHTTPRequest,
                                                 dispatch_webhook_event,
@@ -3153,3 +3157,78 @@ class EmailUtilsTests(TestCase):
 
         self.assertEqual(to, set([submitter, user1]))
         self.assertEqual(len(cc), 0)
+
+
+class BasePreviewEmailViewTests(TestCase):
+    """Unit tests for BasePreviewEmailView."""
+
+    @override_settings(DEBUG=True)
+    def test_get_with_classmethod(self):
+        """Testing BasePreviewEmailView.get with build_email as classmethod"""
+        class MyPreviewEmailView(BasePreviewEmailView):
+            @classmethod
+            def build_email(cls, test_var):
+                self.assertEqual(test_var, 'test')
+                return EmailMessage(subject='Test Subject',
+                                    text_body='Test Body')
+
+            def get_email_data(view, request, test_var=None, *args, **kwargs):
+                self.assertEqual(test_var, 'test')
+
+                return {
+                    'test_var': test_var,
+                }
+
+        request = RequestFactory().request()
+        request.user = User.objects.create(username='test-user')
+
+        view = MyPreviewEmailView.as_view()
+        response = view(request, test_var='test', message_format='text')
+
+        self.assertEqual(response.status_code, 200)
+
+    @override_settings(DEBUG=True)
+    def test_get_with_staticmethod(self):
+        """Testing BasePreviewEmailView.get with build_email as staticmethod"""
+        class MyPreviewEmailView(BasePreviewEmailView):
+            @staticmethod
+            def build_email(test_var):
+                self.assertEqual(test_var, 'test')
+                return EmailMessage(subject='Test Subject',
+                                    text_body='Test Body')
+
+            def get_email_data(view, request, test_var=None, *args, **kwargs):
+                self.assertEqual(test_var, 'test')
+
+                return {
+                    'test_var': test_var,
+                }
+
+        request = RequestFactory().request()
+        request.user = User.objects.create(username='test-user')
+
+        view = MyPreviewEmailView.as_view()
+        response = view(request, test_var='test', message_format='text')
+
+        self.assertEqual(response.status_code, 200)
+
+    @override_settings(DEBUG=False)
+    def test_get_with_debug_false(self):
+        """Testing BasePreviewEmailView.get with DEBUG=False"""
+        class MyPreviewEmailView(BasePreviewEmailView):
+            @classmethod
+            def build_email(cls, test_var):
+                self.fail('build_email should not be reached')
+                return EmailMessage(subject='Test Subject',
+                                    text_body='Test Body')
+
+            def get_email_data(view, request, test_var=None, *args, **kwargs):
+                self.fail('get_email_data should not be reached')
+
+        request = RequestFactory().request()
+        request.user = User.objects.create(username='test-user')
+
+        view = MyPreviewEmailView.as_view()
+
+        with self.assertRaises(Http404):
+            view(request, test_var='test', message_format='text')

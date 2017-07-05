@@ -140,6 +140,7 @@ E-mail and WebHooks
    reviewboard.notifications.email.hooks
    reviewboard.notifications.email.message
    reviewboard.notifications.email.utils
+   reviewboard.notifications.email.views
    reviewboard.notifications.forms
    reviewboard.notifications.managers
    reviewboard.notifications.models
