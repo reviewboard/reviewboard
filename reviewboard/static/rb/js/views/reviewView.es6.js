@@ -294,7 +294,7 @@ RB.ReviewView = Backbone.View.extend({
                 model: this._reviewReply,
                 $floatContainer: this.options.$bannerFloatContainer,
                 noFloatContainerClass: this.options.bannerNoFloatContainerClass,
-                showSendEmail: this.options.showSendEmail,
+                reviewRequestEditor: this.options.reviewRequestEditor,
             });
 
             this._bannerView.render();

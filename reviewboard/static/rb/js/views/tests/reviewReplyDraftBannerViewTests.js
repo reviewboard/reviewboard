@@ -6,7 +6,10 @@ suite('rb/views/ReviewReplyDraftBannerView', function() {
         reviewReply = new RB.ReviewReply();
         view = new RB.ReviewReplyDraftBannerView({
             model: reviewReply,
-            $floatContainer: $testsScratch
+            $floatContainer: $testsScratch,
+            reviewRequestEditor: new RB.ReviewRequestEditor({
+                reviewRequest: new RB.ReviewRequest()
+            })
         });
         view.render().$el.appendTo($testsScratch);
     });
@@ -73,7 +76,10 @@ suite('rb/views/ReviewReplyDraftBannerView', function() {
                 view = new RB.ReviewReplyDraftBannerView({
                     model: reviewReply,
                     $floatContainer: $testsScratch,
-                    showSendEmail: true
+                    reviewRequestEditor: new RB.ReviewRequestEditor({
+                        reviewRequest: new RB.ReviewRequest(),
+                        showSendEmail: true
+                    })
                 });
                 view.render().$el.appendTo($testsScratch);
             });

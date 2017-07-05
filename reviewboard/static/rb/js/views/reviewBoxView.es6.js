@@ -19,9 +19,6 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
      * Option Args:
      *     reviewRequestEditor (RB.ReviewRequestEditor):
      *         The review request editor.
-     *
-     *     showSendEmail (boolean):
-     *         Whether to show the "Send E-mail" box on replies.
      */
     initialize(options) {
         RB.CollapsableBoxView.prototype.initialize.call(this, options);
@@ -55,7 +52,8 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
             $bannerFloatContainer: this._$box,
             $bannerParent: this.$('.banners'),
             bannerNoFloatContainerClass: 'collapsed',
-            showSendEmail: this.options.showSendEmail,
+            showSendEmail: this.options.reviewRequestEditor.get(
+                'showSendEmail'),
         });
 
         this._$boxStatus = this.$('.box-status');

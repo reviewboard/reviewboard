@@ -31,10 +31,10 @@ RB.InitialStatusUpdatesBoxView = RB.CollapsableBoxView.extend({
             return new RB.ReviewView({
                 el: $reviewEl,
                 model: review,
+                reviewRequestEditor: this.options.reviewRequestEditor,
                 $bannerFloatContainer: $reviewEl,
                 $bannerParent: $reviewEl.children('.banners'),
                 bannerNoFloatContainerClass: 'collapsed',
-                showSendEmail: this.options.showSendEmail,
             });
         });
     },
