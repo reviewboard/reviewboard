@@ -137,7 +137,7 @@ def make_review_request_context(request, review_request, extra_context={},
                     'view-diff',
                     args=[review_request.display_id],
                     local_site=review_request.local_site) +
-                '#index-header'),
+                '#index_header'),
         })
 
     review_request_details = extra_context.get('review_request_details',
