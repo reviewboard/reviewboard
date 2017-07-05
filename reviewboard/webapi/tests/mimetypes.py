@@ -67,6 +67,10 @@ hosting_service_account_item_mimetype = \
     _build_mimetype('hosting-service-account')
 
 
+oauth_app_list_mimetype = _build_mimetype('oauth-apps')
+oauth_app_item_mimetype = _build_mimetype('oauth-app')
+
+
 original_file_mimetype = 'text/plain'
 patched_file_mimetype = 'text/plain'
 

@@ -71,6 +71,59 @@ class Application(AbstractApplication):
         """
         pass
 
+    def is_accessible_by(self, user, local_site=None):
+        """Return whether or not the user has access to this Application.
+
+        A user has access if one of the following conditions is met:
+
+        * The user owns the Application.
+        * The user is an administrator.
+        * The user is a Local Site administrator on the Local Site the
+          Application is assigned to.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user in question.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The Local Site the user would access this Application under.
+
+        Returns:
+            bool:
+            Whether or not the given user has access to information about
+            this Application.
+        """
+        return (user.is_authenticated() and
+                (self.user == user or
+                 user.is_superuser or
+                 (self.local_site_id is not None and
+                  local_site is not None and
+                  self.local_site_id == local_site.pk and
+                  local_site.is_mutable_by(user))))
+
+    def is_mutable_by(self, user, local_site=None):
+        """Return whether or not the user can modify this Application.
+
+        A user has access if one of the following conditions is met:
+
+        * The user owns the Application.
+        * The user is an administrator.
+        * The user is a Local Site administrator on the Local Site the
+          Application is assigned to.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user in question.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The Local Site the user would modify this Application under.
+
+        Returns:
+            bool:
+            Whether or not the given user can modify this Application.
+        """
+        return self.is_accessible_by(user, local_site=local_site)
+
     class Meta:
         db_table = 'reviewboard_oauth_application'
         verbose_name = _('OAuth Application')

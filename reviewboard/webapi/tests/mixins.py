@@ -124,6 +124,10 @@ class BasicTestsMetaclass(type):
 
 class BasicTestsMixin(object):
     """Base class for a mixin for basic API tests."""
+
+    not_owner_status_code = 403
+    not_owner_error = PERMISSION_DENIED
+
     def compare_item(self, item_rsp, obj):
         raise NotImplementedError("%s doesn't implement compare_item"
                                   % self.__class__.__name__)
@@ -202,10 +206,11 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_delete(url, expected_status=403)
+            rsp = self.api_delete(url,
+                                  expected_status=self.not_owner_status_code)
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], self.not_owner_error.code)
 
 
 class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
@@ -795,10 +800,11 @@ class BasicPutTestsMixin(BasicTestsMixin):
         self.assertFalse(url.startswith('/s/' + self.local_site_name))
 
         with override_feature_checks(self.override_features):
-            rsp = self.api_put(url, put_data, expected_status=403)
+            rsp = self.api_put(url, put_data,
+                               expected_status=self.not_owner_status_code)
 
         self.assertEqual(rsp['stat'], 'fail')
-        self.assertEqual(rsp['err']['code'], PERMISSION_DENIED.code)
+        self.assertEqual(rsp['err']['code'], self.not_owner_error.code)
 
 
 class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
