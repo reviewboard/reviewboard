@@ -127,7 +127,7 @@ review_request_urls = [
 
     # Review Request infobox
     url(r'^infobox/$',
-        views.review_request_infobox,
+        views.ReviewRequestInfoboxView.as_view(),
         name='review-request-infobox'),
 ]
 

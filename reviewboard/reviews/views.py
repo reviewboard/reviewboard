@@ -1810,76 +1810,80 @@ def bug_infobox(request, review_request_id, bug_id,
     }))
 
 
-@check_login_required
-@check_local_site_access
-def review_request_infobox(request, review_request_id,
-                           template_name='reviews/review_request_infobox.html',
-                           local_site=None):
+class ReviewRequestInfoboxView(ReviewRequestViewMixin, TemplateView):
     """Display a review request info popup.
 
-    This function produces the information needed to be displayed
-    in a summarized information box, upon hovering over a link to
-    a review request.
+    This produces the information needed to be displayed in a summarized
+    information box upon hovering over a link to a review request.
 
-    Args:
-        request (django.http.HttpRequest):
-            The request object.
-
-        review_request_id (int):
-            The ID number of the review request.
-
-        template_name (unicode):
-            The path at which the template for the review request infobox is.
-
-        local_site (reviewboard.site.models.LocalSite):
-            The review request's local site, if available.
-
-    Returns:
-        django.http.HttpResponse:
-        The rendered text from the template and dictionary
-        for review request infobox.
+    This is meant to be embedded in other pages, rather than being
+    a standalone page.
     """
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site)
 
-    if not review_request:
-        return response
+    template_name = 'reviews/review_request_infobox.html'
 
-    # Below code is heavily referenced from columns.py.
-    # It should be refactored.
-    labels = []
+    MAX_REVIEWS = 3
 
-    if (review_request.submitter_id == request.user.id and
-        not review_request.public and
-        review_request.status == ReviewRequest.PENDING_REVIEW):
-        labels.append(('label-draft', _('Draft')))
+    def get_context_data(self, **kwargs):
+        """Handle HTTP GET requests for this view.
 
-    if review_request.status == ReviewRequest.SUBMITTED:
-        labels.append(('label-submitted', _('Submitted')))
-    elif review_request.status == ReviewRequest.DISCARDED:
-        labels.append(('label-discarded', _('Discarded')))
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
 
-    display_data = format_html_join('', '<label class="{0}">{1}</label>',
-                                    labels)
+            *args (tuple):
+                Positional arguments passed to the handler.
 
-    issue_total_count = (review_request.issue_open_count +
-                         review_request.issue_resolved_count +
-                         review_request.issue_dropped_count)
+            **kwargs (dict):
+                Keyword arguments passed to the handler.
 
-    # Contains the three most recent reviews.
-    latest_reviews = list(review_request.reviews.order_by('-timestamp')[:3])
+        Returns:
+            django.http.HttpResponse:
+            The HTTP response containing the infobox, or an error if the
+            infobox could not be provided.
+        """
+        review_request = self.review_request
+        submitter = review_request.submitter
 
-    submitter = review_request.submitter
+        # Below code is heavily referenced from columns.py. We may want to
+        # consider whether it's worth consolidating logic, or if we may want
+        # to keep these separate.
+        labels = []
 
-    return render_to_response(template_name, RequestContext(request, {
-        'review_request': review_request,
-        'review_request_id': review_request_id,
-        'review_request_labels': display_data,
-        'review_request_issue_total_count': issue_total_count,
-        'review_request_latest_reviews': latest_reviews,
-        'show_profile': submitter.is_profile_visible(request.user),
-        'submitter': submitter,
-    }))
+        if (self.request.user.is_authenticated() and
+            submitter == self.request.user and
+            not review_request.public and
+            review_request.status == ReviewRequest.PENDING_REVIEW):
+            labels.append(('label-draft', _('Draft')))
+
+        if review_request.status == ReviewRequest.SUBMITTED:
+            labels.append(('label-submitted', _('Submitted')))
+        elif review_request.status == ReviewRequest.DISCARDED:
+            labels.append(('label-discarded', _('Discarded')))
+
+        display_data = format_html_join('', '<label class="{0}">{1}</label>',
+                                        labels)
+
+        issue_total_count = (review_request.issue_open_count +
+                             review_request.issue_resolved_count +
+                             review_request.issue_dropped_count)
+
+        # Fetch recent reviews to show in the infobox.
+        latest_reviews = list(
+            review_request.reviews
+            .filter(public=True, base_reply_to__isnull=True)
+            .order_by('-timestamp')[:self.MAX_REVIEWS]
+        )
+
+        return {
+            'review_request': review_request,
+            'review_request_id': review_request.display_id,
+            'review_request_labels': display_data,
+            'review_request_issue_total_count': issue_total_count,
+            'review_request_latest_reviews': latest_reviews,
+            'show_profile': submitter.is_profile_visible(self.request.user),
+            'submitter': submitter,
+        }
 
 
 def _download_diff_file(modified, request, review_request_id, revision,
