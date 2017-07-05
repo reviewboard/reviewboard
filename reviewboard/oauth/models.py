@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals
 
+from django.contrib.auth.models import User
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import JSONField
@@ -17,6 +18,21 @@ class Application(AbstractApplication):
     :py:class:`~reviewboard.site.models.LocalSite`.
     """
 
+    enabled = models.BooleanField(
+        verbose_name=_('Enabled'),
+        help_text=_('Whether or not this application can be used to '
+                    'authenticate with Review Board.'),
+        default=True,
+    )
+
+    original_user = models.ForeignKey(
+        verbose_name=_('Original User'),
+        to=User,
+        blank=True,
+        null=True,
+        help_text=_('The original owner of this application.')
+    )
+
     local_site = models.ForeignKey(
         verbose_name=_('Local Site'),
         to=LocalSite,
@@ -31,6 +47,16 @@ class Application(AbstractApplication):
         null=True,
         default=dict,
     )
+
+    @property
+    def is_disabled_for_security(self):
+        """Whether or not this application is disabled for security reasons.
+
+        This will be ``True`` when the :py:attr:`original_owner` no longer
+        has access to the :py:attr:`local_site` this application is associated
+        with.
+        """
+        return not self.enabled and self.original_user_id is not None
 
     class Meta:
         db_table = 'reviewboard_oauth_application'

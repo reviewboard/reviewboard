@@ -19,6 +19,7 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
 from reviewboard.notifications.models import WebHookTarget
+from reviewboard.oauth.models import Application
 from reviewboard.reviews.models import (Comment,
                                         FileAttachmentComment,
                                         GeneralComment,
@@ -1036,3 +1037,51 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             webhook.save(update_fields=['extra_data'])
 
         return webhook
+
+    def create_oauth_application(
+        self, user, local_site=None, with_local_site=False,
+        redirect_uris='http://example.com',
+        authorization_grant_type=Application.GRANT_CLIENT_CREDENTIALS,
+        client_type=Application.CLIENT_PUBLIC,
+        **kwargs):
+        """Create an OAuth application.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user whom is to own the application.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The LocalSite for the application to be associated with, if
+                any.
+
+            redirect_uris (unicode, optional):
+                A whitespace-separated list of allowable redirect URIs.
+
+            authorization_grant_type (unicode, optional):
+                The grant type for the application.
+
+            client_type (unicode, optional):
+                The application client type.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the
+                :py:class:`~reviewboard.oauth.models.Application` initializer.
+
+        Returns:
+            reviewboard.oauth.models.Application:
+            The created application.
+        """
+        if not local_site:
+            if with_local_site:
+                local_site = self.get_local_site(self.local_site_name)
+            else:
+                local_site = None
+
+        return Application.objects.create(
+            user=user,
+            local_site=local_site,
+            authorization_grant_type=authorization_grant_type,
+            redirect_uris=redirect_uris,
+            client_type=client_type,
+            extra_data='{}',
+            **kwargs)

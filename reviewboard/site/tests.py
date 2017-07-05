@@ -6,9 +6,12 @@ from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.template import Context, Template
 from django.test.client import RequestFactory
 from django.views.generic.base import View
+from djblets.features.testing import override_feature_check
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.accounts.models import LocalSiteProfile
+from reviewboard.oauth.features import oauth2_service_feature
+from reviewboard.oauth.models import Application
 from reviewboard.site.context_processors import AllPermsWrapper
 from reviewboard.site.middleware import LocalSiteMiddleware
 from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
@@ -309,3 +312,28 @@ class CheckLocalSiteAccessViewMixinTests(TestCase):
         response = view(request)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, 'success')
+
+
+class OAuth2ApplicationTests(TestCase):
+    """Testing Applicications assigned to a Local Site."""
+
+    fixtures = ['test_users', 'test_site']
+
+    def test_disable_reassign_to_admin(self):
+        """Testing an Application is disabled and re-assigned to a Local Site
+        admin when its owner is removed from a Local Site
+        """
+        with override_feature_check(oauth2_service_feature.feature_id, True):
+            local_site = LocalSite.objects.get(pk=1)
+            user = User.objects.get(username='doc')
+            admin = User.objects.get(username='admin')
+            application = self.create_oauth_application(user=user,
+                                                        local_site=local_site)
+
+            local_site.users.remove(user)
+
+            application = Application.objects.get(pk=application.pk)
+            self.assertTrue(application.is_disabled_for_security)
+            self.assertEqual(application.original_user_id, user.pk)
+            self.assertEqual(application.user_id, admin.pk)
+            self.assertFalse(application.enabled)
