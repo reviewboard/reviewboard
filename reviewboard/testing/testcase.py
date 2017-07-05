@@ -204,14 +204,54 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
     def create_diff_comment(self, review, filediff, interfilediff=None,
                             text='My comment', issue_opened=False,
-                            issue_status=None,
-                            first_line=1, num_lines=5, extra_fields=None,
-                            reply_to=None, **kwargs):
-        """Creates a Comment for testing.
+                            issue_status=None, first_line=1, num_lines=5,
+                            extra_fields=None, reply_to=None, **kwargs):
+        """Create a Comment for testing.
 
         The comment is tied to the given Review and FileDiff (and, optionally,
         an interfilediff). It's populated with default data that can be
         overridden by the caller.
+
+        Args:
+            review (reviewboard.reviews.models.review.Review):
+                The review associated with the comment.
+
+            filediff (reviewboard.diffviewer.models.FileDiff):
+                The FileDiff associated with the comment.
+
+            interfilediff (reviewboard.diffviewer.models.FileDiff, optional):
+                The FileDiff used for the end of an interdiff range associated
+                with the comment.
+
+            text (unicode):
+                The text for the comment.
+
+            issue_opened (bool, optional):
+                Whether an issue is to be opened for the comment.
+
+            issue_status (unicode, optional):
+                The issue status to set, if an issue is opened. Defaults to
+                being an open issue.
+
+            first_line (int, optional):
+                The first line (0-based) of the comment range.
+
+            num_lines (int, optional):
+                The number of lines in the comment.
+
+            extra_fields (dict, optional):
+                Extra data to set on the comment.
+
+            reply_to (reviewboard.reviews.models.diff_comment.Comment,
+                      optional):
+                The comment this comment replies to.
+
+            **kwargs (dict):
+                Additional model attributes to set on the comment.
+
+        Returns:
+            reviewboard.reviews.models.diff_comment.Comment:
+            The resulting comment.
         """
         if issue_opened and not issue_status:
             issue_status = Comment.OPEN
@@ -330,16 +370,51 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def create_file_attachment_comment(self, review, file_attachment,
                                        diff_against_file_attachment=None,
                                        text='My comment', issue_opened=False,
-                                       extra_fields=None, reply_to=None):
-        """Creates a FileAttachmentComment for testing.
+                                       issue_status=None, extra_fields=None,
+                                       reply_to=None, **kwargs):
+        """Create a FileAttachmentComment for testing.
 
         The comment is tied to the given Review and FileAttachment. It's
         populated with default data that can be overridden by the caller.
+
+        Args:
+            review (reviewboard.reviews.models.review.Review):
+                The review associated with the comment.
+
+            file_attachment (reviewboard.attachments.models.FileAttachment):
+                The file attachment associated with the comment.
+
+            diff_against_file_attachment (reviewboard.attachments.models.
+                                          FileAttachment, optional):
+                The file attachment being diff against, for comments on
+                attachment diffs.
+
+            text (unicode):
+                The text for the comment.
+
+            issue_opened (bool, optional):
+                Whether an issue is to be opened for the comment.
+
+            issue_status (unicode, optional):
+                The issue status to set, if an issue is opened. Defaults to
+                being an open issue.
+
+            extra_fields (dict, optional):
+                Extra data to set on the comment.
+
+            reply_to (reviewboard.reviews.models.file_attachment_comment.
+                      FileAttachmentComment, optional):
+                The comment this comment replies to.
+
+            **kwargs (dict):
+                Additional model attributes to set on the comment.
+
+        Returns:
+            reviewboard.reviews.models.file_attachment_comment.FileAttachmentComment:
+            The resulting comment.
         """
-        if issue_opened:
-            issue_status = Comment.OPEN
-        else:
-            issue_status = None
+        if issue_opened and not issue_status:
+            issue_status = FileAttachmentComment.OPEN
 
         comment = FileAttachmentComment(
             file_attachment=file_attachment,
@@ -347,7 +422,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             text=text,
             issue_opened=issue_opened,
             issue_status=issue_status,
-            reply_to=reply_to)
+            reply_to=reply_to,
+            **kwargs)
 
         if extra_fields:
             comment.extra_data = extra_fields
@@ -500,9 +576,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             visibility=visibility,
             user=user)
 
-    def create_review(self, review_request, user='dopey', username=None,
+    def create_review(self, review_request, user='dopey',
                       body_top='Test Body Top', body_bottom='Test Body Bottom',
-                      ship_it=False, publish=False):
+                      ship_it=False, publish=False, **kwargs):
         """Creates a Review for testing.
 
         The Review is tied to the given ReviewRequest. It's populated with
@@ -511,6 +587,33 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         The provided user may either be a username or a User object.
 
         If publish is True, Review.publish() will be called.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request the review is filed against.
+
+            user (unicode or django.contrib.auth.models.User, optional):
+                The username or User object owning the review.
+
+            body_top (unicode, optional):
+                The text for the ``body_top`` field.
+
+            body_bottom (unicode, optional):
+                The text for the ``body_bottom`` field.
+
+            ship_it (bool, optional):
+                The Ship It state for the review.
+
+            publish (bool, optional):
+                Whether to publish the review immediately after creation.
+
+            **kwargs (dict):
+                Additional attributes to set in the review.
+
+        Returns:
+            reviewboard.reviews.models.review.Review:
+            The resulting review.
         """
         if not isinstance(user, User):
             user = User.objects.get(username=user)
@@ -520,7 +623,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             user=user,
             body_top=body_top,
             body_bottom=body_bottom,
-            ship_it=ship_it)
+            ship_it=ship_it,
+            **kwargs)
 
         if publish:
             review.publish()
@@ -601,16 +705,58 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
     def create_screenshot_comment(self, review, screenshot, text='My comment',
                                   x=1, y=1, w=5, h=5, issue_opened=False,
-                                  extra_fields=None, reply_to=None, **kwargs):
-        """Creates a ScreenshotComment for testing.
+                                  issue_status=None, extra_fields=None,
+                                  reply_to=None, **kwargs):
+        """Create a ScreenshotComment for testing.
 
         The comment is tied to the given Review and Screenshot. It's
         It's populated with default data that can be overridden by the caller.
+
+        Args:
+            review (reviewboard.reviews.models.review.Review):
+                The review associated with the comment.
+
+            screenshot (reviewboard.reviews.models.screenshot.Screenshot):
+                The screenshot associated with the comment.
+
+            text (unicode):
+                The text for the comment.
+
+            x (int, optional):
+                The X location for the comment on the screenshot.
+
+            y (int, optional):
+                The Y location for the comment on the screenshot.
+
+            w (int, optional):
+                The width for the comment on the screenshot.
+
+            h (int, optional):
+                The height for the comment on the screenshot.
+
+            issue_opened (bool, optional):
+                Whether an issue is to be opened for the comment.
+
+            issue_status (unicode, optional):
+                The issue status to set, if an issue is opened. Defaults to
+                being an open issue.
+
+            extra_fields (dict, optional):
+                Extra data to set on the comment.
+
+            reply_to (reviewboard.reviews.models.general_comment.
+                      GeneralComment, optional):
+                The comment this comment replies to.
+
+            **kwargs (dict):
+                Additional model attributes to set on the comment.
+
+        Returns:
+            reviewboard.reviews.models.screenshot_comment.ScreenshotComment:
+            The resulting comment.
         """
-        if issue_opened:
-            issue_status = Comment.OPEN
-        else:
-            issue_status = None
+        if issue_opened and not issue_status:
+            issue_status = ScreenshotComment.OPEN
 
         comment = ScreenshotComment(
             screenshot=screenshot,
@@ -706,23 +852,50 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         return file_attachment
 
     def create_general_comment(self, review, text='My comment',
-                               issue_opened=False, extra_fields=None,
-                               reply_to=None, **kwargs):
-        """Creates a GeneralComment for testing.
+                               issue_opened=False, issue_status=None,
+                               extra_fields=None, reply_to=None, **kwargs):
+        """Create a GeneralComment for testing.
 
         The comment is tied to the given Review. It is populated with
         default data that can be overridden by the caller.
+
+        Args:
+            review (reviewboard.reviews.models.review.Review):
+                The review associated with the comment.
+
+            text (unicode):
+                The text for the comment.
+
+            issue_opened (bool, optional):
+                Whether an issue is to be opened for the comment.
+
+            issue_status (unicode, optional):
+                The issue status to set, if an issue is opened. Defaults to
+                being an open issue.
+
+            extra_fields (dict, optional):
+                Extra data to set on the comment.
+
+            reply_to (reviewboard.reviews.models.general_comment.
+                      GeneralComment, optional):
+                The comment this comment replies to.
+
+            **kwargs (dict):
+                Additional model attributes to set on the comment.
+
+        Returns:
+            reviewboard.reviews.models.general_comment.GeneralComment:
+            The resulting comment.
         """
-        if issue_opened:
-            issue_status = Comment.OPEN
-        else:
-            issue_status = None
+        if issue_opened and not issue_status:
+            issue_status = GeneralComment.OPEN
 
         comment = GeneralComment(
             text=text,
             issue_opened=issue_opened,
             issue_status=issue_status,
-            reply_to=reply_to)
+            reply_to=reply_to,
+            **kwargs)
 
         if extra_fields:
             comment.extra_data = extra_fields
@@ -735,6 +908,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def create_status_update(self, review_request, user='dopey',
                              service_id='service', summary='Status Update',
                              state=StatusUpdate.PENDING,
+                             review=None,
                              change_description=None):
         """Create a status update for testing.
 
@@ -758,7 +932,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 The state for the new model. This must be one of the valid
                 choices for the state field.
 
-            change_description (reviewboard.changedescs.models.ChangeDescription, optional):
+            review (reviewboard.reviews.models.review.Review, optional):
+                The review associated with this status update.
+
+            change_description (reviewboard.changedescs.models.
+                                ChangeDescription, optional):
                 The change description for this status update.
 
         Returns:
@@ -774,6 +952,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             service_id=service_id,
             summary=summary,
             state=state,
+            review=review,
             user=user)
 
     def create_webhook(self, enabled=False, events=WebHookTarget.ALL_EVENTS,
