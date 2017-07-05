@@ -1,13 +1,17 @@
 from __future__ import unicode_literals
 
-from django.contrib.auth.models import Permission, User
-from django.http import HttpRequest
+from django.contrib.auth.models import AnonymousUser, Permission, User
+from django.core.urlresolvers import ResolverMatch
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.template import Context, Template
+from django.test.client import RequestFactory
+from django.views.generic.base import View
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.site.context_processors import AllPermsWrapper
 from reviewboard.site.middleware import LocalSiteMiddleware
+from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing.testcase import TestCase
@@ -215,3 +219,93 @@ class TemplateTagTests(TestCase):
 
         t = Template('{% url "user" "sample-user" %}')
         self.assertEqual(t.render(context), '/s/test/users/sample-user/')
+
+
+class CheckLocalSiteAccessViewMixinTests(TestCase):
+    """Unit tests for CheckLocalSiteAccessViewMixin."""
+
+    @add_fixtures(['test_site', 'test_users'])
+    def test_dispatch_with_local_site_and_allowed(self):
+        """Testing CheckLocalSiteAccessViewMixin.dispatch with LocalSite and
+        access allowed
+        """
+        class MyView(CheckLocalSiteAccessViewMixin, View):
+            def get(view, *args, **kwargs):
+                self.assertIsNotNone(view.local_site)
+                self.assertEqual(view.local_site.name, 'local-site-1')
+
+                return HttpResponse('success')
+
+        request = RequestFactory().request()
+        request.local_site = LocalSite.objects.get(name='local-site-1')
+        request.user = request.local_site.users.all()[0]
+
+        view = MyView.as_view()
+        response = view(request, local_site_name='local-site-1')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, 'success')
+
+    @add_fixtures(['test_site', 'test_users'])
+    def test_dispatch_with_local_site_and_not_allowed(self):
+        """Testing CheckLocalSiteAccessViewMixin.dispatch with LocalSite and
+        access not allowed
+        """
+        class MyView(CheckLocalSiteAccessViewMixin, View):
+            def get(view, *args, **kwargs):
+                self.assertIsNotNone(view.local_site)
+                self.assertEqual(view.local_site.name, 'local-site-1')
+
+                return HttpResponse('success')
+
+        view = MyView.as_view()
+
+        request = RequestFactory().request()
+        request.resolver_match = ResolverMatch(view, [], {})
+        request.local_site = LocalSite.objects.get(name='local-site-1')
+        request.user = User.objects.create(username='test123')
+
+        response = view(request, local_site_name='local-site-1')
+        self.assertEqual(response.status_code, 403)
+
+    @add_fixtures(['test_site'])
+    def test_dispatch_with_local_site_and_anonymous(self):
+        """Testing CheckLocalSiteAccessViewMixin.dispatch with LocalSite and
+        anonymous user
+        """
+        class MyView(CheckLocalSiteAccessViewMixin, View):
+            def get(view, *args, **kwargs):
+                self.assertIsNotNone(view.local_site)
+                self.assertEqual(view.local_site.name, 'local-site-1')
+
+                return HttpResponse('success')
+
+        view = MyView.as_view()
+
+        request = RequestFactory().request()
+        request.resolver_match = ResolverMatch(view, [], {})
+        request.local_site = LocalSite.objects.get(name='local-site-1')
+        request.user = AnonymousUser()
+
+        response = view(request, local_site_name='local-site-1')
+        self.assertIsInstance(response, HttpResponseRedirect)
+
+    @add_fixtures(['test_site', 'test_users'])
+    def test_dispatch_with_no_local_site(self):
+        """Testing CheckLocalSiteAccessViewMixin.dispatch with no LocalSite"""
+        class MyView(CheckLocalSiteAccessViewMixin, View):
+            def get(view, *args, **kwargs):
+                self.assertIsNone(view.local_site)
+
+                return HttpResponse('success')
+
+        view = MyView.as_view()
+
+        request = RequestFactory().request()
+        request.resolver_match = ResolverMatch(view, [], {})
+        request.local_site = None
+        request.user = User.objects.get(username='doc')
+
+        response = view(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, 'success')

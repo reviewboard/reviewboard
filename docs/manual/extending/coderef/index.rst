@@ -26,6 +26,7 @@ User Accounts
    reviewboard.accounts.decorators
    reviewboard.accounts.errors
    reviewboard.accounts.managers
+   reviewboard.accounts.mixins
    reviewboard.accounts.models
    reviewboard.accounts.pages
    reviewboard.accounts.trophies
@@ -199,6 +200,7 @@ Local Sites
    :toctree: python
 
    reviewboard.site.decorators
+   reviewboard.site.mixins
    reviewboard.site.models
    reviewboard.site.signals
    reviewboard.site.urlresolvers
