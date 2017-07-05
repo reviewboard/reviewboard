@@ -350,29 +350,6 @@ def _query_for_diff(review_request, user, revision, draft):
         raise Http404
 
 
-def _get_social_page_image_url(file_attachments):
-    """Return the URL to an image used for social media sharing.
-
-    This will look for the first attachment in a list of attachments that can
-    be used to represent the review request on social media sites and chat
-    services. If a suitable attachment is found, its URL will be returned.
-
-    Args:
-        file_attachments (list of reviewboard.attachments.models.FileAttachment):
-            A list of file attachments used on a review request.
-
-    Returns:
-        unicode:
-        The URL to the first image file attachment, if found, or ``None``
-        if no suitable attachments were found.
-    """
-    for file_attachment in file_attachments:
-        if file_attachment.mimetype.startswith('image/'):
-            return file_attachment.get_absolute_url()
-
-    return None
-
-
 def build_diff_comment_fragments(
     comments, context,
     comment_template_name='reviews/diff_comment_fragment.html',
@@ -863,71 +840,108 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
         return context
 
 
-class ReviewsDiffViewerView(DiffViewerView):
+class ReviewsDiffViewerView(ReviewRequestViewMixin, DiffViewerView):
     """Renders the diff viewer for a review request.
 
-    This wraps the base DiffViewerView to display a diff for the given
-    review request and the given diff revision or range.
+    This wraps the base
+    :py:class:`~reviewboard.diffviewer.views.DiffViewerView` to display a diff
+    for the given review request and the given diff revision or range.
 
     The view expects the following parameters to be provided:
 
-        * review_request_id
-          - The ID of the ReviewRequest containing the diff to render.
+    ``review_request_id``:
+        The ID of the ReviewRequest containing the diff to render.
 
     The following may also be provided:
 
-        * revision
-          - The DiffSet revision to render.
+    ``revision``:
+        The DiffSet revision to render.
 
-        * interdiff_revision
-          - The second DiffSet revision in an interdiff revision range.
+    ``interdiff_revision``:
+        The second DiffSet revision in an interdiff revision range.
 
-        * local_site
-          - The LocalSite the ReviewRequest must be on, if any.
+    ``local_site``:
+        The LocalSite the ReviewRequest must be on, if any.
 
-    See DiffViewerView's documentation for the accepted query parameters.
+    See :py:class:`~reviewboard.diffviewer.views.DiffViewerView`'s
+    documentation for the accepted query parameters.
     """
-    @method_decorator(check_login_required)
-    @method_decorator(check_local_site_access)
-    @augment_method_from(DiffViewerView)
-    def dispatch(self, *args, **kwargs):
-        pass
 
-    def get(self, request, review_request_id, revision=None,
-            interdiff_revision=None, local_site=None):
-        """Handles GET requests for this view.
+    def __init__(self, **kwargs):
+        """Initialize a view for the request.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments passed to :py:meth:`as_view`.
+        """
+        super(ReviewsDiffViewerView, self).__init__(**kwargs)
+
+        self.draft = None
+        self.diffset = None
+        self.interdiffset = None
+
+    def get(self, request, revision=None, interdiff_revision=None, *args,
+            **kwargs):
+        """Handle HTTP GET requests for this view.
 
         This will look up the review request and DiffSets, given the
         provided information, and pass them to the parent class for rendering.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            revision (int, optional):
+                The revision of the diff to view. This defaults to the latest
+                diff.
+
+            interdiff_revision (int, optional):
+                The revision to use for an interdiff, if viewing an interdiff.
+
+            *args (tuple):
+                Positional arguments passed to the handler.
+
+            **kwargs (dict):
+                Keyword arguments passed to the handler.
+
+        Returns:
+            django.http.HttpResponse:
+            The HTTP response to send to the client.
         """
-        review_request, response = \
-            _find_review_request(request, review_request_id, local_site)
+        review_request = self.review_request
 
-        if not review_request:
-            return response
-
-        self.review_request = review_request
         self.draft = review_request.get_draft(request.user)
-        self.diffset = _query_for_diff(review_request, request.user,
-                                       revision, self.draft)
-        self.interdiffset = None
+        self.diffset = self.get_diff(revision, self.draft)
 
         if interdiff_revision and interdiff_revision != revision:
             # An interdiff revision was specified. Try to find a matching
             # diffset.
-            self.interdiffset = _query_for_diff(review_request, request.user,
-                                                interdiff_revision, self.draft)
+            self.interdiffset = self.get_diff(interdiff_revision, self.draft)
 
         return super(ReviewsDiffViewerView, self).get(
-            request, self.diffset, self.interdiffset)
+            request=request,
+            diffset=self.diffset,
+            interdiffset=self.interdiffset,
+            *args,
+            **kwargs)
 
-    def get_context_data(self, *args, **kwargs):
-        """Calculates additional context data for rendering.
+    def get_context_data(self, **kwargs):
+        """Return additional context data for the template.
 
         This provides some additional data used for rendering the diff
         viewer. This data is more specific to the reviewing functionality,
-        as opposed to the data calculated by DiffViewerView.get_context_data,
+        as opposed to the data calculated by
+        :py:meth:`DiffViewerView.get_context_data
+        <reviewboard.diffviewer.views.DiffViewerView.get_context_data>`
         which is more focused on the actual diff.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments passed to the handler.
+
+        Returns:
+            django.template.RequestContext:
+            Context data used to render the template.
         """
         # Try to find an existing pending review of this diff from the
         # current user.
@@ -960,7 +974,7 @@ class ReviewsDiffViewerView(DiffViewerView):
         screenshots = list(review_request_details.get_screenshots())
 
         latest_file_attachments = get_latest_file_attachments(file_attachments)
-        social_page_image_url = _get_social_page_image_url(
+        social_page_image_url = self.get_social_page_image_url(
             latest_file_attachments)
 
         # Compute the lists of comments based on filediffs and interfilediffs.
@@ -980,11 +994,9 @@ class ReviewsDiffViewerView(DiffViewerView):
         close_description, close_description_rich_text = \
             self.review_request.get_close_description()
 
-        context = super(ReviewsDiffViewerView, self).get_context_data(
-            *args, **kwargs)
-
         siteconfig = SiteConfiguration.objects.get_current()
 
+        context = super(ReviewsDiffViewerView, self).get_context_data(**kwargs)
         context.update({
             'close_description': close_description,
             'close_description_rich_text': close_description_rich_text,
@@ -1006,14 +1018,14 @@ class ReviewsDiffViewerView(DiffViewerView):
                    review_request_details.summary)
             ),
         })
-
-        context.update(
-            make_review_request_context(self.request,
-                                        self.review_request,
-                                        is_diff_view=True))
+        context.update(make_review_request_context(self.request,
+                                                   self.review_request,
+                                                   is_diff_view=True))
 
         diffset_pair = context['diffset_pair']
-        context['diff_context'].update({
+        diff_context = context['diff_context']
+
+        diff_context.update({
             'num_diffs': num_diffs,
             'comments_hint': {
                 'has_other_comments': has_comments_in_diffsets_excluding(
@@ -1037,7 +1049,7 @@ class ReviewsDiffViewerView(DiffViewerView):
                 ],
             },
         })
-        context['diff_context']['revision'].update({
+        diff_context['revision'].update({
             'latest_revision': (latest_diffset.revision
                                 if latest_diffset else None),
             'is_draft_diff': is_draft_diff,
@@ -1045,6 +1057,7 @@ class ReviewsDiffViewerView(DiffViewerView):
         })
 
         files = []
+
         for f in context['files']:
             filediff = f['filediff']
             interfilediff = f['interfilediff']
@@ -1052,13 +1065,13 @@ class ReviewsDiffViewerView(DiffViewerView):
                 'newfile': f['newfile'],
                 'binary': f['binary'],
                 'deleted': f['deleted'],
-                'id': f['filediff'].pk,
+                'id': filediff.pk,
                 'depot_filename': f['depot_filename'],
                 'dest_filename': f['dest_filename'],
                 'dest_revision': f['dest_revision'],
                 'revision': f['revision'],
                 'filediff': {
-                    'id': filediff.id,
+                    'id': filediff.pk,
                     'revision': filediff.diffset.revision,
                 },
                 'index': f['index'],
@@ -1068,7 +1081,7 @@ class ReviewsDiffViewerView(DiffViewerView):
 
             if interfilediff:
                 data['interfilediff'] = {
-                    'id': interfilediff.id,
+                    'id': interfilediff.pk,
                     'revision': interfilediff.diffset.revision,
                 }
 
@@ -1078,7 +1091,7 @@ class ReviewsDiffViewerView(DiffViewerView):
 
             files.append(data)
 
-        context['diff_context']['files'] = files
+        diff_context['files'] = files
 
         return context
 
