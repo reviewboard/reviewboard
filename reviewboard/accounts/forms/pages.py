@@ -4,6 +4,7 @@ import logging
 
 from django import forms
 from django.contrib import messages
+from django.core.urlresolvers import reverse
 from django.forms import widgets
 from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext_lazy as _
@@ -15,6 +16,8 @@ from djblets.configforms.forms import ConfigPageForm
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.avatars import avatar_services
+from reviewboard.oauth.features import oauth2_service_feature
+from reviewboard.oauth.models import Application
 from reviewboard.reviews.models import Group
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -392,3 +395,76 @@ class GroupsForm(AccountPageForm):
             }
             for group in groups.order_by('name')
         ]
+
+
+class OAuthApplicationsForm(AccountPageForm):
+    """The OAuth Application form.
+
+    This provides a list of all current OAuth2 applications the user has
+    access to.
+    """
+
+    form_id = 'oauth'
+    form_title = _('OAuth Applications')
+    js_view_class = 'RB.OAuthApplicationsView'
+
+    save_label = None
+
+    def get_js_view_data(self):
+        """Return the data for the associated Javascript view.
+
+        Returns:
+            dict:
+            Data to be passed to the Javascript view.
+        """
+        apps = [
+            self.serialize_app(app)
+            for app in (
+                Application.objects
+                .select_related('local_site')
+                .filter(user=self.user)
+            )
+        ]
+
+        return {
+            'addText': _('Add application'),
+            'apps': apps,
+            'emptyText': _('You have not registered any OAuth2 applications.'),
+            'editURL': reverse('edit-oauth-app'),
+        }
+
+    def is_visible(self):
+        """Return whether or not this form is visible.
+
+        This form is visible if and only if the OAuth2 feature is enabled.
+
+        Returns:
+            bool:
+            Whether or not this form is visible.
+        """
+        return oauth2_service_feature.is_enabled(request=self.request)
+
+    @staticmethod
+    def serialize_app(app):
+        """Serialize an application for the JavaScript view.
+
+        Args:
+            app (reviewboard.oauth.models.Application):
+                The application to serialize.
+
+        Returns:
+            dict:
+            The serialized application.
+        """
+        if app.local_site is not None:
+            local_site_name = app.local_site.name
+        else:
+            local_site_name = None
+
+        return {
+            'apiURL': local_site_reverse('oauth-app-resource',
+                                         local_site_name=local_site_name,
+                                         kwargs={'app_id': app.pk}),
+            'editURL': reverse('edit-oauth-app', kwargs={'app_id': app.pk}),
+            'name': app.name,
+        }

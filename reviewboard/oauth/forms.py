@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 from django import forms
 from django.core.exceptions import ValidationError
+from django.forms import widgets
 from django.utils.translation import ugettext, ugettext_lazy as _
 from djblets.forms.widgets import CopyableTextInput, ListEditWidget
 from oauth2_provider.validators import URIValidator
@@ -98,9 +99,9 @@ class ApplicationForm(forms.ModelForm):
             self._errors['redirect_uris'] = self.error_class([
                 ugettext(
                     'The "redirect_uris" field may not be blank when '
-                    '"authorization_grant_type" is %s"'
+                    '"authorization_grant_type" is "%s"'
                 )
-                % self.cleaned_data.get('authorization-grant_type')
+                % grant_type
             ])
 
             self.cleaned_data.pop('redirect_uris')
@@ -151,6 +152,7 @@ class ApplicationForm(forms.ModelForm):
                 'readonly':  True,
                 'size': 100,
             }),
+            'name': widgets.TextInput(attrs={'size': 60}),
             'redirect_uris': ListEditWidget(attrs={'size': 60}, sep=' '),
             'user': RelatedUserWidget(multivalued=False),
         }
@@ -165,3 +167,55 @@ class ApplicationForm(forms.ModelForm):
             'skip_authorization': _('Skip Authorization'),
             'user': _('User'),
         }
+
+
+class UserApplicationForm(ApplicationForm):
+    """A specialized form for end users.
+
+    This form removes the User field so that it cannot be assigned to another
+    user.
+    """
+
+    def __init__(self, user, data=None, instance=None):
+        """Initialize the form.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user editing the form. The resulting
+                :py:class:`~reviewboard.oauth.models.Application` will be
+                associated with this user.
+
+            data (dict, optional):
+                The form data.
+
+            instance (reviewboard.oauth.models.Application, optional):
+                The instance being edited. If this is not provided, a new
+                instance will be created when the form is saved.
+        """
+        super(UserApplicationForm, self).__init__(data=data, instance=instance)
+
+        self.user = user
+
+    def save(self, commit=True):
+        """Update the associated instance or create a new one.
+
+        Args:
+             commit (bool):
+                Whether or not the updated model will be saved to the database.
+
+        Returns:
+            reviewboard.oauth.models.Application:
+            The edited or created instance.
+        """
+        instance = super(UserApplicationForm, self).save(commit=False)
+
+        if not instance.pk:
+            instance.user = self.user
+
+        if commit:
+            instance.save()
+
+        return instance
+
+    class Meta(ApplicationForm.Meta):
+        exclude = ('extra_data', 'local_site', 'skip_authorization', 'user')

@@ -7,7 +7,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render_to_response
 from django.utils import six
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
@@ -17,6 +17,8 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.generic.base import TemplateView
 from djblets.auth.views import register
 from djblets.configforms.views import ConfigPagesView
+from djblets.features.decorators import feature_required
+from djblets.forms.fieldsets import filter_fieldsets
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
 from djblets.views.generic.etag import ETagViewMixin
@@ -25,11 +27,15 @@ from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.accounts.forms.registration import RegistrationForm
 from reviewboard.accounts.mixins import CheckLoginRequiredViewMixin
 from reviewboard.accounts.models import Profile
-from reviewboard.accounts.pages import AccountPage
+from reviewboard.accounts.pages import AccountPage, OAuth2Page
 from reviewboard.avatars import avatar_services
 from reviewboard.notifications.email.decorators import preview_email
 from reviewboard.notifications.email.message import \
     prepare_password_changed_mail
+from reviewboard.oauth.admin import ApplicationAdmin
+from reviewboard.oauth.features import oauth2_service_feature
+from reviewboard.oauth.forms import UserApplicationForm
+from reviewboard.oauth.models import Application
 from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -247,3 +253,57 @@ def preview_password_changed_email(request):
     return {
         'user': request.user,
     }
+
+
+@login_required
+@feature_required(oauth2_service_feature)
+def edit_oauth_app(request, app_id=None):
+    """Create or edit an OAuth2 application.
+
+    Args:
+        request (django.http.HttpRequest):
+            The current HTTP request.
+
+        app_id (int, optional):
+            The ID of the application to edit.
+
+            If this argument is ``None`` a new application will be edited.
+
+    Returns:
+        django.http.HttpResponse:
+        The rendered view.
+    """
+    if app_id:
+        app = get_object_or_404(
+            Application,
+            pk=app_id,
+            user=request.user,
+        )
+    else:
+        app = None
+
+    if request.method == 'POST':
+        form_data = request.POST.copy()
+        form_data['user'] = request.user.pk
+
+        form = UserApplicationForm(user=request.user,
+                                   data=form_data,
+                                   instance=app)
+
+        if form.is_valid():
+            form.save()
+
+            return HttpResponseRedirect(OAuth2Page.get_absolute_url())
+    else:
+        form = UserApplicationForm(user=request.user,
+                                   instance=app)
+
+    return render_to_response(
+        'accounts/edit_oauth_app.html',
+        {
+            'app': app,
+            'form': form,
+            'fieldsets': filter_fieldsets(ApplicationAdmin, form),
+            'oauth2_page_url': OAuth2Page.get_absolute_url(),
+            'request': request,
+        })

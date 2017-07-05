@@ -13,11 +13,12 @@ from djblets.registries.mixins import ExceptionFreeGetterMixin
 
 from reviewboard.admin.server import build_server_url
 from reviewboard.accounts.forms.pages import (AccountSettingsForm,
-                                              AvatarSettingsForm,
                                               APITokensForm,
+                                              AvatarSettingsForm,
                                               ChangePasswordForm,
+                                              GroupsForm,
                                               ProfileForm,
-                                              GroupsForm)
+                                              OAuthApplicationsForm)
 
 
 class AccountPageRegistry(ExceptionFreeGetterMixin, ConfigPageRegistry):
@@ -32,7 +33,7 @@ class AccountPageRegistry(ExceptionFreeGetterMixin, ConfigPageRegistry):
             type: The page classes, as subclasses of :py:class:`AccountPage`.
         """
         return (GroupsPage, AccountSettingsPage, AuthenticationPage,
-                ProfilePage, APITokensPage)
+                ProfilePage, APITokensPage, OAuth2Page)
 
     def unregister(self, page_class):
         """Unregister the page class.
@@ -74,6 +75,7 @@ class AccountPage(DynamicConfigPageMixin, ConfigPage):
             unicode:
             The absolute URL of the page.
         """
+        assert cls.page_id
         return (
             '%s#%s'
             % (build_server_url(reverse('user-preferences')),
@@ -123,6 +125,14 @@ class GroupsPage(AccountPage):
     page_id = 'groups'
     page_title = _('Groups')
     form_classes = [GroupsForm]
+
+
+class OAuth2Page(AccountPage):
+    """A page containing a list of OAuth2 applications to manage."""
+
+    page_id = 'oauth2'
+    page_title = 'OAuth2 Applications'
+    form_classes = [OAuthApplicationsForm]
 
 
 def register_account_page_class(cls):

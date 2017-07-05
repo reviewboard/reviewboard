@@ -57,7 +57,10 @@ urlpatterns = [
             'template_name': 'accounts/password_reset_complete.html',
         },
         name='password_reset_complete'),
+    url(r'^preferences/oauth2-application/(?:(?P<app_id>[0-9]+)/)?$',
+        accounts_views.edit_oauth_app,
+        name='edit-oauth-app'),
     url(r'^preferences/preview-email/password-changed/$',
         accounts_views.preview_password_changed_email,
-        name='preview-password-change-email')
+        name='preview-password-change-email'),
 ]

@@ -27,7 +27,7 @@ class ApplicationAdmin(admin.ModelAdmin):
             'fields': ('name',
                        'enabled',
                        'user',
-                       'redirect_uris'),
+                       'redirect_uris',),
         }),
 
         (_('Client Settings'), {

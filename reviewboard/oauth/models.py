@@ -39,7 +39,9 @@ class Application(AbstractApplication):
         related_name='oauth_applications',
         blank=True,
         null=True,
-        help_text=_('An optional LocalSite to limit this application to.'),
+        help_text=_('An optional Local Site to limit this application to.<br>'
+                    'If specified, only users with access to the Local Site '
+                    'will be able to use the application.'),
     )
 
     extra_data = JSONField(
