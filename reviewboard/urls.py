@@ -7,6 +7,7 @@ from django.contrib import admin
 from django.views.generic import TemplateView
 from djblets.util.views import cached_javascript_catalog
 
+from reviewboard.accounts import views as accounts_views
 from reviewboard.admin import views as admin_views
 from reviewboard.attachments import views as attachments_views
 from reviewboard.datagrids.urls import urlpatterns as datagrid_urlpatterns
@@ -102,7 +103,7 @@ localsite_urlpatterns = [
     url(r'^users/(?P<username>[\w.@+-]+)/', include([
         # User info box
         url(r'^infobox/$',
-            reviews_views.user_infobox,
+            accounts_views.UserInfoboxView.as_view(),
             name='user-infobox'),
 
         # User file attachments

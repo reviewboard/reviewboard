@@ -1,23 +1,177 @@
 from __future__ import unicode_literals
 
+import logging
+
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
+from django.utils import six
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
+from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.csrf import csrf_protect
+from django.views.generic.base import TemplateView
 from djblets.auth.views import register
 from djblets.configforms.views import ConfigPagesView
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import augment_method_from
+from djblets.views.generic.etag import ETagViewMixin
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.accounts.forms.registration import RegistrationForm
+from reviewboard.accounts.mixins import CheckLoginRequiredViewMixin
+from reviewboard.accounts.models import Profile
 from reviewboard.accounts.pages import AccountPage
+from reviewboard.avatars import avatar_services
 from reviewboard.notifications.email.decorators import preview_email
 from reviewboard.notifications.email.message import \
     prepare_password_changed_mail
+from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
+from reviewboard.site.urlresolvers import local_site_reverse
+
+
+class UserInfoboxView(CheckLoginRequiredViewMixin,
+                      CheckLocalSiteAccessViewMixin,
+                      ETagViewMixin,
+                      TemplateView):
+    """Displays information on a user, for use in user pop-up infoboxes.
+
+    This is meant to be embedded in other pages, rather than being
+    a standalone page.
+    """
+
+    template_name = 'accounts/user_infobox.html'
+
+    def __init__(self, **kwargs):
+        """Initialize a view for the request.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments passed to :py:meth:`as_view`.
+        """
+        super(UserInfoboxView, self).__init__(**kwargs)
+
+        self._lookup_user = None
+        self._show_profile = None
+        self._timezone = None
+
+    def get_etag_data(self, request, username, *args, **kwargs):
+        """Return an ETag for the view.
+
+        This will look up some state needed for the request and generate a
+        suitable ETag.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            username (unicode):
+                The username of the user being looked up.
+
+            *args (tuple):
+                Positional arguments to pass to the handler.
+
+            **kwargs (tuple):
+                Keyword arguments to pass to the handler.
+
+                These will be arguments provided by the URL pattern.
+
+        Returns:
+            unicode:
+            The ETag for the page.
+        """
+        from reviewboard.extensions.hooks import UserInfoboxHook
+
+        user = get_object_or_404(User, username=username)
+        self._lookup_user = user
+
+        try:
+            profile = user.get_profile()
+            self._show_profile = not profile.is_private
+            self._timezone = profile.timezone
+        except Profile.DoesNotExist:
+            self._show_profile = True
+            self._timezone = 'UTC'
+
+        etag_data = [
+            user.first_name,
+            user.last_name,
+            user.email,
+            six.text_type(user.last_login),
+            six.text_type(settings.TEMPLATE_SERIAL),
+            six.text_type(self._show_profile),
+            self._timezone,
+        ]
+
+        if avatar_services.avatars_enabled:
+            avatar_service = avatar_services.for_user(user)
+
+            if avatar_service:
+                etag_data.extend(avatar_service.get_etag_data(user))
+
+        local_site = self.local_site
+
+        for hook in UserInfoboxHook.hooks:
+            try:
+                etag_data.append(hook.get_etag_data(user, request, local_site))
+            except Exception as e:
+                logging.exception('Error when running UserInfoboxHook.'
+                                  'get_etag_data method in extension "%s": %s',
+                                  hook.extension.id, e)
+
+        return ':'.join(etag_data)
+
+    def get_context_data(self, **kwargs):
+        """Return data for the template.
+
+        This will return information on the user, along with information from
+        any extension hooks used for the page.
+
+        Args:
+            **kwargs (tuple):
+                Additional keyword arguments from the URL pattern.
+
+        Returns:
+            dict:
+            Context data for the template.
+        """
+        from reviewboard.extensions.hooks import UserInfoboxHook
+
+        # These are accessed several times, so bring them in to reduce
+        # attribute lookups.
+        user = self._lookup_user
+        username = user.username
+        local_site = self.local_site
+
+        extra_content = []
+
+        for hook in UserInfoboxHook.hooks:
+            try:
+                extra_content.append(hook.render(user, self.request,
+                                                 local_site))
+            except Exception as e:
+                logging.exception('Error when running UserInfoboxHook.'
+                                  'render method in extension "%s": %s',
+                                  hook.extension.id, e)
+
+        review_requests_url = local_site_reverse('user', local_site=local_site,
+                                                 args=[username])
+        reviews_url = local_site_reverse('user-grid', local_site=local_site,
+                                         args=[username, 'reviews'])
+
+        return {
+            'extra_content': mark_safe(''.join(extra_content)),
+            'full_name': user.get_full_name(),
+            'infobox_user': user,
+            'review_requests_url': review_requests_url,
+            'reviews_url': reviews_url,
+            'show_profile': self._show_profile,
+            'timezone': self._timezone,
+        }
 
 
 @csrf_protect

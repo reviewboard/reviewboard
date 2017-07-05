@@ -5,7 +5,6 @@ import time
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from django.db.models import Q
@@ -36,7 +35,6 @@ from reviewboard.accounts.decorators import (check_login_required,
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
 from reviewboard.attachments.models import (FileAttachment,
                                             get_latest_file_attachments)
-from reviewboard.avatars import avatar_services
 from reviewboard.diffviewer.diffutils import (convert_to_unicode,
                                               get_file_chunks_in_range,
                                               get_last_header_before_line,
@@ -1316,86 +1314,6 @@ def view_screenshot(request, review_request_id, screenshot_id,
     review_ui = LegacyScreenshotReviewUI(review_request, screenshot)
 
     return review_ui.render_to_response(request)
-
-
-@check_login_required
-@check_local_site_access
-def user_infobox(request, username,
-                 template_name='accounts/user_infobox.html',
-                 local_site=None):
-    """Displays a user info popup.
-
-    This is meant to be embedded in other pages, rather than being
-    a standalone page.
-    """
-    from reviewboard.extensions.hooks import UserInfoboxHook
-
-    user = get_object_or_404(User, username=username)
-
-    try:
-        profile = user.get_profile()
-        show_profile = not profile.is_private
-        timezone = profile.timezone
-    except Profile.DoesNotExist:
-        show_profile = True
-        timezone = 'UTC'
-
-    etag_data = [
-        user.first_name,
-        user.last_name,
-        user.email,
-        six.text_type(user.last_login),
-        six.text_type(settings.TEMPLATE_SERIAL),
-        six.text_type(show_profile),
-        timezone,
-    ]
-
-    if avatar_services.avatars_enabled:
-        avatar_service = avatar_services.for_user(user)
-
-        if avatar_service:
-            etag_data.extend(avatar_service.get_etag_data(user))
-
-    for hook in UserInfoboxHook.hooks:
-        try:
-            etag_data.append(hook.get_etag_data(user, request, local_site))
-        except Exception as e:
-            logging.exception('Error when running UserInfoboxHook.'
-                              'get_etag_data method in extension "%s": %s',
-                              hook.extension.id, e)
-
-    etag = encode_etag(':'.join(etag_data))
-
-    if etag_if_none_match(request, etag):
-        return HttpResponseNotModified()
-
-    extra_content = []
-
-    for hook in UserInfoboxHook.hooks:
-        try:
-            extra_content.append(hook.render(user, request, local_site))
-        except Exception as e:
-            logging.exception('Error when running UserInfoboxHook.'
-                              'render method in extension "%s": %s',
-                              hook.extension.id, e)
-
-    review_requests_url = local_site_reverse('user', local_site=local_site,
-                                             args=[username])
-    reviews_url = local_site_reverse('user-grid', local_site=local_site,
-                                     args=[username, 'reviews'])
-
-    response = render_to_response(template_name, RequestContext(request, {
-        'extra_content': mark_safe(''.join(extra_content)),
-        'full_name': user.get_full_name(),
-        'infobox_user': user,
-        'review_requests_url': review_requests_url,
-        'reviews_url': reviews_url,
-        'show_profile': show_profile,
-        'timezone': timezone,
-    }))
-    set_etag(response, etag)
-
-    return response
 
 
 @check_login_required
