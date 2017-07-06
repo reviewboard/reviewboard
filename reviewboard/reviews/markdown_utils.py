@@ -17,6 +17,7 @@ MARKDOWN_KWARGS = {
     'lazy_ol': False,
     'extensions': [
         'fenced_code', 'codehilite', 'sane_lists', 'smart_strong', 'nl2br',
+        'markdown.extensions.tables',
         'djblets.markdown.extensions.wysiwyg',
     ],
     'extension_configs': {
