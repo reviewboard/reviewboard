@@ -15,10 +15,10 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields,
                                        webapi_response_errors)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA)
-from oauth2_provider.generators import (generate_client_id,
-                                        generate_client_secret)
+from oauth2_provider.generators import generate_client_secret
 
-from reviewboard.oauth.forms import ApplicationForm
+from reviewboard.oauth.forms import (ApplicationChangeForm,
+                                     ApplicationCreationForm)
 from reviewboard.oauth.models import Application
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
@@ -34,7 +34,8 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
     verbose_name = _('OAuth2 Applications')
     uri_object_key = 'app_id'
 
-    form_class = ApplicationForm
+    form_class = ApplicationChangeForm
+    add_form_class = ApplicationCreationForm
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
 
@@ -405,8 +406,15 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
                                            local_site=local_site):
             return self.get_no_access_error(request)
 
+        try:
+            regenerate_secret = parsed_request_fields.pop(
+                'regenerate_client_secret')
+        except KeyError:
+            regenerate_secret = False
+
         return self._create_or_update(request, parsed_request_fields,
-                                      extra_fields, app, local_site)
+                                      extra_fields, app, local_site,
+                                      regenerate_secret=regenerate_secret)
 
     @webapi_login_required
     @webapi_check_local_site
@@ -429,7 +437,7 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
         return 204, {}
 
     def _create_or_update(self, request, parsed_request_fields, extra_fields,
-                          instance, local_site):
+                          instance, local_site, regenerate_secret=False):
         """Create or update an application.
 
         Args:
@@ -449,6 +457,9 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
             local_site (reviewboard.site.models.LocalSite):
                 The LocalSite the API is being accessed through.
 
+            regenerate_secret (bool, optional):
+                Whether or not the secret on the
+
         Returns:
             tuple:
             A 2-tuple of:
@@ -457,7 +468,11 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
               :py:class:`djblets.webapi.error.WebAPIError`).
             * The response body to encode (:py:class:`dict`).
         """
-        username = parsed_request_fields.get('user')
+        try:
+            username = parsed_request_fields.pop('user')
+        except KeyError:
+            username = None
+
         skip_authorization = parsed_request_fields.get('skip_authorization',
                                                        False)
         change_owner = (username is not None and
@@ -498,46 +513,39 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
                     errors['user'].append('The user "%s" does not exist.'
                                           % username)
 
-        if not change_owner:
-            if instance is None:
-                user_pk = request.user.pk
-            else:
-                # Do not update the user field during an update when it is not
-                # explicitly provided.
-                pass
-
         if errors:
             return INVALID_FORM_DATA, {
                 'fields': errors,
             }
 
-        try:
-            generate_secret = parsed_request_fields.pop(
-                'regenerate_client_secret')
-        except KeyError:
-            generate_secret = False
-
         form_data = parsed_request_fields.copy()
+
+        # When creating the application, if a user is not provided, set it to
+        # the user making the request.
+        #
+        # Do not update the user field during an update when it is not
+        # explicitly provided.
+        if user_pk is None and instance is None:
+            assert not change_owner
+            user_pk = request.user.pk
 
         if user_pk is not None:
             form_data['user'] = user_pk
-        elif 'user' in form_data:
-            del form_data['user']
 
-        enabled = parsed_request_fields.get('enabled', False)
-
-        if (generate_secret or
-            instance is None or
-            (instance.is_disabled_for_security and enabled)):
-            form_data['original_user'] = ''
-            form_data['client_secret'] = generate_client_secret()
-
-        if instance is None:
-            form_data['client_id'] = generate_client_id()
+        if not instance:
             form_data.setdefault('enabled', True)
 
             if local_site:
                 form_data['local_site'] = local_site.pk
+        elif regenerate_secret:
+            # We are setting these directly on the instance because the form
+            # does not support updating the client_secret field.
+            instance.client_secret = generate_client_secret()
+
+            # Setting instance.original_user to be blank will make
+            # instance.is_disabled_for_security False so that the form will
+            # validate.
+            instance.original_user = None
 
         form = self.create_form(form_data, request, instance)
 
@@ -547,10 +555,10 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
             else:
                 status_code = 200
 
-            result = self.save_form(form, extra_fields)
+            instance = self.save_form(form, extra_fields)
 
             return status_code, {
-                self.item_result_key: result,
+                self.item_result_key: instance,
             }
         else:
             return INVALID_FORM_DATA, {

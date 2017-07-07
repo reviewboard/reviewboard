@@ -39,6 +39,9 @@ OAuth2 Applications -- Edit {{app_name}}
  </h1>
 </div>
 <div class="box-main box-foot">
+{%   if form.non_field_errors %}
+ {{form.non_field_errors}}
+{%   endif %}
  <form action="." method="POST">
 {%   for fieldset_title, fieldset in fieldsets %}
 {%    include "djblets_forms/admin/form_fieldset.html" %}
