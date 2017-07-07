@@ -8,7 +8,6 @@ page.addBox(new RB.ChangeBoxView({
     el: $('#changedesc{{entry.changedesc.id}}'),
     reviewRequest: page.reviewRequest,
     reviewRequestEditorView: page.reviewRequestEditorView,
-    showSendEmail: {{send_email|yesno:'true,false'}},
     reviews: [
 {% for update in entry.status_updates %}
 {%  if update.review_id %}

@@ -324,6 +324,18 @@ def get_hosting_service_account_item_url(account_or_id, local_site_name=None):
 
 
 #
+# OAuthApplicationResource
+#
+def get_oauth_app_list_url(local_site_name=None):
+    return resources.oauth_app.get_list_url(local_site_name=local_site_name)
+
+
+def get_oauth_app_item_url(app_id, local_site_name=None):
+    return resources.oauth_app.get_item_url(local_site_name=local_site_name,
+                                            app_id=app_id)
+
+
+#
 # OriginalFileResource
 #
 def get_original_file_url(review_request, diffset, filediff,

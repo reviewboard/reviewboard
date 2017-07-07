@@ -5,7 +5,6 @@ import time
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from django.db.models import Q
@@ -25,18 +24,21 @@ from django.utils.http import http_date
 from django.utils.safestring import mark_safe
 from django.utils.timezone import utc
 from django.utils.translation import ugettext_lazy as _
+from django.views.generic.base import TemplateView
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import (encode_etag, set_last_modified,
                                set_etag, etag_if_none_match)
+from djblets.views.generic.base import PrePostDispatchViewMixin
+from djblets.views.generic.etag import ETagViewMixin
 
 from reviewboard.accounts.decorators import (check_login_required,
                                              valid_prefs_required)
+from reviewboard.accounts.mixins import CheckLoginRequiredViewMixin
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
 from reviewboard.attachments.models import (FileAttachment,
                                             get_latest_file_attachments)
-from reviewboard.avatars import avatar_services
 from reviewboard.diffviewer.diffutils import (convert_to_unicode,
                                               get_file_chunks_in_range,
                                               get_last_header_before_line,
@@ -54,6 +56,7 @@ from reviewboard.notifications.email.message import (
     prepare_reply_published_mail,
     prepare_review_published_mail,
     prepare_review_request_mail)
+from reviewboard.notifications.email.views import BasePreviewEmailView
 from reviewboard.reviews.ui.screenshot import LegacyScreenshotReviewUI
 from reviewboard.reviews.context import (comment_counts,
                                          diffsets_with_comments,
@@ -74,7 +77,198 @@ from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.decorators import check_local_site_access
+from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
 from reviewboard.site.urlresolvers import local_site_reverse
+
+
+class ReviewRequestViewMixin(CheckLoginRequiredViewMixin,
+                             CheckLocalSiteAccessViewMixin,
+                             PrePostDispatchViewMixin):
+    """Common functionality for all review request-related pages.
+
+    This performs checks to ensure that the user has access to the page,
+    returning an error page if not. It also provides common functionality
+    for fetching a review request for the given page, returning suitable
+    context for the template, and generating an image used to represent
+    the site when posting to social media sites.
+    """
+
+    permission_denied_template_name = \
+        'reviews/review_request_permission_denied.html'
+
+    def pre_dispatch(self, request, review_request_id, *args, **kwargs):
+        """Look up objects and permissions before dispatching the request.
+
+        This will first look up the review request, returning an error page
+        if it's not accessible. It will then store the review request before
+        calling the handler for the HTTP request.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            review_request_id (int):
+                The ID of the review request being accessed.
+
+            *args (tuple):
+                Positional arguments to pass to the handler.
+
+            **kwargs (dict):
+                Keyword arguments to pass to the handler.
+
+                These will be arguments provided by the URL pattern.
+
+        Returns:
+            django.http.HttpResponse:
+            The resulting HTTP response to send to the client, if there's
+            a Permission Denied.
+        """
+        self.review_request = self.get_review_request(
+            review_request_id=review_request_id,
+            local_site=self.local_site)
+
+        if not self.review_request.is_accessible_by(request.user):
+            return self.render_permission_denied(request)
+
+        return None
+
+    def render_permission_denied(self, request):
+        """Render a Permission Denied page.
+
+        This will be shown to the user if they're not able to view the
+        review request.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            django.http.HttpResponse:
+            The resulting HTTP response to send to the client.
+        """
+        response = render_to_response(self.permission_denied_template_name,
+                                      RequestContext(request))
+        response.status_code = 403
+
+        return response
+
+    def get_review_request(self, review_request_id, local_site=None):
+        """Return the review request for the given display ID.
+
+        Args:
+            review_request_id (int):
+                The review request's display ID.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The Local Site the review request is on.
+
+        Returns:
+            reviewboard.reviews.models.review_request.ReviewRequest:
+            The review request for the given display ID and Local Site.
+
+        Raises:
+            django.http.Http404:
+                The review request could not be found.
+        """
+        q = ReviewRequest.objects.all()
+
+        if local_site:
+            q = q.filter(local_site=local_site,
+                         local_id=review_request_id)
+        else:
+            q = q.filter(pk=review_request_id)
+
+        q = q.select_related('submitter', 'repository')
+
+        return get_object_or_404(q)
+
+    def get_diff(self, revision=None, draft=None):
+        """Return a diff on the review request matching the given criteria.
+
+        If a draft is provided, and ``revision`` is either ``None`` or matches
+        the revision on the draft's DiffSet, that DiffSet will be returned.
+
+        Args:
+            revision (int, optional):
+                The revision of the diff to retrieve. If not provided, the
+                latest DiffSet will be returned.
+
+            draft (reviewboard.reviews.models.review_request_draft.
+                   ReviewRequestDraft, optional):
+                The draft of the review request.
+
+        Returns:
+            reviewboard.diffviewer.models.DiffSet:
+            The resulting DiffSet.
+
+        Raises:
+            django.http.Http404:
+                The diff does not exist.
+        """
+        # Normalize the revision, since it might come in as a string.
+        if revision:
+            revision = int(revision)
+
+        # This will try to grab the diff associated with a draft if the review
+        # request has an associated draft and is either the revision being
+        # requested or no revision is being requested.
+        if (draft and draft.diffset_id and
+            (revision is None or draft.diffset.revision == revision)):
+            return draft.diffset
+
+        query = Q(history=self.review_request.diffset_history_id)
+
+        # Grab a revision if requested.
+        if revision is not None:
+            query = query & Q(revision=revision)
+
+        try:
+            return DiffSet.objects.filter(query).latest()
+        except DiffSet.DoesNotExist:
+            raise Http404
+
+    def get_social_page_image_url(self, file_attachments):
+        """Return the URL to an image used for social media sharing.
+
+        This will look for the first attachment in a list of attachments that
+        can be used to represent the review request on social media sites and
+        chat services. If a suitable attachment is found, its URL will be
+        returned.
+
+        Args:
+            file_attachments (list of reviewboard.attachments.models.
+                              FileAttachment):
+                A list of file attachments used on a review request.
+
+        Returns:
+            unicode:
+            The URL to the first image file attachment, if found, or ``None``
+            if no suitable attachments were found.
+        """
+        for file_attachment in file_attachments:
+            if file_attachment.mimetype.startswith('image/'):
+                return file_attachment.get_absolute_url()
+
+        return None
+
+    def get_context_data(self, **kwargs):
+        """Return context data for the template.
+
+        This ensures the context is wrapped in a
+        :py:class:`django.template.RequestContext`, which is needed when
+        constructing parts of the context for these pages.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments passed to the view.
+
+        Returns:
+            django.template.RequestContext:
+            The resulting context data for the template.
+        """
+        return RequestContext(
+            self.request,
+            super(ReviewRequestViewMixin, self).get_context_data(**kwargs))
 
 
 #
@@ -155,29 +349,6 @@ def _query_for_diff(review_request, user, revision, draft):
         return DiffSet.objects.filter(query).latest()
     except DiffSet.DoesNotExist:
         raise Http404
-
-
-def _get_social_page_image_url(file_attachments):
-    """Return the URL to an image used for social media sharing.
-
-    This will look for the first attachment in a list of attachments that can
-    be used to represent the review request on social media sites and chat
-    services. If a suitable attachment is found, its URL will be returned.
-
-    Args:
-        file_attachments (list of reviewboard.attachments.models.FileAttachment):
-            A list of file attachments used on a review request.
-
-    Returns:
-        unicode:
-        The URL to the first image file attachment, if found, or ``None``
-        if no suitable attachments were found.
-    """
-    for file_attachment in file_attachments:
-        if file_attachment.mimetype.startswith('image/'):
-            return file_attachment.get_absolute_url()
-
-    return None
 
 
 def build_diff_comment_fragments(
@@ -328,284 +499,450 @@ def new_review_request(request,
     }))
 
 
-@check_login_required
-@check_local_site_access
-def review_detail(request,
-                  review_request_id,
-                  local_site=None,
-                  template_name='reviews/review_detail.html'):
-    """Render the main review request page."""
-    review_request, response = _find_review_request(
-        request, review_request_id, local_site)
+class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
+                              TemplateView):
+    """A view for the main review request page.
 
-    status_updates_enabled = status_updates_feature.is_enabled(
-        local_site=local_site)
+    This page shows information on the review request, all the reviews and
+    issues that have been posted, and the status updates made on uploaded
+    changes.
+    """
 
-    if not review_request:
-        return response
+    template_name = 'reviews/review_detail.html'
 
-    data = ReviewRequestPageData(review_request, request)
-    data.query_data_pre_etag()
+    def __init__(self, **kwargs):
+        """Initialize a view for the request.
 
-    visited = None
-    last_visited = 0
-    starred = False
+        Args:
+            **kwargs (dict):
+                Keyword arguments passed to :py:meth:`as_view`.
+        """
+        super(ReviewRequestDetailView, self).__init__(**kwargs)
 
-    if request.user.is_authenticated():
-        try:
-            visited, visited_is_new = \
-                ReviewRequestVisit.objects.get_or_create(
-                    user=request.user, review_request=review_request)
-            last_visited = visited.timestamp.replace(tzinfo=utc)
-        except ReviewRequestVisit.DoesNotExist:
-            # Somehow, this visit was seen as created but then not
-            # accessible. We need to log this and then continue on.
-            logging.error('Unable to get or create ReviewRequestVisit '
-                          'for user "%s" on review request at %s',
-                          request.user.username,
-                          review_request.get_absolute_url())
+        self.status_updates_enabled = None
+        self.data = None
+        self.visited = None
+        self.last_visited = None
+        self.blocks = None
+        self.last_activity_time = None
+        self.initial_status_entry = None
 
-        # If the review request is public and pending review and if the user
-        # is logged in, mark that they've visited this review request.
-        if (review_request.public and
-            review_request.status == review_request.PENDING_REVIEW):
-            visited.timestamp = timezone.now()
-            visited.save()
+    def get_etag_data(self, request, *args, **kwargs):
+        """Return an ETag for the view.
 
-        try:
-            profile = request.user.get_profile()
-            starred_review_requests = \
-                profile.starred_review_requests.filter(pk=review_request.pk)
-            starred = (starred_review_requests.count() > 0)
-        except Profile.DoesNotExist:
-            pass
+        This will look up state needed for the request and generate a
+        suitable ETag. Some of the information will be stored for later
+        computation of the template context.
 
-    last_activity_time, updated_object = \
-        review_request.get_last_activity(data.diffsets, data.reviews)
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
 
-    etag_timestamp = last_activity_time
+            *args (tuple, unused):
+                Positional arguments passsed to the handler.
 
-    if status_updates_enabled:
-        for status_update in data.status_updates:
-            if status_update.timestamp > etag_timestamp:
-                etag_timestamp = status_update.timestamp
+            **kwargs (dict, unused):
+                Keyword arguments passed to the handler.
 
-    if data.draft:
-        draft_timestamp = data.draft.last_updated
-    else:
-        draft_timestamp = ''
+        Returns:
+            unicode:
+            The ETag for the page.
+        """
+        review_request = self.review_request
+        local_site = review_request.local_site
 
-    blocks = review_request.get_blocks()
+        # Determine which features are enabled.
+        self.status_updates_enabled = status_updates_feature.is_enabled(
+            local_site=local_site)
 
-    # Find out if we can bail early. Generate an ETag for this.
-    etag = encode_etag(
-       '%s:%s:%s:%s:%s:%s:%s:%s:%s:%s' %
-       (request.user, etag_timestamp, draft_timestamp,
-        data.latest_review_timestamp,
-        review_request.last_review_activity_timestamp,
-        is_rich_text_default_for_user(request.user),
-        [r.pk for r in blocks],
-        starred, visited and visited.visibility, settings.AJAX_SERIAL))
+        # Begin building data for the contents of the page. This will include
+        # the reviews, change descriptions, and other content shown on the
+        # page.
+        data = ReviewRequestPageData(review_request, request)
+        self.data = data
 
-    if etag_if_none_match(request, etag):
-        return HttpResponseNotModified()
+        data.query_data_pre_etag()
 
-    data.query_data_post_etag()
+        # Track the visit to this review request, so the dashboard can
+        # reflect whether there are new updates.
+        self.visited, self.last_visited = self.track_review_request_visit()
 
-    entries = []
-    reviews_entry_map = {}
-    changedescs_entry_map = {}
+        self.blocks = review_request.get_blocks()
 
-    # Now that we have the list of public reviews and all that metadata,
-    # being processing them and adding entries for display in the page.
-    for review in data.reviews:
-        if (review.public and
-            not review.is_reply() and
-            not (status_updates_enabled and
-                 hasattr(review, 'status_update'))):
-            # Mark as collapsed if the review is older than the latest
-            # change, assuming there's no reply newer than last_visited.
-            latest_reply = data.latest_timestamps_by_review_id.get(review.pk)
-            collapsed = (
-                review.timestamp < data.latest_changedesc_timestamp and
-                not (latest_reply and
-                     last_visited and
-                     last_visited < latest_reply))
+        # Prepare data used in both the page and the ETag.
+        starred = self.is_review_request_starred()
 
-            entry = ReviewEntry(request, review_request, review, collapsed,
+        self.last_activity_time, updated_object = \
+            review_request.get_last_activity(data.diffsets, data.reviews)
+        etag_timestamp = self.last_activity_time
+
+        if self.status_updates_enabled:
+            for status_update in data.status_updates:
+                if status_update.timestamp > etag_timestamp:
+                    etag_timestamp = status_update.timestamp
+
+        if data.draft:
+            draft_timestamp = data.draft.last_updated
+        else:
+            draft_timestamp = ''
+
+        return ':'.join(six.text_type(value) for value in (
+            request.user,
+            etag_timestamp,
+            draft_timestamp,
+            data.latest_review_timestamp,
+            review_request.last_review_activity_timestamp,
+            is_rich_text_default_for_user(request.user),
+            [r.pk for r in self.blocks],
+            starred,
+            self.visited and self.visited.visibility,
+            settings.AJAX_SERIAL,
+        ))
+
+    def track_review_request_visit(self):
+        """Track a visit to the review request.
+
+        If the user is authenticated, their visit to this page will be
+        recorded. That information is used to provide an indicator in the
+        dashboard when a review request is later updated.
+
+        Returns:
+            tuple:
+            A tuple containing the following items:
+
+            1. The resulting
+               :py:class:`~reviewboard.accounts.models.ReviewRequestVisit`,
+               if the user is authenticated and the visit could be returned or
+               created.
+
+            2. The timestamp when the user had last visited the site, prior to
+               this visit (or 0 if they haven't).
+        """
+        user = self.request.user
+        visited = None
+        last_visited = 0
+
+        if user.is_authenticated():
+            review_request = self.review_request
+
+            try:
+                visited, visited_is_new = \
+                    ReviewRequestVisit.objects.get_or_create(
+                        user=user, review_request=review_request)
+                last_visited = visited.timestamp.replace(tzinfo=utc)
+            except ReviewRequestVisit.DoesNotExist:
+                # Somehow, this visit was seen as created but then not
+                # accessible. We need to log this and then continue on.
+                logging.error('Unable to get or create ReviewRequestVisit '
+                              'for user "%s" on review request at %s',
+                              user.username,
+                              review_request.get_absolute_url())
+                visited = None
+
+            # If the review request is public and pending review and if the user
+            # is logged in, mark that they've visited this review request.
+            if (visited and
+                review_request.public and
+                review_request.status == review_request.PENDING_REVIEW):
+                visited.timestamp = timezone.now()
+                visited.save()
+
+        return visited, last_visited
+
+    def is_review_request_starred(self):
+        """Return whether the review request has been starred by the user.
+
+        Returns:
+            bool:
+            ``True`` if the user has starred the review request.
+            ``False`` if they have not.
+        """
+        user = self.request.user
+
+        if user.is_authenticated():
+            try:
+                return (
+                    user.get_profile().starred_review_requests
+                    .filter(pk=self.review_request.pk)
+                    .exists()
+                )
+            except Profile.DoesNotExist:
+                pass
+
+        return False
+
+    def get_entries(self):
+        """Return the entries to show on the page.
+
+        Each entry represents a review, change description, or status update
+        to display.
+
+        Returns:
+            list of reviewboard.reviews.detail.BaseReviewRequestPageEntry:
+            The list of entries to show on the page.
+        """
+        # Convert some frequently-accessed state to local variables for faster
+        # access.
+        status_updates_enabled = self.status_updates_enabled
+        review_request = self.review_request
+        last_visited = self.last_visited
+        request = self.request
+        data = self.data
+
+        entries = []
+        reviews_entry_map = {}
+        changedescs_entry_map = {}
+
+        data.query_data_post_etag()
+
+        # Now that we have the list of public reviews and all that metadata,
+        # being processing them and adding entries for display in the page.
+        for review in data.reviews:
+            if (review.public and
+                not review.is_reply() and
+                not (status_updates_enabled and
+                     hasattr(review, 'status_update'))):
+                # Mark as collapsed if the review is older than the latest
+                # change, assuming there's no reply newer than last_visited.
+                latest_reply = \
+                    data.latest_timestamps_by_review_id.get(review.pk)
+
+                collapsed = (
+                    review.timestamp < data.latest_changedesc_timestamp and
+                    not (latest_reply and
+                         last_visited and
+                         last_visited < latest_reply))
+
+                entry = ReviewEntry(request, review_request, review, collapsed,
+                                    data)
+                reviews_entry_map[review.pk] = entry
+                entries.append(entry)
+
+        # Add entries for the change descriptions.
+        for changedesc in data.changedescs:
+            # Mark as collapsed if the change is older than a newer change.
+            collapsed = (changedesc.timestamp <
+                         data.latest_changedesc_timestamp)
+
+            entry = ChangeEntry(request, review_request, changedesc, collapsed,
                                 data)
-            reviews_entry_map[review.pk] = entry
+            changedescs_entry_map[changedesc.id] = entry
             entries.append(entry)
 
-    # Add entries for the change descriptions.
-    for changedesc in data.changedescs:
-        # Mark as collapsed if the change is older than a newer change.
-        collapsed = (changedesc.timestamp < data.latest_changedesc_timestamp)
+        if status_updates_enabled:
+            self.initial_status_entry = InitialStatusUpdatesEntry(
+                review_request, collapsed=(len(data.changedescs) > 0),
+                data=data)
 
-        entry = ChangeEntry(request, review_request, changedesc, collapsed,
-                            data)
-        changedescs_entry_map[changedesc.id] = entry
-        entries.append(entry)
+            for update in data.status_updates:
+                if update.change_description_id is not None:
+                    entry = changedescs_entry_map[update.change_description_id]
+                else:
+                    entry = self.initial_status_entry
 
-    if status_updates_enabled:
-        initial_status_entry = InitialStatusUpdatesEntry(
-            review_request, collapsed=(len(data.changedescs) > 0),
-            data=data)
+                entry.add_update(update)
 
-        for update in data.status_updates:
-            if update.change_description_id is not None:
-                entry = changedescs_entry_map[update.change_description_id]
-            else:
-                entry = initial_status_entry
+                if update.review_id is not None:
+                    reviews_entry_map[update.review_id] = entry
 
-            entry.add_update(update)
+        # Now that we have entries for all the reviews, go through all the
+        # comments and add them to those entries.
+        for comment in data.comments:
+            review = comment.review_obj
 
-            if update.review_id is not None:
-                reviews_entry_map[update.review_id] = entry
-    else:
-        initial_status_entry = None
+            if review.is_reply():
+                # This is a reply to a comment.
+                base_reply_to_id = comment.review_obj.base_reply_to_id
 
-    # Now that we have entries for all the reviews, go through all the comments
-    # and add them to those entries.
-    for comment in data.comments:
-        review = comment.review_obj
+                assert review.pk not in reviews_entry_map
+                assert base_reply_to_id in reviews_entry_map
 
-        if review.is_reply():
-            # This is a reply to a comment.
-            base_reply_to_id = comment.review_obj.base_reply_to_id
+                # Make sure that any review boxes containing draft replies are
+                # always expanded.
+                if comment.is_reply() and not review.public:
+                    reviews_entry_map[base_reply_to_id].collapsed = False
+            elif review.public:
+                # This is a comment on a public review.
+                assert review.id in reviews_entry_map
 
-            assert review.pk not in reviews_entry_map
-            assert base_reply_to_id in reviews_entry_map
+                entry = reviews_entry_map[review.id]
+                entry.add_comment(comment._type, comment)
 
-            # Make sure that any review boxes containing draft replies are
-            # always expanded.
-            if comment.is_reply() and not review.public:
-                reviews_entry_map[base_reply_to_id].collapsed = False
-        elif review.public:
-            # This is a comment on a public review.
-            assert review.id in reviews_entry_map
+        if status_updates_enabled:
+            self.initial_status_entry.finalize()
 
-            entry = reviews_entry_map[review.id]
-            entry.add_comment(comment._type, comment)
+            for entry in entries:
+                entry.finalize()
 
-    if status_updates_enabled:
-        initial_status_entry.finalize()
+        # Finally, sort all the entries (reviews and change descriptions) by
+        # their timestamp.
+        entries.sort(key=lambda item: item.timestamp)
 
-        for entry in entries:
-            entry.finalize()
+        return entries
 
-    # Finally, sort all the entries (reviews and change descriptions) by their
-    # timestamp.
-    entries.sort(key=lambda item: item.timestamp)
+    def get_context_data(self, **kwargs):
+        """Return data for the template.
 
-    close_description, close_description_rich_text = \
-        review_request.get_close_description()
+        This will return information on the review request, the entries to
+        show, file attachments, issues, metadata to use when sharing the
+        review request on social networks, and everything else needed to
+        render the page.
 
-    siteconfig = SiteConfiguration.objects.get_current()
+        Args:
+            **kwargs (dict):
+                Additional keyword arguments passed to the view.
 
-    # Time to render the page!
-    file_attachments = \
-        get_latest_file_attachments(data.active_file_attachments)
-    social_page_image_url = _get_social_page_image_url(
-        file_attachments)
+        Returns:
+            django.template.RequestContext:
+            Context data for the template.
+        """
+        siteconfig = SiteConfiguration.objects.get_current()
+        review_request = self.review_request
+        request = self.request
+        data = self.data
 
-    context_data = make_review_request_context(request, review_request, {
-        'blocks': blocks,
-        'draft': data.draft,
-        'review_request_details': data.review_request_details,
-        'review_request_visit': visited,
-        'send_email': siteconfig.get('mail_send_review_mail'),
-        'initial_status_entry': initial_status_entry,
-        'entries': entries,
-        'last_activity_time': last_activity_time,
-        'review': review_request.get_pending_review(request.user),
-        'request': request,
-        'close_description': close_description,
-        'close_description_rich_text': close_description_rich_text,
-        'issue_counts': data.issue_counts,
-        'issues': data.issues,
-        'file_attachments': file_attachments,
-        'all_file_attachments': data.all_file_attachments,
-        'screenshots': data.active_screenshots,
-        'social_page_image_url': social_page_image_url,
-        'social_page_title': (
-            'Review Request #%s: %s'
-            % (review_request.display_id, review_request.summary)
-        ),
-    })
+        entries = self.get_entries()
+        review = review_request.get_pending_review(request.user)
+        close_description, close_description_rich_text = \
+            review_request.get_close_description()
+        file_attachments = \
+            get_latest_file_attachments(data.active_file_attachments)
+        social_page_image_url = self.get_social_page_image_url(
+            file_attachments)
 
-    response = render_to_response(template_name,
-                                  RequestContext(request, context_data))
-    set_etag(response, etag)
+        context = \
+            super(ReviewRequestDetailView, self).get_context_data(**kwargs)
+        context.update(make_review_request_context(request, review_request))
+        context.update({
+            'blocks': self.blocks,
+            'draft': data.draft,
+            'review_request_details': data.review_request_details,
+            'review_request_visit': self.visited,
+            'send_email': siteconfig.get('mail_send_review_mail'),
+            'initial_status_entry': self.initial_status_entry,
+            'entries': entries,
+            'last_activity_time': self.last_activity_time,
+            'review': review,
+            'request': request,
+            'close_description': close_description,
+            'close_description_rich_text': close_description_rich_text,
+            'issue_counts': data.issue_counts,
+            'issues': data.issues,
+            'file_attachments': file_attachments,
+            'all_file_attachments': data.all_file_attachments,
+            'screenshots': data.active_screenshots,
+            'social_page_image_url': social_page_image_url,
+            'social_page_title': (
+                'Review Request #%s: %s'
+                % (review_request.display_id, review_request.summary)
+            ),
+        })
 
-    return response
+        return context
 
 
-class ReviewsDiffViewerView(DiffViewerView):
+class ReviewsDiffViewerView(ReviewRequestViewMixin, DiffViewerView):
     """Renders the diff viewer for a review request.
 
-    This wraps the base DiffViewerView to display a diff for the given
-    review request and the given diff revision or range.
+    This wraps the base
+    :py:class:`~reviewboard.diffviewer.views.DiffViewerView` to display a diff
+    for the given review request and the given diff revision or range.
 
     The view expects the following parameters to be provided:
 
-        * review_request_id
-          - The ID of the ReviewRequest containing the diff to render.
+    ``review_request_id``:
+        The ID of the ReviewRequest containing the diff to render.
 
     The following may also be provided:
 
-        * revision
-          - The DiffSet revision to render.
+    ``revision``:
+        The DiffSet revision to render.
 
-        * interdiff_revision
-          - The second DiffSet revision in an interdiff revision range.
+    ``interdiff_revision``:
+        The second DiffSet revision in an interdiff revision range.
 
-        * local_site
-          - The LocalSite the ReviewRequest must be on, if any.
+    ``local_site``:
+        The LocalSite the ReviewRequest must be on, if any.
 
-    See DiffViewerView's documentation for the accepted query parameters.
+    See :py:class:`~reviewboard.diffviewer.views.DiffViewerView`'s
+    documentation for the accepted query parameters.
     """
-    @method_decorator(check_login_required)
-    @method_decorator(check_local_site_access)
-    @augment_method_from(DiffViewerView)
-    def dispatch(self, *args, **kwargs):
-        pass
 
-    def get(self, request, review_request_id, revision=None,
-            interdiff_revision=None, local_site=None):
-        """Handles GET requests for this view.
+    def __init__(self, **kwargs):
+        """Initialize a view for the request.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments passed to :py:meth:`as_view`.
+        """
+        super(ReviewsDiffViewerView, self).__init__(**kwargs)
+
+        self.draft = None
+        self.diffset = None
+        self.interdiffset = None
+
+    def get(self, request, revision=None, interdiff_revision=None, *args,
+            **kwargs):
+        """Handle HTTP GET requests for this view.
 
         This will look up the review request and DiffSets, given the
         provided information, and pass them to the parent class for rendering.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            revision (int, optional):
+                The revision of the diff to view. This defaults to the latest
+                diff.
+
+            interdiff_revision (int, optional):
+                The revision to use for an interdiff, if viewing an interdiff.
+
+            *args (tuple):
+                Positional arguments passed to the handler.
+
+            **kwargs (dict):
+                Keyword arguments passed to the handler.
+
+        Returns:
+            django.http.HttpResponse:
+            The HTTP response to send to the client.
         """
-        review_request, response = \
-            _find_review_request(request, review_request_id, local_site)
+        review_request = self.review_request
 
-        if not review_request:
-            return response
-
-        self.review_request = review_request
         self.draft = review_request.get_draft(request.user)
-        self.diffset = _query_for_diff(review_request, request.user,
-                                       revision, self.draft)
-        self.interdiffset = None
+        self.diffset = self.get_diff(revision, self.draft)
 
         if interdiff_revision and interdiff_revision != revision:
             # An interdiff revision was specified. Try to find a matching
             # diffset.
-            self.interdiffset = _query_for_diff(review_request, request.user,
-                                                interdiff_revision, self.draft)
+            self.interdiffset = self.get_diff(interdiff_revision, self.draft)
 
         return super(ReviewsDiffViewerView, self).get(
-            request, self.diffset, self.interdiffset)
+            request=request,
+            diffset=self.diffset,
+            interdiffset=self.interdiffset,
+            *args,
+            **kwargs)
 
-    def get_context_data(self, *args, **kwargs):
-        """Calculates additional context data for rendering.
+    def get_context_data(self, **kwargs):
+        """Return additional context data for the template.
 
         This provides some additional data used for rendering the diff
         viewer. This data is more specific to the reviewing functionality,
-        as opposed to the data calculated by DiffViewerView.get_context_data,
+        as opposed to the data calculated by
+        :py:meth:`DiffViewerView.get_context_data
+        <reviewboard.diffviewer.views.DiffViewerView.get_context_data>`
         which is more focused on the actual diff.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments passed to the handler.
+
+        Returns:
+            django.template.RequestContext:
+            Context data used to render the template.
         """
         # Try to find an existing pending review of this diff from the
         # current user.
@@ -638,7 +975,7 @@ class ReviewsDiffViewerView(DiffViewerView):
         screenshots = list(review_request_details.get_screenshots())
 
         latest_file_attachments = get_latest_file_attachments(file_attachments)
-        social_page_image_url = _get_social_page_image_url(
+        social_page_image_url = self.get_social_page_image_url(
             latest_file_attachments)
 
         # Compute the lists of comments based on filediffs and interfilediffs.
@@ -658,11 +995,9 @@ class ReviewsDiffViewerView(DiffViewerView):
         close_description, close_description_rich_text = \
             self.review_request.get_close_description()
 
-        context = super(ReviewsDiffViewerView, self).get_context_data(
-            *args, **kwargs)
-
         siteconfig = SiteConfiguration.objects.get_current()
 
+        context = super(ReviewsDiffViewerView, self).get_context_data(**kwargs)
         context.update({
             'close_description': close_description,
             'close_description_rich_text': close_description_rich_text,
@@ -684,14 +1019,14 @@ class ReviewsDiffViewerView(DiffViewerView):
                    review_request_details.summary)
             ),
         })
-
-        context.update(
-            make_review_request_context(self.request,
-                                        self.review_request,
-                                        is_diff_view=True))
+        context.update(make_review_request_context(self.request,
+                                                   self.review_request,
+                                                   is_diff_view=True))
 
         diffset_pair = context['diffset_pair']
-        context['diff_context'].update({
+        diff_context = context['diff_context']
+
+        diff_context.update({
             'num_diffs': num_diffs,
             'comments_hint': {
                 'has_other_comments': has_comments_in_diffsets_excluding(
@@ -715,7 +1050,7 @@ class ReviewsDiffViewerView(DiffViewerView):
                 ],
             },
         })
-        context['diff_context']['revision'].update({
+        diff_context['revision'].update({
             'latest_revision': (latest_diffset.revision
                                 if latest_diffset else None),
             'is_draft_diff': is_draft_diff,
@@ -723,6 +1058,7 @@ class ReviewsDiffViewerView(DiffViewerView):
         })
 
         files = []
+
         for f in context['files']:
             filediff = f['filediff']
             interfilediff = f['interfilediff']
@@ -730,13 +1066,13 @@ class ReviewsDiffViewerView(DiffViewerView):
                 'newfile': f['newfile'],
                 'binary': f['binary'],
                 'deleted': f['deleted'],
-                'id': f['filediff'].pk,
+                'id': filediff.pk,
                 'depot_filename': f['depot_filename'],
                 'dest_filename': f['dest_filename'],
                 'dest_revision': f['dest_revision'],
                 'revision': f['revision'],
                 'filediff': {
-                    'id': filediff.id,
+                    'id': filediff.pk,
                     'revision': filediff.diffset.revision,
                 },
                 'index': f['index'],
@@ -746,7 +1082,7 @@ class ReviewsDiffViewerView(DiffViewerView):
 
             if interfilediff:
                 data['interfilediff'] = {
-                    'id': interfilediff.id,
+                    'id': interfilediff.pk,
                     'revision': interfilediff.diffset.revision,
                 }
 
@@ -756,7 +1092,7 @@ class ReviewsDiffViewerView(DiffViewerView):
 
             files.append(data)
 
-        context['diff_context']['files'] = files
+        diff_context['files'] = files
 
         return context
 
@@ -1155,82 +1491,170 @@ class ReviewsDownloadPatchErrorBundleView(DownloadPatchErrorBundleView,
     """
 
 
-@check_login_required
-@check_local_site_access
-@preview_email(prepare_review_request_mail)
-def preview_review_request_email(request, review_request_id,
-                                 changedesc_id=None, local_site=None):
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site)
+class PreviewReviewRequestEmailView(ReviewRequestViewMixin,
+                                    BasePreviewEmailView):
+    """Display a preview of an e-mail for a review request.
 
-    if not review_request:
-        return response
+    This can be used to see what an HTML or plain text e-mail will look like
+    for a newly-posted review request or an update to a review request.
+    """
 
-    close_type = None
+    build_email = staticmethod(prepare_review_request_mail)
 
-    if changedesc_id:
-        changedesc = get_object_or_404(review_request.changedescs,
-                                       pk=changedesc_id)
-        user = changedesc.get_user(review_request)
+    def get_email_data(self, request, changedesc_id=None, *args, **kwargs):
+        """Return data used for the e-mail builder.
 
-        if 'status' in changedesc.fields_changed:
-            close_type = changedesc.fields_changed['status']['new'][0]
-    else:
-        changedesc = None
-        user = review_request.submitter
+        The data returned will be passed to :py:attr:`build_email` to handle
+        rendering the e-mail.
 
-    return {
-        'user': user,
-        'review_request': review_request,
-        'changedesc': changedesc,
-        'close_type': close_type,
-    }
+        This can also return a :py:class:`~django.http.HttpResponse`, which
+        is useful for returning errors.
+
+        Args:
+            request (django.http.HttpResponse):
+                The HTTP response from the client.
+
+            changedesc_id (int, optional):
+                The ID of a change description used when previewing a
+                Review Request Updated e-mail.
+
+            *args (tuple):
+                Additional positional arguments passed to the handler.
+
+            **kwargs (dict):
+                Additional keyword arguments passed to the handler.
+
+        Returns:
+            object:
+            The dictionary data to pass as keyword arguments to
+            :py:attr:`build_email`, or an instance of
+            :py:class:`~django.http.HttpResponse` to immediately return to
+            the client.
+        """
+        close_type = None
+
+        if changedesc_id:
+            changedesc = get_object_or_404(self.review_request.changedescs,
+                                           pk=changedesc_id)
+            user = changedesc.get_user(self.review_request)
+
+            if 'status' in changedesc.fields_changed:
+                close_type = changedesc.fields_changed['status']['new'][0]
+        else:
+            changedesc = None
+            user = self.review_request.submitter
+
+        return {
+            'user': user,
+            'review_request': self.review_request,
+            'changedesc': changedesc,
+            'close_type': close_type,
+        }
 
 
-@check_login_required
-@check_local_site_access
-@preview_email(prepare_review_published_mail)
-def preview_review_email(request, review_request_id, review_id,
-                         local_site=None):
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site)
+class PreviewReviewEmailView(ReviewRequestViewMixin, BasePreviewEmailView):
+    """Display a preview of an e-mail for a review.
 
-    if not review_request:
-        return response
+    This can be used to see what an HTML or plain text e-mail will look like
+    for a review.
+    """
 
-    review = get_object_or_404(Review, pk=review_id,
-                               review_request=review_request)
+    build_email = staticmethod(prepare_review_published_mail)
 
-    return {
-        'user': review.user,
-        'review': review,
-        'review_request': review_request,
-        'to_submitter_only': False,
-        'request': request,
-    }
+    def get_email_data(self, request, review_id, *args, **kwargs):
+        """Return data used for the e-mail builder.
+
+        The data returned will be passed to :py:attr:`build_email` to handle
+        rendering the e-mail.
+
+        This can also return a :py:class:`~django.http.HttpResponse`, which
+        is useful for returning errors.
+
+        Args:
+            request (django.http.HttpResponse):
+                The HTTP response from the client.
+
+            review_id (int):
+                The ID of the review to preview.
+
+            *args (tuple):
+                Additional positional arguments passed to the handler.
+
+            **kwargs (dict):
+                Additional keyword arguments passed to the handler.
+
+        Returns:
+            object:
+            The dictionary data to pass as keyword arguments to
+            :py:attr:`build_email`, or an instance of
+            :py:class:`~django.http.HttpResponse` to immediately return to
+            the client.
+        """
+        review = get_object_or_404(Review,
+                                   pk=review_id,
+                                   review_request=self.review_request)
+
+        return {
+            'user': review.user,
+            'review': review,
+            'review_request': self.review_request,
+            'to_submitter_only': False,
+            'request': request,
+        }
 
 
-@check_login_required
-@check_local_site_access
-@preview_email(prepare_reply_published_mail)
-def preview_reply_email(request, review_request_id, review_id, reply_id,
-                        local_site=None):
-    review_request, response = _find_review_request(request, review_request_id,
-                                                    local_site)
+class PreviewReplyEmailView(ReviewRequestViewMixin, BasePreviewEmailView):
+    """Display a preview of an e-mail for a reply to a review.
 
-    if not review_request:
-        return response
+    This can be used to see what an HTML or plain text e-mail will look like
+    for a reply to a review.
+    """
 
-    review = get_object_or_404(Review, pk=review_id,
-                               review_request=review_request)
-    reply = get_object_or_404(Review, pk=reply_id, base_reply_to=review)
+    build_email = staticmethod(prepare_reply_published_mail)
 
-    return {
-        'user': reply.user,
-        'reply': reply,
-        'review': review,
-        'review_request': review_request,
-    }
+    def get_email_data(self, request, review_id, reply_id, *args, **kwargs):
+        """Return data used for the e-mail builder.
+
+        The data returned will be passed to :py:attr:`build_email` to handle
+        rendering the e-mail.
+
+        This can also return a :py:class:`~django.http.HttpResponse`, which
+        is useful for returning errors.
+
+        Args:
+            request (django.http.HttpResponse):
+                The HTTP response from the client.
+
+            review_id (int):
+                The ID of the review the reply is for.
+
+            reply_id (int):
+                The ID of the reply to preview.
+
+            *args (tuple):
+                Additional positional arguments passed to the handler.
+
+            **kwargs (dict):
+                Additional keyword arguments passed to the handler.
+
+        Returns:
+            object:
+            The dictionary data to pass as keyword arguments to
+            :py:attr:`build_email`, or an instance of
+            :py:class:`~django.http.HttpResponse` to immediately return to
+            the client.
+        """
+        review = get_object_or_404(Review,
+                                   pk=review_id,
+                                   review_request=self.review_request)
+        reply = get_object_or_404(Review, pk=reply_id, base_reply_to=review)
+
+        return {
+            'user': reply.user,
+            'reply': reply,
+            'review': review,
+            'review_request': self.review_request,
+        }
 
 
 @check_login_required
@@ -1320,86 +1744,6 @@ def view_screenshot(request, review_request_id, screenshot_id,
 
 @check_login_required
 @check_local_site_access
-def user_infobox(request, username,
-                 template_name='accounts/user_infobox.html',
-                 local_site=None):
-    """Displays a user info popup.
-
-    This is meant to be embedded in other pages, rather than being
-    a standalone page.
-    """
-    from reviewboard.extensions.hooks import UserInfoboxHook
-
-    user = get_object_or_404(User, username=username)
-
-    try:
-        profile = user.get_profile()
-        show_profile = not profile.is_private
-        timezone = profile.timezone
-    except Profile.DoesNotExist:
-        show_profile = True
-        timezone = 'UTC'
-
-    etag_data = [
-        user.first_name,
-        user.last_name,
-        user.email,
-        six.text_type(user.last_login),
-        six.text_type(settings.TEMPLATE_SERIAL),
-        six.text_type(show_profile),
-        timezone,
-    ]
-
-    if avatar_services.avatars_enabled:
-        avatar_service = avatar_services.for_user(user)
-
-        if avatar_service:
-            etag_data.extend(avatar_service.get_etag_data(user))
-
-    for hook in UserInfoboxHook.hooks:
-        try:
-            etag_data.append(hook.get_etag_data(user, request, local_site))
-        except Exception as e:
-            logging.exception('Error when running UserInfoboxHook.'
-                              'get_etag_data method in extension "%s": %s',
-                              hook.extension.id, e)
-
-    etag = encode_etag(':'.join(etag_data))
-
-    if etag_if_none_match(request, etag):
-        return HttpResponseNotModified()
-
-    extra_content = []
-
-    for hook in UserInfoboxHook.hooks:
-        try:
-            extra_content.append(hook.render(user, request, local_site))
-        except Exception as e:
-            logging.exception('Error when running UserInfoboxHook.'
-                              'render method in extension "%s": %s',
-                              hook.extension.id, e)
-
-    review_requests_url = local_site_reverse('user', local_site=local_site,
-                                             args=[username])
-    reviews_url = local_site_reverse('user-grid', local_site=local_site,
-                                     args=[username, 'reviews'])
-
-    response = render_to_response(template_name, RequestContext(request, {
-        'extra_content': mark_safe(''.join(extra_content)),
-        'full_name': user.get_full_name(),
-        'infobox_user': user,
-        'review_requests_url': review_requests_url,
-        'reviews_url': reviews_url,
-        'show_profile': show_profile,
-        'timezone': timezone,
-    }))
-    set_etag(response, etag)
-
-    return response
-
-
-@check_login_required
-@check_local_site_access
 def bug_url(request, review_request_id, bug_id, local_site=None):
     """Redirects user to bug tracker issue page."""
     review_request, response = \
@@ -1466,76 +1810,80 @@ def bug_infobox(request, review_request_id, bug_id,
     }))
 
 
-@check_login_required
-@check_local_site_access
-def review_request_infobox(request, review_request_id,
-                           template_name='reviews/review_request_infobox.html',
-                           local_site=None):
+class ReviewRequestInfoboxView(ReviewRequestViewMixin, TemplateView):
     """Display a review request info popup.
 
-    This function produces the information needed to be displayed
-    in a summarized information box, upon hovering over a link to
-    a review request.
+    This produces the information needed to be displayed in a summarized
+    information box upon hovering over a link to a review request.
 
-    Args:
-        request (django.http.HttpRequest):
-            The request object.
-
-        review_request_id (int):
-            The ID number of the review request.
-
-        template_name (unicode):
-            The path at which the template for the review request infobox is.
-
-        local_site (reviewboard.site.models.LocalSite):
-            The review request's local site, if available.
-
-    Returns:
-        django.http.HttpResponse:
-        The rendered text from the template and dictionary
-        for review request infobox.
+    This is meant to be embedded in other pages, rather than being
+    a standalone page.
     """
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site)
 
-    if not review_request:
-        return response
+    template_name = 'reviews/review_request_infobox.html'
 
-    # Below code is heavily referenced from columns.py.
-    # It should be refactored.
-    labels = []
+    MAX_REVIEWS = 3
 
-    if (review_request.submitter_id == request.user.id and
-        not review_request.public and
-        review_request.status == ReviewRequest.PENDING_REVIEW):
-        labels.append(('label-draft', _('Draft')))
+    def get_context_data(self, **kwargs):
+        """Handle HTTP GET requests for this view.
 
-    if review_request.status == ReviewRequest.SUBMITTED:
-        labels.append(('label-submitted', _('Submitted')))
-    elif review_request.status == ReviewRequest.DISCARDED:
-        labels.append(('label-discarded', _('Discarded')))
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
 
-    display_data = format_html_join('', '<label class="{0}">{1}</label>',
-                                    labels)
+            *args (tuple):
+                Positional arguments passed to the handler.
 
-    issue_total_count = (review_request.issue_open_count +
-                         review_request.issue_resolved_count +
-                         review_request.issue_dropped_count)
+            **kwargs (dict):
+                Keyword arguments passed to the handler.
 
-    # Contains the three most recent reviews.
-    latest_reviews = list(review_request.reviews.order_by('-timestamp')[:3])
+        Returns:
+            django.http.HttpResponse:
+            The HTTP response containing the infobox, or an error if the
+            infobox could not be provided.
+        """
+        review_request = self.review_request
+        submitter = review_request.submitter
 
-    submitter = review_request.submitter
+        # Below code is heavily referenced from columns.py. We may want to
+        # consider whether it's worth consolidating logic, or if we may want
+        # to keep these separate.
+        labels = []
 
-    return render_to_response(template_name, RequestContext(request, {
-        'review_request': review_request,
-        'review_request_id': review_request_id,
-        'review_request_labels': display_data,
-        'review_request_issue_total_count': issue_total_count,
-        'review_request_latest_reviews': latest_reviews,
-        'show_profile': submitter.is_profile_visible(request.user),
-        'submitter': submitter,
-    }))
+        if (self.request.user.is_authenticated() and
+            submitter == self.request.user and
+            not review_request.public and
+            review_request.status == ReviewRequest.PENDING_REVIEW):
+            labels.append(('label-draft', _('Draft')))
+
+        if review_request.status == ReviewRequest.SUBMITTED:
+            labels.append(('label-submitted', _('Submitted')))
+        elif review_request.status == ReviewRequest.DISCARDED:
+            labels.append(('label-discarded', _('Discarded')))
+
+        display_data = format_html_join('', '<label class="{0}">{1}</label>',
+                                        labels)
+
+        issue_total_count = (review_request.issue_open_count +
+                             review_request.issue_resolved_count +
+                             review_request.issue_dropped_count)
+
+        # Fetch recent reviews to show in the infobox.
+        latest_reviews = list(
+            review_request.reviews
+            .filter(public=True, base_reply_to__isnull=True)
+            .order_by('-timestamp')[:self.MAX_REVIEWS]
+        )
+
+        return {
+            'review_request': review_request,
+            'review_request_id': review_request.display_id,
+            'review_request_labels': display_data,
+            'review_request_issue_total_count': issue_total_count,
+            'review_request_latest_reviews': latest_reviews,
+            'show_profile': submitter.is_profile_visible(self.request.user),
+            'submitter': submitter,
+        }
 
 
 def _download_diff_file(modified, request, review_request_id, revision,

@@ -119,7 +119,7 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
         file_attachment = self.create_file_attachment(review_request)
         review_request.publish(review_request.submitter)
 
-        review = self.create_review(review_request, username='doc')
+        review = self.create_review(review_request, user='doc')
         comment = self.create_file_attachment_comment(review, file_attachment)
         reply = self.create_reply(review, user=self.user)
 

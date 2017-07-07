@@ -32,6 +32,8 @@ RB.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
      * Renders the banner.
      */
     render: function() {
+        var reviewRequestEditor = this.options.reviewRequestEditor;
+
         _super(this).render.call(this);
 
         this.$el.html(this.template({
@@ -39,7 +41,7 @@ RB.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
             publishText: gettext('Publish'),
             discardText: gettext('Discard'),
             sendEmailText: gettext('Send E-Mail'),
-            showSendEmail: this.options.showSendEmail
+            showSendEmail: reviewRequestEditor.get('showSendEmail')
         }));
 
         this.model.on('saving destroying', function() {

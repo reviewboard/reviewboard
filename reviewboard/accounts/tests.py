@@ -5,10 +5,13 @@ import re
 import nose
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import ValidationError
+from django.http import HttpResponse, HttpResponseRedirect
 from django.test.client import RequestFactory
+from django.views.generic.base import View
 from djblets.registries.errors import ItemLookupError, RegistrationError
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
@@ -27,6 +30,9 @@ from reviewboard.accounts.backends import (AuthBackend, auth_backends,
 from reviewboard.accounts.forms.pages import (AccountPageForm,
                                               ChangePasswordForm,
                                               ProfileForm)
+from reviewboard.accounts.mixins import (CheckLoginRequiredViewMixin,
+                                         LoginRequiredViewMixin,
+                                         UserProfileRequiredViewMixin)
 from reviewboard.accounts.models import (LocalSiteProfile,
                                          Profile,
                                          ReviewRequestVisit,
@@ -783,3 +789,165 @@ class SandboxTests(SpyAgency, TestCase):
 
         form.save()
         self.assertTrue(SandboxAuthBackend.update_email.called)
+
+
+class CheckLoginRequiredViewMixinTests(TestCase):
+    """Unit tests for CheckLoginRequiredViewMixin."""
+
+    def test_dispatch_authenticated_user(self):
+        """Testing CheckLoginRequiredViewMixin.dispatch with authenticated user
+        """
+        class MyView(CheckLoginRequiredViewMixin, View):
+            def get(view, *args, **kwargs):
+                self.assertTrue(view.request.user.is_authenticated())
+
+                return HttpResponse('success')
+
+        request = RequestFactory().request()
+        request.user = User.objects.create(username='doc')
+
+        view = MyView.as_view()
+        response = view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, 'success')
+
+    def test_dispatch_anonymous_user_and_login_not_required(self):
+        """Testing CheckLoginRequiredViewMixin.dispatch with anonymous user
+        and login not required
+        """
+        class MyView(CheckLoginRequiredViewMixin, View):
+            def get(view, *args, **kwargs):
+                self.assertTrue(view.request.user.is_anonymous())
+
+                return HttpResponse('success')
+
+        self.siteconfig = SiteConfiguration.objects.get_current()
+        self.siteconfig.set('auth_require_sitewide_login', False)
+        self.siteconfig.save()
+
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        view = MyView.as_view()
+        response = view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, 'success')
+
+    def test_dispatch_anonymous_user_and_login_required(self):
+        """Testing CheckLoginRequiredViewMixin.dispatch with anonymous user
+        and login required
+        """
+        class MyView(CheckLoginRequiredViewMixin, View):
+            def get(view, *args, **kwargs):
+                self.assertTrue(view.request.user.is_anonymous())
+
+                return HttpResponse('success')
+
+        self.siteconfig = SiteConfiguration.objects.get_current()
+        self.siteconfig.set('auth_require_sitewide_login', True)
+        self.siteconfig.save()
+
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        view = MyView.as_view()
+        response = view(request)
+
+        self.assertIsInstance(response, HttpResponseRedirect)
+
+
+class LoginRequiredViewMixinTests(TestCase):
+    """Unit tests for LoginRequiredViewMixin."""
+
+    def test_dispatch_authenticated_user(self):
+        """Testing LoginRequiredViewMixin.dispatch with authenticated user"""
+        class MyView(LoginRequiredViewMixin, View):
+            def get(view, *args, **kwargs):
+                self.assertTrue(view.request.user.is_authenticated())
+
+                return HttpResponse('success')
+
+        request = RequestFactory().request()
+        request.user = User.objects.create(username='doc')
+
+        view = MyView.as_view()
+        response = view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, 'success')
+
+    def test_dispatch_anonymous_user(self):
+        """Testing LoginRequiredViewMixin.dispatch with anonymous user"""
+        class MyView(CheckLoginRequiredViewMixin, View):
+            def get(view, *args, **kwargs):
+                self.fail('Should not be reached')
+
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        view = MyView.as_view()
+        response = view(request)
+
+        self.assertIsInstance(response, HttpResponseRedirect)
+
+
+class UserProfileRequiredViewMixinTests(TestCase):
+    """Unit tests for UserProfileRequiredViewMixin."""
+
+    def test_dispatch_with_no_profile(self):
+        """Testing CheckLoginRequiredViewMixin.dispatch with authenticated user
+        without a profile
+        """
+        class MyView(UserProfileRequiredViewMixin, View):
+            def get(view, *args, **kwargs):
+                self.assertIsNotNone(view.request.user.get_profile())
+
+                return HttpResponse('success')
+
+        request = RequestFactory().request()
+        request.user = User.objects.create(username='doc')
+
+        view = MyView.as_view()
+        response = view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, 'success')
+
+    def test_dispatch_with_profile(self):
+        """Testing CheckLoginRequiredViewMixin.dispatch with authenticated user
+        with a profile
+        """
+        class MyView(UserProfileRequiredViewMixin, View):
+            def get(view, *args, **kwargs):
+                self.assertIsNotNone(view.request.user.get_profile())
+
+                return HttpResponse('success')
+
+        request = RequestFactory().request()
+        request.user = User.objects.create(username='doc')
+        Profile.objects.create(user=request.user)
+
+        view = MyView.as_view()
+        response = view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, 'success')
+
+    def test_dispatch_with_anonymous(self):
+        """Testing CheckLoginRequiredViewMixin.dispatch with anonymous user"""
+        class MyView(UserProfileRequiredViewMixin, View):
+            def get(view, *args, **kwargs):
+                self.assertIsInstance(view.request.user, AnonymousUser)
+
+                return HttpResponse('success')
+
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        view = MyView.as_view()
+        response = view(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, 'success')

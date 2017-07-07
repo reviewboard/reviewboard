@@ -277,6 +277,7 @@ class GeneralCommentAdmin(admin.ModelAdmin):
 
 class StatusUpdateAdmin(admin.ModelAdmin):
     list_display = ('review_request_id', 'summary', 'description')
+    raw_id_fields = ('user', 'review_request', 'change_description', 'review')
 
     def review_request_id(self, obj):
         return obj.review_request.id

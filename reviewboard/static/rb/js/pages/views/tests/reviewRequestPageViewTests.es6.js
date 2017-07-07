@@ -49,6 +49,7 @@ suite('rb/pages/views/ReviewRequestPageView', () => {
             editorData: {
                 fileAttachments: [],
                 mutableByUser: true,
+                showSendEmail: false,
             },
         });
 
@@ -64,7 +65,6 @@ suite('rb/pages/views/ReviewRequestPageView', () => {
             }),
             el: $el.find('#review123'),
             reviewRequestEditor: page.reviewRequestEditor,
-            showSendEmail: true,
         }));
 
         page.addBox(new RB.ReviewBoxView({
@@ -76,7 +76,6 @@ suite('rb/pages/views/ReviewRequestPageView', () => {
             }),
             el: $el.find('#review124'),
             reviewRequestEditor: page.reviewRequestEditor,
-            showSendEmail: false,
         }));
 
         page.render();

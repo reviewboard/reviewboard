@@ -77,7 +77,7 @@ bugs_urls = [
 review_request_urls = [
     # Review request detail
     url(r'^$',
-        views.review_detail,
+        views.ReviewRequestDetailView.as_view(),
         name='review-request-detail'),
 
     # Review request diffs
@@ -107,27 +107,27 @@ review_request_urls = [
 
     # E-mail previews
     url(r'^preview-email/(?P<message_format>(text|html))/$',
-        views.preview_review_request_email,
+        views.PreviewReviewRequestEmailView.as_view(),
         name='preview-review-request-email'),
 
     url(r'^changes/(?P<changedesc_id>\d+)/preview-email/'
         r'(?P<message_format>(text|html))/$',
-        views.preview_review_request_email,
+        views.PreviewReviewRequestEmailView.as_view(),
         name='preview-review-request-email'),
 
     url(r'^reviews/(?P<review_id>\d+)/preview-email/'
         r'(?P<message_format>(text|html))/$',
-        views.preview_review_email,
+        views.PreviewReviewEmailView.as_view(),
         name='preview-review-email'),
 
     url(r'^reviews/(?P<review_id>\d+)/replies/(?P<reply_id>\d+)/'
         r'preview-email/(?P<message_format>(text|html))/$',
-        views.preview_reply_email,
+        views.PreviewReplyEmailView.as_view(),
         name='preview-review-reply-email'),
 
     # Review Request infobox
     url(r'^infobox/$',
-        views.review_request_infobox,
+        views.ReviewRequestInfoboxView.as_view(),
         name='review-request-infobox'),
 ]
 

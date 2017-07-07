@@ -1,3 +1,8 @@
+@import (reference) "../defs.less";
+@import (reference) "./admin.less";
+
+@img_base: "../../images/";
+
 #custom_policy_editor {
   margin: 0;
   width: 65em;
@@ -53,5 +58,88 @@
     .rb-icon {
       vertical-align: middle;
     }
+  }
+}
+
+#page_oauth2 {
+  .config-app-name a {
+    text-decoration: none;
+  }
+
+  .config-forms-list {
+    &:empty {
+      display: none;
+
+      + .app-list-empty {
+        display: block;
+      }
+    }
+
+    > :last-child {
+      border-bottom: 1px solid #AAAAAA;
+    }
+  }
+
+  .app-list-empty {
+    display: none;
+    background: #FFFFFF;
+    border-top: 1px solid #AAAAAA;
+    border-bottom: 1px solid #AAAAAA;
+    line-height: 32px;
+    padding: 0.3em 0.3em 0.3em 1.5em;
+  }
+}
+
+.oauth-add-app {
+  margin-top: 1em;
+}
+
+.edit-oauth2-app {
+  fieldset:extend(.change-form fieldset all) {
+    margin: 0;
+    padding:0;
+  }
+
+  h2:extend(.module h2) {
+    border-top: 1px solid @box-border-color;
+    border-bottom: 1px solid @box-border-color;
+    margin: 0;
+    padding: 4px (2 * @box-main-padding);
+    text-transform: none;
+  }
+
+  input[type="text"]:extend(input) {}
+
+  ul.errorlist:extend(ul.errorlist all) {}
+
+  #id_redirect_uris_container li {
+    padding: 0.25em 0;
+  }
+
+  .box-main {
+    padding: 0;
+  }
+
+  .form-actions {
+    padding: 0 @box-padding @box-padding @box-padding;
+
+    a.btn, input {
+      margin-right: 1em;
+    }
+  }
+
+  .form-row {
+    margin: inherit -1px;
+    padding: auto (2 * @box-main-padding);
+
+    &.errors:extend(.errors all) {}
+  }
+
+  .help:extend(.help) {
+    padding-left: 30px !important;
+  }
+
+  .list-edit-widget ul {
+    list-style: none;
   }
 }

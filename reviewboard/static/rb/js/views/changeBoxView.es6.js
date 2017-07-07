@@ -32,10 +32,10 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
             return new RB.ReviewView({
                 el: $reviewEl,
                 model: review,
+                reviewRequestEditor: this.reviewRequestEditorView.model,
                 $bannerFloatContainer: $reviewEl,
                 $bannerParent: $reviewEl.children('.banners'),
                 bannerNoFloatContainerClass: 'collapsed',
-                showSendEmail: this.options.showSendEmail,
             });
         });
         this._$boxStatus = null;

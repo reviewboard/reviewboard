@@ -12,6 +12,7 @@ from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.extensions.base import get_extension_manager
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.notifications.models import WebHookTarget
+from reviewboard.oauth.models import Application
 from reviewboard.reviews.models import (Comment,
                                         DefaultReviewer,
                                         FileAttachmentComment,
@@ -50,6 +51,7 @@ class Resources(ResourcesRegistry):
 
     def register_resources(self):
         """Register all the resource model associations."""
+        register_resource_for_model(Application, self.oauth_app)
         register_resource_for_model(ChangeDescription, self.change)
         register_resource_for_model(
             Comment,

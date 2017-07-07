@@ -6,8 +6,7 @@ page.addBox(new RB.ReviewBoxView({
         bodyBottom: '{{entry.review.body_bottom|escapejs}}'
     }),
     el: $('#review{{entry.review.id}}'),
-    reviewRequestEditor: page.reviewRequestEditor,
-    showSendEmail: {{send_email|yesno:'true,false'}}
+    reviewRequestEditor: page.reviewRequestEditor
 }));
 
 {% for comment in entry.comments.diff_comments %}
