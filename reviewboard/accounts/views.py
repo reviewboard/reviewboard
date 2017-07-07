@@ -32,7 +32,6 @@ from reviewboard.avatars import avatar_services
 from reviewboard.notifications.email.decorators import preview_email
 from reviewboard.notifications.email.message import \
     prepare_password_changed_mail
-from reviewboard.oauth.admin import ApplicationAdmin
 from reviewboard.oauth.features import oauth2_service_feature
 from reviewboard.oauth.forms import UserApplicationForm
 from reviewboard.oauth.models import Application
@@ -273,6 +272,10 @@ def edit_oauth_app(request, app_id=None):
         django.http.HttpResponse:
         The rendered view.
     """
+    # If we import this at global scope, it will cause issues with admin sites
+    # being automatically registered.
+    from reviewboard.oauth.admin import ApplicationAdmin
+
     if app_id:
         app = get_object_or_404(
             Application,
