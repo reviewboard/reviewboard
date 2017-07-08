@@ -134,7 +134,7 @@ review_request_urls = [
 
 urlpatterns = [
     url(r'^new/$',
-        views.new_review_request,
+        views.NewReviewRequestView.as_view(),
         name='new-review-request'),
 
     url(r'^(?P<review_request_id>\d+)/',

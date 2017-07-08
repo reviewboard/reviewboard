@@ -35,7 +35,8 @@ from djblets.views.generic.etag import ETagViewMixin
 
 from reviewboard.accounts.decorators import (check_login_required,
                                              valid_prefs_required)
-from reviewboard.accounts.mixins import CheckLoginRequiredViewMixin
+from reviewboard.accounts.mixins import (CheckLoginRequiredViewMixin,
+                                         LoginRequiredViewMixin)
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
 from reviewboard.attachments.models import (FileAttachment,
                                             get_latest_file_attachments)
@@ -449,54 +450,72 @@ def root(request, local_site_name=None):
         local_site_reverse(url_name, local_site_name=local_site_name))
 
 
-@login_required
-@check_local_site_access
-def new_review_request(request,
-                       local_site=None,
-                       template_name='reviews/new_review_request.html'):
-    """Displays the New Review Request UI.
+class NewReviewRequestView(LoginRequiredViewMixin,
+                           CheckLocalSiteAccessViewMixin,
+                           TemplateView):
+    """View for the New Review Request page.
 
-    This handles the creation of a review request based on either an existing
-    changeset or the provided information.
+    This provides the user with a UI consisting of all their repositories,
+    allowing them to manually upload a diff against the repository or,
+    depending on the repository's capabilities, to browse for an existing
+    commit to post.
     """
-    valid_repos = []
-    repos = Repository.objects.accessible(request.user, local_site=local_site)
 
-    if local_site:
-        local_site_name = local_site.name
-    else:
-        local_site_name = ''
+    template_name = 'reviews/new_review_request.html'
 
-    for repo in repos.order_by('name'):
-        try:
-            scmtool = repo.get_scmtool()
-            valid_repos.append({
-                'id': repo.id,
-                'name': repo.name,
-                'scmtool_name': scmtool.name,
-                'supports_post_commit': repo.supports_post_commit,
-                'local_site_name': local_site_name,
-                'files_only': False,
-                'requires_change_number': scmtool.supports_pending_changesets,
-                'requires_basedir': not scmtool.diffs_use_absolute_paths,
-            })
-        except Exception:
-            logging.exception('Error loading SCMTool for repository "%s" '
-                              '(ID %d)',
-                              repo.name, repo.id)
+    def get_context_data(self, **kwargs):
+        """Return data for the template.
 
-    valid_repos.insert(0, {
-        'id': '',
-        'name': _('(None - File attachments only)'),
-        'scmtool_name': '',
-        'supports_post_commit': False,
-        'files_only': True,
-        'local_site_name': local_site_name,
-    })
+        This will return information on each repository shown on the page.
 
-    return render_to_response(template_name, RequestContext(request, {
-        'repos': valid_repos,
-    }))
+        Args:
+            **kwargs (dict):
+                Additional keyword arguments passed to the view.
+
+        Returns:
+            dict:
+            Context data for the template.
+        """
+        local_site = self.local_site
+
+        if local_site:
+            local_site_name = local_site.name
+        else:
+            local_site_name = ''
+
+        valid_repos = [{
+            'id': '',
+            'name': _('(None - File attachments only)'),
+            'scmtool_name': '',
+            'supports_post_commit': False,
+            'files_only': True,
+            'local_site_name': local_site_name,
+        }]
+
+        repos = Repository.objects.accessible(self.request.user,
+                                              local_site=local_site)
+
+        for repo in repos.order_by('name'):
+            try:
+                valid_repos.append({
+                    'id': repo.pk,
+                    'name': repo.name,
+                    'scmtool_name': repo.scmtool_class.name,
+                    'local_site_name': local_site_name,
+                    'supports_post_commit': repo.supports_post_commit,
+                    'requires_change_number': repo.supports_pending_changesets,
+                    'requires_basedir': not repo.diffs_use_absolute_paths,
+                    'files_only': False,
+                })
+            except Exception:
+                logging.exception(
+                    'Error loading information for repository "%s" (ID %d) '
+                    'for the New Review Request page.',
+                    repo.name, repo.pk)
+
+        return {
+            'repos': valid_repos,
+        }
 
 
 class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,

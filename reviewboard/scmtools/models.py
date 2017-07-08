@@ -229,9 +229,19 @@ class Repository(models.Model):
 
     password = property(_get_password, _set_password)
 
+    @property
+    def scmtool_class(self):
+        """The SCMTool subclass used for this repository."""
+        return self.tool.get_scmtool_class()
+
     def get_scmtool(self):
-        cls = self.tool.get_scmtool_class()
-        return cls(self)
+        """Return an instance of the SCMTool for this repository.
+
+        Returns:
+            reviewboard.scmtools.core.SCMTool:
+            A new instance of the SCMTool for this repository.
+        """
+        return self.scmtool_class(self)
 
     @cached_property
     def hosting_service(self):
@@ -272,7 +282,36 @@ class Repository(models.Model):
         if hosting_service:
             return hosting_service.supports_post_commit
         else:
-            return self.get_scmtool().supports_post_commit
+            return self.scmtool_class.supports_post_commit
+
+    @property
+    def supports_pending_changesets(self):
+        """Whether this repository supports server-aware pending changesets."""
+        return self.scmtool_class.supports_pending_changesets
+
+    @property
+    def diffs_use_absolute_paths(self):
+        """Whether or not diffs for this repository contain absolute paths.
+
+        Some types of source code management systems generate diffs that
+        contain paths relative to the directory where the diff was generated.
+        Most contain absolute paths. This flag indicates which path format
+        this repository can expect.
+        """
+        # Ideally, we won't have to instantiate the class, as that can end up
+        # performing some expensive calls or HTTP requests.  If the SCMTool is
+        # modern (doesn't define a get_diffs_use_absolute_paths), it will have
+        # all the information we need on the class. If not, we might have to
+        # instantiate it, but do this as a last resort.
+        scmtool_cls = self.scmtool_class
+
+        if isinstance(scmtool_cls.diffs_use_absolute_paths, bool):
+            return scmtool_cls.diffs_use_absolute_paths
+        elif hasattr(scmtool_cls, 'get_diffs_use_absolute_paths'):
+            # This will trigger a deprecation warning.
+            return self.get_scmtool().diffs_use_absolute_paths
+        else:
+            return False
 
     def get_credentials(self):
         """Returns the credentials for this repository.
