@@ -13,8 +13,7 @@ from django.http import (Http404,
                          HttpResponseNotFound,
                          HttpResponseNotModified,
                          HttpResponseRedirect)
-from django.shortcuts import (get_object_or_404, get_list_or_404,
-                              render_to_response)
+from django.shortcuts import get_object_or_404, get_list_or_404, render
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import six, timezone
@@ -24,7 +23,7 @@ from django.utils.http import http_date
 from django.utils.safestring import mark_safe
 from django.utils.timezone import utc
 from django.utils.translation import ugettext_lazy as _
-from django.views.generic.base import TemplateView
+from django.views.generic.base import RedirectView, TemplateView, View
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.decorators import augment_method_from
@@ -36,7 +35,8 @@ from djblets.views.generic.etag import ETagViewMixin
 from reviewboard.accounts.decorators import (check_login_required,
                                              valid_prefs_required)
 from reviewboard.accounts.mixins import (CheckLoginRequiredViewMixin,
-                                         LoginRequiredViewMixin)
+                                         LoginRequiredViewMixin,
+                                         UserProfileRequiredViewMixin)
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
 from reviewboard.attachments.models import (FileAttachment,
                                             get_latest_file_attachments)
@@ -147,11 +147,9 @@ class ReviewRequestViewMixin(CheckLoginRequiredViewMixin,
             django.http.HttpResponse:
             The resulting HTTP response to send to the client.
         """
-        response = render_to_response(self.permission_denied_template_name,
-                                      RequestContext(request))
-        response.status_code = 403
-
-        return response
+        return render(request,
+                      self.permission_denied_template_name,
+                      status=403)
 
     def get_review_request(self, review_request_id, local_site=None):
         """Return the review request for the given display ID.
@@ -430,9 +428,10 @@ def build_diff_comment_fragments(
 # View functions
 #
 
-@check_login_required
-@valid_prefs_required
-def root(request, local_site_name=None):
+class RootView(CheckLoginRequiredViewMixin,
+               UserProfileRequiredViewMixin,
+               CheckLocalSiteAccessViewMixin,
+               RedirectView):
     """Handles the root URL of Review Board or a Local Site.
 
     If the user is authenticated, this will redirect to their Dashboard.
@@ -441,13 +440,34 @@ def root(request, local_site_name=None):
     Either page may then redirect for login or show a Permission Denied,
     depending on the settings.
     """
-    if request.user.is_authenticated():
-        url_name = 'dashboard'
-    else:
-        url_name = 'all-review-requests'
 
-    return HttpResponseRedirect(
-        local_site_reverse(url_name, local_site_name=local_site_name))
+    permanent = False
+
+    def get_redirect_url(self, local_site_name=None, *args, **kwargs):
+        """Return the URL to redirect to.
+
+        Args:
+            local_site_name (unicode, optional):
+                The Local Site being accessed, if any.
+
+            *args (tuple):
+                Positional arguments passed to the view.
+
+            **kwargs (dict):
+                Keyword arguments passed to the view.
+
+        Returns:
+            unicode:
+            The URL to redirect to. If the user is authenticated, this will
+            return the dashboard's URL. Otherwise, it will return the
+            All Review Request page's URL.
+        """
+        if self.request.user.is_authenticated():
+            url_name = 'dashboard'
+        else:
+            url_name = 'all-review-requests'
+
+        return local_site_reverse(url_name, local_site_name=local_site_name)
 
 
 class NewReviewRequestView(LoginRequiredViewMixin,
@@ -1116,41 +1136,60 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin, DiffViewerView):
         return context
 
 
-@check_login_required
-@check_local_site_access
-def raw_diff(request, review_request_id, revision=None, local_site=None):
+class DownloadRawDiffView(ReviewRequestViewMixin, View):
+    """View for downloading a raw diff from a review request.
+
+    This will generate a single raw diff file spanning all the FileDiffs
+    in a diffset for the revision specified in the URL.
     """
-    Displays a raw diff of all the filediffs in a diffset for the
-    given review request.
-    """
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site)
 
-    if not review_request:
-        return response
+    def get(self, request, revision=None, *args, **kwargs):
+        """Handle HTTP GET requests for this view.
 
-    draft = review_request.get_draft(request.user)
-    diffset = _query_for_diff(review_request, request.user, revision, draft)
+        This will generate the raw diff file and send it to the client.
 
-    tool = review_request.repository.get_scmtool()
-    data = tool.get_parser('').raw_diff(diffset)
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
 
-    resp = HttpResponse(data, content_type='text/x-patch')
+            revision (int, optional):
+                The revision of the diff to download. Defaults to the latest
+                revision.
 
-    if diffset.name == 'diff':
-        filename = "rb%d.patch" % review_request.display_id
-    else:
-        filename = six.text_type(diffset.name).encode('ascii', 'ignore')
+            *args (tuple):
+                Positional arguments passed to the handler.
 
-        # Content-Disposition headers containing commas break on Chrome 16 and
-        # newer. To avoid this, replace any commas in the filename with an
-        # underscore. Was bug 3704.
-        filename = filename.replace(',', '_')
+            **kwargs (dict):
+                Keyword arguments passed to the handler.
 
-    resp['Content-Disposition'] = 'attachment; filename=%s' % filename
-    set_last_modified(resp, diffset.timestamp)
+        Returns:
+            django.http.HttpResponse:
+            The HTTP response to send to the client.
+        """
+        review_request = self.review_request
 
-    return resp
+        draft = review_request.get_draft(request.user)
+        diffset = self.get_diff(revision, draft)
+
+        tool = review_request.repository.get_scmtool()
+        data = tool.get_parser('').raw_diff(diffset)
+
+        resp = HttpResponse(data, content_type='text/x-patch')
+
+        if diffset.name == 'diff':
+            filename = 'rb%d.patch' % review_request.display_id
+        else:
+            filename = six.text_type(diffset.name).encode('ascii', 'ignore')
+
+            # Content-Disposition headers containing commas break on Chrome 16
+            # and newer. To avoid this, replace any commas in the filename with
+            # an underscore. Was bug 3704.
+            filename = filename.replace(',', '_')
+
+        resp['Content-Disposition'] = 'attachment; filename=%s' % filename
+        set_last_modified(resp, diffset.timestamp)
+
+        return resp
 
 
 @check_login_required
@@ -1248,47 +1287,40 @@ def comment_diff_fragments(
     return response
 
 
-class ReviewsDiffFragmentView(DiffFragmentView):
+class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
     """Renders a fragment from a file in the diff viewer.
 
     Displays just a fragment of a diff or interdiff owned by the given
     review request. The fragment is identified by the chunk index in the
     diff.
 
-    The view expects the following parameters to be provided:
+    ``review_request_id``:
+        The ID of the ReviewRequest containing the diff to render.
 
-        * review_request_id
-          - The ID of the ReviewRequest containing the diff to render.
+    ``revision``:
+        The DiffSet revision to render.
 
-        * revision
-          - The DiffSet revision to render.
-
-        * filediff_id
-          - The ID of the FileDiff within the DiffSet.
+    ``filediff_id``:
+        The ID of the FileDiff within the DiffSet.
 
     The following may also be provided:
 
-        * interdiff_revision
-          - The second DiffSet revision in an interdiff revision range.
+    ``interdiff_revision``:
+        The second DiffSet revision in an interdiff revision range.
 
-        * chunk_index
-          - The index (0-based) of the chunk to render. If left out, the
-            entire file will be rendered.
+    ``chunk_index``:
+        The index (0-based) of the chunk to render. If left out, the
+        entire file will be rendered.
 
-        * local_site
-          - The LocalSite the ReviewRequest must be on, if any.
+    ``local_site``:
+        The LocalSite the ReviewRequest must be on, if any.
 
-    See DiffFragmentView's documentation for the accepted query parameters.
+    See :py:class:`~reviewboard.diffviewer.views.DiffFragmentView` for the
+    accepted query parameters.
     """
-    @method_decorator(check_login_required)
-    @method_decorator(check_local_site_access)
-    @augment_method_from(DiffFragmentView)
-    def dispatch(self, *args, **kwargs):
-        pass
 
-    def process_diffset_info(self, review_request_id, revision,
-                             interdiff_revision=None, local_site=None,
-                             *args, **kwargs):
+    def process_diffset_info(self, revision, interdiff_revision=None,
+                             **kwargs):
         """Process and return information on the desired diff.
 
         The diff IDs and other data passed to the view can be processed and
@@ -1297,23 +1329,30 @@ class ReviewsDiffFragmentView(DiffFragmentView):
 
         If the review request cannot be accessed by the user, an HttpResponse
         will be returned instead.
+
+        Args:
+            revision (int):
+                The revision of the diff to view.
+
+            interdiff_revision (int, optional):
+                The second diff revision if viewing an interdiff.
+
+            **kwargs (dict):
+                Keyword arguments passed to the view.
+
+        Returns:
+            dict:
+            Information on the diff for use in the template and in queries.
         """
-        self.review_request, response = \
-            _find_review_request(self.request, review_request_id, local_site)
-
-        if not self.review_request:
-            return response
-
         user = self.request.user
         draft = self.review_request.get_draft(user)
 
         if interdiff_revision is not None:
-            interdiffset = _query_for_diff(self.review_request, user,
-                                           interdiff_revision, draft)
+            interdiffset = self.get_diff(interdiff_revision, draft)
         else:
             interdiffset = None
 
-        diffset = _query_for_diff(self.review_request, user, revision, draft)
+        diffset = self.get_diff(revision, draft)
 
         return super(ReviewsDiffFragmentView, self).process_diffset_info(
             diffset_or_id=diffset,
@@ -1321,10 +1360,24 @@ class ReviewsDiffFragmentView(DiffFragmentView):
             **kwargs)
 
     def create_renderer(self, diff_file, *args, **kwargs):
-        """Creates the DiffRenderer for this fragment.
+        """Create the DiffRenderer for this fragment.
 
         This will augment the renderer for binary files by looking up
         file attachments, if review UIs are involved, disabling caching.
+
+        Args:
+            diff_file (dict):
+                The information on the diff file to render.
+
+            *args (tuple):
+                Additional positional arguments from the parent class.
+
+            **kwargs (dict):
+                Additional keyword arguments from the parent class.
+
+        Returns:
+            reviewboard.diffviewer.renderers.DiffRenderer:
+            The resulting diff renderer.
         """
         renderer = super(ReviewsDiffFragmentView, self).create_renderer(
             diff_file=diff_file, *args, **kwargs)
@@ -1676,157 +1729,244 @@ class PreviewReplyEmailView(ReviewRequestViewMixin, BasePreviewEmailView):
         }
 
 
-@check_login_required
-@check_local_site_access
-def review_file_attachment(request, review_request_id, file_attachment_id,
-                           file_attachment_diff_id=None, local_site=None):
+class ReviewFileAttachmentView(ReviewRequestViewMixin, View):
     """Displays a file attachment with a review UI."""
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site)
 
-    if not review_request:
-        return response
+    def get(self, request, file_attachment_id, file_attachment_diff_id=None,
+            *args, **kwargs):
+        """Handle a HTTP GET request.
 
-    draft = review_request.get_draft(request.user)
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
 
-    # Make sure the attachment returned is part of either the review request
-    # or an accessible draft.
-    review_request_q = (Q(review_request=review_request) |
-                        Q(inactive_review_request=review_request))
+            file_attachment_id (int):
+                The ID of the file attachment to review.
 
-    if draft:
-        review_request_q |= Q(drafts=draft) | Q(inactive_drafts=draft)
+            file_attachment_diff_id (int, optional):
+                The ID of the file attachment to diff against.
 
-    file_attachment = get_object_or_404(
-        FileAttachment,
-        Q(pk=file_attachment_id) & review_request_q)
+            *args (tuple):
+                Positional arguments passed to the handler.
 
-    review_ui = file_attachment.review_ui
+            **kwargs (dict):
+                Keyword arguments passed to the handler.
 
-    if not review_ui:
-        review_ui = FileAttachmentReviewUI(review_request, file_attachment)
+        Returns:
+            django.http.HttpResponse:
+            The resulting HTTP response from the handler.
+        """
+        review_request = self.review_request
+        draft = review_request.get_draft(request.user)
 
-    if file_attachment_diff_id:
-        file_attachment_revision = get_object_or_404(
+        # Make sure the attachment returned is part of either the review request
+        # or an accessible draft.
+        review_request_q = (Q(review_request=review_request) |
+                            Q(inactive_review_request=review_request))
+
+        if draft:
+            review_request_q |= Q(drafts=draft) | Q(inactive_drafts=draft)
+
+        file_attachment = get_object_or_404(
             FileAttachment,
-            Q(pk=file_attachment_diff_id) &
-            Q(attachment_history=file_attachment.attachment_history) &
-            review_request_q)
-        review_ui.set_diff_against(file_attachment_revision)
+            Q(pk=file_attachment_id) & review_request_q)
 
-    try:
-        is_enabled_for = review_ui.is_enabled_for(
-            user=request.user,
-            review_request=review_request,
-            file_attachment=file_attachment)
-    except Exception as e:
-        logging.error('Error when calling is_enabled_for for '
-                      'FileAttachmentReviewUI %r: %s',
-                      review_ui, e, exc_info=1)
-        is_enabled_for = False
+        review_ui = file_attachment.review_ui
 
-    if review_ui and is_enabled_for:
+        if not review_ui:
+            review_ui = FileAttachmentReviewUI(review_request, file_attachment)
+
+        if file_attachment_diff_id:
+            file_attachment_revision = get_object_or_404(
+                FileAttachment,
+                Q(pk=file_attachment_diff_id) &
+                Q(attachment_history=file_attachment.attachment_history) &
+                review_request_q)
+            review_ui.set_diff_against(file_attachment_revision)
+
+        try:
+            is_enabled_for = review_ui.is_enabled_for(
+                user=request.user,
+                review_request=review_request,
+                file_attachment=file_attachment)
+        except Exception as e:
+            logging.error('Error when calling is_enabled_for for '
+                          'FileAttachmentReviewUI %r: %s',
+                          review_ui, e, exc_info=1)
+            is_enabled_for = False
+
+        if review_ui and is_enabled_for:
+            return review_ui.render_to_response(request)
+        else:
+            raise Http404
+
+
+class ReviewScreenshotView(ReviewRequestViewMixin, View):
+    """Displays a review UI for a screenshot.
+
+    Screenshots are a legacy feature, predating file attachments. While they
+    can't be created anymore, this view does allow for reviewing screenshots
+    uploaded in old versions.
+    """
+
+    def get(self, request, screenshot_id, *args, **kwargs):
+        """Handle a HTTP GET request.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            screenshot_id (int):
+                The ID of the screenshot to review.
+
+            *args (tuple):
+                Positional arguments passed to the handler.
+
+            **kwargs (dict):
+                Keyword arguments passed to the handler.
+
+        Returns:
+            django.http.HttpResponse:
+            The resulting HTTP response from the handler.
+        """
+        review_request = self.review_request
+        draft = review_request.get_draft(request.user)
+
+        # Make sure the screenshot returned is part of either the review
+        # request or an accessible draft.
+        review_request_q = (Q(review_request=review_request) |
+                            Q(inactive_review_request=review_request))
+
+        if draft:
+            review_request_q |= Q(drafts=draft) | Q(inactive_drafts=draft)
+
+        screenshot = get_object_or_404(Screenshot,
+                                       Q(pk=screenshot_id) & review_request_q)
+        review_ui = LegacyScreenshotReviewUI(review_request, screenshot)
+
         return review_ui.render_to_response(request)
-    else:
-        raise Http404
 
 
-@check_login_required
-@check_local_site_access
-def view_screenshot(request, review_request_id, screenshot_id,
-                    local_site=None):
-    """
-    Displays a screenshot, along with any comments that were made on it.
-    """
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site)
+class BugURLRedirectView(ReviewRequestViewMixin, View):
+    """Redirects the user to an external bug report."""
 
-    if not review_request:
+    def get(self, request, bug_id, **kwargs):
+        """Handle HTTP GET requests for this view.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            bug_id (unicode):
+                The ID of the bug report to redirect to.
+
+            *args (tuple):
+                Positional arguments passed to the handler.
+
+            **kwargs (dict):
+                Keyword arguments passed to the handler.
+
+        Returns:
+            django.http.HttpResponse:
+            The HTTP response redirecting the client.
+        """
+        # Need to create a custom HttpResponse because a non-HTTP url scheme
+        # will cause HttpResponseRedirect to fail with a "Disallowed Redirect".
+        response = HttpResponse(status=302)
+        response['Location'] = \
+            self.review_request.repository.bug_tracker % bug_id
+
         return response
 
-    draft = review_request.get_draft(request.user)
 
-    # Make sure the screenshot returned is part of either the review request
-    # or an accessible draft.
-    review_request_q = (Q(review_request=review_request) |
-                        Q(inactive_review_request=review_request))
-
-    if draft:
-        review_request_q |= Q(drafts=draft) | Q(inactive_drafts=draft)
-
-    screenshot = get_object_or_404(Screenshot,
-                                   Q(pk=screenshot_id) & review_request_q)
-    review_ui = LegacyScreenshotReviewUI(review_request, screenshot)
-
-    return review_ui.render_to_response(request)
-
-
-@check_login_required
-@check_local_site_access
-def bug_url(request, review_request_id, bug_id, local_site=None):
-    """Redirects user to bug tracker issue page."""
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site)
-
-    if not review_request:
-        return response
-
-    # Need to create a custom HttpResponse because a non-HTTP url scheme will
-    # cause HttpResponseRedirect to fail with a "Disallowed Redirect".
-    response = HttpResponse(status=302)
-    response['Location'] = review_request.repository.bug_tracker % bug_id
-    return response
-
-
-@check_login_required
-@check_local_site_access
-def bug_infobox(request, review_request_id, bug_id,
-                template_name='reviews/bug_infobox.html',
-                local_site=None):
-    """Displays a bug info popup.
+class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
+    """Displays information on a bug, for use in bug pop-up infoboxes.
 
     This is meant to be embedded in other pages, rather than being
     a standalone page.
     """
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site)
 
-    if not review_request:
-        return response
+    template_name = 'reviews/bug_infobox.html'
 
-    repository = review_request.repository
+    def get(self, request, bug_id, **kwargs):
+        """Handle HTTP GET requests for this view.
 
-    bug_tracker = repository.bug_tracker_service
-    if not bug_tracker:
-        return HttpResponseNotFound(_('Unable to find bug tracker service'))
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
 
-    if not isinstance(bug_tracker, BugTracker):
-        return HttpResponseNotFound(
-            _('Bug tracker %s does not support metadata') % bug_tracker.name)
+            bug_id (unicode):
+                The ID of the bug to view.
 
-    bug_info = bug_tracker.get_bug_info(repository, bug_id)
-    bug_description = bug_info['description']
-    bug_summary = bug_info['summary']
-    bug_status = bug_info['status']
+            *args (tuple):
+                Positional arguments passed to the handler.
 
-    if not bug_summary and not bug_description:
-        return HttpResponseNotFound(
-            _('No bug metadata found for bug %(bug_id)s on bug tracker '
-              '%(bug_tracker)s') % {
-                'bug_id': bug_id,
-                'bug_tracker': bug_tracker.name,
-            })
+            **kwargs (dict):
+                Keyword arguments passed to the handler.
 
-    # Don't do anything for single newlines, but treat two newlines as a
-    # paragraph break.
-    escaped_description = escape(bug_description).replace('\n\n', '<br/><br/>')
+        Returns:
+            django.http.HttpResponse:
+            The HTTP response to send to the client.
 
-    return render_to_response(template_name, RequestContext(request, {
-        'bug_id': bug_id,
-        'bug_description': mark_safe(escaped_description),
-        'bug_status': bug_status,
-        'bug_summary': bug_summary
-    }))
+            If details on a bug could not be found or fetching bug information
+            is not supported, this will return a a :http:`404`.
+        """
+        request = self.request
+        review_request = self.review_request
+        repository = review_request.repository
+
+        bug_tracker = repository.bug_tracker_service
+
+        if not bug_tracker:
+            return HttpResponseNotFound(
+                _('Unable to find bug tracker service'))
+
+        if not isinstance(bug_tracker, BugTracker):
+            return HttpResponseNotFound(
+                _('Bug tracker %s does not support metadata')
+                % bug_tracker.name)
+
+        self.bug_id = bug_id
+        self.bug_info = bug_tracker.get_bug_info(repository, bug_id)
+
+        if (not self.bug_info.get('summary') and
+            not self.bug_info.get('description')):
+            return HttpResponseNotFound(
+                _('No bug metadata found for bug %(bug_id)s on bug tracker '
+                  '%(bug_tracker)s') % {
+                    'bug_id': bug_id,
+                    'bug_tracker': bug_tracker.name,
+                })
+
+        return super(BugInfoboxView, self).get(request, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        """Return context data for the template.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments passed to the view.
+
+        Returns:
+            django.template.RequestContext:
+            The resulting context data for the template.
+        """
+        # Don't do anything for single newlines, but treat two newlines as a
+        # paragraph break.
+        escaped_description = (
+            escape(self.bug_info['description'])
+            .replace('\n\n', '<br/><br/>')
+        )
+
+        context_data = super(BugInfoboxView, self).get_context_data(**kwargs)
+        context_data.update({
+            'bug_id': self.bug_id,
+            'bug_description': mark_safe(escaped_description),
+            'bug_status': self.bug_info['status'],
+            'bug_summary': self.bug_info['summary'],
+        })
+
+        return context_data
 
 
 class ReviewRequestInfoboxView(ReviewRequestViewMixin, TemplateView):
@@ -1905,49 +2045,59 @@ class ReviewRequestInfoboxView(ReviewRequestViewMixin, TemplateView):
         }
 
 
-def _download_diff_file(modified, request, review_request_id, revision,
-                        filediff_id, local_site=None):
+class DownloadDiffFileView(ReviewRequestViewMixin, View):
     """Downloads an original or modified file from a diff.
 
     This will fetch the file from a FileDiff, optionally patching it,
     and return the result as an HttpResponse.
     """
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site)
 
-    if not review_request:
-        return response
+    TYPE_ORIG = 0
+    TYPE_MODIFIED = 1
 
-    draft = review_request.get_draft(request.user)
-    diffset = _query_for_diff(review_request, request.user, revision, draft)
-    filediff = get_object_or_404(diffset.files, pk=filediff_id)
-    encoding_list = diffset.repository.get_encoding_list()
+    file_type = TYPE_ORIG
 
-    try:
-        data = get_original_file(filediff, request, encoding_list)
-    except FileNotFoundError:
-        logging.exception(
-            'Could not retrieve file "%s" (revision %s) for filediff ID %s',
-            filediff.dest_detail, revision, filediff_id)
-        raise Http404
+    def get(self, request, revision, filediff_id, *args, **kwargs):
+        """Handle HTTP GET requests for this view.
 
-    if modified:
-        data = get_patched_file(data, filediff, request)
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
 
-    data = convert_to_unicode(data, encoding_list)[1]
+            revision (int):
+                The revision of the diff to download the file from.
 
-    return HttpResponse(data, content_type='text/plain; charset=utf-8')
+            filediff_id (int, optional):
+                The ID of the FileDiff corresponding to the file to download.
 
+            *args (tuple):
+                Positional arguments passed to the handler.
 
-@check_login_required
-@check_local_site_access
-def download_orig_file(*args, **kwargs):
-    """Downloads an original file from a diff."""
-    return _download_diff_file(False, *args, **kwargs)
+            **kwargs (dict):
+                Keyword arguments passed to the handler.
 
+        Returns:
+            django.http.HttpResponse:
+            The HTTP response to send to the client.
+        """
+        review_request = self.review_request
+        draft = review_request.get_draft(request.user)
+        diffset = self.get_diff(revision, draft)
+        filediff = get_object_or_404(diffset.files, pk=filediff_id)
+        encoding_list = diffset.repository.get_encoding_list()
 
-@check_login_required
-@check_local_site_access
-def download_modified_file(*args, **kwargs):
-    """Downloads a modified file from a diff."""
-    return _download_diff_file(True, *args, **kwargs)
+        try:
+            data = get_original_file(filediff, request, encoding_list)
+        except FileNotFoundError:
+            logging.exception(
+                'Could not retrieve file "%s" (revision %s) for filediff '
+                'ID %s',
+                filediff.dest_detail, revision, filediff_id)
+            raise Http404
+
+        if self.file_type == self.TYPE_MODIFIED:
+            data = get_patched_file(data, filediff, request)
+
+        data = convert_to_unicode(data, encoding_list)[1]
+
+        return HttpResponse(data, content_type='text/plain; charset=utf-8')

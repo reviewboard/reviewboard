@@ -89,7 +89,7 @@ if settings.DEBUG and not settings.PRODUCTION:
 
 
 localsite_urlpatterns = [
-    url(r'^$', reviews_views.root, name='root'),
+    url(r'^$', reviews_views.RootView.as_view(), name='root'),
 
     url(r'^api/', include(resources.root.get_url_patterns())),
     url(r'^r/', include('reviewboard.reviews.urls')),

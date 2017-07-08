@@ -7,11 +7,13 @@ from reviewboard.reviews import views
 
 download_diff_urls = [
     url(r'^orig/$',
-        views.download_orig_file,
+        views.DownloadDiffFileView.as_view(
+            file_type=views.DownloadDiffFileView.TYPE_ORIG),
         name='download-orig-file'),
 
     url(r'^new/$',
-        views.download_modified_file,
+        views.DownloadDiffFileView.as_view(
+            file_type=views.DownloadDiffFileView.TYPE_MODIFIED),
         name='download-modified-file'),
 ]
 
@@ -32,7 +34,7 @@ diffviewer_revision_urls = [
         name="view-diff-revision"),
 
     url(r'^raw/$',
-        views.raw_diff,
+        views.DownloadRawDiffView.as_view(),
         name='raw-diff-revision'),
 
     url(r'^fragment/(?P<filediff_id>\d+)/(chunk/(?P<chunk_index>\d+)/)?',
@@ -57,7 +59,7 @@ diffviewer_interdiff_urls = [
 diffviewer_urls = [
     url(r'^$', views.ReviewsDiffViewerView.as_view(), name='view-diff'),
 
-    url(r'^raw/$', views.raw_diff, name='raw-diff'),
+    url(r'^raw/$', views.DownloadRawDiffView.as_view(), name='raw-diff'),
 
     url(r'^(?P<revision>\d+)/',
         include(diffviewer_revision_urls)),
@@ -68,9 +70,9 @@ diffviewer_urls = [
 
 
 bugs_urls = [
-    url(r'^$', views.bug_url, name='bug_url'),
+    url(r'^$', views.BugURLRedirectView.as_view(), name='bug_url'),
 
-    url(r'^infobox/$', views.bug_infobox, name='bug_infobox'),
+    url(r'^infobox/$', views.BugInfoboxView.as_view(), name='bug_infobox'),
 ]
 
 
@@ -89,17 +91,17 @@ review_request_urls = [
 
     # File attachments
     url(r'^file/(?P<file_attachment_id>\d+)/$',
-        views.review_file_attachment,
+        views.ReviewFileAttachmentView.as_view(),
         name='file-attachment'),
 
     url(r'^file/(?P<file_attachment_diff_id>\d+)'
         r'-(?P<file_attachment_id>\d+)/$',
-        views.review_file_attachment,
+        views.ReviewFileAttachmentView.as_view(),
         name='file-attachment'),
 
     # Screenshots
     url(r'^s/(?P<screenshot_id>\d+)/$',
-        views.view_screenshot,
+        views.ReviewScreenshotView.as_view(),
         name='screenshot'),
 
     # Bugs
