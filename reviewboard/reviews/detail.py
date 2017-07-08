@@ -198,9 +198,10 @@ class ReviewRequestPageData(object):
         self.latest_timestamps_by_review_id = {}
 
         for status_update in self.status_updates:
-            review = self.reviews_by_id[status_update.review_id]
-            review.status_update = status_update
-            status_update.review = review
+            if status_update.review_id is not None:
+                review = self.reviews_by_id[status_update.review_id]
+                review.status_update = status_update
+                status_update.review = review
 
         for r in self.reviews:
             r._body_top_replies = []
