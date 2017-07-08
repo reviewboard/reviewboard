@@ -1,96 +1,80 @@
-{% load changedescs avatars djblets_deco djblets_utils i18n reviewtags tz %}
+{% extends "reviews/base_entry.html" %}
+{% load i18n reviewtags %}
 
-{% with changedesc=entry.changedesc %}
-<div class="changedesc review-request-page-entry has-avatar" id="changedesc{{changedesc.id}}">
- <a name="changedesc{{changedesc.id}}"></a>
- <div class="box-statuses">
-  <div class="box-status">
-   <div class="avatar-container">
-{%  if siteconfig_settings.avatars_enabled %}
-    {% changedesc_user changedesc review_request as changedesc_user %}
-    {% avatar changedesc_user 48 %}
-{%  endif %}
-   </div>
-   <div class="labels-container"></div>
-  </div>
- </div>
 
- <div class="review-request-page-entry-contents
-             {{entry.collapsed|yesno:'collapsed,'}}">
-  <div class="header">
-   <div class="collapse-button btn"><div class="rb-icon {% if entry.collapsed %}rb-icon-expand-review{% else %}rb-icon-collapse-review{% endif %}"></div></div>
-   <div class="header-details">
-    <div class="summary"><strong>{% trans "Review request changed" %}</strong></div>
-    <div class="timestamp">{% localtime on %}{% blocktrans with changedesc.timestamp as timestamp and changedesc.timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</div>
-   </div>
-  </div>
-  <div class="body">
-   <div class="changed-fields">
+{% block entry_classes %}changedesc has-avatar{% endblock %}
+
+
+{% block entry_summary %}{% trans "Review request changed" %}{% endblock %}
+
+
+{% block entry_content %}
+{%  with changedesc=entry.changedesc %}
+<div class="changed-fields">
 {%   if entry.new_status %}
-    <h3 class="status">
-     {% trans "Status:" %}
-     <span class="value">
+ <h3 class="status">
+  {% trans "Status:" %}
+  <span class="value">
 {%   if entry.new_status == 'submitted' %}
-     {% trans "Closed (submitted)" %}
+  {% trans "Closed (submitted)" %}
 {%   elif entry.new_status == 'discarded' %}
-     {% trans "Discarded" %}
+  {% trans "Discarded" %}
 {%   elif entry.new_status == 'pending' %}
-     {% trans "Re-opened" %}
+  {% trans "Re-opened" %}
 {%   endif %}
-     </span>
-    </h3>
+  </span>
+ </h3>
 {%   endif %}
 
 {%   if changedesc.text %}
-    <h3>{% trans "Change Summary:" %}</h3>
-    <pre class="changedesc-text {% rich_text_classname changedesc.rich_text %}">{{changedesc.text|render_markdown:changedesc.rich_text}}</pre>
+ <h3>{% trans "Change Summary:" %}</h3>
+ <pre class="changedesc-text {% rich_text_classname changedesc.rich_text %}">{{changedesc.text|render_markdown:changedesc.rich_text}}</pre>
 {%   endif %}
 
 {%   for group in entry.fields_changed_groups %}
 {%    if group.inline %}
-    <table class="secondary-fields">
-{%   for fieldinfo in group.fields %}
-{%    if fieldinfo.rendered_html %}
-     <tr>
-      <th><h3>{{fieldinfo.title}}:</h3></th>
-      <td>
-       {{fieldinfo.rendered_html}}
-      </td>
-     </tr>
-{%    endif %}
-{%   endfor %}
-    </table>
-{%    else %}
-    <ul class="primary-fields">
+ <table class="secondary-fields">
 {%     for fieldinfo in group.fields %}
 {%      if fieldinfo.rendered_html %}
-     <li class="clearfix">
-      <h3>{{fieldinfo.title}}:</h3>
-      {{fieldinfo.rendered_html}}
-     </li>
+  <tr>
+   <th><h3>{{fieldinfo.title}}:</h3></th>
+   <td>
+    {{fieldinfo.rendered_html}}
+   </td>
+  </tr>
 {%      endif %}
 {%     endfor %}
-    </ul>
+ </table>
+{%    else %}
+ <ul class="primary-fields">
+{%     for fieldinfo in group.fields %}
+{%      if fieldinfo.rendered_html %}
+  <li class="clearfix">
+   <h3>{{fieldinfo.title}}:</h3>
+   {{fieldinfo.rendered_html}}
+  </li>
+{%      endif %}
+{%     endfor %}
+ </ul>
 {%    endif %}
 {%   endfor %}
-   </div>
-
-{%  if entry.status_updates %}
-   <div class="changedesc-status-updates">
-    <section class="status-update-summary">
-     <h3 class="status-update-review-header {{entry.state_summary_class}}">{% trans "Checks run" %} ({{entry.state_summary}})</h3>
-
-{%   for update in entry.status_updates %}
-     {{update.summary_html}}
-{%   endfor %}
-   </section>
-
-{%   for update in entry.status_updates %}
-{%    include "reviews/status_update_review_section.html" %}
-{%   endfor %}
-   </div>
-{%  endif %}
-  </div>
- </div>
 </div>
-{% endwith %}
+
+{%   if entry.status_updates %}
+<div class="changedesc-status-updates">
+ <section class="status-update-summary">
+  <h3 class="status-update-review-header {{entry.state_summary_class}}">{% trans "Checks run" %} ({{entry.state_summary}})</h3>
+
+{%    for update in entry.status_updates %}
+  {{update.summary_html}}
+{%    endfor %}
+ </section>
+
+{%    for update in entry.status_updates %}
+{%     include "reviews/status_update_review_section.html" %}
+{%    endfor %}
+</div>
+{%   endif %}
+
+{%  endwith %}
+{% endblock entry_content %}

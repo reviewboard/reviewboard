@@ -28,7 +28,7 @@
 
 <div id="reviews">
 {%  if initial_status_entry and initial_status_entry.has_content %}
-{%   include initial_status_entry.template_name with entry=initial_status_entry %}
+{%   include initial_status_entry.template_name with entry=initial_status_entry show_entry_statuses_area=False %}
 {%  endif %}
 
  <ul id="view_controls">
@@ -50,7 +50,7 @@
 
 {%  for entry in entries %}
 {%   if entry.template_name %}
-{%    include entry.template_name %}
+{%    include entry.template_name with show_entry_statuses_area=True %}
 {%   endif %}
 {%  endfor %}
 </div>

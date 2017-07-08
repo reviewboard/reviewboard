@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 from collections import Counter, defaultdict
 from datetime import datetime
+from itertools import chain
 
 from django.db.models import Q
 from django.template.loader import render_to_string
@@ -386,6 +387,11 @@ class BaseReviewRequestPageEntry(object):
     page.
 
     Attributes:
+        avatar_user (django.contrib.auth.models.User):
+            The user to display an avatar for. This can be ``None``, in which
+            case no avatar will be displayed. Templates can also override the
+            avatar HTML instead of using this.
+
         timestamp (datetime.datetime):
             The timestamp of the entry.
 
@@ -393,13 +399,22 @@ class BaseReviewRequestPageEntry(object):
             Whether the entry should be initially collapsed.
     """
 
+    #: The ID used for entries of this type.
+    entry_id = None
+
     #: The template to render for the HTML.
     template_name = None
 
     #: The template to render for any JavaScript.
-    js_template_name = None
+    js_template_name = 'reviews/boxes/entry.js'
 
-    def __init__(self, timestamp, collapsed):
+    #: The name of the JavaScript Backbone.Model class for this entry.
+    js_model_class = 'RB.ReviewRequestPageEntry'
+
+    #: The name of the JavaScript Backbone.View class for this entry.
+    js_view_class = 'RB.CollapsableBoxView'
+
+    def __init__(self, timestamp, collapsed, avatar_user=None):
         """Initialize the entry.
 
         Args:
@@ -408,16 +423,112 @@ class BaseReviewRequestPageEntry(object):
 
             collapsed (bool):
                 Whether the entry is collapsed by default.
+
+            avatar_user (django.contrib.auth.models.User, optional):
+                The user to display an avatar for. This can be ``None``, in
+                which case no avatar will be displayed. Templates can also
+                override the avatar HTML instead of using this.
         """
         self.timestamp = timestamp
         self.collapsed = collapsed
+        self.avatar_user = avatar_user
+
+    def get_dom_element_id(self):
+        """Return the ID used for the DOM element for this entry.
+
+        By default, this returns :py:attr:`name`. Subclasses should override
+        this to include a unique ID for the entry, based on the object loaded.
+
+        Returns:
+            unicode:
+            The ID used for the element.
+        """
+        return self.entry_id
+
+    def get_js_model_data(self):
+        """Return data to pass to the JavaScript Model during instantiation.
+
+        The data returned from this function will be provided to the model
+        when constructed.
+
+        Returns:
+            dict:
+            A dictionary of attributes to pass to the Model instance. By
+            default, it will be empty.
+        """
+        return {}
+
+    def get_js_view_data(self):
+        """Return data to pass to the JavaScript View during instantiation.
+
+        The data returned from this function will be provided to the view when
+        constructed.
+
+        Returns:
+            dict:
+            A dictionary of options to pass to the View instance. By
+            default, it will be empty.
+        """
+        return {}
 
     def finalize(self):
         """Perform final computations after all comments have been added."""
         pass
 
 
-class StatusUpdatesEntryMixin(object):
+class ReviewSerializerMixin(object):
+    """Mixin to provide review data serialization."""
+
+    def serialize_review_js_model_data(self, review):
+        """Serialize information on a review for JavaScript models.
+
+        Args:
+            review (reviewboard.reviews.models.review.Review):
+                The review to serialize.
+
+        Returns:
+            dict:
+            The serialized data for the JavaScript model.
+        """
+        return {
+            'id': review.pk,
+            'shipIt': review.ship_it,
+            'public': True,
+            'bodyTop': review.body_top,
+            'bodyBottom': review.body_bottom,
+        }
+
+
+class DiffCommentsSerializerMixin(object):
+    """Mixin to provide diff comment data serialization."""
+
+    def serialize_diff_comments_js_model_data(self, diff_comments):
+        """Serialize information on diff comments for JavaScript models.
+
+        Args:
+            diff_comments (list of reviewboard.reviews.models.diff_comment.
+                           Comment):
+                The list of comments to serialize.
+
+        Returns:
+            dict:
+            The serialized data for the JavaScript model.
+        """
+        diff_comments_data = []
+
+        for comment in diff_comments:
+            key = '%s' % comment.filediff_id
+
+            if comment.interfilediff_id:
+                key = '%s-%s' % (key, comment.interfilediff_id)
+
+            diff_comments_data.append((unicode(comment.pk), key))
+
+        return diff_comments_data
+
+
+class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin,
+                              ReviewSerializerMixin):
     """A mixin for any entries which can include status updates.
 
     This provides common functionality for the two entries that include status
@@ -540,6 +651,37 @@ class StatusUpdatesEntryMixin(object):
 
         self.state_summary = ', '.join(summary_parts)
 
+    def get_js_model_data(self):
+        """Return data to pass to the JavaScript Model during instantiation.
+
+        The data returned from this function will be provided to the model
+        when constructed. This consists of information on the reviews for
+        status updates and the comments made on diffs.
+
+        Returns:
+            dict:
+            A dictionary of attributes to pass to the Model instance.
+        """
+        diff_comments_data = list(chain.from_iterable(
+            self.serialize_diff_comments_js_model_data(
+                update.comments['diff_comments'])
+            for update in self.status_updates
+            if update.comments['diff_comments']
+        ))
+
+        reviews_data = [
+            self.serialize_review_js_model_data(update.review)
+            for update in self.status_updates
+            if update.review_id is not None
+        ]
+
+        return {
+            key: value
+            for key, value in (('diffCommentsData', diff_comments_data),
+                               ('reviewsData', reviews_data))
+            if value
+        }
+
 
 class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
                                 BaseReviewRequestPageEntry):
@@ -554,8 +696,10 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
     by this class.
     """
 
+    entry_id = 'initial_status_updates'
     template_name = 'reviews/boxes/initial_status_updates.html'
-    js_template_name = 'reviews/boxes/initial_status_updates.js'
+    js_model_class = 'RB.ReviewRequestPageStatusUpdatesEntry'
+    js_view_class = 'RB.InitialStatusUpdatesBoxView'
 
     def __init__(self, review_request, collapsed, data):
         """Initialize the entry.
@@ -585,7 +729,8 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
         return len(self.status_updates) > 0
 
 
-class ReviewEntry(BaseReviewRequestPageEntry):
+class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
+                  BaseReviewRequestPageEntry):
     """A review box.
 
     Attributes:
@@ -603,8 +748,10 @@ class ReviewEntry(BaseReviewRequestPageEntry):
             type, and the values are lists of comment objects.
     """
 
+    entry_id = 'review'
     template_name = 'reviews/boxes/review.html'
-    js_template_name = 'reviews/boxes/review.js'
+    js_model_class = 'RB.ReviewRequestPageReviewEntry'
+    js_view_class = 'RB.ReviewBoxView'
 
     def __init__(self, request, review_request, review, collapsed, data):
         """Initialize the entry.
@@ -625,7 +772,9 @@ class ReviewEntry(BaseReviewRequestPageEntry):
             data (ReviewRequestPageData):
                 Pre-queried data for the review request page.
         """
-        super(ReviewEntry, self).__init__(review.timestamp, collapsed)
+        super(ReviewEntry, self).__init__(timestamp=review.timestamp,
+                                          collapsed=collapsed,
+                                          avatar_user=review.user)
 
         self.request = request
         self.review_request = review_request
@@ -643,6 +792,15 @@ class ReviewEntry(BaseReviewRequestPageEntry):
     def can_revoke_ship_it(self):
         """Whether the Ship It can be revoked by the current user."""
         return self.review.can_user_revoke_ship_it(self.request.user)
+
+    def get_dom_element_id(self):
+        """Return the ID used for the DOM element for this entry.
+
+        Returns:
+            unicode:
+            The ID used for the element.
+        """
+        return '%s%s' % (self.entry_id, self.review.pk)
 
     def add_comment(self, comment_type, comment):
         """Add a comment to this entry.
@@ -666,6 +824,29 @@ class ReviewEntry(BaseReviewRequestPageEntry):
                 if self.review_request.submitter == self.request.user:
                     self.collapsed = False
 
+    def get_js_model_data(self):
+        """Return data to pass to the JavaScript Model during instantiation.
+
+        The data returned from this function will be provided to the model
+        when constructed. This consists of information on the review and the
+        comments made on diffs.
+
+        Returns:
+            dict:
+            A dictionary of attributes to pass to the Model instance.
+        """
+        model_data = {
+            'reviewData': self.serialize_review_js_model_data(self.review),
+        }
+
+        diff_comments_data = self.serialize_diff_comments_js_model_data(
+            self.comments['diff_comments'])
+
+        if diff_comments_data:
+            model_data['diffCommentsData'] = diff_comments_data
+
+        return model_data
+
 
 class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
     """A change description box.
@@ -675,8 +856,10 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
             The change description for this entry.
     """
 
+    entry_id = 'changedesc'
     template_name = 'reviews/boxes/change.html'
-    js_template_name = 'reviews/boxes/change.js'
+    js_model_class = 'RB.ReviewRequestPageChangeEntry'
+    js_view_class = 'RB.ChangeBoxView'
 
     def __init__(self, request, review_request, changedesc, collapsed, data):
         """Initialize the entry.
@@ -697,8 +880,11 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
             data (ReviewRequestPageData):
                 Pre-queried data for the review request page.
         """
-        BaseReviewRequestPageEntry.__init__(self, changedesc.timestamp,
-                                            collapsed)
+        BaseReviewRequestPageEntry.__init__(
+            self,
+            timestamp=changedesc.timestamp,
+            collapsed=collapsed,
+            avatar_user=changedesc.get_user(review_request))
 
         if status_updates_feature.is_enabled(request=request):
             StatusUpdatesEntryMixin.__init__(self)
@@ -751,3 +937,12 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
                 cur_field_changed_group['fields'] += \
                     field.get_change_entry_sections_html(
                         changedesc.fields_changed[field_id])
+
+    def get_dom_element_id(self):
+        """Return the ID used for the DOM element for this entry.
+
+        Returns:
+            unicode:
+            The ID used for the element.
+        """
+        return '%s%s' % (self.entry_id, self.changedesc.pk)
