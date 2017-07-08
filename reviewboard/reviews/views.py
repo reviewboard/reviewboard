@@ -274,82 +274,6 @@ class ReviewRequestViewMixin(CheckLoginRequiredViewMixin,
 # Helper functions
 #
 
-
-def _render_permission_denied(
-    request,
-    template_name='reviews/review_request_permission_denied.html'):
-    """Renders a Permission Denied error for this review request."""
-
-    response = render_to_response(template_name, RequestContext(request))
-    response.status_code = 403
-    return response
-
-
-def _find_review_request_object(review_request_id, local_site):
-    """Finds a review request given an ID and an optional LocalSite name.
-
-    If a local site is passed in on the URL, we want to look up the review
-    request using the local_id instead of the pk. This allows each LocalSite
-    configured to have its own review request ID namespace starting from 1.
-    """
-    q = ReviewRequest.objects.all()
-
-    if local_site:
-        q = q.filter(local_site=local_site,
-                     local_id=review_request_id)
-    else:
-        q = q.filter(pk=review_request_id)
-
-    try:
-        q = q.select_related('submitter', 'repository')
-        return q.get()
-    except ReviewRequest.DoesNotExist:
-        raise Http404
-
-
-def _find_review_request(request, review_request_id, local_site):
-    """Finds a review request matching an ID, checking user access permissions.
-
-    If the review request is accessible by the user, we return
-    (ReviewRequest, None). Otherwise, we return (None, response).
-    """
-    review_request = _find_review_request_object(review_request_id, local_site)
-
-    if review_request.is_accessible_by(request.user):
-        return review_request, None
-    else:
-        return None, _render_permission_denied(request)
-
-
-def _query_for_diff(review_request, user, revision, draft):
-    """
-    Queries for a diff based on several parameters.
-
-    If the draft does not exist, this throws an Http404 exception.
-    """
-    # Normalize the revision, since it might come in as a string.
-    if revision:
-        revision = int(revision)
-
-    # This will try to grab the diff associated with a draft if the review
-    # request has an associated draft and is either the revision being
-    # requested or no revision is being requested.
-    if (draft and draft.diffset_id and
-        (revision is None or draft.diffset.revision == revision)):
-        return draft.diffset
-
-    query = Q(history=review_request.diffset_history_id)
-
-    # Grab a revision if requested.
-    if revision is not None:
-        query = query & Q(revision=revision)
-
-    try:
-        return DiffSet.objects.filter(query).latest()
-    except DiffSet.DoesNotExist:
-        raise Http404
-
-
 def build_diff_comment_fragments(
     comments, context,
     comment_template_name='reviews/diff_comment_fragment.html',
@@ -1192,50 +1116,95 @@ class DownloadRawDiffView(ReviewRequestViewMixin, View):
         return resp
 
 
-@check_login_required
-@check_local_site_access
-def comment_diff_fragments(
-    request,
-    review_request_id,
-    comment_ids,
-    template_name='reviews/load_diff_comment_fragments.js',
-    comment_template_name='reviews/diff_comment_fragment.html',
-    error_template_name='diffviewer/diff_fragment_error.html',
-    local_site=None):
+class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
+                               TemplateView):
+    """View for rendering a section of a diff that a comment pertains to.
+
+    This takes in one or more
+    :py:class:`~reviewboard.reviews.models.diff_comment.Comment` IDs
+    (comma-separated) as part of the URL and returns JavaScript content for
+    populating the correct elements with the contents of each section of the
+    diff for each comment. This allows this HTML to be lazy-loaded.
+
+    Clients can provide the following additional query arguments:
+
+    ``lines_of_context``:
+        The number of lines of context before and after the commented region
+        of the diff. This is in the form of ``pre,post``, where both are the
+        numbers of lines. This defaults to ``0,0``.
+
+    ``container_prefix``:
+        A prefix to use when building the element ID of the container to inject
+        the HTML into for each comment.
     """
-    Returns the fragment representing the parts of a diff referenced by the
-    specified list of comment IDs. This is used to allow batch lazy-loading
-    of these diff fragments based on filediffs, since they may not be cached
-    and take time to generate.
-    """
-    review_request, response = \
-        _find_review_request(request, review_request_id, local_site)
 
-    if not review_request:
-        return response
+    template_name = 'reviews/load_diff_comment_fragments.js'
+    comment_template_name = 'reviews/diff_comment_fragment.html'
+    error_template_name = 'diffviewer/diff_fragment_error.html'
 
-    q = (Q(pk__in=comment_ids.split(',')) &
-         Q(review__review_request=review_request))
+    content_type = 'application/javascript'
 
-    if request.user.is_authenticated():
-        q &= (Q(review__public=True) | Q(review__user=request.user))
-    else:
-        q &= Q(review__public=True)
+    EXPIRATION_SECONDS = 60 * 60 * 24 * 365  # 1 year
 
-    comments = get_list_or_404(Comment, q)
+    def get_etag_data(self, request, comment_ids, *args, **kwargs):
+        """Return an ETag for the view.
 
-    latest_timestamp = get_latest_timestamp(comment.timestamp
-                                            for comment in comments)
+        This will look up state needed for the request and generate a
+        suitable ETag. Some of the information will be stored for later
+        computation of the template context.
 
-    etag = encode_etag(
-        '%s:%s:%s'
-        % (comment_ids, latest_timestamp, settings.TEMPLATE_SERIAL))
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
 
-    if etag_if_none_match(request, etag):
-        response = HttpResponseNotModified()
-    else:
+            comment_ids (unicode):
+                A list of comment IDs to render.
+
+            *args (tuple, unused):
+                Positional arguments passsed to the handler.
+
+            **kwargs (dict, unused):
+                Keyword arguments passed to the handler.
+
+        Returns:
+            unicode:
+            The ETag for the page.
+        """
+        q = (Q(pk__in=comment_ids.split(',')) &
+             Q(review__review_request=self.review_request))
+
+        if request.user.is_authenticated():
+            q &= Q(review__public=True) | Q(review__user=request.user)
+        else:
+            q &= Q(review__public=True)
+
+        self.comments = get_list_or_404(Comment, q)
+
+        latest_timestamp = get_latest_timestamp(
+            comment.timestamp
+            for comment in self.comments
+        )
+
+        return '%s:%s:%s' % (comment_ids, latest_timestamp,
+                             settings.TEMPLATE_SERIAL)
+
+    def get_context_data(self, **kwargs):
+        """Return context data for the template.
+
+        This will generate the HTML for the lines of code in the diff for
+        each comment, along with generating other state used in the template.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments passed to the view.
+
+        Returns:
+            django.template.RequestContext:
+            The resulting context data for the template.
+        """
+        request = self.request
         lines_of_context = request.GET.get('lines_of_context', '0,0')
-        container_prefix = request.GET.get('container_prefix')
+        container_prefix = request.GET.get('container_prefix', '')
 
         try:
             lines_of_context = [int(i) for i in lines_of_context.split(',')]
@@ -1254,37 +1223,26 @@ def comment_diff_fragments(
         except ValueError:
             lines_of_context = [0, 0]
 
-        context = RequestContext(request, {
+        context = (
+            super(CommentDiffFragmentsView, self)
+            .get_context_data(**kwargs)
+        )
+        context.update({
             'comment_entries': [],
             'container_prefix': container_prefix,
             'queue_name': request.GET.get('queue'),
             'show_controls': request.GET.get('show_controls', False),
         })
+        context['comment_entries'] = build_diff_comment_fragments(
+            self.comments,
+            context,
+            self.comment_template_name,
+            self.error_template_name,
+            lines_of_context=lines_of_context,
+            show_controls=(container_prefix and
+                           'draft' not in container_prefix))[1]
 
-        had_error, context['comment_entries'] = (
-            build_diff_comment_fragments(
-                comments,
-                context,
-                comment_template_name,
-                error_template_name,
-                lines_of_context=lines_of_context,
-                show_controls=(container_prefix and
-                               'draft' not in container_prefix)))
-
-        page_content = render_to_string(template_name, context)
-
-        response = HttpResponse(
-            page_content,
-            content_type='application/javascript')
-
-        if had_error:
-            return response
-
-        set_etag(response, etag)
-
-    response['Expires'] = http_date(time.time() + 60 * 60 * 24 * 365)  # 1 year
-
-    return response
+        return context
 
 
 class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):

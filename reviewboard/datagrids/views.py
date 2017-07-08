@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import Http404
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.accounts.decorators import (check_login_required,
@@ -15,7 +15,6 @@ from reviewboard.datagrids.grids import (DashboardDataGrid,
                                          UserPageReviewsDataGrid,
                                          UserPageReviewRequestDataGrid)
 from reviewboard.reviews.models import Group, ReviewRequest
-from reviewboard.reviews.views import _render_permission_denied
 from reviewboard.site.decorators import check_local_site_access
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -73,8 +72,8 @@ def group(request,
     group = get_object_or_404(Group, name=name, local_site=local_site)
 
     if not group.is_accessible_by(request.user):
-        return _render_permission_denied(
-            request, 'datagrids/group_permission_denied.html')
+        return render(request, 'datagrids/group_permission_denied.html',
+                      status=403)
 
     datagrid = ReviewRequestDataGrid(
         request,
@@ -112,8 +111,8 @@ def group_members(request,
                               local_site=local_site)
 
     if not group.is_accessible_by(request.user):
-        return _render_permission_denied(
-            request, 'datagrids/group_permission_denied.html')
+        return render(request, 'datagrids/group_permission_denied.html',
+                      status=403)
 
     datagrid = UsersDataGrid(request,
                              group.users.filter(is_active=True),

@@ -87,7 +87,7 @@ review_request_urls = [
 
     # Fragments
     url(r'^fragments/diff-comments/(?P<comment_ids>[\d,]+)/$',
-        views.comment_diff_fragments),
+        views.CommentDiffFragmentsView.as_view()),
 
     # File attachments
     url(r'^file/(?P<file_attachment_id>\d+)/$',
