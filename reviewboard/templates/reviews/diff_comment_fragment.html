@@ -63,15 +63,17 @@
  </tbody>
 {% endif %}
 {% for chunk in chunks %}
- <tbody class="{{chunk.change}}">
+ <tbody class="{{chunk.change}}{% if collapsible and chunk.lines.0 == comment.first_line %} begin-comment-range{% endif %}">
 {#  <tr><td colspan="4">{{chunk.meta}}</td></tr> #}
 {% for line in chunk.lines %}
-{%  if collapsible and line.0 == comment.first_line %}
-  <tr class="comment-divider"><td colspan="{% if comment.filediff.is_new %}2{% else %}4{% endif %}"></td></tr>
-{%  endif %}
-
-<tr
-  {% if chunk.change != "equal" %}{% attr "class" %}{% if forloop.first %}first{% endif %} {% if forloop.last %}last{% endif %}{% endattr %}{% endif %}>
+<tr{% attr "class" %}
+{%   if forloop.first %}first{% endif %}
+{%   if forloop.last %}last{% endif %}
+{%   if collapsible %}
+{%    if line.0 == comment.first_line %}first-comment-line{% endif %}
+{%    if line.0 == comment.last_line %}last-comment-line{% endif %}
+{%   endif %}
+{%  endattr %}>
 
 {%  if not comment.filediff.is_new %}
     <th>{{line.1}}</th>
@@ -102,9 +104,6 @@
 {%  endif %}
     </td>
   </tr>
-{%  if collapsible and line.0 == comment.last_line %}
-  <tr class="comment-divider"><td colspan="{% if comment.filediff.is_new %}2{% else %}4{% endif %}"></td></tr>
-{%  endif %}
 {% endfor %}
  </tbody>
 {% endfor %}{# chunks #}

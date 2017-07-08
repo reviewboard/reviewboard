@@ -424,8 +424,28 @@
    * diffviewer.less (.sidebyside thead .filename-row th) which takes
    * precedence.
    */
-  .sidebyside .filename-row th {
-    background: @review-comment-filename-background-color;
+  .sidebyside {
+    .filename-row th {
+      background: @review-comment-filename-background-color;
+
+      /*
+       * Normally the revision row has this border, but for diff fragments,
+       * we want to place it on the filename row.
+       */
+      border-bottom: 1px @diff-file-border-color solid;
+    }
+
+    .first-comment-line {
+      td, th {
+        border-top: 1px black solid;
+      }
+    }
+
+    .last-comment-line {
+      td, th {
+        border-bottom: 1px black solid;
+      }
+    }
   }
 
   .diff-error tbody {
