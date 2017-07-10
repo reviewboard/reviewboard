@@ -182,7 +182,8 @@ RB.apiCall = function(options) {
         }, options);
 
         if (data.data === null || data.data === undefined ||
-            (data.data instanceof Object && !(data.data instanceof Blob))) {
+            (data.data instanceof Object &&
+             !(window.Blob && data.data instanceof Blob))) {
             data.data = $.extend({
                 api_format: 'json'
             }, data.data || {});

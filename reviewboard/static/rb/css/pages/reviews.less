@@ -380,21 +380,16 @@
 .review-comment-file-attachment,
 .review-comment-diff {
   background-color: @review-comment-filename-background-color;
-  border-color: @review-comment-filename-border-color;
-  border-width: 1px 0;
-  border-style: solid;
+  border: 0px @review-comment-filename-border-color solid;
 
   .diffrevision {
     font-weight: normal;
-  }
-
-  li:not(:first-child) > & {
-    margin-top: 2em;
   }
 }
 
 .review-comment-screenshot,
 .review-comment-file-attachment{
+  border-width: 1px 0;
   padding: 5px;
 
   .filename {
@@ -408,9 +403,38 @@
   .thumbnail {
     margin-top: 0.5em;
   }
+
+  li:not(:first-child) > & {
+    margin-top: @review-comment-section-margin-top;
+  }
 }
 
 .review-comment-diff {
+  &.allow-transitions {
+    .sidebyside {
+      /*
+       * Set up some animations for the hover effects on diff fragments.
+       *
+       * When collapsed, the contents of the diff headers will be transparent,
+       * showing just a few pixels of the background to show that there's
+       * something there.
+       *
+       * When expanding, the contents will be fully opaque.
+       *
+       * Both are done as transitions and their states managed in JavaScript.
+       * The result is that the controls will appear to expand outward from the
+       * diff (using transforms, without impacting the layout of the rest of the
+       * page), with the contents fading in/out.
+       */
+      &,
+      thead,
+      .diff-header,
+      .diff-header td > div {
+        transition: all 0.3s linear;
+      }
+    }
+  }
+
   th {
     /*
      * The line numbers aren't clickable in the comment fragments in reviews,
@@ -419,13 +443,76 @@
     cursor: initial;
   }
 
-  /*
-   * XXX: This selector could be simpler but there's a complex selector in
-   * diffviewer.less (.sidebyside thead .filename-row th) which takes
-   * precedence.
-   */
-  .sidebyside .filename-row th {
-    background: @review-comment-filename-background-color;
+  .sidebyside {
+    &:not(.has-diff-header-above) {
+      /*
+       * If there's no diff header above, then we won't have a file header
+       * that's retracted. In this case, we want to add back the margin that
+       * we'd normally have in a comment section.
+       */
+      margin-top: @review-comment-section-margin-top;
+    }
+
+    &:not(.has-diff-header-below) {
+      /*
+       * Diff comment sections don't have a bottom border. We leave it up to
+       * the diff headers to supply one normally. If there isn't a diff header
+       * below the diff, add our own border.
+       */
+      border-bottom: 1px @review-comment-filename-border-color solid;
+    }
+
+    &.collapsed .diff-header td > div {
+      opacity: 0;
+    }
+
+    &.expanded .diff-header td > div {
+      opacity: 1;
+    }
+
+    .filename-row th {
+      background: @review-comment-filename-background-color;
+
+      /*
+       * This replaces the border that would normally be at the top of
+       * .review-comment-diff. We put it here instead so that it will appear
+       * on the top of the header when it animates, instead of staying fixed
+       * above it.
+       */
+      border-top: 1px @review-comment-filename-border-color solid;
+
+      /*
+       * Normally the revision row has this border, but for diff fragments,
+       * we want to place it on the filename row.
+       */
+      border-bottom: 1px @diff-file-border-color solid;
+    }
+
+    .diff-header {
+      &-above {
+        transform-origin: bottom;
+      }
+
+      &-below {
+        transform-origin: top;
+      }
+
+      td > div {
+        overflow: hidden;
+      }
+    }
+
+    .first-comment-line {
+      td, th {
+        border-top: 1px black solid;
+      }
+    }
+
+    .last-comment-line {
+      td, th {
+        border-bottom: 1px black solid;
+      }
+    }
   }
 
   .diff-error tbody {
@@ -1875,16 +1962,49 @@
  * Banners
  ****************************************************************************/
 #review-banner {
-  padding-bottom: 4em;
+  overflow: hidden;
+
+  &.hidden {
+    max-height: 0;
+    visibility: hidden;
+
+    .banner {
+      /*
+       * Instead of hiding the banner, we keep the position off-screen by
+       * default using a transform. This makes it easy to animate it on-screen
+       * when putting it in the "shown" state.
+       */
+      transform: translateY(-100%);
+    }
+  }
+
+  &.ui-ready {
+    transition: max-height 0.3s linear, visibility 0.3s linear;
+
+    .banner {
+      /*
+       * We only set the position as fixed when the UI is ready (JavaScript
+       * has processed things). The reason for this is that when the page is
+       * loading, we want the #review-banner to have the same height as the
+       * draft banner, but the JavaScript wouldn't have executed yet, so it
+       * wouldn't be able to force that height. So instead, we leave the
+       * banner with a normal position, impacting #review-banner's height,
+       * and ensuring the page doesn't jump. Then we convert it to fixed once
+       * we've rendered everything.
+       */
+      position: fixed;
+      left: 0;
+      top: 0;
+      transition: transform 0.3s linear;
+    }
+  }
 
   .banner {
     border-left: 0;
     border-right: 0;
     border-top: 0;
     box-shadow: @box-shadow;
-    left: 0;
-    position: fixed;
-    top: 0;
+    margin: 0;
     width: 100%;
     z-index: @z-index-banner;
   }

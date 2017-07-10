@@ -228,13 +228,15 @@ def diff_lines(index, chunk, standalone, line_fmt, anchor_fmt='',
         show_collapse = False
         anchor = None
 
+        if i == 0:
+            row_classes.append('first')
+
+        if i == num_lines - 1:
+            row_classes.append('last')
+
         if not is_equal:
             if i == 0:
-                row_classes.append('first')
                 anchor = '%s.%s' % (index, chunk_index)
-
-            if i == num_lines - 1:
-                row_classes.append('last')
 
             if line[7]:
                 row_classes.append('whitespace-line')

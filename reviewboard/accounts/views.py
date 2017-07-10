@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.forms.util import ErrorDict
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render_to_response
 from django.utils import six
@@ -32,9 +33,9 @@ from reviewboard.avatars import avatar_services
 from reviewboard.notifications.email.decorators import preview_email
 from reviewboard.notifications.email.message import \
     prepare_password_changed_mail
-from reviewboard.oauth.admin import ApplicationAdmin
 from reviewboard.oauth.features import oauth2_service_feature
-from reviewboard.oauth.forms import UserApplicationForm
+from reviewboard.oauth.forms import (UserApplicationChangeForm,
+                                     UserApplicationCreationForm)
 from reviewboard.oauth.models import Application
 from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -273,37 +274,61 @@ def edit_oauth_app(request, app_id=None):
         django.http.HttpResponse:
         The rendered view.
     """
+    # If we import this at global scope, it will cause issues with admin sites
+    # being automatically registered.
+    from reviewboard.oauth.admin import ApplicationAdmin
+
     if app_id:
         app = get_object_or_404(
             Application,
             pk=app_id,
             user=request.user,
         )
+        form_cls = UserApplicationChangeForm
+        fieldsets = ApplicationAdmin.fieldsets
     else:
         app = None
+        form_cls = UserApplicationCreationForm
+        fieldsets = ApplicationAdmin.add_fieldsets
 
     if request.method == 'POST':
         form_data = request.POST.copy()
-        form_data['user'] = request.user.pk
 
-        form = UserApplicationForm(user=request.user,
-                                   data=form_data,
-                                   instance=app)
+        form = form_cls(user=request.user, data=form_data, initial=None,
+                        instance=app)
 
         if form.is_valid():
-            form.save()
+            app = form.save()
 
-            return HttpResponseRedirect(OAuth2Page.get_absolute_url())
+            if app_id is not None:
+                next_url = OAuth2Page.get_absolute_url()
+            else:
+                next_url = reverse('edit-oauth-app', args=(app.pk,))
+
+            return HttpResponseRedirect(next_url)
     else:
-        form = UserApplicationForm(user=request.user,
-                                   instance=app)
+        form = form_cls(user=request.user, data=None, initial=None,
+                        instance=app)
+        # Show a warning at the top of the form when the form is disabled for
+        # security.
+        #
+        # We don't need to worry about full_clean not being called (which would
+        # be if we went through form.errors) because this form will never be
+        # saved.
+        if app and app.is_disabled_for_security:
+            form._errors = ErrorDict({
+                '__all__': form.error_class(
+                    [form.DISABLED_FOR_SECURITY_ERROR],
+                ),
+            })
 
     return render_to_response(
         'accounts/edit_oauth_app.html',
         {
             'app': app,
             'form': form,
-            'fieldsets': filter_fieldsets(ApplicationAdmin, form),
+            'fieldsets': filter_fieldsets(form=form_cls,
+                                          fieldsets=fieldsets),
             'oauth2_page_url': OAuth2Page.get_absolute_url(),
             'request': request,
         })

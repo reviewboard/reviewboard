@@ -75,7 +75,11 @@ suite('rb/views/ReviewView', function() {
         view = new RB.ReviewView({
             el: $el,
             model: review,
-            reviewRequestEditor: editor,
+            entryModel: new RB.ReviewRequestPageReviewEntry({
+                review: review,
+                reviewRequest: reviewRequest,
+                reviewRequestEditor: editor,
+            }),
         });
 
         view._setupNewReply(reviewReply);

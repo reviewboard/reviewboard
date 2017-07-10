@@ -9,6 +9,7 @@ from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import DOES_NOT_EXIST
 from djblets.webapi.testing.decorators import webapi_test_template
 
+from reviewboard.oauth.forms import ApplicationChangeForm
 from reviewboard.oauth.models import Application
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.resources import resources
@@ -719,17 +720,18 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
         rsp = self.api_put(get_oauth_app_item_url(app.pk, local_site.name),
                            {'enabled': '1'},
-                           expected_mimetype=oauth_app_item_mimetype)
+                           expected_status=400)
 
         app = Application.objects.get(pk=app.pk)
 
         self.assertIn('stat', rsp)
-        self.assertEqual(rsp['stat'], 'ok')
-        self.compare_item(rsp['oauth_app'], app)
-        self.assertFalse(app.is_disabled_for_security)
-        self.assertNotEqual(app.client_secret, original_secret)
-        self.assertTrue(app.enabled)
-        self.assertIsNone(app.original_user)
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertIn('fields', rsp)
+        self.assertIn('__all__', rsp['fields'])
+        self.assertEqual(rsp['fields']['__all__'][0],
+                         ApplicationChangeForm.DISABLED_FOR_SECURITY_ERROR)
+        self.assertEqual(app.original_user, doc)
+        self.assertEqual(app.client_secret, original_secret)
 
     def test_put_regenerate_secret_key(self):
         """Testing the PUT <URL> API with regenerate_client_secret=1"""
@@ -745,6 +747,46 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
         self.assertIn('stat', rsp)
         self.assertEqual(rsp['stat'], 'ok')
         self.compare_item(rsp['oauth_app'], app)
+        self.assertNotEqual(app.client_secret, original_secret)
+
+    @add_fixtures(['test_site'])
+    def test_put_regenerate_secret_key_enable(self):
+        """Testing the PUT <URL> API with regenerate_secret_key=1 and enabled=1
+        """
+        self.user = self._login_user(admin=True)
+        doc = User.objects.get(username='doc')
+        local_site = LocalSite.objects.get(pk=1)
+        app = self.create_oauth_application(user=doc, local_site=local_site)
+
+        original_secret = app.client_secret
+
+        local_site.users.remove(doc)
+
+        app = Application.objects.get(pk=app.pk)
+
+        self.assertTrue(app.is_disabled_for_security)
+        self.assertEqual(app.user, self.user)
+        self.assertEqual(app.original_user, doc)
+
+        rsp = self.api_put(
+            get_oauth_app_item_url(app.pk, local_site.name),
+            {
+                'enabled': '1',
+                'regenerate_client_secret': 1,
+            },
+            expected_mimetype=oauth_app_item_mimetype)
+
+        app = Application.objects.get(pk=app.pk)
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+        item_rsp = rsp['oauth_app']
+        self.compare_item(item_rsp, app)
+        self.assertNotEqual(item_rsp['client_secret'], original_secret)
+
+        self.assertFalse(app.is_disabled_for_security)
+        self.assertIsNone(app.original_user)
+        self.assertTrue(app.enabled)
         self.assertNotEqual(app.client_secret, original_secret)
 
     #

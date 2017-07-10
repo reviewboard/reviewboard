@@ -1182,7 +1182,8 @@ class CommentDiffFragmentsViewTests(TestCase):
         """Testing comment_diff_fragments with unpublished review request and
         user is not the owner
         """
-        user = User.objects.create(username='reviewer')
+        user = User.objects.create_user(username='reviewer',
+                                        password='reviewer')
 
         review_request = self.create_review_request(create_repository=True)
         diffset = self.create_diffset(review_request)
@@ -1192,6 +1193,9 @@ class CommentDiffFragmentsViewTests(TestCase):
         comment1 = self.create_diff_comment(review, filediff)
         comment2 = self.create_diff_comment(review, filediff)
         review.publish()
+
+        self.assertTrue(self.client.login(username='reviewer',
+                                          password='reviewer'))
 
         response = self.client.get(
             '/r/%d/fragments/diff-comments/%d,%d/'

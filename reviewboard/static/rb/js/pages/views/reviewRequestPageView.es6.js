@@ -50,7 +50,6 @@ RB.ReviewRequestPageView = RB.ReviewablePageView.extend({
      */
     render() {
         RB.ReviewablePageView.prototype.render.call(this);
-        this.diffFragmentQueue.loadFragments();
 
         /*
          * If trying to link to a review, find the box which contains that
@@ -66,6 +65,8 @@ RB.ReviewRequestPageView = RB.ReviewablePageView.extend({
                 box.expand();
             }
         });
+
+        this.diffFragmentQueue.loadFragments();
 
         this._rendered = true;
 

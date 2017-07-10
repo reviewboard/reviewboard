@@ -9,29 +9,18 @@
 RB.InitialStatusUpdatesBoxView = RB.CollapsableBoxView.extend({
     /**
      * Initialize the view.
-     *
-     * Args:
-     *     options (object):
-     *         Options for the view.
-     *
-     * Option Args:
-     *     reviewRequestEditor (RB.ReviewRequestEditor):
-     *         The review request editor.
-     *
-     *     reviews (array of RB.Review):
-     *         Models for each review.
      */
-    initialize(options) {
-        RB.CollapsableBoxView.prototype.initialize.call(this, options);
+    initialize() {
+        RB.CollapsableBoxView.prototype.initialize.call(this);
 
-        this._reviews = options.reviews;
+        this._reviews = this.model.get('reviews');
         this._reviewViews = this._reviews.map(review => {
             const $reviewEl = this.$(`#review${review.id}`);
 
             return new RB.ReviewView({
                 el: $reviewEl,
                 model: review,
-                reviewRequestEditor: this.options.reviewRequestEditor,
+                entryModel: this.model,
                 $bannerFloatContainer: $reviewEl,
                 $bannerParent: $reviewEl.children('.banners'),
                 bannerNoFloatContainerClass: 'collapsed',

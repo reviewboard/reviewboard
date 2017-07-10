@@ -44,6 +44,11 @@ suite('rb/views/ReviewBoxView', function() {
                     }
                 }
             }),
+            model = new RB.ReviewRequestPageReviewEntry({
+                review: review,
+                reviewRequest: reviewRequest,
+                reviewRequestEditor: editor
+            }),
             $el = $(template())
                 .appendTo($testsScratch);
 
@@ -51,8 +56,7 @@ suite('rb/views/ReviewBoxView', function() {
 
         view = new RB.ReviewBoxView({
             el: $el,
-            model: review,
-            reviewRequestEditor: editor,
+            model: model
         });
 
         view.render();

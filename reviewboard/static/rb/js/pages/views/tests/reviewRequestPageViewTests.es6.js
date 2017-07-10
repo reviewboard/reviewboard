@@ -57,25 +57,29 @@ suite('rb/pages/views/ReviewRequestPageView', () => {
         spyOn(page.reviewRequest, '_checkForUpdates');
 
         page.addBox(new RB.ReviewBoxView({
-            model: page.reviewRequest.createReview(123, {
-                shipIt: true,
-                public: true,
-                bodyTop: 'Body Top',
-                bodyBottom: 'Body Bottom',
+            model: new RB.ReviewRequestPageReviewEntry({
+                review: page.reviewRequest.createReview(123, {
+                    shipIt: true,
+                    public: true,
+                    bodyTop: 'Body Top',
+                    bodyBottom: 'Body Bottom',
+                }),
+                reviewRequestEditor: page.reviewRequestEditor,
             }),
             el: $el.find('#review123'),
-            reviewRequestEditor: page.reviewRequestEditor,
         }));
 
         page.addBox(new RB.ReviewBoxView({
-            model: page.reviewRequest.createReview(124, {
-                shipIt: false,
-                public: true,
-                bodyTop: 'Body Top',
-                bodyBottom: 'Body Bottom',
+            model: new RB.ReviewRequestPageReviewEntry({
+                review: page.reviewRequest.createReview(124, {
+                    shipIt: false,
+                    public: true,
+                    bodyTop: 'Body Top',
+                    bodyBottom: 'Body Bottom',
+                }),
+                reviewRequestEditor: page.reviewRequestEditor,
             }),
             el: $el.find('#review124'),
-            reviewRequestEditor: page.reviewRequestEditor,
         }));
 
         page.render();

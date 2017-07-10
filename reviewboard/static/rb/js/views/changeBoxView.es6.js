@@ -13,31 +13,29 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
      *          Options for the view.
      *
      * Option Args:
-     *     reviewRequest (RB.ReviewRequest):
-     *         The review request model.
-     *
      *     reviewRequestEditorView (RB.ReviewRequestEditorView):
      *         The review request editor.
-     *
-     *     reviews (array of RB.Review):
-     *         Models for each review.
      */
     initialize(options) {
-        this.reviewRequest = options.reviewRequest;
+        const reviewRequestEditor = this.model.get('reviewRequestEditor');
+
+        this.reviewRequest = reviewRequestEditor.get('reviewRequest');
         this.reviewRequestEditorView = options.reviewRequestEditorView;
-        this._reviews = options.reviews;
+        this._reviews = this.model.get('reviews');
+
         this._reviewViews = this._reviews.map(review => {
             const $reviewEl = this.$(`#review${review.id}`);
 
             return new RB.ReviewView({
                 el: $reviewEl,
                 model: review,
-                reviewRequestEditor: this.reviewRequestEditorView.model,
+                entryModel: this.model,
                 $bannerFloatContainer: $reviewEl,
                 $bannerParent: $reviewEl.children('.banners'),
                 bannerNoFloatContainerClass: 'collapsed',
             });
         });
+
         this._$boxStatus = null;
         this._$fixItLabel = null;
     },

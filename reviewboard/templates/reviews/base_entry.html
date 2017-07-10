@@ -1,0 +1,49 @@
+{% load avatars djblets_extensions djblets_utils i18n tz %}
+
+
+{# This can be used by child templates that want to override the avatar. #}
+{% definevar "avatar_size" %}48{% enddefinevar %}
+
+{% definevar "pre_template_hook_name" %}{{entry.entry_id}}-summary-header-pre{% enddefinevar %}
+{% definevar "post_template_hook_name" %}{{entry.entry_id}}-summary-header-post{% enddefinevar %}
+
+{% with element_id=entry.get_dom_element_id %}
+<div id="{{element_id}}" class="review-request-page-entry {% block entry_classes %}{% endblock %}">
+ <a name="{{element_id}}"></a>
+{% endwith %}
+{% block entry_extra_anchors %}{% endblock %}
+
+{% if show_entry_statuses_area %}
+ <div class="box-statuses">
+  <div class="box-status {% block entry_status_classes %}{% endblock %}">
+   <div class="avatar-container">
+{%  if siteconfig_settings.avatars_enabled %}
+{%   block entry_avatar %}
+{%    if entry.avatar_user %}
+{%     avatar entry.avatar_user avatar_size %}
+{%    endif %}
+{%   endblock %}
+{%  endif %}
+   </div>
+   <div class="labels-container">{% block entry_labels %}{% endblock %}</div>
+  </div>
+ </div>
+{% endif %}
+
+ <div class="review-request-page-entry-contents {% spaceless %}
+             {{entry.collapsed|yesno:'collapsed,'}}{% endspaceless %}">
+  <div class="header {% block entry_header_classes %}{% endblock %}">
+{%  template_hook_point pre_template_hook_name %}
+   <div class="collapse-button btn"><div class="rb-icon rb-icon-{{entry.collapsed|yesno:'expand-review,collapse-review'}}"></div></div>
+   <div class="header-details">
+    <div class="summary">{% block entry_summary %}{% endblock %}</div>
+    <div class="timestamp">{% localtime on %}{% blocktrans with entry.timestamp as timestamp and entry.timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</div>
+   </div>
+{%  template_hook_point post_template_hook_name %}
+  </div>
+  <div class="banners"></div>
+  <div class="body">
+{% block entry_content %}{% endblock %}
+  </div>
+ </div>
+</div>

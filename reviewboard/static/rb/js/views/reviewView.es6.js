@@ -6,14 +6,6 @@
 RB.ReviewView = Backbone.View.extend({
     /**
      * Initialize the view.
-     *
-     * Args:
-     *     options (object):
-     *         Options for the view.
-     *
-     * Option Args:
-     *     reviewRequestEditor (RB.ReviewRequestEditor):
-     *         The review request editor.
      */
     initialize(options) {
         this.options = options;
@@ -42,6 +34,9 @@ RB.ReviewView = Backbone.View.extend({
      *     This object, for chaining.
      */
     render() {
+        const reviewRequestEditor =
+            this.options.entryModel.get('reviewRequestEditor');
+
         this._$reviewComments = this.$('.review-comments');
         this._$bodyTop = this._$reviewComments.find(
             '.review-comment-thread .review-comment .body_top');
@@ -106,13 +101,27 @@ RB.ReviewView = Backbone.View.extend({
             const view = new RB.ReviewReplyEditorView({
                 el: el,
                 model: editor,
-                reviewRequestEditor: this.options.reviewRequestEditor,
+                reviewRequestEditor: reviewRequestEditor,
             });
             view.render();
 
             this._replyEditors.push(editor);
             this._replyEditorViews.push(view);
         });
+
+        /*
+         * Load any diff fragments for comments made on this review. Each
+         * will be queued up and loaded when the page is rendered.
+         */
+        const page = RB.PageManager.getPage();
+        const diffCommentsData =
+            this.options.entryModel.get('diffCommentsData');
+
+        for (let i = 0; i < diffCommentsData.length; i++) {
+            const diffCommentData = diffCommentsData[i];
+
+            page.queueLoadDiff(diffCommentData[0], diffCommentData[1]);
+        }
 
         /*
          * Do this last, after ReviewReplyEditorView has already set up the
@@ -294,7 +303,8 @@ RB.ReviewView = Backbone.View.extend({
                 model: this._reviewReply,
                 $floatContainer: this.options.$bannerFloatContainer,
                 noFloatContainerClass: this.options.bannerNoFloatContainerClass,
-                reviewRequestEditor: this.options.reviewRequestEditor,
+                reviewRequestEditor: this.options.entryModel.get(
+                    'reviewRequestEditor'),
             });
 
             this._bannerView.render();

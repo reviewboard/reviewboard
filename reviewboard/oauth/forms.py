@@ -7,18 +7,37 @@ from django.core.exceptions import ValidationError
 from django.forms import widgets
 from django.utils.translation import ugettext, ugettext_lazy as _
 from djblets.forms.widgets import CopyableTextInput, ListEditWidget
+from oauth2_provider.generators import (generate_client_id,
+                                        generate_client_secret)
 from oauth2_provider.validators import URIValidator
 
 from reviewboard.admin.form_widgets import RelatedUserWidget
 from reviewboard.oauth.models import Application
 
 
-class ApplicationForm(forms.ModelForm):
-    """The application configuration form.
+class ApplicationChangeForm(forms.ModelForm):
+    """A form for updating an Application.
 
-    This form provides a more helpful user selection widget, as well as
-    providing help text for all fields.
+    This form is intended to be used by the admin site.
     """
+
+    DISABLED_FOR_SECURITY_ERROR = _(
+        'This Application has been disabled to keep your server secure. '
+        'It cannot be re-enabled until its client secret changes.'
+    )
+
+    client_id = forms.CharField(
+        label=_('Client ID'),
+        help_text=_(
+            'The client ID. Your application will use this in OAuth2 '
+            'authentication to identify itself.',
+        ),
+        widget=CopyableTextInput(attrs={
+            'readonly': True,
+            'size': 100,
+        }),
+        required=False,
+    )
 
     def clean_extra_data(self):
         """Prevent ``extra_data`` from being an empty string.
@@ -82,7 +101,7 @@ class ApplicationForm(forms.ModelForm):
             dict:
             The cleaned form data.
         """
-        super(ApplicationForm, self).clean()
+        super(ApplicationChangeForm, self).clean()
 
         grant_type = self.cleaned_data.get('authorization_grant_type')
 
@@ -106,6 +125,18 @@ class ApplicationForm(forms.ModelForm):
 
             self.cleaned_data.pop('redirect_uris')
 
+        if (self.instance and
+            self.instance.pk and
+            self.instance.is_disabled_for_security and
+            self.cleaned_data['enabled']):
+            raise ValidationError(self.DISABLED_FOR_SECURITY_ERROR)
+
+        if 'client_id' in self.cleaned_data:
+            del self.cleaned_data['client_id']
+
+        if 'client_secret' in self.cleaned_data:
+            del self.cleaned_data['client_secret']
+
         return self.cleaned_data
 
     class Meta:
@@ -114,10 +145,6 @@ class ApplicationForm(forms.ModelForm):
         help_texts = {
             'authorization_grant_type': _(
                 'How the authorization is granted to the application.'
-            ),
-            'client_id': _(
-                'The client ID. Your application will use this in OAuth2 '
-                'authentication to identify itself.',
             ),
             'client_secret': _(
                 'The client secret. This should only be known to Review Board '
@@ -144,12 +171,8 @@ class ApplicationForm(forms.ModelForm):
         }
 
         widgets = {
-            'client_id': CopyableTextInput(attrs={
-                'readonly': True,
-                'size': 100,
-            }),
             'client_secret': CopyableTextInput(attrs={
-                'readonly':  True,
+                'readonly': True,
                 'size': 100,
             }),
             'name': widgets.TextInput(attrs={'size': 60}),
@@ -159,7 +182,6 @@ class ApplicationForm(forms.ModelForm):
 
         labels = {
             'authorization_grant_type': _('Authorization Grant Type'),
-            'client_id': _('Client ID'),
             'client_secret': _('Client Secret'),
             'client_type': _('Client Type'),
             'name': _('Name'),
@@ -169,53 +191,127 @@ class ApplicationForm(forms.ModelForm):
         }
 
 
-class UserApplicationForm(ApplicationForm):
-    """A specialized form for end users.
+class ApplicationCreationForm(ApplicationChangeForm):
+    """A form for creating an Application.
 
-    This form removes the User field so that it cannot be assigned to another
-    user.
+    This is meant to be used by the admin site.
     """
 
-    def __init__(self, user, data=None, instance=None):
-        """Initialize the form.
-
-        Args:
-            user (django.contrib.auth.models.User):
-                The user editing the form. The resulting
-                :py:class:`~reviewboard.oauth.models.Application` will be
-                associated with this user.
-
-            data (dict, optional):
-                The form data.
-
-            instance (reviewboard.oauth.models.Application, optional):
-                The instance being edited. If this is not provided, a new
-                instance will be created when the form is saved.
-        """
-        super(UserApplicationForm, self).__init__(data=data, instance=instance)
-
-        self.user = user
-
     def save(self, commit=True):
-        """Update the associated instance or create a new one.
+        """Save the form.
+
+        This method will generate the ``client_id`` and ``client_secret``
+        fields.
 
         Args:
-             commit (bool):
-                Whether or not the updated model will be saved to the database.
+            commit (bool, optional):
+                Whether or not the Application should be saved to the database.
 
         Returns:
             reviewboard.oauth.models.Application:
-            The edited or created instance.
+            The created Application.
         """
-        instance = super(UserApplicationForm, self).save(commit=False)
+        instance = super(ApplicationCreationForm, self).save(commit=False)
 
-        if not instance.pk:
-            instance.user = self.user
+        instance.client_id = generate_client_id()
+        instance.client_secret = generate_client_secret()
 
         if commit:
             instance.save()
 
         return instance
 
-    class Meta(ApplicationForm.Meta):
-        exclude = ('extra_data', 'local_site', 'skip_authorization', 'user')
+    class Meta(ApplicationChangeForm.Meta):
+        exclude = (
+            'client_id',
+            'client_secret',
+        )
+
+
+class UserApplicationChangeForm(ApplicationChangeForm):
+    """A form for an end user to change an Application."""
+
+    def __init__(self, user, data=None, initial=None, instance=None):
+        """Initialize the form.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user changing the form. Ignored, but included to match
+                :py:meth:`UserApplicationCreationForm.__init__`.
+
+            data (dict):
+                The provided data.
+
+            initial (dict, optional):
+                The initial form values.
+
+            instance (reviewboard.oauth.models.Application):
+                The Application that is to be edited.
+        """
+        super(UserApplicationChangeForm, self).__init__(data=data,
+                                                        initial=initial,
+                                                        instance=instance)
+
+    class Meta(ApplicationChangeForm.Meta):
+        exclude = (
+            'extra_data',
+            'local_site',
+            'original_user',
+            'skip_authorization',
+            'user',
+        )
+
+
+class UserApplicationCreationForm(ApplicationCreationForm):
+    """A form for an end user to update an Application."""
+
+    def __init__(self, user, data, initial=None, instance=None):
+        """Initialize the form.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user changing the form. Ignored, but included to match
+                :py:meth:`UserApplicationCreationForm.__init__`.
+
+            data (dict):
+                The provided data.
+
+            initial (dict, optional):
+                The initial form values.
+
+            instance (reviewboard.oauth.models.Application, optional):
+                The Application that is to be edited.
+
+                This should always be ``None``.
+        """
+        assert instance is None
+        super(UserApplicationCreationForm, self).__init__(data=data,
+                                                          initial=initial,
+                                                          instance=instance)
+        self.user = user
+
+    def save(self, commit=True):
+        """Save the form.
+
+        This method will associate the user creating the application as its
+        owner.
+
+        Args:
+            commit (bool, optional):
+                Whether or not the Application should be saved to the database.
+
+        Returns:
+            reviewboard.oauth.models.Application:
+            The created Application.
+        """
+        instance = super(UserApplicationCreationForm, self).save(commit=False)
+        instance.user = self.user
+
+        if commit:
+            instance.save()
+
+        return instance
+
+    class Meta(ApplicationCreationForm.Meta):
+        exclude = (ApplicationCreationForm.Meta.exclude +
+                   UserApplicationChangeForm.Meta.exclude)

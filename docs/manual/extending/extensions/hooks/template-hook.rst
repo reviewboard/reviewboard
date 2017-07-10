@@ -95,6 +95,11 @@ Review Request Pages
 +----------------------------+----------------------------------------------+
 | Name                       | Location                                     |
 +============================+==============================================+
+| change-summary-header-pre  | For each change entry, before the header.    |
++----------------------------+----------------------------------------------+
+| change-summary-header-post | For each change entry, after the header but  |
+|                            | before before any field changes.             |
++----------------------------+----------------------------------------------+
 | review-summary-header-pre  | For each review, before the header.          |
 +----------------------------+----------------------------------------------+
 | review-summary-header-post | For each review, after the header but before |

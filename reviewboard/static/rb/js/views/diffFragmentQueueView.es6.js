@@ -13,6 +13,8 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
     // The timeout for a mouseout event to fire after it actually occurs.
     _timeout: 250,
 
+    COLLAPSED_HEADERS_HEIGHT: 4,
+
     initialize: function() {
         this._queue = {};
         this._centered = new RB.CenteredElementManager();
@@ -133,27 +135,66 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
         RB.setActivityIndicator(true, {'type': 'GET'});
     },
 
-    /*
+    /**
      * Show the controls on the specified comment container.
+     *
+     * Args:
+     *     diffEls (object):
+     *         An object containing useful elements related to the diff
+     *         fragment.
      */
-    _showControls: function($container) {
-        $container
-            .find('td > div')
-            .not('.collapse-floater')
-            .slideDown('slow');
+    _showControls(diffEls) {
+        /*
+         * This will effectively control the opacity of the controls.
+         */
+        diffEls.$table
+            .removeClass('collapsed')
+            .addClass('expanded');
+
+        /*
+         * Undo all the transforms, so that these animate to their normal
+         * positions.
+         */
+        diffEls.$thead.css('transform', '');
+        diffEls.$diffHeaders.css('transform', '');
     },
 
-    /*
+    /**
      * Hide the controls on the specified comment container.
+     *
+     * Args:
+     *     diffEls (object):
+     *         An object containing useful elements related to the diff
+     *         fragment.
      */
-    _hideControls: function($container, immediate) {
-        var $selector = $container.find('td > div').not('.collapse-floater');
+    _hideControls(diffEls) {
+        diffEls.$table
+            .removeClass('expanded')
+            .addClass('collapsed');
 
-        if (immediate) {
-            $selector.hide();
-        } else {
-            $selector.slideUp('slow');
+        const $firstDiffHeader = diffEls.$diffHeaders.eq(0);
+
+        if ($firstDiffHeader.hasClass('diff-header-above')) {
+            /*
+             * If the first diff header is present, we'll need to transition
+             * the header down to be flush against the collapsed header.
+             */
+            const translateY = $firstDiffHeader.height() -
+                               this.COLLAPSED_HEADERS_HEIGHT;
+
+            diffEls.$thead.css('transform', `translateY(${translateY}px)`);
         }
+
+        /*
+         * The diff headers won't have the same heights exactly. We need to
+         * compute the proper scale for the correct size per-header.
+         */
+        _.each(diffEls.$diffHeaders, diffHeaderEl => {
+            const $diffHeader = $(diffHeaderEl);
+            const scale = this.COLLAPSED_HEADERS_HEIGHT / $diffHeader.height();
+
+            $diffHeader.css('transform', `scaleY(${scale})`);
+        });
     },
 
     /*
@@ -195,38 +236,74 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
         this._tryHideControlsDelayed($expanded);
     },
 
-    /*
-     * When a comment container loads its contents for the first time, hide its
-     * controls and set up the mouseenter and mouseleave events.
+    /**
+     * Set up state for a fragment when it's first loaded.
+     *
+     * When a comment container loads its contents for the first time, the
+     * controls will be hidden and the hover-related events will be registered
+     * to allow the fragment to be expanded/collapsed.
+     *
+     * Args:
+     *     id (string):
+     *         The ID of the comment used to build the container ID.
      */
-    _onFirstLoad: function(id) {
-        var $container = this.$('#' + this.options.containerPrefix + '_' + id);
+    _onFirstLoad(id) {
+        const $container = this.$(`#${this.options.containerPrefix}_${id}`);
+        const $table = $container.children('table');
+        const $diffHeaders = $table.find('.diff-header');
 
-        this._hideControls($container, true);
+        const diffEls = {
+            $container: $container,
+            $table: $table,
+            $thead: $table.children('thead'),
+            $diffHeaders: $diffHeaders,
+            $controls: $diffHeaders.find('td > div'),
+        };
 
-        $container.hover(_.partial(this._tryShowControlsDelayed, $container),
-                         _.partial(this._tryHideControlsDelayed, $container));
+        this._hideControls(diffEls);
+
+        /*
+         * Once we've hidden the controls, we want to enable transitions for
+         * hovering. We don't apply this before (or make it implicit) because
+         * we don't want all the transitions to take place on page load, as
+         * it's both visually weird and messes with the height calculation for
+         * the collapsed areas.
+         */
+        _.defer(() => $container.addClass('allow-transitions'));
+
+        $container.hover(_.partial(this._tryShowControlsDelayed, diffEls),
+                         _.partial(this._tryHideControlsDelayed, diffEls));
     },
 
-    /*
+    /**
      * Attempt to hide the controls in the given container after a delay.
+     *
+     * Args:
+     *     diffEls (object):
+     *         An object containing useful elements related to the diff
+     *         fragment.
      */
-    _tryShowControlsDelayed: function($container) {
-        _.delay(_.bind(function() {
-            if ($container.is(':hover')) {
-                this._showControls($container);
+    _tryShowControlsDelayed(diffEls) {
+        _.delay(() => {
+            if (diffEls.$container.is(':hover')) {
+                this._showControls(diffEls);
             }
-        }, this), this._timeout);
+        }, this._timeout);
     },
 
-    /*
+    /**
      * Attempt to hide the controls in the given container after a delay.
+     *
+     * Args:
+     *     diffEls (object):
+     *         An object containing useful elements related to the diff
+     *         fragment.
      */
-    _tryHideControlsDelayed: function($container) {
-        _.delay(_.bind(function() {
-            if (!$container.is(':hover')) {
-                this._hideControls($container, false);
+    _tryHideControlsDelayed(diffEls) {
+        _.delay(() => {
+            if (!diffEls.$container.is(':hover')) {
+                this._hideControls(diffEls);
             }
-        }, this), this._timeout);
+        }, this._timeout);
     }
 });

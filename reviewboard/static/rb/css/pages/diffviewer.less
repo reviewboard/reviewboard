@@ -26,8 +26,9 @@
   @moved-border-width: 4px;
 
   background: white;
-  border-collapse: collapse;
-  padding: 2px;
+  border-collapse: separate;
+  border-spacing: 0;
+  padding: 0;
   width: 100%;
   overflow: hidden;
 
@@ -216,19 +217,14 @@
         }
       }
 
-      &.last {
-        td, th {
-          border-bottom: 1px @diff-line-border-color solid;
-        }
-      }
-
       &.highlight-anchor {
         td, th {
-            background: @diff-highlight-color;
+          background: @diff-highlight-color;
         }
       }
 
       td {
+        background: @diff-background-color;
         padding: 1px;
         vertical-align: top;
 
@@ -273,12 +269,6 @@
         min-width: calc(28px - 1em - @linenum-padding-right);
 
         .unselectable();
-      }
-
-      &.comment-divider td {
-        height: 1px;
-        padding: 0;
-        background-color: #666 !important;
       }
     }
 
@@ -379,52 +369,111 @@
     }
 
     &.delete {
+      /*
+       * Use the delete border colors for this chunk and for the top of the
+       * following chunk. The delete border is darker than the borders of other
+       * types of chunks, and contrasts much better with the delete background
+       * color, so we always want it used for the top of the next diff row.
+       */
+      & tr,
+      + tbody.equal tr.first,
+      + tbody.delete tr.first,
+      + tbody.insert tr.first,
+      + tbody.replace tr.first {
+        td {
+          border-color: @diff-delete-border-color;
+        }
+
+        th {
+          border-color: @diff-delete-linenum-border-color;
+        }
+      }
+
       tr {
         &.selected * { background: @diff-delete-selected-color; }
         &.highlight-anchor * { background: @diff-highlight-color; }
 
         td {
           background: @diff-delete-color;
-          border-color: @diff-delete-border-color;
         }
 
         th {
           background: @diff-delete-linenum-color;
-          border-color: @diff-delete-linenum-border-color;
+        }
+      }
+    }
+
+    &.equal {
+      /*
+       * Don't include a border for adjacent equals chunks. This will happen
+       * when expanding diffs, and is specific to equals.
+       */
+      + tbody.equal tr.first {
+        td, th {
+          border-top: 0;
         }
       }
     }
 
     &.insert {
+      /*
+       * Use the insert border colors for this chunk and the top of a
+       * following equal or replace chunks. The insert border color better
+       * contrasts with the green than the border colors of the equal or
+       * replace chunks. We don't want this for deletes.
+       */
+      & tr,
+      + tbody.equal tr.first,
+      + tbody.replace tr.first {
+        td {
+          border-color: @diff-insert-border-color;
+        }
+
+        th {
+          border-color: @diff-insert-linenum-border-color;
+        }
+      }
+
       tr {
         &.selected * { background: @diff-insert-selected-color; }
         &.highlight-anchor * { background: @diff-highlight-color; }
 
         td {
           background: @diff-insert-color;
-          border-color: @diff-insert-border-color;
         }
 
         th {
           background: @diff-insert-linenum-color;
-          border-color: @diff-insert-linenum-border-color;
         }
       }
     }
 
     &.replace {
+      /*
+       * Use the replace border colors for this chunk and the top of a
+       * following equal chunk.
+       */
+      & tr,
+      + tbody.equal tr.first {
+        td {
+          border-color: @diff-replace-border-color;
+        }
+
+        th {
+          border-color: @diff-replace-linenum-border-color;
+        }
+      }
+
       tr {
         &.selected * { background: @diff-replace-selected-color; }
         &.highlight-anchor * { background: @diff-highlight-color; }
 
         td {
           background: @diff-replace-color;
-          border-color: @diff-replace-border-color;
         }
 
         th {
           background: @diff-replace-linenum-color;
-          border-color: @diff-replace-linenum-border-color;
         }
       }
 
@@ -439,6 +488,12 @@
     }
 
     &.diff-header {
+      + tbody {
+        td, th {
+          border-top: 0;
+        }
+      }
+
       a {
         text-decoration: none;
         color: black;
@@ -465,17 +520,37 @@
 
       tr {
         &:first-child {
-          border-top: 1px darken(@diff-header-color, 10%) solid;
+          td, th {
+            border-top: 1px darken(@diff-header-color, 10%) solid;
+          }
         }
 
         &:last-child {
-          border-bottom: 1px darken(@diff-header-color, 10%) solid;
+          td, th {
+            border-bottom: 1px darken(@diff-header-color, 10%) solid;
+          }
         }
       }
     }
   }
 
   thead {
+    /*
+     * Remove the top border on the diff header or chunk following the file
+     * header, so that the file header's border takes precedence.
+     */
+    + tbody {
+      tr.first, tr:first-child {
+        td, th {
+          /*
+           * Ideally we wouldn't use !important, but we otherwise need to
+           * have this rule for each type of tbody, which we don't want.
+           */
+          border-top: 0 !important;
+        }
+      }
+    }
+
     th {
       background: @diff-file-color;
       font-size: 120%;

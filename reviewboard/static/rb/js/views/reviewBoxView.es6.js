@@ -11,17 +11,9 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
 
     /**
      * Initialize the view.
-     *
-     * Args:
-     *     options (object):
-     *         Options for the view.
-     *
-     * Option Args:
-     *     reviewRequestEditor (RB.ReviewRequestEditor):
-     *         The review request editor.
      */
-    initialize(options) {
-        RB.CollapsableBoxView.prototype.initialize.call(this, options);
+    initialize() {
+        RB.CollapsableBoxView.prototype.initialize.call(this);
 
         this._reviewView = null;
         this._draftBannerShown = false;
@@ -47,13 +39,11 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
 
         this._reviewView = new RB.ReviewView({
             el: this.el,
-            model: this.model,
-            reviewRequestEditor: this.options.reviewRequestEditor,
+            model: this.model.get('review'),
+            entryModel: this.model,
             $bannerFloatContainer: this._$box,
             $bannerParent: this.$('.banners'),
             bannerNoFloatContainerClass: 'collapsed',
-            showSendEmail: this.options.reviewRequestEditor.get(
-                'showSendEmail'),
         });
 
         this._$boxStatus = this.$('.box-status');
@@ -107,7 +97,7 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
                           this._reviewView.hasOpenIssues(),
                           'has-issues');
         this._updateLabel(this._$shipItLabel,
-                          this.model.get('shipIt'),
+                          this.model.get('review').get('shipIt'),
                           'ship-it');
     },
 
@@ -163,10 +153,12 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
             return;
         }
 
-        this.model.ready({
+        const review = this.model.get('review');
+
+        review.ready({
             ready: () => {
-                this.model.set('shipIt', false);
-                this.model.save({
+                review.set('shipIt', false);
+                review.save({
                     attrs: ['shipIt', 'includeTextTypes'],
                     success: () => {
                         this._updateLabels();
@@ -179,7 +171,7 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
                         setTimeout(() => this._clearRevokingShipIt(), 900);
                     },
                     error: (model, xhr) => {
-                        this.model.set('shipIt', true);
+                        review.set('shipIt', true);
                         this._clearRevokingShipIt();
 
                         alert(xhr.responseJSON.err.msg);
