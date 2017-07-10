@@ -48,6 +48,12 @@ RB.DraftReviewBannerView = Backbone.View.extend({
 
         this._publishButton.render();
 
+        if (!this.$el.hasClass('hidden')) {
+            this.show();
+        }
+
+        this.$el.addClass('ui-ready');
+
         return this;
     },
 
@@ -57,28 +63,34 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      * The banner will appear to slide down from the top of the page.
      */
     show() {
-        if (this.$el.is(':hidden')) {
-            this.$el.slideDown();
-            this._$banner
-                .hide()
-                .slideDown();
-        }
+        const height = this._$banner.outerHeight();
+
+        this.$el
+            .removeClass('hidden')
+            .css({
+                maxHeight: height,
+                height: height,
+            });
     },
 
     /*
      * Hide the banner.
      *
      * The banner will slide up to the top of the page.
-     *
-     * A callback can be provided for after the banner is hidden.
      */
-    hide(onDone, context) {
-        this.$el.slideUp();
-        this._$banner.slideUp();
+    hide() {
+        this.$el
+            .addClass('hidden')
+            .css('max-height', '');
 
-        if (_.isFunction(onDone)) {
-            this.$el.queue(_.bind(onDone, context));
-        }
+        /*
+         * If we set the height immediately, the browser will appear to not
+         * animate, since it can't transition heights (only max-heights). So
+         * we delay for a short period after we know the transition will have
+         * completed.
+         */
+        _.delay(() => this.$el.css('height', ''),
+                500);
     },
 
     /**
@@ -87,18 +99,18 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      * XXX Remove this function when we make the pages more dynamic.
      */
     hideAndReload() {
-        this.hide(() => {
-            /*
-             * hideAndReload might have been called from within a $.funcQueue.
-             * With Firefox, later async functions that are queued in the
-             * $.funcQueue will not run when we change window.location, which
-             * means that we might miss out on some teardown that was
-             * scheduled. We defer changing the location until the next tick
-             * of the event loop to let any teardown occur.
-             */
-            _.defer(() => {
-                window.location = this.model.get('parentObject').get('reviewURL');
-            });
+        this.hide();
+
+        /*
+         * hideAndReload might have been called from within a $.funcQueue.
+         * With Firefox, later async functions that are queued in the
+         * $.funcQueue will not run when we change window.location, which
+         * means that we might miss out on some teardown that was
+         * scheduled. We defer changing the location until the next tick
+         * of the event loop to let any teardown occur.
+         */
+        _.defer(() => {
+            window.location = this.model.get('parentObject').get('reviewURL');
         });
     },
 

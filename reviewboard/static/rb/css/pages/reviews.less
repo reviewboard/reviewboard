@@ -1962,16 +1962,49 @@
  * Banners
  ****************************************************************************/
 #review-banner {
-  padding-bottom: 4em;
+  overflow: hidden;
+
+  &.hidden {
+    max-height: 0;
+    visibility: hidden;
+
+    .banner {
+      /*
+       * Instead of hiding the banner, we keep the position off-screen by
+       * default using a transform. This makes it easy to animate it on-screen
+       * when putting it in the "shown" state.
+       */
+      transform: translateY(-100%);
+    }
+  }
+
+  &.ui-ready {
+    transition: max-height 0.3s linear, visibility 0.3s linear;
+
+    .banner {
+      /*
+       * We only set the position as fixed when the UI is ready (JavaScript
+       * has processed things). The reason for this is that when the page is
+       * loading, we want the #review-banner to have the same height as the
+       * draft banner, but the JavaScript wouldn't have executed yet, so it
+       * wouldn't be able to force that height. So instead, we leave the
+       * banner with a normal position, impacting #review-banner's height,
+       * and ensuring the page doesn't jump. Then we convert it to fixed once
+       * we've rendered everything.
+       */
+      position: fixed;
+      left: 0;
+      top: 0;
+      transition: transform 0.3s linear;
+    }
+  }
 
   .banner {
     border-left: 0;
     border-right: 0;
     border-top: 0;
     box-shadow: @box-shadow;
-    left: 0;
-    position: fixed;
-    top: 0;
+    margin: 0;
     width: 100%;
     z-index: @z-index-banner;
   }
