@@ -1,6 +1,11 @@
 {% load difftags djblets_utils i18n reviewtags %}
 
-<table class="sidebyside{% if comment.filediff.is_new %} newfile{% endif %}">
+<table{% attr "class" %}
+ sidebyside
+{%  if comment.filediff.is_new %}newfile{% endif %}
+{%  if expandable_above or header.left or header.right %}has-diff-header-above{% endif %}
+{%  if expandable_below %}has-diff-header-below{% endif %}
+{% endattr %}>
  <colgroup>
 {% if not comment.filediff.is_new %}
   <col class="line" />
@@ -23,8 +28,8 @@
    </th>
   </tr>
  </thead>
-{% if expandable_above or header %}
- <tbody class="diff-header">
+{% if expandable_above or header.left or header.right %}
+ <tbody class="diff-header diff-header-above" data-foo="{{header}}" data-bar="{{expandable_above}}">
 {%  if expandable_above %}
   <tr>
    <td><div>
@@ -108,7 +113,7 @@
  </tbody>
 {% endfor %}{# chunks #}
 {% if expandable_below %}
- <tbody class="diff-header">
+ <tbody class="diff-header diff-header-below">
   <tr>
    <td><div>
     {% expand_fragment_link 'above' _('Show 20 more lines below') 0 20 %}
