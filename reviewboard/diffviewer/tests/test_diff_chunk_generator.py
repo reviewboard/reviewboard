@@ -11,6 +11,8 @@ class DiffChunkGeneratorTests(TestCase):
     fixtures = ['test_scmtools']
 
     def setUp(self):
+        super(DiffChunkGeneratorTests, self).setUp()
+
         self.repository = self.create_repository()
         self.diffset = self.create_diffset(repository=self.repository)
         self.filediff = self.create_filediff(diffset=self.diffset)

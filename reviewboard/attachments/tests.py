@@ -28,10 +28,6 @@ from reviewboard.testing import TestCase
 class BaseFileAttachmentTestCase(TestCase):
     """Base functionality for FileAttachment test cases."""
 
-    def setUp(self):
-        """Set up this test case."""
-        initialize()
-
     def make_uploaded_file(self):
         """Create a return a file to use for mocking in forms."""
         filename = os.path.join(settings.STATIC_ROOT,
