@@ -323,7 +323,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                 prefix = (options.showDeleted ? '#file' : '#file_container_');
                 diffReviewable.getRenderedDiff({
                     complete: function(xhr) {
-                        const $container = $(prefix + fileDiffID)
+                        var $container = $(prefix + fileDiffID)
                             .parent()
                             .hide();
 
