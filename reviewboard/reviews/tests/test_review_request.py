@@ -609,3 +609,46 @@ class IssueCounterTests(TestCase):
         self.review_request.issue_resolved_count = None
         self.review_request.issue_dropped_count = None
         self.review_request.save()
+
+    def test_approval_states_ship_it(self):
+        """Testing the default review request approval logic (ship it)"""
+        self.create_review(self.review_request, ship_it=True, publish=True)
+
+        self.assertTrue(self.review_request.approved)
+        self.assertIsNone(self.review_request.approval_failure)
+
+    def test_approval_states_no_ship_its(self):
+        """Testing the default review request approval logic (no ship-its)"""
+        self.create_review(self.review_request, ship_it=False, publish=True)
+
+        self.assertFalse(self.review_request.approved)
+        self.assertEqual(self.review_request.approval_failure,
+                         'The review request has not been marked "Ship It!"')
+
+    def test_approval_states_open_issues(self):
+        """Testing the default review request approval logic (open issues)"""
+        review = self.create_review(self.review_request, ship_it=True)
+        self.create_general_comment(review, issue_opened=True)
+        review.publish()
+
+        self._reload_object(clear_counters=True)
+
+        self.assertFalse(self.review_request.approved)
+        self.assertEqual(self.review_request.approval_failure,
+                         'The review request has open issues.')
+
+    def test_approval_states_unverified_issues(self):
+        """Testing the default review request approval logic (unverified
+        issues)
+        """
+        review = self.create_review(self.review_request, ship_it=True)
+        self.create_general_comment(
+            review, issue_opened=True,
+            issue_status=Comment.VERIFYING_RESOLVED)
+        review.publish()
+
+        self._reload_object(clear_counters=True)
+
+        self.assertFalse(self.review_request.approved)
+        self.assertEqual(self.review_request.approval_failure,
+                         'The review request has unverified issues.')

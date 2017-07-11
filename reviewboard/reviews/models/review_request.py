@@ -1133,6 +1133,9 @@ class ReviewRequest(BaseReviewRequestDetails):
         elif self.issue_open_count > 0:
             approved = False
             failure = 'The review request has open issues.'
+        elif self.issue_verifying_count > 0:
+            approved = False
+            failure = 'The review request has unverified issues.'
 
         for hook in ReviewRequestApprovalHook.hooks:
             try:
