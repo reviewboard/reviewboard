@@ -299,7 +299,9 @@ class Review(models.Model):
         return None
 
     def save(self, **kwargs):
-        self.timestamp = timezone.now()
+        if ('update_fields' not in kwargs or
+            'timestamp' in kwargs['update_fields']):
+            self.timestamp = timezone.now()
 
         super(Review, self).save(**kwargs)
 
