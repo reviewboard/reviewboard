@@ -82,6 +82,15 @@ def get_default_reviewer_item_url(default_reviewer_id, local_site_name=None):
 
 
 #
+# DiffContextResource
+#
+def get_diff_context_url(review_request_id, local_site_name=None):
+    return resources.diff_context.get_list_url(
+        review_request_id=review_request_id,
+        local_site_name=local_site_name)
+
+
+#
 # DiffResource
 #
 def get_diff_list_url(review_request, local_site_name=None):
