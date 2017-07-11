@@ -219,7 +219,7 @@ PIPELINE_JAVASCRIPT = dict({
             # Note: These are roughly in dependency order.
             'rb/js/models/abstractCommentBlockModel.es6.js',
             'rb/js/models/abstractReviewableModel.es6.js',
-            'rb/js/models/commentEditorModel.js',
+            'rb/js/models/commentEditorModel.es6.js',
             'rb/js/models/commentIssueManagerModel.es6.js',
             'rb/js/models/fileAttachmentCommentBlockModel.es6.js',
             'rb/js/models/fileAttachmentReviewableModel.es6.js',

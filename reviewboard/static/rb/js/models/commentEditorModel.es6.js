@@ -1,4 +1,4 @@
-/*
+/**
  * Represents the state for editing a new or existing draft comment.
  *
  * From here, a comment can be created, edited, or deleted.
@@ -6,10 +6,58 @@
  * This will provide state on what actions are available on a comment,
  * informative text, dirty states, existing published comments on the
  * same region this comment is on, and more.
+ *
+ * Attributes:
+ *     canDelete (boolean):
+ *         Whether the draft comment can be deleted.
+ *
+ *     canEdit (boolean):
+ *         Whether the draft comment can be edited.
+ *
+ *     canSave (boolean):
+ *         Whether the draft comment can be saved.
+ *
+ *     editing (boolean):
+ *         True if the comment is currently being edited.
+ *
+ *     extraData (object):
+ *         The draft state for the comment's extra data.
+ *
+ *     comment (RB.BaseComment):
+ *         The comment model.
+ *
+ *     dirty (boolean):
+ *         True if the draft comment has been edited but not saved.
+ *
+ *     openIssue (boolean):
+ *         Whether the comment opens an issue.
+ *
+ *     publishedComments (Array of RB.BaseComment):
+ *         The thread of previous comments that this draft is a reply to, if
+ *         applicable.
+ *
+ *     publishedCommentsType (string):
+ *         The type of comment that this draft is a reply to, if applicable.
+ *
+ *     reviewRequest (RB.ReviewRequest):
+ *         The review request that the comment is on.
+ *
+ *     richText (boolean):
+ *         Whether the comment is formatted in Markdown.
+ *
+ *     text (string):
+ *         The comment's text.
  */
 RB.CommentEditor = Backbone.Model.extend(_.defaults({
-    defaults: function() {
-        var userSession = RB.UserSession.instance;
+    /**
+     * Return the default values for the model attributes.
+     *
+     * Returns:
+     *     object:
+     *     The default values for the attributes.
+     */
+    defaults() {
+        const userSession = RB.UserSession.instance;
 
         return {
             canDelete: false,
@@ -24,12 +72,15 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
             publishedCommentsType: null,
             reviewRequest: null,
             richText: userSession.get('defaultUseRichText'),
-            text: ''
+            text: '',
         };
     },
 
-    initialize: function() {
-        var reviewRequest = this.get('reviewRequest');
+    /**
+     * Initialize the comment editor.
+     */
+    initialize() {
+        const reviewRequest = this.get('reviewRequest');
 
         this.on('change:comment', this._updateFromComment, this);
         this._updateFromComment();
@@ -43,8 +94,8 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
             this._updateCanEdit();
         }
 
-        this.on('change:dirty', function(model, dirty) {
-            var reviewRequestEditor = this.get('reviewRequestEditor');
+        this.on('change:dirty', (model, dirty) => {
+            const reviewRequestEditor = this.get('reviewRequestEditor');
 
             if (reviewRequestEditor) {
                 if (dirty) {
@@ -53,24 +104,24 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
                     reviewRequestEditor.decr('editCount');
                 }
             }
-        }, this);
+        });
 
-        this.on('change:openIssue change:richText change:text', function() {
+        this.on('change:openIssue change:richText change:text', () => {
             if (this.get('editing')) {
                 this.set('dirty', true);
                 this._updateState();
             }
-        }, this);
+        });
 
         this._updateState();
 
         this._setupExtraData();
     },
 
-    /*
-     * Sets the editor to begin editing a new or existing comment.
+    /**
+     * Set the editor to begin editing a new or existing comment.
      */
-    beginEdit: function() {
+    beginEdit() {
         console.assert(this.get('canEdit'),
                        'beginEdit() called when canEdit is false.');
         console.assert(this.get('comment'),
@@ -78,42 +129,41 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
 
         this.set({
             dirty: false,
-            editing: true
+            editing: true,
         });
 
         this._updateState();
     },
 
-    /*
-     * Deletes the current comment, if it can be deleted.
+    /**
+     * Delete the current comment, if it can be deleted.
      *
      * This requires that there's a saved comment to delete.
      *
      * The editor will be marked as closed, requiring a new call to beginEdit.
      */
-    deleteComment: function() {
-        var comment = this.get('comment');
-
+    deleteComment() {
         console.assert(this.get('canDelete'),
                        'deleteComment() called when canDelete is false.');
-        comment.destroy({
-            success: function() {
-                this.trigger('deleted');
 
+        const comment = this.get('comment');
+        comment.destroy({
+            success: () => {
+                this.trigger('deleted');
                 this.close();
-            }
-        }, this);
+            },
+        });
     },
 
-    /*
-     * Cancels editing of a comment.
+    /**
+     * Cancel editing of a comment.
      *
      * If there's a saved comment and it's been made empty, it will end
      * up being deleted. Then this editor will be marked as closed,
      * requiring a new call to beginEdit.
      */
-    cancel: function() {
-        var comment = this.get('comment');
+    cancel() {
+        const comment = this.get('comment');
 
         this.off('change:comment', this._updateFromComment, this);
 
@@ -125,8 +175,8 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
         this.close();
     },
 
-    /*
-     * Closes editing of the comment.
+    /**
+     * Close editing of the comment.
      *
      * The comment state will be reset, and the "closed" event will be
      * triggered.
@@ -134,7 +184,7 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
      * To edit a comment again after closing it, the proper state must be
      * set again and beginEdit must be called.
      */
-    close: function() {
+    close() {
         /* Set this first, to prevent dirty firing. */
         this.set('editing', false);
 
@@ -142,68 +192,70 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
             comment: null,
             dirty: false,
             extraData: new RB.ExtraData(),
-            text: ''
+            text: '',
         });
 
         this.trigger('closed');
     },
 
-    /*
-     * Saves the comment.
+    /**
+     * Save the comment.
      *
      * If this is a new comment, it will be created on the server.
      * Otherwise, the existing comment will be updated.
      *
      * The editor will not automatically be marked as closed. That is up
      * to the caller.
+     *
+     * Args:
+     *     options (object, optional):
+     *         Options for the save operation.
+     *
+     *     context (object, optional):
+     *         The context to use when calling callbacks.
      */
-    save: function(options, context) {
-        var comment = this.get('comment');
-
+    save(options={}, context=undefined) {
         console.assert(this.get('canSave'),
                        'save() called when canSave is false.');
 
-        options = options || {};
-
+        const comment = this.get('comment');
         comment.set({
             text: this.get('text'),
             issueOpened: this.get('openIssue'),
             extraData: _.clone(this.get('extraData')),
             richText: this.get('richText'),
-            includeTextTypes: 'html,raw,markdown'
+            includeTextTypes: 'html,raw,markdown',
         });
 
         comment.save({
-            success: _.bind(function() {
+            success: () => {
                 this.set('dirty', false);
                 this.trigger('saved');
 
                 if (_.isFunction(options.success)) {
                     options.success.call(context);
                 }
-            }, this),
+            },
 
             error: _.isFunction(options.error)
-                   ? _.bind(options.error, context)
-                   : undefined
+                   ? options.error.bind(context)
+                   : undefined,
         });
     },
 
-    /*
-     * Updates the state of the editor from the currently set comment.
+    /**
+     * Update the state of the editor from the currently set comment.
      */
-    _updateFromComment: function() {
-        var oldComment = this.previous('comment'),
-            comment = this.get('comment'),
-            defaultRichText,
-            textFields;
+    _updateFromComment() {
+        const oldComment = this.previous('comment');
+        const comment = this.get('comment');
 
         if (oldComment) {
             oldComment.destroyIfEmpty();
         }
 
         if (comment) {
-            defaultRichText = this.defaults().richText;
+            const defaultRichText = this.defaults().richText;
 
             /*
              * Set the attributes based on what we know at page load time.
@@ -227,7 +279,7 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
                 openIssue: comment.get('issueOpened') === null
                            ? this.defaults().openIssue
                            : comment.get('issueOpened'),
-                richText: defaultRichText || !!comment.get('richText')
+                richText: defaultRichText || !!comment.get('richText'),
             });
 
             /*
@@ -236,9 +288,9 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
              * previous save. If we don't have it, we'll fall back to "text",
              * which should be normalized content from the initial page load.
              */
-            textFields = (comment.get('richText') || !defaultRichText
-                          ? comment.get('rawTextFields')
-                          : comment.get('markdownTextFields'));
+            const textFields = (comment.get('richText') || !defaultRichText
+                                ? comment.get('rawTextFields')
+                                : comment.get('markdownTextFields'));
 
             this.set('text',
                      !_.isEmpty(textFields)
@@ -246,40 +298,40 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
                      : comment.get('text'));
 
             comment.ready({
-                ready: this._updateState
+                ready: this._updateState,
             }, this);
         }
     },
 
-    /*
-     * Updates the canEdit state of the editor.
+    /**
+     * Update the canEdit state of the editor.
      *
      * This is based on the authentication state of the user, and
      * whether or not there's an existing draft for the review request.
      */
-    _updateCanEdit: function() {
-        var reviewRequest = this.get('reviewRequest'),
-            userSession = RB.UserSession.instance;
+    _updateCanEdit() {
+        const reviewRequest = this.get('reviewRequest');
+        const userSession = RB.UserSession.instance;
 
         this.set('canEdit',
                  userSession.get('authenticated') &&
                  !reviewRequest.get('hasDraft'));
     },
 
-    /*
-     * Updates the capability states of the editor.
+    /**
+     * Update the capability states of the editor.
      *
      * Some of the can* properties will change to reflect the various
      * actions that can be performed with the editor.
      */
-    _updateState: function() {
-        var canEdit = this.get('canEdit'),
-            editing = this.get('editing'),
-            comment = this.get('comment');
+    _updateState() {
+        const canEdit = this.get('canEdit');
+        const editing = this.get('editing');
+        const comment = this.get('comment');
 
         this.set({
             canDelete: canEdit && editing && comment && !comment.isNew(),
-            canSave: canEdit && editing && this.get('text') !== ''
+            canSave: canEdit && editing && this.get('text') !== '',
         });
-    }
+    },
 }, RB.ExtraDataMixin));
