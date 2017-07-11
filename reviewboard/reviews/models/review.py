@@ -301,7 +301,7 @@ class Review(models.Model):
     def save(self, **kwargs):
         self.timestamp = timezone.now()
 
-        super(Review, self).save()
+        super(Review, self).save(**kwargs)
 
     def publish(self, user=None, trivial=False, to_submitter_only=False,
                 request=None):
