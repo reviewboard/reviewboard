@@ -2,7 +2,7 @@ suite('rb/views/DraftReviewBannerView', function() {
     var model,
         view,
         template = _.template([
-            '<div id="review-banner" style="display: none;">',
+            '<div id="review-banner" class="hidden">',
             ' <div class="banner">',
             '  <h1>You have a pending review.</h1>',
             '  <input id="review-banner-edit" type="button" ',
@@ -129,18 +129,17 @@ suite('rb/views/DraftReviewBannerView', function() {
 
     describe('Methods', function() {
         it('show', function() {
-            expect(view.$el.is(':visible')).toBe(false);
+            expect(view.$el.hasClass('hidden')).toBe(true);
 
             view.show();
-            expect(view.$el.is(':visible')).toBe(true);
+            expect(view.$el.hasClass('hidden')).toBe(false);
         });
 
         it('hide', function() {
-            view.$el.show();
-            expect(view.$el.is(':visible')).toBe(true);
+            view.$el.addClass('hidden');
 
             view.hide();
-            expect(view.$el.is(':visible')).toBe(false);
+            expect(view.$el.hasClass('hidden')).toBe(true);
         });
     });
 });
