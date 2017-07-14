@@ -1,13 +1,16 @@
 from __future__ import unicode_literals
 
+from datetime import datetime, timedelta
 import logging
 
 from django.contrib.auth.models import AnonymousUser, User
+from django.utils import timezone
 from djblets.testing.decorators import add_fixtures
-from kgb import SpyAgency
+from djblets.util.dates import get_tz_aware_utcnow
+from kgb import SpyAgency, spy_on
 
 from reviewboard.reviews.errors import RevokeShipItError
-from reviewboard.reviews.models import Review
+from reviewboard.reviews.models import Review, ReviewRequest
 from reviewboard.reviews.signals import (review_ship_it_revoked,
                                          review_ship_it_revoking)
 from reviewboard.testing import TestCase
@@ -269,3 +272,46 @@ class ReviewTests(SpyAgency, TestCase):
         self.assertEqual(review.body_top, Review.REVOKED_SHIP_IT_TEXT)
         self.assertFalse(review.ship_it)
         self.assertTrue(review.extra_data.get('revoked_ship_it'))
+
+    def test_revoke_ship_it_timestamp(self):
+        """Testing Review.revoke_ship_it does not modify the review timestamp
+        """
+        # ReviewRequest.last_update is a
+        # django.db.fields.ModificationTimestampField, which retrieves its
+        # value from datetime.utcnow().replace(tzinfo=utc).
+        #
+        # django.utils.timezone.now has the same implementation.
+        #
+        # Unfortunately, we cannot spy on datetime.utcnow since it is a
+        # builtin. So we replace get_tz_aware_utcnow with timezone.now and we
+        # will replace that with a constant function in the spy_on calls below.
+        self.spy_on(get_tz_aware_utcnow, call_fake=lambda: timezone.now())
+
+        creation_timestamp = datetime.fromtimestamp(0, timezone.utc)
+        review_timestamp = creation_timestamp + timedelta(hours=1)
+        revoke_timestamp = review_timestamp + timedelta(hours=1)
+
+        with spy_on(timezone.now, call_fake=lambda: creation_timestamp):
+            review_request = self.create_review_request(publish=True)
+
+        with spy_on(timezone.now, call_fake=lambda: review_timestamp):
+            review = self.create_review(review_request,
+                                        body_top=Review.SHIP_IT_TEXT,
+                                        ship_it=True,
+                                        publish=True)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+
+        self.assertEqual(review_request.time_added, creation_timestamp)
+        self.assertEqual(review_request.last_updated, review_timestamp)
+        self.assertEqual(review.timestamp, review_timestamp)
+
+        with spy_on(timezone.now, call_fake=lambda: revoke_timestamp):
+            review.revoke_ship_it(review.user)
+
+        review = Review.objects.get(pk=review.pk)
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+
+        self.assertEqual(review_request.time_added, creation_timestamp)
+        self.assertEqual(review_request.last_updated, review_timestamp)
+        self.assertEqual(review.timestamp, review_timestamp)

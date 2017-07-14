@@ -39,7 +39,6 @@ class AccountSettingsForm(AccountPageForm):
 
     form_id = 'settings'
     form_title = _('Settings')
-    save_label = _('Save Settings')
 
     timezone = TimeZoneField(
         label=_('Time zone'),
@@ -51,6 +50,10 @@ class AccountSettingsForm(AccountPageForm):
         required=False)
     open_an_issue = forms.BooleanField(
         label=_('Always open an issue when comment box opens'),
+        required=False)
+
+    default_use_rich_text = forms.BooleanField(
+        label=_('Always use Markdown for text fields'),
         required=False)
 
     should_send_email = forms.BooleanField(
@@ -65,21 +68,17 @@ class AccountSettingsForm(AccountPageForm):
         label=_('Show desktop notifications'),
         required=False)
 
-    default_use_rich_text = forms.BooleanField(
-        label=_('Always use Markdown for text fields'),
-        required=False)
-
     def load(self):
         """Load data for the form."""
         self.set_initial({
             'open_an_issue': self.profile.open_an_issue,
+            'syntax_highlighting': self.profile.syntax_highlighting,
+            'timezone': self.profile.timezone,
+            'default_use_rich_text': self.profile.should_use_rich_text,
             'should_send_email': self.profile.should_send_email,
             'should_send_own_updates': self.profile.should_send_own_updates,
             'enable_desktop_notifications':
                 self.profile.should_enable_desktop_notifications,
-            'syntax_highlighting': self.profile.syntax_highlighting,
-            'timezone': self.profile.timezone,
-            'default_use_rich_text': self.profile.should_use_rich_text,
         })
 
         siteconfig = SiteConfiguration.objects.get_current()
@@ -94,18 +93,34 @@ class AccountSettingsForm(AccountPageForm):
                 self.cleaned_data['syntax_highlighting']
 
         self.profile.open_an_issue = self.cleaned_data['open_an_issue']
+        self.profile.default_use_rich_text = \
+            self.cleaned_data['default_use_rich_text']
+        self.profile.timezone = self.cleaned_data['timezone']
         self.profile.should_send_email = self.cleaned_data['should_send_email']
         self.profile.should_send_own_updates = \
             self.cleaned_data['should_send_own_updates']
         self.profile.settings['enable_desktop_notifications'] = \
             self.cleaned_data['enable_desktop_notifications']
-        self.profile.default_use_rich_text = \
-            self.cleaned_data['default_use_rich_text']
-        self.profile.timezone = self.cleaned_data['timezone']
         self.profile.save()
 
         messages.add_message(self.request, messages.INFO,
                              _('Your settings have been saved.'))
+
+    class Meta:
+        fieldsets = (
+            (_('General Settings'), {
+                'fields': ('form_target',
+                           'timezone',
+                           'syntax_highlighting',
+                           'open_an_issue',
+                           'default_use_rich_text'),
+            }),
+            (_('Notifications'), {
+                'fields': ('should_send_email',
+                           'should_send_own_updates',
+                           'enable_desktop_notifications'),
+            })
+        )
 
 
 class AvatarSettingsForm(DjbletsAvatarSettingsForm):

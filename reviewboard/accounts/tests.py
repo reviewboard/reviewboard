@@ -434,8 +434,11 @@ class ProfileTests(TestCase):
 class AccountPageTests(TestCase):
     """Test account page functionality."""
 
-    builtin_pages = set(['settings', 'authentication', 'profile', 'groups',
-                         'api-tokens'])
+    @classmethod
+    def setUpClass(cls):
+        super(AccountPageTests, cls).setUpClass()
+
+        cls.builtin_pages = set(AccountPage.registry.get_defaults())
 
     def tearDown(self):
         """Uninitialize this test case."""
@@ -444,11 +447,7 @@ class AccountPageTests(TestCase):
 
     def test_default_pages(self):
         """Testing default list of account pages."""
-        page_classes = list(get_page_classes())
-        self.assertEqual(len(page_classes), len(self.builtin_pages))
-
-        page_class_ids = [page_cls.page_id for page_cls in page_classes]
-        self.assertEqual(set(page_class_ids), self.builtin_pages)
+        self.assertEqual(set(get_page_classes()), self.builtin_pages)
 
     def test_register_account_page_class(self):
         """Testing register_account_page_class."""
@@ -458,9 +457,10 @@ class AccountPageTests(TestCase):
 
         register_account_page_class(MyPage)
 
-        page_classes = list(get_page_classes())
-        self.assertEqual(len(page_classes), len(self.builtin_pages) + 1)
-        self.assertEqual(page_classes[-1], MyPage)
+        self.assertEqual(
+            set(get_page_classes()),
+            self.builtin_pages | {MyPage}
+        )
 
     def test_register_account_page_class_with_duplicate(self):
         """Testing register_account_page_class with duplicate page."""
@@ -482,8 +482,7 @@ class AccountPageTests(TestCase):
         register_account_page_class(MyPage)
         unregister_account_page_class(MyPage)
 
-        page_classes = list(get_page_classes())
-        self.assertEqual(len(page_classes), len(self.builtin_pages))
+        self.assertEqual(set(get_page_classes()), self.builtin_pages)
 
     def test_unregister_unknown_account_page_class(self):
         """Testing unregister_account_page_class with unknown page."""
@@ -491,7 +490,7 @@ class AccountPageTests(TestCase):
             page_id = 'test-page'
             page_title = 'Test Page'
 
-        with self.assertRaises(ItemLookupError):
+        with self.assertRaises(AccountPage.registry.lookup_error_class):
             unregister_account_page_class(MyPage)
 
     def test_add_form_to_page(self):
@@ -551,7 +550,7 @@ class AccountPageTests(TestCase):
 
         register_account_page_class(MyPage)
 
-        with self.assertRaises(ItemLookupError):
+        with self.assertRaises(AccountPage.registry.lookup_error_class):
             MyPage.remove_form(MyForm)
 
     def test_default_form_classes_for_page(self):

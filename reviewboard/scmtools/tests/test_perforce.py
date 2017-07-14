@@ -48,6 +48,8 @@ class PerforceTests(SpyAgency, SCMTestCase):
             raise nose.SkipTest('perforce/p4python is not installed')
 
     def tearDown(self):
+        super(PerforceTests, self).tearDown()
+
         shutil.rmtree(os.path.join(settings.SITE_DATA_DIR, 'p4'),
                       ignore_errors=True)
 

@@ -1,13 +1,17 @@
 from __future__ import unicode_literals
 
+from datetime import datetime, timedelta
+
 from django.core import mail
-from django.utils import six
+from django.utils import six, timezone
+from djblets.util.dates import get_tz_aware_utcnow
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    PERMISSION_DENIED)
 from djblets.webapi.testing.decorators import webapi_test_template
+from kgb import SpyAgency, spy_on
 
-from reviewboard.reviews.models import Review
+from reviewboard.reviews.models import Review, ReviewRequest
 from reviewboard.reviews.signals import review_ship_it_revoking
 from reviewboard.webapi.errors import REVOKE_SHIP_IT_ERROR
 from reviewboard.webapi.resources import resources
@@ -131,8 +135,8 @@ class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
-                        BaseWebAPITestCase):
+class ResourceItemTests(SpyAgency, ReviewItemMixin,
+                        ReviewRequestChildItemMixin, BaseWebAPITestCase):
     """Testing the ReviewResource item APIs."""
     fixtures = ['test_users']
     sample_api_url = 'review-requests/<id>/reviews/<id>/'
@@ -347,7 +351,7 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
     @webapi_test_template
     def test_put_with_revoke_ship_it_and_revoke_error(self):
         """Testing the PUT <URL> API with revoking Ship It and handling a
-        revokation error
+        revocation error
         """
         def on_revoking(**kwargs):
             raise Exception('oh no')
@@ -371,6 +375,59 @@ class ResourceItemTests(ReviewItemMixin, ReviewRequestChildItemMixin,
         self.assertEqual(rsp['err']['code'], REVOKE_SHIP_IT_ERROR.code)
         self.assertEqual(rsp['err']['msg'],
                          'Error revoking the Ship It: oh no')
+
+    @webapi_test_template
+    def test_put_revoke_ship_it_timestamp(self):
+        """Testing the PUT <URL> API with revoking Ship It does not update
+        timestamp
+        """
+        # ReviewRequest.last_update is a
+        # django.db.fields.ModificationTimestampField, which retrieves its
+        # value from datetime.utcnow().replace(tzinfo=utc).
+        #
+        # django.utils.timezone.now has the same implementation.
+        #
+        # Unfortunately, we cannot spy on datetime.utcnow since it is a
+        # builtin. So we replace get_tz_aware_utcnow with timezone.now and we
+        # will replace that with a constant function in the spy_on calls below.
+        self.spy_on(get_tz_aware_utcnow, call_fake=lambda: timezone.now())
+        creation_timestamp = datetime.fromtimestamp(0, timezone.utc)
+        review_timestamp = creation_timestamp + timedelta(hours=1)
+        revoke_timestamp = review_timestamp + timedelta(hours=1)
+
+        with spy_on(timezone.now, call_fake=lambda: creation_timestamp):
+            review_request = self.create_review_request(publish=True,
+                                                        submitter=self.user)
+
+        with spy_on(timezone.now, call_fake=lambda: review_timestamp):
+            review = self.create_review(review_request,
+                                        body_top=Review.SHIP_IT_TEXT,
+                                        ship_it=True,
+                                        publish=True,
+                                        user=self.user)
+
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+
+        self.assertEqual(review_request.time_added, creation_timestamp)
+        self.assertEqual(review_request.last_updated, review_timestamp)
+        self.assertEqual(review.timestamp, review_timestamp)
+
+        with spy_on(timezone.now, call_fake=lambda: revoke_timestamp):
+            rsp = self.api_put(
+                get_review_item_url(review_request, review.pk),
+                {'ship_it': False},
+                expected_mimetype=review_item_mimetype,
+            )
+
+        self.assertIn('stat', rsp)
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review = Review.objects.get(pk=review.pk)
+        review_request = ReviewRequest.objects.get(pk=review_request.pk)
+
+        self.assertEqual(review_request.time_added, creation_timestamp)
+        self.assertEqual(review_request.last_updated, review_timestamp)
+        self.assertEqual(review.timestamp, review_timestamp)
 
     @add_fixtures(['test_site'])
     def test_put_publish(self):

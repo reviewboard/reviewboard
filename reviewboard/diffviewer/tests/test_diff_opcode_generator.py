@@ -11,6 +11,8 @@ class IndentationTests(TestCase):
     """Unit tests for DiffOpcodeGenerator indentation highlighting."""
 
     def setUp(self):
+        super(IndentationTests, self).setUp()
+
         self.generator = get_diff_opcode_generator(MyersDiffer('', ''))
 
     def test_indentation_with_spaces(self):
