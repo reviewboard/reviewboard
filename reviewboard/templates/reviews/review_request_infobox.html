@@ -1,12 +1,12 @@
 {% load avatars i18n %}
 
-<div class="review-request-infobox-content">
- <div class="review-request-infobox-details">
+<div class="infobox-content">
+ <div class="infobox-text">
   <div class="review-request-infobox-header">
    <h2><a href="{{review_request.get_absolute_url}}">Review Request #{{review_request_id}}</a>:
     {{review_request_labels}} {{review_request.summary}}</h2>
   </div>
-  <div class="review-request-infobox-section review-request-infobox-submitter">
+  <div class="infobox-text-section review-request-infobox-submitter">
    {% trans "Submitter:" %}
 {% if show_profile and submitter.full_name %}
    <a href="{% url 'user' submitter %}">{{submitter.full_name}}</a> <span class="username">({{submitter.username}})</span>
@@ -14,10 +14,10 @@
    <a href="{% url 'user' submitter %}">{{submitter.username}}</a>
 {% endif %}
   </div>
-  <div class="review-request-infobox-section review-request-infobox-description">
+  <div class="infobox-text-section review-request-infobox-description">
    {{review_request.description}}
   </div>
-  <div class="review-request-infobox-section review-request-infobox-issue-summary">
+  <div class="infobox-text-section review-request-infobox-issue-summary">
    {# Very similar code can be found in reviews/review_issue_summary_table.html #}
    <ul class="issue-summary">
     <li class="issue-summary-item" title="{% trans 'All issues' %}">
@@ -42,7 +42,7 @@
    </ul>
   </div>
 {% if review_request_latest_reviews %}
-  <div class="review-request-infobox-section review-request-infobox-latest">
+  <div class="infobox-text-section review-request-infobox-latest">
    <h3>Latest Reviews</h3>
 {%  for review in review_request_latest_reviews %}
     <div class="review-request-latest-review">

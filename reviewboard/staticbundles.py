@@ -360,6 +360,7 @@ PIPELINE_STYLESHEETS = dict({
             'rb/css/ui/buttons.less',
             'rb/css/ui/datagrids.less',
             'rb/css/ui/forms.less',
+            'rb/css/ui/infoboxes.less',
             'rb/css/ui/menus.less',
             'rb/css/ui/sidebars.less',
             'rb/css/common.less',

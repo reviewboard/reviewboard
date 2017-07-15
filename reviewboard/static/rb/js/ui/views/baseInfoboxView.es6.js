@@ -35,13 +35,7 @@ RB.BaseInfoboxView = Backbone.View.extend({
      *     The CSS class name for the infobox element.
      */
     className() {
-        /*
-         * XXX This is temporary. It will be replaced when the CSS is
-         *     cleaned up.
-         */
-        const className = this.infoboxID.replace(/-/g, '_');
-
-        return `infobox ${className}`;
+        return `infobox ${this.infoboxID}`;
     },
 
     /**
