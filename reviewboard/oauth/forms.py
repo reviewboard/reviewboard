@@ -13,6 +13,8 @@ from oauth2_provider.validators import URIValidator
 
 from reviewboard.admin.form_widgets import RelatedUserWidget
 from reviewboard.oauth.models import Application
+from reviewboard.oauth.widgets import OAuthSecretInputWidget
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 class ApplicationChangeForm(forms.ModelForm):
@@ -38,6 +40,36 @@ class ApplicationChangeForm(forms.ModelForm):
         }),
         required=False,
     )
+
+    def __init__(self, data=None, initial=None, instance=None):
+        """Initialize the form:
+
+        Args:
+            data (dict, optional):
+                The provided form data.
+
+            initial (dict, optional):
+                The initial form values.
+
+            instance (Application, optional):
+                The application to edit.
+        """
+        super(ApplicationChangeForm, self).__init__(data=data,
+                                                    initial=initial,
+                                                    instance=instance)
+
+        if instance and instance.pk:
+            # If we are creating an application (as the
+            # ApplicationCreationForm is a subclass of this class), the
+            # client_secret wont be present so we don't have to initialize the
+            # widget.
+            client_secret = self.fields['client_secret']
+            client_secret.widget = OAuthSecretInputWidget(
+                attrs=client_secret.widget.attrs,
+                api_url=local_site_reverse('oauth-app-resource',
+                                           local_site=instance.local_site,
+                                           kwargs={'app_id': instance.pk}),
+            )
 
     def clean_extra_data(self):
         """Prevent ``extra_data`` from being an empty string.
@@ -178,6 +210,7 @@ class ApplicationChangeForm(forms.ModelForm):
             'name': widgets.TextInput(attrs={'size': 60}),
             'redirect_uris': ListEditWidget(attrs={'size': 60}, sep=' '),
             'user': RelatedUserWidget(multivalued=False),
+            'original_user': RelatedUserWidget(multivalued=False),
         }
 
         labels = {

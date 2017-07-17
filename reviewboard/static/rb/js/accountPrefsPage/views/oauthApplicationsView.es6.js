@@ -2,6 +2,8 @@
 
 
 const addApplicationText = gettext('Add application');
+const disabledForSecurityText = gettext('Disabled for security.');
+const disabledWarningTemplate = gettext('This application has been disabled because the user "%s" has been removed from the Local Site.');
 const emptyText = gettext('You have not registered any OAuth2 applications.');
 
 
@@ -9,12 +11,23 @@ const emptyText = gettext('You have not registered any OAuth2 applications.');
  * A model representing an OAuth application.
  *
  * Attributes:
+ *     enabled (boolean):
+ *         Whether or not the application is enabled.
  *
  *     editURL (string):
  *         The URL to edit this application.
  *
+ *     isDisabledForSecurity (bool):
+ *         When true, this attribute indicates that the application was
+ *         re-assigned to the current user because the original user was
+ *         removed from the Local Site associated with this.
+ *
  *     name (string):
  *         The name of the application.
+ *
+ *     originalUser (string):
+ *         The username of the user who originally owned this application. This
+ *         will only be set if :js:attr:`enabled` is ``false``.
  *
  *     showRemove (boolean):
  *         Whether or not the "Remove Item" link should be shown.
@@ -24,9 +37,13 @@ const emptyText = gettext('You have not registered any OAuth2 applications.');
 const OAuthAppItem = Djblets.Config.ListItem.extend({
     defaults: _.defaults({
         editURL: '',
+        enabled: true,
+        isDisabledForSecurity: false,
         name: '',
+        originalUser: null,
         showRemove: true,
     }, Djblets.Config.ListItem.prototype.defaults),
+
 });
 
 
@@ -35,13 +52,36 @@ const OAuthAppItem = Djblets.Config.ListItem.extend({
  */
 const OAuthAppItemView = Djblets.Config.ListItemView.extend({
     template: _.template(dedent`
-        <span class="config-app-name">
-         <a href="<%- editURL %>"><%- name %></a>
-        </span>
+        <div class="app-entry-wrapper">
+         <span class="config-app-name<% if (!enabled) {%> disabled<% } %>">
+          <% if (isDisabledForSecurity) { %>
+            <span class="rb-icon rb-icon-warning"
+                  title="${disabledForSecurityText}"></span>
+          <% } %>
+          <a href="<%- editURL %>"><%- name %></a>
+         </span>
+         <% if (isDisabledForSecurity) { %>
+           <p class="disabled-warning"><%- disabledWarning %></p>
+          <% } %>
+         </div>
     `),
 
     actionHandlers: {
         'delete': '_onDeleteClicked',
+    },
+
+    /**
+     * Return additional rendering context.
+     *
+     * Returns:
+     *     object:
+     *     Additional rendering context.
+     */
+    getRenderContext() {
+        return {
+            disabledWarning: interpolate(disabledWarningTemplate,
+                                         [this.model.get('originalUser')])
+        };
     },
 
     /**

@@ -772,7 +772,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
             get_oauth_app_item_url(app.pk, local_site.name),
             {
                 'enabled': '1',
-                'regenerate_client_secret': 1,
+                'regenerate_client_secret': '1',
             },
             expected_mimetype=oauth_app_item_mimetype)
 

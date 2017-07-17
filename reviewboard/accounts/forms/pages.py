@@ -476,10 +476,21 @@ class OAuthApplicationsForm(AccountPageForm):
         else:
             local_site_name = None
 
+        enabled = app.enabled
+        is_disabled_for_security = (not enabled and
+                                    app.is_disabled_for_security)
+        original_user = None
+
+        if is_disabled_for_security:
+            original_user = app.original_user.username
+
         return {
             'apiURL': local_site_reverse('oauth-app-resource',
                                          local_site_name=local_site_name,
                                          kwargs={'app_id': app.pk}),
             'editURL': reverse('edit-oauth-app', kwargs={'app_id': app.pk}),
+            'enabled': app.enabled,
+            'isDisabledForSecurity': app.is_disabled_for_security,
             'name': app.name,
+            'originalUser': original_user,
         }

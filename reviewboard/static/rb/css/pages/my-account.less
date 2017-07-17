@@ -62,8 +62,22 @@
 }
 
 #page_oauth2 {
-  .config-app-name a {
-    text-decoration: none;
+  .app-entry-wrapper {
+    overflow: hidden;
+  }
+
+  .config-app-name {
+    &.disabled a {
+      font-style: italic;
+    }
+
+    .rb-icon {
+      vertical-align: middle;
+    }
+
+    a {
+      vertical-align: middle;
+    }
   }
 
   .config-forms-list {
@@ -78,6 +92,10 @@
     > :last-child {
       border-bottom: 1px solid #AAAAAA;
     }
+
+    .config-forms-list-item {
+      white-space: unset;
+    }
   }
 
   .app-list-empty {
@@ -87,6 +105,15 @@
     border-bottom: 1px solid #AAAAAA;
     line-height: 32px;
     padding: 0.3em 0.3em 0.3em 1.5em;
+  }
+
+  .disabled-warning {
+    margin-bottom: 1em;
+  }
+
+
+  p {
+    line-height: normal;
   }
 }
 
@@ -111,6 +138,9 @@
   input[type="text"]:extend(input) {}
 
   ul.errorlist:extend(ul.errorlist all) {}
+
+  #id_client_secret_container:extend(
+    #application_form #id_client_secret_container) {}
 
   #id_redirect_uris_container li {
     padding: 0.25em 0;
@@ -144,11 +174,13 @@
     &.errors:extend(.errors all) {}
   }
 
-  .help:extend(.help) {
-    padding-left: 30px !important;
-  }
+  .help:extend(.help) {}
 
   .list-edit-widget ul {
     list-style: none;
+  }
+
+  .regenerate-secret-button {
+    margin-top: 1px;
   }
 }

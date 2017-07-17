@@ -314,6 +314,12 @@ PIPELINE_JAVASCRIPT = dict({
         ),
         'output_filename': 'rb/js/newReviewRequest.min.js',
     },
+    'oauth-edit': {
+        'source_filenames': (
+            'rb/js/accountPrefsPage/views/oauthClientSecretView.es6.js',
+        ),
+        'output_filename': 'rb/js/oauth.min.js',
+    },
     'admin-dashboard': {
         'source_filenames': (
             'lib/js/jquery.masonry.js',
