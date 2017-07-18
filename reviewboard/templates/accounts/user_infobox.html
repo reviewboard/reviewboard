@@ -20,7 +20,7 @@
 {%  endif %}
    <div class="localtime">
     <span class="fa fa-clock-o"></span> <time data-timezone="{{timezone}}"></time>
-    <p class="small-detail">
+    <p class="infobox-small-detail">
 {%  blocktrans with infobox_user.last_login|date:"c" as last_login %}
      Last logged in <time class="timesince" datetime="{{last_login}}"></time>
 {%  endblocktrans %}
@@ -32,7 +32,7 @@
    </div>
 {% endif %}
 
-   <p class="small-detail links">
+   <p class="infobox-small-detail infobox-links">
     <a href="{{review_requests_url}}">{% trans "Review Requests" %}</a>
     <a href="{{reviews_url}}">{% trans "Reviews" %}</a>
    </p>

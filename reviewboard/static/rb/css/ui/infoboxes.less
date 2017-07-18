@@ -1,0 +1,284 @@
+@import (reference) "../defs.less";
+
+
+/****************************************************************************
+ * Shared rules for all infoboxes
+ ****************************************************************************/
+
+.infobox {
+  background: @infobox-bg-color;
+  border: 1px @infobox-border-color solid;
+  border-radius: @infobox-border-radius;
+  box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.5);
+  display: block;
+  font-size: 12px;
+  overflow: hidden;
+  position: absolute;
+  min-width: 40em;
+  max-width: 50em;
+  min-height: 10em;
+  z-index: @z-index-dialog;
+
+  a {
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  h2 {
+    font-size: 1.4em;
+    margin: 0 0 0.5em 0;
+    padding: 0;
+
+    a {
+      color: inherit;
+    }
+  }
+
+  p {
+    margin: 0.5em 0;
+    padding: 0;
+  }
+
+
+  .infobox-extra {
+    box-sizing: border-box;
+    padding: 0.5em;
+    width: 100%;
+  }
+
+  .infobox-links {
+    a {
+      margin-right: 2em;
+    }
+  }
+
+  .infobox-pic {
+    display: inline-block;
+    vertical-align: top;
+
+    img {
+      border-radius: @infobox-inner-border-radius 0
+                     0 @infobox-inner-border-radius;
+    }
+  }
+
+  .infobox-small-detail {
+    font-size: 10px;
+  }
+
+  .infobox-text {
+    box-sizing: border-box;
+    display: inline-block;
+    padding: @infobox-padding;
+    position: relative;
+    vertical-align: top;
+    word-wrap: break-word;
+  }
+
+  .infobox-text-section {
+    margin-top: (2 * @infobox-padding);
+  }
+}
+
+
+/****************************************************************************
+ * User infobox
+ ****************************************************************************/
+
+.user-infobox {
+  min-height: @user-infobox-avatar-size;
+
+  .infobox-pic {
+    height: @user-infobox-avatar-size;
+    width: @user-infobox-avatar-size;
+  }
+
+  /*
+   * If there's extra content provided by extensions, the avatar image should
+   * have a flat bottom. If not, round the bottom-left as well as the top-left.
+   */
+  .has-extra-content .infobox-pic img {
+    border-radius: @infobox-inner-border-radius 0 0 0;
+  }
+
+  .infobox-extra {
+    border-top: 1px solid #666;
+  }
+
+  .infobox-text {
+    min-height: @user-infobox-avatar-size;
+    min-width: 20em;
+    max-width: 40em;
+
+    .infobox-links {
+      position: absolute;
+      bottom: @infobox-padding;
+    }
+
+    .localtime {
+      position: absolute;
+      z-index: @z-index-dialog + 1;
+
+      & > time {
+        cursor: pointer;
+        border-bottom: 1px dotted #666;
+      }
+
+      .infobox-small-detail {
+        display: none;
+
+        /*
+         * 14px left margin aligns the text with the time above it. The rest
+         * are chosen to look nice.
+         */
+        margin: 14px 20px 4px 14px;
+      }
+
+      &:hover {
+        border: 1px solid #666;
+        background-color: white;
+        padding: 3px;
+        margin: -4px;
+
+        .infobox-small-detail {
+          display: block;
+        }
+      }
+    }
+  }
+
+  h2 .username {
+    color: #888888;
+    font-size: 12px;
+    font-weight: normal;
+  }
+}
+
+
+/****************************************************************************
+ * Review Request infobox
+ ****************************************************************************/
+
+.review-request-infobox {
+  min-width: 50em;
+  max-width: 60em;
+
+  .review-request-infobox-header {
+
+    .label-draft {
+      .review-request-label(@summary-label-draft-bg, @summary-label-draft-border-color, @summary-label-text-color)
+    }
+
+    .label-submitted {
+      .review-request-label(@summary-label-submitted-bg, @summary-label-submitted-border-color, @summary-label-submitted-text-color)
+    }
+
+    .label-discarded {
+      .review-request-label(@summary-label-discarded-bg, @summary-label-discarded-border-color, @summary-label-discarded-text-color)
+    }
+
+    .label-archived {
+      .review-request-label(@summary-label-archived-bg, @summary-label-archived-border-color, @summary-label-archived-text-color)
+    }
+
+    .label-muted {
+      .review-request-label(@summary-label-muted-bg, @summary-label-muted-border-color, @summary-label-muted-text-color)
+    }
+  }
+
+  .review-request-infobox-section {
+    margin-top: 1.2em;
+  }
+
+  .review-request-infobox-description {
+    margin-right: -1em;
+    margin-top: 1.2em;
+    max-height: 3.6em;
+    max-width: 49em;
+    overflow: hidden;
+    padding-right: 1em;
+    position: relative;
+    text-align: justify;
+  }
+
+  /* For the ellipsis when cutting off the description at 3 lines. */
+  .review-request-infobox-description:before {
+    bottom: 0;
+    content: '...';
+    position: absolute;
+    right: 0;
+  }
+
+  .review-request-infobox-description:after {
+    background: #F9F9F9;
+    content: '';
+    height: 1em;
+    margin-top: 0.2em;
+    position: absolute;
+    right: 0;
+    width: 1em;
+  }
+
+  .review-request-infobox-issue-summary {
+    .issue-summary {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      vertical-align: bottom;
+    }
+
+    .issue-summary-item {
+      display: inline-block;
+      padding-right: 2em;
+    }
+  }
+
+  .review-request-latest-icon {
+    display: inline-block;
+
+    img {
+      border: 2px #F9F9F9 solid;
+      border-radius: 50%;
+      box-sizing: border-box;
+    }
+  }
+
+  .review-request-infobox-latest h3 {
+    margin: 0;
+  }
+
+  .review-request-latest-review {
+    margin-top: 1.2em;
+  }
+
+  .review-request-latest-summary {
+    .left-arrow-callout(#ECECEE);
+
+    background-color: #ECECEE;
+    border: 1px #888A85 solid;
+    border-radius: 6px;
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.15);
+    display: inline;
+    margin-left: 1.3em;
+    padding-bottom: 1.2em;
+    padding-top: 1.2em;
+    position: absolute;
+    width: 86%;
+
+    .review-request-latest-header {
+      color: black;
+      font-size: 110%;
+      margin-left: 0.8em;
+
+      .review-request-latest-time {
+        color: #555;
+        float: right;
+        font-size: 11px;
+        margin-right: 1.3em;
+      }
+    }
+  }
+}

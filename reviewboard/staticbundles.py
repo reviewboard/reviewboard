@@ -96,6 +96,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/reviewRequestPage/models/tests/reviewRequestPageReviewEntryModelTests.es6.js',
             'rb/js/reviewRequestPage/models/tests/reviewRequestPageStatusUpdatesEntryModelTests.es6.js',
             'rb/js/ui/views/tests/dialogViewTests.js',
+            'rb/js/ui/views/tests/infoboxManagerViewTests.es6.js',
             'rb/js/ui/views/tests/notificationManagerTests.es6.js',
             'rb/js/ui/views/tests/textEditorViewTests.js',
             'rb/js/utils/tests/keyBindingUtilsTests.js',
@@ -173,10 +174,14 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/resources/collections/repositoryCommitsCollection.es6.js',
             'rb/js/ui/views/centeredElementManager.es6.js',
             'rb/js/ui/views/dialogView.es6.js',
-            'rb/js/ui/views/infoboxView.es6.js',
+            'rb/js/ui/views/baseInfoboxView.es6.js',
+            'rb/js/ui/views/infoboxManagerView.es6.js',
+            'rb/js/ui/views/bugInfoboxView.es6.js',
             'rb/js/ui/views/notificationManager.es6.js',
+            'rb/js/ui/views/reviewRequestInfoboxView.es6.js',
             'rb/js/ui/views/splitButtonView.es6.js',
             'rb/js/ui/views/textEditorView.es6.js',
+            'rb/js/ui/views/userInfoboxView.es6.js',
             'rb/js/models/starManagerModel.js',
             'rb/js/models/userSessionModel.js',
             'rb/js/views/headerView.js',
@@ -214,7 +219,7 @@ PIPELINE_JAVASCRIPT = dict({
             # Note: These are roughly in dependency order.
             'rb/js/models/abstractCommentBlockModel.es6.js',
             'rb/js/models/abstractReviewableModel.es6.js',
-            'rb/js/models/commentEditorModel.js',
+            'rb/js/models/commentEditorModel.es6.js',
             'rb/js/models/commentIssueManagerModel.es6.js',
             'rb/js/models/fileAttachmentCommentBlockModel.es6.js',
             'rb/js/models/fileAttachmentReviewableModel.es6.js',
@@ -309,6 +314,12 @@ PIPELINE_JAVASCRIPT = dict({
         ),
         'output_filename': 'rb/js/newReviewRequest.min.js',
     },
+    'oauth-edit': {
+        'source_filenames': (
+            'rb/js/accountPrefsPage/views/oauthClientSecretView.es6.js',
+        ),
+        'output_filename': 'rb/js/oauth.min.js',
+    },
     'admin-dashboard': {
         'source_filenames': (
             'lib/js/jquery.masonry.js',
@@ -355,6 +366,7 @@ PIPELINE_STYLESHEETS = dict({
             'rb/css/ui/buttons.less',
             'rb/css/ui/datagrids.less',
             'rb/css/ui/forms.less',
+            'rb/css/ui/infoboxes.less',
             'rb/css/ui/menus.less',
             'rb/css/ui/sidebars.less',
             'rb/css/common.less',

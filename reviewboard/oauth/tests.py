@@ -122,6 +122,34 @@ class ApplicationChangeFormTests(TestCase):
         self._test_redirect_uri_grant_combination(
             '', Application.GRANT_CLIENT_CREDENTIALS, True)
 
+    @add_fixtures(['test_site'])
+    def test_enable_disabled_for_security(self):
+        """Testing ApplicationChangeForm will not enable an application
+        disabled for security
+        """
+        local_site = LocalSite.objects.get(pk=1)
+        admin = User.objects.get(username='admin')
+        owner = User.objects.get(username='doc')
+        local_site.users.remove(owner)
+
+        application = self.create_oauth_application(user=admin,
+                                                    local_site=local_site,
+                                                    enabled=False,
+                                                    original_user=owner)
+
+        self.assertTrue(application.is_disabled_for_security)
+        self.assertEqual(application.original_user, owner)
+
+        form = ApplicationChangeForm(
+            data=dict(model_to_dict(application),
+                      enabled=True),
+            instance=application,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.non_field_errors(),
+                         [ApplicationCreationForm.DISABLED_FOR_SECURITY_ERROR])
+
     def _test_redirect_uri_grant_combination(self, redirect_uris, grant_type,
                                              is_valid):
         doc = User.objects.get(username='doc')
