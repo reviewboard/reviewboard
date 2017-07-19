@@ -19,6 +19,11 @@ RB.BaseInfoboxView = Backbone.View.extend({
         yDistance: 10,
     },
 
+    events: {
+        'mouseenter .infobox-hover-item-anchor': '_onHoverItemMouseEnter',
+        'mouseleave .infobox-hover-item': '_onHoverItemMouseLeave',
+    },
+
     /**
      * Initialize the infobox.
      */
@@ -75,6 +80,34 @@ RB.BaseInfoboxView = Backbone.View.extend({
      */
     render() {
         return this;
+    },
+
+    /**
+     * Handler for mouseenter events on hover item anchors.
+     *
+     * This will display the hover details for the item.
+     *
+     * Args:
+     *     evt (Event):
+     *         The mouseenter event.
+     */
+    _onHoverItemMouseEnter(evt) {
+        $(evt.target).closest('.infobox-hover-item')
+            .addClass('infobox-hover-item-opened');
+    },
+
+    /**
+     * Handler for mouseleave events on hover items or their children.
+     *
+     * This will hide the hover details for the item.
+     *
+     * Args:
+     *     evt (Event):
+     *         The mouseleave event.
+     */
+    _onHoverItemMouseLeave(evt) {
+        $(evt.target).closest('.infobox-hover-item')
+            .removeClass('infobox-hover-item-opened');
     },
 });
 
