@@ -84,8 +84,30 @@ class UsernameColumn(Column):
             css_class='submitter-column',
             shrink=True,
             sortable=True,
-            link=False,
+            link=True,
+            link_func=self._link_user,
+            link_css_class='user',
             *args, **kwargs)
+
+    def get_user(self, obj):
+        """Return the user associated with this object.
+
+        Args:
+            obj (object):
+                The object provided to the column.
+
+        Returns:
+            django.contrib.auth.models.User:
+            The resulting user.
+        """
+        # Look up the user in the provided obj by traversing the relation.
+        # If _user_relation is empty, then obj is the user.
+        user = obj
+
+        for field_name in self._user_relation:
+            user = getattr(user, field_name)
+
+        return user
 
     def render_data(self, state, obj):
         """Render the user's name and avatar as HTML.
@@ -101,12 +123,7 @@ class UsernameColumn(Column):
             django.utils.safestring.SafeText:
             The HTML for the column.
         """
-        # Look up the user in the provided obj by traversing the relation.
-        # If _user_relation is empty, then obj is the user.
-        user = obj
-
-        for field_name in self._user_relation:
-            user = getattr(user, field_name)
+        user = self.get_user(obj)
 
         # If avatars are eanbled, we'll want to include that in the resulting
         # HTML.
@@ -128,9 +145,7 @@ class UsernameColumn(Column):
             'username': username,
         })
 
-        return format_html(
-            '<a class="user" href="{0}">{1}{2}</a>',
-            user_url, avatar_html, username)
+        return format_html('{0}{1}', avatar_html, username)
 
     def augment_queryset(self, state, queryset):
         """Add additional queries to the queryset.
@@ -158,6 +173,25 @@ class UsernameColumn(Column):
 
         return queryset.select_related(*fields)
 
+    def _link_user(self, state, obj, *args):
+        """Return the URL to link the user associated with this object.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn, unused):
+                The column state.
+
+            obj (object):
+                The object provided to the column.
+
+            *args (tuple):
+                Additional keyword arguments provided to the method.
+
+        Returns:
+            unicode:
+            The URL for the user.
+        """
+        return self.get_user(obj).get_absolute_url()
+
 
 class BugsColumn(Column):
     """Shows the list of bugs specified on a review request.
@@ -175,8 +209,7 @@ class BugsColumn(Column):
         super(BugsColumn, self).__init__(
             label=_('Bugs'),
             css_class='bugs',
-            link=True,
-            link_func=lambda *args: None,
+            link=False,
             shrink=True,
             sortable=False,
             *args, **kwargs)
@@ -668,7 +701,8 @@ class SummaryColumn(Column):
         super(SummaryColumn, self).__init__(
             label=_('Summary'),
             expand=True,
-            link=False,
+            link=True,
+            link_css_class='review-request-link',
             css_class='summary',
             sortable=True,
             *args, **kwargs)
@@ -713,7 +747,6 @@ class SummaryColumn(Column):
             The rendered column.
         """
         summary = review_request.summary
-        url = review_request.get_absolute_url()
         labels = []
 
         if review_request.submitter_id == state.datagrid.request.user.id:
@@ -738,7 +771,6 @@ class SummaryColumn(Column):
             labels.append(('label-discarded', _('Discarded')))
 
         result = [
-            format_html('<a class="review-request-link" href="{0}">', url),
             format_html_join('', '<label class="{0}">{1}</label>', labels)
         ]
 
@@ -747,8 +779,6 @@ class SummaryColumn(Column):
         else:
             result.append(format_html('<span class="no-summary">{0}</span>',
                                       _('No Summary')))
-
-        result.append('</a>')
 
         return mark_safe(''.join(result))
 
