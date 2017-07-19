@@ -16,19 +16,28 @@
 
 {% if show_profile %}
 {%  if request.user.is_authenticated %}
-   <p class="email"><span class="fa fa-envelope-o"> </span> <a href="mailto:{{infobox_user.email}}">{{infobox_user.email}}</a></p>
+   <div class="infobox-item email">
+    <span class="fa fa-envelope-o"></span>
+    <a href="mailto:{{infobox_user.email}}">{{infobox_user.email}}</a>
+   </div>
 {%  endif %}
-   <div class="localtime">
-    <span class="fa fa-clock-o"></span> <time data-timezone="{{timezone}}"></time>
-    <p class="infobox-small-detail">
+   <div class="infobox-hover-item infobox-hover-item-anchor-has-small-icon">
+    <div class="infobox-hover-item-content">
+     <p class="infobox-small-detail">
 {%  blocktrans with infobox_user.last_login|date:"c" as last_login %}
-     Last logged in <time class="timesince" datetime="{{last_login}}"></time>
+      Last logged in <time class="timesince" datetime="{{last_login}}"></time>
 {%  endblocktrans %}
-     <br>
+     </p>
+     <p class="infobox-small-detail">
 {%  blocktrans with infobox_user.date_joined|date:"F jS, Y" as date_joined %}
-     Joined {{date_joined}}
+      Joined {{date_joined}}
 {%  endblocktrans %}
-    </p>
+     </p>
+    </div>
+    <span class="infobox-hover-item-anchor">
+     <span class="fa fa-clock-o"></span>
+     <label class="localtime"><time data-timezone="{{timezone}}"></time></label>
+    </span>
    </div>
 {% endif %}
 

@@ -27,10 +27,14 @@
     }
   }
 
-  h2 {
+  h2,
+  .infobox-header-text {
+    color: inherit;
     font-size: 1.4em;
+    font-weight: bold;
     margin: 0 0 0.5em 0;
     padding: 0;
+    vertical-align: top;
 
     a {
       color: inherit;
@@ -41,46 +45,93 @@
     margin: 0.5em 0;
     padding: 0;
   }
+}
 
+.infobox-extra {
+  box-sizing: border-box;
+  padding: 0.5em;
+  width: 100%;
+}
 
-  .infobox-extra {
-    box-sizing: border-box;
-    padding: 0.5em;
-    width: 100%;
+.infobox-hover-item,
+.infobox-item {
+  margin: 0.5em 0;
+}
+
+.infobox-hover-item {
+  position: relative;
+
+  &.infobox-hover-item-anchor-has-small-icon .infobox-hover-item-content {
+    @icon-size: 16px;
+
+    padding-left: @infobox-hover-item-content-padding-horiz + @icon-size;
+    padding-right: @infobox-hover-item-content-padding-horiz + @icon-size;
   }
 
-  .infobox-links {
-    a {
-      margin-right: 2em;
-    }
+  &.infobox-hover-item-opened .infobox-hover-item-content {
+    display: block;
   }
+}
 
-  .infobox-pic {
-    display: inline-block;
-    vertical-align: top;
+.infobox-hover-item-content {
+  border: 1px solid #666;
+  background-color: white;
+  display: none;
+  margin: -@infobox-hover-item-content-padding-vert 0 0
+          -@infobox-hover-item-content-padding-horiz;
+  padding: (@infobox-hover-item-content-offset-top +
+            @infobox-hover-item-content-padding-vert)
+           @infobox-hover-item-content-padding-horiz
+           @infobox-hover-item-content-padding-vert
+           @infobox-hover-item-content-padding-horiz;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: @z-index-dialog + 1;
+}
 
-    img {
-      border-radius: @infobox-inner-border-radius 0
-                     0 @infobox-inner-border-radius;
-    }
+.infobox-hover-item-anchor {
+  cursor: pointer;
+  position: relative;
+  z-index: @z-index-dialog + 1;
+
+  label {
+    border-bottom: 1px dotted #666;
   }
+}
 
-  .infobox-small-detail {
-    font-size: 10px;
+.infobox-links {
+  a {
+    color: @link-color;
+    margin-right: 2em;
   }
+}
 
-  .infobox-text {
-    box-sizing: border-box;
-    display: inline-block;
-    padding: @infobox-padding;
-    position: relative;
-    vertical-align: top;
-    word-wrap: break-word;
-  }
+.infobox-pic {
+  display: inline-block;
+  vertical-align: top;
 
-  .infobox-text-section {
-    margin-top: (2 * @infobox-padding);
+  img {
+    border-radius: @infobox-inner-border-radius 0
+                   0 @infobox-inner-border-radius;
   }
+}
+
+.infobox-small-detail {
+  font-size: 10px;
+}
+
+.infobox-text {
+  box-sizing: border-box;
+  display: inline-block;
+  padding: @infobox-padding;
+  position: relative;
+  vertical-align: top;
+  word-wrap: break-word;
+}
+
+.infobox-text-section {
+  margin-top: (2 * @infobox-padding);
 }
 
 
@@ -116,37 +167,6 @@
     .infobox-links {
       position: absolute;
       bottom: @infobox-padding;
-    }
-
-    .localtime {
-      position: absolute;
-      z-index: @z-index-dialog + 1;
-
-      & > time {
-        cursor: pointer;
-        border-bottom: 1px dotted #666;
-      }
-
-      .infobox-small-detail {
-        display: none;
-
-        /*
-         * 14px left margin aligns the text with the time above it. The rest
-         * are chosen to look nice.
-         */
-        margin: 14px 20px 4px 14px;
-      }
-
-      &:hover {
-        border: 1px solid #666;
-        background-color: white;
-        padding: 3px;
-        margin: -4px;
-
-        .infobox-small-detail {
-          display: block;
-        }
-      }
     }
   }
 
