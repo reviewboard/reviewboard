@@ -11,6 +11,7 @@ from reviewboard.extensions.tests import TestService
 from reviewboard.hostingsvcs.service import (register_hosting_service,
                                              unregister_hosting_service)
 from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.reviews.detail import InitialStatusUpdatesEntry, ReviewEntry
 from reviewboard.reviews.models import (Comment,
                                         GeneralComment,
                                         Review)
@@ -133,8 +134,14 @@ class ViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         entries = response.context['entries']
-        self.assertEqual(len(entries), 1)
-        entry = entries[0]
+        initial_entries = entries['initial']
+        self.assertEqual(len(initial_entries), 1)
+        self.assertIsInstance(initial_entries[0], InitialStatusUpdatesEntry)
+
+        main_entries = entries['main']
+        self.assertEqual(len(main_entries), 1)
+        entry = main_entries[0]
+        self.assertIsInstance(entry, ReviewEntry)
         comments = entry.comments['diff_comments']
         self.assertEqual(len(comments), 1)
         self.assertEqual(comments[0].text, comment_text_1)
@@ -247,8 +254,14 @@ class ViewTests(TestCase):
 
         # Make sure we loaded the reviews and all data correctly.
         entries = response.context['entries']
-        self.assertEqual(len(entries), 1)
-        entry = entries[0]
+        initial_entries = entries['initial']
+        self.assertEqual(len(initial_entries), 1)
+        self.assertIsInstance(initial_entries[0], InitialStatusUpdatesEntry)
+
+        main_entries = entries['main']
+        self.assertEqual(len(main_entries), 1)
+        entry = main_entries[0]
+        self.assertIsInstance(entry, ReviewEntry)
 
         comments = entry.comments['file_attachment_comments']
         self.assertEqual(len(comments), 2)
@@ -313,8 +326,14 @@ class ViewTests(TestCase):
         self.assertEqual(screenshots[0].caption, caption_1)
 
         entries = response.context['entries']
-        self.assertEqual(len(entries), 1)
-        entry = entries[0]
+        initial_entries = entries['initial']
+        self.assertEqual(len(initial_entries), 1)
+        self.assertIsInstance(initial_entries[0], InitialStatusUpdatesEntry)
+
+        main_entries = entries['main']
+        self.assertEqual(len(main_entries), 1)
+        entry = main_entries[0]
+        self.assertIsInstance(entry, ReviewEntry)
 
         # Make sure we loaded the reviews and all data correctly.
         comments = entry.comments['screenshot_comments']

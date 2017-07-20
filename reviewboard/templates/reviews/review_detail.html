@@ -27,9 +27,11 @@
 </div>
 
 <div id="reviews">
-{%  if initial_status_entry and initial_status_entry.has_content %}
-{%   include initial_status_entry.template_name with entry=initial_status_entry show_entry_statuses_area=False %}
-{%  endif %}
+{%  for entry in entries.initial %}
+{%   if entry.template_name and entry.has_content %}
+{%    include entry.template_name with show_entry_statuses_area=False %}
+{%   endif %}
+{%  endfor %}
 
  <ul id="view_controls">
 {%  if entries %}
@@ -48,8 +50,8 @@
 {%  endif %}
  </ul>
 
-{%  for entry in entries %}
-{%   if entry.template_name %}
+{%  for entry in entries.main %}
+{%   if entry.template_name and entry.has_content %}
 {%    include entry.template_name with show_entry_statuses_area=True %}
 {%   endif %}
 {%  endfor %}
@@ -68,11 +70,13 @@
     }));
 
     RB.PageManager.beforeRender(function(page) {
-{%  if initial_status_entry and initial_status_entry.has_content %}
-{%   include initial_status_entry.js_template_name with entry=initial_status_entry %}
-{%  endif %}
+{%  for entry in entries.initial %}
+{%   if entry.js_template_name %}
+{%    include entry.js_template_name %}
+{%   endif %}
+{%  endfor %}
 
-{%  for entry in entries %}
+{%  for entry in entries.main %}
 {%   if entry.js_template_name %}
 {%    include entry.js_template_name %}
 {%   endif %}

@@ -579,7 +579,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
     def create_review(self, review_request, user='dopey',
                       body_top='Test Body Top', body_bottom='Test Body Bottom',
-                      ship_it=False, publish=False, **kwargs):
+                      ship_it=False, publish=False, timestamp=None, **kwargs):
         """Creates a Review for testing.
 
         The Review is tied to the given ReviewRequest. It's populated with
@@ -609,6 +609,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             publish (bool, optional):
                 Whether to publish the review immediately after creation.
 
+            timestamp (datetime.datetime, optional):
+                The timestamp for the review.
+
             **kwargs (dict):
                 Additional attributes to set in the review.
 
@@ -629,6 +632,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         if publish:
             review.publish()
+
+        if timestamp:
+            Review.objects.filter(pk=review.pk).update(timestamp=timestamp)
+            review.timestamp = timestamp
 
         return review
 

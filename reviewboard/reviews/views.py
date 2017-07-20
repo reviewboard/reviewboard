@@ -484,13 +484,10 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
         """
         super(ReviewRequestDetailView, self).__init__(**kwargs)
 
-        self.status_updates_enabled = None
         self.data = None
         self.visited = None
-        self.last_visited = None
         self.blocks = None
         self.last_activity_time = None
-        self.initial_status_entry = None
 
     def get_etag_data(self, request, *args, **kwargs):
         """Return an ETag for the view.
@@ -516,21 +513,19 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
         review_request = self.review_request
         local_site = review_request.local_site
 
-        # Determine which features are enabled.
-        self.status_updates_enabled = status_updates_feature.is_enabled(
-            local_site=local_site)
+        # Track the visit to this review request, so the dashboard can
+        # reflect whether there are new updates.
+        self.visited, last_visited = self.track_review_request_visit()
 
         # Begin building data for the contents of the page. This will include
         # the reviews, change descriptions, and other content shown on the
         # page.
-        data = ReviewRequestPageData(review_request, request)
+        data = ReviewRequestPageData(review_request=review_request,
+                                     request=request,
+                                     last_visited=last_visited)
         self.data = data
 
         data.query_data_pre_etag()
-
-        # Track the visit to this review request, so the dashboard can
-        # reflect whether there are new updates.
-        self.visited, self.last_visited = self.track_review_request_visit()
 
         self.blocks = review_request.get_blocks()
 
@@ -541,8 +536,8 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
             review_request.get_last_activity(data.diffsets, data.reviews)
         etag_timestamp = self.last_activity_time
 
-        if self.status_updates_enabled:
-            for status_update in data.status_updates:
+        if data.status_updates_enabled:
+            for status_update in data.all_status_updates:
                 if status_update.timestamp > etag_timestamp:
                     etag_timestamp = status_update.timestamp
 
@@ -636,115 +631,6 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
 
         return False
 
-    def get_entries(self):
-        """Return the entries to show on the page.
-
-        Each entry represents a review, change description, or status update
-        to display.
-
-        Returns:
-            list of reviewboard.reviews.detail.BaseReviewRequestPageEntry:
-            The list of entries to show on the page.
-        """
-        # Convert some frequently-accessed state to local variables for faster
-        # access.
-        status_updates_enabled = self.status_updates_enabled
-        review_request = self.review_request
-        last_visited = self.last_visited
-        request = self.request
-        data = self.data
-
-        entries = []
-        reviews_entry_map = {}
-        changedescs_entry_map = {}
-
-        data.query_data_post_etag()
-
-        # Now that we have the list of public reviews and all that metadata,
-        # being processing them and adding entries for display in the page.
-        for review in data.reviews:
-            if (review.public and
-                not review.is_reply() and
-                not (status_updates_enabled and
-                     hasattr(review, 'status_update'))):
-                # Mark as collapsed if the review is older than the latest
-                # change, assuming there's no reply newer than last_visited.
-                latest_reply = \
-                    data.latest_timestamps_by_review_id.get(review.pk)
-
-                collapsed = (
-                    review.timestamp < data.latest_changedesc_timestamp and
-                    not (latest_reply and
-                         last_visited and
-                         last_visited < latest_reply))
-
-                entry = ReviewEntry(request, review_request, review, collapsed,
-                                    data)
-                reviews_entry_map[review.pk] = entry
-                entries.append(entry)
-
-        # Add entries for the change descriptions.
-        for changedesc in data.changedescs:
-            # Mark as collapsed if the change is older than a newer change.
-            collapsed = (changedesc.timestamp <
-                         data.latest_changedesc_timestamp)
-
-            entry = ChangeEntry(request, review_request, changedesc, collapsed,
-                                data)
-            changedescs_entry_map[changedesc.id] = entry
-            entries.append(entry)
-
-        if status_updates_enabled:
-            self.initial_status_entry = InitialStatusUpdatesEntry(
-                review_request, collapsed=(len(data.changedescs) > 0),
-                data=data)
-
-            for update in data.status_updates:
-                if update.change_description_id is not None:
-                    entry = changedescs_entry_map[update.change_description_id]
-                else:
-                    entry = self.initial_status_entry
-
-                entry.add_update(update)
-
-                if update.review_id is not None:
-                    reviews_entry_map[update.review_id] = entry
-
-        # Now that we have entries for all the reviews, go through all the
-        # comments and add them to those entries.
-        for comment in data.comments:
-            review = comment.review_obj
-
-            if review.is_reply():
-                # This is a reply to a comment.
-                base_reply_to_id = comment.review_obj.base_reply_to_id
-
-                assert review.pk not in reviews_entry_map
-                assert base_reply_to_id in reviews_entry_map
-
-                # Make sure that any review boxes containing draft replies are
-                # always expanded.
-                if comment.is_reply() and not review.public:
-                    reviews_entry_map[base_reply_to_id].collapsed = False
-            elif review.public:
-                # This is a comment on a public review.
-                assert review.id in reviews_entry_map
-
-                entry = reviews_entry_map[review.id]
-                entry.add_comment(comment._type, comment)
-
-        if status_updates_enabled:
-            self.initial_status_entry.finalize()
-
-            for entry in entries:
-                entry.finalize()
-
-        # Finally, sort all the entries (reviews and change descriptions) by
-        # their timestamp.
-        entries.sort(key=lambda item: item.timestamp)
-
-        return entries
-
     def get_context_data(self, **kwargs):
         """Return data for the template.
 
@@ -766,7 +652,9 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
         request = self.request
         data = self.data
 
-        entries = self.get_entries()
+        data.query_data_post_etag()
+        entries = data.get_entries()
+
         review = review_request.get_pending_review(request.user)
         close_description, close_description_rich_text = \
             review_request.get_close_description()
@@ -784,7 +672,6 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
             'review_request_details': data.review_request_details,
             'review_request_visit': self.visited,
             'send_email': siteconfig.get('mail_send_review_mail'),
-            'initial_status_entry': self.initial_status_entry,
             'entries': entries,
             'last_activity_time': self.last_activity_time,
             'review': review,
