@@ -170,6 +170,7 @@
   padding: @infobox-padding;
   position: relative;
   vertical-align: top;
+  width: 100%;
   word-wrap: break-word;
 }
 
@@ -211,6 +212,7 @@
     min-height: @user-infobox-avatar-size;
     min-width: 20em;
     max-width: 40em;
+    width: auto;
 
     .infobox-links {
       position: absolute;
@@ -227,6 +229,23 @@
 
 
 /****************************************************************************
+ * Bug infobox
+ ****************************************************************************/
+
+.bug-infobox {
+  .bug-infobox-id {
+    float: right;
+
+    a {
+      color: #888;
+      font-size: 90%;
+      font-weight: normal;
+    }
+  }
+}
+
+
+/****************************************************************************
  * Review Request infobox
  ****************************************************************************/
 
@@ -234,10 +253,6 @@
   .infobox-pic {
     border-radius: 0;
     vertical-align: middle;
-  }
-
-  .infobox-text {
-    width: 100%;
   }
 
   .review-request-infobox-header {

@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import logging
+import re
 import time
 
 from django.conf import settings
@@ -18,7 +19,7 @@ from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import six, timezone
 from django.utils.decorators import method_decorator
-from django.utils.html import escape, format_html
+from django.utils.html import escape, format_html, strip_tags
 from django.utils.http import http_date
 from django.utils.safestring import mark_safe
 from django.utils.timezone import utc
@@ -69,7 +70,8 @@ from reviewboard.reviews.detail import (ChangeEntry,
                                         ReviewEntry,
                                         ReviewRequestPageData)
 from reviewboard.reviews.features import status_updates_feature
-from reviewboard.reviews.markdown_utils import is_rich_text_default_for_user
+from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
+                                                render_markdown)
 from reviewboard.reviews.models import (Comment,
                                         Review,
                                         ReviewRequest,
@@ -1846,6 +1848,14 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
 
     template_name = 'reviews/bug_infobox.html'
 
+    HTML_ENTITY_RE = re.compile(r'(&[a-z]+;)')
+    HTML_ENTITY_MAP = {
+        '&quot;': '"',
+        '&lt;': '<',
+        '&gt;': '>',
+        '&amp;': '&',
+    }
+
     def get(self, request, bug_id, **kwargs):
         """Handle HTTP GET requests for this view.
 
@@ -1909,22 +1919,71 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
             django.template.RequestContext:
             The resulting context data for the template.
         """
-        # Don't do anything for single newlines, but treat two newlines as a
-        # paragraph break.
-        escaped_description = (
-            escape(self.bug_info['description'])
-            .replace('\n\n', '<br/><br/>')
-        )
+        description_text_format = self.bug_info.get('description_text_format',
+                                                    'plain')
+        description = self.normalize_text(self.bug_info['description'],
+                                          description_text_format)
+
+        bug_url = local_site_reverse(
+            'bug_url',
+            args=[self.review_request.display_id, self.bug_id])
 
         context_data = super(BugInfoboxView, self).get_context_data(**kwargs)
         context_data.update({
             'bug_id': self.bug_id,
-            'bug_description': mark_safe(escaped_description),
+            'bug_url': bug_url,
+            'bug_description': description,
+            'bug_description_rich_text': description_text_format == 'markdown',
             'bug_status': self.bug_info['status'],
             'bug_summary': self.bug_info['summary'],
         })
 
         return context_data
+
+    def normalize_text(self, text, text_format):
+        """Normalize the text for display.
+
+        Based on the text format, this will sanitize and normalize the text
+        so it's suitable for rendering to HTML.
+
+        HTML text will have tags stripped away and certain common entities
+        replaced.
+
+        Markdown text will be rendered using our default Markdown parser
+        rules.
+
+        Plain text (or any unknown text format) will simply be escaped and
+        wrapped, with paragraphs left intact.
+
+        Args:
+            text (unicode):
+                The text to normalize for display.
+
+            text_format (unicode):
+                The text format. This should be one of ``html``, ``markdown``,
+                or ``plain``.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The resulting text, safe for rendering in HTML.
+        """
+        if text_format == 'html':
+            # We want to strip the tags away, but keep certain common entities.
+            text = (
+                escape(self.HTML_ENTITY_RE.sub(
+                    lambda m: (self.HTML_ENTITY_MAP.get(m.group(0)) or
+                               m.group(0)),
+                    strip_tags(text)))
+                .replace('\n\n', '<br><br>'))
+        elif text_format == 'markdown':
+            # This might not know every bit of Markdown that's thrown at us,
+            # but we'll do the best we can.
+            text = render_markdown(text)
+        else:
+            # Should be plain text, but don't trust it.
+            text = escape(text).replace('\n\n', '<br><br>')
+
+        return mark_safe(text)
 
 
 class ReviewRequestInfoboxView(ReviewRequestViewMixin, TemplateView):
