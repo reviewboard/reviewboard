@@ -18,7 +18,7 @@ from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import six, timezone
 from django.utils.decorators import method_decorator
-from django.utils.html import escape, format_html_join
+from django.utils.html import escape, format_html
 from django.utils.http import http_date
 from django.utils.safestring import mark_safe
 from django.utils.timezone import utc
@@ -1961,45 +1961,64 @@ class ReviewRequestInfoboxView(ReviewRequestViewMixin, TemplateView):
         """
         review_request = self.review_request
         submitter = review_request.submitter
+        draft = review_request.get_draft(self.request.user)
 
-        # Below code is heavily referenced from columns.py. We may want to
-        # consider whether it's worth consolidating logic, or if we may want
-        # to keep these separate.
-        labels = []
+        # We only want to show one label. If there's a draft, then that's
+        # the most important information, so we'll only show that. Otherwise,
+        # we'll show the submitted/discarded state.
+        label = None
 
-        if (self.request.user.is_authenticated() and
-            submitter == self.request.user and
-            not review_request.public and
-            review_request.status == ReviewRequest.PENDING_REVIEW):
-            labels.append(('label-draft', _('Draft')))
-
-        if review_request.status == ReviewRequest.SUBMITTED:
-            labels.append(('label-submitted', _('Submitted')))
+        if draft:
+            label = ('review-request-infobox-label-draft', _('Draft'))
+        elif review_request.status == ReviewRequest.SUBMITTED:
+            label = ('review-request-infobox-label-submitted', _('Submitted'))
         elif review_request.status == ReviewRequest.DISCARDED:
-            labels.append(('label-discarded', _('Discarded')))
+            label = ('review-request-infobox-label-discarded', _('Discarded'))
 
-        display_data = format_html_join('', '<label class="{0}">{1}</label>',
-                                        labels)
+        if label:
+            label = format_html('<label class="{0}">{1}</label>', *label)
 
-        issue_total_count = (review_request.issue_open_count +
-                             review_request.issue_resolved_count +
-                             review_request.issue_dropped_count)
-
-        # Fetch recent reviews to show in the infobox.
-        latest_reviews = list(
+        # Fetch information on the reviews for this review request.
+        review_count = (
             review_request.reviews
             .filter(public=True, base_reply_to__isnull=True)
-            .order_by('-timestamp')[:self.MAX_REVIEWS]
+            .count()
         )
+
+        # Fetch information on the draft for this review request.
+        diffset = None
+
+        if draft and draft.diffset_id:
+            diffset = draft.diffset
+
+        if not diffset and review_request.diffset_history_id:
+            try:
+                diffset = (
+                    DiffSet.objects
+                    .filter(history__pk=review_request.diffset_history_id)
+                    .latest()
+                )
+            except DiffSet.DoesNotExist:
+                pass
+
+        if diffset:
+            diff_url = '%s#index_header' % local_site_reverse(
+                'view-diff-revision',
+                args=[review_request.display_id, diffset.revision],
+                local_site=review_request.local_site)
+        else:
+            diff_url = None
 
         return {
             'review_request': review_request,
-            'review_request_id': review_request.display_id,
-            'review_request_labels': display_data,
-            'review_request_issue_total_count': issue_total_count,
-            'review_request_latest_reviews': latest_reviews,
-            'show_profile': submitter.is_profile_visible(self.request.user),
-            'submitter': submitter,
+            'review_request_label': label or '',
+            'review_request_details': draft or review_request,
+            'issue_total_count': (review_request.issue_open_count +
+                                  review_request.issue_resolved_count +
+                                  review_request.issue_dropped_count),
+            'review_count': review_count,
+            'diffset': diffset,
+            'diff_url': diff_url,
         }
 
 

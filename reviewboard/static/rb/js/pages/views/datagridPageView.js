@@ -38,6 +38,22 @@ RB.DatagridPageView = Backbone.View.extend({
      * Renders the datagrid page view, and begins listening for events.
      */
     render: function() {
+        RB.InfoboxManagerView.getInstance().setPositioning(
+            RB.ReviewRequestInfoboxView,
+            {
+                /*
+                 * The order on the side matters. If the Summary column is
+                 * on the left-hand side of the datagrid, we'll always end up
+                 * in "L", but if it's on the right-hand side, we want to
+                 * prioritize "l" so it's anchored more to the left so there's
+                 * less chance of overlapping the summary cells.
+                 */
+                side: 'lL',
+                LDistance: 300,
+                lDistance: 20,
+                yOffset: -20
+            });
+
         this._$window = $(window);
 
         if (this.actionsViewType) {

@@ -1,69 +1,121 @@
-{% load avatars i18n %}
+{% load avatars djblets_utils i18n reviewtags %}
 
 <div class="infobox-content">
  <div class="infobox-text">
   <div class="review-request-infobox-header">
-   <h2><a href="{{review_request.get_absolute_url}}">Review Request #{{review_request_id}}</a>:
-    {{review_request_labels}} {{review_request.summary}}</h2>
-  </div>
-  <div class="infobox-text-section review-request-infobox-submitter">
-   {% trans "Submitter:" %}
-{% if show_profile and submitter.full_name %}
-   <a href="{% url 'user' submitter %}">{{submitter.full_name}}</a> <span class="username">({{submitter.username}})</span>
+   <div class="review-request-infobox-id infobox-header-text">
+    <a href="{{review_request.get_absolute_url}}">#{{review_request.display_id}}</a>
+    {{review_request_label}}
+   </div>
+   <h2><a href="{{review_request.get_absolute_url}}">{% spaceless %}
+{% if review_request_details.summary %}
+    {{review_request_details.summary}}
 {% else %}
-   <a href="{% url 'user' submitter %}">{{submitter.username}}</a>
+    <em>{% trans "No Summary" %}</em>
 {% endif %}
+   {% endspaceless %}</a></h2>
   </div>
-  <div class="infobox-text-section review-request-infobox-description">
-   {{review_request.description}}
+  <div class="infobox-item">
+   <span class="fa fa-user"></span>
+{% if siteconfig_settings.avatars_enabled %}
+   <div class="infobox-pic">{% avatar review_request_details.submitter 24 %}</div>
+{% endif %}
+   <a href="{% url 'user' review_request_details.submitter %}">{{review_request_details.submitter.username}}</a>
   </div>
-  <div class="infobox-text-section review-request-infobox-issue-summary">
-   {# Very similar code can be found in reviews/review_issue_summary_table.html #}
-   <ul class="issue-summary">
-    <li class="issue-summary-item" title="{% trans 'All issues' %}">
-{% blocktrans count total=review_request_issue_total_count %}
-     <span id="total-counter" class="issue-counter-value">{{review_request_issue_total_count}} issue:</span>
-{% plural %}
-     <span id="total-counter" class="issue-counter-value">{{review_request_issue_total_count}} issues:</span>
+{% if review_request_details.repository %}
+{%  if review_request_details.branch or review_request_details.commit %}
+  <div class="infobox-hover-item infobox-hover-item-anchor-has-small-icon">
+   <div class="infobox-hover-item-content">
+{%   if review_request_details.branch %}
+    <p class="infobox-small-detail">
+     <strong>{% trans "Branch:" %}</strong>
+     {{review_request_details.branch}}
+    </p>
+{%   endif %}
+{%   if review_request_details.commit %}
+    <p class="infobox-small-detail">
+     <strong>{% trans "Commit:" %}</strong>
+     {{review_request_details.commit}}
+    </p>
+{%   endif %}
+   </div>
+   <span class="infobox-hover-item-anchor">
+    <span class="fa fa-code-fork"></span>
+    <label>{{review_request_details.repository.name}}</label>
+   </span>
+  </div>
+{%  else %}
+  <div class="infobox-item">
+   <span class="fa fa-code-fork"></span>
+   {{review_request_details.repository.name}}
+  </div>
+{%  endif %}
+{% endif %}
+  <div class="infobox-hover-item infobox-hover-item-anchor-has-small-icon">
+   <div class="infobox-hover-item-content">
+    <p class="infobox-small-detail">
+{% blocktrans with created_time=review_request.time_added %}
+     Created {{created_time}}
 {% endblocktrans %}
+    </p>
+    <p class="infobox-small-detail">
+{% blocktrans with last_updated=review_request_details.last_updated %}
+     Last updated {{last_updated}}
+{% endblocktrans %}
+    </p>
+   </div>
+   <span class="infobox-hover-item-anchor">
+    <span class="fa fa-clock-o"></span>
+    <label><time class="timesince">Updated {{review_request_details.last_updated|timesince}} ago</time></label>
+   </span>
+  </div>
+  <div class="infobox-text-section infobox-scrollable-section">
+   <pre class="infobox-scrollable-section-content {% rich_text_classname review_request_details.description_rich_text %}">{{review_request_details.description|render_markdown:review_request_details.description_rich_text}}</pre>
+  </div>
+  <div class="infobox-text-section review-request-infobox-review-summary{% if review_request.issue_open_count > 0 %} has-issues{% elif review_request.shipit_count > 0 %} has-ship-its{% endif %}">
+   <ul>
+{%  if review_request.shipit_count > 0 %}
+    <li title="{% trans "Number of &quot;Ship It!&quot;s" %}">
+     <span class="rb-icon rb-icon-shipit"></span>
+     {{review_request.shipit_count}}
     </li>
-    <li class="issue-summary-item" title="{% trans 'Open issues' %}">
-     <label><span class="rb-icon rb-icon-issue-open"></span></label>
-     <span id="open-counter" class="issue-counter-value">{{review_request.issue_open_count}}</span>
+{%  endif %}
+{%  if issue_total_count > 0 %}
+    <li title="{% trans 'Number of open issues' %}">
+     <span class="rb-icon rb-icon-issue-open"></span>
+     {{review_request.issue_open_count}}
     </li>
-    <li class="issue-summary-item" title="{% trans 'Resolved issues' %}">
-     <label><span class="rb-icon rb-icon-issue-resolved"></span></label>
-     <span id="resolved-counter" class="issue-counter-value">{{review_request.issue_resolved_count}}</span>
+{%  endif %}
+{%  if review_request.issue_resolved_count > 0 %}
+    <li title="{% trans 'Number of resolved issues' %}">
+     <span class="rb-icon rb-icon-issue-resolved"></span>
+     {{review_request.issue_resolved_count}}
     </li>
-    <li class="issue-summary-item" title="{% trans 'Dropped issues' %}">
-     <label><span class="rb-icon rb-icon-issue-dropped"></span></label>
-     <span id="dropped-counter" class="issue-counter-value">{{review_request.issue_dropped_count}}</span>
+{%  endif %}
+{%  if review_request.issue_dropped_count > 0 %}
+    <li title="{% trans 'Number of dropped issues' %}">
+     <span class="rb-icon rb-icon-issue-dropped"></span>
+     {{review_request.issue_dropped_count}}
     </li>
+{%  endif %}
+    <li>
+     <a href="{{review_request.get_absolute_url}}">{% spaceless %}
+{%   blocktrans count counter=review_count %}
+     {{counter}} review
+{%   plural %}
+     {{counter}} reviews
+{%   endblocktrans %}
+     {% endspaceless %}</a>
+    </li>
+{%  if diffset %}
+    <li>
+     <a href="{{diff_url}}">{% spaceless %}
+{%   blocktrans with revision=diffset.revision %}
+      Diff revision {{revision}}
+{%   endblocktrans %}
+     {% endspaceless %}</a>
+    </li>
+{%  endif %}
    </ul>
   </div>
-{% if review_request_latest_reviews %}
-  <div class="infobox-text-section review-request-infobox-latest">
-   <h3>Latest Reviews</h3>
-{%  for review in review_request_latest_reviews %}
-    <div class="review-request-latest-review">
-{%   if siteconfig_settings.avatars_enabled %}
-     <div class="review-request-latest-icon">
-      {% avatar review.user 48 %}
-     </div>
-{%   endif %}
-     <a href="{{review.get_absolute_url}}">
-      <div class="review-request-latest-summary">
-       <div class="review-request-latest-header">
-        <b>{{review.user.username}}</b>
-        <time class="review-request-latest-time" title="{{review.timestamp}}">
-         {{review.timestamp|timesince}}
-        </time>
-       </div>
-      </div>
-     </a>
-    </div>
-{%  endfor %}
-  </div>
- </div>
-{% endif %}
 </div>

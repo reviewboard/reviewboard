@@ -30,7 +30,7 @@
   h2,
   .infobox-header-text {
     color: inherit;
-    font-size: 1.4em;
+    font-size: @infobox-header-font-size;
     font-weight: bold;
     margin: 0 0 0.5em 0;
     padding: 0;
@@ -56,20 +56,34 @@
 .infobox-hover-item,
 .infobox-item {
   margin: 0.5em 0;
+
+  .fa {
+    min-width: @infobox-item-small-icon-size;
+    text-align: right;
+  }
 }
 
 .infobox-hover-item {
   position: relative;
 
   &.infobox-hover-item-anchor-has-small-icon .infobox-hover-item-content {
-    @icon-size: 16px;
+    // The 4px covers whitespace between the icon and text.
+    @padding: @infobox-hover-item-content-padding-horiz +
+              @infobox-item-small-icon-size + 4px;
 
-    padding-left: @infobox-hover-item-content-padding-horiz + @icon-size;
-    padding-right: @infobox-hover-item-content-padding-horiz + @icon-size;
+    padding-left: @padding;
+    padding-right: @padding;
   }
 
-  &.infobox-hover-item-opened .infobox-hover-item-content {
-    display: block;
+  &.infobox-hover-item-opened {
+    .infobox-hover-item-content,
+    .infobox-hover-item-anchor {
+      z-index: @z-index-dialog + 1;
+    }
+
+    .infobox-hover-item-content {
+      display: block;
+    }
   }
 }
 
@@ -87,13 +101,11 @@
   position: absolute;
   top: 0;
   left: 0;
-  z-index: @z-index-dialog + 1;
 }
 
 .infobox-hover-item-anchor {
   cursor: pointer;
   position: relative;
-  z-index: @z-index-dialog + 1;
 
   label {
     border-bottom: 1px dotted #666;
@@ -117,6 +129,37 @@
   }
 }
 
+.infobox-scrollable-section {
+  padding-left: 20px;
+  position: relative;
+
+  &:after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2em;
+    background: linear-gradient(to bottom, fade(@infobox-bg-color, 0%),
+                                fade(@infobox-bg-color, 60%) 100%);
+  }
+
+  &:hover {
+    &:after {
+      display: none;
+    }
+
+    .infobox-scrollable-section-content {
+      overflow-y: scroll;
+    }
+  }
+
+  .infobox-scrollable-section-content {
+    max-height: 8em;
+    overflow: hidden;
+  }
+}
+
 .infobox-small-detail {
   font-size: 10px;
 }
@@ -132,6 +175,11 @@
 
 .infobox-text-section {
   margin-top: (2 * @infobox-padding);
+
+  > pre {
+    font-size: 12px;
+    white-space: pre-wrap;
+  }
 }
 
 
@@ -183,121 +231,88 @@
  ****************************************************************************/
 
 .review-request-infobox {
-  min-width: 50em;
-  max-width: 60em;
+  .infobox-pic {
+    border-radius: 0;
+    vertical-align: middle;
+  }
+
+  .infobox-text {
+    width: 100%;
+  }
 
   .review-request-infobox-header {
+    margin-bottom: 1em;
+  }
 
-    .label-draft {
-      .review-request-label(@summary-label-draft-bg, @summary-label-draft-border-color, @summary-label-text-color)
-    }
+  .review-request-infobox-id {
+    float: right;
 
-    .label-submitted {
-      .review-request-label(@summary-label-submitted-bg, @summary-label-submitted-border-color, @summary-label-submitted-text-color)
-    }
-
-    .label-discarded {
-      .review-request-label(@summary-label-discarded-bg, @summary-label-discarded-border-color, @summary-label-discarded-text-color)
-    }
-
-    .label-archived {
-      .review-request-label(@summary-label-archived-bg, @summary-label-archived-border-color, @summary-label-archived-text-color)
-    }
-
-    .label-muted {
-      .review-request-label(@summary-label-muted-bg, @summary-label-muted-border-color, @summary-label-muted-text-color)
+    a {
+      color: #888;
+      font-size: 90%;
+      font-weight: normal;
     }
   }
 
-  .review-request-infobox-section {
-    margin-top: 1.2em;
+  .review-request-infobox-label-draft {
+    .review-request-label(@summary-label-draft-bg,
+                          @summary-label-draft-border-color,
+                          @summary-label-text-color)
   }
 
-  .review-request-infobox-description {
-    margin-right: -1em;
-    margin-top: 1.2em;
-    max-height: 3.6em;
-    max-width: 49em;
-    overflow: hidden;
-    padding-right: 1em;
-    position: relative;
-    text-align: justify;
+  .review-request-infobox-label-submitted {
+    .review-request-label(@summary-label-submitted-bg,
+                          @summary-label-submitted-border-color,
+                          @summary-label-submitted-text-color)
   }
 
-  /* For the ellipsis when cutting off the description at 3 lines. */
-  .review-request-infobox-description:before {
-    bottom: 0;
-    content: '...';
-    position: absolute;
-    right: 0;
+  .review-request-infobox-label-discarded {
+    .review-request-label(@summary-label-discarded-bg,
+                          @summary-label-discarded-border-color,
+                          @summary-label-discarded-text-color)
   }
 
-  .review-request-infobox-description:after {
-    background: #F9F9F9;
-    content: '';
-    height: 1em;
-    margin-top: 0.2em;
-    position: absolute;
-    right: 0;
-    width: 1em;
-  }
+  .review-request-infobox-review-summary {
+    background: #F0F0F0;
+    border-top: 1px #CCC solid;
+    border-radius: 0 0 @infobox-inner-border-radius
+                   @infobox-inner-border-radius;
+    margin-left: -@infobox-padding;
+    margin-right: -@infobox-padding;
+    margin-bottom: -@infobox-padding;
+    padding: @infobox-padding;
 
-  .review-request-infobox-issue-summary {
-    .issue-summary {
+    &.has-ship-its {
+      background: #bcf592;
+      border-color: #8fd051;
+    }
+
+    &.has-issues {
+      background: @issue-opened-bg;
+      border-color: @issue-opened-border-color;
+    }
+
+    a {
+      color: @link-color;
+    }
+
+    ul {
       list-style: none;
       margin: 0;
       padding: 0;
       vertical-align: bottom;
     }
 
-    .issue-summary-item {
+    li {
       display: inline-block;
-      padding-right: 2em;
-    }
-  }
+      padding-left: 1.5em;
 
-  .review-request-latest-icon {
-    display: inline-block;
+      &:first-child {
+        padding-left: 0;
+      }
 
-    img {
-      border: 2px #F9F9F9 solid;
-      border-radius: 50%;
-      box-sizing: border-box;
-    }
-  }
-
-  .review-request-infobox-latest h3 {
-    margin: 0;
-  }
-
-  .review-request-latest-review {
-    margin-top: 1.2em;
-  }
-
-  .review-request-latest-summary {
-    .left-arrow-callout(#ECECEE);
-
-    background-color: #ECECEE;
-    border: 1px #888A85 solid;
-    border-radius: 6px;
-    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.15);
-    display: inline;
-    margin-left: 1.3em;
-    padding-bottom: 1.2em;
-    padding-top: 1.2em;
-    position: absolute;
-    width: 86%;
-
-    .review-request-latest-header {
-      color: black;
-      font-size: 110%;
-      margin-left: 0.8em;
-
-      .review-request-latest-time {
-        color: #555;
-        float: right;
-        font-size: 11px;
-        margin-right: 1.3em;
+      .rb-icon {
+        vertical-align: text-top;
       }
     }
   }

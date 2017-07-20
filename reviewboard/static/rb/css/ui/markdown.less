@@ -1,0 +1,19 @@
+@import (reference) "../defs.less";
+@import (reference) "djblets/css/mixins/markdown.less";
+
+
+/****************************************************************************
+ * Rich text
+ ****************************************************************************/
+
+.rich-text {
+  margin: 0;
+  padding: 0;
+
+  .markdown-wysiwyg();
+
+  .emoji {
+    vertical-align: text-top;
+    width: 1rem;
+  }
+}
