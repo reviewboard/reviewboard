@@ -374,22 +374,21 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             useEditIconOnly: true,
             formatter: function(view, data, $el) {
                 var reviewRequest = view.model.get('reviewRequest'),
-                    bugTrackerURL = reviewRequest.get('bugTrackerURL'),
-                    bugList,
-                    $bugList;
+                    bugTrackerURL = reviewRequest.get('bugTrackerURL');
 
                 data = data || [];
 
                 if (bugTrackerURL) {
-                    bugList = view.urlizeList(data, function(item) {
-                        return bugTrackerURL.replace('--bug_id--', item);
-                    });
-
-                    $bugList = $(bugList)
-                        .addClass('bug')
-                        .bug_infobox();
-
-                    $el.html($bugList);
+                    $el
+                        .empty()
+                        .append(view.urlizeList(data, {
+                            makeItemURL: function(item) {
+                                return bugTrackerURL.replace('--bug_id--',
+                                                             item);
+                            },
+                            cssClass: 'bug'
+                        }))
+                        .find('.bug').bug_infobox();
                 } else {
                     $el.text(data.join(", "));
                 }
@@ -421,11 +420,14 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             },
             useEditIconOnly: true,
             formatter: function(view, data, $el) {
-                $el.html(view.urlizeList(
-                    data,
-                    function(item) { return item.url; },
-                    function(item) { return item.id; }
-                ));
+                $el
+                    .empty()
+                    .append(view.urlizeList(data, {
+                        makeItemURL: function(item) { return item.url; },
+                        makeItemText: function(item) { return item.id; },
+                        cssClass: 'review-request-link'
+                    }))
+                    .find('.review-request-link').review_request_infobox();
             }
         },
         {
@@ -477,23 +479,25 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 }
             },
             formatter: function(view, data, $el) {
-                var $link = $(view.convertToLink(
+                var $link = view.convertToLink(
                     data,
-                    function(item) {
-                        var href = item.href,
-                            startIndex;
+                    {
+                        makeItemURL: function(item) {
+                            var href = item.href,
+                                startIndex;
 
-                        startIndex = href.indexOf('/users');
-                        href = href.substr(startIndex);
+                            startIndex = href.indexOf('/users');
+                            href = href.substr(startIndex);
 
-                        return href;
-                    },
-                    function(item) { return item.title; }
-                ));
+                            return href;
+                        },
+                        makeItemText: function(item) { return item.title; },
+                        cssClass: 'user'
+                    });
 
-                $el.html($link
-                    .addClass("user")
-                    .user_infobox());
+                $el
+                    .empty()
+                    .append($link.user_infobox());
             }
         },
         {
@@ -509,11 +513,12 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 }
             },
             formatter: function(view, data, $el) {
-                $el.html(view.urlizeList(
-                    data,
-                    function(item) { return item.url; },
-                    function(item) { return item.name; }
-                ));
+                $el
+                    .empty()
+                    .append(view.urlizeList(data, {
+                        makeItemURL: function(item) { return item.url; },
+                        makeItemText: function(item) { return item.name; }
+                    }));
             }
         },
         {
@@ -551,16 +556,14 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 }
             },
             formatter: function(view, data, $el) {
-                var $list = $(view.urlizeList(
-                    data,
-                    function(item) { return item.url; },
-                    function(item) { return item.username; }
-                ));
-
-                $el.html(
-                    $list
-                        .addClass("user")
-                        .user_infobox());
+                $el
+                    .empty()
+                    .append(view.urlizeList(data, {
+                        makeItemURL: function(item) { return item.url; },
+                        makeItemText: function(item) { return item.username; },
+                        cssClass: 'user'
+                    }))
+                    .find('.user').user_infobox();
             }
         },
         {
@@ -1006,57 +1009,100 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         }
     },
 
-    /*
-     * Convert an item to hyperlink.
+    /**
+     * Convert an item to a hyperlink.
      *
-     * By default, this will use the item as the URL and as the hyperlink text.
-     * By overriding urlFunc and textFunc, the URL and text can be customized.
+     * Args:
+     *     item (object):
+     *         The item to link. The content is up to the caller.
+     *
+     *     options (object):
+     *         Options to control the linking behavior.
+     *
+     * Option Args:
+     *     cssClass (string):
+     *         The optional CSS class to add to the link.
+     *
+     *     makeItemText (function):
+     *         A function that takes the item and returns the text for the
+     *         link. If not specified, the item itself will be used as the
+     *         text.
+     *
+     *     makeItemURL (function):
+     *         A function that takes the item and returns the URL for the link.
+     *         If not specified, the item itself will be used as the URL.
+     *
+     * Returns:
+     *     jQuery:
+     *     The resulting link element wrapped in jQuery.
      */
-    convertToLink: function(item, urlFunc, textFunc) {
+    convertToLink: function(item, options) {
+        var $link;
+
         if (!item) {
-            return '';
+            return $();
         }
 
-        var _linkTemplate = _.template('<a href="<%- url %>"><%- label %></a>');
-        return _linkTemplate({
-            url: urlFunc ? urlFunc(item) : item,
-            label: textFunc ? textFunc(item) : item
-        });
+        options = options || {};
+
+        $link = $('<a/>')
+            .attr('href', (options.makeItemURL
+                           ? options.makeItemURL(item)
+                           : item))
+            .text(options.makeItemText ? options.makeItemText(item) : item);
+
+        if (options.cssClass) {
+            $link.addClass(options.cssClass);
+        }
+
+        return $link;
     },
 
-    /*
-     * Converts an array of items to a list of hyperlinks.
+    /**
+     * Convert an array of items to a list of hyperlinks.
      *
-     * By default, this will use the item as the URL and as the hyperlink text.
-     * By overriding urlFunc and textFunc, the URL and text can be customized.
+     * Args:
+     *     list (Array);
+     *         An array of items. The contents of the item is up to the caller.
+     *
+     *     options (object):
+     *         Options to control the linking behavior.
+     *
+     * Option Args:
+     *     cssClass (string):
+     *         The optional CSS class to add for each link.
+     *
+     *     makeItemText (function):
+     *         A function that takes an item and returns the text for the link.
+     *         If not specified, the item itself will be used as the text.
+     *
+     *     makeItemURL (function):
+     *         A function that takes an item and returns the URL for the link.
+     *         If not specified, the item itself will be used as the URL.
+     *
+     * Returns:
+     *     jQuery:
+     *     The resulting link elements in a jQuery list.
      */
-    urlizeList: function(list, urlFunc, textFunc) {
-        var str = '',
+    urlizeList: function(list, options) {
+        var $links = $(),
             len,
-            item,
             i;
 
-        if (!list) {
-            return '';
-        }
+        if (list) {
+            options = options || {};
+            len = list.length;
 
-        len = list.length;
+            for (i = 0; i < len; i++) {
+                $links = $links.add(this.convertToLink(list[i], options));
 
-        for (i = 0; i < len; i++) {
-            item = list[i];
-
-            str += '<a href="';
-            str += (urlFunc ? urlFunc(item) : item);
-            str += '">';
-            str += (textFunc ? textFunc(item) : item);
-            str += '</a>';
-
-            if (i < len - 1) {
-                str += ', ';
+                if (i < len - 1) {
+                    $links = $links.add(new Text(', '));
+                }
             }
         }
 
-        return str;
+        return $links;
     },
 
     /*
