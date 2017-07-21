@@ -190,6 +190,11 @@ WEB_API_AUTH_BACKENDS = (
     'djblets.webapi.auth.backends.api_tokens.WebAPITokenAuthBackend',
 )
 
+WEB_API_SCOPE_DICT_CLASS = (
+    'djblets.webapi.oauth2_scopes.ExtensionEnabledWebAPIScopeDictionary')
+
+WEB_API_ROOT_RESOURCE = 'reviewboard.webapi.resources.root.root_resource'
+
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
 # Set up a default cache backend. This will mostly be useful for
@@ -478,5 +483,6 @@ FEATURE_CHECKER = 'reviewboard.features.checkers.RBFeatureChecker'
 
 OAUTH2_PROVIDER = {
     'APPLICATION_MODEL': 'oauth.Application',
+    'DEFAULT_SCOPES': 'root:read',
     'SCOPES': {},
 }

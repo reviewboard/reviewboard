@@ -409,6 +409,13 @@ PIPELINE_STYLESHEETS = dict({
         'output_filename': 'rb/css/newReviewRequest.min.css',
         'absolute_paths': False,
     },
+    'oauth': {
+        'source_filenames': (
+            'rb/css/pages/oauth.less',
+        ),
+        'output_filename': 'rb/css/oauth.min.css',
+        'absolute_paths': False,
+    },
     'admin': {
         'source_filenames': (
             'rb/css/pages/admin.less',

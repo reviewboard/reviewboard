@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% load djblets_deco i18n pipeline %}
+
+{% block title %}{% blocktrans with application_name=application.name %}Authorize {{application_name}}{% endblocktrans %}{% endblock title %}
+
+{% block css %}
+{{block.super}}
+{%  stylesheet 'oauth' %}
+{% endblock css %}
+
+{% block content %}
+{%  box 'oauth-authorize' %}
+{%   if not error %}
+<div class="box-head">
+ <h1>{% blocktrans with application_name=application.name %}Authorize {{application_name}}?{% endblocktrans %}</h1>
+</div>
+<div class="box-main box-foot">
+<form method="POST" action=".">
+ {% csrf_token %}
+{%    for field in form %}
+{%     if field.is_hidden %}
+ {{field}}
+{%     endif %}
+{%    endfor %}
+{%    if scopes_descriptions %}
+ <p>{% trans 'This application requires the following permissions:' %}</p>
+ <ul>
+{%     for scope in scopes_descriptions %}
+  <li>{{scope}}</li>
+{%     endfor %}
+ </ul>
+{%    else %}
+ <p>{% trans 'This application is not requesting any permissions.' %}</p>
+{%    endif %}
+
+ {{form.errors}}
+ {{form.non_field_errors}}
+
+ <div class="oauth-actions">
+  <input type="submit" value="{% trans 'Cancel' %}">
+  <input type="submit" class="btn primary" name="allow" value="{% trans 'Authorize' %}">
+ </div>
+</form>
+</div>
+{%   else %}
+<h1>{% blocktrans with err_msg=error.error %}Error: {{err_msg}}{% endblocktrans %}</h1>
+ <p>{{error.description}}</p>
+{%  endif %}
+{%   endbox %}
+{% endblock content %}

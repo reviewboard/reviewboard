@@ -15,6 +15,8 @@ from djblets.webapi.errors import PERMISSION_DENIED
 from djblets.webapi.resources.base import \
     WebAPIResource as DjbletsWebAPIResource
 from djblets.webapi.resources.mixins.api_tokens import ResourceAPITokenMixin
+from djblets.webapi.resources.mixins.oauth2_tokens import (
+    ResourceOAuth2TokenMixin)
 from djblets.webapi.resources.mixins.queries import APIQueryUtilsMixin
 
 from reviewboard.registries.registry import Registry
@@ -83,8 +85,8 @@ class CallbackRegistry(Registry):
         super(CallbackRegistry, self).register(item)
 
 
-class WebAPIResource(ResourceAPITokenMixin, APIQueryUtilsMixin,
-                     DjbletsWebAPIResource):
+class WebAPIResource(ResourceAPITokenMixin, ResourceOAuth2TokenMixin,
+                     APIQueryUtilsMixin, DjbletsWebAPIResource):
     """A specialization of the Djblets WebAPIResource for Review Board."""
 
     autogenerate_etags = True

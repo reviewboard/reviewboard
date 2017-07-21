@@ -45,9 +45,11 @@ from djblets.siteconfig.django_settings import (apply_django_settings,
                                                 get_django_defaults,
                                                 get_django_settings_map)
 from djblets.siteconfig.models import SiteConfiguration
+from djblets.webapi.auth.backends import reset_auth_backends
 from haystack import connections
 
 from reviewboard.accounts.backends import auth_backends
+from reviewboard.oauth.features import oauth2_service_feature
 from reviewboard.search import search_backend_registry
 from reviewboard.search.search_backends.whoosh import WhooshBackend
 from reviewboard.signals import site_settings_loaded
@@ -191,12 +193,17 @@ defaults.update({
 })
 
 
+_original_webapi_auth_backends = settings.WEB_API_AUTH_BACKENDS
+
+
 def load_site_config(full_reload=False):
     """Load stored site configuration settings.
 
     This populates the Django settings object with any keys that need to be
     there.
     """
+    global _original_webapi_auth_backends
+
     def apply_setting(settings_key, db_key, default=None):
         """Apply the given siteconfig value to the Django settings object."""
         db_value = siteconfig.settings.get(db_key)
@@ -367,6 +374,20 @@ def load_site_config(full_reload=False):
     settings.AUTHENTICATION_BACKENDS += (
         'reviewboard.webapi.auth_backends.TokenAuthBackend',
     )
+
+    # Reset the WebAPI auth backends in case OAuth2 has become disabled.
+    settings.WEB_API_AUTH_BACKENDS = _original_webapi_auth_backends
+    reset_auth_backends()
+
+    if oauth2_service_feature.is_enabled():
+        settings.AUTHENTICATION_BACKENDS += (
+            'reviewboard.webapi.auth_backends.OAuth2TokenAuthBackend',
+        )
+
+        settings.WEB_API_AUTH_BACKENDS += (
+            'djblets.webapi.auth.backends.oauth2_tokens'
+            '.WebAPIOAuth2TokenAuthBackend',
+        )
 
     # Set the storage backend
     storage_backend = siteconfig.settings.get('storage_backend', 'builtin')

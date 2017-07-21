@@ -55,7 +55,7 @@ class AuthBackend(object):
     supports_change_password = False
     login_instructions = None
 
-    def authenticate(self, username, password):
+    def authenticate(self, **credentials):
         """Authenticate the user.
 
         This will authenticate the username and return the appropriate User
@@ -186,7 +186,7 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
         'scmtools.change_repository',
     ]
 
-    def authenticate(self, username, password):
+    def authenticate(self, username, password, **kwargs):
         """Authenticate the user.
 
         This will authenticate the username and return the appropriate User
@@ -304,7 +304,7 @@ class HTTPDigestBackend(AuthBackend):
     login_instructions = \
         _('Use your standard username and password.')
 
-    def authenticate(self, username, password):
+    def authenticate(self, username, password, **kwargs):
         """Authenticate the user.
 
         This will authenticate the username and return the appropriate User
@@ -360,7 +360,7 @@ class NISBackend(AuthBackend):
     login_instructions = \
         _('Use your standard NIS username and password.')
 
-    def authenticate(self, username, password):
+    def authenticate(self, username, password, **kwargs):
         """Authenticate the user.
 
         This will authenticate the username and return the appropriate User
@@ -494,7 +494,7 @@ class LDAPBackend(AuthBackend):
     login_instructions = \
         _('Use your standard LDAP username and password.')
 
-    def authenticate(self, username, password):
+    def authenticate(self, username, password, **kwargs):
         """Authenticate a user.
 
         This will attempt to authenticate the user against the LDAP server.
@@ -938,7 +938,7 @@ class ActiveDirectoryBackend(AuthBackend):
             con.set_option(ldap.OPT_REFERRALS, 0)
             yield con
 
-    def authenticate(self, username, password):
+    def authenticate(self, username, password, **kwargs):
         """Authenticate the user.
 
         This will authenticate the username and return the appropriate User
@@ -1061,7 +1061,7 @@ class X509Backend(AuthBackend):
     settings_form = X509SettingsForm
     supports_change_password = True
 
-    def authenticate(self, x509_field=""):
+    def authenticate(self, x509_field="", **kwargs):
         """Authenticate the user.
 
         This will extract the username from the provided certificate and return

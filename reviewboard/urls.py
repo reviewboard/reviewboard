@@ -124,6 +124,7 @@ localsite_urlpatterns += hostingsvcs_urlpatterns
 # Main includes
 urlpatterns += [
     url(r'^account/', include('reviewboard.accounts.urls')),
+    url(r'^oauth2/', include('reviewboard.oauth.urls')),
     url(r'^s/(?P<local_site_name>[\w\.-]+)/',
         include(localsite_urlpatterns)),
 ]

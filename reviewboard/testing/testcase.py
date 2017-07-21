@@ -4,14 +4,17 @@ import os
 import re
 import warnings
 from contextlib import contextmanager
+from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.files import File
-from django.utils import six
+from django.utils import six, timezone
 from djblets.testing.testcases import (FixturesCompilerMixin,
                                        TestCase as DjbletsTestCase)
+from oauthlib.common import generate_token
+from oauth2_provider.models import AccessToken
 
 from reviewboard import scmtools, initialize
 from reviewboard.accounts.models import ReviewRequestVisit
@@ -1092,3 +1095,37 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             client_type=client_type,
             extra_data='{}',
             **kwargs)
+
+    def create_oauth_token(self, application, user, scope='', expires=None,
+                           **kwargs):
+        """Create an OAuth2 access token for testing.
+
+        Args:
+            application (reviewboard.oauth.models.Application):
+                The application the token should be associated with.
+
+            user (django.contrib.auth.models.User):
+                The user who should own the token.
+
+            scope (unicode, optional):
+                The scopes of the token. This argument defaults to the empty
+                scope.
+
+            expires (datetime.timedelta, optional):
+                How far into the future the token expires. If not provided,
+                this argument defaults to one hour.
+
+        Returns:
+            oauth2_provider.models.AccessToken:
+            The created access token.
+        """
+        if expires is None:
+            expires = timedelta(hours=1)
+
+        return AccessToken.objects.create(
+            application=application,
+            token=generate_token(),
+            expires=timezone.now() + expires,
+            scope=scope,
+            user=user,
+        )
