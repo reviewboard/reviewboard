@@ -5,6 +5,7 @@ from djblets.extensions.models import RegisteredExtension
 from djblets.extensions.resources import ExtensionResource
 from djblets.webapi.resources.registry import (ResourcesRegistry,
                                                register_resource_for_model)
+from oauth2_provider.models import AccessToken
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffSet, FileDiff
@@ -51,6 +52,7 @@ class Resources(ResourcesRegistry):
 
     def register_resources(self):
         """Register all the resource model associations."""
+        register_resource_for_model(AccessToken, self.oauth_token)
         register_resource_for_model(Application, self.oauth_app)
         register_resource_for_model(ChangeDescription, self.change)
         register_resource_for_model(
