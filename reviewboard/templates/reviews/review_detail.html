@@ -63,7 +63,7 @@
 {%  javascript 'review-request-page' %}
 
 <script>
-    RB.PageManager.setPage(new RB.ReviewRequestPageView({
+    RB.PageManager.setPage(new RB.ReviewRequestPage.PageView({
 {%  localtime off %}
         lastActivityTimestamp: {{last_activity_time|json_dumps}},
 {%  endlocaltime %}

@@ -4,7 +4,7 @@
  * This will track the editing state of a reply to the body top/bottom of
  * a review or a comment, and handles saving of the reply.
  */
-RB.ReviewReplyEditor = Backbone.Model.extend({
+RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
     defaults: {
         contextID: null,
         contextType: null,

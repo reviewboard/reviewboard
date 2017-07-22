@@ -32,7 +32,7 @@ RB.ReviewRequestPage.ChangeEntryView = ParentView.extend({
         this._reviewViews = this._reviews.map(review => {
             const $reviewEl = this.$(`#review${review.id}`);
 
-            return new RB.ReviewView({
+            return new RB.ReviewRequestPage.ReviewView({
                 el: $reviewEl,
                 model: review,
                 entryModel: this.model,

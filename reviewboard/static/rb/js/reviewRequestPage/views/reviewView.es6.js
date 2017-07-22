@@ -3,7 +3,7 @@
  * contained within the main review entries, but also for status updates in
  * change description entries or the initial status updates entry.
  */
-RB.ReviewView = Backbone.View.extend({
+RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
     /**
      * Initialize the view.
      */
@@ -30,7 +30,7 @@ RB.ReviewView = Backbone.View.extend({
      * Render the view.
      *
      * Returns:
-     *     RB.ReviewView:
+     *     RB.ReviewRequestPage.ReviewView:
      *     This object, for chaining.
      */
     render() {
@@ -82,7 +82,7 @@ RB.ReviewView = Backbone.View.extend({
 
         _.each(this.$('.comment-section'), el => {
             const $el = $(el);
-            const editor = new RB.ReviewReplyEditor({
+            const editor = new RB.ReviewRequestPage.ReviewReplyEditor({
                 contextID: $el.data('context-id'),
                 contextType: $el.data('context-type'),
                 review: this.model,
@@ -98,7 +98,7 @@ RB.ReviewView = Backbone.View.extend({
                 }
             });
 
-            const view = new RB.ReviewReplyEditorView({
+            const view = new RB.ReviewRequestPage.ReviewReplyEditorView({
                 el: el,
                 model: editor,
                 reviewRequestEditor: reviewRequestEditor,
@@ -229,7 +229,7 @@ RB.ReviewView = Backbone.View.extend({
      *         The ID of the comment being replied to, if appropriate.
      *
      * Returns:
-     *     RB.ReviewReplyEditorView:
+     *     RB.ReviewRequestPage.ReviewReplyEditorView:
      *     The matching editor view.
      */
     getReviewReplyEditorView(contextType, contextID) {
@@ -299,13 +299,15 @@ RB.ReviewView = Backbone.View.extend({
      */
     _showReplyDraftBanner() {
         if (!this._draftBannerShown) {
-            this._bannerView = new RB.ReviewReplyDraftBannerView({
-                model: this._reviewReply,
-                $floatContainer: this.options.$bannerFloatContainer,
-                noFloatContainerClass: this.options.bannerNoFloatContainerClass,
-                reviewRequestEditor: this.options.entryModel.get(
-                    'reviewRequestEditor'),
-            });
+            this._bannerView =
+                new RB.ReviewRequestPage.ReviewReplyDraftBannerView({
+                    model: this._reviewReply,
+                    $floatContainer: this.options.$bannerFloatContainer,
+                    noFloatContainerClass:
+                        this.options.bannerNoFloatContainerClass,
+                    reviewRequestEditor: this.options.entryModel.get(
+                        'reviewRequestEditor'),
+                });
 
             this._bannerView.render();
             this._bannerView.$el.appendTo(this.options.$bannerParent);

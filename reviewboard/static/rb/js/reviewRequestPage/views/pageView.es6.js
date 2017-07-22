@@ -14,7 +14,7 @@ const commentTypeToIDPrefix = {
  * This manages all the reviews on the page, diff fragment loading, and
  * other functionality needed for the main review request page.
  */
-RB.ReviewRequestPageView = RB.ReviewablePageView.extend({
+RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
     /**
      * Initialize the page.
      */
@@ -45,7 +45,7 @@ RB.ReviewRequestPageView = RB.ReviewablePageView.extend({
      * Render the page.
      *
      * Returns:
-     *     RB.ReviewRequestPageView:
+     *     RB.ReviewRequestPage.PageView:
      *     This object, for chaining.
      */
     render() {

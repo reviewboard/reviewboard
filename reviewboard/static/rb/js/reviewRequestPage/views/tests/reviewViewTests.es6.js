@@ -72,7 +72,7 @@ suite('rb/views/ReviewView', function() {
 
         reviewReply = review.createReply();
 
-        view = new RB.ReviewView({
+        view = new RB.ReviewRequestPage.ReviewView({
             el: $el,
             model: review,
             entryModel: new RB.ReviewRequestPage.ReviewEntry({

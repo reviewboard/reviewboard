@@ -43,7 +43,7 @@ RB.ReviewRequestPage.ReviewEntryView = ParentView.extend({
     render() {
         ParentView.prototype.render.call(this);
 
-        this._reviewView = new RB.ReviewView({
+        this._reviewView = new RB.ReviewRequestPage.ReviewView({
             el: this.el,
             model: this.model.get('review'),
             entryModel: this.model,
@@ -79,7 +79,7 @@ RB.ReviewRequestPage.ReviewEntryView = ParentView.extend({
      *         The ID of the comment being replied to, if appropriate.
      *
      * Returns:
-     *     RB.ReviewReplyEditorView:
+     *     RB.ReviewRequestPage.ReviewReplyEditorView:
      *     The matching editor view.
      */
     getReviewReplyEditorView(contextType, contextID) {
