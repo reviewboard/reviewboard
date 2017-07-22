@@ -650,10 +650,10 @@ class BaseReviewRequestPageEntry(object):
     js_template_name = 'reviews/boxes/entry.js'
 
     #: The name of the JavaScript Backbone.Model class for this entry.
-    js_model_class = 'RB.ReviewRequestPageEntry'
+    js_model_class = 'RB.ReviewRequestPage.Entry'
 
     #: The name of the JavaScript Backbone.View class for this entry.
-    js_view_class = 'RB.CollapsableBoxView'
+    js_view_class = 'RB.ReviewRequestPage.EntryView'
 
     #: Whether this entry has displayable content.
     #:
@@ -1025,8 +1025,8 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
     entry_pos = BaseReviewRequestPageEntry.ENTRY_POS_INITIAL
 
     template_name = 'reviews/boxes/initial_status_updates.html'
-    js_model_class = 'RB.ReviewRequestPageStatusUpdatesEntry'
-    js_view_class = 'RB.InitialStatusUpdatesBoxView'
+    js_model_class = 'RB.ReviewRequestPage.StatusUpdatesEntry'
+    js_view_class = 'RB.ReviewRequestPage.InitialStatusUpdatesEntryView'
 
     @classmethod
     def build_entries(cls, data):
@@ -1101,8 +1101,8 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
     needs_reviews = True
 
     template_name = 'reviews/boxes/review.html'
-    js_model_class = 'RB.ReviewRequestPageReviewEntry'
-    js_view_class = 'RB.ReviewBoxView'
+    js_model_class = 'RB.ReviewRequestPage.ReviewEntry'
+    js_view_class = 'RB.ReviewRequestPage.ReviewEntryView'
 
     @classmethod
     def build_entries(cls, data):
@@ -1260,8 +1260,8 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
     needs_screenshots = True
 
     template_name = 'reviews/boxes/change.html'
-    js_model_class = 'RB.ReviewRequestPageChangeEntry'
-    js_view_class = 'RB.ChangeBoxView'
+    js_model_class = 'RB.ReviewRequestPage.ChangeEntry'
+    js_view_class = 'RB.ReviewRequestPage.ChangeEntryView'
 
     @classmethod
     def build_entries(cls, data):

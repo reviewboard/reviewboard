@@ -3,8 +3,7 @@
  *
  * This stores state needed for a review entry on a review request.
  *
- * See :js:class:`RB.ReviewRequestStatusUpdatesEntry` for additional model
- * attributes.
+ * See :js:class:`RB.ReviewRequestPage.Entry` for additional model attributes.
  *
  * Model Attributes:
  *     diffCommentsData (Array):
@@ -16,11 +15,11 @@
  *     review (RB.Review):
  *         The review being represented by this entry.
  */
-RB.ReviewRequestPageReviewEntry = RB.ReviewRequestPageEntry.extend({
+RB.ReviewRequestPage.ReviewEntry = RB.ReviewRequestPage.Entry.extend({
     defaults: _.defaults({
         diffCommentsData: [],
         review: null,
-    }, RB.ReviewRequestPageEntry.prototype.defaults),
+    }, RB.ReviewRequestPage.Entry.prototype.defaults),
 
     /**
      * Parse attributes for the model.
@@ -38,7 +37,7 @@ RB.ReviewRequestPageReviewEntry = RB.ReviewRequestPageEntry.extend({
         const reviewData = attrs.reviewData;
 
         return _.extend(
-            RB.ReviewRequestPageEntry.prototype.parse.call(this, attrs),
+            RB.ReviewRequestPage.Entry.prototype.parse.call(this, attrs),
             {
                 diffCommentsData: attrs.diffCommentsData,
                 review: reviewRequest.createReview(reviewData.id, {

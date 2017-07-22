@@ -56,8 +56,8 @@ suite('rb/pages/views/ReviewRequestPageView', () => {
         // Stub this out.
         spyOn(page.reviewRequest, '_checkForUpdates');
 
-        page.addBox(new RB.ReviewBoxView({
-            model: new RB.ReviewRequestPageReviewEntry({
+        page.addBox(new RB.ReviewRequestPage.ReviewEntryView({
+            model: new RB.ReviewRequestPage.ReviewEntry({
                 review: page.reviewRequest.createReview(123, {
                     shipIt: true,
                     public: true,
@@ -69,8 +69,8 @@ suite('rb/pages/views/ReviewRequestPageView', () => {
             el: $el.find('#review123'),
         }));
 
-        page.addBox(new RB.ReviewBoxView({
-            model: new RB.ReviewRequestPageReviewEntry({
+        page.addBox(new RB.ReviewRequestPage.ReviewEntryView({
+            model: new RB.ReviewRequestPage.ReviewEntry({
                 review: page.reviewRequest.createReview(124, {
                     shipIt: false,
                     public: true,

@@ -1,4 +1,4 @@
-suite('rb/views/ReviewBoxView', function() {
+suite('rb/reviewRequestPage/views/ReviewEntryView', function() {
     var view,
         reviewView,
         reviewReply,
@@ -44,7 +44,7 @@ suite('rb/views/ReviewBoxView', function() {
                     }
                 }
             }),
-            model = new RB.ReviewRequestPageReviewEntry({
+            model = new RB.ReviewRequestPage.ReviewEntry({
                 review: review,
                 reviewRequest: reviewRequest,
                 reviewRequestEditor: editor
@@ -54,7 +54,7 @@ suite('rb/views/ReviewBoxView', function() {
 
         reviewReply = review.createReply();
 
-        view = new RB.ReviewBoxView({
+        view = new RB.ReviewRequestPage.ReviewEntryView({
             el: $el,
             model: model
         });

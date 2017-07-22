@@ -11,7 +11,7 @@
  *     reviewRequestEditor (RB.ReviewRequestEditor):
  *         The review request editor managing state on the page.
  */
-RB.ReviewRequestPageEntry = Backbone.Model.extend({
+RB.ReviewRequestPage.Entry = Backbone.Model.extend({
     defaults: {
         reviewRequestEditor: null,
     },

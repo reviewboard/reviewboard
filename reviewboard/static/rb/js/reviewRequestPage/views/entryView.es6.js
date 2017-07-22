@@ -1,7 +1,7 @@
 /**
- * Represents a box on the page that can be collapsed.
+ * Represents an entry on the review request page.
  */
-RB.CollapsableBoxView = Backbone.View.extend({
+RB.ReviewRequestPage.EntryView = Backbone.View.extend({
     events: {
         'click .collapse-button': '_onToggleCollapseClicked',
     },
@@ -10,7 +10,7 @@ RB.CollapsableBoxView = Backbone.View.extend({
      * Render the box.
      *
      * Returns:
-     *     RB.CollapsableBoxView:
+     *     RB.ReviewRequestPage.EntryView:
      *     This object, for chaining.
      */
     render() {

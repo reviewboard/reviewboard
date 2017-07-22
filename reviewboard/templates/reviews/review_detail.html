@@ -1,5 +1,5 @@
 {% extends "reviews/reviewable_base.html" %}
-{% load i18n djblets_deco djblets_js reviewtags staticfiles tz %}
+{% load i18n djblets_deco djblets_js pipeline reviewtags staticfiles tz %}
 
 {% block title %}{{review_request_details.summary}} | {% trans "Review Request" %}{% endblock %}
 
@@ -60,6 +60,7 @@
 
 {% block scripts-post %}
 {{block.super}}
+{%  javascript 'review-request-page' %}
 
 <script>
     RB.PageManager.setPage(new RB.ReviewRequestPageView({

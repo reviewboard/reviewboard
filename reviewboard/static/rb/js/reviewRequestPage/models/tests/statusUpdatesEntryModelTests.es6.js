@@ -1,4 +1,4 @@
-suite('rb/reviewRequestPage/models/ReviewRequestPageChangeEntry',
+suite('rb/reviewRequestPage/models/StatusUpdatesEntry',
       function() {
     it('parse', function() {
         const diffCommentsData = [
@@ -9,7 +9,7 @@ suite('rb/reviewRequestPage/models/ReviewRequestPageChangeEntry',
             reviewRequest: new RB.ReviewRequest(),
         });
 
-        const entry = new RB.ReviewRequestPageChangeEntry({
+        const entry = new RB.ReviewRequestPage.StatusUpdatesEntry({
             diffCommentsData: diffCommentsData,
             reviewsData: [
                 {

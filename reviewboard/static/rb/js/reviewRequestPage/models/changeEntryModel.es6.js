@@ -4,8 +4,8 @@
  * This stores state needed for change descriptions, including the status
  * updates on the change.
  *
- * See :js:class:`RB.ReviewRequestPageStatusUpdatesEntry` for additional model
+ * See :js:class:`RB.ReviewRequestPage.StatusUpdatesEntry` for additional model
  * attributes.
  */
-RB.ReviewRequestPageChangeEntry =
-    RB.ReviewRequestPageStatusUpdatesEntry.extend();
+RB.ReviewRequestPage.ChangeEntry =
+    RB.ReviewRequestPage.StatusUpdatesEntry.extend();

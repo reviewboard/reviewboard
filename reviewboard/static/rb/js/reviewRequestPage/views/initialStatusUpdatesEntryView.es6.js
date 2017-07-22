@@ -1,3 +1,9 @@
+{
+
+
+const ParentView = RB.ReviewRequestPage.EntryView;
+
+
 /**
  * Displays all the initial status updates.
  *
@@ -6,12 +12,12 @@
  * file attachments that were present when the review request was first
  * published).
  */
-RB.InitialStatusUpdatesBoxView = RB.CollapsableBoxView.extend({
+RB.ReviewRequestPage.InitialStatusUpdatesEntryView = ParentView.extend({
     /**
      * Initialize the view.
      */
     initialize() {
-        RB.CollapsableBoxView.prototype.initialize.call(this);
+        ParentView.prototype.initialize.call(this);
 
         this._reviews = this.model.get('reviews');
         this._reviewViews = this._reviews.map(review => {
@@ -32,14 +38,17 @@ RB.InitialStatusUpdatesBoxView = RB.CollapsableBoxView.extend({
      * Render the box.
      *
      * Returns:
-     *     RB.InitialStatusUpdatesBoxView:
+     *     RB.ReviewRequestPage.InitialStatusUpdatesEntryView:
      *     This object, for chaining.
      */
     render() {
-        RB.CollapsableBoxView.prototype.render.call(this);
+        ParentView.prototype.render.call(this);
 
         this._reviewViews.forEach(view => view.render());
 
         return this;
     },
 });
+
+
+}
