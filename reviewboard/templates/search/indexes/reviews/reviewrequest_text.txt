@@ -7,3 +7,4 @@
 {{object.submitter.username}}
 {{object.submitter.get_full_name}}
 {{object.get_all_diff_filenames}}
+{{object.commit_id}}
