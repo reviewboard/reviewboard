@@ -4,11 +4,13 @@ from __future__ import unicode_literals
 
 from django.utils import six
 from djblets.db.query import get_object_or_none
+from djblets.features.testing import override_feature_check
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.testing.decorators import webapi_test_template
 from djblets.webapi.errors import DOES_NOT_EXIST
 from oauth2_provider.models import AccessToken
 
+from reviewboard.oauth.features import oauth2_service_feature
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (oauth_token_item_mimetype,
@@ -68,7 +70,8 @@ class ResourceListTests(BaseWebAPITestCase):
                                                           None, True)
         self._login_user(admin=True)
 
-        rsp = self.api_get(url, expected_mimetype=mimetype)
+        with override_feature_check(oauth2_service_feature.feature_id, True):
+            rsp = self.api_get(url, expected_mimetype=mimetype)
 
         self.assertIn('oauth_tokens', rsp)
         self.assertEqual(len(rsp['oauth_tokens']), 1)
@@ -83,7 +86,8 @@ class ResourceListTests(BaseWebAPITestCase):
             self.user, True, self.local_site_name, True)
         self._login_user(admin=True)
 
-        rsp = self.api_get(url, expected_mimetype=mimetype)
+        with override_feature_check(oauth2_service_feature.feature_id, True):
+            rsp = self.api_get(url, expected_mimetype=mimetype)
 
         self.assertIn('oauth_tokens', rsp)
         self.assertEqual(len(rsp['oauth_tokens']), 1)
@@ -129,7 +133,8 @@ class ResourceItemTests(BaseWebAPITestCase):
                                                          None)
         self._login_user(admin=True)
 
-        rsp = self.api_get(url, expected_mimetype=mimetype)
+        with override_feature_check(oauth2_service_feature.feature_id, True):
+            rsp = self.api_get(url, expected_mimetype=mimetype)
 
         self.assertIn('oauth_token', rsp)
         self.compare_item(rsp['oauth_token'], token)
@@ -143,7 +148,8 @@ class ResourceItemTests(BaseWebAPITestCase):
                                                          self.local_site_name)
         self._login_user(admin=True)
 
-        rsp = self.api_get(url, expected_mimetype=mimetype)
+        with override_feature_check(oauth2_service_feature.feature_id, True):
+            rsp = self.api_get(url, expected_mimetype=mimetype)
 
         self.assertIn('oauth_token', rsp)
         self.compare_item(rsp['oauth_token'], token)
@@ -188,7 +194,8 @@ class ResourceItemTests(BaseWebAPITestCase):
             self.user, False, None, True)[:-1]
         self._login_user(admin=True)
 
-        rsp = self.api_get(url, request_data, expected_mimetype=mimetype)
+        with override_feature_check(oauth2_service_feature.feature_id, True):
+            rsp = self.api_get(url, request_data, expected_mimetype=mimetype)
 
         self.assertIn('oauth_token', rsp)
         self.check_put_result(self.user, rsp['oauth_token'], token)
@@ -202,7 +209,8 @@ class ResourceItemTests(BaseWebAPITestCase):
             self.user, True, self.local_site_name, True)[:-1]
         self._login_user(admin=True)
 
-        rsp = self.api_get(url, request_data, expected_mimetype=mimetype)
+        with override_feature_check(oauth2_service_feature.feature_id, True):
+            rsp = self.api_get(url, request_data, expected_mimetype=mimetype)
 
         self.assertIn('oauth_token', rsp)
         self.check_put_result(self.user, rsp['oauth_token'], token)
@@ -230,7 +238,8 @@ class ResourceItemTests(BaseWebAPITestCase):
         url, (pk,) = self.setup_basic_delete_test(self.user, False, None)
         self._login_user(admin=True)
 
-        self.api_delete(url, expected_status=204)
+        with override_feature_check(oauth2_service_feature.feature_id, True):
+            self.api_delete(url, expected_status=204)
 
         self.check_put_result(self.user, pk)
 
@@ -244,6 +253,7 @@ class ResourceItemTests(BaseWebAPITestCase):
                                                   self.local_site_name)
         self._login_user(admin=True)
 
-        self.api_delete(url, expected_status=204)
+        with override_feature_check(oauth2_service_feature.feature_id, True):
+            self.api_delete(url, expected_status=204)
 
         self.check_put_result(self.user, pk)

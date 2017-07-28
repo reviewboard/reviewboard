@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import copy
+import logging
 
 from django.utils import six
 from django.utils.encoding import force_unicode
@@ -239,6 +240,10 @@ class WebAPIResource(ResourceAPITokenMixin, ResourceOAuth2TokenMixin,
         """
         for feature in self.required_features:
             if not feature.is_enabled(request=request):
+                logging.warning('Disallowing %s for API resource %r because '
+                                'feature %s is not enabled',
+                                method, self, feature.feature_id,
+                                request=request)
                 return PERMISSION_DENIED
 
         return super(WebAPIResource, self).call_method_view(
