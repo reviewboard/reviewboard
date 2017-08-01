@@ -23,6 +23,7 @@ RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
 
         this._boxes = [];
         this._rendered = false;
+        this._issueSummaryTableView = null;
 
         $('#collapse-all').click(e => this._onCollapseAllClicked(e));
         $('#expand-all').click(e => this._onExpandAllClicked(e));
@@ -33,12 +34,6 @@ RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
             queueName: 'diff_fragments',
             el: document.getElementById('content'),
         });
-
-        if (this.reviewRequestEditorView.issueSummaryTableView) {
-            this.listenTo(this.reviewRequestEditorView.issueSummaryTableView,
-                          'issueClicked',
-                          (...args) => this._expandIssueBox(...args));
-        }
     },
 
     /**
@@ -67,6 +62,17 @@ RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
         });
 
         this.diffFragmentQueue.loadFragments();
+
+        this._issueSummaryTableView =
+            new RB.ReviewRequestPage.IssueSummaryTableView({
+                el: $('#issue-summary'),
+                model: this.reviewRequestEditor.get('commentIssueManager'),
+            });
+        this._issueSummaryTableView.render();
+
+        this.listenTo(this._issueSummaryTableView,
+                      'issueClicked',
+                      this._expandIssueBox);
 
         this._rendered = true;
 

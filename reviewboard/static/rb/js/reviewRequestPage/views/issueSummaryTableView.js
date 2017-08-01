@@ -2,7 +2,7 @@
  * IssueSummaryTableView handles all interactions with the issue summary
  * table.
  */
-RB.IssueSummaryTableView = Backbone.View.extend({
+RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
     events: {
         'change #issue-reviewer-filter': '_onReviewerChanged',
         'click .issue-summary-tab': '_onTabChanged',

@@ -599,8 +599,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     ].join('')),
 
     initialize: function() {
-        var $issueSummary = $('#issue-summary');
-
         _.bindAll(this, '_checkResizeLayout', '_scheduleResizeLayout',
                   '_onCloseDiscardedClicked', '_onCloseSubmittedClicked',
                   '_onDeleteReviewRequestClicked', '_onUpdateDiffClicked',
@@ -623,13 +621,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this._$main = null;
         this._$extra = null;
         this._blockResizeLayout = false;
-
-        if ($issueSummary.length > 0) {
-            this.issueSummaryTableView = new RB.IssueSummaryTableView({
-                el: $('#issue-summary'),
-                model: this.model.get('commentIssueManager')
-            });
-        }
     },
 
     /*
@@ -832,10 +823,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
             $(window).resize(this._scheduleResizeLayout);
             this.listenTo(this.model, 'change:editCount', this._checkResizeLayout);
             this._checkResizeLayout();
-
-            if (this.issueSummaryTableView) {
-                this.issueSummaryTableView.render();
-            }
 
             $("#review-request-files-placeholder").remove();
 
