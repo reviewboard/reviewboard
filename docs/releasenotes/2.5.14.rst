@@ -1,0 +1,121 @@
+.. default-intersphinx:: rb2.5
+
+
+=================================
+Review Board 2.5.14 Release Notes
+=================================
+
+**Release date**: August 1, 2017
+
+
+Security Updates
+================
+
+This release fixes two security vulnerabilities, found in-house and by
+partners.
+
+* The Quick Search API allowed information on otherwise-inaccessible review
+  requests to be returned in the results. This affected setups using private
+  repositories or invite-only review groups.
+
+  If you're not making use of these access controls, this bug won't impact
+  you, but for those that do, we recommend upgrading to stay secure.
+
+* A URL could be crafted for the diff viewer page allowing the execution of
+  arbitrary JavaScript on the user's behalf.
+
+We recommend that everyone upgrade at their earliest convenience in order to
+stay secure.
+
+
+Reporting Security Vulnerabilities
+----------------------------------
+
+Security vulnerabilities can be reported by `filing a bug`_ and choosing
+:guilabel:`Security issue` or by e-mailing security@beanbaginc.com. Patches
+can be sent by posting a review request to https://reviews.reviewboard.org and
+choosing *only* the "security" review group. These methods ensure security
+vulnerabilities are sent safely and confidentially to the Review Board team.
+
+
+.. _filing a bug: https://hellosplat.com/s/beanbag/tickets/new/
+
+
+Upgrade Notes
+=============
+
+* A full search re-index is recommended after upgrading.
+
+  There's new data indexed along with review requests. While not required,
+  we recommend performing a full re-index after upgrading if you're using
+  the search functionality.
+
+
+New Features
+============
+
+* Added support for tables when using Markdown.
+
+  Tabular data can now be used in Markdown-based descriptions and comments.
+  These follow the GitHub-Formatted Markdown table syntax.
+
+
+Extensions
+==========
+
+* Fixed building and packaging extensions using LessCSS or UglifyJS.
+
+  A regression had caused packages utilizing LessCSS or UglifyJS to fail to
+  build, due to some bad path information. Extensions should now properly
+  build once again.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed the display of some buttons on Firefox.
+
+
+Diff Viewer
+-----------
+
+* Fixed regressions with diff navigation key bindings in the diff viewer.
+  (:bug:`4559`)
+
+* Failures to load diff fragments no longer result in long tracebacks in
+  log files.
+
+  If a previously-valid diff could no longer be generated for a review
+  request (perhaps due to the commit no longer being available in the
+  repository, or the repository moving), long error tracebacks would be
+  sent to the log file, taking up a lot of space. We no longer log these.
+
+
+Search
+------
+
+* Commit IDs for review requests are now included in the search.
+
+  This will require a full reindex in order for existing commit IDs to be
+  searchable.
+
+
+Administration
+--------------
+
+* Sending test e-mails now properly reports errors caused when communicating
+  with the mail server.
+
+  Patch by Ezra Buehler.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Ezra Buehler
