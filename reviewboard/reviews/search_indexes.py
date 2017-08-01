@@ -20,6 +20,7 @@ class ReviewRequestIndex(BaseSearchIndex, indexes.Indexable):
     summary = indexes.CharField(model_attr='summary')
     description = indexes.CharField(model_attr='description')
     testing_done = indexes.CharField(model_attr='testing_done')
+    commit_id = indexes.EdgeNgramField(model_attr='commit', null=True)
     bug = indexes.CharField(model_attr='bugs_closed')
     username = indexes.CharField(model_attr='submitter__username')
     user_display_name = indexes.CharField()

@@ -37,8 +37,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         var revisionInfo = this.model.get('revision'),
             curRevision = revisionInfo.get('revision'),
             curInterdiffRevision = revisionInfo.get('interdiffRevision'),
-            url = document.location.toString(),
-            hash = document.location.hash || '',
+            hash = RB.getLocationHash(),
             search = document.location.search || '',
             revisionRange;
 
@@ -55,7 +54,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this.listenTo(this.model.get('files'), 'update', this._setFiles);
 
         /* Check to see if there's an anchor we need to scroll to. */
-        this._startAtAnchorName = (url.match('#') ? url.split('#')[1] : null);
+        this._startAtAnchorName = hash || null;
 
         this.router = new Backbone.Router({
             routes: {
@@ -123,7 +122,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             revisionRange += '-' + curInterdiffRevision;
         }
 
-        this.router.navigate(revisionRange + '/' + search + hash, {
+        this.router.navigate(revisionRange + '/' + search + '#' + hash, {
             replace: true,
             trigger: false
         });
@@ -242,7 +241,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
     /* Template for code line link anchor */
     anchorTemplate: _.template(
-    '<a name="<%- anchorName %>" class="highlight-anchor"></a>'),
+        '<a name="<%- anchorName %>" class="highlight-anchor"></a>'),
 
     /*
      * Set the displayed files.
@@ -517,7 +516,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * If no anchor is selected, we'll try to select the first one.
      */
     _updateAnchors: function($table) {
-        this._$anchors = this._$anchors.add($table.find('tbody th a[name]'));
+        this._$anchors = this._$anchors.add($table.find('th a[name]'));
 
         /* Skip over the change index to the first item. */
         if (this._selectedAnchorIndex === -1 && this._$anchors.length > 0) {
