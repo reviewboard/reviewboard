@@ -1,19 +1,25 @@
+{
+
+
+const ParentView = RB.ReviewRequestPage.EntryView;
+
+
 /**
  * Displays a review with discussion on the review request page.
  *
  * Review boxes contain discussion on parts of a review request. This includes
  * comments, screenshots, and file attachments.
  */
-RB.ReviewBoxView = RB.CollapsableBoxView.extend({
+RB.ReviewRequestPage.ReviewEntryView = ParentView.extend({
     events: _.defaults({
         'click .revoke-ship-it': '_revokeShipIt',
-    }, RB.CollapsableBoxView.prototype.events),
+    }, ParentView.prototype.events),
 
     /**
      * Initialize the view.
      */
     initialize() {
-        RB.CollapsableBoxView.prototype.initialize.call(this);
+        ParentView.prototype.initialize.call(this);
 
         this._reviewView = null;
         this._draftBannerShown = false;
@@ -31,13 +37,13 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
      * Each comment section will be set up to allow discussion.
      *
      * Returns:
-     *     RB.ReviewBoxView:
+     *     RB.ReviewRequestPage.ReviewEntryView:
      *     This object, for chaining.
      */
     render() {
-        RB.CollapsableBoxView.prototype.render.call(this);
+        ParentView.prototype.render.call(this);
 
-        this._reviewView = new RB.ReviewView({
+        this._reviewView = new RB.ReviewRequestPage.ReviewView({
             el: this.el,
             model: this.model.get('review'),
             entryModel: this.model,
@@ -73,7 +79,7 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
      *         The ID of the comment being replied to, if appropriate.
      *
      * Returns:
-     *     RB.ReviewReplyEditorView:
+     *     RB.ReviewRequestPage.ReviewReplyEditorView:
      *     The matching editor view.
      */
     getReviewReplyEditorView(contextType, contextID) {
@@ -148,7 +154,10 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
     _revokeShipIt() {
         this._$boxStatus.addClass('revoking-ship-it');
 
-        if (!confirm(RB.ReviewBoxView.strings.revokeShipItConfirm)) {
+        const confirmation =
+            RB.ReviewRequestPage.ReviewEntryView.strings.revokeShipItConfirm;
+
+        if (!confirm(confirmation)) {
             this._clearRevokingShipIt();
             return;
         }
@@ -194,3 +203,6 @@ RB.ReviewBoxView = RB.CollapsableBoxView.extend({
         revokeShipItConfirm: gettext('Are you sure you want to revoke this Ship It?\n\nThis cannot be undone.'),
     },
 });
+
+
+}

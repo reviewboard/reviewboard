@@ -4,7 +4,7 @@
  * This will handle the "New Comment" link and the draft banners for the
  * review.
  */
-RB.ReviewReplyEditorView = Backbone.View.extend({
+RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
     commentTemplate: _.template([
         '<li <% if (isDraft) { %>class="draft"<% } %>',
         '    <% if (commentID) { %>data-comment-id="<%= commentID %>"<% } %>>',

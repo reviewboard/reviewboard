@@ -31,6 +31,7 @@ class RootResource(WebAPIResource, DjbletsRootResource):
             resources.hosting_service,
             resources.hosting_service_account,
             resources.oauth_app,
+            resources.oauth_token,
             resources.repository,
             resources.review_group,
             resources.review_request,

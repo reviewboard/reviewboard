@@ -1,0 +1,60 @@
+.. default-intersphinx:: rb2.0
+
+
+=================================
+Review Board 2.0.30 Release Notes
+=================================
+
+**Release date**: August 1, 2017
+
+
+Security Updates
+================
+
+This release fixes two security vulnerabilities, found in-house and by
+partners.
+
+* The Quick Search API allowed information on otherwise-inaccessible review
+  requests to be returned in the results. This affected setups using private
+  repositories or invite-only review groups.
+
+  If you're not making use of these access controls, this bug won't impact
+  you, but for those that do, we recommend upgrading to stay secure.
+
+* A URL could be crafted for the diff viewer page allowing the execution of
+  arbitrary JavaScript on the user's behalf.
+
+We recommend that everyone upgrade at their earliest convenience in order to
+stay secure.
+
+
+Reporting Security Vulnerabilities
+----------------------------------
+
+Security vulnerabilities can be reported by `filing a bug`_ and choosing
+:guilabel:`Security issue` or by e-mailing security@beanbaginc.com. Patches
+can be sent by posting a review request to https://reviews.reviewboard.org and
+choosing *only* the "security" review group. These methods ensure security
+vulnerabilities are sent safely and confidentially to the Review Board team.
+
+
+.. _filing a bug: https://hellosplat.com/s/beanbag/tickets/new/
+
+
+Upgrade Instructions
+====================
+
+To upgrade to Review Board 2.0.30, run::
+
+    pip install ReviewBoard==2.0.30
+
+or::
+
+    easy_install ReviewBoard==2.0.30
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond

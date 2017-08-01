@@ -199,6 +199,10 @@ body.datagrid-page {
       &:last-child {
         border-top-right-radius: @box-border-radius;
       }
+
+      .rb-icon-datagrid-column-shipits-issues {
+        margin-left: 4px;
+      }
     }
 
     .datagrid-main {
@@ -564,11 +568,12 @@ body.datagrid-page {
 
   .issue-count,
   .shipit-count {
+    border-radius: 10px;
     display: inline-block;
     font-weight: bold;
     padding: 0.05em 0.8em;
+    vertical-align: bottom;
     white-space: nowrap;
-    border-radius: 10px;
   }
 
   .issue-count {
@@ -577,21 +582,20 @@ body.datagrid-page {
     #gradient > .vertical-three-colors(@issue-opened-bg, @issue-opened-bg, 25%,
                                        darken(@issue-opened-bg, 30%));
 
-    .issue-icon {
-      color: darken(@issue-opened-bg, 60%);
-      display: inline-block;
-      padding: 0 3px 0 1px;
-      text-align: center;
+    .rb-icon-datagrid-open-issues {
+      margin: 2px 1px;
     }
   }
 
   .shipit-count {
-    background-image: url("../../images/shipit_bg.png");
-    background-position: top left;
-    background-repeat: repeat-x;
-    background-color: #6bc810;
-    border: 1px #478a06 solid;
-    color: #205003;
+    border: 1px @shipit-border-color solid;
+    color: @shipit-text-color;
+    #gradient > .vertical-three-colors(@shipit-bg, @shipit-bg, 25%,
+                                       darken(@shipit-bg, 8%));
+
+    .rb-icon-datagrid-shipit {
+      margin: 1px 0;
+    }
   }
 
   .repository-column,

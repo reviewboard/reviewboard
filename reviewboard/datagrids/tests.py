@@ -720,9 +720,7 @@ class SummaryColumnTests(BaseColumnTestCase):
 
         self.assertEqual(
             self.column.render_data(self.stateful_column, review_request),
-            '<a class="review-request-link" href="/r/1/">'
-            '<span>Summary 1</span>'
-            '</a>')
+            '<span>Summary 1</span>')
 
     def test_render_data_with_draft(self):
         """Testing SummaryColumn.render_data with draft review request"""
@@ -736,10 +734,8 @@ class SummaryColumnTests(BaseColumnTestCase):
 
         self.assertEqual(
             self.column.render_data(self.stateful_column, review_request),
-            '<a class="review-request-link" href="/r/1/">'
             '<label class="label-draft">Draft</label>'
-            '<span>Summary 1</span>'
-            '</a>')
+            '<span>Summary 1</span>')
 
     def test_render_data_with_draft_summary(self):
         """Testing SummaryColumn.render_data with draft summary"""
@@ -753,10 +749,8 @@ class SummaryColumnTests(BaseColumnTestCase):
 
         self.assertEqual(
             self.column.render_data(self.stateful_column, review_request),
-            '<a class="review-request-link" href="/r/1/">'
             '<label class="label-draft">Draft</label>'
-            '<span>Draft Summary 1</span>'
-            '</a>')
+            '<span>Draft Summary 1</span>')
 
     def test_render_data_with_draft_and_no_summary(self):
         """Testing SummaryColumn.render_data with draft and no summary"""
@@ -771,10 +765,8 @@ class SummaryColumnTests(BaseColumnTestCase):
 
         self.assertEqual(
             self.column.render_data(self.stateful_column, review_request),
-            '<a class="review-request-link" href="/r/1/">'
             '<label class="label-draft">Draft</label>'
-            '<span class="no-summary">No Summary</span>'
-            '</a>')
+            '<span class="no-summary">No Summary</span>')
 
     def test_render_data_with_archived(self):
         """Testing SummaryColumn.render_data with archived review request"""
@@ -789,10 +781,8 @@ class SummaryColumnTests(BaseColumnTestCase):
 
         self.assertEqual(
             self.column.render_data(self.stateful_column, review_request),
-            '<a class="review-request-link" href="/r/1/">'
             '<label class="label-archived">Archived</label>'
-            '<span>Summary 1</span>'
-            '</a>')
+            '<span>Summary 1</span>')
 
     def test_render_data_with_muted(self):
         """Testing SummaryColumn.render_data with muted review request"""
@@ -807,10 +797,8 @@ class SummaryColumnTests(BaseColumnTestCase):
 
         self.assertEqual(
             self.column.render_data(self.stateful_column, review_request),
-            '<a class="review-request-link" href="/r/1/">'
             '<label class="label-muted">Muted</label>'
-            '<span>Summary 1</span>'
-            '</a>')
+            '<span>Summary 1</span>')
 
     def test_render_data_with_draft_and_archived(self):
         """Testing SummaryColumn.render_data with draft and archived
@@ -826,11 +814,9 @@ class SummaryColumnTests(BaseColumnTestCase):
 
         self.assertEqual(
             self.column.render_data(self.stateful_column, review_request),
-            '<a class="review-request-link" href="/r/1/">'
             '<label class="label-draft">Draft</label>'
             '<label class="label-archived">Archived</label>'
-            '<span>Summary 1</span>'
-            '</a>')
+            '<span>Summary 1</span>')
 
     def test_render_data_with_draft_and_muted(self):
         """Testing SummaryColumn.render_data with draft and muted
@@ -846,11 +832,9 @@ class SummaryColumnTests(BaseColumnTestCase):
 
         self.assertEqual(
             self.column.render_data(self.stateful_column, review_request),
-            '<a class="review-request-link" href="/r/1/">'
             '<label class="label-draft">Draft</label>'
             '<label class="label-muted">Muted</label>'
-            '<span>Summary 1</span>'
-            '</a>')
+            '<span>Summary 1</span>')
 
     def test_render_data_with_submitted(self):
         """Testing SummaryColumn.render_data with submitted review request"""
@@ -866,10 +850,8 @@ class SummaryColumnTests(BaseColumnTestCase):
 
         self.assertEqual(
             self.column.render_data(self.stateful_column, review_request),
-            '<a class="review-request-link" href="/r/1/">'
             '<label class="label-submitted">Submitted</label>'
-            '<span>Summary 1</span>'
-            '</a>')
+            '<span>Summary 1</span>')
 
     def test_render_data_with_discarded(self):
         """Testing SummaryColumn.render_data with discarded review request"""
@@ -885,7 +867,5 @@ class SummaryColumnTests(BaseColumnTestCase):
 
         self.assertEqual(
             self.column.render_data(self.stateful_column, review_request),
-            '<a class="review-request-link" href="/r/1/">'
             '<label class="label-discarded">Discarded</label>'
-            '<span>Summary 1</span>'
-            '</a>')
+            '<span>Summary 1</span>')

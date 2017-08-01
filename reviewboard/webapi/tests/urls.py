@@ -345,6 +345,18 @@ def get_oauth_app_item_url(app_id, local_site_name=None):
 
 
 #
+# OAuthTokenResource
+#
+def get_oauth_token_list_url(local_site_name=None):
+    return resources.oauth_token.get_list_url(local_site_name=local_site_name)
+
+
+def get_oauth_token_item_url(token_id, local_site_name=None):
+    return resources.oauth_token.get_item_url(local_site_name=local_site_name,
+                                              oauth_token_id=token_id)
+
+
+#
 # OriginalFileResource
 #
 def get_original_file_url(review_request, diffset, filediff,

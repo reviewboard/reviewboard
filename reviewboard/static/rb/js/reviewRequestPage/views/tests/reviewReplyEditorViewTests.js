@@ -1,4 +1,4 @@
-suite('rb/views/ReviewReplyEditorView', function() {
+suite('rb/reviewRequestPage/views/ReviewReplyEditorView', function() {
     var reviewReply,
         editor,
         view;
@@ -14,7 +14,7 @@ suite('rb/views/ReviewReplyEditorView', function() {
                 options.success.call(context);
             });
 
-        editor = new RB.ReviewReplyEditor({
+        editor = new RB.ReviewRequestPage.ReviewReplyEditor({
             review: new RB.Review({
                 id: 42,
                 parentObject: new RB.ReviewRequest()
@@ -24,7 +24,7 @@ suite('rb/views/ReviewReplyEditorView', function() {
             contextID: '100'
         });
 
-        view = new RB.ReviewReplyEditorView({
+        view = new RB.ReviewRequestPage.ReviewReplyEditorView({
             model: editor,
             el: $testsScratch
         });

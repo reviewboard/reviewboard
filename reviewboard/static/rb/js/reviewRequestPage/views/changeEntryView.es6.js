@@ -1,10 +1,16 @@
+{
+
+
+const ParentView = RB.ReviewRequestPage.EntryView;
+
+
 /**
- * Displays the "Review request changed" box on the review request page.
+ * Displays the "Review request changed" entry on the review request page.
  *
  * This handles any rendering needed for special contents in the box,
  * such as the diff complexity icons and the file attachment thumbnails.
  */
-RB.ChangeBoxView = RB.CollapsableBoxView.extend({
+RB.ReviewRequestPage.ChangeEntryView = ParentView.extend({
     /**
      * Initialize the view.
      *
@@ -26,7 +32,7 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
         this._reviewViews = this._reviews.map(review => {
             const $reviewEl = this.$(`#review${review.id}`);
 
-            return new RB.ReviewView({
+            return new RB.ReviewRequestPage.ReviewView({
                 el: $reviewEl,
                 model: review,
                 entryModel: this.model,
@@ -44,11 +50,11 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
      * Render the view.
      *
      * Returns:
-     *     RB.ChangeBoxView:
+     *     RB.ReviewRequestPage.ChangeEntryView:
      *     This object, for chaining.
      */
     render() {
-        RB.CollapsableBoxView.prototype.render.call(this);
+        ParentView.prototype.render.call(this);
 
         this._$boxStatus = this.$('.box-status');
         this._$fixItLabel = $('<label class="fix-it-label">')
@@ -136,3 +142,6 @@ RB.ChangeBoxView = RB.CollapsableBoxView.extend({
         }
     }
 });
+
+
+}

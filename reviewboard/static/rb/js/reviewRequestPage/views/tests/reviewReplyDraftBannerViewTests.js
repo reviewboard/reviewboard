@@ -1,10 +1,10 @@
-suite('rb/views/ReviewReplyDraftBannerView', function() {
+suite('rb/reviewRequestPage/views/ReviewReplyDraftBannerView', function() {
     var reviewReply,
         view;
 
     beforeEach(function() {
         reviewReply = new RB.ReviewReply();
-        view = new RB.ReviewReplyDraftBannerView({
+        view = new RB.ReviewRequestPage.ReviewReplyDraftBannerView({
             model: reviewReply,
             $floatContainer: $testsScratch,
             reviewRequestEditor: new RB.ReviewRequestEditor({
@@ -73,7 +73,7 @@ suite('rb/views/ReviewReplyDraftBannerView', function() {
         describe('With Send E-Mail shown', function() {
             beforeEach(function() {
                 view.remove();
-                view = new RB.ReviewReplyDraftBannerView({
+                view = new RB.ReviewRequestPage.ReviewReplyDraftBannerView({
                     model: reviewReply,
                     $floatContainer: $testsScratch,
                     reviewRequestEditor: new RB.ReviewRequestEditor({

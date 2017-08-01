@@ -3,7 +3,7 @@
  *
  * The banner offers actions for publishing and discarding the review.
  */
-RB.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
+RB.ReviewRequestPage.ReviewReplyDraftBannerView = RB.FloatingBannerView.extend({
     className: 'banner',
 
     template: _.template([

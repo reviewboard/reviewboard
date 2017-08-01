@@ -11,7 +11,11 @@ from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.timezone import utc
 from django.utils.translation import ugettext as _
+from djblets.registries.registry import (ALREADY_REGISTERED,
+                                         ATTRIBUTE_REGISTERED,
+                                         NOT_REGISTERED)
 
+from reviewboard.registries.registry import OrderedRegistry
 from reviewboard.reviews.builtin_fields import ReviewRequestPageDataMixin
 from reviewboard.reviews.features import status_updates_feature
 from reviewboard.reviews.fields import get_review_request_fieldsets
@@ -51,9 +55,15 @@ class ReviewRequestPageData(object):
             :py:class:`~reviewboard.reviews.models.Review` objects which reply
             to it.
 
-        comments (list):
-            A list of all comments associated with all reviews shown on the
-            page.
+        review_comments (dict):
+            A dictionary of comments across all reviews. The keys are
+            :py:class:`~reviewboard.reviews.models.review.Review` IDs and the
+            values are lists of comments.
+
+        draft_reply_comments (dict):
+            A dictionary of draft reply comments across all reviews. The keys
+            are :py:class:`~reviewboard.reviews.models.review.Review` IDs that
+            are being replied to and the values are lists of reply comments.
 
         changedescs (list of reviewboard.changedescs.models.ChangeDescription):
             All the change descriptions to be shown on the page.
@@ -68,10 +78,12 @@ class ReviewRequestPageData(object):
         draft (reviewboard.reviews.models.ReviewRequestDraft):
             The active draft of the review request, if any. May be ``None``.
 
-        active file_attachments (list of reviewboard.attachments.models.FileAttachment):
+        active file_attachments (list of reviewboard.attachments.models.
+                                 FileAttachment):
             All the active file attachments associated with the review request.
 
-        all_file_attachments (list of reviewboard.attachments.models.FileAttachment):
+        all_file_attachments (list of reviewboard.attachments.models.
+                              FileAttachment):
             All the file attachments associated with the review request.
 
         file_attachments_by_id (dict):
@@ -79,7 +91,8 @@ class ReviewRequestPageData(object):
             :py:class:`~reviewboard.attachments.models.FileAttachment`
 
         issues (list of reviewboard.reviews.models.BaseComment):
-            A list of all the comments (of all types) which are marked as issues.
+            A list of all the comments (of all types) which are marked as
+            issues.
 
         issue_counts (dict):
             A dictionary storing counts of the various issue states throughout
@@ -98,21 +111,25 @@ class ReviewRequestPageData(object):
         review_request (reviewboard.reviews.models.ReviewRequest):
             The review request.
 
-        review_request_details (reviewboard.reviews.models.base_review_request_details.BaseReviewRequestDetails):
+        review_request_details (reviewboard.reviews.models.
+                                base_review_request_details.
+                                BaseReviewRequestDetails):
             The review request (or the active draft thereof). In practice this
             will either be a
             :py:class:`~reviewboard.reviews.models.ReviewRequest` or a
             :py:class:`~reviewboard.reviews.models.ReviewRequestDraft`.
 
-        reviews (list of reviewboard.reviews.models.Review):
+        reviews (list of reviewboard.reviews.models.reviews.Review):
             All the reviews to be shown on the page. This includes any draft
             reviews owned by the requesting user but not drafts owned by
             others.
 
         reviews_by_id (dict):
-            A mapping from ID to :py:class:`~reviewboard.reviews.models.Review`.
+            A mapping from ID to
+            :py:class:`~reviewboard.reviews.models.Review`.
 
-        active_screenshots (list of reviewboard.reviews.models.Screenshot):
+        active_screenshots (list of reviewboard.reviews.models.screenshots.
+                            Screenshot):
             All the active screenshots associated with the review request.
 
         all_screenshots (list of reviewboard.reviews.models.Screenshot):
@@ -121,9 +138,32 @@ class ReviewRequestPageData(object):
         screenshots_by_id (dict):
             A mapping from ID to
             :py:class:`~reviewboard.reviews.models.Screenshot`.
-    """  # noqa
 
-    def __init__(self, review_request, request):
+        all_status_updates (list of reviewboard.reviews.models.
+                            status_updates.StatusUpdate):
+            All status updates recorded for the review request.
+
+        initial_status_updates (list of reviewboard.reviews.models.
+                                status_updates.StatusUpdate):
+            The status updates recorded on the initial publish of the
+            review request.
+
+        change_status_updates (dict):
+            The status updates associated with change descriptions. Each key
+            in the dictionary is a
+            :py:class:`~reviewboard.changedescs.models.ChangeDescription` ID,
+            and each key is a list of
+            :py:class:`reviewboard.reviews.models. status_updates.StatusUpdate`
+            instances.
+
+        status_updates_enabled (bool):
+            Whether the status updates feature is enabled for this
+            review request. This does not necessarily mean that there are
+            status updates on the review request.
+    """
+
+    def __init__(self, review_request, request, last_visited=None,
+                 entry_classes=None):
         """Initialize the data object.
 
         Args:
@@ -132,9 +172,80 @@ class ReviewRequestPageData(object):
 
             request (django.http.HttpRequest):
                 The HTTP request object.
+
+            last_visited (datetime.datetime, optional):
+                The date/time when the user last visited the review request.
+
+            entry_classes (list of BaseReviewRequestPageEntry, optional):
+                The list of entry classes that should be used for data
+                generation. If not provided, all registered entry classes
+                will be used.
         """
         self.review_request = review_request
         self.request = request
+        self.last_visited = last_visited
+        self.entry_classes = entry_classes or list(entry_registry)
+
+        # These are populated in query_data_pre_etag().
+        self.reviews = []
+        self.changedescs = []
+        self.diffsets = []
+        self.diffsets_by_id = {}
+        self.all_status_updates = []
+        self.latest_review_timestamp = None
+        self.latest_changedesc_timestamp = None
+        self.draft = None
+
+        # These are populated in query_data_post_etag().
+        self.initial_status_updates = []
+        self.change_status_updates = {}
+        self.reviews_by_id = {}
+        self.latest_reviews_by_timestamp = {}
+        self.latest_timestamps_by_review_id = {}
+        self.body_top_replies = defaultdict(list)
+        self.body_bottom_replies = defaultdict(list)
+        self.review_request_details = None
+        self.active_file_attachments = []
+        self.all_file_attachments = []
+        self.file_attachments_by_id = {}
+        self.active_screenshots = []
+        self.all_comments = []
+        self.all_screenshots = []
+        self.screenshots_by_id = {}
+        self.review_comments = {}
+        self.draft_reply_comments = {}
+        self.issues = []
+        self.issue_counts = {
+            'total': 0,
+            'open': 0,
+            'resolved': 0,
+            'dropped': 0,
+        }
+
+        self.status_updates_enabled = status_updates_feature.is_enabled(
+            local_site=review_request.local_site)
+
+        self._needs_draft = False
+        self._needs_reviews = False
+        self._needs_changedescs = False
+        self._needs_status_updates = False
+        self._needs_file_attachments = False
+        self._needs_screenshots = False
+
+        # There's specific entries being used for the data collection.
+        # Loop through them and determine what sets of data we need.
+        for entry_cls in self.entry_classes:
+            self._needs_draft = self._needs_draft or entry_cls.needs_draft
+            self._needs_reviews = (self._needs_reviews or
+                                   entry_cls.needs_reviews)
+            self._needs_changedescs = (self._needs_changedescs or
+                                       entry_cls.needs_changedescs)
+            self._needs_status_updates = (self._needs_status_updates or
+                                          entry_cls.needs_status_updates)
+            self._needs_file_attachments = (self._needs_file_attachments or
+                                            entry_cls.needs_file_attachments)
+            self._needs_screenshots = (self._needs_screenshots or
+                                       entry_cls.needs_screenshots)
 
     def query_data_pre_etag(self):
         """Perform initial queries for the page.
@@ -151,12 +262,13 @@ class ReviewRequestPageData(object):
         if self.request.user.is_authenticated():
             reviews_query |= Q(user_id=self.request.user.pk)
 
-        self.reviews = list(
-            self.review_request.reviews
-            .filter(reviews_query)
-            .order_by('-timestamp')
-            .select_related('user', 'user__profile')
-        )
+        if self._needs_reviews or self._needs_status_updates:
+            self.reviews = list(
+                self.review_request.reviews
+                .filter(reviews_query)
+                .order_by('-timestamp')
+                .select_related('user', 'user__profile')
+            )
 
         if len(self.reviews) == 0:
             self.latest_review_timestamp = datetime.fromtimestamp(0, utc)
@@ -164,8 +276,9 @@ class ReviewRequestPageData(object):
             self.latest_review_timestamp = self.reviews[0].timestamp
 
         # Get all the public ChangeDescriptions.
-        self.changedescs = list(
-            self.review_request.changedescs.filter(public=True))
+        if self._needs_changedescs:
+            self.changedescs = list(
+                self.review_request.changedescs.filter(public=True))
 
         if len(self.changedescs) == 0:
             self.latest_changedesc_timestamp = datetime.fromtimestamp(0, utc)
@@ -173,15 +286,17 @@ class ReviewRequestPageData(object):
             self.latest_changedesc_timestamp = self.changedescs[0].timestamp
 
         # Get the active draft (if any).
-        self.draft = self.review_request.get_draft(self.request.user)
+        if self._needs_draft:
+            self.draft = self.review_request.get_draft(self.request.user)
 
         # Get diffsets.
-        self.diffsets = self.review_request.get_diffsets()
-        self.diffsets_by_id = self._build_id_map(self.diffsets)
+        if self._needs_reviews:
+            self.diffsets = self.review_request.get_diffsets()
+            self.diffsets_by_id = self._build_id_map(self.diffsets)
 
         # Get all status updates.
-        if status_updates_feature.is_enabled(request=self.request):
-            self.status_updates = list(
+        if self.status_updates_enabled and self._needs_status_updates:
+            self.all_status_updates = list(
                 self.review_request.status_updates.all())
 
     def query_data_post_etag(self):
@@ -193,15 +308,18 @@ class ReviewRequestPageData(object):
         """
         self.reviews_by_id = self._build_id_map(self.reviews)
 
-        self.body_top_replies = defaultdict(list)
-        self.body_bottom_replies = defaultdict(list)
-        self.latest_timestamps_by_review_id = {}
-
-        for status_update in self.status_updates:
+        for status_update in self.all_status_updates:
             if status_update.review_id is not None:
                 review = self.reviews_by_id[status_update.review_id]
                 review.status_update = status_update
                 status_update.review = review
+
+            if status_update.change_description_id:
+                self.change_status_updates.setdefault(
+                    status_update.change_description_id,
+                    []).append(status_update)
+            else:
+                self.initial_status_updates.append(status_update)
 
         for r in self.reviews:
             r._body_top_replies = []
@@ -251,117 +369,175 @@ class ReviewRequestPageData(object):
         # Note that we fetch both active and inactive file attachments and
         # screenshots. We do this because even though they've been removed,
         # they still will be rendered in change descriptions.
-        self.active_file_attachments = \
-            list(self.review_request_details.get_file_attachments())
-        self.all_file_attachments = (
-            self.active_file_attachments +
-            list(self.review_request_details.get_inactive_file_attachments()))
-        self.file_attachments_by_id = \
-            self._build_id_map(self.all_file_attachments)
+        if self._needs_file_attachments or self._needs_reviews:
+            self.active_file_attachments = \
+                list(self.review_request_details.get_file_attachments())
+            self.all_file_attachments = (
+                self.active_file_attachments + list(
+                    self.review_request_details
+                    .get_inactive_file_attachments()))
+            self.file_attachments_by_id = \
+                self._build_id_map(self.all_file_attachments)
 
-        for attachment in self.all_file_attachments:
-            attachment._comments = []
+            for attachment in self.all_file_attachments:
+                attachment._comments = []
 
-        self.active_screenshots = \
-            list(self.review_request_details.get_screenshots())
-        self.all_screenshots = (
-            self.active_screenshots +
-            list(self.review_request_details.get_inactive_screenshots()))
-        self.screenshots_by_id = self._build_id_map(self.all_screenshots)
+        if self._needs_screenshots or self._needs_reviews:
+            self.active_screenshots = \
+                list(self.review_request_details.get_screenshots())
+            self.all_screenshots = (
+                self.active_screenshots +
+                list(self.review_request_details.get_inactive_screenshots()))
+            self.screenshots_by_id = self._build_id_map(self.all_screenshots)
 
-        for screenshot in self.all_screenshots:
-            screenshot._comments = []
+            for screenshot in self.all_screenshots:
+                screenshot._comments = []
 
-        review_ids = self.reviews_by_id.keys()
+        if self.reviews:
+            review_ids = self.reviews_by_id.keys()
 
-        self.comments = []
-        self.issues = []
-        self.issue_counts = {
-            'total': 0,
-            'open': 0,
-            'resolved': 0,
-            'dropped': 0,
+            for model, key, ordering in (
+                (Comment, 'diff_comments', ('comment__filediff',
+                                            'comment__first_line',
+                                            'comment__timestamp')),
+                (ScreenshotComment, 'screenshot_comments', None),
+                (FileAttachmentComment, 'file_attachment_comments', None),
+                (GeneralComment, 'general_comments', None)):
+                # Due to mistakes in how we initially made the schema, we have
+                # a ManyToManyField in between comments and reviews, instead of
+                # comments having a ForeignKey to the review. This makes it
+                # difficult to easily go from a comment to a review ID.
+                #
+                # The solution to this is to not query the comment objects, but
+                # rather the through table. This will let us grab the review
+                # and comment in one go, using select_related.
+                related_field = model.review.related.field
+                comment_field_name = related_field.m2m_reverse_field_name()
+                through = related_field.rel.through
+                q = (
+                    through.objects.filter(review__in=review_ids)
+                    .select_related()
+                )
+
+                if ordering:
+                    q = q.order_by(*ordering)
+
+                objs = list(q)
+
+                # We do two passes. One to build a mapping, and one to actually
+                # process comments.
+                comment_map = {}
+
+                for obj in objs:
+                    comment = getattr(obj, comment_field_name)
+                    comment._type = key
+                    comment._replies = []
+                    comment_map[comment.pk] = comment
+
+                for obj in objs:
+                    comment = getattr(obj, comment_field_name)
+
+                    self.all_comments.append(comment)
+
+                    # Short-circuit some object fetches for the comment by
+                    # setting some internal state on them.
+                    assert obj.review_id in self.reviews_by_id
+                    review = self.reviews_by_id[obj.review_id]
+                    comment.review_obj = review
+                    comment._review = review
+                    comment._review_request = self.review_request
+
+                    # If the comment has an associated object (such as a file
+                    # attachment) that we've already fetched, attach it to
+                    # prevent future queries.
+                    if isinstance(comment, FileAttachmentComment):
+                        attachment_id = comment.file_attachment_id
+                        f = self.file_attachments_by_id[attachment_id]
+                        comment.file_attachment = f
+                        f._comments.append(comment)
+
+                        diff_against_id = \
+                            comment.diff_against_file_attachment_id
+
+                        if diff_against_id is not None:
+                            f = self.file_attachments_by_id[diff_against_id]
+                            comment.diff_against_file_attachment = f
+                    elif isinstance(comment, ScreenshotComment):
+                        screenshot = \
+                            self.screenshots_by_id[comment.screenshot_id]
+                        comment.screenshot = screenshot
+                        screenshot._comments.append(comment)
+
+                    # We've hit legacy database cases where there were entries
+                    # that weren't a reply, and were just orphaned. Check and
+                    # ignore anything we don't expect.
+                    is_reply = review.is_reply()
+
+                    if is_reply == comment.is_reply():
+                        if is_reply:
+                            replied_comment = comment_map[comment.reply_to_id]
+                            replied_comment._replies.append(comment)
+
+                            if not review.public:
+                                self.draft_reply_comments.setdefault(
+                                    review.base_reply_to_id, []).append(
+                                        comment)
+                        else:
+                            self.review_comments.setdefault(
+                                review.pk, []).append(comment)
+
+                    if review.public and comment.issue_opened:
+                        status_key = comment.issue_status_to_string(
+                            comment.issue_status)
+                        self.issue_counts[status_key] += 1
+                        self.issue_counts['total'] += 1
+                        self.issues.append(comment)
+
+    def get_entries(self):
+        """Return all entries for the review request page.
+
+        This will create and populate entries for the page (based on the
+        entry classes provided in :py:attr:`entry_classes`). The entries can
+        then be injected into the review request page.
+
+        Returns:
+            dict:
+            A dictionary of entries. This has ``initial`` and ``main`` keys,
+            corresponding to
+            :py:attr:`BaseReviewRequestPageEntry.ENTRY_POS_INITIAL` and
+            :py:attr:`BaseReviewRequestPageEntry.ENTRY_POS_MAIN` entries,
+            respectively.
+
+            The ``initial`` entries are sorted in registered entry order,
+            while the ``main`` entries are sorted in timestamp order.
+        """
+        initial_entries = []
+        main_entries = []
+
+        for entry_cls in self.entry_classes:
+            new_entries = entry_cls.build_entries(self)
+
+            if new_entries is not None:
+                if entry_cls.entry_pos == entry_cls.ENTRY_POS_INITIAL:
+                    initial_entries += new_entries
+                elif entry_cls.entry_pos == entry_cls.ENTRY_POS_MAIN:
+                    main_entries += new_entries
+
+        for entry in initial_entries:
+            entry.finalize()
+
+        for entry in main_entries:
+            entry.finalize()
+
+        # Sort all the main entries (such as reviews and change descriptions)
+        # by their timestamp. We don't sort the initial entries, which are
+        # displayed in registration order.
+        main_entries.sort(key=lambda item: item.timestamp)
+
+        return {
+            'initial': initial_entries,
+            'main': main_entries,
         }
-
-        for model, key, ordering in (
-            (Comment, 'diff_comments', ('comment__filediff',
-                                        'comment__first_line',
-                                        'comment__timestamp')),
-            (ScreenshotComment, 'screenshot_comments', None),
-            (FileAttachmentComment, 'file_attachment_comments', None),
-            (GeneralComment, 'general_comments', None)):
-            # Due to mistakes in how we initially made the schema, we have a
-            # ManyToManyField in between comments and reviews, instead of
-            # comments having a ForeignKey to the review. This makes it
-            # difficult to easily go from a comment to a review ID.
-            #
-            # The solution to this is to not query the comment objects, but
-            # rather the through table. This will let us grab the review and
-            # comment in one go, using select_related.
-            related_field = model.review.related.field
-            comment_field_name = related_field.m2m_reverse_field_name()
-            through = related_field.rel.through
-            q = through.objects.filter(review__in=review_ids).select_related()
-
-            if ordering:
-                q = q.order_by(*ordering)
-
-            objs = list(q)
-
-            # We do two passes. One to build a mapping, and one to actually
-            # process comments.
-            comment_map = {}
-
-            for obj in objs:
-                comment = getattr(obj, comment_field_name)
-                comment._type = key
-                comment._replies = []
-                comment_map[comment.pk] = comment
-
-            for obj in objs:
-                comment = getattr(obj, comment_field_name)
-
-                self.comments.append(comment)
-
-                # Short-circuit some object fetches for the comment by setting
-                # some internal state on them.
-                assert obj.review_id in self.reviews_by_id
-                review = self.reviews_by_id[obj.review_id]
-                comment.review_obj = review
-                comment._review = review
-                comment._review_request = self.review_request
-
-                # If the comment has an associated object (such as a file
-                # attachment) that we've already fetched, attach it to prevent
-                # future queries.
-                if isinstance(comment, FileAttachmentComment):
-                    attachment_id = comment.file_attachment_id
-                    f = self.file_attachments_by_id[attachment_id]
-                    comment.file_attachment = f
-                    f._comments.append(comment)
-
-                    diff_against_id = comment.diff_against_file_attachment_id
-
-                    if diff_against_id is not None:
-                        f = self.file_attachments_by_id[diff_against_id]
-                        comment.diff_against_file_attachment = f
-                elif isinstance(comment, ScreenshotComment):
-                    screenshot = self.screenshots_by_id[comment.screenshot_id]
-                    comment.screenshot = screenshot
-                    screenshot._comments.append(comment)
-
-                # We've hit legacy database cases where there were entries that
-                # weren't a reply, and were just orphaned. Ignore them.
-                if review.is_reply() and comment.is_reply():
-                    replied_comment = comment_map[comment.reply_to_id]
-                    replied_comment._replies.append(comment)
-
-                if review.public and comment.issue_opened:
-                    status_key = \
-                        comment.issue_status_to_string(comment.issue_status)
-                    self.issue_counts[status_key] += 1
-                    self.issue_counts['total'] += 1
-                    self.issues.append(comment)
 
     def _build_id_map(self, objects):
         """Return an ID map from a list of objects.
@@ -400,8 +576,72 @@ class BaseReviewRequestPageEntry(object):
             Whether the entry should be initially collapsed.
     """
 
+    #: An initial entry appearing above the review-like boxes.
+    ENTRY_POS_INITIAL = 1
+
+    #: An entry appearing in the main area along with review-like boxes.
+    ENTRY_POS_MAIN = 2
+
     #: The ID used for entries of this type.
-    entry_id = None
+    entry_type_id = None
+
+    #: The type of entry on the page.
+    #:
+    #: By default, this is a box type, which will appear along with other
+    #: reviews and change descriptions.
+    entry_pos = ENTRY_POS_MAIN
+
+    #: Whether the entry needs a review request draft to be queried.
+    #:
+    #: If set, :py:attr:`ReviewRequestPageData.draft` will be set (if a draft
+    #: exists).
+    needs_draft = False
+
+    #: Whether the entry needs reviews, replies, and comments to be queried.
+    #:
+    #: If set, :py:attr:`ReviewRequestPageData.reviews`,
+    #: :py:attr:`ReviewRequestPageData.diffsets`,
+    #: :py:attr:`ReviewRequestPageData.diffsets_by_id`,
+    #: :py:attr:`ReviewRequestPageData.active_file_attachments`,
+    #: :py:attr:`ReviewRequestPageData.all_file_attachments`,
+    #: :py:attr:`ReviewRequestPageData.file_attachments_by_id`,
+    #: :py:attr:`ReviewRequestPageData.active_file_screenshots`,
+    #: :py:attr:`ReviewRequestPageData.all_file_screenshots`, and
+    #: :py:attr:`ReviewRequestPageData.file_screenshots_by_id` will be set.
+    needs_reviews = False
+
+    #: Whether the entry needs change descriptions to be queried.
+    #:
+    #: If set, :py:attr:`ReviewRequestPageData.changedescs` will be queried.
+    needs_changedescs = False
+
+    #: Whether the entry needs status updates-related data to be queried.
+    #:
+    #: This will also fetch the reviews, but will not automatically fetch any
+    #: comments or other related data. For that, set :py:attr:`needs_reviews`.
+    #:
+    #: If set, :py:attr:`ReviewRequestPageData.reviews`,
+    #: If set, :py:attr:`ReviewRequestPageData.all_status_updates`,
+    #: If set, :py:attr:`ReviewRequestPageData.initial_status_updates`, and
+    #: If set, :py:attr:`ReviewRequestPageData.change_status_updates` will be
+    #: set.
+    needs_status_updates = False
+
+    #: Whether the entry needs file attachment data to be queried.
+    #:
+    #: If set, :py:attr:`ReviewRequestPageData.active_file_attachments`,
+    #: :py:attr:`ReviewRequestPageData.all_file_attachments`, and
+    #: :py:attr:`ReviewRequestPageData.file_attachments_by_id` will be set.
+    needs_file_attachments = False
+
+    #: Whether the entry needs screenshot data to be queried.
+    #:
+    #: Most entries should never need this, as screenshots are deprecated.
+    #:
+    #: If set, :py:attr:`ReviewRequestPageData.active_screenshots`,
+    #: :py:attr:`ReviewRequestPageData.all_screenshots`, and
+    #: :py:attr:`ReviewRequestPageData.screenshots_by_id` will be set.
+    needs_screenshots = False
 
     #: The template to render for the HTML.
     template_name = None
@@ -410,10 +650,33 @@ class BaseReviewRequestPageEntry(object):
     js_template_name = 'reviews/boxes/entry.js'
 
     #: The name of the JavaScript Backbone.Model class for this entry.
-    js_model_class = 'RB.ReviewRequestPageEntry'
+    js_model_class = 'RB.ReviewRequestPage.Entry'
 
     #: The name of the JavaScript Backbone.View class for this entry.
-    js_view_class = 'RB.CollapsableBoxView'
+    js_view_class = 'RB.ReviewRequestPage.EntryView'
+
+    #: Whether this entry has displayable content.
+    #:
+    #: This can be overridden as a property to calculate whether to render
+    #: the entry, or disabled altogether.
+    has_content = True
+
+    @classmethod
+    def build_entries(cls, data):
+        """Generate entry instances from review request page data.
+
+        Subclasses should override this to yield any entries needed, based on
+        the page data.
+
+        Args:
+            data (ReviewRequestPageData):
+                The data used for the entries on the page.
+
+        Yields:
+            BaseReviewRequestPageEntry:
+            An entry to include on the page.
+        """
+        pass
 
     def __init__(self, timestamp, collapsed, avatar_user=None):
         """Initialize the entry.
@@ -444,7 +707,7 @@ class BaseReviewRequestPageEntry(object):
             unicode:
             The ID used for the element.
         """
-        return self.entry_id
+        return self.entry_type_id
 
     def get_js_model_data(self):
         """Return data to pass to the JavaScript Model during instantiation.
@@ -543,6 +806,9 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin,
             A mapping from review ID to the matching status update.
     """
 
+    needs_reviews = True
+    needs_status_updates = True
+
     def __init__(self):
         """Initialize the entry."""
         self.status_updates = []
@@ -592,6 +858,37 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin,
                 'url': update.url,
                 'url_text': update.url_text,
             })
+
+    def populate_status_updates(self, status_updates, data):
+        """Populate the list of status updates for the entry.
+
+        This will add all the provided status updates and all comments from
+        their reviews. It will also uncollapse the entry if there are any
+        draft replies owned by the user.
+
+        Args:
+            status_updates (list of reviewboard.reviews.models.status_update.
+                            StatusUpdate):
+                The list of status updates to add.
+
+            data (ReviewRequestPageData):
+                The data used for the entries on the page.
+        """
+        for update in status_updates:
+            self.add_update(update)
+
+            review_id = update.review_id
+
+            if review_id:
+                # Uncollapse this box if there are any status updates with
+                # reviews containing draft replies.
+                if data.draft_reply_comments.get(review_id, []):
+                    self.collapsed = False
+
+                # Add all the comments for the review on this status
+                # update.
+                for comment in data.review_comments.get(review_id, []):
+                    self.add_comment(comment._type, comment)
 
     def add_comment(self, comment_type, comment):
         """Add a comment to the entry.
@@ -684,6 +981,33 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin,
         }
 
 
+class ReviewRequestEntry(BaseReviewRequestPageEntry):
+    """An entry for the main review request box.
+
+    This is used to control the data queried by
+    :py:class:`ReviewRequestPageData` for display in the main review request
+    box. It does not render onto the page.
+    """
+
+    entry_type_id = 'review-request'
+    entry_pos = BaseReviewRequestPageEntry.ENTRY_POS_INITIAL
+
+    js_template_name = None
+    js_model_class = None
+    js_view_class = None
+
+    needs_draft = True
+
+    # These are needed for the file attachments/screenshots area.
+    needs_file_attachments = True
+    needs_screenshots = True
+
+    # Reviews, comments, etc. are needed for the issue summary table.
+    needs_reviews = True
+
+    has_content = False
+
+
 class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
                                 BaseReviewRequestPageEntry):
     """An entry for any status updates posted against the initial state.
@@ -697,10 +1021,33 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
     by this class.
     """
 
-    entry_id = 'initial_status_updates'
+    entry_type_id = 'initial_status_updates'
+    entry_pos = BaseReviewRequestPageEntry.ENTRY_POS_INITIAL
+
     template_name = 'reviews/boxes/initial_status_updates.html'
-    js_model_class = 'RB.ReviewRequestPageStatusUpdatesEntry'
-    js_view_class = 'RB.InitialStatusUpdatesBoxView'
+    js_model_class = 'RB.ReviewRequestPage.StatusUpdatesEntry'
+    js_view_class = 'RB.ReviewRequestPage.InitialStatusUpdatesEntryView'
+
+    @classmethod
+    def build_entries(cls, data):
+        """Generate the entry instance from review request page data.
+
+        This will only generate a single instance.
+
+        Args:
+            data (ReviewRequestPageData):
+                The data used for the initial status update entry.
+
+        Yields:
+            InitialStatusUpdatesEntry:
+            The entry to include on the page.
+        """
+        entry = cls(review_request=data.review_request,
+                    collapsed=(len(data.changedescs) > 0),
+                    data=data)
+        entry.populate_status_updates(data.initial_status_updates, data)
+
+        yield entry
 
     def __init__(self, review_request, collapsed, data):
         """Initialize the entry.
@@ -749,10 +1096,59 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
             type, and the values are lists of comment objects.
     """
 
-    entry_id = 'review'
+    entry_type_id = 'review'
+
+    needs_reviews = True
+
     template_name = 'reviews/boxes/review.html'
-    js_model_class = 'RB.ReviewRequestPageReviewEntry'
-    js_view_class = 'RB.ReviewBoxView'
+    js_model_class = 'RB.ReviewRequestPage.ReviewEntry'
+    js_view_class = 'RB.ReviewRequestPage.ReviewEntryView'
+
+    @classmethod
+    def build_entries(cls, data):
+        """Generate review entry instances from review request page data.
+
+        Args:
+            data (ReviewRequestPageData):
+                The data used for the entries on the page.
+
+        Yields:
+            ReviewEntry:
+            A review entry to include on the page.
+        """
+        for review in data.reviews:
+            if (not review.public or
+                review.is_reply() or
+                (data.status_updates_enabled and
+                 hasattr(review, 'status_update'))):
+                continue
+
+            # Mark as collapsed if the review is older than the latest
+            # change, assuming there's no reply newer than last_visited.
+            latest_reply = data.latest_timestamps_by_review_id.get(review.pk)
+
+            collapsed = (
+                # Draft reviews with comments should never be collapsed.
+                not data.draft_reply_comments.get(review.pk, []) and
+
+                # Collapse if older than the most recent review request
+                # change and there's no recent activity.
+                review.timestamp < data.latest_changedesc_timestamp and
+                not (latest_reply and
+                     data.last_visited and
+                     data.last_visited < latest_reply)
+            )
+
+            entry = cls(request=data.request,
+                        review_request=data.review_request,
+                        review=review,
+                        collapsed=collapsed,
+                        data=data)
+
+            for comment in data.review_comments.get(review.pk, []):
+                entry.add_comment(comment._type, comment)
+
+            yield entry
 
     def __init__(self, request, review_request, review, collapsed, data):
         """Initialize the entry.
@@ -801,7 +1197,7 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
             unicode:
             The ID used for the element.
         """
-        return '%s%s' % (self.entry_id, self.review.pk)
+        return '%s%s' % (self.entry_type_id, self.review.pk)
 
     def add_comment(self, comment_type, comment):
         """Add a comment to this entry.
@@ -857,10 +1253,43 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
             The change description for this entry.
     """
 
-    entry_id = 'changedesc'
+    entry_type_id = 'changedesc'
+
+    needs_changedescs = True
+    needs_file_attachments = True
+    needs_screenshots = True
+
     template_name = 'reviews/boxes/change.html'
-    js_model_class = 'RB.ReviewRequestPageChangeEntry'
-    js_view_class = 'RB.ChangeBoxView'
+    js_model_class = 'RB.ReviewRequestPage.ChangeEntry'
+    js_view_class = 'RB.ReviewRequestPage.ChangeEntryView'
+
+    @classmethod
+    def build_entries(cls, data):
+        """Generate change entry instances from review request page data.
+
+        Args:
+            data (ReviewRequestPageData):
+                The data used for the entries on the page.
+
+        Yields:
+            ChangeEntry:
+            A change entry to include on the page.
+        """
+        for changedesc in data.changedescs:
+            # Mark as collapsed if the change is older than a newer change.
+            collapsed = \
+                changedesc.timestamp < data.latest_changedesc_timestamp
+
+            entry = cls(request=data.request,
+                        review_request=data.review_request,
+                        changedesc=changedesc,
+                        collapsed=collapsed,
+                        data=data)
+            entry.populate_status_updates(
+                data.change_status_updates.get(changedesc.pk, []),
+                data)
+
+            yield entry
 
     def __init__(self, request, review_request, changedesc, collapsed, data):
         """Initialize the entry.
@@ -946,4 +1375,59 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
             unicode:
             The ID used for the element.
         """
-        return '%s%s' % (self.entry_id, self.changedesc.pk)
+        return '%s%s' % (self.entry_type_id, self.changedesc.pk)
+
+
+class ReviewRequestPageEntryRegistry(OrderedRegistry):
+    """A registry for types of entries on the review request page."""
+
+    lookup_attrs = ['entry_type_id']
+    errors = {
+        ALREADY_REGISTERED: _(
+            'This review request page entry is already registered.'
+        ),
+        ATTRIBUTE_REGISTERED: _(
+            'A review request page entry with the entry_type_id '
+            '"%(attr_value)s" is already registered by another entry '
+            '(%(duplicate)s).'
+        ),
+        NOT_REGISTERED: _(
+            '"%(attr_value)s" is not a registered review request page entry '
+            'ID.'
+        ),
+    }
+
+    def get_entry(self, entry_type_id):
+        """Return an entry with the given type ID.
+
+        Args:
+            entry_type_id (unicode):
+                The ID of the entry type to return.
+
+        Returns:
+            type:
+            The registered page entry type matching the ID, or ``None`` if
+            it could not be found.
+        """
+        return self.get('entry_type_id', entry_type_id)
+
+    def get_defaults(self):
+        """Return the default review request page entry types for the registry.
+
+        This is used internally by the registry to populate the list of
+        built-in types of entries that should be used on the review request
+        page.
+
+        Returns:
+            list of BaseReviewRequestPageEntry:
+            The list of default entry types.
+        """
+        return [
+            ReviewRequestEntry,
+            InitialStatusUpdatesEntry,
+            ChangeEntry,
+            ReviewEntry,
+        ]
+
+
+entry_registry = ReviewRequestPageEntryRegistry()

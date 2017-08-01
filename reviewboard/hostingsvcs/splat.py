@@ -5,13 +5,11 @@ from __future__ import unicode_literals
 import logging
 
 from django import forms
-from django.utils.html import strip_tags
 from django.utils.translation import ugettext_lazy as _
 
 from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.service import HostingService
-from reviewboard.reviews.markdown_utils import render_markdown
 
 
 class SplatForm(HostingServiceForm):
@@ -55,6 +53,7 @@ class Splat(HostingService, BugTracker):
         result = {
             'summary': '',
             'description': '',
+            'description_text_format': '',
             'status': '',
         }
 
@@ -73,11 +72,18 @@ class Splat(HostingService, BugTracker):
         else:
             text = ticket['text']
 
-            if ticket['text_format'] == 'markdown':
-                text = render_markdown(text)
+            # Normalize the text format. For Splat, this is going to look
+            # a bit silly, but we don't want to make the assumption in code
+            # that we can just pass through the text format here.
+            text_format = {
+                'plain': 'plain',
+                'markdown': 'markdown',
+                'html': 'html',
+            }.get(ticket['text_format'], 'plain')
 
             result = {
-                'description': strip_tags(text),
+                'description': text,
+                'description_text_format': text_format,
                 'status': ticket['status'],
                 'summary': ticket['summary'],
             }

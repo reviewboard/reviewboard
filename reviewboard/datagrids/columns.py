@@ -664,9 +664,9 @@ class ShipItColumn(Column):
     def __init__(self, *args, **kwargs):
         """Initialize the column."""
         super(ShipItColumn, self).__init__(
-            image_class='rb-icon rb-icon-shipit',
-            image_alt=_('Ship It!'),
-            detailed_label=_('Ship It!'),
+            image_class='rb-icon rb-icon-datagrid-column-shipits-issues',
+            image_alt=_('Ship It!/Issue Counts'),
+            detailed_label=_('Ship It!/Issue Counts'),
             db_field='shipit_count',
             sortable=True,
             shrink=True,
@@ -676,15 +676,16 @@ class ShipItColumn(Column):
         """Return the rendered contents of the column."""
         if review_request.issue_open_count > 0:
             return ('<span class="issue-count">'
-                    ' <span class="issue-icon">!</span> %s'
+                    ' <div class="rb-icon rb-icon-datagrid-open-issues"'
+                    '      title="%s"></div> %s'
                     '</span>'
-                    % review_request.issue_open_count)
+                    % (_('Open issue count'), review_request.issue_open_count))
         elif review_request.shipit_count > 0:
-            return '<span class="shipit-count">' \
-                   ' <div class="rb-icon rb-icon-shipit-checkmark"' \
-                   '      title="%s"></div> %s' \
-                   '</span>' % \
-                (self.image_alt, review_request.shipit_count)
+            return ('<span class="shipit-count">'
+                    ' <div class="rb-icon rb-icon-datagrid-shipit"'
+                    '      title="%s"></div> %s'
+                    '</span>'
+                    % (_('Ship It! count'), review_request.shipit_count))
         else:
             return ''
 

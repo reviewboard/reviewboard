@@ -2,6 +2,8 @@
 
 from __future__ import unicode_literals
 
+from datetime import timedelta
+
 from django.contrib.auth.models import AnonymousUser
 from django.test.client import RequestFactory
 from django.utils import six
@@ -9,6 +11,7 @@ from djblets.testing.decorators import add_fixtures
 
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.detail import (ChangeEntry,
+                                        InitialStatusUpdatesEntry,
                                         ReviewEntry,
                                         ReviewRequestPageData,
                                         StatusUpdatesEntryMixin)
@@ -267,6 +270,198 @@ class StatusUpdatesEntryMixinTests(TestCase):
         self.assertEqual(entry.state_summary_class,
                          'status-update-state-pending')
 
+    @add_fixtures(['test_users'])
+    def test_populate_status_updates(self):
+        """Testing StatusUpdatesEntryMixin.populate_status_updates"""
+        review_request = self.create_review_request()
+        review = self.create_review(review_request, public=True)
+        comment = self.create_general_comment(review)
+
+        # This state is normally set in ReviewRequestPageData.
+        comment._type = 'general_comments'
+        comment.review_obj = review
+
+        status_updates = [
+            StatusUpdate(state=StatusUpdate.PENDING),
+            StatusUpdate(state=StatusUpdate.DONE_FAILURE,
+                         review=review)
+        ]
+
+        request = RequestFactory().get('/r/1/')
+        request.user = AnonymousUser()
+
+        data = ReviewRequestPageData(review_request=review_request,
+                                     request=request)
+        data.review_comments[review.pk] = [comment]
+
+        entry = StatusUpdatesEntryMixin()
+        entry.collapsed = True
+        entry.populate_status_updates(status_updates, data)
+
+        self.assertTrue(entry.collapsed)
+        self.assertEqual(entry.status_updates, status_updates)
+
+        status_update = entry.status_updates[0]
+        self.assertIsNone(status_update.review)
+        self.assertEqual(
+            status_update.comments,
+            {
+                'diff_comments': [],
+                'screenshot_comments': [],
+                'file_attachment_comments': [],
+                'general_comments': [],
+            })
+
+        status_update = entry.status_updates[1]
+        self.assertEqual(status_update.review, review)
+        self.assertEqual(
+            status_update.comments,
+            {
+                'diff_comments': [],
+                'screenshot_comments': [],
+                'file_attachment_comments': [],
+                'general_comments': [comment],
+            })
+
+    @add_fixtures(['test_users'])
+    def test_populate_status_updates_with_draft_replies(self):
+        """Testing StatusUpdatesEntryMixin.populate_status_updates with
+        draft replies
+        """
+        review_request = self.create_review_request()
+        review = self.create_review(review_request, public=True)
+        comment = self.create_general_comment(review)
+
+        reply = self.create_reply(review)
+        reply_comment = self.create_general_comment(reply, reply_to=comment)
+
+        # This state is normally set in ReviewRequestPageData.
+        comment._type = 'general_comments'
+        comment.review_obj = review
+
+        status_updates = [
+            StatusUpdate(state=StatusUpdate.PENDING),
+            StatusUpdate(state=StatusUpdate.DONE_FAILURE,
+                         review=review)
+        ]
+
+        request = RequestFactory().get('/r/1/')
+        request.user = AnonymousUser()
+
+        data = ReviewRequestPageData(review_request=review_request,
+                                     request=request)
+        data.review_comments[review.pk] = [comment]
+        data.draft_reply_comments[review.pk] = [reply_comment]
+
+        entry = StatusUpdatesEntryMixin()
+        entry.collapsed = True
+        entry.populate_status_updates(status_updates, data)
+
+        self.assertFalse(entry.collapsed)
+        self.assertEqual(entry.status_updates, status_updates)
+
+        status_update = entry.status_updates[0]
+        self.assertIsNone(status_update.review)
+        self.assertEqual(
+            status_update.comments,
+            {
+                'diff_comments': [],
+                'screenshot_comments': [],
+                'file_attachment_comments': [],
+                'general_comments': [],
+            })
+
+        status_update = entry.status_updates[1]
+        self.assertEqual(status_update.review, review)
+        self.assertEqual(
+            status_update.comments,
+            {
+                'diff_comments': [],
+                'screenshot_comments': [],
+                'file_attachment_comments': [],
+                'general_comments': [comment],
+            })
+
+
+class InitialStatusUpdatesEntryTests(TestCase):
+    """Unit tests for InitialStatusUpdatesEntry."""
+
+    fixtures = ['test_users']
+
+    def setUp(self):
+        super(InitialStatusUpdatesEntryTests, self).setUp()
+
+        self.request = RequestFactory().get('/r/1/')
+        self.request.user = AnonymousUser()
+
+        self.review_request = self.create_review_request()
+        self.review = self.create_review(self.review_request, public=True)
+        self.general_comment = self.create_general_comment(self.review,
+                                                           issue_opened=False)
+        self.status_update = self.create_status_update(self.review_request,
+                                                       review=self.review)
+
+        self.data = ReviewRequestPageData(review_request=self.review_request,
+                                          request=self.request)
+
+    def test_build_entries(self):
+        """Testing InitialStatusUpdatesEntry.build_entries"""
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entries = list(InitialStatusUpdatesEntry.build_entries(self.data))
+        self.assertEqual(len(entries), 1)
+
+        entry = entries[0]
+        self.assertFalse(entry.collapsed)
+        self.assertEqual(entry.status_updates, [self.status_update])
+        self.assertEqual(
+            entry.status_updates_by_review,
+            {
+                self.review.pk: self.status_update,
+            })
+        self.assertEqual(
+            entry.status_updates[0].comments,
+            {
+                'diff_comments': [],
+                'screenshot_comments': [],
+                'file_attachment_comments': [],
+                'general_comments': [self.general_comment],
+            })
+
+    def test_build_entries_with_changedesc(self):
+        """Testing InitialStatusUpdatesEntry.build_entries with
+        ChangeDescription following this entry
+        """
+        self.review_request.changedescs.create(public=True)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entries = list(InitialStatusUpdatesEntry.build_entries(self.data))
+        self.assertEqual(len(entries), 1)
+
+        entry = entries[0]
+        self.assertTrue(entry.collapsed)
+        self.assertEqual(entry.status_updates, [self.status_update])
+        self.assertEqual(
+            entry.status_updates_by_review,
+            {
+                self.review.pk: self.status_update,
+            })
+
+        status_update = entry.status_updates[0]
+        self.assertEqual(status_update.review, self.review)
+        self.assertIsNone(status_update.change_description)
+        self.assertEqual(
+            status_update.comments,
+            {
+                'diff_comments': [],
+                'screenshot_comments': [],
+                'file_attachment_comments': [],
+                'general_comments': [self.general_comment],
+            })
+
 
 class ReviewEntryTests(TestCase):
     """Unit tests for ReviewEntry."""
@@ -280,7 +475,9 @@ class ReviewEntryTests(TestCase):
         self.request.user = AnonymousUser()
 
         self.review_request = self.create_review_request()
-        self.review = self.create_review(self.review_request, id=123)
+        self.review = self.create_review(self.review_request,
+                                         id=123,
+                                         public=True)
         self.data = ReviewRequestPageData(review_request=self.review_request,
                                           request=self.request)
 
@@ -415,6 +612,67 @@ class ReviewEntryTests(TestCase):
         self.assertEqual(entry.issue_open_count, 1)
         self.assertFalse(entry.collapsed)
 
+    def test_build_entries(self):
+        """Testing ReviewEntry.build_entries"""
+        review1 = self.create_review(
+            self.review_request,
+            timestamp=self.review.timestamp - timedelta(days=2),
+            public=True)
+        review2 = self.review
+
+        comment = self.create_general_comment(review1)
+
+        # These shouldn't show up in the results.
+        self.create_review(
+            self.review_request,
+            timestamp=self.review.timestamp - timedelta(days=1),
+            public=False)
+        self.create_reply(review1)
+
+        status_update_review = self.create_review(self.review_request,
+                                                  public=True)
+        self.create_general_comment(status_update_review)
+        self.create_status_update(self.review_request,
+                                  review=status_update_review)
+
+        # Create a change description to test collapsing.
+        self.review_request.changedescs.create(
+            timestamp=review2.timestamp - timedelta(days=1),
+            public=True)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entries = list(ReviewEntry.build_entries(self.data))
+
+        self.assertEqual(len(entries), 2)
+
+        # These will actually be in database query order (newest to oldest),
+        # not the order shown on the page.
+        entry = entries[0]
+        self.assertEqual(entry.review, review2)
+        self.assertFalse(entry.collapsed)
+        self.assertEqual(
+            entry.comments,
+            {
+                'diff_comments': [],
+                'screenshot_comments': [],
+                'file_attachment_comments': [],
+                'general_comments': [],
+            })
+
+        entry = entries[1]
+        self.assertEqual(entry.review, review1)
+        self.assertTrue(entry.collapsed)
+        self.assertEqual(
+            entry.comments,
+            {
+                'diff_comments': [],
+                'screenshot_comments': [],
+                'file_attachment_comments': [],
+                'general_comments': [comment],
+            })
+
 
 class ChangeEntryTests(TestCase):
     """Unit tests for ChangeEntry."""
@@ -428,7 +686,8 @@ class ChangeEntryTests(TestCase):
         self.request.user = AnonymousUser()
 
         self.review_request = self.create_review_request()
-        self.changedesc = ChangeDescription.objects.create(id=123)
+        self.changedesc = ChangeDescription.objects.create(id=123,
+                                                           public=True)
         self.review_request.changedescs.add(self.changedesc)
         self.data = ReviewRequestPageData(review_request=self.review_request,
                                           request=self.request)
@@ -505,3 +764,47 @@ class ChangeEntryTests(TestCase):
                 (six.text_type(comment2.pk), six.text_type(filediff.pk)),
             ],
         })
+
+    def test_build_entries(self):
+        """Testing ChangeEntry.build_entries"""
+        changedesc1 = self.changedesc
+        changedesc2 = self.review_request.changedescs.create(
+            timestamp=changedesc1.timestamp + timedelta(days=1),
+            public=True)
+
+        review = self.create_review(self.review_request, public=True)
+        comment = self.create_general_comment(review)
+        status_update = self.create_status_update(
+            self.review_request,
+            review=review,
+            change_description=changedesc2)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entries = list(ChangeEntry.build_entries(self.data))
+
+        # These will actually be in database query order (newest to oldest),
+        # not the order shown on the page.
+        entry = entries[0]
+        self.assertEqual(entry.changedesc, changedesc2)
+        self.assertFalse(entry.collapsed)
+        self.assertEqual(entry.status_updates, [status_update])
+        self.assertEqual(
+            entry.status_updates_by_review,
+            {
+                review.pk: status_update,
+            })
+        self.assertEqual(
+            entry.status_updates[0].comments,
+            {
+                'diff_comments': [],
+                'screenshot_comments': [],
+                'file_attachment_comments': [],
+                'general_comments': [comment],
+            })
+
+        entry = entries[1]
+        self.assertEqual(entry.changedesc, changedesc1)
+        self.assertTrue(entry.collapsed)
+        self.assertEqual(entry.status_updates, [])

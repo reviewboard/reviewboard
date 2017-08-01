@@ -74,6 +74,10 @@ oauth_app_list_mimetype = _build_mimetype('oauth-apps')
 oauth_app_item_mimetype = _build_mimetype('oauth-app')
 
 
+oauth_token_list_mimetype = _build_mimetype('oauth-tokens')
+oauth_token_item_mimetype = _build_mimetype('oauth-token')
+
+
 original_file_mimetype = 'text/plain'
 patched_file_mimetype = 'text/plain'
 

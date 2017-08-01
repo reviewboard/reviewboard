@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import copy
+import logging
 
 from django.utils import six
 from django.utils.encoding import force_unicode
@@ -15,6 +16,8 @@ from djblets.webapi.errors import PERMISSION_DENIED
 from djblets.webapi.resources.base import \
     WebAPIResource as DjbletsWebAPIResource
 from djblets.webapi.resources.mixins.api_tokens import ResourceAPITokenMixin
+from djblets.webapi.resources.mixins.oauth2_tokens import (
+    ResourceOAuth2TokenMixin)
 from djblets.webapi.resources.mixins.queries import APIQueryUtilsMixin
 
 from reviewboard.registries.registry import Registry
@@ -83,8 +86,8 @@ class CallbackRegistry(Registry):
         super(CallbackRegistry, self).register(item)
 
 
-class WebAPIResource(ResourceAPITokenMixin, APIQueryUtilsMixin,
-                     DjbletsWebAPIResource):
+class WebAPIResource(ResourceAPITokenMixin, ResourceOAuth2TokenMixin,
+                     APIQueryUtilsMixin, DjbletsWebAPIResource):
     """A specialization of the Djblets WebAPIResource for Review Board."""
 
     autogenerate_etags = True
@@ -237,6 +240,10 @@ class WebAPIResource(ResourceAPITokenMixin, APIQueryUtilsMixin,
         """
         for feature in self.required_features:
             if not feature.is_enabled(request=request):
+                logging.warning('Disallowing %s for API resource %r because '
+                                'feature %s is not enabled',
+                                method, self, feature.feature_id,
+                                request=request)
                 return PERMISSION_DENIED
 
         return super(WebAPIResource, self).call_method_view(

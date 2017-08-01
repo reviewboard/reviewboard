@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import logging
+import re
 import time
 
 from django.conf import settings
@@ -18,7 +19,7 @@ from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import six, timezone
 from django.utils.decorators import method_decorator
-from django.utils.html import escape, format_html_join
+from django.utils.html import escape, format_html, strip_tags
 from django.utils.http import http_date
 from django.utils.safestring import mark_safe
 from django.utils.timezone import utc
@@ -69,7 +70,8 @@ from reviewboard.reviews.detail import (ChangeEntry,
                                         ReviewEntry,
                                         ReviewRequestPageData)
 from reviewboard.reviews.features import status_updates_feature
-from reviewboard.reviews.markdown_utils import is_rich_text_default_for_user
+from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
+                                                render_markdown)
 from reviewboard.reviews.models import (Comment,
                                         Review,
                                         ReviewRequest,
@@ -482,13 +484,10 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
         """
         super(ReviewRequestDetailView, self).__init__(**kwargs)
 
-        self.status_updates_enabled = None
         self.data = None
         self.visited = None
-        self.last_visited = None
         self.blocks = None
         self.last_activity_time = None
-        self.initial_status_entry = None
 
     def get_etag_data(self, request, *args, **kwargs):
         """Return an ETag for the view.
@@ -514,21 +513,19 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
         review_request = self.review_request
         local_site = review_request.local_site
 
-        # Determine which features are enabled.
-        self.status_updates_enabled = status_updates_feature.is_enabled(
-            local_site=local_site)
+        # Track the visit to this review request, so the dashboard can
+        # reflect whether there are new updates.
+        self.visited, last_visited = self.track_review_request_visit()
 
         # Begin building data for the contents of the page. This will include
         # the reviews, change descriptions, and other content shown on the
         # page.
-        data = ReviewRequestPageData(review_request, request)
+        data = ReviewRequestPageData(review_request=review_request,
+                                     request=request,
+                                     last_visited=last_visited)
         self.data = data
 
         data.query_data_pre_etag()
-
-        # Track the visit to this review request, so the dashboard can
-        # reflect whether there are new updates.
-        self.visited, self.last_visited = self.track_review_request_visit()
 
         self.blocks = review_request.get_blocks()
 
@@ -539,8 +536,8 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
             review_request.get_last_activity(data.diffsets, data.reviews)
         etag_timestamp = self.last_activity_time
 
-        if self.status_updates_enabled:
-            for status_update in data.status_updates:
+        if data.status_updates_enabled:
+            for status_update in data.all_status_updates:
                 if status_update.timestamp > etag_timestamp:
                     etag_timestamp = status_update.timestamp
 
@@ -634,115 +631,6 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
 
         return False
 
-    def get_entries(self):
-        """Return the entries to show on the page.
-
-        Each entry represents a review, change description, or status update
-        to display.
-
-        Returns:
-            list of reviewboard.reviews.detail.BaseReviewRequestPageEntry:
-            The list of entries to show on the page.
-        """
-        # Convert some frequently-accessed state to local variables for faster
-        # access.
-        status_updates_enabled = self.status_updates_enabled
-        review_request = self.review_request
-        last_visited = self.last_visited
-        request = self.request
-        data = self.data
-
-        entries = []
-        reviews_entry_map = {}
-        changedescs_entry_map = {}
-
-        data.query_data_post_etag()
-
-        # Now that we have the list of public reviews and all that metadata,
-        # being processing them and adding entries for display in the page.
-        for review in data.reviews:
-            if (review.public and
-                not review.is_reply() and
-                not (status_updates_enabled and
-                     hasattr(review, 'status_update'))):
-                # Mark as collapsed if the review is older than the latest
-                # change, assuming there's no reply newer than last_visited.
-                latest_reply = \
-                    data.latest_timestamps_by_review_id.get(review.pk)
-
-                collapsed = (
-                    review.timestamp < data.latest_changedesc_timestamp and
-                    not (latest_reply and
-                         last_visited and
-                         last_visited < latest_reply))
-
-                entry = ReviewEntry(request, review_request, review, collapsed,
-                                    data)
-                reviews_entry_map[review.pk] = entry
-                entries.append(entry)
-
-        # Add entries for the change descriptions.
-        for changedesc in data.changedescs:
-            # Mark as collapsed if the change is older than a newer change.
-            collapsed = (changedesc.timestamp <
-                         data.latest_changedesc_timestamp)
-
-            entry = ChangeEntry(request, review_request, changedesc, collapsed,
-                                data)
-            changedescs_entry_map[changedesc.id] = entry
-            entries.append(entry)
-
-        if status_updates_enabled:
-            self.initial_status_entry = InitialStatusUpdatesEntry(
-                review_request, collapsed=(len(data.changedescs) > 0),
-                data=data)
-
-            for update in data.status_updates:
-                if update.change_description_id is not None:
-                    entry = changedescs_entry_map[update.change_description_id]
-                else:
-                    entry = self.initial_status_entry
-
-                entry.add_update(update)
-
-                if update.review_id is not None:
-                    reviews_entry_map[update.review_id] = entry
-
-        # Now that we have entries for all the reviews, go through all the
-        # comments and add them to those entries.
-        for comment in data.comments:
-            review = comment.review_obj
-
-            if review.is_reply():
-                # This is a reply to a comment.
-                base_reply_to_id = comment.review_obj.base_reply_to_id
-
-                assert review.pk not in reviews_entry_map
-                assert base_reply_to_id in reviews_entry_map
-
-                # Make sure that any review boxes containing draft replies are
-                # always expanded.
-                if comment.is_reply() and not review.public:
-                    reviews_entry_map[base_reply_to_id].collapsed = False
-            elif review.public:
-                # This is a comment on a public review.
-                assert review.id in reviews_entry_map
-
-                entry = reviews_entry_map[review.id]
-                entry.add_comment(comment._type, comment)
-
-        if status_updates_enabled:
-            self.initial_status_entry.finalize()
-
-            for entry in entries:
-                entry.finalize()
-
-        # Finally, sort all the entries (reviews and change descriptions) by
-        # their timestamp.
-        entries.sort(key=lambda item: item.timestamp)
-
-        return entries
-
     def get_context_data(self, **kwargs):
         """Return data for the template.
 
@@ -764,7 +652,9 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
         request = self.request
         data = self.data
 
-        entries = self.get_entries()
+        data.query_data_post_etag()
+        entries = data.get_entries()
+
         review = review_request.get_pending_review(request.user)
         close_description, close_description_rich_text = \
             review_request.get_close_description()
@@ -782,7 +672,6 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
             'review_request_details': data.review_request_details,
             'review_request_visit': self.visited,
             'send_email': siteconfig.get('mail_send_review_mail'),
-            'initial_status_entry': self.initial_status_entry,
             'entries': entries,
             'last_activity_time': self.last_activity_time,
             'review': review,
@@ -1846,6 +1735,14 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
 
     template_name = 'reviews/bug_infobox.html'
 
+    HTML_ENTITY_RE = re.compile(r'(&[a-z]+;)')
+    HTML_ENTITY_MAP = {
+        '&quot;': '"',
+        '&lt;': '<',
+        '&gt;': '>',
+        '&amp;': '&',
+    }
+
     def get(self, request, bug_id, **kwargs):
         """Handle HTTP GET requests for this view.
 
@@ -1909,22 +1806,71 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
             django.template.RequestContext:
             The resulting context data for the template.
         """
-        # Don't do anything for single newlines, but treat two newlines as a
-        # paragraph break.
-        escaped_description = (
-            escape(self.bug_info['description'])
-            .replace('\n\n', '<br/><br/>')
-        )
+        description_text_format = self.bug_info.get('description_text_format',
+                                                    'plain')
+        description = self.normalize_text(self.bug_info['description'],
+                                          description_text_format)
+
+        bug_url = local_site_reverse(
+            'bug_url',
+            args=[self.review_request.display_id, self.bug_id])
 
         context_data = super(BugInfoboxView, self).get_context_data(**kwargs)
         context_data.update({
             'bug_id': self.bug_id,
-            'bug_description': mark_safe(escaped_description),
+            'bug_url': bug_url,
+            'bug_description': description,
+            'bug_description_rich_text': description_text_format == 'markdown',
             'bug_status': self.bug_info['status'],
             'bug_summary': self.bug_info['summary'],
         })
 
         return context_data
+
+    def normalize_text(self, text, text_format):
+        """Normalize the text for display.
+
+        Based on the text format, this will sanitize and normalize the text
+        so it's suitable for rendering to HTML.
+
+        HTML text will have tags stripped away and certain common entities
+        replaced.
+
+        Markdown text will be rendered using our default Markdown parser
+        rules.
+
+        Plain text (or any unknown text format) will simply be escaped and
+        wrapped, with paragraphs left intact.
+
+        Args:
+            text (unicode):
+                The text to normalize for display.
+
+            text_format (unicode):
+                The text format. This should be one of ``html``, ``markdown``,
+                or ``plain``.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The resulting text, safe for rendering in HTML.
+        """
+        if text_format == 'html':
+            # We want to strip the tags away, but keep certain common entities.
+            text = (
+                escape(self.HTML_ENTITY_RE.sub(
+                    lambda m: (self.HTML_ENTITY_MAP.get(m.group(0)) or
+                               m.group(0)),
+                    strip_tags(text)))
+                .replace('\n\n', '<br><br>'))
+        elif text_format == 'markdown':
+            # This might not know every bit of Markdown that's thrown at us,
+            # but we'll do the best we can.
+            text = render_markdown(text)
+        else:
+            # Should be plain text, but don't trust it.
+            text = escape(text).replace('\n\n', '<br><br>')
+
+        return mark_safe(text)
 
 
 class ReviewRequestInfoboxView(ReviewRequestViewMixin, TemplateView):
@@ -1961,45 +1907,64 @@ class ReviewRequestInfoboxView(ReviewRequestViewMixin, TemplateView):
         """
         review_request = self.review_request
         submitter = review_request.submitter
+        draft = review_request.get_draft(self.request.user)
 
-        # Below code is heavily referenced from columns.py. We may want to
-        # consider whether it's worth consolidating logic, or if we may want
-        # to keep these separate.
-        labels = []
+        # We only want to show one label. If there's a draft, then that's
+        # the most important information, so we'll only show that. Otherwise,
+        # we'll show the submitted/discarded state.
+        label = None
 
-        if (self.request.user.is_authenticated() and
-            submitter == self.request.user and
-            not review_request.public and
-            review_request.status == ReviewRequest.PENDING_REVIEW):
-            labels.append(('label-draft', _('Draft')))
-
-        if review_request.status == ReviewRequest.SUBMITTED:
-            labels.append(('label-submitted', _('Submitted')))
+        if draft:
+            label = ('review-request-infobox-label-draft', _('Draft'))
+        elif review_request.status == ReviewRequest.SUBMITTED:
+            label = ('review-request-infobox-label-submitted', _('Submitted'))
         elif review_request.status == ReviewRequest.DISCARDED:
-            labels.append(('label-discarded', _('Discarded')))
+            label = ('review-request-infobox-label-discarded', _('Discarded'))
 
-        display_data = format_html_join('', '<label class="{0}">{1}</label>',
-                                        labels)
+        if label:
+            label = format_html('<label class="{0}">{1}</label>', *label)
 
-        issue_total_count = (review_request.issue_open_count +
-                             review_request.issue_resolved_count +
-                             review_request.issue_dropped_count)
-
-        # Fetch recent reviews to show in the infobox.
-        latest_reviews = list(
+        # Fetch information on the reviews for this review request.
+        review_count = (
             review_request.reviews
             .filter(public=True, base_reply_to__isnull=True)
-            .order_by('-timestamp')[:self.MAX_REVIEWS]
+            .count()
         )
+
+        # Fetch information on the draft for this review request.
+        diffset = None
+
+        if draft and draft.diffset_id:
+            diffset = draft.diffset
+
+        if not diffset and review_request.diffset_history_id:
+            try:
+                diffset = (
+                    DiffSet.objects
+                    .filter(history__pk=review_request.diffset_history_id)
+                    .latest()
+                )
+            except DiffSet.DoesNotExist:
+                pass
+
+        if diffset:
+            diff_url = '%s#index_header' % local_site_reverse(
+                'view-diff-revision',
+                args=[review_request.display_id, diffset.revision],
+                local_site=review_request.local_site)
+        else:
+            diff_url = None
 
         return {
             'review_request': review_request,
-            'review_request_id': review_request.display_id,
-            'review_request_labels': display_data,
-            'review_request_issue_total_count': issue_total_count,
-            'review_request_latest_reviews': latest_reviews,
-            'show_profile': submitter.is_profile_visible(self.request.user),
-            'submitter': submitter,
+            'review_request_label': label or '',
+            'review_request_details': draft or review_request,
+            'issue_total_count': (review_request.issue_open_count +
+                                  review_request.issue_resolved_count +
+                                  review_request.issue_dropped_count),
+            'review_count': review_count,
+            'diffset': diffset,
+            'diff_url': diff_url,
         }
 
 

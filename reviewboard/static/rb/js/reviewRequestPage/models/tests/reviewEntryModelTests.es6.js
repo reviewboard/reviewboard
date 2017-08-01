@@ -1,5 +1,4 @@
-suite('rb/reviewRequestPage/models/ReviewRequestPageStatusUpdatesEntry',
-      function() {
+suite('rb/reviewRequestPage/models/ReviewEntry', function() {
     it('parse', function() {
         const diffCommentsData = [
             ['1', '100'],
@@ -9,17 +8,15 @@ suite('rb/reviewRequestPage/models/ReviewRequestPageStatusUpdatesEntry',
             reviewRequest: new RB.ReviewRequest(),
         });
 
-        const entry = new RB.ReviewRequestPageStatusUpdatesEntry({
+        const entry = new RB.ReviewRequestPage.ReviewEntry({
             diffCommentsData: diffCommentsData,
-            reviewsData: [
-                {
-                    id: 123,
-                    bodyTop: 'My body top',
-                    bodyBottom: 'My body bottom',
-                    'public': true,
-                    shipIt: false,
-                },
-            ],
+            reviewData: {
+                id: 123,
+                bodyTop: 'My body top',
+                bodyBottom: 'My body bottom',
+                'public': true,
+                shipIt: false,
+            },
             reviewRequestEditor: reviewRequestEditor,
             ignoredAttr: 'ignored',
         }, {
@@ -30,10 +27,8 @@ suite('rb/reviewRequestPage/models/ReviewRequestPageStatusUpdatesEntry',
         expect(entry.get('reviewRequestEditor')).toBe(reviewRequestEditor);
         expect(entry.get('ignoredAttr')).toBe(undefined);
 
-        const reviews = entry.get('reviews');
-        expect(reviews.length).toBe(1);
-
-        const review = reviews[0];
+        const review = entry.get('review');
+        expect(review).toBeTruthy();
         expect(review.get('id')).toBe(123);
         expect(review.get('bodyTop')).toBe('My body top');
         expect(review.get('bodyBottom')).toBe('My body bottom');

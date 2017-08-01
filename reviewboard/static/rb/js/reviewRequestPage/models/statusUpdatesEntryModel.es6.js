@@ -4,8 +4,7 @@
  * This stores common state needed for an entry containing status updates
  * made on a review request.
  *
- * See :js:class:`RB.ReviewRequestPageStatusUpdatesEntry` for additional model
- * attributes.
+ * See :js:class:`RB.ReviewRequestPage.Entry` for additional model attributes.
  *
  * Model Attributes:
  *     diffCommentsData (Array):
@@ -18,11 +17,11 @@
  *         An array of objects representing attributes for reviews for the
  *         status updates.
  */
-RB.ReviewRequestPageStatusUpdatesEntry = RB.ReviewRequestPageEntry.extend({
+RB.ReviewRequestPage.StatusUpdatesEntry = RB.ReviewRequestPage.Entry.extend({
     defaults: _.defaults({
         diffCommentsData: [],
         reviews: [],
-    }, RB.ReviewRequestPageEntry.prototype.defaults),
+    }, RB.ReviewRequestPage.Entry.prototype.defaults),
 
     /**
      * Parse attributes for the model.
@@ -47,7 +46,7 @@ RB.ReviewRequestPageStatusUpdatesEntry = RB.ReviewRequestPageEntry.extend({
             }));
 
         return _.extend(
-            RB.ReviewRequestPageEntry.prototype.parse.call(this, attrs),
+            RB.ReviewRequestPage.Entry.prototype.parse.call(this, attrs),
             {
                 diffCommentsData: attrs.diffCommentsData,
                 reviews: reviews,

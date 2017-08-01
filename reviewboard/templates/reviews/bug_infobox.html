@@ -1,7 +1,17 @@
+{% load reviewtags %}
+
 <div class="infobox-content">
  <div class="infobox-text">
-  <h2 class="bug_header">{{bug_id}}: {{bug_summary}}</h2>
-  <p class="bug_status">Status: {{bug_status}}</p>
-  <p class="bug_description">{{bug_description}}</p>
+  <div class="bug-infobox-id infobox-header-text">
+   <a href="{{bug_url}}"><span class="fa fa-ticket"></span> {{bug_id}}</a>
+  </div>
+  <h2><a href="{{bug_url}}">{{bug_summary}}</a></h2>
+  <div class="infobox-item">
+   <span class="fa fa-tag"></span>
+   {{bug_status}}
+  </div>
+  <div class="infobox-text-section infobox-scrollable-section">
+   <pre class="infobox-scrollable-section-content {% rich_text_classname bug_description_rich_text %}">{{bug_description}}</pre>
+  </div>
  </div>
 </div>

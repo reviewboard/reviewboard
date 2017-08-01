@@ -22,8 +22,7 @@ const BaseCommentView = Backbone.View.extend({
             <a href="#" role="button" class="delete-comment"
                aria-label="<%- deleteCommentText %>"
                title="<%- deleteCommentText %>"
-               ><span class="fa fa-trash-o delete-comment"
-                      aria-hidden="true"></span></a>
+               ><span class="fa fa-trash-o" aria-hidden="true"></span></a>
            </label>
            <pre id="<%= id %>" class="reviewtext rich-text"
                 data-rich-text="true"><%- text %></pre>

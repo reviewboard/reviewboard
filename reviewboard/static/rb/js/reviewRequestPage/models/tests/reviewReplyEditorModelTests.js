@@ -1,4 +1,4 @@
-suite('rb/models/ReviewReplyEditor', function() {
+suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
     var reviewReply,
         review,
         editor;
@@ -32,7 +32,7 @@ suite('rb/models/ReviewReplyEditor', function() {
     describe('Event handling', function() {
         describe('reviewReply changes', function() {
             beforeEach(function() {
-                editor = new RB.ReviewReplyEditor({
+                editor = new RB.ReviewRequestPage.ReviewReplyEditor({
                     contextType: 'body_top',
                     review: review,
                     reviewReply: reviewReply,
@@ -64,7 +64,7 @@ suite('rb/models/ReviewReplyEditor', function() {
     describe('Methods', function() {
         describe('save', function() {
             function testBodySave(options) {
-                editor = new RB.ReviewReplyEditor({
+                editor = new RB.ReviewRequestPage.ReviewReplyEditor({
                     contextType: options.contextType,
                     review: review,
                     reviewReply: reviewReply,
@@ -96,7 +96,7 @@ suite('rb/models/ReviewReplyEditor', function() {
             function testCommentSave(options) {
                 var replyObject;
 
-                editor = new RB.ReviewReplyEditor({
+                editor = new RB.ReviewRequestPage.ReviewReplyEditor({
                     contextType: options.contextType,
                     hasDraft: false,
                     review: review,
@@ -134,7 +134,7 @@ suite('rb/models/ReviewReplyEditor', function() {
             it('With existing reply object', function() {
                 var replyObject = new RB.DiffCommentReply();
 
-                editor = new RB.ReviewReplyEditor({
+                editor = new RB.ReviewRequestPage.ReviewReplyEditor({
                     contextType: 'diff_comments',
                     hasDraft: false,
                     replyObject: replyObject,
@@ -169,7 +169,7 @@ suite('rb/models/ReviewReplyEditor', function() {
                     text: 'Orig Text'
                 });
 
-                editor = new RB.ReviewReplyEditor({
+                editor = new RB.ReviewRequestPage.ReviewReplyEditor({
                     contextType: 'diff_comments',
                     review: review,
                     reviewReply: reviewReply
@@ -316,7 +316,7 @@ suite('rb/models/ReviewReplyEditor', function() {
             beforeEach(function() {
                 replyObject = new RB.DiffCommentReply();
 
-                editor = new RB.ReviewReplyEditor({
+                editor = new RB.ReviewRequestPage.ReviewReplyEditor({
                     contextType: 'diff_comments',
                     hasDraft: true,
                     replyObject: replyObject,

@@ -1,4 +1,4 @@
-suite('rb/pages/views/ReviewRequestPageView', () => {
+suite('rb/reviewRequestPage/views/PageView', () => {
     let page;
     let box1;
     let box2;
@@ -42,7 +42,7 @@ suite('rb/pages/views/ReviewRequestPageView', () => {
             .appendTo($testsScratch);
 
         RB.DnDUploader.instance = null;
-        page = new RB.ReviewRequestPageView({
+        page = new RB.ReviewRequestPage.PageView({
             el: $el,
             reviewRequestData: {
             },
@@ -56,8 +56,8 @@ suite('rb/pages/views/ReviewRequestPageView', () => {
         // Stub this out.
         spyOn(page.reviewRequest, '_checkForUpdates');
 
-        page.addBox(new RB.ReviewBoxView({
-            model: new RB.ReviewRequestPageReviewEntry({
+        page.addBox(new RB.ReviewRequestPage.ReviewEntryView({
+            model: new RB.ReviewRequestPage.ReviewEntry({
                 review: page.reviewRequest.createReview(123, {
                     shipIt: true,
                     public: true,
@@ -69,8 +69,8 @@ suite('rb/pages/views/ReviewRequestPageView', () => {
             el: $el.find('#review123'),
         }));
 
-        page.addBox(new RB.ReviewBoxView({
-            model: new RB.ReviewRequestPageReviewEntry({
+        page.addBox(new RB.ReviewRequestPage.ReviewEntryView({
+            model: new RB.ReviewRequestPage.ReviewEntry({
                 review: page.reviewRequest.createReview(124, {
                     shipIt: false,
                     public: true,
@@ -120,7 +120,8 @@ suite('rb/pages/views/ReviewRequestPageView', () => {
     describe('Methods', () => {
         describe('openCommentEditor', () => {
             beforeEach(() => {
-                spyOn(RB.ReviewReplyEditorView.prototype, 'openCommentEditor');
+                spyOn(RB.ReviewRequestPage.ReviewReplyEditorView.prototype,
+                      'openCommentEditor');
                 spyOn(box1, 'getReviewReplyEditorView').and.callThrough();
                 spyOn(box2, 'getReviewReplyEditorView').and.callThrough();
             });
@@ -129,8 +130,8 @@ suite('rb/pages/views/ReviewRequestPageView', () => {
                 page.openCommentEditor('body_top');
 
                 expect(box1.getReviewReplyEditorView).toHaveBeenCalled();
-                expect(RB.ReviewReplyEditorView.prototype.openCommentEditor)
-                    .toHaveBeenCalled();
+                expect(RB.ReviewRequestPage.ReviewReplyEditorView
+                       .prototype.openCommentEditor).toHaveBeenCalled();
 
                 /* We should have matched the first one. */
                 expect(box2.getReviewReplyEditorView).not.toHaveBeenCalled();
@@ -140,8 +141,8 @@ suite('rb/pages/views/ReviewRequestPageView', () => {
                 page.openCommentEditor('body_bottom');
 
                 expect(box1.getReviewReplyEditorView).toHaveBeenCalled();
-                expect(RB.ReviewReplyEditorView.prototype.openCommentEditor)
-                    .toHaveBeenCalled();
+                expect(RB.ReviewRequestPage.ReviewReplyEditorView
+                       .prototype.openCommentEditor).toHaveBeenCalled();
 
                 /* We should have matched the first one. */
                 expect(box2.getReviewReplyEditorView).not.toHaveBeenCalled();
@@ -151,8 +152,8 @@ suite('rb/pages/views/ReviewRequestPageView', () => {
                 page.openCommentEditor('diff_comments', 123);
 
                 expect(box1.getReviewReplyEditorView).toHaveBeenCalled();
-                expect(RB.ReviewReplyEditorView.prototype.openCommentEditor)
-                    .toHaveBeenCalled();
+                expect(RB.ReviewRequestPage.ReviewReplyEditorView
+                       .prototype.openCommentEditor).toHaveBeenCalled();
 
                 /* We should have matched the first one. */
                 expect(box2.getReviewReplyEditorView).not.toHaveBeenCalled();
