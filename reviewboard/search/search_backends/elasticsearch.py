@@ -2,6 +2,8 @@
 
 from __future__ import unicode_literals
 
+from importlib import import_module
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext, ugettext_lazy as _
@@ -49,7 +51,7 @@ class ElasticsearchBackend(SearchBackend):
                 Raised if the ``elasticsearch`` module is not installed.
         """
         try:
-            import elasticsearch  # noqa
+            import_module('elasticsearch')
         except ImportError:
             raise ValidationError(ugettext(
                 'The "elasticsearch" module is required to use the '
