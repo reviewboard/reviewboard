@@ -98,5 +98,3 @@ $(document).ready(function() {
 
     $('.gravatar').retinaGravatar();
 });
-
-// vim: set et:sw=4:
