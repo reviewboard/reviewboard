@@ -37,8 +37,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         var revisionInfo = this.model.get('revision'),
             curRevision = revisionInfo.get('revision'),
             curInterdiffRevision = revisionInfo.get('interdiffRevision'),
-            url = document.location.toString(),
-            hash = document.location.hash || '',
+            hash = RB.getLocationHash(),
             search = document.location.search || '',
             revisionRange;
 
@@ -54,7 +53,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this.listenTo(this.model.get('files'), 'update', this._setFiles);
 
         /* Check to see if there's an anchor we need to scroll to. */
-        this._startAtAnchorName = (url.match('#') ? url.split('#')[1] : null);
+        this._startAtAnchorName = hash || null;
 
         this.router = new Backbone.Router({
             routes: {
@@ -122,7 +121,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             revisionRange += '-' + curInterdiffRevision;
         }
 
-        this.router.navigate(revisionRange + '/' + search + hash, {
+        this.router.navigate(revisionRange + '/' + search + '#' + hash, {
             replace: true,
             trigger: false
         });

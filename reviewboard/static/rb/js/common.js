@@ -430,5 +430,3 @@ $(document).ready(function() {
 
     registerToggleStar();
 });
-
-// vim: set et:sw=4:
