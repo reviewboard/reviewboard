@@ -5,7 +5,7 @@
 Review Board 2.5.14 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: August 1, 2017
 
 
 Security Updates
