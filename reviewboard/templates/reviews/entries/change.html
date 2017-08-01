@@ -1,4 +1,4 @@
-{% extends "reviews/base_entry.html" %}
+{% extends "reviews/entries/base.html" %}
 {% load i18n reviewtags %}
 
 
@@ -71,7 +71,7 @@
  </section>
 
 {%    for update in entry.status_updates %}
-{%     include "reviews/status_update_review_section.html" %}
+{%     include "reviews/entries/_status_update_review_section.html" %}
 {%    endfor %}
 </div>
 {%   endif %}
