@@ -590,6 +590,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
      */
     _onMouseUp: function(e) {
         var node = e.target,
+            anchor,
             $tbody;
 
         /*
@@ -602,7 +603,11 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             ($tbody.hasClass('delete') ||
              $tbody.hasClass('insert') ||
              $tbody.hasClass('replace'))) {
-            this.trigger('chunkClicked', $tbody[0].querySelector('a').name);
+            anchor = $tbody[0].querySelector('a');
+
+            if (anchor) {
+                this.trigger('chunkClicked', anchor.name);
+            }
         }
     },
 

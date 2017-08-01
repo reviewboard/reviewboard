@@ -83,7 +83,6 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         });
 
         /*
-        /*
          * Begin managing the URL history for the page, so that we can
          * switch revisions and handle pagination while keeping the history
          * clean and the URLs representative of the current state.
@@ -246,7 +245,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
     /* Template for code line link anchor */
     anchorTemplate: _.template(
-    '<a name="<%- anchorName %>" class="highlight-anchor"></a>'),
+        '<a name="<%- anchorName %>" class="highlight-anchor"></a>'),
 
     /*
      * Set the displayed files.
@@ -502,7 +501,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * If no anchor is selected, we'll try to select the first one.
      */
     _updateAnchors: function($table) {
-        this._$anchors = this._$anchors.add($table.find('tbody th a[name]'));
+        this._$anchors = this._$anchors.add($table.find('th a[name]'));
 
         /* Skip over the change index to the first item. */
         if (this._selectedAnchorIndex === -1 && this._$anchors.length > 0) {

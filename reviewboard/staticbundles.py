@@ -57,6 +57,7 @@ PIPELINE_JS = dict({
             'rb/js/newReviewRequest/views/tests/postCommitViewTests.js',
             'rb/js/newReviewRequest/views/tests/repositorySelectionViewTests.js',
             'rb/js/pages/models/tests/pageManagerModelTests.js',
+            'rb/js/pages/views/tests/diffViewerPageViewTests.js',
             'rb/js/pages/views/tests/reviewablePageViewTests.js',
             'rb/js/resources/collections/tests/repositoryBranchesCollectionTests.js',
             'rb/js/resources/collections/tests/repositoryCommitsCollectionTests.js',
