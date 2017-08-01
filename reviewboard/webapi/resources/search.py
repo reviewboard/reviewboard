@@ -23,7 +23,22 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
 
     MIN_SUMMARY_LEN = 4
 
-    def has_access_permissions(self, request, *args, **kwargs):
+    def has_access_permissions(self, *args, **kwargs):
+        """Return whether or not users have access to this resource.
+
+        This resource is accessible to any users that have access to the API.
+
+        Args:
+            *args (tuple):
+                Ignored positional arguments.
+
+            **kwargs (dict):
+                Ignored keyword arguments.
+
+        Returns:
+            bool:
+            Always ``True``.
+        """
         return True
 
     @webapi_request_fields(
@@ -34,8 +49,9 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
             },
             'displayname': {
                 'type': bool,
-                'description': 'Whether or not to include groups whose '
-                               'display_name field includes the search text.',
+                'description': 'This field is deprecated and ignored. It '
+                               'will be removed in a future release of '
+                               'Review Board.',
             },
             'fullname': {
                 'type': bool,
@@ -43,24 +59,22 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
                                'name includes the search text.',
             },
             'id': {
-                'type': bool,
-                'description': 'Whether or not to include review requests '
-                               'with IDs that start with the given search '
-                               'text.',
+                'type': int,
+                'description': 'A specific review request ID to search for.',
             },
             'max_results': {
                 'type': int,
                 'description': 'The maximum number of results to return '
-                                'for each type of matching object. By '
-                                'default, this is 25. There is a hard limit '
-                                'of 200.',
+                               'for each type of matching object. By '
+                               'default, this is 25. There is a hard limit '
+                               'of 200.',
             },
         },
     )
     @webapi_check_local_site
     @webapi_check_login_required
-    def get(self, request, displayname=None, fullname=None, id=None,
-            max_results=None, q=None, local_site_name=None, *args, **kwargs):
+    def get(self, request, max_results=None, local_site_name=None, *args,
+            **kwargs):
         """Returns information on users, groups and review requests.
 
         This is used by the autocomplete widget for quick search to get
@@ -68,69 +82,172 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
         users' first name, last name and username, groups' name and display
         name, and review requests' ID and summary.
         """
-        q = request.GET.get('q', None)
         local_site = self._get_local_site(local_site_name)
+        max_results = min((max_results or 25), 200)
 
+        try:
+            # We have to keep the parameter named id for backwards
+            # compatibility, but it would override the builtin of the same
+            # name.
+            kwargs['id_q'] = kwargs.pop('id')
+        except KeyError:
+            pass
+
+        return 200, {
+            self.name: {
+                'users': self._search_users(
+                    request=request,
+                    local_site=local_site,
+                    *args,
+                    **kwargs)[:max_results],
+                'groups': self._search_groups(
+                    request=request,
+                    local_site=local_site,
+                    *args,
+                    **kwargs)[:max_results],
+                'review_requests': self._search_review_requests(
+                    request=request,
+                    local_site=local_site,
+                    *args,
+                    **kwargs)[:max_results],
+            },
+        }
+
+    def _search_users(self, local_site=None, fullname=None, q=None, *args,
+                      **kwargs):
+        """Search for users and return the results.
+
+        Args:
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The current local site.
+
+            fullname (bool, optional):
+                Whether or not to perform a search against the users' full
+                names.
+
+            q (unicode, optional):
+                The search text.
+
+            *args (tuple):
+                Ignored positional arguments.
+
+            **kwargs (dict):
+                Ignored keyword arguments.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            A query set for users matching the given arguments.
+        """
         if local_site:
-            query_users = local_site.users.filter(is_active=True)
+            users = local_site.users.filter(is_active=True)
         else:
-            query_users = self.model.objects.filter(is_active=True)
-
-        query_groups = Group.objects.filter(local_site=local_site)
-        query_review_requests = \
-            ReviewRequest.objects.filter(local_site=local_site)
+            users = self.model.objects.filter(is_active=True)
 
         if q:
-            # Try to match users.
             parts = q.split(' ', 1)
 
-            query = Q()
-
             if len(parts) > 1:
-                query |= ((Q(first_name__istartswith=parts[0]) &
-                           Q(last_name__istartswith=parts[1])) |
-                          (Q(first_name__istartswith=parts[1]) &
-                           Q(last_name__istartswith=parts[0])))
+                query = (
+                    (Q(first_name__istartswith=parts[0]) &
+                     Q(last_name__istartswith=parts[1])) |
+                    (Q(first_name__istartswith=parts[1]) &
+                     Q(last_name__istartswith=parts[0]))
+                )
+
+                if fullname:
+                    query |= (Q(first_name__istartswith=q) |
+                              Q(last_name__istartswith=q))
             else:
-                query |= (Q(username__istartswith=q) |
-                          Q(first_name__istartswith=q) |
-                          Q(last_name__istartswith=q))
+                query = (Q(username__istartswith=q) |
+                         Q(first_name__istartswith=q) |
+                         Q(last_name__istartswith=q))
 
-            if fullname:
-                query = query | (Q(first_name__istartswith=q) |
-                                 Q(last_name__istartswith=q))
+            users = users.filter(query)
 
-            query_users = query_users.filter(query)
+        return users
 
-            # Try to match groups.
-            query = (Q(name__istartswith=q) |
-                     Q(display_name__istartswith=q))
+    def _search_groups(self, request, local_site=None, q=None, *args,
+                       **kwargs):
+        """Search for review groups and return the results.
 
-            if displayname:
-                query = query | Q(display_name__istartswith=q)
+        Args:
+            request (django.http.HttpRequest):
+                The current HTTP request.
 
-            query_groups = query_groups.filter(query)
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The current local site.
 
-            # Try to match summaries or IDs.
-            query = Q(id__istartswith=q)
+            q (unicode, optional):
+                The search text.
+
+            *args (tuple):
+                Ignored positional arguments.
+
+            **kwargs (dict):
+                Ignored keyword arguments.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            A query set for review groups matching the given arguments.
+        """
+        groups = Group.objects.accessible(request.user, local_site=local_site)
+
+        if q:
+            groups = groups.filter(
+                Q(name__istartswith=q) |
+                Q(display_name__istartswith=q)
+            )
+
+        # Group.objects.accessible only respects visible_only for
+        # non-superusers. We add this here to make the behavior consistent.
+        return groups.filter(visible=True)
+
+    def _search_review_requests(self, request, local_site=None, q=None,
+                                id_q=None, *args, **kwargs):
+        """Search for a user and return the results.
+
+        Args:
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The current local site.
+
+            q (unicode, optional):
+                The search text.
+
+            id_q (int, optional):
+                An optional ID to search against review request IDs.
+
+            *args (tuple):
+                Ignored positional arguments.
+
+            **kwargs (dict):
+                Ignored keyword arguments.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            A query set for users matching the given arguments.
+        """
+        review_requests = ReviewRequest.objects.public(filter_private=True,
+                                                       user=request.user,
+                                                       local_site=local_site)
+
+        query = Q()
+
+        if q:
+            if local_site:
+                query |= Q(local_id__istartswith=q)
+            else:
+                query |= Q(id__startswith=q)
 
             if len(q) >= self.MIN_SUMMARY_LEN:
                 query |= Q(summary__istartswith=q)
 
-            if id:
-                query |= Q(id__istartswith=id)
+        if id_q:
+            if local_site:
+                query |= Q(local_id__startswith=id_q)
+            else:
+                query |= Q(id__startswith=id_q)
 
-            query_review_requests = query_review_requests.filter(query)
-
-        max_results = min((max_results or 25), 200)
-
-        return 200, {
-            self.name: {
-                'users': query_users[:max_results],
-                'groups': query_groups[:max_results],
-                'review_requests': query_review_requests[:max_results],
-            },
-        }
+        return review_requests.filter(query)
 
 
 search_resource = SearchResource()
