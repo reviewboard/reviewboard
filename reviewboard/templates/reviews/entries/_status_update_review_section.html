@@ -5,7 +5,7 @@
  <div class="banners"></div>
 
  <ul class="review-comments">
-{%   include "reviews/boxes/review_body.html" with diff_comments=update.comments.diff_comments file_attachment_comments=update.comments.file_attachment_comments general_comments=update.comments.general_comments screenshot_comments=update.comments.screenshot_comments review=update.review always_show_body_top=False %}
+{%   include "reviews/entries/_review_body.html" with diff_comments=update.comments.diff_comments file_attachment_comments=update.comments.file_attachment_comments general_comments=update.comments.general_comments screenshot_comments=update.comments.screenshot_comments review=update.review always_show_body_top=False %}
  </ul>
 </section>
 {%  endif %}

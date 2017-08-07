@@ -647,7 +647,7 @@ class BaseReviewRequestPageEntry(object):
     template_name = None
 
     #: The template to render for any JavaScript.
-    js_template_name = 'reviews/boxes/entry.js'
+    js_template_name = 'reviews/entries/entry.js'
 
     #: The name of the JavaScript Backbone.Model class for this entry.
     js_model_class = 'RB.ReviewRequestPage.Entry'
@@ -1024,7 +1024,7 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
     entry_type_id = 'initial_status_updates'
     entry_pos = BaseReviewRequestPageEntry.ENTRY_POS_INITIAL
 
-    template_name = 'reviews/boxes/initial_status_updates.html'
+    template_name = 'reviews/entries/initial_status_updates.html'
     js_model_class = 'RB.ReviewRequestPage.StatusUpdatesEntry'
     js_view_class = 'RB.ReviewRequestPage.InitialStatusUpdatesEntryView'
 
@@ -1100,7 +1100,7 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
 
     needs_reviews = True
 
-    template_name = 'reviews/boxes/review.html'
+    template_name = 'reviews/entries/review.html'
     js_model_class = 'RB.ReviewRequestPage.ReviewEntry'
     js_view_class = 'RB.ReviewRequestPage.ReviewEntryView'
 
@@ -1259,7 +1259,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
     needs_file_attachments = True
     needs_screenshots = True
 
-    template_name = 'reviews/boxes/change.html'
+    template_name = 'reviews/entries/change.html'
     js_model_class = 'RB.ReviewRequestPage.ChangeEntry'
     js_view_class = 'RB.ReviewRequestPage.ChangeEntryView'
 

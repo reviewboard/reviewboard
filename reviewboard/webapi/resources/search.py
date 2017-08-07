@@ -76,8 +76,7 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
     )
     @webapi_check_local_site
     @webapi_check_login_required
-    def get(self, request, max_results=None, local_site_name=None, *args,
-            **kwargs):
+    def get(self, request, max_results=None, *args, **kwargs):
         """Returns information on users, groups and review requests.
 
         This is used by the autocomplete widget for quick search to get
@@ -85,7 +84,6 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
         users' first name, last name and username, groups' name and display
         name, and review requests' ID and summary.
         """
-        local_site = self._get_local_site(local_site_name)
         max_results = min((max_results or 25), 200)
 
         try:
@@ -100,17 +98,14 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
             self.name: {
                 'users': self._search_users(
                     request=request,
-                    local_site=local_site,
                     *args,
                     **kwargs)[:max_results],
                 'groups': self._search_groups(
                     request=request,
-                    local_site=local_site,
                     *args,
                     **kwargs)[:max_results],
                 'review_requests': self._search_review_requests(
                     request=request,
-                    local_site=local_site,
                     *args,
                     **kwargs)[:max_results],
             },

@@ -15,17 +15,20 @@ const commentTypeToIDPrefix = {
  * other functionality needed for the main review request page.
  */
 RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
+    events: {
+        'click #collapse-all': '_onCollapseAllClicked',
+        'click #expand-all': '_onExpandAllClicked',
+    },
+
     /**
      * Initialize the page.
      */
     initialize(options) {
         RB.ReviewablePageView.prototype.initialize.call(this, options);
 
-        this._boxes = [];
+        this._entryViews = [];
         this._rendered = false;
-
-        $('#collapse-all').click(e => this._onCollapseAllClicked(e));
-        $('#expand-all').click(e => this._onExpandAllClicked(e));
+        this._issueSummaryTableView = null;
 
         this.diffFragmentQueue = new RB.DiffFragmentQueueView({
             reviewRequestPath: this.reviewRequest.get('reviewURL'),
@@ -33,12 +36,6 @@ RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
             queueName: 'diff_fragments',
             el: document.getElementById('content'),
         });
-
-        if (this.reviewRequestEditorView.issueSummaryTableView) {
-            this.listenTo(this.reviewRequestEditorView.issueSummaryTableView,
-                          'issueClicked',
-                          (...args) => this._expandIssueBox(...args));
-        }
     },
 
     /**
@@ -52,21 +49,41 @@ RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
         RB.ReviewablePageView.prototype.render.call(this);
 
         /*
-         * If trying to link to a review, find the box which contains that
-         * review and expand it.
+         * Render each of the entries on the page.
+         *
+         * If trying to link to some anchor in some entry, we'll expand the
+         * first entry containing that anchor.
          */
-        this._boxes.forEach(box => {
-            box.render();
+        const selector = window.location.hash.match(/^#[A-Za-z0-9_\.-]+$/);
+        let anchorFound = false;
 
-            // If the box contains something we're linking to, expand it.
-            const selector = window.location.hash.match(/^#[A-Za-z0-9_\.-]+$/);
+        this._entryViews.forEach(entryView => {
+            entryView.render();
 
-            if (selector && box.$(selector[0]).length > 0) {
-                box.expand();
+            if (!anchorFound &&
+                selector &&
+                entryView.$(selector[0]).length > 0) {
+                /*
+                 * We found the entry containing the specified anchor. Expand
+                 * it and stop searching the rest of the entries.
+                 */
+                entryView.expand();
+                anchorFound = true;
             }
         });
 
         this.diffFragmentQueue.loadFragments();
+
+        this._issueSummaryTableView =
+            new RB.ReviewRequestPage.IssueSummaryTableView({
+                el: $('#issue-summary'),
+                model: this.reviewRequestEditor.get('commentIssueManager'),
+            });
+        this._issueSummaryTableView.render();
+
+        this.listenTo(this._issueSummaryTableView,
+                      'issueClicked',
+                      this._expandIssueEntry);
 
         this._rendered = true;
 
@@ -74,17 +91,17 @@ RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
     },
 
     /**
-     * Add a new box to the page.
+     * Add a new entry and view to the page.
      *
      * Args:
-     *     box (Backbone.View):
-     *         The new box to add.
+     *     entryView (RB.ReviewRequestPage.EntryView):
+     *         The new entry's view to add.
      */
-    addBox(box) {
-        this._boxes.push(box);
+    addEntryView(entryView) {
+        this._entryViews.push(entryView);
 
         if (this._rendered) {
-            box.render();
+            entryView.render();
         }
     },
 
@@ -120,11 +137,11 @@ RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
      *         The ID of the comment being edited, if appropriate.
      */
     openCommentEditor(contextType, contextID) {
-        for (let i = 0; i < this._boxes.length; i++) {
-            const box = this._boxes[i];
+        for (let i = 0; i < this._entryViews.length; i++) {
+            const entryView = this._entryViews[i];
             const reviewReplyEditorView = (
-                _.isFunction(box.getReviewReplyEditorView)
-                ? box.getReviewReplyEditorView(contextType, contextID)
+                _.isFunction(entryView.getReviewReplyEditorView)
+                ? entryView.getReviewReplyEditorView(contextType, contextID)
                 : null);
 
             if (reviewReplyEditorView) {
@@ -137,7 +154,7 @@ RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
     /**
      * Handle a press on the Collapse All button.
      *
-     * Collapses each review box.
+     * Collapses each entry.
      *
      * Args:
      *     e (Event):
@@ -147,13 +164,13 @@ RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
         e.preventDefault();
         e.stopPropagation();
 
-        this._boxes.forEach(box => box.collapse());
+        this._entryViews.forEach(entryView => entryView.collapse());
     },
 
     /**
      * Handle a press on the Expand All button.
      *
-     * Expands each review box.
+     * Expands each entry.
      *
      * Args:
      *     e (Event):
@@ -163,11 +180,11 @@ RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
         e.preventDefault();
         e.stopPropagation();
 
-        this._boxes.forEach(box => box.expand());
+        this._entryViews.forEach(entryView => entryView.expand());
     },
 
     /**
-     * Expand the review box that contains the relevent comment for the issue.
+     * Expand the review entry that contains the comment for the issue.
      *
      * This is used when clicking an issue from the issue summary table to
      * navigate the user to the issue comment.
@@ -179,13 +196,13 @@ RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
      *     commentID (string):
      *         The ID of the comment to expand.
      */
-    _expandIssueBox(commentType, commentID) {
+    _expandIssueEntry(commentType, commentID) {
         const prefix = commentTypeToIDPrefix[commentType];
         const selector = `#${prefix}comment${commentID}`;
 
-        this._boxes.forEach(box => {
-            if (box.$el.find(selector).length) {
-                box.expand();
+        this._entryViews.forEach(entryView => {
+            if (entryView.$el.find(selector).length > 0) {
+                entryView.expand();
             }
         });
     },

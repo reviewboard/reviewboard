@@ -1,7 +1,7 @@
 suite('rb/reviewRequestPage/views/PageView', () => {
     let page;
-    let box1;
-    let box2;
+    let entry1;
+    let entry2;
 
     const template = [
         '<a id="collapse-all"></a>',
@@ -53,10 +53,12 @@ suite('rb/reviewRequestPage/views/PageView', () => {
             },
         });
 
-        // Stub this out.
+        // Stub these out.
         spyOn(page.reviewRequest, '_checkForUpdates');
+        spyOn(RB.ReviewRequestPage.IssueSummaryTableView.prototype,
+              'render');
 
-        page.addBox(new RB.ReviewRequestPage.ReviewEntryView({
+        page.addEntryView(new RB.ReviewRequestPage.ReviewEntryView({
             model: new RB.ReviewRequestPage.ReviewEntry({
                 review: page.reviewRequest.createReview(123, {
                     shipIt: true,
@@ -69,7 +71,7 @@ suite('rb/reviewRequestPage/views/PageView', () => {
             el: $el.find('#review123'),
         }));
 
-        page.addBox(new RB.ReviewRequestPage.ReviewEntryView({
+        page.addEntryView(new RB.ReviewRequestPage.ReviewEntryView({
             model: new RB.ReviewRequestPage.ReviewEntry({
                 review: page.reviewRequest.createReview(124, {
                     shipIt: false,
@@ -84,15 +86,15 @@ suite('rb/reviewRequestPage/views/PageView', () => {
 
         page.render();
 
-        expect(page._boxes.length).toBe(2);
-        box1 = page._boxes[0];
-        box2 = page._boxes[1];
+        expect(page._entryViews.length).toBe(2);
+        entry1 = page._entryViews[0];
+        entry2 = page._entryViews[1];
     });
 
     describe('Actions', () => {
         it('Collapse all', () => {
-            const $el1 = box1.$el.find('.review-request-page-entry-contents');
-            const $el2 = box2.$el.find('.review-request-page-entry-contents');
+            const $el1 = entry1.$el.find('.review-request-page-entry-contents');
+            const $el2 = entry2.$el.find('.review-request-page-entry-contents');
 
             expect($el1.hasClass('collapsed')).toBe(false);
             expect($el2.hasClass('collapsed')).toBe(false);
@@ -104,8 +106,8 @@ suite('rb/reviewRequestPage/views/PageView', () => {
         });
 
         it('Expand all', () => {
-            const $el1 = box1.$el.find('.review-request-page-entry-contents');
-            const $el2 = box2.$el.find('.review-request-page-entry-contents');
+            const $el1 = entry1.$el.find('.review-request-page-entry-contents');
+            const $el2 = entry2.$el.find('.review-request-page-entry-contents');
 
             $el1.addClass('collapsed');
             $el2.addClass('collapsed');
@@ -122,41 +124,41 @@ suite('rb/reviewRequestPage/views/PageView', () => {
             beforeEach(() => {
                 spyOn(RB.ReviewRequestPage.ReviewReplyEditorView.prototype,
                       'openCommentEditor');
-                spyOn(box1, 'getReviewReplyEditorView').and.callThrough();
-                spyOn(box2, 'getReviewReplyEditorView').and.callThrough();
+                spyOn(entry1, 'getReviewReplyEditorView').and.callThrough();
+                spyOn(entry2, 'getReviewReplyEditorView').and.callThrough();
             });
 
             it('With body_top', () => {
                 page.openCommentEditor('body_top');
 
-                expect(box1.getReviewReplyEditorView).toHaveBeenCalled();
+                expect(entry1.getReviewReplyEditorView).toHaveBeenCalled();
                 expect(RB.ReviewRequestPage.ReviewReplyEditorView
                        .prototype.openCommentEditor).toHaveBeenCalled();
 
                 /* We should have matched the first one. */
-                expect(box2.getReviewReplyEditorView).not.toHaveBeenCalled();
+                expect(entry2.getReviewReplyEditorView).not.toHaveBeenCalled();
             });
 
             it('With body_bottom', () => {
                 page.openCommentEditor('body_bottom');
 
-                expect(box1.getReviewReplyEditorView).toHaveBeenCalled();
+                expect(entry1.getReviewReplyEditorView).toHaveBeenCalled();
                 expect(RB.ReviewRequestPage.ReviewReplyEditorView
                        .prototype.openCommentEditor).toHaveBeenCalled();
 
                 /* We should have matched the first one. */
-                expect(box2.getReviewReplyEditorView).not.toHaveBeenCalled();
+                expect(entry2.getReviewReplyEditorView).not.toHaveBeenCalled();
             });
 
             it('With comments', () => {
                 page.openCommentEditor('diff_comments', 123);
 
-                expect(box1.getReviewReplyEditorView).toHaveBeenCalled();
+                expect(entry1.getReviewReplyEditorView).toHaveBeenCalled();
                 expect(RB.ReviewRequestPage.ReviewReplyEditorView
                        .prototype.openCommentEditor).toHaveBeenCalled();
 
                 /* We should have matched the first one. */
-                expect(box2.getReviewReplyEditorView).not.toHaveBeenCalled();
+                expect(entry2.getReviewReplyEditorView).not.toHaveBeenCalled();
             });
         });
     });
