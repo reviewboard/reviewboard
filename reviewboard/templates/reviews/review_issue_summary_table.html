@@ -1,7 +1,6 @@
 {% load avatars djblets_utils i18n reviewtags %}
 
-{% if issue_counts.total > 0 %}
-<div class="review-request-section" id="issue-summary">
+<div class="review-request-section" id="issue-summary"{% if issue_counts.total == 0 %} style="display: none;"{% endif %}>
  <a name="issue-summary"></a>
  <label class="review-request-section-label">{% trans "Issues" %}</label>
  <div class="issue-summary-header">
@@ -45,12 +44,11 @@
    </thead>
    <tbody>
 {% for comment in issues %}
-{%  definevar 'issue_link_attrs' %}class="issue-link {% rich_text_classname comment.rich_text %}" comment-type="{{comment.comment_type}}" issue-id="{{comment.id}}" href="#{{comment.anchor_prefix}}{{comment.id}}"{% enddefinevar %}
 {%  definevar 'reviewer_name' %}{{comment.review_obj.user|user_displayname}}{% enddefinevar %}
     <tr id="summary-table-entry-{{comment.id}}"
         class="issue {{comment.issue_status|pretty_print_issue_status}}{% if comment.issue_status != 'O' %} hidden{% endif %}"
         data-issue-id="{{comment.pk}}"
-	data-reviewer="{{reviewer_name}}"
+        data-reviewer="{{reviewer_name}}"
         data-comment-type="{{comment.comment_type}}"
         data-comment-href="#{{comment.anchor_prefix}}{{comment.pk}}">
      <td class="summary-table-description">
@@ -74,4 +72,3 @@
   </table>
  </div>
 </div>
-{% endif %}
