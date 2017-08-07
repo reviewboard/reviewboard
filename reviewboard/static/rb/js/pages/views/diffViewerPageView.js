@@ -253,6 +253,8 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         var files = this.model.get('files'),
             $diffs = $('#diffs').empty();
 
+        $.funcQueue('diff_files').clear();
+
         this._highlightedChunk = null;
 
         files.each(function(file) {
@@ -323,8 +325,18 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                 diffReviewable.getRenderedDiff({
                     complete: function(xhr) {
                         var $container = $(prefix + fileDiffID)
-                            .parent()
-                            .hide();
+                            .parent();
+
+                        if ($container.length === 0) {
+                            /*
+                             * The revision or page may have changed. There's
+                             * no element to work with. Just ignore this and
+                             * move on to the next.
+                             */
+                            return;
+                        }
+
+                        $container.hide();
 
                         /*
                          * jQuery's html() and replaceWith() perform checks of

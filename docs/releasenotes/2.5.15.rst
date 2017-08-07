@@ -1,0 +1,31 @@
+.. default-intersphinx:: rb2.5
+
+
+=================================
+Review Board 2.5.15 Release Notes
+=================================
+
+**Release date**: August 7, 2017
+
+
+Bug Fixes
+=========
+
+Diff Viewer
+-----------
+
+* Fixed a crash when attempting to switch diff revisions or diff pages while
+  an existing diff is still loading.
+
+
+Search
+------
+
+* Fixed a crash that could occur when using the Quick Search field or API.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
