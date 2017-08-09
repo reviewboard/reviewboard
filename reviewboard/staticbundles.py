@@ -198,6 +198,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/accountPrefsPage/views/apiTokensView.es6.js',
             'rb/js/accountPrefsPage/views/joinedGroupsView.es6.js',
             'rb/js/accountPrefsPage/views/oauthApplicationsView.es6.js',
+            'rb/js/accountPrefsPage/views/oauthTokensView.es6.js',
         ),
         'output_filename': 'rb/js/account-page.min.js',
     },

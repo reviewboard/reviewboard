@@ -13,6 +13,7 @@ from djblets.avatars.forms import (
 from djblets.forms.fields import TimeZoneField
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.configforms.forms import ConfigPageForm
+from oauth2_provider.models import AccessToken
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.avatars import avatar_services
@@ -32,6 +33,21 @@ class AccountPageForm(ConfigPageForm):
     More advanced forms can supply their own template or even their own
     JavaScript models and views.
     """
+
+    #: Features required for a form to be displayed.
+    required_features = []
+
+    def is_visible(self):
+        """Return whether or not the form should be rendered.
+
+        This is a base implementation that takes into account a set of required
+        features.
+
+        Returns
+            bool:
+            Whether or not the form should be rendered.
+        """
+        return all(feature.is_enabled() for feature in self.required_features)
 
 
 class AccountSettingsForm(AccountPageForm):
@@ -128,6 +144,7 @@ class AvatarSettingsForm(DjbletsAvatarSettingsForm):
 
     This form will only be shown when avatars are enabled for the server.
     """
+
     avatar_service_registry = avatar_services
 
     def is_visible(self):
@@ -137,7 +154,8 @@ class AvatarSettingsForm(DjbletsAvatarSettingsForm):
             bool:
             Whether or not to show the avatar settings form.
         """
-        return (self.avatar_service_registry.avatars_enabled and
+        return (super(AvatarSettingsForm, self).is_visible() and
+                self.avatar_service_registry.avatars_enabled and
                 len(self.avatar_service_registry.enabled_services) > 0)
 
 
@@ -214,10 +232,14 @@ class ChangePasswordForm(AccountPageForm):
         widget=widgets.PasswordInput())
 
     def is_visible(self):
-        """Get whether or not the "change password" form should be shown."""
-        backend = get_enabled_auth_backends()[0]
+        """Return whether or not the "change password" form should be shown.
 
-        return backend.supports_change_password
+        Returns:
+            bool:
+            Whether or not the form will be rendered.
+        """
+        return (super(ChangePasswordForm, self).is_visible() and
+                get_enabled_auth_backends()[0].supports_change_password)
 
     def clean_old_password(self):
         """Validate the 'old_password' field.
@@ -423,6 +445,7 @@ class OAuthApplicationsForm(AccountPageForm):
     form_title = _('OAuth Applications')
     js_view_class = 'RB.OAuthApplicationsView'
 
+    required_features = [oauth2_service_feature]
     save_label = None
 
     def get_js_view_data(self):
@@ -442,22 +465,9 @@ class OAuthApplicationsForm(AccountPageForm):
         ]
 
         return {
-            'addText': _('Add application'),
             'apps': apps,
-            'emptyText': _('You have not registered any OAuth2 applications.'),
             'editURL': reverse('edit-oauth-app'),
         }
-
-    def is_visible(self):
-        """Return whether or not this form is visible.
-
-        This form is visible if and only if the OAuth2 feature is enabled.
-
-        Returns:
-            bool:
-            Whether or not this form is visible.
-        """
-        return oauth2_service_feature.is_enabled(request=self.request)
 
     @staticmethod
     def serialize_app(app):
@@ -493,4 +503,66 @@ class OAuthApplicationsForm(AccountPageForm):
             'isDisabledForSecurity': app.is_disabled_for_security,
             'name': app.name,
             'originalUser': original_user,
+        }
+
+
+class OAuthTokensForm(AccountPageForm):
+    """The OAuth Token form
+
+    This provides a list of all current OAuth2 tokens the user has created.
+    """
+
+    form_id = 'oauth_tokens'
+    form_title = _('OAuth Tokens')
+    js_view_class = 'RB.OAuthTokensView'
+
+    required_features = [oauth2_service_feature]
+    save_label = None
+
+    def get_js_view_data(self):
+        """Return the data for the JavaScript view.
+
+        Returns:
+            dict:
+            A dict containing a single key:
+
+            ``'tokens'`` (:py:class:`list`):
+                A list of serialized information about each token.
+        """
+        tokens = [
+            self.serialize_token(token)
+            for token in (
+                AccessToken.objects
+                .select_related('application', 'application__local_site')
+                .filter(user=self.user)
+            )
+        ]
+
+        return {
+            'tokens': tokens,
+        }
+
+    @staticmethod
+    def serialize_token(token):
+        """Serialize a single token for the JavaScript view.
+
+        Returns:
+            dict:
+            A dict with the following keys:
+
+            ``'apiURL'`` (:py:class:`unicode`):
+                The URL to access the token via the API.
+
+            ``'application'`` (:py:class:`unicode`):
+                The name of the application the token is associated with.
+        """
+        return {
+            'apiURL': local_site_reverse(
+                'oauth-token-resource',
+                local_site=token.application.local_site,
+                kwargs={
+                    'oauth_token_id': token.pk,
+                },
+            ),
+            'application': token.application.name,
         }

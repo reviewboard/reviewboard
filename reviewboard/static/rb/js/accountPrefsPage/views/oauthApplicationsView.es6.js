@@ -104,7 +104,7 @@ const OAuthAppItemView = Djblets.Config.ListItemView.extend({
 RB.OAuthApplicationsView = Backbone.View.extend({
     template: _.template(dedent`
         <div class="app-list">
-         <div class="app-list-empty box-recessed">
+         <div class="config-forms-list-empty box-recessed">
           ${emptyText}
          </div>
         </div>
@@ -158,7 +158,6 @@ RB.OAuthApplicationsView = Backbone.View.extend({
         }));
 
         this._$list = this.$('.app-list');
-        this._$empty = this.$('.app-list-empty');
         this._listView = new Djblets.Config.ListView({
             ItemView: OAuthAppItemView,
             model: new Djblets.Config.List({}, {
