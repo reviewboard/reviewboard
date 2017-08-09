@@ -15,19 +15,14 @@ suite('rb/utils/urlUtils', function() {
             }
         });
 
-        it('Prevents XSS injection', function() {
-            runs(function() {
-                spyOn(window, 'xss');
+        it('Prevents XSS injection', function(done) {
+            spyOn(window, 'xss');
 
-                $('a[name="' + hash + '"]');
+            $('a[name="' + hash + '"]');
 
-                _.delay(function() { done = true; }, 500);
-            });
-
-            waitsFor(function() { return done ;}, '', 1000);
-
-            runs(function() {
+            _.delay(function() {
                 expect(window.xss).not.toHaveBeenCalled();
+                done();
             });
         });
     });

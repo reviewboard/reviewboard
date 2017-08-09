@@ -57,11 +57,15 @@ suite('rb/pages/views/DiffViewerPageView', function() {
         });
 
         /* Don't communicate with the server for page updates. */
-        spyOn(pageView.reviewRequest, 'ready').andCallFake(
+        spyOn(pageView.reviewRequest, 'ready').and.callFake(
             function(options, context) {
                 options.ready.call(context);
             });
         spyOn(pageView.reviewRequest, 'beginCheckForUpdates');
+    });
+
+    afterEach(function() {
+        RB.DnDUploader.instance = null;
     });
 
     describe('Anchors', function() {
