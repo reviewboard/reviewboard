@@ -17,21 +17,14 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
 
     initialize: function() {
         this._queue = {};
+        this._saved = {};
+
         this._centered = new RB.CenteredElementManager();
 
-        _.bindAll(this, '_onExpandOrCollapseFinished',
-                  '_updateCollapseButtonPos', '_tryHideControlsDelayed',
+        _.bindAll(this,
+                  '_onExpandOrCollapseFinished',
+                  '_tryHideControlsDelayed',
                   '_tryShowControlsDelayed');
-    },
-
-    /*
-     * Remove this from the DOM and set all the elements it references to null
-     */
-    remove: function() {
-        RB.AbstractReviewableView.prototype.remove.call(this);
-
-        this._$window = null;
-        this._active = null;
     },
 
     /*
@@ -40,14 +33,34 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
      * This will be added to a list, which will fetch the comments in batches
      * based on file IDs.
      */
-    queueLoad: function(comment_id, key) {
+    queueLoad: function(commentID, key) {
         var queue = this._queue;
 
         if (!queue[key]) {
             queue[key] = [];
         }
 
-        queue[key].push(comment_id);
+        queue[key].push(commentID);
+    },
+
+    /**
+     * Save a comment's loaded diff fragment for the next load operation.
+     *
+     * If the comment's diff fragment was already loaded, it will be
+     * temporarily stored until the next load operation involving that
+     * comment. Instead of loading the fragment from the server, the saved
+     * fragment's HTML will be used instead.
+     *
+     * Args:
+     *     commentID (string):
+     *         The ID of the comment to save.
+     */
+    saveFragment(commentID) {
+        const $el = this._getCommentContainer(commentID);
+
+        if ($el.length === 1 && $el.data('diff-fragment-loaded')) {
+            this._saved[commentID] = $el.html();
+        }
     },
 
     /*
@@ -59,7 +72,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
             urlPrefix,
             urlSuffix;
 
-        if (!this._queue) {
+        if (_.isEmpty(this._queue) && _.isEmpty(this._saved)) {
             return;
         }
 
@@ -69,22 +82,71 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                     '&container_prefix=' + this.options.containerPrefix +
                     '&' + TEMPLATE_SERIAL;
 
-        _.each(this._queue, function(comments) {
-            var url = urlPrefix + comments.join(',') + urlSuffix;
+        _.each(this._queue, commentIDs => {
+            $.funcQueue(queueName).add(() => {
+                const pendingCommentIDs = [];
 
-            $.funcQueue(queueName).add(_.bind(function() {
-                this._addScript(url,
-                                _.bind(function() {
-                                    _.each(comments, this._onFirstLoad, this);
-                                }, this)
-                );
-            }, this));
-        }, this);
+                /*
+                 * Check if there are any comment IDs that have been saved.
+                 * We don't need to reload these from the server.
+                 */
+                for (let i = 0; i < commentIDs.length; i++) {
+                    const commentID = commentIDs[i];
+
+                    if (this._saved.hasOwnProperty(commentID)) {
+                        this._getCommentContainer(commentID).html(
+                            this._saved[commentID]);
+                        this._onFirstLoad(commentID);
+                        delete this._saved[commentID];
+                    } else {
+                        pendingCommentIDs.push(commentID);
+                    }
+                }
+
+                if (pendingCommentIDs.length > 0) {
+                    /*
+                     * There are some comment IDs we don't have. Load these
+                     * from the server.
+                     *
+                     * Once these are loaded, they'll call next() on the queue
+                     * to process the next batch.
+                     */
+                    const url = urlPrefix + pendingCommentIDs.join(',') +
+                                urlSuffix;
+
+                    this._addScript(url, () => {
+                        _.each(pendingCommentIDs, this._onFirstLoad, this);
+                    });
+                } else {
+                    /*
+                     * We processed all we need to process above. Go to the
+                     * next queue.
+                     */
+                    $.funcQueue(queueName).next();
+                }
+            });
+        });
 
         // Clear the list.
         this._queue = {};
 
         $.funcQueue(queueName).start();
+    },
+
+    /**
+     * Return the container for a particular comment.
+     *
+     * Args:
+     *     commentID (string):
+     *         The ID of the comment.
+     *
+     * Returns:
+     *     jQuery:
+     *     The comment container, wrapped in a jQuery element. The caller
+     *     may want to check the length to be sure the container was found.
+     */
+    _getCommentContainer(commentID) {
+        return $(`#${this.options.containerPrefix}_${commentID}`);
     },
 
     /*
@@ -222,7 +284,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
      * finished loading).
      */
     _onExpandOrCollapseFinished: function(id) {
-        var $expanded = this.$('#' + this.options.containerPrefix + '_' + id);
+        const $expanded = this._getCommentContainer(id);
 
         this._centered.setElements(new Map(
             Array.prototype.map.call(
@@ -248,7 +310,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
      *         The ID of the comment used to build the container ID.
      */
     _onFirstLoad(id) {
-        const $container = this.$(`#${this.options.containerPrefix}_${id}`);
+        const $container = this._getCommentContainer(id);
         const $table = $container.children('table');
         const $diffHeaders = $table.find('.diff-header');
 
@@ -271,8 +333,10 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
          */
         _.defer(() => $container.addClass('allow-transitions'));
 
-        $container.hover(_.partial(this._tryShowControlsDelayed, diffEls),
-                         _.partial(this._tryHideControlsDelayed, diffEls));
+        $container
+            .hover(_.partial(this._tryShowControlsDelayed, diffEls),
+                   _.partial(this._tryHideControlsDelayed, diffEls))
+            .data('diff-fragment-loaded', true);
     },
 
     /**
