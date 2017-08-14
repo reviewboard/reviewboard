@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import json
 import logging
+import warnings
 
 from django import template
 from django.db.models import Q
@@ -20,7 +21,8 @@ from reviewboard.accounts.models import Profile, Trophy
 from reviewboard.accounts.trophies import UnknownTrophy
 from reviewboard.diffviewer.diffutils import get_displayed_diff_line_ranges
 from reviewboard.reviews.actions import get_top_level_actions
-from reviewboard.reviews.fields import (get_review_request_fieldset,
+from reviewboard.reviews.fields import (get_review_request_field,
+                                        get_review_request_fieldset,
                                         get_review_request_fieldsets)
 from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
                                                 render_markdown,
@@ -386,16 +388,27 @@ def for_review_request_field(context, nodelist, review_request_details,
                               field_cls, e)
             continue
 
-        try:
-            if field.should_render(field.value):
-                context.push()
-                context['field'] = field
-                s.append(nodelist.render(context))
-                context.pop()
-        except Exception as e:
-            logging.exception(
-                'Error running should_render for field %r: %s',
-                field_cls, e)
+        if hasattr(field_cls.should_render, '__call__'):
+            warnings.warn('Field %r uses an old style should_render function '
+                          'which is deprecated and will be removed in the '
+                          'future. This should be converted to a property.'
+                          % field_cls,
+                          DeprecationWarning)
+            try:
+                should_render = field.should_render(field.value)
+            except Exception as e:
+                logging.exception(
+                    'Error running should_render for field %r: %s',
+                    field_cls, e)
+                should_render = True
+        else:
+            should_render = field.should_render
+
+        if should_render:
+            context.push()
+            context['field'] = field
+            s.append(nodelist.render(context))
+            context.pop()
 
     return ''.join(s)
 
@@ -403,18 +416,30 @@ def for_review_request_field(context, nodelist, review_request_details,
 @register.tag
 @blocktag(end_prefix='end_')
 def for_review_request_fieldset(context, nodelist, review_request_details):
-    """Loops through all fieldsets.
+    """Loop through all fieldsets.
 
-    This skips the "main" fieldset, as that's handled separately by the
-    template.
+    Args:
+        context (dict):
+            The render context.
+
+        nodelist (django.template.NodeList):
+            The contents of the template inside the blocktag.
+
+        review_request_details (reviewboard.reviews.models.
+                                base_review_request_details.
+                                BaseReviewRequestDetails):
+            The review request or draft being rendered.
+
+    Returns:
+        unicode:
+        The rendered tag contents.
     """
     s = []
     is_first = True
     review_request = review_request_details.get_review_request()
     user = context['request'].user
-    fieldset_classes = get_review_request_fieldsets(include_main=False)
 
-    for fieldset_cls in fieldset_classes:
+    for fieldset_cls in get_review_request_fieldsets():
         try:
             if not fieldset_cls.is_empty():
                 try:
@@ -444,6 +469,49 @@ def for_review_request_fieldset(context, nodelist, review_request_details):
                           '%r: %s', fieldset_cls, e, exc_info=1)
 
     return ''.join(s)
+
+
+@register.tag
+@blocktag(end_prefix='end_')
+def review_request_field(context, nodelist, review_request_details, field_id):
+    """Render a block with a specific review request field.
+
+    Args:
+        context (dict):
+            The render context.
+
+        nodelist (django.template.NodeList):
+            The contents of the template inside the blocktag.
+
+        review_request_details (reviewboard.reviews.models.
+                                base_review_request_details.
+                                BaseReviewRequestDetails):
+            The review request or draft being rendered.
+
+        field_id (unicode):
+            The ID of the field to add to the render context.
+
+    Returns:
+        unicode:
+        The rendered block.
+    """
+    request = context.get('request')
+
+    try:
+        field_cls = get_review_request_field(field_id)
+        field = field_cls(review_request_details, request=request)
+    except Exception as e:
+        logging.exception('Error instantiating field %r: %s',
+                          field_id, e)
+        return ''
+
+    context.push()
+
+    try:
+        context['field'] = field
+        return nodelist.render(context)
+    finally:
+        context.pop()
 
 
 @register.assignment_tag

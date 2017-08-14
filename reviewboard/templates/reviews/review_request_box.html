@@ -2,7 +2,9 @@
 
 <div class="review-request-section review-request-summary">
  <label class="review-request-section-label" for="field_summary">{% trans "Summary" %}: </label>
- <h1 id="field_summary" class="field editable required" data-field-id="summary">{{review_request_details.summary|escape}}</h1>
+{% review_request_field review_request_details 'summary' %}
+ {{field.as_html}}
+{% end_review_request_field %}
  <p>
 {% with review_request_details.time_added|date as dateadded and review_request_details.last_updated as lastupdated and review_request_details.last_updated|date:"c" as lastupdatedraw and latest_diffset.timestamp|date:"c" as lastdiffdateraw and latest_diffset.timestamp as lastdiffdate %}
 {%  blocktrans with review_request.display_id as review_request_id and review_request.get_absolute_url as review_request_url %}
@@ -41,34 +43,35 @@
   <col width="100%" />
  </colgroup>
 {% for_review_request_fieldset review_request_details %}
+{%  if fieldset.fieldset_id != 'main' %}
  <thead id="fieldset_{{fieldset.fieldset_id}}_head"{% if forloop.first %} class="first-fieldset"{% endif %}>
   <tr>
    <th class="review-request-section-label" colspan="2">{{fieldset.label}}
-{%  if show_fieldset_required %}
+{%   if show_fieldset_required %}
     <span class="required-flag" aria-label="{% trans 'This field is required' %}" title="{% trans 'This field is required' %}">*</span>
-{%  endif %}
+{%   endif %}
   </tr>
  </thead>
  <tbody id="fieldset_{{fieldset.fieldset_id}}_body">
-{%  for_review_request_field review_request_details fieldset %}
+{%   for_review_request_field review_request_details fieldset %}
   <tr>
    <th><label for="field_{{field.field_id}}">{{field.label}}:</label></th>
-   <td><span id="field_{{field.field_id}}" data-field-id="{{field.field_id}}"
-             class="field {{field.get_css_classes|join:' '}}"{% for key, value in field.get_data_attributes.items %} data-{{key}}="{{value}}"{% endfor %}>{{field.as_html|safe}}</span></td>
+   <td>{{field.as_html}}</td>
   </tr>
-{%  end_for_review_request_field %}
+{%   end_for_review_request_field %}
  </tbody>
+{%  endif %}
 {% end_for_review_request_fieldset %}
 </table>
 
 <div id="review-request-main">
 {% for_review_request_field review_request_details 'main' %}
+{%  if field.field_id != 'summary' %}
  <div class="review-request-section">
   <label class="review-request-section-label" for="field_{{field.field_id}}">{{field.label}}</label>
-  <div class="field-container">
-   <{{field.tag_name|default:"div"}} id="field_{{field.field_id}}" class="field {{field.get_css_classes|join:' '}}" data-field-id="{{field.field_id}}"{% for key, value in field.get_data_attributes.items %} data-{{key}}="{{value}}"{% endfor %}>{{field.as_html|safe}}</{{field.tag_name|default:"div"}}>
-  </div>
+  <div class="field-container">{{field.as_html}}</div>
  </div>
+{%  endif %}
 {% end_for_review_request_field %}
 </div>
 

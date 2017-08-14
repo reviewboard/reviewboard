@@ -34,6 +34,7 @@ class BuiltinFieldMixin(object):
     ReviewRequest or ReviewRequestDraft, rather than working with those
     stored in extra_data.
     """
+
     def __init__(self, *args, **kwargs):
         super(BuiltinFieldMixin, self).__init__(*args, **kwargs)
 
@@ -64,6 +65,7 @@ class BuiltinTextAreaFieldMixin(BuiltinFieldMixin):
     still escape the text if it's not in Markdown format before
     rendering.
     """
+
     def get_data_attributes(self):
         attrs = super(BuiltinTextAreaFieldMixin, self).get_data_attributes()
 
@@ -89,6 +91,9 @@ class ReviewRequestPageDataMixin(BuiltinFieldMixin):
     entry recording. Subclasses must implement those manually.
     """
 
+    #: Whether the field should be rendered.
+    should_render = False
+
     def __init__(self, review_request_details, data=None, *args, **kwargs):
         """Initialize the mixin.
 
@@ -113,9 +118,6 @@ class ReviewRequestPageDataMixin(BuiltinFieldMixin):
 
         self.data = data
 
-    def should_render(self, value):
-        return False
-
     def load_value(self, review_request_details):
         return None
 
@@ -130,6 +132,7 @@ class BaseCaptionsField(ReviewRequestPageDataMixin, BaseReviewRequestField):
     ScreenshotCaptionsField. It provides the base rendering and
     for caption changes on file attachments or screenshots.
     """
+
     obj_map_attr = None
     caption_object_field = None
 
@@ -175,6 +178,7 @@ class BaseModelListEditableField(BaseCommaEditableField):
 
     This is used for built-in classes that work with ManyToManyFields.
     """
+
     model_name_attr = None
 
     def has_value_changed(self, old_value, new_value):
@@ -206,13 +210,8 @@ class StatusField(BuiltinFieldMixin, BaseReviewRequestField):
     label = _('Status')
     is_required = True
 
-    def should_render(self, status):
-        """Return whether this field should be rendered.
-
-        This field is "rendered" by displaying the publish and close banners,
-        and doesn't have a real field within the fieldsets.
-        """
-        return False
+    #: Whether the field should be rendered.
+    should_render = False
 
     def get_change_entry_sections_html(self, info):
         """Return sections of change entries with titles and rendered HTML.
@@ -225,19 +224,16 @@ class StatusField(BuiltinFieldMixin, BaseReviewRequestField):
 
 class SummaryField(BuiltinFieldMixin, BaseEditableField):
     """The Summary field on a review request."""
+
     field_id = 'summary'
     label = _('Summary')
     is_required = True
-
-    def should_render(self, summary):
-        # This field is rendered separately in the template, and isn't
-        # included with other fields in the "main" group, so just don't
-        # render it there.
-        return False
+    tag_name = 'h1'
 
 
 class DescriptionField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
     """The Description field on a review request."""
+
     field_id = 'description'
     label = _('Description')
     is_required = True
@@ -248,6 +244,7 @@ class DescriptionField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
 
 class TestingDoneField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
     """The Testing Done field on a review request."""
+
     field_id = 'testing_done'
     label = _('Testing Done')
 
@@ -257,6 +254,7 @@ class TestingDoneField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
 
 class SubmitterField(BuiltinFieldMixin, BaseEditableField):
     """The Submitter field on a review request."""
+
     field_id = 'submitter'
     label = _('Submitter')
     model = User
@@ -295,11 +293,14 @@ class SubmitterField(BuiltinFieldMixin, BaseEditableField):
 
 class RepositoryField(BuiltinFieldMixin, BaseReviewRequestField):
     """The Repository field on a review request."""
+
     field_id = 'repository'
     label = _('Repository')
     model = Repository
 
-    def should_render(self, value):
+    @property
+    def should_render(self):
+        """Whether the field should be rendered."""
         review_request = self.review_request_details.get_review_request()
 
         return review_request.repository_id is not None
@@ -307,12 +308,14 @@ class RepositoryField(BuiltinFieldMixin, BaseReviewRequestField):
 
 class BranchField(BuiltinFieldMixin, BaseEditableField):
     """The Branch field on a review request."""
+
     field_id = 'branch'
     label = _('Branch')
 
 
 class BugsField(BuiltinFieldMixin, BaseCommaEditableField):
     """The Bugs field on a review request."""
+
     field_id = 'bugs_closed'
     label = _('Bugs')
 
@@ -360,6 +363,7 @@ class BugsField(BuiltinFieldMixin, BaseCommaEditableField):
 
 class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
     """The Depends On field on a review request."""
+
     field_id = 'depends_on'
     label = _('Depends On')
     model = ReviewRequest
@@ -397,6 +401,7 @@ class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
 
 class BlocksField(BuiltinFieldMixin, BaseReviewRequestField):
     """The Blocks field on a review request."""
+
     field_id = 'blocks'
     label = _('Blocks')
     model = ReviewRequest
@@ -404,8 +409,10 @@ class BlocksField(BuiltinFieldMixin, BaseReviewRequestField):
     def load_value(self, review_request_details):
         return review_request_details.get_review_request().get_blocks()
 
-    def should_render(self, blocks):
-        return len(blocks) > 0
+    @property
+    def should_render(self):
+        """Whether the field should be rendered."""
+        return len(self.value) > 0
 
     def render_value(self, blocks):
         return format_html_join(
@@ -428,14 +435,17 @@ class ChangeField(BuiltinFieldMixin, BaseReviewRequestField):
     request, only this field will be shown, as both are likely to have
     values.
     """
+
     field_id = 'changenum'
     label = _('Change')
 
     def load_value(self, review_request_details):
         return review_request_details.get_review_request().changenum
 
-    def should_render(self, changenum):
-        return bool(changenum)
+    @property
+    def should_render(self):
+        """Whether the field should be rendered."""
+        return bool(self.value)
 
     def render_value(self, changenum):
         review_request = self.review_request_details.get_review_request()
@@ -457,12 +467,16 @@ class CommitField(BuiltinFieldMixin, BaseReviewRequestField):
     let ChangeField take precedence. It knows how to render information based
     on a changeset ID.
     """
+
     field_id = 'commit_id'
     label = _('Commit')
     can_record_change_entry = True
+    tag_name = 'span'
 
-    def should_render(self, commit_id):
-        return (bool(commit_id) and
+    @property
+    def should_render(self):
+        """Whether the field should be rendered."""
+        return (bool(self.value) and
                 not self.review_request_details.get_review_request().changenum)
 
     def render_value(self, commit_id):
@@ -483,6 +497,7 @@ class DiffField(ReviewRequestPageDataMixin, BaseReviewRequestField):
     itself. Instead, it is used only during the ChangeDescription population
     and processing steps.
     """
+
     field_id = 'diff'
     label = _('Diff')
 
@@ -647,6 +662,7 @@ class FileAttachmentCaptionsField(BaseCaptionsField):
     stage. It is not, however, used for populating entries in
     ChangeDescription.
     """
+
     field_id = 'file_captions'
     label = _('File Captions')
     obj_map_attr = 'file_attachments_by_id'
@@ -662,6 +678,7 @@ class FileAttachmentsField(ReviewRequestPageDataMixin, BaseCommaEditableField):
     stage. It is not, however, used for populating entries in
     ChangeDescription.
     """
+
     field_id = 'files'
     label = _('Files')
     model = FileAttachment
@@ -729,6 +746,7 @@ class ScreenshotCaptionsField(BaseCaptionsField):
     stage. It is not, however, used for populating entries in
     ChangeDescription.
     """
+
     field_id = 'screenshot_captions'
     label = _('Screenshot Captions')
     obj_map_attr = 'screenshots_by_id'
@@ -744,6 +762,7 @@ class ScreenshotsField(BaseCommaEditableField):
     stage. It is not, however, used for populating entries in
     ChangeDescription.
     """
+
     field_id = 'screenshots'
     label = _('Screenshots')
     model = Screenshot
@@ -751,6 +770,7 @@ class ScreenshotsField(BaseCommaEditableField):
 
 class TargetGroupsField(BuiltinFieldMixin, BaseModelListEditableField):
     """The Target Groups field on a review request."""
+
     field_id = 'target_groups'
     label = _('Groups')
     model = Group
@@ -763,6 +783,7 @@ class TargetGroupsField(BuiltinFieldMixin, BaseModelListEditableField):
 
 class TargetPeopleField(BuiltinFieldMixin, BaseModelListEditableField):
     """The Target People field on a review request."""
+
     field_id = 'target_people'
     label = _('People')
     model = User
