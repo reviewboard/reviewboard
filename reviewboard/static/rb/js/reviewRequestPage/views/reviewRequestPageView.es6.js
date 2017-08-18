@@ -83,7 +83,7 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
 
         this.listenTo(this._issueSummaryTableView,
                       'issueClicked',
-                      this._expandIssueEntry);
+                      this._onIssueClicked);
 
         this._rendered = true;
 
@@ -184,27 +184,26 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
     },
 
     /**
-     * Expand the review entry that contains the comment for the issue.
+     * Handler for when an issue in the issue summary table is clicked.
      *
-     * This is used when clicking an issue from the issue summary table to
-     * navigate the user to the issue comment.
+     * This will expand the review entry that contains the comment for the
+     * issue, and navigate to the comment.
      *
      * Args:
-     *     commentType (string):
-     *         The type of comment to expand.
-     *
-     *     commentID (string):
-     *         The ID of the comment to expand.
+     *     params (object):
+     *         Parameters passed to the event handler.
      */
-    _expandIssueEntry(commentType, commentID) {
-        const prefix = commentTypeToIDPrefix[commentType];
-        const selector = `#${prefix}comment${commentID}`;
+    _onIssueClicked(params) {
+        const prefix = commentTypeToIDPrefix[params.commentType];
+        const selector = `#${prefix}comment${params.commentID}`;
 
         this._entryViews.forEach(entryView => {
             if (entryView.$el.find(selector).length > 0) {
                 entryView.expand();
             }
         });
+
+        window.location = params.commentURL;
     },
 });
 
