@@ -42,7 +42,7 @@ suite('rb/reviewRequestPage/views/PageView', () => {
             .appendTo($testsScratch);
 
         RB.DnDUploader.instance = null;
-        page = new RB.ReviewRequestPage.PageView({
+        page = new RB.ReviewRequestPage.ReviewRequestPageView({
             el: $el,
             reviewRequestData: {
             },
