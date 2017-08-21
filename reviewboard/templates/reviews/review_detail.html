@@ -88,5 +88,7 @@
                                parseInt("{{request.GET.reply_id|escapejs}}", 10));
     });
 {%  endif %}
+
+{%  include "reviews/review_request_box.js" %}
 </script>
 {% endblock scripts-post %}

@@ -105,6 +105,90 @@ suite('rb/views/ReviewRequestEditorView', function() {
             model: editor
         });
 
+        view.addFieldView(
+            new RB.ReviewRequestFields.SummaryFieldView({
+                el: $el.find('#field_summary'),
+                fieldID: 'summary',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.BranchFieldView({
+                el: $el.find('#field_branch'),
+                fieldID: 'branch',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.SubmitterFieldView({
+                el: $el.find('#field_submitter'),
+                fieldID: 'submitter',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.BugsFieldView({
+                el: $el.find('#field_bugs_closed'),
+                fieldID: 'bugs_closed',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.DependsOnFieldView({
+                el: $el.find('#field_depends_on'),
+                fieldID: 'depends_on',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.TargetGroupsFieldView({
+                el: $el.find('#field_target_groups'),
+                fieldID: 'target_groups',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.TargetPeopleFieldView({
+                el: $el.find('#field_target_people'),
+                fieldID: 'target_people',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.DescriptionFieldView({
+                el: $el.find('#field_description'),
+                fieldID: 'description',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.TestingDoneFieldView({
+                el: $el.find('#field_testing_done'),
+                fieldID: 'testing_done',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.TextFieldView({
+                el: $el.find('#field_my_custom'),
+                fieldID: 'my_custom',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.MultilineTextFieldView({
+                el: $el.find('#field_my_rich_text_custom'),
+                fieldID: 'my_rich_text_custom',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.MultilineTextFieldView({
+                el: $el.find('#field_text'),
+                fieldID: 'text',
+                model: editor
+            }));
+
         $filesContainer = $testsScratch.find('#file-list');
         $screenshotsContainer = $testsScratch.find('#screenshot-thumbnails');
 
@@ -727,8 +811,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 setupFieldTests({
                     fieldName: 'closeDescription',
-                    jsonFieldName: 'changedescription',
-                    selector: options.bannerSel + ' #field_changedescription'
+                    jsonFieldName: 'close_description',
+                    selector: options.bannerSel + ' #field_close_description'
                 });
 
                 hasEditorTest();
@@ -824,9 +908,9 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 setupFieldTests({
                     supportsRichText: true,
-                    fieldName: 'closeDescription',
+                    fieldName: 'changeDescription',
                     jsonFieldName: 'changedescription',
-                    selector: '#draft-banner #field_changedescription'
+                    selector: '#draft-banner #field_change_description'
                 });
 
                 hasEditorTest();

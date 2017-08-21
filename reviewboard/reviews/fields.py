@@ -262,6 +262,9 @@ class BaseReviewRequestField(object):
     #: Whether the field should be rendered.
     should_render = True
 
+    #: The class name for the JavaScript view representing this field.
+    js_view_class = None
+
     can_record_change_entry = property(lambda self: self.is_editable)
 
     def __init__(self, review_request_details, request=None):
@@ -724,6 +727,9 @@ class BaseEditableField(BaseReviewRequestField):
     default_css_classes = ['editable']
     is_editable = True
 
+    #: The class name for the JavaScript view representing this field.
+    js_view_class = 'RB.ReviewRequestFields.TextFieldView'
+
 
 class BaseCommaEditableField(BaseEditableField):
     """Base class for an editable comma-separated list of values.
@@ -739,6 +745,9 @@ class BaseCommaEditableField(BaseEditableField):
 
     default_css_classes = ['editable', 'comma-editable']
     order_matters = False
+
+    #: The class name for the JavaScript view representing this field.
+    js_view_class = 'RB.ReviewRequestFields.CommaSeparatedValuesTextFieldView'
 
     one_line_per_change_entry = True
 
@@ -928,6 +937,9 @@ class BaseTextAreaField(BaseEditableField):
     enable_markdown = True
     always_render_markdown = False
     tag_name = 'pre'
+
+    #: The class name for the JavaScript view representing this field.
+    js_view_class = 'RB.ReviewRequestFields.MultilineTextFieldView'
 
     @cached_property
     def text_type_key(self):

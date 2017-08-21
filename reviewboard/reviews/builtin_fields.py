@@ -364,6 +364,9 @@ class SummaryField(BuiltinFieldMixin, BaseEditableField):
     is_required = True
     tag_name = 'h1'
 
+    #: The class name for the JavaScript view representing this field.
+    js_view_class = 'RB.ReviewRequestFields.SummaryFieldView'
+
 
 class DescriptionField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
     """The Description field on a review request."""
@@ -371,6 +374,9 @@ class DescriptionField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
     field_id = 'description'
     label = _('Description')
     is_required = True
+
+    #: The class name for the JavaScript view representing this field.
+    js_view_class = 'RB.ReviewRequestFields.DescriptionFieldView'
 
     def is_text_markdown(self, value):
         """Return whether the description uses Markdown.
@@ -387,6 +393,9 @@ class TestingDoneField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
 
     field_id = 'testing_done'
     label = _('Testing Done')
+
+    #: The class name for the JavaScript view representing this field.
+    js_view_class = 'RB.ReviewRequestFields.TestingDoneFieldView'
 
     def is_text_markdown(self, value):
         """Return whether the description uses Markdown.
@@ -406,6 +415,9 @@ class SubmitterField(BuiltinFieldMixin, BaseEditableField):
     model = User
     model_name_attr = 'username'
     is_required = True
+
+    #: The class name for the JavaScript view representing this field.
+    js_view_class = 'RB.ReviewRequestFields.SubmitterFieldView'
 
     def render_value(self, user):
         """Render the value in the field.
@@ -508,6 +520,9 @@ class BranchField(BuiltinFieldMixin, BaseEditableField):
     field_id = 'branch'
     label = _('Branch')
 
+    #: The class name for the JavaScript view representing this field.
+    js_view_class = 'RB.ReviewRequestFields.BranchFieldView'
+
 
 class BugsField(BuiltinFieldMixin, BaseCommaEditableField):
     """The Bugs field on a review request."""
@@ -516,6 +531,9 @@ class BugsField(BuiltinFieldMixin, BaseCommaEditableField):
     label = _('Bugs')
 
     one_line_per_change_entry = False
+
+    #: The class name for the JavaScript view representing this field.
+    js_view_class = 'RB.ReviewRequestFields.BugsFieldView'
 
     def load_value(self, review_request_details):
         """Load a value from the review request or draft.
@@ -615,6 +633,9 @@ class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
     label = _('Depends On')
     model = ReviewRequest
     model_name_attr = 'summary'
+
+    #: The class name for the JavaScript view representing this field.
+    js_view_class = 'RB.ReviewRequestFields.DependsOnFieldView'
 
     def render_change_entry_item_html(self, info, item):
         """Render an item for change description HTML.
@@ -1196,6 +1217,9 @@ class TargetGroupsField(BuiltinFieldMixin, BaseModelListEditableField):
     model = Group
     model_name_attr = 'name'
 
+    #: The class name for the JavaScript view representing this field.
+    js_view_class = 'RB.ReviewRequestFields.TargetGroupsFieldView'
+
     def render_item(self, group):
         """Render an item from the list.
 
@@ -1218,6 +1242,9 @@ class TargetPeopleField(BuiltinFieldMixin, BaseModelListEditableField):
     label = _('People')
     model = User
     model_name_attr = 'username'
+
+    #: The class name for the JavaScript view representing this field.
+    js_view_class = 'RB.ReviewRequestFields.TargetPeopleFieldView'
 
     def render_item(self, user):
         """Render an item from the list.

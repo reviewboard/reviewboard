@@ -101,8 +101,8 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
         }
     },
 
-    /*
-     * Sets a field in the draft.
+    /**
+     * Set a field in the draft.
      *
      * If we're in the process of publishing, this will check if we have saved
      * all fields before publishing the draft.
@@ -111,6 +111,47 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *
      *     * fieldChanged(fieldName, value)
      *     * fieldChanged:<fieldName>(value)
+     *
+     * Args:
+     *     fieldName (string):
+     *         The name of the field to set.
+     *
+     *     value (object):
+     *         The value to set in the field.
+     *
+     *     options (object, optional):
+     *         Options for the set operation.
+     *
+     *     context (object, optional):
+     *         Optional context to use when calling callbacks.
+     *
+     * Option Args:
+     *     allowMarkdown (boolean, optional):
+     *         Whether the field can support rich text (Markdown).
+     *
+     *     closeType (string, optional):
+     *         If the ``fieldName`` is ``closeDescription`` and this is
+     *         specified, the way that the review request should be closed.
+     *
+     *     error (function, optional):
+     *         A callback to call in case of error.
+     *
+     *     jsonFieldName (string, optional):
+     *         The key to use for the field name in the API.
+     *
+     *     jsonTextTypeFieldName (string, optional):
+     *         The key to use for the name of the field indicating the text
+     *         type (rich text or plain) in the API.
+     *
+     *     richText (boolean, optional):
+     *         Whether the field is rich text (Markdown) formatted.
+     *
+     *     success (function, optional):
+     *         A callback to call once the field has been set successfully.
+     *
+     *     useExtraData (boolean, optional):
+     *         Whether the field should be set as a key in extraData or as a
+     *         direct attribute.
      */
     setDraftField: function(fieldName, value, options, context) {
         var reviewRequest = this.get('reviewRequest'),
