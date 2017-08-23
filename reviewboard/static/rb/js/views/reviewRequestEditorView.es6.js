@@ -510,12 +510,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         this._updateArchiveVisibility();
 
         /*
-         * We need to show any banners before we continue with field setup,
-         * since the banners register and set up fields as well.
-         *
-         * If we do this any later, formatText() will be called prematurely,
-         * preventing proper Markdown text loading and saving from working
-         * correctly.
+         * We need to show any banners before we render the fields, since the
+         * banners can add their own fields.
          */
         this.showBanner();
 
@@ -687,123 +683,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         } else {
             fields.inlineEditor('submit');
         }
-    },
-
-    /**
-     * Convert an item to a hyperlink.
-     *
-     * Args:
-     *     item (object):
-     *         The item to link. The content is up to the caller.
-     *
-     *     options (object):
-     *         Options to control the linking behavior.
-     *
-     * Option Args:
-     *     cssClass (string, optional):
-     *         The optional CSS class to add to the link.
-     *
-     *     makeItemText (function, optional):
-     *         A function that takes the item and returns the text for the
-     *         link. If not specified, the item itself will be used as the
-     *         text.
-     *
-     *     makeItemURL (function, optional):
-     *         A function that takes the item and returns the URL for the link.
-     *         If not specified, the item itself will be used as the URL.
-     *
-     * Returns:
-     *     jQuery:
-     *     The resulting link element wrapped in jQuery.
-     */
-    convertToLink(item, options={}) {
-        if (!item) {
-            return $();
-        }
-
-        const $link = $('<a/>')
-            .attr('href', (options.makeItemURL
-                           ? options.makeItemURL(item)
-                           : item))
-            .text(options.makeItemText ? options.makeItemText(item) : item);
-
-        if (options.cssClass) {
-            $link.addClass(options.cssClass);
-        }
-
-        return $link;
-    },
-
-    /**
-     * Convert an array of items to a list of hyperlinks.
-     *
-     * Args:
-     *     list (Array);
-     *         An array of items. The contents of the item is up to the caller.
-     *
-     *     options (object):
-     *         Options to control the linking behavior.
-     *
-     * Option Args:
-     *     cssClass (string, optional):
-     *         The optional CSS class to add for each link.
-     *
-     *     makeItemText (function, optional):
-     *         A function that takes an item and returns the text for the link.
-     *         If not specified, the item itself will be used as the text.
-     *
-     *     makeItemURL (function, optional):
-     *         A function that takes an item and returns the URL for the link.
-     *         If not specified, the item itself will be used as the URL.
-     *
-     * Returns:
-     *     jQuery:
-     *     The resulting link elements in a jQuery list.
-     */
-    urlizeList(list, options={}) {
-        // TODO: Move this into a comma-separated values field type.
-        let $links = $();
-
-        if (list) {
-            const len = list.length;
-
-            for (let i = 0; i < len; i++) {
-                $links = $links.add(this.convertToLink(list[i], options));
-
-                if (i < len - 1) {
-                    $links = $links.add(new Text(', '));
-                }
-            }
-        }
-
-        return $links;
-    },
-
-    /**
-     * Linkify a block of text.
-     *
-     * This turns URLs, /r/#/ paths, and bug numbers into clickable links. It's
-     * a wrapper around RB.formatText that handles passing in the bug tracker.
-     */
-    formatText($el, options) {
-        const reviewRequest = this.model.get('reviewRequest');
-
-        options = _.defaults({
-            bugTrackerURL: reviewRequest.get('bugTrackerURL'),
-            isHTMLEncoded: true
-        }, options);
-
-        const fieldOptions = options.fieldOptions;
-
-        if (fieldOptions && fieldOptions.richTextAttr) {
-            options.richText = this.model.getDraftField(
-                fieldOptions.richTextAttr,
-                fieldOptions);
-        }
-
-        RB.formatText($el, options);
-
-        $el.find('img').load(this._checkResizeLayout);
     },
 
     /**

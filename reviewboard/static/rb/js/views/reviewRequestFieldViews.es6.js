@@ -205,6 +205,51 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
     },
 
     /**
+     * Convert an item to a hyperlink.
+     *
+     * Args:
+     *     item (object):
+     *         The item to link. The content is up to the caller.
+     *
+     *     options (object):
+     *         Options to control the linking behavior.
+     *
+     * Option Args:
+     *     cssClass (string, optional):
+     *         The optional CSS class to add to the link.
+     *
+     *     makeItemText (function, optional):
+     *         A function that takes the item and returns the text for the
+     *         link. If not specified, the item itself will be used as the
+     *         text.
+     *
+     *     makeItemURL (function, optional):
+     *         A function that takes the item and returns the URL for the link.
+     *         If not specified, the item itself will be used as the URL.
+     *
+     * Returns:
+     *     jQuery:
+     *     The resulting link element wrapped in jQuery.
+     */
+    _convertToLink(item, options={}) {
+        if (!item) {
+            return $();
+        }
+
+        const $link = $('<a/>')
+            .attr('href', (options.makeItemURL
+                           ? options.makeItemURL(item)
+                           : item))
+            .text(options.makeItemText ? options.makeItemText(item) : item);
+
+        if (options.cssClass) {
+            $link.addClass(options.cssClass);
+        }
+
+        return $link;
+    },
+
+    /**
      * Add auto-complete functionality to the field.
      */
     _buildAutoComplete() {
@@ -343,6 +388,41 @@ Fields.MultilineTextFieldView = Fields.TextFieldView.extend({
     },
 
     /**
+     * Linkify a block of text.
+     *
+     * This turns URLs, /r/#/ paths, and bug numbers into clickable links. It's
+     * a wrapper around RB.formatText that handles passing in the bug tracker.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the text formatting.
+     *
+     * Option Args:
+     *     newText (string, optional):
+     *         The new text to format into the element. If not specified, the
+     *         existing contents of the element are used.
+     */
+    formatText(options) {
+        const reviewRequest = this.model.get('reviewRequest');
+
+        options = _.defaults({
+            bugTrackerURL: reviewRequest.get('bugTrackerURL'),
+            isHTMLEncoded: true,
+        }, options);
+
+        if (this.allowRichText) {
+            const richTextAttr = _.result(this, 'richTextAttr');
+            options.richText = this.model.getDraftField(richTextAttr, {
+                useExtraData: this.useExtraData,
+            });
+        }
+
+        RB.formatText(this.$el, options);
+
+        this.$('img').load(() => this.trigger('resize'));
+    },
+
+    /**
      * Render the view.
      *
      * Returns:
@@ -352,7 +432,7 @@ Fields.MultilineTextFieldView = Fields.TextFieldView.extend({
     render() {
         Fields.TextFieldView.prototype.render.call(this);
 
-        this.reviewRequestEditorView.formatText(this.$el);
+        this.formatText();
 
         return this;
     },
@@ -365,14 +445,8 @@ Fields.MultilineTextFieldView = Fields.TextFieldView.extend({
      *         The new value of the field.
      */
     formatValue(data) {
-        // TODO: move formatText into this object.
         if (this.allowRichText) {
-            this.reviewRequestEditorView.formatText(this.$el, {
-                newText: data,
-                fieldOptions: {
-                    richTextAttr: _.result(this, 'richTextAttr'),
-                },
-            });
+            this.formatText({ newText: data });
         }
     },
 });
@@ -383,6 +457,48 @@ Fields.MultilineTextFieldView = Fields.TextFieldView.extend({
  */
 Fields.CommaSeparatedValuesTextFieldView = Fields.TextFieldView.extend({
     useEditIconOnly: true,
+
+    /**
+     * Convert an array of items to a list of hyperlinks.
+     *
+     * Args:
+     *     list (Array);
+     *         An array of items. The contents of the item is up to the caller.
+     *
+     *     options (object):
+     *         Options to control the linking behavior.
+     *
+     * Option Args:
+     *     cssClass (string, optional):
+     *         The optional CSS class to add for each link.
+     *
+     *     makeItemText (function, optional):
+     *         A function that takes an item and returns the text for the link.
+     *         If not specified, the item itself will be used as the text.
+     *
+     *     makeItemURL (function, optional):
+     *         A function that takes an item and returns the URL for the link.
+     *         If not specified, the item itself will be used as the URL.
+     *
+     * Returns:
+     *     jQuery:
+     *     The resulting link elements in a jQuery list.
+     */
+    _urlizeList(list, options={}) {
+        let $links = $();
+
+        if (list) {
+            for (let i = 0; i < list.length; i++) {
+                $links = $links.add(this._convertToLink(list[i], options));
+
+                if (i < list.length - 1) {
+                    $links = $links.add(new Text(', '));
+                }
+            }
+        }
+
+        return $links;
+    },
 
     /**
      * Format the value into the field.
@@ -428,7 +544,7 @@ Fields.BugsFieldView = Fields.CommaSeparatedValuesTextFieldView.extend({
         if (bugTrackerURL) {
             this.$el
                 .empty()
-                .append(this.reviewRequestEditorView.urlizeList(data, {
+                .append(this._urlizeList(data, {
                     makeItemURL: item => bugTrackerURL.replace(
                         '--bug_id--', item),
                     cssClass: 'bug',
@@ -498,7 +614,7 @@ Fields.DependsOnFieldView = Fields.CommaSeparatedValuesTextFieldView.extend({
 
         this.$el
             .empty()
-            .append(this.reviewRequestEditorView.urlizeList(data, {
+            .append(this._urlizeList(data, {
                 makeItemURL: item => item.url,
                 makeItemText: item => item.id,
                 cssClass: 'review-request-link',
@@ -563,7 +679,7 @@ Fields.SubmitterFieldView = Fields.TextFieldView.extend({
      *         The new value of the field.
      */
     formatValue(data) {
-        const $link = this.reviewRequestEditorView.convertToLink(
+        const $link = this._convertToLink(
             data,
             {
                 makeItemURL: item => {
@@ -617,7 +733,7 @@ Fields.TargetGroupsFieldView = Fields.CommaSeparatedValuesTextFieldView.extend({
 
         this.$el
             .empty()
-            .append(this.reviewRequestEditorView.urlizeList(data, {
+            .append(this._urlizeList(data, {
                 makeItemURL: item => item.url,
                 makeItemText: item => item.name,
             }));
@@ -673,7 +789,7 @@ Fields.TargetPeopleFieldView = Fields.CommaSeparatedValuesTextFieldView.extend({
         data = data || [];
         this.$el
             .empty()
-            .append(this.reviewRequestEditorView.urlizeList(data, {
+            .append(this._urlizeList(data, {
                 makeItemURL: item => item.url,
                 makeItemText: item => item.username,
                 cssClass: 'user',
