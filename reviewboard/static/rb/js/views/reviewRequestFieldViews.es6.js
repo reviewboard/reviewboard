@@ -123,22 +123,19 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
         };
 
         if (this.allowRichText) {
-            const options = {
-                useExtraData: this.useExtraData,
-            };
-
             _.extend(
                 inlineEditorOptions,
                 RB.TextEditorView.getInlineEditorOptions({
                     minHeight: 0,
                     richText: this.model.getDraftField(
-                        _.result(this, 'richTextAttr'), options),
+                        _.result(this, 'richTextAttr'),
+                        { useExtraData: this.useExtraData }),
                 }),
                 {
                     matchHeight: false,
                     hasRawValue: true,
                     rawValue: this.model.getDraftField(
-                        fieldName, options) || '',
+                        fieldName, {useExtraData: this.useExtraData }) || '',
                 });
         }
 
