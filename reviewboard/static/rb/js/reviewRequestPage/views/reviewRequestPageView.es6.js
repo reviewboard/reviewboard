@@ -54,21 +54,34 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
          * If trying to link to some anchor in some entry, we'll expand the
          * first entry containing that anchor.
          */
-        const selector = window.location.hash.match(/^#[A-Za-z0-9_\.-]+$/);
+        const hash = RB.getLocationHash();
         let anchorFound = false;
+        let selector = null;
+
+        if (hash !== '') {
+            if (hash.includes('comment')) {
+                selector = `a[name=${hash}]`;
+            } else {
+                selector = `#${hash}`;
+            }
+        }
 
         this._entryViews.forEach(entryView => {
             entryView.render();
 
-            if (!anchorFound &&
-                selector &&
-                entryView.$(selector[0]).length > 0) {
+            if (!anchorFound && selector && entryView.$(selector).length > 0) {
                 /*
-                 * We found the entry containing the specified anchor. Expand
-                 * it and stop searching the rest of the entries.
+                 * We found the entry containing the specified anchor.
+                 * Expand it and stop searching the rest of the entries.
                  */
                 entryView.expand();
                 anchorFound = true;
+
+                /*
+                 * Scroll down to the particular anchor, now that the entry
+                 * is expanded.
+                 */
+                window.location.hash = hash;
             }
         });
 

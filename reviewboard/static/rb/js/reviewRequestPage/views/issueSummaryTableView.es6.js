@@ -75,7 +75,6 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
 
         this._buildReviewerFilterMap();
         this._checkIssues();
-        this._uncollapseTarget();
 
         this.listenTo(this.model, 'issueStatusUpdated',
                       this._onIssueStatusChanged);
@@ -232,27 +231,6 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
                     $('<option>').text(reviewer).val(reviewer));
             }
         });
-    },
-
-    /**
-     * Uncollapse the review with the comment specified in the URL.
-     *
-     * This will locate the review entry that has the comment that's
-     * referenced in the hash for the URL and expand its box.
-     */
-    _uncollapseTarget() {
-        const hash = RB.getLocationHash();
-
-        if (hash.indexOf('comment') !== -1) {
-            const $targetBox = $(`a[name=${hash}]`).closest('.box');
-
-            if ($targetBox.hasClass('collapsed')) {
-                $targetBox.removeClass('collapsed');
-
-                // Scroll down to the targeted comment box
-                window.location.hash = hash;
-            }
-        }
     },
 
     /**
