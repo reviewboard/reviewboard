@@ -1,6 +1,6 @@
 suite('rb/views/DiffFragmentQueueView', function() {
     const URL_PREFIX = '/r/123/fragments/diff-comments/';
-    const URL_SUFFIX = '/?queue=diff_fragments&container_prefix=container1&' +
+    const URL_SUFFIX = '/?container_prefix=container1&queue=diff_fragments&' +
                        TEMPLATE_SERIAL;
 
     let fragmentQueue;
@@ -50,7 +50,7 @@ suite('rb/views/DiffFragmentQueueView', function() {
             ];
 
             spyOn(fragmentQueue, '_addScript').and.callFake(
-                function(url, callback, params) {
+                function(url, callback) {
                     if (url === urls[0]) {
                         $container1.html('<span>Comment 1</span>');
                         $container2.html('<span>Comment 2</span>');
@@ -62,7 +62,7 @@ suite('rb/views/DiffFragmentQueueView', function() {
                     }
 
                     if (callback !== undefined) {
-                        callback(params);
+                        callback();
                     }
 
                     $.funcQueue('diff_fragments').next();
@@ -72,13 +72,13 @@ suite('rb/views/DiffFragmentQueueView', function() {
 
             expect(fragmentQueue._addScript.calls.count()).toBe(2);
 
-            expect($container1.data('diff-fragment-loaded')).toBe(true);
+            expect($container1.data('diff-fragment-view')).toBeTruthy();
             expect($container1.html()).toBe('<span>Comment 1</span>');
 
-            expect($container2.data('diff-fragment-loaded')).toBe(true);
+            expect($container2.data('diff-fragment-view')).toBeTruthy();
             expect($container2.html()).toBe('<span>Comment 2</span>');
 
-            expect($container3.data('diff-fragment-loaded')).toBe(true);
+            expect($container3.data('diff-fragment-view')).toBeTruthy();
             expect($container3.html()).toBe('<span>Comment 3</span>');
         });
 
@@ -89,7 +89,7 @@ suite('rb/views/DiffFragmentQueueView', function() {
             ];
 
             spyOn(fragmentQueue, '_addScript').and.callFake(
-                function(url, callback, params) {
+                function(url, callback) {
                     if (url === urls[0]) {
                         $container2.html('<span>New comment 2</span>');
                     } else if (url === urls[1]) {
@@ -100,7 +100,7 @@ suite('rb/views/DiffFragmentQueueView', function() {
                     }
 
                     if (callback !== undefined) {
-                        callback(params);
+                        callback();
                     }
 
                     $.funcQueue('diff_fragments').next();
@@ -113,11 +113,11 @@ suite('rb/views/DiffFragmentQueueView', function() {
              */
             $container1
                 .html('<span>Comment 1</span>')
-                .data('diff-fragment-loaded', true);
+                .data('diff-fragment-view', new RB.DiffFragmentView());
 
             $container2
                 .html('<span>Comment 2</span>')
-                .data('diff-fragment-loaded', true);
+                .data('diff-fragment-view', new RB.DiffFragmentView());
 
             /*
              * We're going to save 123 and 125 (which is not loaded). Only
@@ -130,13 +130,13 @@ suite('rb/views/DiffFragmentQueueView', function() {
 
             expect(fragmentQueue._addScript.calls.count()).toBe(2);
 
-            expect($container1.data('diff-fragment-loaded')).toBe(true);
+            expect($container1.data('diff-fragment-view')).toBeTruthy();
             expect($container1.html()).toBe('<span>Comment 1</span>');
 
-            expect($container2.data('diff-fragment-loaded')).toBe(true);
+            expect($container2.data('diff-fragment-view')).toBeTruthy();
             expect($container2.html()).toBe('<span>New comment 2</span>');
 
-            expect($container3.data('diff-fragment-loaded')).toBe(true);
+            expect($container3.data('diff-fragment-view')).toBeTruthy();
             expect($container3.html()).toBe('<span>New comment 3</span>');
 
             expect(fragmentQueue._saved).toEqual({});

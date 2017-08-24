@@ -4,9 +4,17 @@
 RB.CenteredElementManager = Backbone.View.extend({
     /**
      * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options passed to this view.
+     *
+     * Option Args:
+     *     elements (Array, optional):
+     *         An initial array of elements to center.
      */
-    initialize() {
-        this._elements = new Map();
+    initialize(options={}) {
+        this._elements = options.elements || new Map();
         this._$window = $(window);
 
         this._updatePositionThrottled = _.throttle(() => this.updatePosition(),

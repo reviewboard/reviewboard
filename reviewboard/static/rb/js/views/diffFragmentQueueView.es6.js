@@ -1,40 +1,55 @@
-/*
+/**
  * Queues loading of diff fragments from a page.
  *
  * This is used to load diff fragments one-by-one, and to intelligently
  * batch the loads to only fetch at most one set of fragments per file.
  */
 RB.DiffFragmentQueueView = Backbone.View.extend({
-    events: {
-        'click .diff-expand-btn': '_onExpandButtonClicked',
-        'click .diff-collapse-btn': '_onCollapseButtonClicked'
-    },
+    /**
+     * Initialize the queue.
+     *
+     * Args:
+     *     options (object):
+     *         Options passed to this view.
+     *
+     * Returns:
+     *     containerPrefix (string):
+     *         The prefix to prepend to diff comment IDs when forming
+     *         container element IDs.
+     *
+     *     reviewRequestPath (string):
+     *         The URL for the review request that diff fragments will be
+     *         loaded from.
+     *
+     *     queueName (string):
+     *         The name of the diff loading queue.
+     */
+    initialize(options) {
+        this._containerPrefix = options.containerPrefix;
+        this._fragmentsBasePath =
+            `${options.reviewRequestPath}fragments/diff-comments/`;
+        this._queueName = options.queueName;
 
-    // The timeout for a mouseout event to fire after it actually occurs.
-    _timeout: 250,
-
-    COLLAPSED_HEADERS_HEIGHT: 4,
-
-    initialize: function() {
         this._queue = {};
         this._saved = {};
-
-        this._centered = new RB.CenteredElementManager();
-
-        _.bindAll(this,
-                  '_onExpandOrCollapseFinished',
-                  '_tryHideControlsDelayed',
-                  '_tryShowControlsDelayed');
     },
 
-    /*
-     * Queues the load of a diff fragment from the server.
+    /**
+     * Queue the load of a diff fragment from the server.
      *
      * This will be added to a list, which will fetch the comments in batches
      * based on file IDs.
+     *
+     * Args:
+     *     commentID (string):
+     *         The ID of the comment to queue.
+     *
+     *     key (string):
+     *         The key for the queue. Each comment with the same key will be
+     *         loaded in a batch. This will generally be the ID of a file.
      */
-    queueLoad: function(commentID, key) {
-        var queue = this._queue;
+    queueLoad(commentID, key) {
+        const queue = this._queue;
 
         if (!queue[key]) {
             queue[key] = [];
@@ -58,29 +73,26 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
     saveFragment(commentID) {
         const $el = this._getCommentContainer(commentID);
 
-        if ($el.length === 1 && $el.data('diff-fragment-loaded')) {
+        if ($el.length === 1 && $el.data('diff-fragment-view')) {
             this._saved[commentID] = $el.html();
         }
     },
 
-    /*
-     * Begins the loading of all diff fragments on the page belonging to
-     * the specified queue.
+    /**
+     * Load all queued diff fragments.
+     *
+     * The diff fragments for each keyed set in the queue will be loaded as
+     * a batch. The resulting fragments will be injected into the DOM.
+     *
+     * Any existing fragments that were saved will be loaded from the cache
+     * without requesting them from the server.
      */
-    loadFragments: function() {
-        var queueName = this.options.queueName,
-            urlPrefix,
-            urlSuffix;
-
+    loadFragments() {
         if (_.isEmpty(this._queue) && _.isEmpty(this._saved)) {
             return;
         }
 
-        urlPrefix = this.options.reviewRequestPath +
-                    'fragments/diff-comments/';
-        urlSuffix = '/?queue=' + queueName +
-                    '&container_prefix=' + this.options.containerPrefix +
-                    '&' + TEMPLATE_SERIAL;
+        const queueName = this._queueName;
 
         _.each(this._queue, commentIDs => {
             $.funcQueue(queueName).add(() => {
@@ -94,9 +106,13 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                     const commentID = commentIDs[i];
 
                     if (this._saved.hasOwnProperty(commentID)) {
-                        this._getCommentContainer(commentID).html(
-                            this._saved[commentID]);
-                        this._onFirstLoad(commentID);
+                        const view = this._getCommentContainer(commentID)
+                            .data('diff-fragment-view');
+                        console.assert(view);
+
+                        view.$el.html(this._saved[commentID]);
+                        view.render();
+
                         delete this._saved[commentID];
                     } else {
                         pendingCommentIDs.push(commentID);
@@ -111,11 +127,13 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                      * Once these are loaded, they'll call next() on the queue
                      * to process the next batch.
                      */
-                    const url = urlPrefix + pendingCommentIDs.join(',') +
-                                urlSuffix;
-
-                    this._addScript(url, () => {
-                        _.each(pendingCommentIDs, this._onFirstLoad, this);
+                    this._loadDiff(pendingCommentIDs.join(','), {
+                        queueName: queueName,
+                        onDone: () => {
+                            _.each(pendingCommentIDs,
+                                   this._setupDiffFragmentView,
+                                   this);
+                        },
                     });
                 } else {
                     /*
@@ -146,156 +164,81 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
      *     may want to check the length to be sure the container was found.
      */
     _getCommentContainer(commentID) {
-        return $(`#${this.options.containerPrefix}_${commentID}`);
-    },
-
-    /*
-     * When the expand button is clicked, trigger loading of a new diff
-     * fragment with context.
-     */
-    _onExpandButtonClicked: function(e) {
-        e.preventDefault();
-        this._expandOrCollapse($(e.target).closest('.diff-expand-btn'), e);
-    },
-
-    /*
-     * When the collapse button is clicked, trigger loading of a new diff
-     * fragment with context.
-     */
-    _onCollapseButtonClicked: function(e) {
-        e.preventDefault();
-        this._expandOrCollapse($(e.target).closest('.diff-collapse-btn'), e);
-    },
-
-    /*
-     * Update the positions of the collapse buttons.
-     *
-     * This will attempt to position the collapse buttons such that they're
-     * in the center of the exposed part of the expanded diff fragment in the
-     * current viewport.
-     *
-     * As the user scrolls, they'll be able to see the button scroll along
-     * with them. It will not, however, leave the confines of the table.
-     */
-    _updateCollapseButtonPos: function() {
-        this._centered.updatePosition();
-    },
-
-    /*
-     * Add the given context above and below to the fragment corresponding to
-     * the comment id.
-     */
-    _expandOrCollapse: function($btn) {
-        var id = $btn.data('comment-id'),
-            linesOfContext = $btn.data('lines-of-context'),
-            url = this.options.reviewRequestPath + 'fragments/diff-comments/' +
-                  id + '/?container_prefix=' + this.options.containerPrefix +
-                  '&lines_of_context=' + linesOfContext + '&' + AJAX_SERIAL;
-
-        this._addScript(url, this._onExpandOrCollapseFinished, id);
-
-        RB.setActivityIndicator(true, {'type': 'GET'});
+        return $(`#${this._containerPrefix}_${commentID}`);
     },
 
     /**
-     * Show the controls on the specified comment container.
+     * Load a diff fragment for the given comment IDs and options.
+     *
+     * This will construct the URL for the relevant diff fragment and load
+     * it from the server.
      *
      * Args:
-     *     diffEls (object):
-     *         An object containing useful elements related to the diff
-     *         fragment.
-     */
-    _showControls(diffEls) {
-        /*
-         * This will effectively control the opacity of the controls.
-         */
-        diffEls.$table
-            .removeClass('collapsed')
-            .addClass('expanded');
-
-        /*
-         * Undo all the transforms, so that these animate to their normal
-         * positions.
-         */
-        diffEls.$thead.css('transform', '');
-        diffEls.$diffHeaders.css('transform', '');
-    },
-
-    /**
-     * Hide the controls on the specified comment container.
+     *     commentIDs (string):
+     *         A string of comment IDs to load fragments for.
      *
-     * Args:
-     *     diffEls (object):
-     *         An object containing useful elements related to the diff
-     *         fragment.
+     *     options (object, optional):
+     *         Options for the loaded diff fragments.
+     *
+     * Option Args:
+     *     linesOfContext (string):
+     *         The lines of context to load for the diff. This is a string
+     *         containing a comma-separated set of line counts in the form
+     *         of ``numLinesBefore,numLinesAfter``.
+     *
+     *     onDone (function):
+     *         A function to call after the diff has been loaded.
+     *
+     *     queueName (string):
+     *         The name of the load queue. This is used to load batches of
+     *         fragments sequentially.
      */
-    _hideControls(diffEls) {
-        diffEls.$table
-            .removeClass('expanded')
-            .addClass('collapsed');
+    _loadDiff(commentIDs, options={}) {
+        const queryArgs = [
+            `container_prefix=${this._containerPrefix}`,
+        ];
 
-        const $firstDiffHeader = diffEls.$diffHeaders.eq(0);
-
-        if ($firstDiffHeader.hasClass('diff-header-above')) {
-            /*
-             * If the first diff header is present, we'll need to transition
-             * the header down to be flush against the collapsed header.
-             */
-            const translateY = $firstDiffHeader.height() -
-                               this.COLLAPSED_HEADERS_HEIGHT;
-
-            diffEls.$thead.css('transform', `translateY(${translateY}px)`);
+        if (options.queueName !== undefined) {
+            queryArgs.push(`queue=${options.queueName}`);
         }
 
-        /*
-         * The diff headers won't have the same heights exactly. We need to
-         * compute the proper scale for the correct size per-header.
-         */
-        _.each(diffEls.$diffHeaders, diffHeaderEl => {
-            const $diffHeader = $(diffHeaderEl);
-            const scale = this.COLLAPSED_HEADERS_HEIGHT / $diffHeader.height();
+        if (options.linesOfContext !== undefined) {
+            queryArgs.push(`lines_of_context=${options.linesOfContext}`);
+        }
 
-            $diffHeader.css('transform', `scaleY(${scale})`);
-        });
+        queryArgs.push(TEMPLATE_SERIAL);
+
+        this._addScript(
+            `${this._fragmentsBasePath}${commentIDs}/?${queryArgs.join('&')}`,
+            options.onDone);
     },
 
     /*
-     * Adds a script tag for a diff fragment to the bottom of the page. An
-     * optional callback is added to the load event of the script tag. It is
-     * called with the specified optional params.
+     * Add a script tag to the page and set up a callback handler for load.
+     *
+     * The browser will load the script at the specified URL, execute it, and
+     * call a handler when the load has finished. It's expected this will be
+     * called after the page is already otherwise loaded.
+     *
+     * Args:
+     *     url (string):
+     *         The URL of the script to load.
+     *
+     *     callback (function, optional):
+     *         An optional callback function to call once the script has
+     *         loaded.
      */
-    _addScript: function(url, callback, params) {
-        var e = document.createElement('script');
+    _addScript(url, callback) {
+        const e = document.createElement('script');
 
         e.type = 'text/javascript';
         e.src = url;
 
         if (callback !== undefined) {
-            e.addEventListener('load', function () {
-                callback(params);
-            });
+            e.addEventListener('load', callback);
         }
 
         document.body.appendChild(e);
-    },
-
-    /*
-     * Handle a expand or collapse finishing (i.e., the associated script tag
-     * finished loading).
-     */
-    _onExpandOrCollapseFinished: function(id) {
-        const $expanded = this._getCommentContainer(id);
-
-        this._centered.setElements(new Map(
-            Array.prototype.map.call(
-                this.$('.diff-collapse-btn'),
-                el => [el, $(el).closest('table')])
-        ));
-        this._updateCollapseButtonPos();
-
-        RB.setActivityIndicator(false, {});
-
-        this._tryHideControlsDelayed($expanded);
     },
 
     /**
@@ -306,68 +249,27 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
      * to allow the fragment to be expanded/collapsed.
      *
      * Args:
-     *     id (string):
+     *     commentID (string):
      *         The ID of the comment used to build the container ID.
      */
-    _onFirstLoad(id) {
-        const $container = this._getCommentContainer(id);
-        const $table = $container.children('table');
-        const $diffHeaders = $table.find('.diff-header');
+    _setupDiffFragmentView(commentID) {
+        const view = new RB.DiffFragmentView({
+            el: this._getCommentContainer(commentID),
+            loadDiff: options => {
+                RB.setActivityIndicator(true, {type: 'GET'});
 
-        const diffEls = {
-            $container: $container,
-            $table: $table,
-            $thead: $table.children('thead'),
-            $diffHeaders: $diffHeaders,
-            $controls: $diffHeaders.find('td > div'),
-        };
+                this._loadDiff(commentID, _.defaults({
+                    onDone() {
+                        RB.setActivityIndicator(false, {});
 
-        this._hideControls(diffEls);
-
-        /*
-         * Once we've hidden the controls, we want to enable transitions for
-         * hovering. We don't apply this before (or make it implicit) because
-         * we don't want all the transitions to take place on page load, as
-         * it's both visually weird and messes with the height calculation for
-         * the collapsed areas.
-         */
-        _.defer(() => $container.addClass('allow-transitions'));
-
-        $container
-            .hover(_.partial(this._tryShowControlsDelayed, diffEls),
-                   _.partial(this._tryHideControlsDelayed, diffEls))
-            .data('diff-fragment-loaded', true);
+                        if (options.onDone) {
+                            options.onDone();
+                        }
+                    },
+                }, options));
+            },
+        });
+        view.render().$el
+            .data('diff-fragment-view', view);
     },
-
-    /**
-     * Attempt to hide the controls in the given container after a delay.
-     *
-     * Args:
-     *     diffEls (object):
-     *         An object containing useful elements related to the diff
-     *         fragment.
-     */
-    _tryShowControlsDelayed(diffEls) {
-        _.delay(() => {
-            if (diffEls.$container.is(':hover')) {
-                this._showControls(diffEls);
-            }
-        }, this._timeout);
-    },
-
-    /**
-     * Attempt to hide the controls in the given container after a delay.
-     *
-     * Args:
-     *     diffEls (object):
-     *         An object containing useful elements related to the diff
-     *         fragment.
-     */
-    _tryHideControlsDelayed(diffEls) {
-        _.delay(() => {
-            if (!diffEls.$container.is(':hover')) {
-                this._hideControls(diffEls);
-            }
-        }, this._timeout);
-    }
 });
