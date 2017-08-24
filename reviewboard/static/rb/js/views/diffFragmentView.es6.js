@@ -40,6 +40,7 @@ RB.DiffFragmentView = Backbone.View.extend({
         this._$controls = null;
 
         this._centeredMgr = null;
+        this._contextExpanded = false;
     },
 
     /**
@@ -140,6 +141,14 @@ RB.DiffFragmentView = Backbone.View.extend({
      * Hide the controls on the specified comment container.
      */
     _hideControls() {
+        /*
+         * Never hide the controls when context has been expanded. It creates
+         * a sort of jarring initial effect.
+         */
+        if (this._contextExpanded) {
+            return;
+        }
+
         this._$table
             .removeClass('expanded')
             .addClass('collapsed');
@@ -184,14 +193,12 @@ RB.DiffFragmentView = Backbone.View.extend({
             this._centeredMgr = null;
         }
 
-        this.render();
+        const $collapseButtons = this.$('.diff-collapse-btn');
 
         /*
          * Check if we have any collapse buttons. If so, we'll need to track
          * them in a CenteredElementManager.
          */
-        const $collapseButtons = this.$('.diff-collapse-btn');
-
         if ($collapseButtons.length > 0) {
             this._centeredMgr = new RB.CenteredElementManager({
                 elements: new Map(Array.prototype.map.call(
@@ -199,9 +206,17 @@ RB.DiffFragmentView = Backbone.View.extend({
                     el => [el, $(el).closest('tbody')])),
             });
             this._centeredMgr.updatePosition();
+
+            this._contextExpanded = true;
+        } else {
+            this._contextExpanded = false;
         }
 
-        this._tryHideControlsDelayed();
+        this.render();
+
+        if (!this._contextExpanded) {
+            this._tryHideControlsDelayed();
+        }
     },
 
     /**
