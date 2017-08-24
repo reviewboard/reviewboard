@@ -947,6 +947,11 @@
         text-decoration: underline;
       }
 
+      p {
+        padding-top: 2px;
+        padding-bottom: 2px;
+      }
+
       pre {
         background: none;
         border: 0;
@@ -957,13 +962,22 @@
 
       td {
         font-family: @textarea-font-family;
-        padding: 2px 4px;
+        padding: 0 4px;
         vertical-align: top;
         white-space: pre-wrap;
 
         .codehilite {
+          border-radius: 0;
+          border-left: 0;
+          border-right: 0;
+
           // Make this flush with the sides of the row.
           margin: 0 -4px;
+
+          pre:empty {
+            /* Give this a reasonable height so it's not just blank. */
+            height: 1rem;
+          }
         }
       }
 
