@@ -37,6 +37,8 @@ suite('rb/pages/views/ReviewablePageView', function() {
     });
 
     afterEach(function() {
+        RB.DnDUploader.instance = null;
+
         pageView.remove();
     });
 

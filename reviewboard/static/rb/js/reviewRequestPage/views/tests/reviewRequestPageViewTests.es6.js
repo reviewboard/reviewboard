@@ -91,6 +91,10 @@ suite('rb/reviewRequestPage/views/PageView', () => {
         entry2 = page._entryViews[1];
     });
 
+    afterEach(function() {
+        RB.DnDUploader.instance = null;
+    });
+
     describe('Actions', () => {
         it('Collapse all', () => {
             const $el1 = entry1.$el.find('.review-request-page-entry-contents');

@@ -3,8 +3,11 @@ suite('rb/ui/views/TextEditorView', function() {
         file;
 
     beforeEach(function() {
-        RB.DnDUploader.instance = null;
         RB.DnDUploader.create();
+    });
+
+    afterEach(function() {
+        RB.DnDUploader.instance = null;
     });
 
     describe('Construction', function() {
