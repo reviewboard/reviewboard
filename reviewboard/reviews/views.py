@@ -2,39 +2,27 @@ from __future__ import unicode_literals
 
 import logging
 import re
-import time
 
 from django.conf import settings
-from django.contrib.auth.decorators import login_required
 from django.contrib.sites.models import Site
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from django.db.models import Q
-from django.http import (Http404,
-                         HttpResponse,
-                         HttpResponseNotFound,
-                         HttpResponseNotModified,
-                         HttpResponseRedirect)
+from django.http import Http404, HttpResponse, HttpResponseNotFound
 from django.shortcuts import get_object_or_404, get_list_or_404, render
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import six, timezone
-from django.utils.decorators import method_decorator
 from django.utils.html import escape, format_html, strip_tags
-from django.utils.http import http_date
 from django.utils.safestring import mark_safe
 from django.utils.timezone import utc
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import RedirectView, TemplateView, View
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.dates import get_latest_timestamp
-from djblets.util.decorators import augment_method_from
-from djblets.util.http import (encode_etag, set_last_modified,
-                               set_etag, etag_if_none_match)
+from djblets.util.http import set_last_modified
 from djblets.views.generic.base import PrePostDispatchViewMixin
 from djblets.views.generic.etag import ETagViewMixin
 
-from reviewboard.accounts.decorators import (check_login_required,
-                                             valid_prefs_required)
 from reviewboard.accounts.mixins import (CheckLoginRequiredViewMixin,
                                          LoginRequiredViewMixin,
                                          UserProfileRequiredViewMixin)
@@ -53,7 +41,6 @@ from reviewboard.diffviewer.views import (DiffFragmentView,
                                           DownloadPatchErrorBundleView,
                                           exception_traceback_string)
 from reviewboard.hostingsvcs.bugtracker import BugTracker
-from reviewboard.notifications.email.decorators import preview_email
 from reviewboard.notifications.email.message import (
     prepare_reply_published_mail,
     prepare_review_published_mail,
@@ -65,11 +52,7 @@ from reviewboard.reviews.context import (comment_counts,
                                          has_comments_in_diffsets_excluding,
                                          interdiffs_with_comments,
                                          make_review_request_context)
-from reviewboard.reviews.detail import (ChangeEntry,
-                                        InitialStatusUpdatesEntry,
-                                        ReviewEntry,
-                                        ReviewRequestPageData)
-from reviewboard.reviews.features import status_updates_feature
+from reviewboard.reviews.detail import ReviewRequestPageData
 from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
                                                 render_markdown)
 from reviewboard.reviews.models import (Comment,
@@ -79,7 +62,6 @@ from reviewboard.reviews.models import (Comment,
 from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.scmtools.models import Repository
-from reviewboard.site.decorators import check_local_site_access
 from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -511,7 +493,6 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
             The ETag for the page.
         """
         review_request = self.review_request
-        local_site = review_request.local_site
 
         # Track the visit to this review request, so the dashboard can
         # reflect whether there are new updates.
@@ -1906,7 +1887,6 @@ class ReviewRequestInfoboxView(ReviewRequestViewMixin, TemplateView):
             infobox could not be provided.
         """
         review_request = self.review_request
-        submitter = review_request.submitter
         draft = review_request.get_draft(self.request.user)
 
         # We only want to show one label. If there's a draft, then that's
