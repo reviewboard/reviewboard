@@ -1,26 +1,35 @@
 from __future__ import unicode_literals
 
+import json
 import logging
 import re
+from itertools import chain
 
+import dateutil.parser
 from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.exceptions import MultipleObjectsReturned, ObjectDoesNotExist
 from django.db.models import Q
-from django.http import Http404, HttpResponse, HttpResponseNotFound
+from django.http import (Http404,
+                         HttpResponse,
+                         HttpResponseBadRequest,
+                         HttpResponseNotFound)
 from django.shortcuts import get_object_or_404, get_list_or_404, render
 from django.template.context import RequestContext
 from django.template.loader import render_to_string
 from django.utils import six, timezone
 from django.utils.html import escape, format_html, strip_tags
 from django.utils.safestring import mark_safe
-from django.utils.timezone import utc
+from django.utils.six.moves import cStringIO as StringIO
+from django.utils.timezone import is_aware, make_aware, utc
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic.base import RedirectView, TemplateView, View
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.http import set_last_modified
-from djblets.views.generic.base import PrePostDispatchViewMixin
+from djblets.views.generic.base import (CheckRequestMethodViewMixin,
+                                        ContextMixin,
+                                        PrePostDispatchViewMixin)
 from djblets.views.generic.etag import ETagViewMixin
 
 from reviewboard.accounts.mixins import (CheckLoginRequiredViewMixin,
@@ -52,7 +61,7 @@ from reviewboard.reviews.context import (comment_counts,
                                          has_comments_in_diffsets_excluding,
                                          interdiffs_with_comments,
                                          make_review_request_context)
-from reviewboard.reviews.detail import ReviewRequestPageData
+from reviewboard.reviews.detail import ReviewRequestPageData, entry_registry
 from reviewboard.reviews.markdown_utils import (is_rich_text_default_for_user,
                                                 render_markdown)
 from reviewboard.reviews.models import (Comment,
@@ -66,7 +75,8 @@ from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
-class ReviewRequestViewMixin(CheckLoginRequiredViewMixin,
+class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
+                             CheckLoginRequiredViewMixin,
                              CheckLocalSiteAccessViewMixin,
                              PrePostDispatchViewMixin):
     """Common functionality for all review request-related pages.
@@ -517,10 +527,10 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
             review_request.get_last_activity(data.diffsets, data.reviews)
         etag_timestamp = self.last_activity_time
 
-        if data.status_updates_enabled:
-            for status_update in data.all_status_updates:
-                if status_update.timestamp > etag_timestamp:
-                    etag_timestamp = status_update.timestamp
+        entry_etags = ':'.join(
+            entry_cls.build_etag_data(data)
+            for entry_cls in entry_registry
+        )
 
         if data.draft:
             draft_timestamp = data.draft.last_updated
@@ -531,6 +541,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
             request.user,
             etag_timestamp,
             draft_timestamp,
+            entry_etags,
             data.latest_review_timestamp,
             review_request.last_review_activity_timestamp,
             is_rich_text_default_for_user(request.user),
@@ -672,6 +683,286 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
         })
 
         return context
+
+
+class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
+                               ContextMixin, View):
+    """Internal view for sending data for updating the review request page.
+
+    This view serializes data representing components of the review request
+    page (the issue summary table and entries) that need to periodically
+    update without a full page reload. It's used internally by the page to
+    request and handle updates.
+
+    The resulting format is a custom, condensed format containing metadata
+    information and HTML for each component being updated. It's designed
+    to be quick to parse and reduces the amount of data to send across the
+    wire (unlike a format like JSON, which would add overhead to the
+    serialization/deserialization time and data size when storing HTML).
+
+    Each entry in the payload is in the following format, with all entries
+    joined together:
+
+        <metadata length>\\n
+        <metadata content>
+        <html length>\\n
+        <html content>
+
+    The format is subject to change without notice, and should not be
+    relied upon by third parties.
+    """
+
+    def __init__(self, **kwargs):
+        """Initialize the view.
+
+        Args:
+            **kwargs (tuple):
+                Keyword arguments passed to :py:meth:`as_view`.
+        """
+        super(ReviewRequestUpdatesView, self).__init__(**kwargs)
+
+        self.entry_ids = {}
+        self.data = None
+        self.since = None
+
+    def pre_dispatch(self, request, *args, **kwargs):
+        """Look up and validate state before dispatching the request.
+
+        This looks up information based on the request before performing any
+        ETag generation or otherwise handling the HTTP request.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            *args (tuple, unused):
+                Positional arguments passsed to the view.
+
+            **kwargs (dict, unused):
+                Keyword arguments passed to the view.
+
+        Returns:
+            django.http.HttpResponse:
+            The HTTP response containin the updates payload.
+        """
+        super(ReviewRequestUpdatesView, self).pre_dispatch(request, *args,
+                                                           **kwargs)
+
+        # Find out which entries and IDs (if any) that the caller is most
+        # interested in.
+        entries_str = request.GET.get('entries')
+
+        if entries_str:
+            try:
+                for entry_part in entries_str.split(';'):
+                    entry_type, entry_ids = entry_part.split(':')
+                    self.entry_ids[entry_type] = set(entry_ids.split(','))
+            except ValueError as e:
+                return HttpResponseBadRequest('Invalid ?entries= value: %s'
+                                              % e)
+
+        if self.entry_ids:
+            entry_classes = []
+
+            for entry_type in six.iterkeys(self.entry_ids):
+                entry_cls = entry_registry.get_entry(entry_type)
+
+                if entry_cls:
+                    entry_classes.append(entry_cls)
+        else:
+            entry_classes = list(entry_registry)
+
+        if not entry_classes:
+            raise Http404
+
+        self.since = request.GET.get('since')
+
+        self.data = ReviewRequestPageData(self.review_request, request,
+                                          entry_classes=entry_classes)
+
+    def get_etag_data(self, request, *args, **kwargs):
+        """Return an ETag for the view.
+
+        This will look up state needed for the request and generate a
+        suitable ETag. Some of the information will be stored for later
+        computation of the payload.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            *args (tuple, unused):
+                Positional arguments passsed to the handler.
+
+            **kwargs (dict, unused):
+                Keyword arguments passed to the handler.
+
+        Returns:
+            unicode:
+            The ETag for the page.
+        """
+        review_request = self.review_request
+        data = self.data
+
+        # Build page data only for the entry we care about.
+        data.query_data_pre_etag()
+
+        last_activity_time, updated_object = \
+            review_request.get_last_activity(data.diffsets, data.reviews)
+
+        entry_etags = ':'.join(
+            entry_cls.build_etag_data(data)
+            for entry_cls in entry_registry
+        )
+
+        return ':'.join(six.text_type(value) for value in (
+            request.user,
+            last_activity_time,
+            data.latest_review_timestamp,
+            review_request.last_review_activity_timestamp,
+            entry_etags,
+            is_rich_text_default_for_user(request.user),
+            settings.AJAX_SERIAL,
+        ))
+
+    def get(self, request, **kwargs):
+        """Handle HTTP GET requests for this view.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            **kwargs (dict):
+                Keyword arguments passed to the handler.
+
+        Returns:
+            django.http.HttpResponse:
+            The HTTP response to send to the client. This will contain the
+            custom update payload content.
+        """
+        request = self.request
+        review_request = self.review_request
+        data = self.data
+        since = self.since
+
+        # Finish any querying needed by entries on this page.
+        self.data.query_data_post_etag()
+
+        # Gather all the entries into a single list.
+        entries = chain.from_iterable(
+            entry_list
+            for entry_list in six.itervalues(data.get_entries())
+        )
+
+        if self.entry_ids:
+            # If specific entry IDs have been requested, limit the results
+            # to those.
+            entries = (
+                entry
+                for entry in entries
+                if (entry.entry_type_id in self.entry_ids and
+                    entry.entry_id in self.entry_ids[entry.entry_type_id])
+            )
+
+        # See if the caller only wants to fetch entries updated since a given
+        # timestamp.
+        if since:
+            since = dateutil.parser.parse(since)
+
+            if not is_aware(since):
+                since = make_aware(since, utc)
+
+            entries = (
+                entry
+                for entry in entries
+                if entry.timestamp > since
+            )
+
+        # We can now begin to serialize the payload for all the updates.
+        payload = StringIO()
+        entry_context = None
+        needs_issue_summary_table = False
+
+        for entry in entries:
+            metadata = {
+                'type': 'entry',
+                'entryType': entry.entry_type_id,
+                'entryID': entry.entry_id,
+                'timestamp': six.text_type(entry.timestamp),
+                'modelData': entry.get_js_model_data(),
+                'viewOptions': entry.get_js_view_data(),
+            }
+
+            if entry_context is None:
+                # Now that we know the context is needed for entries,
+                # we can construct and populate it.
+                entry_context = (
+                    super(ReviewRequestUpdatesView, self)
+                    .get_context_data(**kwargs)
+                )
+                entry_context.update(
+                    make_review_request_context(request, review_request))
+
+            entry_context.push()
+            entry_context.update({
+                'show_entry_statuses_area': (
+                    entry.entry_pos == entry.ENTRY_POS_MAIN),
+                'entry': entry,
+            })
+
+            html = render_to_string(entry.template_name, entry_context)
+            entry_context.pop()
+
+            self._write_update(payload, metadata, html)
+
+            if entry.needs_reviews:
+                needs_issue_summary_table = True
+
+        # If any of the entries required any information on reviews, then
+        # the state of the issue summary table may have changed. We'll need
+        # to send this along as well.
+        if needs_issue_summary_table:
+            metadata = {
+                'type': 'issue-summary-table',
+            }
+
+            html = render_to_string(
+                'reviews/review_issue_summary_table.html',
+                RequestContext(self.request, {
+                    'issue_counts': data.issue_counts,
+                    'issues': data.issues,
+                }))
+
+            self._write_update(payload, metadata, html)
+
+        # The payload's complete. Close it out and send to the client.
+        result = payload.getvalue()
+        payload.close()
+
+        return HttpResponse(result, content_type='text/plain')
+
+    def _write_update(self, payload, metadata, html):
+        """Write an update to the payload.
+
+        This will format the metadata and HTML for the update and write it.
+
+        Args:
+            payload (StringIO.StringIO):
+                The payload to write to.
+
+            metadata (dict):
+                The JSON-serializable metadata to write.
+
+            html (unicode):
+                The HTML to write.
+        """
+        metadata = json.dumps(metadata).encode('utf-8')
+        html = html.strip().encode('utf-8')
+
+        payload.write(b'%d\n' % len(metadata))
+        payload.write(metadata)
+        payload.write(b'%d\n' % len(html))
+        payload.write(html)
 
 
 class ReviewsDiffViewerView(ReviewRequestViewMixin, DiffViewerView):

@@ -711,7 +711,9 @@ class ChangeEntryTests(TestCase):
                             collapsed=False,
                             data=self.data)
 
-        self.assertEqual(entry.get_js_model_data(), {})
+        self.assertEqual(entry.get_js_model_data(), {
+            'pendingStatusUpdates': False,
+        })
 
     @add_fixtures(['test_scmtools'])
     def test_get_js_model_data_with_status_updates(self):
@@ -763,6 +765,7 @@ class ChangeEntryTests(TestCase):
                 (six.text_type(comment1.pk), six.text_type(filediff.pk)),
                 (six.text_type(comment2.pk), six.text_type(filediff.pk)),
             ],
+            'pendingStatusUpdates': False,
         })
 
     def test_build_entries(self):

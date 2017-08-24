@@ -14,6 +14,7 @@ from django.utils.translation import ugettext as _
 from djblets.registries.registry import (ALREADY_REGISTERED,
                                          ATTRIBUTE_REGISTERED,
                                          NOT_REGISTERED)
+from djblets.util.dates import get_latest_timestamp
 
 from reviewboard.registries.registry import OrderedRegistry
 from reviewboard.reviews.builtin_fields import ReviewRequestPageDataMixin
@@ -569,6 +570,10 @@ class BaseReviewRequestPageEntry(object):
             case no avatar will be displayed. Templates can also override the
             avatar HTML instead of using this.
 
+        entry_id (unicode):
+            The ID of the entry. This will be unique across this type of entry,
+            and may refer to a database object ID.
+
         timestamp (datetime.datetime):
             The timestamp of the entry.
 
@@ -678,10 +683,31 @@ class BaseReviewRequestPageEntry(object):
         """
         pass
 
-    def __init__(self, timestamp, collapsed, avatar_user=None):
+    @classmethod
+    def build_etag_data(cls, data):
+        """Build ETag data for the entry.
+
+        This will be incorporated into the ETag for the page. By default,
+        no additional data will be returned.
+
+        Args:
+            data (ReviewRequestPageData):
+                The computed data (pre-ETag) for the page.
+
+        Returns:
+            unicode:
+            The ETag data for the entry.
+        """
+        return ''
+
+    def __init__(self, entry_id, timestamp, collapsed, avatar_user=None):
         """Initialize the entry.
 
         Args:
+            entry_id (unicode):
+                The ID of the entry. This must be unique across this type
+                of entry, and may refer to a database object ID.
+
             timestamp (datetime.datetime):
                 The timestamp of the entry.
 
@@ -693,21 +719,36 @@ class BaseReviewRequestPageEntry(object):
                 which case no avatar will be displayed. Templates can also
                 override the avatar HTML instead of using this.
         """
+        self.entry_id = entry_id
         self.timestamp = timestamp
         self.collapsed = collapsed
         self.avatar_user = avatar_user
 
+    def __repr__(self):
+        """Return a string representation for this entry.
+
+        Returns:
+            unicode:
+            A string representation for the entry.
+        """
+        return (
+            '%s(entry_type_id=%s, entry_id=%s, timestamp=%s, collapsed=%s)'
+            % (self.__class__.__name__, self.entry_type_id, self.entry_id,
+               self.timestamp, self.collapsed)
+        )
+
     def get_dom_element_id(self):
         """Return the ID used for the DOM element for this entry.
 
-        By default, this returns :py:attr:`name`. Subclasses should override
-        this to include a unique ID for the entry, based on the object loaded.
+        By default, this returns :py:attr:`entry_type_id` and
+        :py:attr:`entry_id` concatenated. Subclasses should override this if
+        they need something custom.
 
         Returns:
             unicode:
             The ID used for the element.
         """
-        return self.entry_type_id
+        return '%s%s' % (self.entry_type_id, self.entry_id)
 
     def get_js_model_data(self):
         """Return data to pass to the JavaScript Model during instantiation.
@@ -809,10 +850,38 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin,
     needs_reviews = True
     needs_status_updates = True
 
+    @classmethod
+    def build_etag_data(cls, data):
+        """Build ETag data for the entry.
+
+        This will be incorporated into the ETag for the page.
+
+        Args:
+            data (ReviewRequestPageData):
+                The computed data (pre-ETag) for the page.
+
+        Returns:
+            unicode:
+            The ETag data for the entry.
+        """
+        if data.status_updates_enabled:
+            timestamp = six.text_type(get_latest_timestamp(
+                status_update.timestamp
+                for status_update in data.all_status_updates
+            ))
+        else:
+            timestamp = datetime.fromtimestamp(0, utc)
+
+        return '%s:%s' % (
+            super(StatusUpdatesEntryMixin, cls).build_etag_data(data),
+            timestamp,
+        )
+
     def __init__(self):
         """Initialize the entry."""
         self.status_updates = []
         self.status_updates_by_review = {}
+        self.state_counts = Counter()
 
     def add_update(self, update):
         """Add a status update to the entry.
@@ -908,8 +977,6 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin,
 
     def finalize(self):
         """Perform final computations after all comments have been added."""
-        self.state_counts = Counter()
-
         for update in self.status_updates:
             self.state_counts[update.effective_state] += 1
 
@@ -973,12 +1040,18 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin,
             if update.review_id is not None
         ]
 
-        return {
+        model_data = {
+            'pendingStatusUpdates': (
+                self.state_counts[StatusUpdate.PENDING] > 0),
+        }
+        model_data.update({
             key: value
             for key, value in (('diffCommentsData', diff_comments_data),
                                ('reviewsData', reviews_data))
             if value
-        }
+        })
+
+        return model_data
 
 
 class ReviewRequestEntry(BaseReviewRequestPageEntry):
@@ -1063,8 +1136,11 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
                 Pre-queried data for the review request page.
         """
         StatusUpdatesEntryMixin.__init__(self)
-        BaseReviewRequestPageEntry.__init__(self, review_request.time_added,
-                                            collapsed)
+        BaseReviewRequestPageEntry.__init__(
+            self,
+            entry_id='0',
+            timestamp=review_request.time_added,
+            collapsed=collapsed)
 
     @property
     def has_content(self):
@@ -1075,6 +1151,15 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
             True if there are any initial status updates to display.
         """
         return len(self.status_updates) > 0
+
+    def get_dom_element_id(self):
+        """Return the ID used for the DOM element for this entry.
+
+        Returns:
+            unicode:
+            The ID used for the element.
+        """
+        return self.entry_type_id
 
 
 class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
@@ -1169,7 +1254,8 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
             data (ReviewRequestPageData):
                 Pre-queried data for the review request page.
         """
-        super(ReviewEntry, self).__init__(timestamp=review.timestamp,
+        super(ReviewEntry, self).__init__(entry_id=six.text_type(review.pk),
+                                          timestamp=review.timestamp,
                                           collapsed=collapsed,
                                           avatar_user=review.user)
 
@@ -1312,6 +1398,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
         """
         BaseReviewRequestPageEntry.__init__(
             self,
+            entry_id=six.text_type(changedesc.pk),
             timestamp=changedesc.timestamp,
             collapsed=collapsed,
             avatar_user=changedesc.get_user(review_request))
