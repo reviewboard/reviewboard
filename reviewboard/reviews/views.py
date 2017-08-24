@@ -23,12 +23,12 @@ from django.utils.safestring import mark_safe
 from django.utils.six.moves import cStringIO as StringIO
 from django.utils.timezone import is_aware, make_aware, utc
 from django.utils.translation import ugettext_lazy as _
-from django.views.generic.base import RedirectView, TemplateView, View
+from django.views.generic.base import (ContextMixin, RedirectView,
+                                       TemplateView, View)
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.dates import get_latest_timestamp
 from djblets.util.http import set_last_modified
 from djblets.views.generic.base import (CheckRequestMethodViewMixin,
-                                        ContextMixin,
                                         PrePostDispatchViewMixin)
 from djblets.views.generic.etag import ETagViewMixin
 
