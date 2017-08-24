@@ -203,7 +203,17 @@ RB.DiffFragmentView = Backbone.View.extend({
             this._centeredMgr = new RB.CenteredElementManager({
                 elements: new Map(Array.prototype.map.call(
                     $collapseButtons,
-                    el => [el, $(el).closest('tbody')])),
+                    el => {
+                        const $chunks = $(el)
+                            .closest('.sidebyside')
+                            .children('tbody')
+                            .not('.diff-header');
+
+                        return [el, {
+                            $top: $chunks.eq(0),
+                            $bottom: $chunks.eq(-1),
+                        }];
+                    }))
             });
             this._centeredMgr.updatePosition();
 

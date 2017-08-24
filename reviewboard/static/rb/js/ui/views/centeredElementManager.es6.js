@@ -62,11 +62,13 @@ RB.CenteredElementManager = Backbone.View.extend({
         const windowHeight = this._$window.height();
         const windowBottom = windowTop + windowHeight;
 
-        this._elements.forEach(($container, el) => {
+        this._elements.forEach((containers, el) => {
             const $el = $(el);
-            const containerTop = $container.offset().top;
-            const containerHeight = $container.height();
-            const containerBottom = containerTop + containerHeight;
+            const $topContainer = containers.$top;
+            const $bottomContainer = containers.$bottom || $topContainer;
+            const containerTop = $topContainer.offset().top;
+            const containerBottom = $bottomContainer.offset().top +
+                                    $bottomContainer.height();
 
             /*
              * We don't have to vertically center the element when its

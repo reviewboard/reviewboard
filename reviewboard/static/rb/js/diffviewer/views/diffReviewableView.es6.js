@@ -330,7 +330,9 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
                 this._centered.setElements(new Map(
                     Array.prototype.map.call(
                         this.$('.diff-collapse-btn'),
-                        el => [el, $(el).closest('tbody')])
+                        el => [el, {
+                            $top: $(el).closest('tbody'),
+                        }])
                 ));
                 this._updateCollapseButtonPos();
 
