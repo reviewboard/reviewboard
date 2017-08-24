@@ -722,7 +722,14 @@
       white-space: pre-wrap;
     }
 
-    .comment-text:target {
+    /*
+     * The first selector highlights top-level comments. The second
+     * highlights just comments on replies. This ensures that highlighting
+     * a top-level comment won't highlight replies (which are all in the
+     * same container for the top-level comment).
+     */
+    li:target .review-comment > .comment-text,
+    li:target > .reply-comment > .comment-text {
       background-color: #E7EDF3;
       border: 1px solid @dark-blue;
       padding: 1em;
