@@ -15,10 +15,10 @@ const commentTypeToIDPrefix = {
  * other functionality needed for the main review request page.
  */
 RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
-    events: {
+    events: _.extend({
         'click #collapse-all': '_onCollapseAllClicked',
         'click #expand-all': '_onExpandAllClicked',
-    },
+    }, RB.ReviewablePageView.prototype.events),
 
     /**
      * Initialize the page.
