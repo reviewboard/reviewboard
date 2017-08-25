@@ -7,7 +7,7 @@ import logging
 from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.functional import cached_property
-from django.utils.html import escape, strip_tags
+from django.utils.html import escape, format_html_join, strip_tags
 from django.utils.safestring import mark_safe
 from django.utils.six.moves.html_parser import HTMLParser
 from django.utils.translation import ugettext_lazy as _
@@ -1331,6 +1331,93 @@ class BaseCheckboxField(BaseReviewRequestField):
             The rendered field.
         """
         return ''
+
+
+class BaseDropdownField(BaseReviewRequestField):
+    """Base class for a drop-down field."""
+
+    is_editable = True
+
+    #: The class name for the JavaScript view representing this field.
+    js_view_class = 'RB.ReviewRequestFields.DropdownFieldView'
+
+    #: The default value of the field.
+    default_value = None
+
+    #: The HTML tag to be used when rendering the field.
+    tag_name = 'select'
+
+    #: A list of the available options for the dropdown.
+    #:
+    #: Each entry in the list should be a 2-tuple of (value, label). The values
+    #: must be unique. Both values and labels should be unicode.
+    options = []
+
+    def load_value(self, review_request_details):
+        """Load a value from the review request or draft.
+
+        Args:
+            review_request_details (reviewboard.reviews.models.
+                                    base_review_request_details.
+                                    BaseReviewRequestDetails):
+                The review request or draft.
+
+        Returns:
+            unicode:
+            The loaded value.
+        """
+        value = review_request_details.extra_data.get(self.field_id)
+
+        if value is not None:
+            return value
+        else:
+            return self.default_value
+
+    def render_change_entry_value_html(self, info, value):
+        """Render the value for a change description string to HTML.
+
+        Args:
+            info (dict):
+                A dictionary describing how the field has changed.
+
+            item (object):
+                The value of the field.
+
+        Returns:
+            unicode:
+            The rendered change entry.
+        """
+        for key, label in self.options:
+            if value == key:
+                return escape(label)
+
+        return ''
+
+    def value_as_html(self):
+        """Return the field rendered as HTML.
+
+        Select tags are funny kinds of inputs, and need a bunch of
+        ``<option>`` elements inside them. This renders the "value" of the
+        field as those options, to fit in with the base field's template.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The rendered field.
+        """
+        data = []
+
+        for value, label in self.options:
+            if self.value == value:
+                selected = ' selected'
+            else:
+                selected = ''
+
+            data.append((value, selected, label))
+
+        return format_html_join(
+            '',
+            '<option value="{}"{}>{}</option>',
+            data)
 
 
 def get_review_request_fields():

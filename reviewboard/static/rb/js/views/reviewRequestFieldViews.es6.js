@@ -554,6 +554,32 @@ Fields.CheckboxFieldView = Fields.BaseFieldView.extend({
 
 
 /**
+ * A field view for dropdown fields.
+ */
+Fields.DropdownFieldView = Fields.BaseFieldView.extend({
+    /**
+     * Render the field.
+     *
+     * Returns:
+     *     RB.ReviewRequestFields.DropdownFieldView:
+     *     This object, for chaining.
+     */
+    render() {
+        Fields.BaseFieldView.prototype.render.call(this);
+
+        this.$el.change(() => {
+            this._saveValue(this.$el.val(), {
+                error: err => this.trigger('fieldError', err),
+                success: () => this.trigger('fieldSaved'),
+            });
+        });
+
+        return this;
+    },
+});
+
+
+/**
  * The "Branch" field.
  */
 Fields.BranchFieldView = Fields.TextFieldView.extend({
