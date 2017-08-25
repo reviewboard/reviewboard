@@ -24,7 +24,7 @@ RB.getLocationHash = function(url) {
     rawHash = url.split('#')[1] || '';
     decodedHash = decodeURIComponent(rawHash);
 
-    if (!decodedHash.match(/^[A-Za-z0-9,_-]*$/)) {
+    if (!decodedHash.match(/^[A-Za-z0-9,_\.-]*$/)) {
         /*
          * This hash contains characters we cannot necessarily trust.
          * Instead of hoping we can trust it or attempting to sanitize it,

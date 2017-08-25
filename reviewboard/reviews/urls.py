@@ -82,6 +82,10 @@ review_request_urls = [
         views.ReviewRequestDetailView.as_view(),
         name='review-request-detail'),
 
+    url(r'^_updates/$',
+        views.ReviewRequestUpdatesView.as_view(),
+        name='review-request-updates'),
+
     # Review request diffs
     url(r'^diff/', include(diffviewer_urls)),
 

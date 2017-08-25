@@ -18,6 +18,7 @@ from reviewboard.accounts.forms.pages import (AccountSettingsForm,
                                               ChangePasswordForm,
                                               GroupsForm,
                                               OAuthApplicationsForm,
+                                              OAuthTokensForm,
                                               ProfileForm)
 
 
@@ -100,7 +101,7 @@ class AuthenticationPage(AccountPage):
 
     page_id = 'authentication'
     page_title = _('Authentication')
-    form_classes = [ChangePasswordForm, APITokensForm]
+    form_classes = [ChangePasswordForm, APITokensForm, OAuthTokensForm]
 
 
 class ProfilePage(AccountPage):

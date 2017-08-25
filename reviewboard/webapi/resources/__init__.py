@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
 from djblets.extensions.models import RegisteredExtension
-from djblets.extensions.resources import ExtensionResource
 from djblets.webapi.resources.registry import (ResourcesRegistry,
                                                register_resource_for_model)
 from oauth2_provider.models import AccessToken
@@ -10,7 +9,6 @@ from oauth2_provider.models import AccessToken
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.extensions.base import get_extension_manager
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.oauth.models import Application
@@ -44,11 +42,6 @@ class Resources(ResourcesRegistry):
     resource_search_path = [
         'reviewboard.webapi.resources',
     ]
-
-    def __init__(self):
-        super(Resources, self).__init__()
-
-        self.extension = ExtensionResource(get_extension_manager())
 
     def register_resources(self):
         """Register all the resource model associations."""

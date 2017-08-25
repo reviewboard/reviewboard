@@ -5,10 +5,11 @@ from djblets.webapi.resources.root import RootResource as DjbletsRootResource
 
 from reviewboard.webapi.decorators import (webapi_check_local_site,
                                            webapi_check_login_required)
+from reviewboard.webapi.base import RBResourceMixin
 from reviewboard.webapi.resources import resources
 
 
-class ValidationResource(DjbletsRootResource):
+class ValidationResource(RBResourceMixin, DjbletsRootResource):
     """Links to validation resources."""
     added_in = '2.0'
 

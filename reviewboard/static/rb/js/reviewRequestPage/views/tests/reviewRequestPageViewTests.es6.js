@@ -42,7 +42,7 @@ suite('rb/reviewRequestPage/views/PageView', () => {
             .appendTo($testsScratch);
 
         RB.DnDUploader.instance = null;
-        page = new RB.ReviewRequestPage.PageView({
+        page = new RB.ReviewRequestPage.ReviewRequestPageView({
             el: $el,
             reviewRequestData: {
             },
@@ -89,6 +89,10 @@ suite('rb/reviewRequestPage/views/PageView', () => {
         expect(page._entryViews.length).toBe(2);
         entry1 = page._entryViews[0];
         entry2 = page._entryViews[1];
+    });
+
+    afterEach(function() {
+        RB.DnDUploader.instance = null;
     });
 
     describe('Actions', () => {

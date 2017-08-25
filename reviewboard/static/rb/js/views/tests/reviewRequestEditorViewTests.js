@@ -85,6 +85,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
     beforeEach(function() {
         var $el = $(template()).appendTo($testsScratch);
 
+        RB.DnDUploader.create();
+
         reviewRequest = new RB.ReviewRequest({
             id: 123,
             'public': true,
@@ -116,6 +118,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
             .and.callFake(function(options, context) {
                 options.ready.call(context);
             });
+    });
+
+    afterEach(function() {
+        RB.DnDUploader.instance = null;
     });
 
     describe('Actions bar', function() {

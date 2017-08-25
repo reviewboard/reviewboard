@@ -86,13 +86,22 @@ class CallbackRegistry(Registry):
         super(CallbackRegistry, self).register(item)
 
 
-class WebAPIResource(ResourceAPITokenMixin, ResourceOAuth2TokenMixin,
-                     APIQueryUtilsMixin, DjbletsWebAPIResource):
-    """A specialization of the Djblets WebAPIResource for Review Board."""
+class RBResourceMixin(APIQueryUtilsMixin, ResourceAPITokenMixin,
+                      ResourceOAuth2TokenMixin):
+    """A mixin for Review Board resources.
+
+    This mixin is intended to be used by the base Review Board
+    :py:class:`WebAPIResource` and in subclasses of resources from other
+    packages (e.g., Djblets) to specialize them for Review Board.
+    """
 
     autogenerate_etags = True
     mimetype_vendor = 'reviewboard.org'
     api_token_model = WebAPIToken
+
+
+class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
+    """A specialization of the Djblets WebAPIResource for Review Board."""
 
     #: An optional set of required features to communicate with this resource.
     #:

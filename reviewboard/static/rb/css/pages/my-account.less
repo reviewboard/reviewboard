@@ -1,5 +1,6 @@
 @import (reference) "../defs.less";
 @import (reference) "./admin.less";
+@import (reference) "djblets/css/config-forms.less";
 
 @img_base: "../../images/";
 
@@ -19,6 +20,28 @@
 }
 
 .config-forms-container .config-forms-page-content {
+  .config-forms-list-item {
+    white-space: unset;
+  }
+}
+
+#page_authentication {
+  .api-tokens .config-forms-list {
+    border-bottom: none;
+
+    &:empty {
+      display: none;
+
+      + .generate-api-token {
+        border-top: 1px solid @config-forms-list-border-color;
+      }
+    }
+
+    > :last-child {
+      border-bottom: 1px @config-forms-list-item-border-color solid;
+    }
+  }
+
   .config-site-api-tokens {
     .config-api-token-note {
       color: #888;
@@ -45,18 +68,19 @@
       width: 6.5em;
     }
 
-    .generate-api-token {
-      background: white;
-
-      a {
-        color: blue;
-        font-size: 90%;
-        text-decoration: none;
-      }
-    }
-
     .rb-icon {
       vertical-align: middle;
+    }
+  }
+
+  .generate-api-token {
+    background: white;
+    border-bottom: 1px solid @config-forms-list-border-color;
+
+    a {
+      color: blue;
+      font-size: 90%;
+      text-decoration: none;
     }
   }
 }
@@ -80,37 +104,13 @@
     }
   }
 
-  .config-forms-list {
-    &:empty {
-      display: none;
-
-      + .app-list-empty {
-        display: block;
-      }
-    }
-
-    > :last-child {
-      border-bottom: 1px solid #AAAAAA;
-    }
-
-    .config-forms-list-item {
-      white-space: unset;
-    }
-  }
-
-  .app-list-empty {
-    display: none;
-    background: #FFFFFF;
-    border-top: 1px solid #AAAAAA;
-    border-bottom: 1px solid #AAAAAA;
-    line-height: 32px;
-    padding: 0.3em 0.3em 0.3em 1.5em;
+  .config-forms-list-item {
+    white-space: unset;
   }
 
   .disabled-warning {
     margin-bottom: 1em;
   }
-
 
   p {
     line-height: normal;

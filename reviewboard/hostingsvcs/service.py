@@ -493,6 +493,8 @@ class HostingServiceClient(object):
                     }
                 )
 
+        content_parts.append(b'--%s--' % boundary)
+
         content = b''.join(content_parts)
         content_type = b'multipart/form-data; boundary=%s' % boundary
 

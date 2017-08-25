@@ -1,6 +1,6 @@
 {% load avatars djblets_utils i18n reviewtags %}
 
-<div class="review-request-section" id="issue-summary"{% if issue_counts.total == 0 %} style="display: none;"{% endif %}>
+<div id="issue-summary" class="review-request-section"{% if issue_counts.total == 0 %} style="display: none;"{% endif %}>
  <a name="issue-summary"></a>
  <label class="review-request-section-label">{% trans "Issues" %}</label>
  <div class="issue-summary-header">

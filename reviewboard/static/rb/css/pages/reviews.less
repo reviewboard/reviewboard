@@ -722,7 +722,14 @@
       white-space: pre-wrap;
     }
 
-    .comment-text:target {
+    /*
+     * The first selector highlights top-level comments. The second
+     * highlights just comments on replies. This ensures that highlighting
+     * a top-level comment won't highlight replies (which are all in the
+     * same container for the top-level comment).
+     */
+    li:target .review-comment > .comment-text,
+    li:target > .reply-comment > .comment-text {
       background-color: #E7EDF3;
       border: 1px solid @dark-blue;
       padding: 1em;
@@ -947,6 +954,11 @@
         text-decoration: underline;
       }
 
+      p {
+        padding-top: 2px;
+        padding-bottom: 2px;
+      }
+
       pre {
         background: none;
         border: 0;
@@ -957,13 +969,22 @@
 
       td {
         font-family: @textarea-font-family;
-        padding: 2px 4px;
+        padding: 0 4px;
         vertical-align: top;
         white-space: pre-wrap;
 
         .codehilite {
+          border-radius: 0;
+          border-left: 0;
+          border-right: 0;
+
           // Make this flush with the sides of the row.
           margin: 0 -4px;
+
+          pre:empty {
+            /* Give this a reasonable height so it's not just blank. */
+            height: 1rem;
+          }
         }
       }
 
@@ -1863,12 +1884,14 @@
 .issue-state {
   @issue-state-height: 26px;
 
+  border: 1px transparent solid;
   font-weight: bold;
   line-height: @issue-state-height;
   margin-bottom: 2em;
   min-height: @issue-state-height;
   padding: 0.6em;
   transition: 0.1s linear all;
+  visibility: hidden;
 
   input, .back-to-issue-summary {
     /*
@@ -1888,9 +1911,13 @@
     margin: 0 0.2em;
   }
 
+  &.dropped, &.open, &.resolved {
+    visibility: visible;
+  }
+
   &.dropped {
     background: @issue-discarded-bg;
-    border: 1px @issue-discarded-border-color solid;
+    border-color: @issue-discarded-border-color;
 
     .back-to-issue-summary, .back-to-issue-summary:visited {
       color: @issue-discarded-link-color;
@@ -1899,7 +1926,7 @@
 
   &.open {
     background: @issue-opened-bg;
-    border: 1px @issue-opened-border-color solid;
+    border-color: @issue-opened-border-color;
 
     .back-to-issue-summary, .back-to-issue-summary:visited {
       color: @issue-opened-link-color;
@@ -1908,7 +1935,7 @@
 
   &.resolved {
     background: @issue-resolved-bg;
-    border: 1px @issue-resolved-border-color solid;
+    border-color: @issue-resolved-border-color;
 
     .back-to-issue-summary, .back-to-issue-summary:visited {
       color: @issue-resolved-link-color;

@@ -4,9 +4,17 @@
 RB.CenteredElementManager = Backbone.View.extend({
     /**
      * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options passed to this view.
+     *
+     * Option Args:
+     *     elements (Array, optional):
+     *         An initial array of elements to center.
      */
-    initialize() {
-        this._elements = new Map();
+    initialize(options={}) {
+        this._elements = options.elements || new Map();
         this._$window = $(window);
 
         this._updatePositionThrottled = _.throttle(() => this.updatePosition(),
@@ -54,11 +62,13 @@ RB.CenteredElementManager = Backbone.View.extend({
         const windowHeight = this._$window.height();
         const windowBottom = windowTop + windowHeight;
 
-        this._elements.forEach(($container, el) => {
+        this._elements.forEach((containers, el) => {
             const $el = $(el);
-            const containerTop = $container.offset().top;
-            const containerHeight = $container.height();
-            const containerBottom = containerTop + containerHeight;
+            const $topContainer = containers.$top;
+            const $bottomContainer = containers.$bottom || $topContainer;
+            const containerTop = $topContainer.offset().top;
+            const containerBottom = $bottomContainer.offset().top +
+                                    $bottomContainer.height();
 
             /*
              * We don't have to vertically center the element when its

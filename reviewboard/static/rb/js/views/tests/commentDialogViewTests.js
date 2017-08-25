@@ -3,10 +3,16 @@ suite('rb/views/CommentDialogView', function() {
         reviewRequest;
 
     beforeEach(function() {
+        RB.DnDUploader.create();
+
         reviewRequest = new RB.ReviewRequest();
         reviewRequestEditor = new RB.ReviewRequestEditor({
             reviewRequest: reviewRequest
         });
+    });
+
+    afterEach(function() {
+        RB.DnDUploader.instance = null;
     });
 
     describe('Class methods', function() {

@@ -14,11 +14,11 @@ const commentTypeToIDPrefix = {
  * This manages all the reviews on the page, diff fragment loading, and
  * other functionality needed for the main review request page.
  */
-RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
-    events: {
+RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
+    events: _.extend({
         'click #collapse-all': '_onCollapseAllClicked',
         'click #expand-all': '_onExpandAllClicked',
-    },
+    }, RB.ReviewablePageView.prototype.events),
 
     /**
      * Initialize the page.
@@ -42,7 +42,7 @@ RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
      * Render the page.
      *
      * Returns:
-     *     RB.ReviewRequestPage.PageView:
+     *     RB.ReviewRequestPage.ReviewRequestPageView:
      *     This object, for chaining.
      */
     render() {
@@ -54,21 +54,34 @@ RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
          * If trying to link to some anchor in some entry, we'll expand the
          * first entry containing that anchor.
          */
-        const selector = window.location.hash.match(/^#[A-Za-z0-9_\.-]+$/);
+        const hash = RB.getLocationHash();
         let anchorFound = false;
+        let selector = null;
+
+        if (hash !== '') {
+            if (hash.includes('comment')) {
+                selector = `a[name=${hash}]`;
+            } else {
+                selector = `#${hash}`;
+            }
+        }
 
         this._entryViews.forEach(entryView => {
             entryView.render();
 
-            if (!anchorFound &&
-                selector &&
-                entryView.$(selector[0]).length > 0) {
+            if (!anchorFound && selector && entryView.$(selector).length > 0) {
                 /*
-                 * We found the entry containing the specified anchor. Expand
-                 * it and stop searching the rest of the entries.
+                 * We found the entry containing the specified anchor.
+                 * Expand it and stop searching the rest of the entries.
                  */
                 entryView.expand();
                 anchorFound = true;
+
+                /*
+                 * Scroll down to the particular anchor, now that the entry
+                 * is expanded.
+                 */
+                window.location.hash = hash;
             }
         });
 
@@ -83,7 +96,7 @@ RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
 
         this.listenTo(this._issueSummaryTableView,
                       'issueClicked',
-                      this._expandIssueEntry);
+                      this._onIssueClicked);
 
         this._rendered = true;
 
@@ -184,27 +197,26 @@ RB.ReviewRequestPage.PageView = RB.ReviewablePageView.extend({
     },
 
     /**
-     * Expand the review entry that contains the comment for the issue.
+     * Handler for when an issue in the issue summary table is clicked.
      *
-     * This is used when clicking an issue from the issue summary table to
-     * navigate the user to the issue comment.
+     * This will expand the review entry that contains the comment for the
+     * issue, and navigate to the comment.
      *
      * Args:
-     *     commentType (string):
-     *         The type of comment to expand.
-     *
-     *     commentID (string):
-     *         The ID of the comment to expand.
+     *     params (object):
+     *         Parameters passed to the event handler.
      */
-    _expandIssueEntry(commentType, commentID) {
-        const prefix = commentTypeToIDPrefix[commentType];
-        const selector = `#${prefix}comment${commentID}`;
+    _onIssueClicked(params) {
+        const prefix = commentTypeToIDPrefix[params.commentType];
+        const selector = `#${prefix}comment${params.commentID}`;
 
         this._entryViews.forEach(entryView => {
             if (entryView.$el.find(selector).length > 0) {
                 entryView.expand();
             }
         });
+
+        window.location = params.commentURL;
     },
 });
 

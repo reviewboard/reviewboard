@@ -13,15 +13,14 @@
 {% endif %}
 
 {% for comment in general_comments %}
-<li>
+<li id="{{comment.anchor_prefix}}{{comment.id}}">
  <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
  <div class="review-comment-thread">
   <div class="review-comment">
    {% comment_detail_display_hook comment 'review' %}
    {% comment_issue review_request_details comment 'general_comments' %}
 
-   <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}"
-        id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text}}</pre>
+   <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}">{{comment.text|render_markdown:comment.rich_text}}</pre>
   </div>
 
   {% reply_section review comment 'general_comments' 'rc' comment.text %}
@@ -30,7 +29,7 @@
 {% endfor %}
 
 {% for comment in screenshot_comments %}
-<li>
+<li id="{{comment.anchor_prefix}}{{comment.id}}">
  <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
  <div class="review-comment-screenshot">
   <a class="filename" href="{{comment.screenshot.get_absolute_url}}">
@@ -43,8 +42,7 @@
    {% comment_detail_display_hook comment 'review' %}
    {% comment_issue review_request_details comment 'screenshot_comments' %}
 
-   <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}"
-        id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text}}</pre>
+   <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}">{{comment.text|render_markdown:comment.rich_text}}</pre>
   </div>
 
   {% reply_section review comment 'screenshot_comments' 'rc' comment.text %}
@@ -53,7 +51,7 @@
 {% endfor %}
 
 {% for comment in file_attachment_comments %}
-<li>
+<li id="{{comment.anchor_prefix}}{{comment.id}}">
  <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
  <div class="review-comment-file-attachment">
   <a class="filename" href="{{comment.get_absolute_url}}">
@@ -83,8 +81,7 @@
    {% comment_detail_display_hook comment 'review' %}
    {% comment_issue review_request_details comment 'file_attachment_comments' %}
 
-   <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}"
-        id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text}}</pre>
+   <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}">{{comment.text|render_markdown:comment.rich_text}}</pre>
   </div>
 
   {% reply_section review comment 'file_attachment_comments' 'rc' comment.text %}
@@ -93,9 +90,9 @@
 {% endfor %}
 
 {% for comment in diff_comments %}
-<li>
- <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
- <div class="review-comment-diff" id="comment_container_{{comment.id}}">
+<li id="{{comment.anchor_prefix}}{{comment.pk}}">
+ <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.pk}}"></a>
+ <div class="review-comment-diff" id="comment_container_{{comment.pk}}">
   <table class="sidebyside loading">
    <thead>
     <tr class="filename-row">
@@ -128,8 +125,7 @@
    {% comment_detail_display_hook comment 'review' %}
    {% comment_issue review_request_details comment 'diff_comments' %}
 
-   <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}"
-        id="{{comment.anchor_prefix}}{{comment.id}}">{{comment.text|render_markdown:comment.rich_text}}</pre>
+   <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}">{{comment.text|render_markdown:comment.rich_text}}</pre>
   </div>
 
   {% reply_section review comment 'diff_comments' 'rc' comment.text %}

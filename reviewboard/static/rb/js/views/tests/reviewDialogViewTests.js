@@ -82,6 +82,8 @@ suite('rb/views/ReviewDialogView', function() {
                 summary: 'My Review Request'
             });
 
+        RB.DnDUploader.create();
+
         reviewRequestEditor = new RB.ReviewRequestEditor({
             reviewRequest: reviewRequest
         });
@@ -116,6 +118,7 @@ suite('rb/views/ReviewDialogView', function() {
     });
 
     afterEach(function() {
+        RB.DnDUploader.instance = null;
         RB.ReviewDialogView._instance = null;
         RB.EnabledFeatures.generalComments = origGeneralCommentsEnabled;
     });
