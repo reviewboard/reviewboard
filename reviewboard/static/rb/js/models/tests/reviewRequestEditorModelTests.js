@@ -228,54 +228,6 @@ suite('rb/models/ReviewRequestEditor', function() {
                         });
                     });
                 });
-
-                describe('closeDescription', function() {
-                    function testCloseDescription(closeType, richText) {
-                        spyOn(reviewRequest, 'close')
-                            .and.callFake(function(options) {
-                                expect(options.type).toBe(closeType);
-                                expect(options.description)
-                                    .toBe('My description');
-                                expect(options.richText).toBe(richText);
-                            });
-
-                        editor.setDraftField('closeDescription',
-                                             'My description', {
-                            closeType: closeType,
-                            richText: richText
-                        });
-
-                        expect(reviewRequest.close).toHaveBeenCalled();
-                    }
-
-                    describe('Discarded description', function() {
-                        it('For Markdown', function() {
-                            testCloseDescription(
-                                RB.ReviewRequest.CLOSE_DISCARDED,
-                                true);
-                        });
-
-                        it('For plain text', function() {
-                            testCloseDescription(
-                                RB.ReviewRequest.CLOSE_DISCARDED,
-                                false);
-                        });
-                    });
-
-                    describe('Submitted description', function() {
-                        it('For Markdown', function() {
-                            testCloseDescription(
-                                RB.ReviewRequest.CLOSE_SUBMITTED,
-                                true);
-                        });
-
-                        it('For plain text', function() {
-                            testCloseDescription(
-                                RB.ReviewRequest.CLOSE_SUBMITTED,
-                                false);
-                        });
-                    });
-                });
             });
 
             describe('Special list fields', function() {

@@ -31,6 +31,7 @@ Fields.BaseFieldView = Backbone.View.extend({
         Backbone.View.prototype.initialize.call(this, options);
         this.options = options;
         this.fieldID = options.fieldID;
+        this._fieldName = undefined;
     },
 
     /**
@@ -53,6 +54,26 @@ Fields.BaseFieldView = Backbone.View.extend({
         }
 
         return this._fieldName;
+    },
+
+    /**
+     * Save a new value for the field.
+     *
+     * Args:
+     *     value (*):
+     *         The new value for the field.
+     *
+     *     options (object):
+     *         Options for the save operation.
+     */
+    _saveValue(value, options) {
+        this.model.setDraftField(
+            _.result(this, 'fieldName'),
+            value,
+            _.defaults(options, {
+                jsonFieldName: this.jsonFieldName || this.fieldID,
+                useExtraData: this.useExtraData,
+            }));
     },
 });
 
@@ -152,34 +173,29 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
                     this.model.decr('editCount');
 
                     const jsonFieldName = this.jsonFieldName || this.fieldID;
-                    const extraOptions = { jsonFieldName, };
+                    const saveOptions = {
+                        allowMarkdown: this.allowRichText,
+                        error: err => {
+                            this._formatField();
+                            this.trigger('fieldError', err);
+                        },
+                        success: () => {
+                            this._formatField();
+                            this.trigger('fieldSaved');
+                        },
+                    };
 
                     if (this.allowRichText) {
                         const textEditor =
                             RB.TextEditorView.getFromInlineEditor(this.$el);
-                        extraOptions.richText = textEditor.richText;
-                        extraOptions.jsonTextTypeFieldName = (
+                        saveOptions.richText = textEditor.richText;
+                        saveOptions.jsonTextTypeFieldName = (
                             this.fieldID === 'text'
                             ? 'text_type'
                             : `${jsonFieldName}_text_type`);
                     }
 
-                    this.model.setDraftField(
-                        fieldName,
-                        value,
-                        _.defaults({
-                            allowMarkdown: this.allowRichText,
-                            closeType: this.closeType,
-                            useExtraData: this.useExtraData,
-                            error: err => {
-                                this._formatField();
-                                this.trigger('fieldError', err);
-                            },
-                            success: () => {
-                                this._formatField();
-                                this.trigger('fieldSaved');
-                            }
-                        }, extraOptions));
+                    this._saveValue(value, saveOptions);
                 },
                 resize: () => this.trigger('resize'),
             });
@@ -571,6 +587,27 @@ Fields.CloseDescriptionFieldView = Fields.MultilineTextFieldView.extend({
     allowRichText: true,
     useExtraData: false,
     editableProp: 'statusEditable',
+
+    /**
+     * Save a new value for the field.
+     *
+     * Args:
+     *     value (*):
+     *         The new value for the field.
+     *
+     *     options (object):
+     *         Options for the save operation.
+     */
+    _saveValue(value, options) {
+        this.model.get('reviewRequest').close(_.defaults({
+            type: this.closeType,
+            description: value,
+            postData: {
+                force_text_type: 'html',
+                include_text_types: 'raw',
+            },
+        }, options));
+    },
 });
 
 

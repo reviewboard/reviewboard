@@ -158,10 +158,6 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
      *     allowMarkdown (boolean, optional):
      *         Whether the field can support rich text (Markdown).
      *
-     *     closeType (string, optional):
-     *         If the ``fieldName`` is ``closeDescription`` and this is
-     *         specified, the way that the review request should be closed.
-     *
      *     error (function, optional):
      *         A callback to call in case of error.
      *
@@ -185,25 +181,6 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
     setDraftField: function(fieldName, value, options={}, context=undefined) {
         const reviewRequest = this.get('reviewRequest');
         const data = {};
-        const richText = !!options.richText;
-
-        if (fieldName === 'closeDescription' && _.has(options, 'closeType')) {
-            reviewRequest.close(
-                {
-                    type: options.closeType,
-                    richText: richText,
-                    description: value,
-                    success: options.success,
-                    error: options.error,
-                    postData: {
-                        force_text_type: 'html',
-                        include_text_types: 'raw',
-                    },
-                },
-                context);
-
-            return;
-        }
 
         let jsonFieldName = options.jsonFieldName;
 
@@ -218,6 +195,7 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
                 jsonTextTypeFieldName = `extra_data.${jsonTextTypeFieldName}`;
             }
 
+            const richText = !!options.richText;
             data[jsonTextTypeFieldName] = richText ? 'markdown' : 'plain';
 
             data.force_text_type = 'html';

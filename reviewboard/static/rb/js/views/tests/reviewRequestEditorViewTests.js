@@ -487,6 +487,58 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     expect(reviewRequest.reopen).toHaveBeenCalled();
                 });
             });
+
+            describe('Close description', function() {
+                var $field,
+                    $input;
+
+                beforeEach(function() {
+                    view.showBanner();
+                    $field = view.banner.$('#field_close_description');
+                    $input = $field.inlineEditor('field');
+                });
+
+                function testCloseDescription(testName, richText) {
+                    it(testName, function(done) {
+                        var textEditor,
+                            t;
+
+                        $field.inlineEditor('startEdit');
+
+                        textEditor =
+                            RB.TextEditorView.getFromInlineEditor($input);
+                        textEditor.setText('My description');
+                        textEditor.setRichText(richText);
+
+                        $input.triggerHandler('keyup');
+
+                        t = setInterval(function() {
+                            if ($field.inlineEditor('dirty')) {
+                                clearInterval(t);
+
+                                spyOn(reviewRequest, 'close')
+                                    .and.callFake(function(options) {
+                                        expect(options.type)
+                                            .toBe(RB.ReviewRequest.CLOSE_DISCARDED);
+                                        expect(options.description)
+                                            .toBe('My description');
+                                        expect(options.richText).toBe(richText);
+                                    });
+
+                                $field.inlineEditor('submit');
+                                expect(reviewRequest.close).toHaveBeenCalled();
+
+                                done();
+                            }
+                        }, 100);
+                    });
+                }
+
+                describe('Saves', function() {
+                    testCloseDescription('For Markdown', true);
+                    testCloseDescription('For plain text', false);
+                });
+            });
         });
 
         describe('Submitted banner', function() {
@@ -517,6 +569,58 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     $('#btn-review-request-reopen').click();
 
                     expect(reviewRequest.reopen).toHaveBeenCalled();
+                });
+            });
+
+            describe('Close description', function() {
+                var $field,
+                    $input;
+
+                beforeEach(function() {
+                    view.showBanner();
+                    $field = view.banner.$('#field_close_description');
+                    $input = $field.inlineEditor('field');
+                });
+
+                function testCloseDescription(testName, richText) {
+                    it(testName, function(done) {
+                        var textEditor,
+                            t;
+
+                        $field.inlineEditor('startEdit');
+
+                        textEditor =
+                            RB.TextEditorView.getFromInlineEditor($input);
+                        textEditor.setText('My description');
+                        textEditor.setRichText(richText);
+
+                        $input.triggerHandler('keyup');
+
+                        t = setInterval(function() {
+                            if ($field.inlineEditor('dirty')) {
+                                clearInterval(t);
+
+                                spyOn(reviewRequest, 'close')
+                                    .and.callFake(function(options) {
+                                        expect(options.type)
+                                            .toBe(RB.ReviewRequest.CLOSE_SUBMITTED);
+                                        expect(options.description)
+                                            .toBe('My description');
+                                        expect(options.richText).toBe(richText);
+                                    });
+
+                                $field.inlineEditor('submit');
+                                expect(reviewRequest.close).toHaveBeenCalled();
+
+                                done();
+                            }
+                        }, 100);
+                    });
+                }
+
+                describe('Saves', function() {
+                    testCloseDescription('For Markdown', true);
+                    testCloseDescription('For plain text', false);
                 });
             });
         });
