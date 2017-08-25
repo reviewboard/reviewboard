@@ -57,6 +57,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
             '          data-field-id="text"',
             '          class="field field-text-area editable"',
             '          data-allow-markdown="True"></pre>',
+            '     <input id="field_checkbox"',
+            '            data-field-id="checkbox"',
+            '            class="field"',
+            '            type="checkbox">',
             '    </div>',
             '   </div>',
             '  </div>',
@@ -186,6 +190,13 @@ suite('rb/views/ReviewRequestEditorView', function() {
             new RB.ReviewRequestFields.MultilineTextFieldView({
                 el: $el.find('#field_text'),
                 fieldID: 'text',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.CheckboxFieldView({
+                el: $el.find('#field_checkbox'),
+                fieldID: 'checkbox',
                 model: editor
             }));
 
@@ -1269,6 +1280,31 @@ suite('rb/views/ReviewRequestEditorView', function() {
             richTextSavingTest();
             editCountTests();
             securityTests();
+        });
+
+        describe('Custom checkbox field', function() {
+            beforeEach(function() {
+                $field = view.$('#field_checkbox');
+
+                saveSpyFunc = function(options, context) {
+                    expect(options.data['extra_data.checkbox'])
+                        .toBe(true);
+                    options.success.call(context);
+                };
+                reviewRequest.draft.save.and.callFake(saveSpyFunc);
+            });
+
+            it('Saves', function() {
+                var expectedData = {
+                    'extra_data.checkbox': true
+                };
+
+                $field.click();
+
+                expect(reviewRequest.draft.save).toHaveBeenCalled();
+                expect(reviewRequest.draft.save.calls.argsFor(0)[0].data)
+                    .toEqual(expectedData);
+            });
         });
     });
 

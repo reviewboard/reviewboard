@@ -528,6 +528,32 @@ Fields.CommaSeparatedValuesTextFieldView = Fields.TextFieldView.extend({
 
 
 /**
+ * A field view for checkbox fields.
+ */
+Fields.CheckboxFieldView = Fields.BaseFieldView.extend({
+    /**
+     * Render the field.
+     *
+     * Returns:
+     *     RB.ReviewRequestFields.CheckboxFieldView:
+     *     This object, for chaining.
+     */
+    render() {
+        Fields.BaseFieldView.prototype.render.call(this);
+
+        this.$el.change(() => {
+            this._saveValue(this.$el.is(':checked'), {
+                error: err => this.trigger('fieldError', err),
+                success: () => this.trigger('fieldSaved'),
+            });
+        });
+
+        return this;
+    },
+});
+
+
+/**
  * The "Branch" field.
  */
 Fields.BranchFieldView = Fields.TextFieldView.extend({

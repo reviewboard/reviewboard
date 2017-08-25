@@ -659,6 +659,18 @@ class BaseReviewRequestField(object):
 
         return css_classes
 
+    def get_dom_attributes(self):
+        """Return any additional attributes to include in the element.
+
+        By default, this returns nothing.
+
+        Returns:
+            dict:
+            Additional key/value pairs for attributes to include in the
+            rendered HTML element.
+        """
+        return {}
+
     def get_data_attributes(self):
         """Return any data attributes to include in the element.
 
@@ -1188,6 +1200,137 @@ class BaseTextAreaField(BaseEditableField):
                 ' <td class="line rich-text">%s</td>'
                 '</tr>'
                 % line)
+
+
+class BaseCheckboxField(BaseReviewRequestField):
+    """Base class for a checkbox.
+
+    The field's value will be either True or False.
+    """
+
+    is_editable = True
+
+    #: The class name for the JavaScript view representing this field.
+    js_view_class = 'RB.ReviewRequestFields.CheckboxFieldView'
+
+    #: The default value of the field.
+    default_value = False
+
+    #: The HTML tag to be used when rendering the field.
+    tag_name = 'input'
+
+    def load_value(self, review_request_details):
+        """Load a value from the review request or draft.
+
+        Args:
+            review_request_details (reviewboard.reviews.models.
+                                    base_review_request_details.
+                                    BaseReviewRequestDetails):
+                The review request or draft.
+
+        Returns:
+            bool:
+            The loaded value.
+        """
+        value = review_request_details.extra_data.get(self.field_id)
+
+        if value is not None:
+            return value
+        else:
+            return self.default_value
+
+    def render_change_entry_html(self, info):
+        """Render a change entry to HTML.
+
+        This function is expected to return safe, valid HTML. Any values
+        coming from a field or any other form of user input must be
+        properly escaped.
+
+        Args:
+            info (dict):
+                A dictionary describing how the field has changed. This is
+                guaranteed to have ``new`` and ``old`` keys, but may also
+                contain ``added`` and ``removed`` keys as well.
+
+        Returns:
+            unicode:
+            The HTML representation of the change entry.
+        """
+        old_value = None
+        new_value = None
+
+        if 'old' in info:
+            old_value = info['old'][0]
+
+        if 'new' in info:
+            new_value = info['new'][0]
+
+        s = ['<table class="changed">']
+
+        if old_value is not None:
+            s.append(self.render_change_entry_removed_value_html(
+                info, old_value))
+
+        if new_value is not None:
+            s.append(self.render_change_entry_added_value_html(
+                info, new_value))
+
+        s.append('</table>')
+
+        return ''.join(s)
+
+    def render_change_entry_value_html(self, info, value):
+        """Render the value for a change description string to HTML.
+
+        Args:
+            info (dict):
+                A dictionary describing how the field has changed.
+
+            item (object):
+                The value of the field.
+
+        Returns:
+            unicode:
+            The rendered change entry.
+        """
+        if value:
+            checked = 'checked'
+        else:
+            checked = ''
+
+        return ('<input type="checkbox" autocomplete="off" disabled %s>'
+                % checked)
+
+    def get_dom_attributes(self):
+        """Return any additional attributes to include in the element.
+
+        By default, this returns nothing.
+
+        Returns:
+            dict:
+            Additional key/value pairs for attributes to include in the
+            rendered HTML element.
+        """
+        attrs = {
+            'type': 'checkbox',
+        }
+
+        if self.value:
+            attrs['checked'] = 'checked'
+
+        return attrs
+
+    def value_as_html(self):
+        """Return the field rendered as HTML.
+
+        Because the value is included as a boolean attribute on the checkbox
+        element, this just returns the empty string.
+
+        Returns:
+            unicode:
+            The rendered field.
+        """
+        return ''
 
 
 def get_review_request_fields():
