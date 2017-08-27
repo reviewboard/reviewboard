@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 import logging
 
+from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.functional import cached_property
 from django.utils.html import escape, strip_tags
@@ -254,6 +255,12 @@ class BaseReviewRequestField(object):
     default_css_classes = set()
     change_entry_renders_inline = True
     model = None
+
+    #: The HTML tag to be used when rendering the field.
+    tag_name = 'span'
+
+    #: Whether the field should be rendered.
+    should_render = True
 
     can_record_change_entry = property(lambda self: self.is_editable)
 
@@ -629,21 +636,6 @@ class BaseReviewRequestField(object):
         """
         return escape(six.text_type(value or ''))
 
-    def should_render(self, value):
-        """Return whether the field should be rendered.
-
-        By default, the field is always rendered, but this can be overridden
-        if you only want to show under certain conditions (such as if it has
-        a value).
-
-        This must use ``value`` instead of ``self.value``.
-
-        Args:
-            value (object):
-                The value for the field.
-        """
-        return True
-
     def get_css_classes(self):
         """Return the set of CSS classes to apply to the element.
 
@@ -676,6 +668,17 @@ class BaseReviewRequestField(object):
         return {}
 
     def as_html(self):
+        """Return the field rendered to HTML.
+
+        Returns:
+            django.utils.safetext.SafeString:
+            The rendered field.
+        """
+        return render_to_string('reviews/review_request_field.html', {
+            'field': self,
+        })
+
+    def value_as_html(self):
         """Return the field rendered as HTML.
 
         By default, this just calls ``render_value`` with the value
@@ -1186,17 +1189,13 @@ def get_review_request_fields():
         yield field
 
 
-def get_review_request_fieldsets(include_main=False,
-                                 include_change_entries_only=False):
+def get_review_request_fieldsets(include_change_entries_only=False):
     """Return a list of all registered fieldset classes.
 
     As an internal optimization, the "main" fieldset can be filtered out,
     to help with rendering the side of the review request page.
 
     Args:
-        include_main (boolean):
-            Whether or not the main fieldset should be included.
-
         include_change_entries_only (bool):
             Whether or not to include the change-entry only fieldset.
 
@@ -1204,22 +1203,16 @@ def get_review_request_fieldsets(include_main=False,
         list:
         The requested :py:class:`fieldsets <BaseReviewRequestFieldSet>`.
     """
-    if include_main and include_change_entries_only:
-        return list(fieldset_registry)
-    else:
-        excluded_ids = []
+    excluded_ids = []
 
-        if not include_main:
-            excluded_ids.append('main')
+    if not include_change_entries_only:
+        excluded_ids.append('_change_entries_only')
 
-        if not include_change_entries_only:
-            excluded_ids.append('_change_entries_only')
-
-        return [
-            fieldset
-            for fieldset in fieldset_registry
-            if fieldset.fieldset_id not in excluded_ids
-        ]
+    return [
+        fieldset
+        for fieldset in fieldset_registry
+        if fieldset.fieldset_id not in excluded_ids
+    ]
 
 
 def get_review_request_fieldset(fieldset_id):

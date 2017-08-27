@@ -1424,7 +1424,6 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
         # put into groups composed of inline vs. full-width field values,
         # for render into the box.
         fieldsets = get_review_request_fieldsets(
-            include_main=True,
             include_change_entries_only=True)
 
         for fieldset in fieldsets:

@@ -53,7 +53,9 @@ class RBFeatureChecker(SiteConfigFeatureChecker):
         local_site = kwargs.get('local_site')
         request = kwargs.get('request')
 
-        if local_site is None and request is not None:
+        if (local_site is None and
+            request is not None and
+            hasattr(request, 'local_site')):
             local_site = request.local_site
 
         if local_site and local_site.extra_data:
