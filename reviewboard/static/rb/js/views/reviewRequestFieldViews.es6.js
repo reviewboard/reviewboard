@@ -580,6 +580,54 @@ Fields.DropdownFieldView = Fields.BaseFieldView.extend({
 
 
 /**
+ * A field view for date fields.
+ */
+Fields.DateFieldView = Fields.TextFieldView.extend({
+    /**
+     * Render the field.
+     *
+     * Returns:
+     *     RB.ReviewRequestFields.DateFieldView:
+     *     This object, for chaining.
+     */
+    render() {
+        Fields.TextFieldView.prototype.render.call(this);
+
+        this.$el.inlineEditor('field')
+            .datepicker({
+                changeMonth: true,
+                changeYear: true,
+                dateFormat: $.datepicker.ISO_8601,
+                showButtonPanel: true,
+            });
+
+        return this;
+    },
+
+    /**
+     * Save a new value for the field.
+     *
+     * Args:
+     *     value (*):
+     *         The new value for the field.
+     *
+     *     options (object):
+     *         Options for the save operation.
+     */
+    _saveValue(value, options) {
+        const m = moment(value, 'YYYY-MM-DD', true);
+
+        if (!m.isValid()) {
+            value = '';
+            this.$el.text('');
+        }
+
+        Fields.TextFieldView.prototype._saveValue.call(this, value, options);
+    },
+});
+
+
+/**
  * The "Branch" field.
  */
 Fields.BranchFieldView = Fields.TextFieldView.extend({

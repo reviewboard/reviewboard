@@ -1420,6 +1420,36 @@ class BaseDropdownField(BaseReviewRequestField):
             data)
 
 
+class BaseDateField(BaseEditableField):
+    """Base class for a date field."""
+
+    #: The class name for the JavaScript view representing this field.
+    js_view_class = 'RB.ReviewRequestFields.DateFieldView'
+
+    #: The default value of the field.
+    default_value = ''
+
+    def load_value(self, review_request_details):
+        """Load a value from the review request or draft.
+
+        Args:
+            review_request_details (reviewboard.reviews.models.
+                                    base_review_request_details.
+                                    BaseReviewRequestDetails):
+                The review request or draft.
+
+        Returns:
+            unicode:
+            The loaded value.
+        """
+        value = review_request_details.extra_data.get(self.field_id)
+
+        if value is not None:
+            return value
+        else:
+            return self.default_value
+
+
 def get_review_request_fields():
     """Yield all registered field classes.
 
