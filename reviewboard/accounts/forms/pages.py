@@ -20,6 +20,7 @@ from reviewboard.avatars import avatar_services
 from reviewboard.oauth.features import oauth2_service_feature
 from reviewboard.oauth.models import Application
 from reviewboard.reviews.models import Group
+from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
@@ -455,18 +456,31 @@ class OAuthApplicationsForm(AccountPageForm):
             dict:
             Data to be passed to the Javascript view.
         """
-        apps = [
-            self.serialize_app(app)
-            for app in (
-                Application.objects
-                .select_related('local_site')
-                .filter(user=self.user)
+        apps = {
+            site_name: []
+            for site_name in (
+                LocalSite.objects
+                .filter(users=self.user)
+                .values_list('name', flat=True)
             )
-        ]
+        }
+
+        apps[''] = []
+
+        app_qs = (
+            Application.objects
+            .select_related('local_site')
+            .filter(user=self.user)
+        )
+
+        for app in app_qs:
+            app = self.serialize_app(app)
+            apps[app['localSiteName'] or ''].append(app)
 
         return {
             'apps': apps,
             'editURL': reverse('edit-oauth-app'),
+            'baseURL': reverse('oauth-apps-resource'),
         }
 
     @staticmethod
@@ -495,12 +509,11 @@ class OAuthApplicationsForm(AccountPageForm):
             original_user = app.original_user.username
 
         return {
-            'apiURL': local_site_reverse('oauth-app-resource',
-                                         local_site_name=local_site_name,
-                                         kwargs={'app_id': app.pk}),
+            'id': app.pk,
             'editURL': reverse('edit-oauth-app', kwargs={'app_id': app.pk}),
             'enabled': app.enabled,
             'isDisabledForSecurity': app.is_disabled_for_security,
+            'localSiteName': local_site_name,
             'name': app.name,
             'originalUser': original_user,
         }
