@@ -27,7 +27,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
     initialize(options) {
         this._containerPrefix = options.containerPrefix;
         this._fragmentsBasePath =
-            `${options.reviewRequestPath}fragments/diff-comments/`;
+            `${options.reviewRequestPath}_fragments/diff-comments/`;
         this._queueName = options.queueName;
 
         this._queue = {};
@@ -129,11 +129,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                      */
                     this._loadDiff(pendingCommentIDs.join(','), {
                         queueName: queueName,
-                        onDone: () => {
-                            _.each(pendingCommentIDs,
-                                   this._setupDiffFragmentView,
-                                   this);
-                        },
+                        onDone: () => $.funcQueue(queueName).next(),
                     });
                 } else {
                     /*
@@ -194,51 +190,55 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
      *         fragments sequentially.
      */
     _loadDiff(commentIDs, options={}) {
-        const queryArgs = [
-            `container_prefix=${this._containerPrefix}`,
-        ];
-
-        if (options.queueName !== undefined) {
-            queryArgs.push(`queue=${options.queueName}`);
-        }
+        const containerPrefix = this._containerPrefix;
+        const queryArgs = [];
 
         if (options.linesOfContext !== undefined) {
             queryArgs.push(`lines_of_context=${options.linesOfContext}`);
         }
 
-        queryArgs.push(TEMPLATE_SERIAL);
-
-        this._addScript(
-            `${this._fragmentsBasePath}${commentIDs}/?${queryArgs.join('&')}`,
-            options.onDone);
-    },
-
-    /*
-     * Add a script tag to the page and set up a callback handler for load.
-     *
-     * The browser will load the script at the specified URL, execute it, and
-     * call a handler when the load has finished. It's expected this will be
-     * called after the page is already otherwise loaded.
-     *
-     * Args:
-     *     url (string):
-     *         The URL of the script to load.
-     *
-     *     callback (function, optional):
-     *         An optional callback function to call once the script has
-     *         loaded.
-     */
-    _addScript(url, callback) {
-        const e = document.createElement('script');
-
-        e.type = 'text/javascript';
-        e.src = url;
-
-        if (callback !== undefined) {
-            e.addEventListener('load', callback);
+        if (!containerPrefix.includes('draft')) {
+            queryArgs.push('allow_expansion=1');
         }
 
-        document.body.appendChild(e);
+        queryArgs.push(TEMPLATE_SERIAL);
+
+        $.ajax({
+            url: `${this._fragmentsBasePath}${commentIDs}/`,
+            data: queryArgs.join('&'),
+            dataType: 'text',
+            success: data => {
+                let i = 0;
+
+                while (i < data.length) {
+                    /* Read the comment ID. */
+                    let j = data.indexOf('\n', i);
+                    const commentID = data.substr(i, j - i);
+                    i = j + 1;
+
+                    /* Read the length of the HTML. */
+                    j = data.indexOf('\n', i);
+                    const htmlLen = parseInt(data.substr(i, j - i), 10);
+                    i = j + 1;
+
+                    /* Read the HTML. */
+                    const html = data.substr(i, htmlLen);
+                    i += htmlLen;
+
+                    /* Set the HTML in the container. */
+                    const $container = $(`#${containerPrefix}_${commentID}`)
+                        .html(html);
+
+                    if ($container.data('diff-fragment-view') === undefined) {
+                        this._setupDiffFragmentView(commentID, $container);
+                    }
+                }
+
+                if (_.isFunction(options.onDone)) {
+                    options.onDone();
+                }
+            }
+        });
     },
 
     /**
@@ -251,10 +251,13 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
      * Args:
      *     commentID (string):
      *         The ID of the comment used to build the container ID.
+     *
+     *     $container (jQuery):
+     *         The container for the comment.
      */
-    _setupDiffFragmentView(commentID) {
+    _setupDiffFragmentView(commentID, $container) {
         const view = new RB.DiffFragmentView({
-            el: this._getCommentContainer(commentID),
+            el: $container,
             loadDiff: options => {
                 RB.setActivityIndicator(true, {type: 'GET'});
 

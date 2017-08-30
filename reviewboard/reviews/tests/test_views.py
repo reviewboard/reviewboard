@@ -4,6 +4,7 @@ from datetime import timedelta
 
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 
@@ -1216,10 +1217,9 @@ class CommentDiffFragmentsViewTests(TestCase):
         self.assertTrue(self.client.login(username='reviewer',
                                           password='reviewer'))
 
-        response = self.client.get(
-            '/r/%d/fragments/diff-comments/%d,%d/'
-            % (review_request.pk, comment1.pk, comment2.pk))
-        self.assertEqual(response.status_code, 403)
+        self._get_fragments(review_request,
+                            [comment1.pk, comment2.pk],
+                            expected_status=403)
 
     def test_get_with_unpublished_review_request_owner(self):
         """Testing comment_diff_fragments with unpublished review request and
@@ -1241,15 +1241,11 @@ class CommentDiffFragmentsViewTests(TestCase):
         self.assertTrue(self.client.login(username='test-user',
                                           password='test-user'))
 
-        response = self.client.get(
-            '/r/%d/fragments/diff-comments/%d,%d/'
-            % (review_request.pk, comment1.pk, comment2.pk))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['comment_entries']), 2)
-        self.assertEqual(response.context['comment_entries'][0]['comment'],
-                         comment1)
-        self.assertEqual(response.context['comment_entries'][1]['comment'],
-                         comment2)
+        fragments = self._get_fragments(review_request,
+                                        [comment1.pk, comment2.pk])
+        self.assertEqual(len(fragments), 2)
+        self.assertEqual(fragments[0][0], comment1.pk)
+        self.assertEqual(fragments[1][0], comment2.pk)
 
     @add_fixtures(['test_site'])
     def test_get_with_published_review_request_local_site_access(self):
@@ -1275,15 +1271,12 @@ class CommentDiffFragmentsViewTests(TestCase):
         self.assertTrue(self.client.login(username='test-user',
                                           password='test-user'))
 
-        response = self.client.get(
-            '/s/local-site-1/r/%d/fragments/diff-comments/%d,%d/'
-            % (review_request.display_id, comment1.pk, comment2.pk))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['comment_entries']), 2)
-        self.assertEqual(response.context['comment_entries'][0]['comment'],
-                         comment1)
-        self.assertEqual(response.context['comment_entries'][1]['comment'],
-                         comment2)
+        fragments = self._get_fragments(review_request,
+                                        [comment1.pk, comment2.pk],
+                                        local_site_name='local-site-1')
+        self.assertEqual(len(fragments), 2)
+        self.assertEqual(fragments[0][0], comment1.pk)
+        self.assertEqual(fragments[1][0], comment2.pk)
 
     @add_fixtures(['test_site'])
     def test_get_with_published_review_request_local_site_no_access(self):
@@ -1307,10 +1300,10 @@ class CommentDiffFragmentsViewTests(TestCase):
         self.assertTrue(self.client.login(username='test-user',
                                           password='test-user'))
 
-        response = self.client.get(
-            '/s/local-site-1/r/%d/fragments/diff-comments/%d,%d/'
-            % (review_request.display_id, comment1.pk, comment2.pk))
-        self.assertEqual(response.status_code, 403)
+        self._get_fragments(review_request,
+                            [comment1.pk, comment2.pk],
+                            local_site_name='local-site-1',
+                            expected_status=403)
 
     def test_get_with_valid_comment_ids(self):
         """Testing comment_diff_fragments with valid comment ID"""
@@ -1326,15 +1319,11 @@ class CommentDiffFragmentsViewTests(TestCase):
         comment2 = self.create_diff_comment(review, filediff)
         review.publish()
 
-        response = self.client.get(
-            '/r/%d/fragments/diff-comments/%d,%d/'
-            % (review_request.pk, comment1.pk, comment2.pk))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['comment_entries']), 2)
-        self.assertEqual(response.context['comment_entries'][0]['comment'],
-                         comment1)
-        self.assertEqual(response.context['comment_entries'][1]['comment'],
-                         comment2)
+        fragments = self._get_fragments(review_request,
+                                        [comment1.pk, comment2.pk])
+        self.assertEqual(len(fragments), 2)
+        self.assertEqual(fragments[0][0], comment1.pk)
+        self.assertEqual(fragments[1][0], comment2.pk)
 
     def test_get_with_valid_and_invalid_comment_ids(self):
         """Testing comment_diff_fragments with mix of valid comment IDs and
@@ -1351,23 +1340,18 @@ class CommentDiffFragmentsViewTests(TestCase):
         comment = self.create_diff_comment(review, filediff)
         review.publish()
 
-        response = self.client.get(
-            '/r/%d/fragments/diff-comments/999,%d/'
-            % (review_request.pk, comment.pk))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['comment_entries']), 1)
-        self.assertEqual(response.context['comment_entries'][0]['comment'],
-                         comment)
+        fragments = self._get_fragments(review_request, [999, comment.pk])
+        self.assertEqual(len(fragments), 1)
+        self.assertEqual(fragments[0][0], comment.pk)
 
     def test_get_with_no_valid_comment_ids(self):
         """Testing comment_diff_fragments with no valid comment IDs"""
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
 
-        response = self.client.get(
-            '/r/%d/fragments/diff-comments/100,200,300/'
-            % review_request.pk)
-        self.assertEqual(response.status_code, 404)
+        self._get_fragments(review_request,
+                            [100, 200, 300],
+                            expected_status=404)
 
     def test_get_with_comment_ids_from_other_review_request(self):
         """Testing comment_diff_fragments with comment ID from another review
@@ -1395,13 +1379,10 @@ class CommentDiffFragmentsViewTests(TestCase):
         comment2 = self.create_diff_comment(review, filediff)
         review.publish()
 
-        response = self.client.get(
-            '/r/%d/fragments/diff-comments/%d,%d/'
-            % (review_request1.pk, comment1.pk, comment2.pk))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['comment_entries']), 1)
-        self.assertEqual(response.context['comment_entries'][0]['comment'],
-                         comment1)
+        fragments = self._get_fragments(review_request1,
+                                        [comment1.pk, comment2.pk])
+        self.assertEqual(len(fragments), 1)
+        self.assertEqual(fragments[0][0], comment1.pk)
 
     def test_get_with_comment_ids_from_draft_review_owner(self):
         """Testing comment_diff_fragments with comment ID from draft review,
@@ -1421,13 +1402,9 @@ class CommentDiffFragmentsViewTests(TestCase):
         self.assertTrue(self.client.login(username='reviewer',
                                           password='reviewer'))
 
-        response = self.client.get(
-            '/r/%d/fragments/diff-comments/%d/'
-            % (review_request1.pk, comment.pk))
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['comment_entries']), 1)
-        self.assertEqual(response.context['comment_entries'][0]['comment'],
-                         comment)
+        fragments = self._get_fragments(review_request1, [comment.pk])
+        self.assertEqual(len(fragments), 1)
+        self.assertEqual(fragments[0][0], comment.pk)
 
     def test_get_with_comment_ids_from_draft_review_not_owner(self):
         """Testing comment_diff_fragments with comment ID from draft review,
@@ -1443,10 +1420,72 @@ class CommentDiffFragmentsViewTests(TestCase):
         review = self.create_review(review_request1, user=user)
         comment = self.create_diff_comment(review, filediff)
 
+        self._get_fragments(review_request1,
+                            [comment.pk],
+                            expected_status=404)
+
+    def _get_fragments(self, review_request, comment_ids,
+                       local_site_name=None, expected_status=200):
+        """Load and return fragments from the server.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request the comments were made on.
+
+            comment_ids (list of int):
+                The list of comment IDs to load.
+
+            local_site_name (unicode, optional):
+                The name of the Local Site for the URL.
+
+            expected_status (int, optional):
+                The expected HTTP status code. By default, this is a
+                successful 200.
+
+        Returns:
+            list of tuple:
+            A list of ``(comment_id, html)`` from the parsed payload, if
+            the status code was 200.
+        """
         response = self.client.get(
-            '/r/%d/fragments/diff-comments/%d/'
-            % (review_request1.pk, comment.pk))
-        self.assertEqual(response.status_code, 404)
+            local_site_reverse(
+                'diff-comment-fragments',
+                kwargs={
+                    'review_request_id': review_request.display_id,
+                    'comment_ids': ','.join(
+                        six.text_type(comment_id)
+                        for comment_id in comment_ids
+                    ),
+                },
+                local_site_name=local_site_name))
+        self.assertEqual(response.status_code, expected_status)
+
+        if expected_status != 200:
+            return None
+
+        i = 0
+        content = response.content
+        results = []
+
+        while i < len(content):
+            # Read the comment ID.
+            j = content.index(b'\n', i)
+            comment_id = int(content[i:j])
+            i = j + 1
+
+            # Read the length of the HTML.
+            j = content.index(b'\n', i)
+            html_len = int(content[i:j])
+            i = j + 1
+
+            # Read the HTML.
+            html = content[i:i + html_len]
+            i += html_len
+
+            results.append((comment_id, html))
+
+        return results
 
 
 class DownloadFileTests(TestCase):
