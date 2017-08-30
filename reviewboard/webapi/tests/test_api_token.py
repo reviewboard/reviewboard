@@ -42,6 +42,7 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
     sample_api_url = 'users/<username>/api-tokens/'
     resource = resources.api_token
     test_api_token_access = False
+    test_oauth_token_access = False
 
     compare_item = _compare_item
 
@@ -150,6 +151,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
     sample_api_url = 'users/<username>/api-tokens/<id>/'
     resource = resources.api_token
     test_api_token_access = False
+    test_oauth_token_access = False
 
     compare_item = _compare_item
 

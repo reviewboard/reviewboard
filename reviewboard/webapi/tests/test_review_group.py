@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.db import IntegrityError
 from django.utils import six
 from djblets.db.query import get_object_or_none
 from djblets.testing.decorators import add_fixtures
@@ -46,7 +47,10 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
                              populate_items):
         if populate_items:
             if not with_local_site:
-                LocalSite.objects.create(name=self.local_site_name)
+                try:
+                    LocalSite.objects.create(name=self.self.local_site_name)
+                except IntegrityError:
+                    pass
 
             items = [
                 self.create_review_group(name='group1',

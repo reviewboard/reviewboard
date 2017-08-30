@@ -63,7 +63,7 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
                              populate_items):
         if populate_items:
             if not with_local_site:
-                LocalSite.objects.create(name=self.local_site_name)
+                LocalSite.objects.get_or_create(name=self.local_site_name)
 
             items = [
                 self.create_review_request(
