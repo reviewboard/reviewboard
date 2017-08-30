@@ -14,6 +14,7 @@ from oauth2_provider.validators import URIValidator
 from reviewboard.admin.form_widgets import RelatedUserWidget
 from reviewboard.oauth.models import Application
 from reviewboard.oauth.widgets import OAuthSecretInputWidget
+from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
@@ -285,13 +286,45 @@ class UserApplicationChangeForm(ApplicationChangeForm):
                                                         initial=initial,
                                                         instance=instance)
 
+        local_site_field = self.fields['local_site']
+        local_site_field.queryset = LocalSite.objects.filter(users=user)
+        local_site_field.widget.attrs['disabled'] = True
+
+    def clean(self):
+        """Clean the form data.
+
+        This method will ensure that the ``local_site`` field cannot be changed
+        via form submission.
+
+        Returns:
+            dict:
+            A dictionary of the cleaned form data.
+        """
+        super(UserApplicationChangeForm, self).clean()
+
+        if 'local_site' in self.cleaned_data:
+            self.cleaned_data.pop('local_site')
+
+        return self.cleaned_data
+
     class Meta(ApplicationChangeForm.Meta):
         exclude = (
             'extra_data',
-            'local_site',
             'original_user',
             'skip_authorization',
             'user',
+        )
+
+        labels = dict(
+            ApplicationChangeForm.Meta.labels,
+            local_site=_('Restrict to'),
+        )
+
+        help_texts = dict(
+            ApplicationChangeForm.Meta.help_texts,
+            local_site=_('If this application is not restricted, it will be '
+                         'available to all users.<br><br>This cannot be '
+                         'changed once set.'),
         )
 
 
@@ -321,7 +354,10 @@ class UserApplicationCreationForm(ApplicationCreationForm):
         super(UserApplicationCreationForm, self).__init__(data=data,
                                                           initial=initial,
                                                           instance=instance)
+
         self.user = user
+        self.fields['local_site'].queryset = LocalSite.objects.filter(
+            users=user)
 
     def save(self, commit=True):
         """Save the form.
@@ -348,3 +384,13 @@ class UserApplicationCreationForm(ApplicationCreationForm):
     class Meta(ApplicationCreationForm.Meta):
         exclude = (ApplicationCreationForm.Meta.exclude +
                    UserApplicationChangeForm.Meta.exclude)
+
+        labels = dict(
+            ApplicationCreationForm.Meta.labels,
+            local_site=UserApplicationChangeForm.Meta.labels['local_site'],
+        )
+
+        help_texts = dict(
+            ApplicationCreationForm.Meta.help_texts,
+            local_site=UserApplicationChangeForm.Meta.help_texts['local_site'],
+        )

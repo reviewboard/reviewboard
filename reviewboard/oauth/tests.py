@@ -237,7 +237,29 @@ class UserApplicationCreationFormTests(TestCase):
 
     @add_fixtures(['test_site'])
     def test_assign_local_site(self):
-        """Testing UserApplicationCreationForm cannot assign Local Site"""
+        """Testing UserApplicationCreationForm with Local Site"""
+        user = User.objects.get(username='doc')
+        local_site = LocalSite.objects.get(name=self.local_site_name)
+
+        form = UserApplicationCreationForm(
+            user,
+            data={
+                'authorization_grant_type': Application.GRANT_IMPLICIT,
+                'client_type': Application.CLIENT_PUBLIC,
+                'name': 'test',
+                'redirect_uris': 'http://example.com',
+                'local_site': local_site.pk
+            },
+        )
+
+        self.assertTrue(form.is_valid())
+        application = form.save()
+        self.assertEqual(application.local_site, local_site)
+
+    def test_assign_local_site_inacessible(self):
+        """Testing UserApplicationCreationForm with an inaccessible Local Site
+        """
+        local_site = LocalSite.objects.create(name='inacessible')
         user = User.objects.get(username='doc')
 
         form = UserApplicationCreationForm(
@@ -247,13 +269,11 @@ class UserApplicationCreationFormTests(TestCase):
                 'client_type': Application.CLIENT_PUBLIC,
                 'name': 'test',
                 'redirect_uris': 'http://example.com',
-                'local_site': 'local-site-1',
+                'local_site': local_site.pk
             },
         )
 
-        self.assertTrue(form.is_valid())
-        application = form.save()
-        self.assertEqual(application.local_site, None)
+        self.assertFalse(form.is_valid())
 
     def test_set_extra_data(self):
         """Testing UserApplicationCreationForm cannot assign extra_data"""
