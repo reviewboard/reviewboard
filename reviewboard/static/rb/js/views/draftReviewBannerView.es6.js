@@ -65,12 +65,16 @@ RB.DraftReviewBannerView = Backbone.View.extend({
     show() {
         const height = this._$banner.outerHeight();
 
+        RB.scrollManager.markForUpdate(this.$el);
+
         this.$el
             .removeClass('hidden')
             .css({
                 maxHeight: height,
                 height: height,
             });
+        RB.scrollManager.scrollYOffset += height;
+        RB.scrollManager.markUpdated(this.$el);
     },
 
     /*
@@ -79,6 +83,10 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      * The banner will slide up to the top of the page.
      */
     hide() {
+        RB.scrollManager.markForUpdate(this.$el);
+
+        const height = this._$banner.outerHeight();
+
         this.$el
             .addClass('hidden')
             .css('max-height', '');
@@ -89,8 +97,13 @@ RB.DraftReviewBannerView = Backbone.View.extend({
          * we delay for a short period after we know the transition will have
          * completed.
          */
-        _.delay(() => this.$el.css('height', ''),
-                500);
+        _.delay(
+            () => {
+                this.$el.css('height', '');
+                RB.scrollManager.markUpdated(this.$el);
+                RB.scrollManager.scrollYOffset -= height;
+            },
+            500);
     },
 
     /**

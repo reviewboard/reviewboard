@@ -1,18 +1,22 @@
 suite('rb/pages/views/ReviewablePageView', function() {
-    var $editReview,
+    var pageTemplate = _.template([
+            '<div id="review-banner"></div>',
+            '<a href="#" id="review-action">Edit Review</a>',
+            '<a href="#" id="ship-it-action">Ship It</a>',
+        ].join('')),
+        $editReview,
         $shipIt,
         pageView;
 
     beforeEach(function() {
         var $container = $('<div/>')
+            .html(pageTemplate())
             .appendTo($testsScratch);
 
         RB.DnDUploader.instance = null;
 
-        $editReview = $('<a href="#" id="review-action">Edit Review</a>')
-            .appendTo($container);
-        $shipIt = $('<a href="#" id="ship-it-action">Ship It</a>')
-            .appendTo($container);
+        $editReview = $container.find('#review-action');
+        $shipIt = $container.find('#ship-it-action');
 
         pageView = new RB.ReviewablePageView({
             el: $container,

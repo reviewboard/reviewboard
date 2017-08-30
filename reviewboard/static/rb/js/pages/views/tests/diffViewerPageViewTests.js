@@ -1,5 +1,6 @@
 suite('rb/pages/views/DiffViewerPageView', function() {
     var tableTemplate = _.template([
+            '<div id="review-banner"></div>',
             '<div class="diff-container">',
             ' <table class="sidebyside">',
             '  <thead>',

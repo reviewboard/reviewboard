@@ -226,12 +226,9 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                     i += htmlLen;
 
                     /* Set the HTML in the container. */
-                    const $container = $(`#${containerPrefix}_${commentID}`)
-                        .html(html);
-
-                    if ($container.data('diff-fragment-view') === undefined) {
-                        this._setupDiffFragmentView(commentID, $container);
-                    }
+                    this._renderFragment($(`#${containerPrefix}_${commentID}`),
+                                         commentID,
+                                         html);
                 }
 
                 if (_.isFunction(options.onDone)) {
@@ -242,37 +239,54 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
     },
 
     /**
-     * Set up state for a fragment when it's first loaded.
+     * Render a diff fragment on the page.
      *
-     * When a comment container loads its contents for the first time, the
-     * controls will be hidden and the hover-related events will be registered
-     * to allow the fragment to be expanded/collapsed.
+     * This will set up a view for the diff fragment, if one is not already
+     * created, and render it on the page.
+     *
+     * It will also mark the fragment for updates with the scroll manager
+     * so that if the user is scrolled to a location past the fragment, the
+     * resulting size change for the fragment won't cause the page to jump.
      *
      * Args:
-     *     commentID (string):
-     *         The ID of the comment used to build the container ID.
-     *
      *     $container (jQuery):
-     *         The container for the comment.
+     *         The container element where the fragment will be injected.
+     *
+     *     commentID (number):
+     *         The ID of the comment.
+     *
+     *     html (string):
+     *         The HTML contents of the fragment.
      */
-    _setupDiffFragmentView(commentID, $container) {
-        const view = new RB.DiffFragmentView({
-            el: $container,
-            loadDiff: options => {
-                RB.setActivityIndicator(true, {type: 'GET'});
+    _renderFragment($container, commentID, html) {
+        RB.scrollManager.markForUpdate($container);
 
-                this._loadDiff(commentID, _.defaults({
-                    onDone() {
-                        RB.setActivityIndicator(false, {});
+        $container.html(html);
 
-                        if (options.onDone) {
-                            options.onDone();
-                        }
-                    },
-                }, options));
-            },
-        });
-        view.render().$el
-            .data('diff-fragment-view', view);
+        let view = $container.data('diff-fragment-view');
+
+        if (!view) {
+            view = new RB.DiffFragmentView({
+                el: $container,
+                loadDiff: options => {
+                    RB.setActivityIndicator(true, {type: 'GET'});
+
+                    this._loadDiff(commentID, _.defaults({
+                        onDone() {
+                            RB.setActivityIndicator(false, {});
+
+                            if (options.onDone) {
+                                options.onDone();
+                            }
+                        },
+                    }, options));
+                },
+            });
+            $container.data('diff-fragment-view', view);
+        }
+
+        view.render();
+
+        RB.scrollManager.markUpdated($container);
     },
 });

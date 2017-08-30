@@ -50,48 +50,35 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
 
         /*
          * Render each of the entries on the page.
-         *
-         * If trying to link to some anchor in some entry, we'll expand the
-         * first entry containing that anchor.
          */
-        const hash = RB.getLocationHash();
-        let anchorFound = false;
-        let selector = null;
+        this._entryViews.forEach(entryView => entryView.render());
 
-        if (hash !== '') {
-            if (hash.includes('comment')) {
-                selector = `a[name=${hash}]`;
-            } else {
-                selector = `#${hash}`;
-            }
+        /*
+         * Navigate to the right anchor on the page, if there's a valid hash
+         * in the URL. We'll also do this whenever it changes, if the browser
+         * supports this.
+         */
+        this._onHashChanged();
+
+        if ('onhashchange' in window) {
+            window.onhashchange = this._onHashChanged.bind(this);
         }
 
-        this._entryViews.forEach(entryView => {
-            entryView.render();
-
-            if (!anchorFound && selector && entryView.$(selector).length > 0) {
-                /*
-                 * We found the entry containing the specified anchor.
-                 * Expand it and stop searching the rest of the entries.
-                 */
-                entryView.expand();
-                anchorFound = true;
-
-                /*
-                 * Scroll down to the particular anchor, now that the entry
-                 * is expanded.
-                 */
-                window.location.hash = hash;
-            }
-        });
-
+        /*
+         * Load all the diff fragments queued up in each review.
+         */
         this.diffFragmentQueue.loadFragments();
 
+        /*
+         * Set up the Issue Summary Table and begin listening for related
+         * events.
+         */
         this._issueSummaryTableView =
             new RB.ReviewRequestPage.IssueSummaryTableView({
                 el: $('#issue-summary'),
                 model: this.reviewRequestEditor.get('commentIssueManager'),
             });
+
         this._issueSummaryTableView.render();
 
         this.listenTo(this._issueSummaryTableView,
@@ -159,6 +146,56 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
 
             if (reviewReplyEditorView) {
                 reviewReplyEditorView.openCommentEditor();
+                break;
+            }
+        }
+    },
+
+    /**
+     * Handler for when the location hash changes.
+     *
+     * This will attempt to locate a proper anchor point for the given
+     * hash, if one is provided, and scroll down to that anchor. The
+     * scrolling will take any docked floating banners (the review draft,
+     * specifically) into consideration to ensure the entirety of the comment
+     * is shown on-screen.
+     */
+    _onHashChanged() {
+        const hash = RB.getLocationHash();
+        let selector = null;
+
+        if (hash !== '') {
+            if (hash.includes('comment')) {
+                selector = `a[name=${hash}]`;
+            } else {
+                selector = `#${hash}`;
+            }
+        }
+
+        if (!selector) {
+            return;
+        }
+
+        /*
+         * If trying to link to some anchor in some entry, we'll expand the
+         * first entry containing that anchor.
+         */
+        for (let i = 0; i < this._entryViews.length; i++) {
+            const entryView = this._entryViews[i];
+            const $anchor = entryView.$(selector);
+
+            if ($anchor.length > 0) {
+                /*
+                 * We found the entry containing the specified anchor.
+                 * Expand it and stop searching the rest of the entries.
+                 */
+                entryView.expand();
+
+                /*
+                 * Scroll down to the particular anchor, now that the entry
+                 * is expanded.
+                 */
+                RB.scrollManager.scrollToElement($anchor);
                 break;
             }
         }
