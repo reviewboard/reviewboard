@@ -1,11 +1,13 @@
 from __future__ import unicode_literals
 
-from django.db.models import Q
+from django.db.models.query import Q
 from django.utils import six
 from djblets.webapi.decorators import webapi_request_fields
 from djblets.webapi.resources.user import UserResource as DjbletsUserResource
 
 from reviewboard.reviews.models import Group, ReviewRequest
+from reviewboard.search import search_backend_registry
+from reviewboard.search.forms import RBSearchForm
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_login_required,
                                            webapi_check_local_site)
@@ -98,24 +100,36 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
             self.name: {
                 'users': self._search_users(
                     request=request,
+                    max_results=max_results,
                     *args,
-                    **kwargs)[:max_results],
+                    **kwargs
+                ),
                 'groups': self._search_groups(
                     request=request,
+                    max_results=max_results,
                     *args,
-                    **kwargs)[:max_results],
+                    **kwargs
+                ),
                 'review_requests': self._search_review_requests(
                     request=request,
+                    max_results=max_results,
                     *args,
-                    **kwargs)[:max_results],
+                    **kwargs
+                )
             },
         }
 
-    def _search_users(self, local_site=None, fullname=None, q=None, *args,
-                      **kwargs):
+    def _search_users(self, request, max_results, local_site=None,
+                      fullname=None, q=None, id_q=None, *args, **kwargs):
         """Search for users and return the results.
 
         Args:
+            request (django.http.HttpRequest):
+                The current request.
+
+            max_results (int):
+                The maximum number of results to return.
+
             local_site (reviewboard.site.models.LocalSite, optional):
                 The current local site.
 
@@ -125,6 +139,9 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
 
             q (unicode, optional):
                 The search text.
+
+            id_q (int, optional):
+                An optional ID to search against user IDs.
 
             *args (tuple):
                 Ignored positional arguments.
@@ -136,6 +153,29 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
             django.db.models.query.QuerySet:
             A query set for users matching the given arguments.
         """
+        if search_backend_registry.search_enabled:
+            # If search is enabled, we will use the index to perform the query.
+            form = RBSearchForm(
+                user=request.user,
+                local_site=local_site,
+                data={
+                    'q': q,
+                    'id_q': id_q,
+                    'filter': [RBSearchForm.FILTER_USERS],
+                }
+            )
+
+            return [
+                {
+                    'id': result.pk,
+                    'username': result.username,
+                    'fullname': result.full_name,
+                    'url': result.url,
+                }
+                for result in form.search()[:max_results]
+            ]
+
+        # If search is disabled, we will fall back to using database queries.
         if local_site:
             users = local_site.users.filter(is_active=True)
         else:
@@ -162,15 +202,18 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
 
             users = users.filter(query)
 
-        return users
+            return users[:max_results]
 
-    def _search_groups(self, request, local_site=None, q=None, *args,
-                       **kwargs):
+    def _search_groups(self, request, max_results, local_site=None, q=None,
+                       *args, **kwargs):
         """Search for review groups and return the results.
 
         Args:
             request (django.http.HttpRequest):
                 The current HTTP request.
+
+            max_results (int):
+                The maximum number of results to return.
 
             local_site (reviewboard.site.models.LocalSite, optional):
                 The current local site.
@@ -198,15 +241,21 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
 
         # Group.objects.accessible only respects visible_only for
         # non-superusers. We add this here to make the behavior consistent.
-        return groups.filter(visible=True)
+        return groups.filter(visible=True)[:max_results]
 
-    def _search_review_requests(self, request, local_site=None, q=None,
-                                id_q=None, *args, **kwargs):
-        """Search for a user and return the results.
+    def _search_review_requests(self, request, max_results, local_site=None,
+                                q=None, id_q=None, *args, **kwargs):
+        """Search for a review request and return the results.
+
+        If indexed search is enabled, this will use the search index. Otherwise
+        it will query against the database.
 
         Args:
             local_site (reviewboard.site.models.LocalSite, optional):
                 The current local site.
+
+            max_results (int):
+                The maximum number of results to return.
 
             q (unicode, optional):
                 The search text.
@@ -221,12 +270,36 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
                 Ignored keyword arguments.
 
         Returns:
-            django.db.models.query.QuerySet:
-            A query set for users matching the given arguments.
+            django.db.models.query.QuerySet or haystack.query.SearchQuerySet:
+            A query for review requests matching the given arguments.
         """
-        review_requests = ReviewRequest.objects.public(filter_private=True,
-                                                       user=request.user,
-                                                       local_site=local_site)
+        if search_backend_registry.search_enabled:
+            # If search is enabled, we will use the index to perform the query.
+            form = RBSearchForm(
+                user=request.user,
+                local_site=local_site,
+                data={
+                    'q': q,
+                    'id': id_q,
+                    'filter': [RBSearchForm.FILTER_REVIEW_REQUESTS],
+                }
+            )
+
+            return [
+                {
+                    'id': result.review_request_id,
+                    'public': True,  # Drafts are not indexed.
+                    'summary': result.summary,
+                }
+                for result in form.search()[:max_results]
+            ]
+
+        # If search is disabled, we will fall back to using database queries.
+        review_requests = ReviewRequest.objects.public(
+            filter_private=True,
+            user=request.user,
+            local_site=local_site,
+        )
 
         query = Q()
 
@@ -245,7 +318,7 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
             else:
                 query |= Q(id__startswith=id_q)
 
-        return review_requests.filter(query)
+        return review_requests.filter(query)[:max_results]
 
 
 search_resource = SearchResource()

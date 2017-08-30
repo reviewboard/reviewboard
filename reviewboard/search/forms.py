@@ -25,17 +25,21 @@ class RBSearchForm(ModelSearchForm):
     :py:class:`Users <django.contrib.auth.models.User>`.
     """
 
+    FILTER_ALL = ''
+    FILTER_REVIEW_REQUESTS = 'reviewrequests'
+    FILTER_USERS = 'users'
+
     #: Available model filters.
     FILTER_TYPES = OrderedDict([
-        ('', {
+        (FILTER_ALL, {
             'models': [ReviewRequest, User],
             'name': _('All results'),
         }),
-        ('reviewrequests', {
+        (FILTER_REVIEW_REQUESTS, {
             'models': [ReviewRequest],
             'name': _('Review Requests'),
         }),
-        ('users', {
+        (FILTER_USERS, {
             'models': [User],
             'name': _('Users'),
         }),
@@ -48,6 +52,8 @@ class RBSearchForm(ModelSearchForm):
         ),
         required=False,
     )
+
+    id = forms.IntegerField(required=False)
 
     def __init__(self, user=None, local_site=None, **kwargs):
         """Initialize the search form.
@@ -105,6 +111,7 @@ class RBSearchForm(ModelSearchForm):
 
         user = self.user
         q = self.cleaned_data['q']
+        id_q = self.cleaned_data.get('id')
         model_filters = set()
 
         for filter_type in self.cleaned_data.get('model_filter', ['']):
@@ -117,6 +124,9 @@ class RBSearchForm(ModelSearchForm):
             .filter(content=Raw(q))
             .models(*model_filters)
         )
+
+        if id_q:
+            sqs = sqs.filter_or(SQ(id=q))
 
         if self.local_site:
             local_site_id = self.local_site.pk

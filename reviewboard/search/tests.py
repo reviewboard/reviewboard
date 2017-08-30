@@ -14,6 +14,7 @@ from kgb import SpyAgency
 from reviewboard.admin.server import build_server_url
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.reviews.models import ReviewRequestDraft
+from reviewboard.search.testing import reindex_search
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing.testcase import TestCase
 
@@ -43,7 +44,7 @@ class SearchTests(SpyAgency, TestCase):
         # We already have doc. Now let's create a review request.
         review_request = self.create_review_request(submitter='doc',
                                                     publish=True)
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search('doc')
@@ -61,7 +62,7 @@ class SearchTests(SpyAgency, TestCase):
         # We already have doc. Now let's create a review request.
         review_request = self.create_review_request(submitter='doc',
                                                     publish=True)
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search('doc', filter_by='reviewrequests')
@@ -76,7 +77,7 @@ class SearchTests(SpyAgency, TestCase):
         """Testing search with filtering for review requests"""
         # We already have doc. Now let's create a review request.
         self.create_review_request(submitter='doc', publish=True)
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search('doc', filter_by='users')
@@ -99,7 +100,7 @@ class SearchTests(SpyAgency, TestCase):
         review_request = self.create_review_request(repository=repository,
                                                     publish=True)
         self.assertFalse(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
@@ -120,7 +121,7 @@ class SearchTests(SpyAgency, TestCase):
                                                     publish=True)
 
         self.assertTrue(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
@@ -148,7 +149,7 @@ class SearchTests(SpyAgency, TestCase):
                                                     publish=True)
 
         self.assertTrue(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
@@ -172,7 +173,7 @@ class SearchTests(SpyAgency, TestCase):
         review_request.target_groups.add(group)
 
         self.assertFalse(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
@@ -193,7 +194,7 @@ class SearchTests(SpyAgency, TestCase):
         review_request.target_groups.add(group)
 
         self.assertTrue(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
@@ -222,7 +223,7 @@ class SearchTests(SpyAgency, TestCase):
         review_request.target_groups.add(group)
 
         self.assertFalse(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
@@ -245,7 +246,7 @@ class SearchTests(SpyAgency, TestCase):
                                                     publish=True)
 
         self.assertTrue(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
@@ -270,7 +271,7 @@ class SearchTests(SpyAgency, TestCase):
         review_request.target_people.add(user)
 
         self.assertFalse(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
@@ -290,7 +291,7 @@ class SearchTests(SpyAgency, TestCase):
         review_request.target_people.add(user)
 
         self.assertTrue(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
@@ -313,7 +314,7 @@ class SearchTests(SpyAgency, TestCase):
         review_request = self.create_review_request(publish=True)
 
         self.assertTrue(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search('%d' % review_request.id)
@@ -332,7 +333,7 @@ class SearchTests(SpyAgency, TestCase):
                                                     publish=True)
 
         self.assertTrue(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search('456')
@@ -342,10 +343,6 @@ class SearchTests(SpyAgency, TestCase):
         results = context['object_list']
         self.assertEqual(results[0].content_type(), 'reviews.reviewrequest')
         self.assertEqual(results[0].summary, review_request.summary)
-
-    def reindex(self):
-        """Re-index the search database for the unit tests."""
-        call_command('rebuild_index', interactive=False)
 
     def search(self, q, filter_by=None):
         """Perform a search with the given query and optional filters.
@@ -364,7 +361,7 @@ class SearchTests(SpyAgency, TestCase):
 
     def test_on_the_fly_indexing_review_requests(self):
         """Testing on-the-fly indexing for review requests"""
-        self.reindex()
+        reindex_search()
 
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set('search_on_the_fly_indexing', True)
@@ -409,7 +406,7 @@ class SearchTests(SpyAgency, TestCase):
 
     def test_on_the_fly_indexing_users(self):
         """Testing on-the-fly indexing for users"""
-        self.reindex()
+        reindex_search()
 
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set('search_on_the_fly_indexing', True)
