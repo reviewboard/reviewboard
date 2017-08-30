@@ -354,7 +354,7 @@ class ReviewRequestManager(ConcurrencyManager):
             query = query & extra_query
 
         if filter_private and (not user or not user.is_superuser):
-            # This must always be kept in sync with RBSearchView.get_results.
+            # This must always be kept in sync with RBSearchForm.search.
             repo_query = Q(repository=None)
             group_query = Q(target_groups=None)
 

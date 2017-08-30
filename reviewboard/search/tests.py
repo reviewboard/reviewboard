@@ -3,7 +3,9 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.management import call_command
+from django.core.urlresolvers import reverse
 from django.utils import six
+from django.utils.six.moves.urllib.parse import urlencode
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from haystack import signal_processor
@@ -48,7 +50,7 @@ class SearchTests(SpyAgency, TestCase):
         context = response.context
         self.assertEqual(context['hits_returned'], 2)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'auth.user')
         self.assertEqual(results[0].username, 'doc')
         self.assertEqual(results[1].content_type(), 'reviews.reviewrequest')
@@ -66,7 +68,7 @@ class SearchTests(SpyAgency, TestCase):
         context = response.context
         self.assertEqual(context['hits_returned'], 1)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'reviews.reviewrequest')
         self.assertEqual(results[0].summary, review_request.summary)
 
@@ -81,7 +83,7 @@ class SearchTests(SpyAgency, TestCase):
         context = response.context
         self.assertEqual(context['hits_returned'], 1)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'auth.user')
         self.assertEqual(results[0].username, 'doc')
 
@@ -125,7 +127,7 @@ class SearchTests(SpyAgency, TestCase):
         context = response.context
         self.assertEqual(context['hits_returned'], 1)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'reviews.reviewrequest')
         self.assertEqual(results[0].summary, review_request.summary)
 
@@ -153,7 +155,7 @@ class SearchTests(SpyAgency, TestCase):
         context = response.context
         self.assertEqual(context['hits_returned'], 1)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'reviews.reviewrequest')
         self.assertEqual(results[0].summary, review_request.summary)
 
@@ -198,7 +200,7 @@ class SearchTests(SpyAgency, TestCase):
         context = response.context
         self.assertEqual(context['hits_returned'], 1)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'reviews.reviewrequest')
         self.assertEqual(results[0].summary, review_request.summary)
 
@@ -250,7 +252,7 @@ class SearchTests(SpyAgency, TestCase):
         context = response.context
         self.assertEqual(context['hits_returned'], 1)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'reviews.reviewrequest')
         self.assertEqual(results[0].summary, review_request.summary)
 
@@ -295,7 +297,7 @@ class SearchTests(SpyAgency, TestCase):
         context = response.context
         self.assertEqual(context['hits_returned'], 1)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'reviews.reviewrequest')
         self.assertEqual(results[0].summary, review_request.summary)
 
@@ -337,7 +339,7 @@ class SearchTests(SpyAgency, TestCase):
         context = response.context
         self.assertEqual(context['hits_returned'], 1)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'reviews.reviewrequest')
         self.assertEqual(results[0].summary, review_request.summary)
 
@@ -449,3 +451,59 @@ class SearchTests(SpyAgency, TestCase):
         self.assertEqual(result.url, '/users/not_doc/')
         self.assertEqual(result.username, 'not_doc')
         self.assertEqual(result.full_name, 'Not Doc Dwarf')
+
+
+class ViewTests(TestCase):
+
+    def test_get_enabled_no_query(self):
+        """Testing the search view without a query redirects to all review
+        requests
+        """
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('search_enable', True)
+        siteconfig.save()
+
+        try:
+            rsp = self.client.get(reverse('search'))
+        finally:
+            siteconfig.set('search_enable', False)
+            siteconfig.save()
+
+        self.assertEqual(rsp.status_code, 302)
+        self.assertEqual(rsp.get('Location'), 'http://testserver/r/')
+
+    def test_get_enabled_query(self):
+        """Testing the search view with a query"""
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('search_enable', True)
+        siteconfig.save()
+
+        try:
+            rsp = self.client.get(
+                '%s?%s'
+                % (reverse('search'),
+                   urlencode({'q': 'foo'}))
+            )
+        finally:
+            siteconfig.set('search_enable', False)
+            siteconfig.save()
+
+        self.assertEqual(rsp.status_code, 200)
+        # Check for the search form.
+        self.assertIn('<form method="get" action="/search/">', rsp.content)
+        # And the filtered search links.
+        self.assertIn('<a href="?q=foo&filter=r">', rsp.content)
+        self.assertIn('<a href="?q=foo&filter=u">', rsp.content)
+
+    def test_get_disabled(self):
+        """Testing the search view with search disabled"""
+        siteconfig = SiteConfiguration.objects.get_current()
+        self.assertFalse(siteconfig.get('search_enable'))
+
+        rsp = self.client.get(reverse('search'))
+
+        self.assertEqual(rsp.status_code, 200)
+        self.assertIn(
+            '<title>Indexed searched not enabled | Review Board</title>',
+            rsp.content)
+        self.assertNotIn('<form', rsp.content)
