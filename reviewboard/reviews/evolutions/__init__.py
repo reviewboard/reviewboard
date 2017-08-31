@@ -35,4 +35,5 @@ SEQUENCE = [
     'general_comments',
     'add_owner_to_draft',
     'status_update_timeout',
+    'comment_issue_verification',
 ]

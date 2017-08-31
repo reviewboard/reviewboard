@@ -258,12 +258,13 @@ class BaseComment(models.Model):
                     new_field = ReviewRequest.ISSUE_COUNTER_FIELDS[
                         self.issue_status]
 
-                    CounterField.increment_many(
-                        self.get_review_request(),
-                        {
-                            old_field: -1,
-                            new_field: 1,
-                        })
+                    if old_field != new_field:
+                        CounterField.increment_many(
+                            self.get_review_request(),
+                            {
+                                old_field: -1,
+                                new_field: 1,
+                            })
 
                 q = ReviewRequest.objects.filter(pk=review.review_request_id)
                 q.update(last_review_activity_timestamp=self.timestamp)

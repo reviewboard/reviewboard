@@ -382,6 +382,7 @@ class Review(models.Model):
                     'issue_open_count': issue_counts[BaseComment.OPEN],
                     'issue_dropped_count': 0,
                     'issue_resolved_count': 0,
+                    'issue_verifying_count': 0,
                     'shipit_count': ship_it_value,
                 })
 

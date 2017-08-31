@@ -52,7 +52,8 @@ class Command(BaseCommand):
 
         q.update(issue_open_count=None,
                  issue_resolved_count=None,
-                 issue_dropped_count=None)
+                 issue_dropped_count=None,
+                 issue_verifying_count=None)
 
         if not update_all and recalculate:
             if int(options['verbosity']) > 1:
