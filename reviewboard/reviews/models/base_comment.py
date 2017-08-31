@@ -17,12 +17,31 @@ class BaseComment(models.Model):
     OPEN = 'O'
     RESOLVED = 'R'
     DROPPED = 'D'
+    VERIFYING_RESOLVED = 'A'
+    VERIFYING_DROPPED = 'B'
 
     ISSUE_STATUSES = (
         (OPEN, _('Open')),
         (RESOLVED, _('Resolved')),
         (DROPPED, _('Dropped')),
     )
+
+    ISSUE_STATUS_TO_STRING = {
+        OPEN: 'open',
+        RESOLVED: 'resolved',
+        DROPPED: 'dropped',
+        VERIFYING_RESOLVED: 'verifying-resolved',
+        VERIFYING_DROPPED: 'verifying-dropped',
+    }
+
+    ISSUE_STRING_TO_STATUS = {
+        'open': OPEN,
+        'resolved': RESOLVED,
+        'dropped': DROPPED,
+        'verifying-resolved': VERIFYING_RESOLVED,
+        'verifying-dropped': VERIFYING_DROPPED,
+    }
+
     issue_opened = models.BooleanField(_('Issue Opened'), default=False)
     issue_status = models.CharField(_('Issue Status'),
                                     max_length=1,
@@ -56,13 +75,9 @@ class BaseComment(models.Model):
             A string representation of the status used for the API and other
             interfaces.
         """
-        if status == BaseComment.OPEN:
-            return 'open'
-        elif status == BaseComment.RESOLVED:
-            return 'resolved'
-        elif status == BaseComment.DROPPED:
-            return 'dropped'
-        else:
+        try:
+            return BaseComment.ISSUE_STATUS_TO_STRING[status]
+        except KeyError:
             return ''
 
     @staticmethod
@@ -77,13 +92,9 @@ class BaseComment(models.Model):
             unicode:
             A value suitable for storing in the ``issue_status`` field.
         """
-        if status == 'open':
-            return BaseComment.OPEN
-        elif status == 'resolved':
-            return BaseComment.RESOLVED
-        elif status == 'dropped':
-            return BaseComment.DROPPED
-        else:
+        try:
+            return BaseComment.ISSUE_STRING_TO_STATUS[status]
+        except KeyError:
             raise Exception('Invalid issue status "%s"' % status)
 
     def __init__(self, *args, **kwargs):

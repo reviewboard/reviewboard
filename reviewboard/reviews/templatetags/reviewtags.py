@@ -777,6 +777,11 @@ def issue_status_icon(status):
         return 'rb-icon-issue-resolved'
     elif status == BaseComment.DROPPED:
         return 'rb-icon-issue-dropped'
+    elif status in (BaseComment.VERIFYING_RESOLVED,
+                    BaseComment.VERIFYING_DROPPED):
+        # TODO: change once the icon is landed
+        return 'rb-icon-issue-open'
+        #return 'rb-icon-issue-verifying'
     else:
         raise ValueError('Unknown comment issue status "%s"' % status)
 

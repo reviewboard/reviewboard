@@ -34,7 +34,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             'description': 'Whether or not a comment opens an issue.',
         },
         'issue_status': {
-            'type': ('dropped', 'open', 'resolved'),
+            'type': tuple(BaseComment.ISSUE_STRING_TO_STATUS.keys()),
             'description': 'The status of an issue.',
         },
         'public': {
@@ -135,7 +135,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             'added_in': '2.0',
         },
         'issue_status': {
-            'type': ('dropped', 'open', 'resolved'),
+            'type': tuple(BaseComment.ISSUE_STRING_TO_STATUS.keys()),
             'description': 'The status of an open issue.',
             'added_in': '2.0',
         },

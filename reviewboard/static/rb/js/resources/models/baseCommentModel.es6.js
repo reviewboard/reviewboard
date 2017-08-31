@@ -18,7 +18,8 @@
  *
  *     issueStatus (string):
  *         The current state of the issue. This must be one of
- *         ``STATE_DROPPED``, ``STATE_OPEN``, or ``STATE_RESOLVED``.
+ *         ``STATE_DROPPED``, ``STATE_OPEN``, ``STATE_RESOLVED``,
+ *         ``STATE_VERIFYING_DROPPED`` or ``STATE_VERIFYING_RESOLVED``.
  *
  *     markdownTextFields (object):
  *         The source contents of any Markdown text fields, if forceTextType is
@@ -183,19 +184,25 @@ RB.BaseComment = RB.BaseResource.extend({
         if (attrs.issueStatus &&
             attrs.issueStatus !== RB.BaseComment.STATE_DROPPED &&
             attrs.issueStatus !== RB.BaseComment.STATE_OPEN &&
-            attrs.issueStatus !== RB.BaseComment.STATE_RESOLVED) {
+            attrs.issueStatus !== RB.BaseComment.STATE_RESOLVED &&
+            attrs.issueStatus !== RB.BaseComment.STATE_VERIFYING_DROPPED &&
+            attrs.issueStatus !== RB.BaseComment.STATE_VERIFYING_RESOLVED) {
             return RB.BaseComment.strings.INVALID_ISSUE_STATUS;
         }
 
         return RB.BaseResource.prototype.validate.apply(this, arguments);
-    }
+    },
 }, {
     STATE_DROPPED: 'dropped',
     STATE_OPEN: 'open',
     STATE_RESOLVED: 'resolved',
+    STATE_VERIFYING_DROPPED: 'verifying-dropped',
+    STATE_VERIFYING_RESOLVED: 'verifying-resolved',
 
     strings: {
         INVALID_ISSUE_STATUS: 'issueStatus must be one of STATE_DROPPED, ' +
-                              'STATE_OPEN, or STATE_RESOLVED'
-    }
+                              'STATE_OPEN, STATE_RESOLVED, ' +
+                              'STATE_VERIFYING_DROPPED, or ' +
+                              'STATE_VERIFYING_RESOLVED',
+    },
 });
