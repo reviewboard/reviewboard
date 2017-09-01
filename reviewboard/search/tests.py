@@ -39,6 +39,16 @@ class SearchTests(SpyAgency, TestCase):
 
         load_site_config()
 
+    @classmethod
+    def tearDownClass(cls):
+        super(SearchTests, cls).tearDownClass()
+
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('search_enable', False)
+        siteconfig.save()
+
+        load_site_config()
+
     def test_search_all(self):
         """Testing search with review requests and users"""
         # We already have doc. Now let's create a review request.
@@ -355,7 +365,7 @@ class SearchTests(SpyAgency, TestCase):
         }
 
         if filter_by:
-            options['filter'] = filter_by
+            options['model_filter'] = filter_by
 
         return self.client.get(local_site_reverse('search'), options)
 
@@ -451,6 +461,7 @@ class SearchTests(SpyAgency, TestCase):
 
 
 class ViewTests(TestCase):
+    """Tests for the search view."""
 
     def test_get_enabled_no_query(self):
         """Testing the search view without a query redirects to all review
@@ -489,8 +500,8 @@ class ViewTests(TestCase):
         # Check for the search form.
         self.assertIn('<form method="get" action="/search/">', rsp.content)
         # And the filtered search links.
-        self.assertIn('<a href="?q=foo&filter=r">', rsp.content)
-        self.assertIn('<a href="?q=foo&filter=u">', rsp.content)
+        self.assertIn('<a href="?q=foo&model_filter=r">', rsp.content)
+        self.assertIn('<a href="?q=foo&model_filter=u">', rsp.content)
 
     def test_get_disabled(self):
         """Testing the search view with search disabled"""
