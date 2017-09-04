@@ -5,11 +5,16 @@
  * display and update the diff viewer.
  *
  * Model Attributes:
+ *     canDownloadDiff (boolean):
+ *         Whether a diff file can be downloaded, given the current revision
+ *         state.
+ *
  *     numDiffs (number):
  *         The total number of diffs.
  */
 RB.DiffViewerPage = RB.ReviewablePage.extend({
     defaults: _.defaults({
+        canDownloadDiff: false,
         numDiffs: 1,
     }, RB.ReviewablePage.prototype.defaults),
 
@@ -30,6 +35,21 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
     },
 
     /**
+     * Initialize the page.
+     *
+     * This will begin listening for events on the page and set up default
+     * state.
+     */
+    initialize() {
+        RB.ReviewablePage.prototype.initialize.apply(this, arguments);
+
+        this.diffReviewables = new RB.DiffReviewableCollection([], {
+            reviewRequest: this.get('reviewRequest'),
+        });
+        this.diffReviewables.watchFiles(this.files);
+    },
+
+    /**
      * Parse the data for the page.
      *
      * Args:
@@ -41,8 +61,49 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
      *     The returned attributes.
      */
     parse(rsp) {
-        return _.extend(this.parseDiffContext(rsp),
+        return _.extend(this._parseDiffContext(rsp),
                         RB.ReviewablePage.prototype.parse.call(this, rsp));
+    },
+
+    /**
+     * Load a new diff from the server.
+     *
+     * Args:
+     *     options (object):
+     *         The options for the diff to load.
+     *
+ *     Option Args:
+     *     page (number):
+     *         The page number to load. Defaults to the first page.
+     *
+     *     revision (number):
+     *         The base revision. If displaying an interdiff, this will be
+     *         the first revision in the range.
+     *
+     *     interdiffRevision (number):
+     *         The optional interdiff revision, representing the ending
+     *         revision in a range.
+     */
+    loadDiffRevision(options={}) {
+        const reviewRequestURL = this.get('reviewRequest').url();
+        const queryArgs = [];
+
+        if (options.revision) {
+            queryArgs.push(`revision=${options.revision}`);
+        }
+
+        if (options.interdiffRevision) {
+            queryArgs.push(`interdiff-revision=${options.interdiffRevision}`);
+        }
+
+        if (options.page && options.page !== 1) {
+            queryArgs.push(`page=${options.page}`);
+        }
+
+        this.set('canDownloadDiff', !options.interdiffRevision);
+
+        $.ajax(`${reviewRequestURL}diff-context/?${queryArgs.join('&')}`)
+            .done(rsp => this.set(this._parseDiffContext(rsp.diff_context)));
     },
 
     /**
@@ -56,7 +117,7 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
      *     object:
      *     The returned attributes.
      */
-    parseDiffContext(rsp) {
+    _parseDiffContext(rsp) {
         if (rsp.comments_hint) {
             this.commentsHint.set(this.commentsHint.parse(rsp.comments_hint));
         }

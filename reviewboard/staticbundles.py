@@ -50,6 +50,7 @@ PIPELINE_JAVASCRIPT = dict({
         'source_filenames': (
             'rb/js/collections/tests/filteredCollectionTests.js',
             'rb/js/configForms/models/tests/resourceListItemModelTests.js',
+            'rb/js/diffviewer/collections/tests/diffReviewableCollectionTests.es6.js',
             'rb/js/diffviewer/models/tests/diffFileModelTests.js',
             'rb/js/diffviewer/models/tests/diffReviewableModelTests.js',
             'rb/js/diffviewer/models/tests/diffRevisionModelTests.js',
@@ -283,6 +284,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/diffviewer/models/diffRevisionModel.js',
             'rb/js/diffviewer/models/paginationModel.js',
             'rb/js/diffviewer/collections/diffFileCollection.js',
+            'rb/js/diffviewer/collections/diffReviewableCollection.es6.js',
             'rb/js/diffviewer/views/chunkHighlighterView.js',
             'rb/js/diffviewer/views/diffCommentBlockView.es6.js',
             'rb/js/diffviewer/views/diffCommentsHintView.js',

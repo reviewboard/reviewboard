@@ -1,6 +1,5 @@
 suite('rb/pages/views/DiffViewerPageView', function() {
     const tableTemplate = _.template(dedent`
-        <div id="review-banner"></div>
         <div class="diff-container">
          <table class="sidebyside">
           <thead>
@@ -31,8 +30,16 @@ suite('rb/pages/views/DiffViewerPageView', function() {
         </div>
     `);
 
+    const pageTemplate = dedent`
+        <div>
+         <div id="review-banner"></div>
+         <div id="diffs"></div>
+        </div>
+    `;
+
     let page;
     let pageView;
+    let $diffs;
 
     beforeEach(function() {
         /*
@@ -60,9 +67,11 @@ suite('rb/pages/views/DiffViewerPageView', function() {
         });
 
         pageView = new RB.DiffViewerPageView({
-            el: $('<div/>').appendTo($testsScratch),
+            el: $(pageTemplate).appendTo($testsScratch),
             model: page,
         });
+
+        $diffs = pageView.$el.children('#diffs');
 
         /* Don't communicate with the server for page updates. */
         spyOn(page.get('reviewRequest'), 'ready').and.callFake(
@@ -75,7 +84,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
     describe('Anchors', function() {
         it('Tracks all types', function() {
-            pageView.$el.html(tableTemplate({
+            $diffs.html(tableTemplate({
                 fileID: 'file1',
                 chunks: [
                     {
@@ -127,7 +136,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
         describe('Navigation', function() {
             beforeEach(function() {
-                pageView.$el.html([
+                $diffs.html([
                     tableTemplate({
                         fileID: 'file1',
                         chunks: [
@@ -405,5 +414,67 @@ suite('rb/pages/views/DiffViewerPageView', function() {
         testKeys('Create comment',
                  '_createComment',
                  ['r', 'R']);
+    });
+
+    describe('Reviewable Management', function() {
+        beforeEach(function() {
+            spyOn(pageView, 'queueLoadDiff');
+
+            pageView.render();
+        });
+
+        it('File added', function() {
+            expect($diffs.find('.diff-container').length).toBe(0);
+            expect(pageView.queueLoadDiff.calls.count()).toBe(0);
+
+            page.files.reset([
+                new RB.DiffFile({
+                    id: 100,
+                    filediff: {
+                        id: 200,
+                        revision: 1,
+                    },
+                }),
+            ]);
+
+            expect($diffs.find('.diff-container').length).toBe(1);
+            expect(pageView.queueLoadDiff.calls.count()).toBe(1);
+        });
+
+        it('Files reset', function() {
+            expect($diffs.find('.diff-container').length).toBe(0);
+            expect(pageView.queueLoadDiff.calls.count()).toBe(0);
+
+            /* Add an initial batch of files. */
+            page.files.reset([
+                new RB.DiffFile({
+                    id: 100,
+                    filediff: {
+                        id: 200,
+                        revision: 1,
+                    },
+                }),
+            ]);
+
+            expect($diffs.find('.diff-container').length).toBe(1);
+            expect(pageView.queueLoadDiff.calls.count()).toBe(1);
+
+            /* Now do another. */
+            page.files.reset([
+                new RB.DiffFile({
+                    id: 101,
+                    filediff: {
+                        id: 201,
+                        revision: 2,
+                    },
+                }),
+            ]);
+
+            const $containers = $diffs.find('.diff-container');
+            expect($containers.length).toBe(1);
+            expect($containers.find('.sidebyside')[0].id)
+                .toBe('file_container_101');
+            expect(pageView.queueLoadDiff.calls.count()).toBe(2);
+        });
     });
 });

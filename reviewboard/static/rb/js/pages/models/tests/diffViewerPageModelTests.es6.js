@@ -234,4 +234,88 @@ suite('rb/pages/models/DiffViewerPage', function() {
             ]);
         });
     });
+
+    describe('loadDiffRevision', function() {
+        let page;
+
+        beforeEach(function() {
+            page = new RB.DiffViewerPage({
+                reviewRequestData: {
+                    id: 123,
+                },
+            }, {
+                parse: true,
+            });
+
+            spyOn($, 'ajax').and.callFake(() => {
+                return {
+                    done: function() {},
+                };
+            });
+        });
+
+        describe('Generates URL for', function() {
+            it('First page, normal diffs', function() {
+                page.loadDiffRevision({
+                    page: 1,
+                    revision: 1,
+                });
+
+                expect($.ajax).toHaveBeenCalledWith(
+                    '/api/review-requests/123/diff-context/?revision=1');
+            });
+
+            it('Other page, normal diffs', function() {
+                page.loadDiffRevision({
+                    page: 2,
+                    revision: 1,
+                });
+
+                expect($.ajax).toHaveBeenCalledWith(
+                    '/api/review-requests/123/diff-context/' +
+                    '?revision=1&page=2');
+            });
+
+            it('First page, interdiffs', function() {
+                page.loadDiffRevision({
+                    page: 1,
+                    revision: 1,
+                    interdiffRevision: 2,
+                });
+
+                expect($.ajax).toHaveBeenCalledWith(
+                    '/api/review-requests/123/diff-context/' +
+                    '?revision=1&interdiff-revision=2');
+            });
+
+            it('Other page, interdiffs', function() {
+                page.loadDiffRevision({
+                    page: 2,
+                    revision: 1,
+                    interdiffRevision: 2,
+                });
+
+                expect($.ajax).toHaveBeenCalledWith(
+                    '/api/review-requests/123/diff-context/' +
+                    '?revision=1&interdiff-revision=2&page=2');
+            });
+        });
+
+        describe('Sets canDownloadDiff to', function() {
+            it('true for normal diffs', function() {
+                page.loadDiffRevision({
+                    revision: 1,
+                });
+                expect(page.get('canDownloadDiff')).toBe(true);
+            });
+
+            it('false for interdiffs', function() {
+                page.loadDiffRevision({
+                    revision: 1,
+                    interdiffRevision: 2,
+                });
+                expect(page.get('canDownloadDiff')).toBe(false);
+            });
+        });
+    });
 });

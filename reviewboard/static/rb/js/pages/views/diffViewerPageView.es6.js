@@ -33,11 +33,11 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     _fileEntryTemplate: _.template(dedent`
         <div class="diff-container">
          <div class="diff-box">
-          <table class="sidebyside loading <% if (newfile) { %>newfile<% } %>"
+          <table class="sidebyside loading <% if (newFile) { %>newfile<% } %>"
                  id="file_container_<%- id %>">
            <thead>
             <tr class="filename-row">
-             <th><%- depotFilename %></th>
+             <th><%- filename %></th>
             </tr>
            </thead>
            <tbody>
@@ -66,11 +66,37 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this._$window = $(window);
         this._$anchors = $();
         this._$controls = null;
+        this._$diffs = null;
         this._diffReviewableViews = [];
         this._diffFileIndexView = null;
         this._highlightedChunk = null;
 
-        this.listenTo(this.model.files, 'reset', this._setFiles);
+        /*
+         * Listen for the construction of added DiffReviewables.
+         *
+         * We'll queue up the loading and construction of a view when added.
+         * This will ultimately result in a RB.DiffReviewableView being
+         * constructed, once the data from the server is loaded.
+         */
+        this.listenTo(this.model.diffReviewables, 'add',
+                      this._onDiffReviewableAdded);
+
+        /*
+         * Listen for when we're started and finished populating the list
+         * of DiffReviewables. We'll use these events to clear and start the
+         * diff loading queue.
+         */
+        const diffQueue = $.funcQueue('diff_files');
+
+        this.listenTo(this.model.diffReviewables, 'populating', () => {
+            this._diffReviewableViews.forEach(view => view.remove());
+            this._$diffs.children('.diff-container').remove();
+            this._highlightedChunk = null;
+
+            diffQueue.clear();
+        });
+        this.listenTo(this.model.diffReviewables, 'populated',
+                      () => diffQueue.start());
 
         /* Check to see if there's an anchor we need to scroll to. */
         this._startAtAnchorName = hash || null;
@@ -89,13 +115,18 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             }
 
             if (revision.indexOf('-') === -1) {
-                this._loadRevision(0, parseInt(revision, 10), page);
+                this.model.loadDiffRevision({
+                    page: page,
+                    revision: parseInt(revision, 10),
+                });
             } else {
                 const parts = revision.split('-', 2);
 
-                this._loadRevision(parseInt(parts[0], 10),
-                                   parseInt(parts[1], 10),
-                                   page);
+                this.model.loadDiffRevision({
+                    page: page,
+                    revision: parseInt(parts[0], 10),
+                    interdiffRevision: parseInt(parts[1], 10),
+                });
             }
         });
 
@@ -230,62 +261,31 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this.listenTo(this._paginationView2, 'pageSelected',
                       _.partial(this._onPageSelected, true));
 
-        const $diffs = $('#diffs');
-
-        $diffs.bindClass(RB.UserSession.instance,
-                         'diffsShowExtraWhitespace', 'ewhl');
-
-        this._setFiles();
+        this._$diffs = $('#diffs')
+            .bindClass(RB.UserSession.instance,
+                       'diffsShowExtraWhitespace', 'ewhl');
 
         this._chunkHighlighter = new RB.ChunkHighlighterView();
-        this._chunkHighlighter.render().$el.prependTo($diffs);
+        this._chunkHighlighter.render().$el.prependTo(this._$diffs);
 
         $('#diff-details').removeClass('loading');
+        $('#download-diff-action').bindVisibility(this.model,
+                                                  'canDownloadDiff');
 
         this._$window.on(`resize.${this.cid}`,
                          _.throttleLayout(this._onWindowResize.bind(this)));
 
+        /*
+         * Begin creating any DiffReviewableViews needed for the page, and
+         * start loading their contents.
+         */
+        if (this.model.diffReviewables.length > 0) {
+            this.model.diffReviewables.each(
+                diffReviewable => this._onDiffReviewableAdded(diffReviewable));
+            $.funcQueue('diff_files').start();
+        }
+
         return this;
-    },
-
-    /**
-     * Set the displayed files.
-     *
-     * This will replace the displayed files with a set of pending entries,
-     * queue loads for each file, and start the queue.
-     */
-    _setFiles() {
-        const $diffs = $('#diffs').empty();
-
-        $.funcQueue('diff_files').clear();
-
-        this._highlightedChunk = null;
-
-        this.model.files.each(file => {
-            const filediff = file.get('filediff');
-            const interfilediff = file.get('interfilediff');
-            let interdiffRevision = null;
-
-            $diffs.append(this._fileEntryTemplate(file.attributes));
-
-            if (interfilediff) {
-                interdiffRevision = interfilediff.revision;
-            } else if (file.get('forceInterdiff')) {
-                interdiffRevision = file.get('forceInterdiffRevision');
-            }
-
-            this.queueLoadDiff(new RB.DiffReviewable({
-                reviewRequest: this.model.get('reviewRequest'),
-                file: file,
-                fileDiffID: filediff.id,
-                interFileDiffID: interfilediff ? interfilediff.id : null,
-                revision: filediff.revision,
-                interdiffRevision: interdiffRevision,
-                serializedCommentBlocks: file.get('commentCounts'),
-            }));
-        });
-
-        $.funcQueue('diff_files').start();
     },
 
     /**
@@ -738,6 +738,28 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     },
 
     /**
+     * Handler for when a RB.DiffReviewable is added.
+     *
+     * This will add a placeholder entry for the file and queue the diff
+     * for loading/rendering.
+     *
+     * Args:
+     *     diffReviewable (RB.DiffReviewable):
+     *         The DiffReviewable that was added.
+     */
+    _onDiffReviewableAdded(diffReviewable) {
+        const file = diffReviewable.get('file');
+
+        this._$diffs.append(this._fileEntryTemplate({
+            id: file.id,
+            newFile: file.get('isnew'),
+            filename: file.get('depotFilename'),
+        }));
+
+        this.queueLoadDiff(diffReviewable);
+    },
+
+    /**
      * Handler for when the window resizes.
      *
      * Triggers a relayout of all the diffs and the chunk highlighter.
@@ -782,10 +804,12 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      */
     _getCurrentURL() {
         const revision = this.model.revision;
+        const interdiffRevision = revision.get('interdiffRevision');
+
         let url = revision.get('revision');
 
-        if (revision.get('interdiffRevision') !== null) {
-            url += '-' + revision.get('interdiffRevision');
+        if (interdiffRevision !== null) {
+            url += `-${interdiffRevision}`;
         }
 
         return url;
@@ -811,49 +835,6 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         }
 
         this.router.navigate(`${url}/?page=${page}`, {trigger: true});
-    },
-
-    /**
-     * Load a given revision.
-     *
-     * This supports both single revisions and interdiffs. If `base` is 0, a
-     * single revision is selected. If not, the interdiff between `base` and
-     * `tip` will be shown.
-     *
-     * Args:
-     *     base (number):
-     *         The base revision, used if there's an interdiff. Otherwise this
-     *         is 0.
-     *
-     *     tip (number):
-     *         The latest revision in the range.
-     *
-     *     page (number):
-     *         The page number to navigate to (or -1 to use the first page).
-     */
-    _loadRevision(base, tip, page) {
-        const reviewRequestURL = this.model.get('reviewRequest').url();
-        const $downloadLink = $('#download-diff-action');
-        let contextURL = `${reviewRequestURL}diff-context/`;
-
-        if (base === 0) {
-            contextURL += `?revision=${tip}`;
-            $downloadLink.show();
-        } else {
-            contextURL += `?revision=${base}&interdiff-revision=${tip}`;
-            $downloadLink.hide();
-        }
-
-        if (page !== 1) {
-            contextURL += `&page=${page}`;
-        }
-
-        $.ajax(contextURL).done(rsp => {
-            this._diffReviewableViews.forEach(view => view.remove());
-            this._diffReviewableViews = [];
-
-            this.model.set(this.model.parseDiffContext(rsp.diff_context));
-        });
     },
 });
 _.extend(RB.DiffViewerPageView.prototype, RB.KeyBindingsMixin);
