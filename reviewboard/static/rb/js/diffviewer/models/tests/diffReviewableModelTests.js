@@ -23,8 +23,10 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
             var diffReviewable = new RB.DiffReviewable({
                 reviewRequest: reviewRequest,
                 fileDiffID: 3,
-                fileIndex: 4,
-                revision: 2
+                revision: 2,
+                file: new RB.DiffFile({
+                    index: 4
+                })
             });
 
             spyOn($, 'ajax').and.callFake(function(request) {
@@ -48,9 +50,11 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
             var diffReviewable = new RB.DiffReviewable({
                 reviewRequest: reviewRequest,
                 fileDiffID: 3,
-                fileIndex: 4,
                 revision: 2,
-                interdiffRevision: 3
+                interdiffRevision: 3,
+                file: new RB.DiffFile({
+                    index: 4
+                })
             });
 
             spyOn($, 'ajax').and.callFake(function(request) {
@@ -76,8 +80,10 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
             var diffReviewable = new RB.DiffReviewable({
                 reviewRequest: reviewRequest,
                 fileDiffID: 3,
-                fileIndex: 5,
-                revision: 2
+                revision: 2,
+                file: new RB.DiffFile({
+                    index: 5
+                })
             });
 
             spyOn($, 'ajax').and.callFake(function(request) {
@@ -105,10 +111,12 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
             var diffReviewable = new RB.DiffReviewable({
                 reviewRequest: reviewRequest,
                 fileDiffID: 3,
-                fileIndex: 5,
                 revision: 2,
                 interdiffRevision: 3,
-                interFileDiffID: 4
+                interFileDiffID: 4,
+                file: new RB.DiffFile({
+                    index: 5
+                })
             });
 
             spyOn($, 'ajax').and.callFake(function(request) {

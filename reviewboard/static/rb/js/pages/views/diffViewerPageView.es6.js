@@ -276,7 +276,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
             this.queueLoadDiff(new RB.DiffReviewable({
                 reviewRequest: this.model.get('reviewRequest'),
-                fileIndex: file.get('index'),
+                file: file,
                 fileDiffID: filediff.id,
                 interFileDiffID: interfilediff ? interfilediff.id : null,
                 revision: filediff.revision,
@@ -401,7 +401,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         diffReviewableView.$el.parent().show();
 
         this.listenTo(diffReviewableView, 'fileClicked', () => {
-            this.selectAnchorByName(diffReviewable.get('fileIndex'));
+            this.selectAnchorByName(diffReviewable.get('file').get('index'));
         });
 
         this.listenTo(diffReviewableView, 'chunkClicked', name => {
