@@ -1,36 +1,37 @@
 suite('rb/pages/views/DiffViewerPageView', function() {
-    var tableTemplate = _.template([
-            '<div id="review-banner"></div>',
-            '<div class="diff-container">',
-            ' <table class="sidebyside">',
-            '  <thead>',
-            '   <tr class="filename-row">',
-            '    <th colspan="4">',
-            '     <a name="<%- fileID %>" class="file-anchor"></a>',
-            '    </th>',
-            '   </tr>',
-            '  </thead>',
-            '  <% _.each(chunks, function(chunk) { %>',
-            '   <tbody class="<%- chunk.type %>">',
-            '    <% _.each(chunk.lines, function(line, i) { %>',
-            '     <tr line="<%- line.vNumber %>">',
-            '      <th>',
-            '       <% if (i === 0 && chunk.type !== "equal") { %>',
-            '        <a name="<%- chunk.id %>" class="chunk-anchor"></a>',
-            '       <% } %>',
-            '       <%- line.leftNumber || "" %>',
-            '      </th>',
-            '      <td class="l"></td>',
-            '      <th><%- line.rightNumber || "" %></th>',
-            '      <td class="r"></td>',
-            '     </tr>',
-            '    <% }); %>',
-            '   </tbody>',
-            '  <% }); %>',
-            ' </table>',
-            '</div>'
-        ].join('')),
-        pageView;
+    const tableTemplate = _.template(dedent`
+        <div id="review-banner"></div>
+        <div class="diff-container">
+         <table class="sidebyside">
+          <thead>
+           <tr class="filename-row">
+            <th colspan="4">
+             <a name="<%- fileID %>" class="file-anchor"></a>
+            </th>
+           </tr>
+          </thead>
+          <% _.each(chunks, function(chunk) { %>
+           <tbody class="<%- chunk.type %>">
+            <% _.each(chunk.lines, function(line, i) { %>
+             <tr line="<%- line.vNumber %>">
+              <th>
+               <% if (i === 0 && chunk.type !== "equal") { %>
+                <a name="<%- chunk.id %>" class="chunk-anchor"></a>
+               <% } %>
+               <%- line.leftNumber || "" %>
+              </th>
+              <td class="l"></td>
+              <th><%- line.rightNumber || "" %></th>
+              <td class="r"></td>
+             </tr>
+            <% }); %>
+           </tbody>
+          <% }); %>
+         </table>
+        </div>
+    `);
+
+    let pageView;
 
     beforeEach(function() {
         /*
@@ -44,24 +45,22 @@ suite('rb/pages/views/DiffViewerPageView', function() {
             model: new RB.DiffViewerPageModel({
                 revision: 1,
                 is_interdiff: false,
-                interdiff_revision: null
+                interdiff_revision: null,
             }, {parse: true}),
             reviewRequestData: {
                 id: 123,
                 loaded: true,
-                state: RB.ReviewRequest.PENDING
+                state: RB.ReviewRequest.PENDING,
             },
             editorData: {
                 mutableByUser: true,
-                statusMutableByUser: true
-            }
+                statusMutableByUser: true,
+            },
         });
 
         /* Don't communicate with the server for page updates. */
         spyOn(pageView.reviewRequest, 'ready').and.callFake(
-            function(options, context) {
-                options.ready.call(context);
-            });
+            (options, context) => options.ready.call(context));
         spyOn(pageView.reviewRequest, 'beginCheckForUpdates');
     });
 
@@ -81,9 +80,9 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                 type: 'insert',
                                 vNumber: 100,
                                 leftNumber: 100,
-                                rightNumber: 101
-                            }
-                        ]
+                                rightNumber: 101,
+                            },
+                        ],
                     },
                     {
                         id: '1.2',
@@ -92,9 +91,9 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                 type: 'equal',
                                 vNumber: 101,
                                 leftNumber: 101,
-                                rightNumber: 101
-                            }
-                        ]
+                                rightNumber: 101,
+                            },
+                        ],
                     },
                     {
                         id: '1.3',
@@ -103,11 +102,11 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                 type: 'delete',
                                 vNumber: 102,
                                 leftNumber: 102,
-                                rightNumber: 101
-                            }
-                        ]
-                    }
-                ]
+                                rightNumber: 101,
+                            },
+                        ],
+                    },
+                ],
             }));
 
             pageView.render();
@@ -134,9 +133,9 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                         type: 'insert',
                                         vNumber: 100,
                                         leftNumber: 100,
-                                        rightNumber: 101
-                                    }
-                                ]
+                                        rightNumber: 101,
+                                    },
+                                ],
                             },
                             {
                                 id: '1.2',
@@ -145,15 +144,15 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                         type: 'equal',
                                         vNumber: 101,
                                         leftNumber: 101,
-                                        rightNumber: 101
-                                    }
-                                ]
-                            }
-                        ]
+                                        rightNumber: 101,
+                                    },
+                                ],
+                            },
+                        ],
                     }),
                     tableTemplate({
                         fileID: 'file2',
-                        chunks: []
+                        chunks: [],
                     }),
                     tableTemplate({
                         fileID: 'file3',
@@ -165,7 +164,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                         type: 'insert',
                                         vNumber: 100,
                                         leftNumber: 100,
-                                        rightNumber: 101
+                                        rightNumber: 101,
                                     }
                                 ]
                             },
@@ -176,12 +175,12 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                         type: 'equal',
                                         vNumber: 101,
                                         leftNumber: 101,
-                                        rightNumber: 101
-                                    }
-                                ]
-                            }
-                        ]
-                    })
+                                        rightNumber: 101,
+                                    },
+                                ],
+                            },
+                        ],
+                    }),
                 ]);
 
                 pageView.render();
@@ -347,7 +346,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
     describe('Key bindings', function() {
         function triggerKeyPress(c) {
-            var evt = $.Event('keypress');
+            const evt = $.Event('keypress');
             evt.which = c.charCodeAt(0);
 
             pageView.$el.trigger(evt);
@@ -355,9 +354,9 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
         function testKeys(description, funcName, keyList) {
             describe(description, function() {
-                _.each(keyList, function(key) {
-                    var label,
-                        c;
+                keyList.forEach(key => {
+                    let label;
+                    let c;
 
                     if (key.length === 2) {
                         label = key[0];

@@ -1,16 +1,17 @@
 suite('rb/pages/views/ReviewablePageView', function() {
-    var pageTemplate = _.template([
-            '<div id="review-banner"></div>',
-            '<a href="#" id="review-action">Edit Review</a>',
-            '<a href="#" id="ship-it-action">Ship It</a>',
-        ].join('')),
-        $editReview,
-        $shipIt,
-        pageView;
+    const pageTemplate = dedent`
+        <div id="review-banner"></div>
+        <a href="#" id="review-action">Edit Review</a>
+        <a href="#" id="ship-it-action">Ship It</a>
+    `;
+
+    let $editReview;
+    let $shipIt;
+    let pageView;
 
     beforeEach(function() {
-        var $container = $('<div/>')
-            .html(pageTemplate())
+        const $container = $('<div/>')
+            .html(pageTemplate)
             .appendTo($testsScratch);
 
         RB.DnDUploader.instance = null;
@@ -23,18 +24,16 @@ suite('rb/pages/views/ReviewablePageView', function() {
             reviewRequestData: {
                 id: 123,
                 loaded: true,
-                state: RB.ReviewRequest.PENDING
+                state: RB.ReviewRequest.PENDING,
             },
             editorData: {
                 mutableByUser: true,
-                statusMutableByUser: true
-            }
+                statusMutableByUser: true,
+            },
         });
 
         spyOn(pageView.reviewRequest, 'ready').and.callFake(
-            function(options, context) {
-                options.ready.call(context);
-            });
+            (options, context) => options.ready.call(context));
         spyOn(pageView.reviewRequest, 'beginCheckForUpdates');
 
         pageView.render();
@@ -81,7 +80,7 @@ suite('rb/pages/views/ReviewablePageView', function() {
 
     describe('Actions', function() {
         it('Edit Review', function() {
-            var options;
+            let options;
 
             spyOn(RB.ReviewDialogView, 'create');
 
@@ -91,20 +90,17 @@ suite('rb/pages/views/ReviewablePageView', function() {
 
             options = RB.ReviewDialogView.create.calls.argsFor(0)[0];
             expect(options.review).toBe(pageView.pendingReview);
-            expect(options.reviewRequestEditor).toBe(pageView.reviewRequestEditor);
+            expect(options.reviewRequestEditor)
+                .toBe(pageView.reviewRequestEditor);
         });
 
         describe('Ship It', function() {
             it('Confirmed', function() {
                 spyOn(window, 'confirm').and.returnValue(true);
                 spyOn(pageView.pendingReview, 'ready').and.callFake(
-                    function(options, context) {
-                        options.ready.call(context);
-                    });
+                    (options, context) => options.ready.call(context));
                 spyOn(pageView.pendingReview, 'save').and.callFake(
-                    function(options, context) {
-                        options.success.call(context);
-                    });
+                    (options, context) => options.success.call(context));
                 spyOn(pageView.pendingReview, 'publish').and.callThrough();
                 spyOn(pageView.draftReviewBanner, 'hideAndReload');
 
@@ -133,19 +129,19 @@ suite('rb/pages/views/ReviewablePageView', function() {
     });
 
     describe('Update bubble', function() {
-        var summary = 'My summary',
-            user = {
-                url: '/users/foo/',
-                fullname: 'Mr. User',
-                username: 'user'
-            },
-            $bubble,
-            bubbleView;
+        const summary = 'My summary';
+        const user = {
+            url: '/users/foo/',
+            fullname: 'Mr. User',
+            username: 'user',
+        };
+        let $bubble;
+        let bubbleView;
 
         beforeEach(function() {
             pageView.reviewRequest.trigger('updated', {
                 summary: summary,
-                user: user
+                user: user,
             });
 
             $bubble = $('#updates-bubble');
@@ -186,10 +182,10 @@ suite('rb/pages/views/ReviewablePageView', function() {
             });
 
             it('Update Page calls notify if shouldNotify', function() {
-                var info = {
+                const info = {
                     user: {
-                        fullname: 'Hello'
-                    }
+                        fullname: 'Hello',
+                    },
                 };
 
                 RB.NotificationManager.instance._canNotify = true;
