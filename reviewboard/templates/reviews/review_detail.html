@@ -64,10 +64,11 @@
 
 <script>
     RB.PageManager.setPage(new RB.ReviewRequestPage.ReviewRequestPageView({
+        el: document.body,
 {%  localtime off %}
         lastActivityTimestamp: {{last_activity_time|json_dumps}},
 {%  endlocaltime %}
-{%  include "reviews/reviewable_page_data.js" %}
+        {% reviewable_page_model_data %}
     }));
 
     RB.PageManager.beforeRender(function(page) {

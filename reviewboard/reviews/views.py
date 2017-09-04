@@ -663,7 +663,6 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
             'draft': data.draft,
             'review_request_details': data.review_request_details,
             'review_request_visit': self.visited,
-            'send_email': siteconfig.get('mail_send_review_mail'),
             'entries': entries,
             'last_activity_time': self.last_activity_time,
             'review': review,
@@ -1135,7 +1134,6 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin, DiffViewerView):
             'all_file_attachments': file_attachments,
             'screenshots': screenshots,
             'comments': comments,
-            'send_email': siteconfig.get('mail_send_review_mail'),
             'social_page_image_url': social_page_image_url,
             'social_page_title': (
                 'Diff for Review Request #%s: %s'

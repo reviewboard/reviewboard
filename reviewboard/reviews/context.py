@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 from django.utils import six
 from django.utils.translation import ugettext as _
 from django.template.defaultfilters import truncatechars
+from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.server import build_server_url
@@ -140,6 +141,8 @@ def make_review_request_context(request, review_request, extra_context={},
                 '#index_header'),
         })
 
+    siteconfig = SiteConfiguration.objects.get_current()
+
     review_request_details = extra_context.get('review_request_details',
                                                review_request)
     social_page_description = truncatechars(
@@ -153,6 +156,7 @@ def make_review_request_context(request, review_request, extra_context={},
         'review_request': review_request,
         'upload_diff_form': upload_diff_form,
         'scmtool': scmtool,
+        'send_email': siteconfig.get('mail_send_review_mail'),
         'tabs': tabs,
         'social_page_description': social_page_description,
         'social_page_url': build_server_url(request.path, request=request),
