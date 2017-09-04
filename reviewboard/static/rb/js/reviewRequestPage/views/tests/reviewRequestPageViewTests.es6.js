@@ -1,5 +1,6 @@
 suite('rb/reviewRequestPage/views/ReviewRequestPageView', function() {
     const template = dedent`
+        <div id="review-banner"></div>
         <a id="collapse-all"></a>
         <a id="expand-all"></a>
         <div>
@@ -32,6 +33,7 @@ suite('rb/reviewRequestPage/views/ReviewRequestPageView', function() {
         </div>
     `;
 
+    let page;
     let pageView;
     let entry1;
     let entry2;
@@ -42,25 +44,33 @@ suite('rb/reviewRequestPage/views/ReviewRequestPageView', function() {
             .appendTo($testsScratch);
 
         RB.DnDUploader.instance = null;
-        pageView = new RB.ReviewRequestPage.ReviewRequestPageView({
-            el: $el,
-            reviewRequestData: {
-            },
+
+        page = new RB.ReviewRequestPage.ReviewRequestPage({
+            checkForUpdates: false,
+            reviewRequestData: {},
             editorData: {
                 fileAttachments: [],
                 mutableByUser: true,
                 showSendEmail: false,
             },
+        }, {
+            parse: true,
         });
 
-        // Stub these out.
-        spyOn(pageView.reviewRequest, '_checkForUpdates');
+        pageView = new RB.ReviewRequestPage.ReviewRequestPageView({
+            el: $el,
+            model: page,
+        });
+
+        // Stub this out.
         spyOn(RB.ReviewRequestPage.IssueSummaryTableView.prototype,
               'render');
 
+        const reviewRequest = page.get('reviewRequest');
+
         pageView.addEntryView(new RB.ReviewRequestPage.ReviewEntryView({
             model: new RB.ReviewRequestPage.ReviewEntry({
-                review: pageView.reviewRequest.createReview(123, {
+                review: reviewRequest.createReview(123, {
                     shipIt: true,
                     public: true,
                     bodyTop: 'Body Top',
@@ -73,7 +83,7 @@ suite('rb/reviewRequestPage/views/ReviewRequestPageView', function() {
 
         pageView.addEntryView(new RB.ReviewRequestPage.ReviewEntryView({
             model: new RB.ReviewRequestPage.ReviewEntry({
-                review: pageView.reviewRequest.createReview(124, {
+                review: reviewRequest.createReview(124, {
                     shipIt: false,
                     public: true,
                     bodyTop: 'Body Top',

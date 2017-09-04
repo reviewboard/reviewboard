@@ -30,7 +30,7 @@
                     {{key|json_dumps}}: {{value|json_dumps}},
 {%   endfor %}
                     caption: '{{caption|escapejs}}',
-                    reviewRequest: page.reviewRequest,
+                    reviewRequest: page.model.get('reviewRequest'),
                     serializedCommentBlocks: {{review_ui.get_comments_json}}
                 })
             });

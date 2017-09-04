@@ -31,6 +31,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
         </div>
     `);
 
+    let page;
     let pageView;
 
     beforeEach(function() {
@@ -40,13 +41,11 @@ suite('rb/pages/views/DiffViewerPageView', function() {
          */
         spyOn(Backbone.history, 'start');
 
-        pageView = new RB.DiffViewerPageView({
-            el: $('<div/>').appendTo($testsScratch),
-            model: new RB.DiffViewerPageModel({
-                revision: 1,
-                is_interdiff: false,
-                interdiff_revision: null,
-            }, {parse: true}),
+        page = new RB.DiffViewerPage({
+            revision: 1,
+            is_interdiff: false,
+            interdiff_revision: null,
+            checkForUpdates: false,
             reviewRequestData: {
                 id: 123,
                 loaded: true,
@@ -56,12 +55,18 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                 mutableByUser: true,
                 statusMutableByUser: true,
             },
+        }, {
+            parse: true,
+        });
+
+        pageView = new RB.DiffViewerPageView({
+            el: $('<div/>').appendTo($testsScratch),
+            model: page,
         });
 
         /* Don't communicate with the server for page updates. */
-        spyOn(pageView.reviewRequest, 'ready').and.callFake(
+        spyOn(page.get('reviewRequest'), 'ready').and.callFake(
             (options, context) => options.ready.call(context));
-        spyOn(pageView.reviewRequest, 'beginCheckForUpdates');
     });
 
     afterEach(function() {

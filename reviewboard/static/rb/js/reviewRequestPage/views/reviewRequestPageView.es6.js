@@ -30,8 +30,10 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
         this._rendered = false;
         this._issueSummaryTableView = null;
 
+        const reviewRequest = this.model.get('reviewRequest');
+
         this.diffFragmentQueue = new RB.DiffFragmentQueueView({
-            reviewRequestPath: this.reviewRequest.get('reviewURL'),
+            reviewRequestPath: reviewRequest.get('reviewURL'),
             containerPrefix: 'comment_container',
             queueName: 'diff_fragments',
             el: document.getElementById('content'),
@@ -76,7 +78,7 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
         this._issueSummaryTableView =
             new RB.ReviewRequestPage.IssueSummaryTableView({
                 el: $('#issue-summary'),
-                model: this.reviewRequestEditor.get('commentIssueManager'),
+                model: this.model.commentIssueManager,
             });
 
         this._issueSummaryTableView.render();

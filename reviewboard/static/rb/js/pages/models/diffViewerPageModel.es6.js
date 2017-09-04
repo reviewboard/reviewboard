@@ -20,17 +20,17 @@
  *     revision (RB.DiffRevision):
  *         The current diff revision on the page.
  */
-RB.DiffViewerPageModel = RB.Page.extend({
+RB.DiffViewerPage = RB.ReviewablePage.extend({
     defaults: _.defaults({
         commentsHint: null,
         files: null,
         numDiffs: 1,
         pagination: null,
         revision: null,
-    }, RB.Page.prototype.defaults),
+    }, RB.ReviewablePage.prototype.defaults),
 
     /**
-     * Parse the data given to us by the server.
+     * Parse the data for the page.
      *
      * Args:
      *     rsp (object):
@@ -38,14 +38,30 @@ RB.DiffViewerPageModel = RB.Page.extend({
      *
      * Returns:
      *     object:
-     *     The resulting attributes for the model.
+     *     The returned attributes.
      */
     parse(rsp) {
+        return _.extend(this.parseDiffContext(rsp),
+                        RB.ReviewablePage.prototype.parse.call(this, rsp));
+    },
+
+    /**
+     * Parse context for a displayed diff.
+     *
+     * Args:
+     *     rsp (object):
+     *         The payload to parse.
+     *
+     * Returns:
+     *     object:
+     *     The returned attributes.
+     */
+    parseDiffContext(rsp) {
         return {
             commentsHint: new RB.DiffCommentsHint(rsp.comments_hint,
                                                   {parse: true}),
             files: new RB.DiffFileCollection(rsp.files, {parse: true}),
-            numDiffs: rsp.num_diffs,
+            numDiffs: rsp.num_diffs || 0,
             pagination: new RB.Pagination(rsp.pagination, {parse: true}),
             revision: new RB.DiffRevision(rsp.revision, {parse: true}),
         };
@@ -68,36 +84,37 @@ RB.DiffViewerPageModel = RB.Page.extend({
      *         The options for the set.
      */
     set(attrs, options) {
-        const toSet = {
-            numDiffs: attrs.numDiffs,
-        };
+        const toIgnore = {};
+        const toSet = {};
 
-        if (this.attributes.commentsHint) {
-            this.attributes.commentsHint.set(
-                attrs.commentsHint.attributes);
-        } else {
-            toSet.commentsHint = attrs.commentsHint;
+        if (this.attributes.commentsHint && attrs.commentsHint) {
+            this.attributes.commentsHint.set(attrs.commentsHint.attributes);
+            toIgnore.commentsHint = true;
         }
 
-        if (this.attributes.files) {
+        if (this.attributes.files && attrs.files) {
             this.attributes.files.set(attrs.files.models);
             this.attributes.files.trigger('update');
-        } else {
-            toSet.files = attrs.files;
+            toIgnore.files = true;
         }
 
-        if (this.attributes.pagination) {
+        if (this.attributes.pagination && attrs.pagination) {
             this.attributes.pagination.set(attrs.pagination.attributes);
-        } else {
-            toSet.pagination = attrs.pagination;
+            toIgnore.pagination = true;
         }
 
-        if (this.attributes.revision) {
+        if (this.attributes.revision && attrs.revision) {
             this.attributes.revision.set(attrs.revision.attributes);
-        } else {
-            toSet.revision = attrs.revision;
+            toIgnore.revision = true;
         }
 
-        RB.Page.prototype.set.call(this, toSet, options);
+        /* Anything not explicitly handled above can be set. */
+        for (let attr in attrs) {
+            if (attrs.hasOwnProperty(attr) && !toIgnore[attr]) {
+                toSet[attr] = attrs[attr];
+            }
+        }
+
+        RB.ReviewablePage.prototype.set.call(this, toSet, options);
     },
 });

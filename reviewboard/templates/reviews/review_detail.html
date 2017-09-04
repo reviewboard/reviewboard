@@ -65,10 +65,14 @@
 <script>
     RB.PageManager.setPage(new RB.ReviewRequestPage.ReviewRequestPageView({
         el: document.body,
+        model: new RB.ReviewRequestPage.ReviewRequestPage({
 {%  localtime off %}
-        lastActivityTimestamp: {{last_activity_time|json_dumps}},
+            lastActivityTimestamp: {{last_activity_time|json_dumps}},
 {%  endlocaltime %}
-        {% reviewable_page_model_data %}
+            {% reviewable_page_model_data %}
+        }, {
+            parse: true
+        })
     }));
 
     RB.PageManager.beforeRender(function(page) {

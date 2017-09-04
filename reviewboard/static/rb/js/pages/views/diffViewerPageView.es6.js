@@ -117,7 +117,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         Backbone.history.start({
             pushState: true,
             hashChange: false,
-            root: `${this.options.reviewRequestData.reviewURL}diff/`,
+            root: `${this.model.get('reviewRequest').get('reviewURL')}diff/`,
             silent: true,
         });
 
@@ -278,7 +278,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             }
 
             this.queueLoadDiff(new RB.DiffReviewable({
-                reviewRequest: this.reviewRequest,
+                reviewRequest: this.model.get('reviewRequest'),
                 fileIndex: file.get('index'),
                 fileDiffID: filediff.id,
                 interFileDiffID: interfilediff ? interfilediff.id : null,
@@ -835,7 +835,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *         The page number to navigate to (or -1 to use the first page).
      */
     _loadRevision(base, tip, page) {
-        const reviewRequestURL = _.result(this.reviewRequest, 'url');
+        const reviewRequestURL = this.model.get('reviewRequest').url();
         const $downloadLink = $('#download-diff-action');
         let contextURL = `${reviewRequestURL}diff-context/`;
 
@@ -855,7 +855,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             this._diffReviewableViews.forEach(view => view.remove());
             this._diffReviewableViews = [];
 
-            this.model.set(this.model.parse(rsp.diff_context));
+            this.model.set(this.model.parseDiffContext(rsp.diff_context));
         });
     },
 });

@@ -6,7 +6,7 @@ page.addEntryView(new {{entry.js_view_class}}({
     reviewRequestEditorView: page.reviewRequestEditorView,
     model: new {{entry.js_model_class}}({
         {{entry.get_js_model_data|json_dumps_items:','}}
-        reviewRequestEditor: page.reviewRequestEditor
+        reviewRequestEditor: page.model.reviewRequestEditor
     }, {
         parse: true
     })
