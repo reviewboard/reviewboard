@@ -69,6 +69,7 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
                 const issueBar = new RB.CommentIssueBarView({
                     el: el,
                     reviewID: this.model.id,
+                    canVerify: $issueState.data('can-verify'),
                     commentID: $issueState.data('comment-id'),
                     commentType: $issueState.data('comment-type'),
                     interactive: $issueState.data('interactive'),

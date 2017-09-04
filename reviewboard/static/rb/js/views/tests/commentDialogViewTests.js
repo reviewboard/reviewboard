@@ -467,7 +467,7 @@ suite('rb/views/CommentDialogView', function() {
                     dlg.open();
 
                     $buttons = dlg.$el.find('.other-comments .issue-button');
-                    expect($buttons.length).toBe(3);
+                    expect($buttons.length).toBe(5);
                     expect($buttons.is(':visible')).toBe(true);
                 });
 

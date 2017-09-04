@@ -30,8 +30,13 @@ const BaseCommentView = Backbone.View.extend({
          </div>
          <div class="edit-field">
           <input class="issue-opened" id="<%= issueOpenedID %>"
-                 type="checkbox" />
+                 type="checkbox">
           <label for="<%= issueOpenedID %>"><%- openAnIssueText %></label>
+          <% if (showVerify) { %>
+           <input class="issue-verify" id="<%= verifyIssueID %>"
+                  type="checkbox">
+           <label for="<%= verifyIssueID %>"><%- verifyIssueText %></label>
+          <% } %>
          </div>
         </div>
     `),
@@ -119,6 +124,9 @@ const BaseCommentView = Backbone.View.extend({
                 issueOpenedID: _.uniqueId('issue-opened'),
                 openAnIssueText: gettext('Open an Issue'),
                 text: this.model.get('text'),
+                verifyIssueID: _.uniqueId('issue-verify'),
+                showVerify: RB.EnabledFeatures.issueVerification,
+                verifyIssueText: RB.CommentDialogView._verifyIssueText,
             }))
             .find('time.timesince')
                 .timesince()
@@ -140,6 +148,28 @@ const BaseCommentView = Backbone.View.extend({
                     this.model.save({
                         attrs: ['forceTextType', 'includeTextTypes',
                                 'issueOpened'],
+                    });
+                }
+            });
+
+        this._$issueVerify = this.$('.issue-verify')
+            .prop('checked', this.model.requiresVerification())
+            .change(() => {
+                const extraData = _.clone(this.model.get('extraData'));
+                extraData.require_verification =
+                    this._$issueVerify.prop('checked');
+                this.model.set('extraData', extraData);
+
+                if (!this.model.isNew()) {
+                    /*
+                     * We don't save the extraData attribute for unsaved models
+                     * because the comment won't exist yet. If we did, clicking
+                     * cancel when creating a new comment wouldn't delete the
+                     * comment.
+                     */
+                    this.model.save({
+                        attrs: ['forceTextType', 'includeTextTypes',
+                                'extra_data.require_verification'],
                     });
                 }
             });
@@ -170,7 +200,7 @@ const BaseCommentView = Backbone.View.extend({
                          * issue opened checkbox before it is completed won't
                          * save the status to the server.
                          */
-                        attrs.push('issueOpened');
+                        attrs.push('extra_data.require_verification', 'issueOpened');
                     }
 
                     this.model.set({

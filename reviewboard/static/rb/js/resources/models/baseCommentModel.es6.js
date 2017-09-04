@@ -49,7 +49,7 @@ RB.BaseComment = RB.BaseResource.extend({
             markdownTextFields: {},
             rawTextFields: {},
             richText: null,
-            text: ''
+            text: '',
         }, RB.BaseResource.prototype.defaults());
     },
 
@@ -191,6 +191,18 @@ RB.BaseComment = RB.BaseResource.extend({
         }
 
         return RB.BaseResource.prototype.validate.apply(this, arguments);
+    },
+
+    /**
+     * Return whether this comment issue requires verification before closing.
+     *
+     * Returns:
+     *     boolean:
+     *     True if the issue is marked to require verification.
+     */
+    requiresVerification() {
+        const extraData = this.get('extraData');
+        return extraData && extraData.require_verification === true;
     },
 }, {
     STATE_DROPPED: 'dropped',

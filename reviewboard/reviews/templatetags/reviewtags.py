@@ -749,6 +749,7 @@ def comment_issue(context, review_request, comment, comment_type):
         'issue_status': issue_status,
         'review': comment.get_review(),
         'interactive': comment.can_change_issue_status(user),
+        'can_verify': comment.can_verify_issue_status(user),
     }
 
 

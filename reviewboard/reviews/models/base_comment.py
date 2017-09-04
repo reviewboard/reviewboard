@@ -99,6 +99,19 @@ class BaseComment(models.Model):
         except KeyError:
             raise Exception('Invalid issue status "%s"' % status)
 
+    def _get_require_verification(self):
+        return self.extra_data.get('require_verification', False)
+
+    def _set_require_verification(self, value):
+        if not isinstance(value, bool):
+            raise ValueError('require_verification must be a bool')
+
+        self.extra_data['require_verification'] = value
+
+    require_verification = property(
+        _get_require_verification, _set_require_verification,
+        doc='Whether this comment requires verification before closing.')
+
     def __init__(self, *args, **kwargs):
         """Initialize the comment.
 
@@ -226,6 +239,32 @@ class BaseComment(models.Model):
 
         return (self.get_review_request().is_mutable_by(user) or
                 user == self.get_review().user)
+
+    def can_verify_issue_status(self, user):
+        """Return whether the user can verify the issue status.
+
+        Currently this is allowed for:
+
+        - The user who opened the issue.
+        - Administrators.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user being checked.
+
+        Returns:
+            bool:
+            True if the given user is allowed to verify the issue status.
+        """
+        if not (user and user.is_authenticated()):
+            return False
+
+        review = self.get_review()
+        local_site = review.review_request.local_site
+
+        return (user.is_superuser or
+                user.pk == review.user or
+                (local_site and local_site.is_mutable_by(user)))
 
     def save(self, **kwargs):
         """Save the comment.

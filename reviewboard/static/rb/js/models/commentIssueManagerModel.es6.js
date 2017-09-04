@@ -33,7 +33,7 @@ RB.CommentIssueManager = Backbone.Model.extend({
      *          ``open``, ``resolved``, ``dropped``, or ``verify``.
      */
     setCommentState(reviewID, commentID, commentType, state) {
-        const comment = this._getComment(reviewID, commentID, commentType);
+        const comment = this.getComment(reviewID, commentID, commentType);
         this._requestState(comment, state);
     },
 
@@ -58,7 +58,7 @@ RB.CommentIssueManager = Backbone.Model.extend({
      *     RB.BaseComment:
      *     The comment model.
      */
-    _getComment(reviewID, commentID, commentType) {
+    getComment(reviewID, commentID, commentType) {
         if (!this._comments[commentID]) {
             const reviewRequest = this.get('reviewRequest');
             let comment = null;

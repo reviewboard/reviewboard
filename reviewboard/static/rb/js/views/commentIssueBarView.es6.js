@@ -9,7 +9,9 @@ RB.CommentIssueBarView = Backbone.View.extend({
     events: {
         'click .reopen': '_onReopenClicked',
         'click .resolve': '_onResolveClicked',
-        'click .drop': '_onDropClicked'
+        'click .drop': '_onDropClicked',
+        'click .verify-dropped': '_onVerifyDroppedClicked',
+        'click .verify-resolved': '_onVerifyFixedClicked',
     },
 
     statusInfo: {
@@ -49,9 +51,9 @@ RB.CommentIssueBarView = Backbone.View.extend({
                     value="<%- dropLabel %>">
              <input type="button" class="issue-button reopen"
                     value="<%- reopenLabel %>">
-             <input type="button" class="issue-button reopen"
+             <input type="button" class="issue-button verify-resolved"
                     value="<%- verifyFixedLabel %>">
-             <input type="button" class="issue-button reopen"
+             <input type="button" class="issue-button verify-dropped"
                     value="<%- verifyDroppedLabel %>">
             </span>
            <% } %>
@@ -143,15 +145,32 @@ RB.CommentIssueBarView = Backbone.View.extend({
             .removeClass(prevStatus)
             .addClass(issueStatus);
 
-        this._$icon
-            .removeClass(`rb-icon-issue-${prevStatus}`)
-            .addClass(`rb-icon-issue-${issueStatus}`);
+        let iconClass;
 
+        if (issueStatus === RB.BaseComment.STATE_VERIFYING_DROPPED ||
+            issueStatus === RB.BaseComment.STATE_VERIFYING_RESOLVED) {
+            iconClass = 'rb-icon rb-icon-issue-verifying';
+        } else {
+            iconClass = `rb-icon rb-icon-issue-${issueStatus}`;
+        }
+
+        this._$icon.attr('class', iconClass);
         this._$buttons.hide();
         this._$message.text(statusInfo.text);
 
         if (this.options.interactive) {
-            this._$buttons.filter(statusInfo.visibleButtons.join(',')).show();
+            let visibleButtons = statusInfo.visibleButtons;
+
+            if (this.options.canVerify) {
+                if (issueStatus === RB.BaseComment.STATE_VERIFYING_DROPPED) {
+                    visibleButtons.push('.verify-dropped');
+                } else if (issueStatus ===
+                           RB.BaseComment.STATE_VERIFYING_RESOLVED) {
+                    visibleButtons.push('.verify-resolved');
+                }
+            }
+
+            this._$buttons.filter(visibleButtons.join(',')).show();
             this._$buttons.prop('disabled', false);
         }
 
@@ -164,7 +183,7 @@ RB.CommentIssueBarView = Backbone.View.extend({
      * Reopens the issue.
      */
     _onReopenClicked() {
-        this._setStatus(RB.BaseComment.STATUS_OPEN);
+        this._setStatus(RB.BaseComment.STATE_OPEN);
     },
 
     /**
@@ -173,7 +192,15 @@ RB.CommentIssueBarView = Backbone.View.extend({
      * Marks the issue as fixed.
      */
     _onResolveClicked() {
-        this._setStatus(RB.BaseComment.STATUS_FIXED);
+        const comment = this._manager.getComment(this.options.reviewID,
+                                                 this.options.commentID,
+                                                 this.options.commentType);
+
+        if (comment.requiresVerification()) {
+            this._setStatus(RB.BaseComment.STATE_VERIFYING_RESOLVED);
+        } else {
+            this._setStatus(RB.BaseComment.STATE_RESOLVED);
+        }
     },
 
     /**
@@ -182,7 +209,29 @@ RB.CommentIssueBarView = Backbone.View.extend({
      * Marks the issue as dropped.
      */
     _onDropClicked() {
-        this._setStatus(RB.BaseComment.STATUS_DROPPED);
+        const comment = this._manager.getComment(this.options.reviewID,
+                                                 this.options.commentID,
+                                                 this.options.commentType);
+
+        if (comment.requiresVerification()) {
+            this._setStatus(RB.BaseComment.STATE_VERIFYING_DROPPED);
+        } else {
+            this._setStatus(RB.BaseComment.STATE_DROPPED);
+        }
+    },
+
+    /**
+     * Handler for when "Verify Fixed" is clicked.
+     */
+    _onVerifyFixedClicked() {
+        this._setStatus(RB.BaseComment.STATE_RESOLVED);
+    },
+
+    /**
+     * Handler for when "Verify Dropped" is clicked.
+     */
+    _onVerifyDroppedClicked() {
+        this._setStatus(RB.BaseComment.STATE_DROPPED);
     },
 
     /**
