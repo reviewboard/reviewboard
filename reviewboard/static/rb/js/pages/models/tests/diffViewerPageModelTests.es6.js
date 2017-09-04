@@ -8,11 +8,12 @@ suite('rb/pages/models/DiffViewerPage', function() {
             expect(page.get('lastActivityTimestamp')).toBe(null);
             expect(page.get('checkForUpdates')).toBe(false);
             expect(page.get('checkUpdatesType')).toBe(null);
-            expect(page.get('commentsHint')).not.toBe(null);
-            expect(page.get('files')).not.toBe(null);
             expect(page.get('numDiffs')).toBe(0);
-            expect(page.get('pagination')).not.toBe(null);
-            expect(page.get('revision')).not.toBe(null);
+
+            expect(page.commentsHint).not.toBe(null);
+            expect(page.files).not.toBe(null);
+            expect(page.pagination).not.toBe(null);
+            expect(page.revision).not.toBe(null);
 
             /* These shouldn't be attributes. */
             expect(page.get('editorData')).toBe(undefined);
@@ -216,7 +217,7 @@ suite('rb/pages/models/DiffViewerPage', function() {
                 parse: true,
             });
 
-            const commentsHint = page.get('commentsHint');
+            const commentsHint = page.commentsHint;
             expect(commentsHint.get('hasOtherComments')).toBe(true);
             expect(commentsHint.get('diffsetsWithComments')).toEqual([
                 {

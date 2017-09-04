@@ -56,8 +56,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * Initialize the diff viewer page.
      */
     initialize() {
-        const revisionInfo = this.model.get('revision');
-        const curRevision = revisionInfo.get('revision');
+        const curRevision = this.model.revision.get('revision');
         const hash = RB.getLocationHash();
         const search = document.location.search || '';
 
@@ -71,7 +70,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this._diffFileIndexView = null;
         this._highlightedChunk = null;
 
-        this.listenTo(this.model.get('files'), 'update', this._setFiles);
+        this.listenTo(this.model.files, 'reset', this._setFiles);
 
         /* Check to see if there's an anchor we need to scroll to. */
         this._startAtAnchorName = hash || null;
@@ -136,7 +135,8 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
          * button will correctly bring the user to the previous page.
          */
         let revisionRange = curRevision;
-        const curInterdiffRevision = revisionInfo.get('interdiffRevision');
+        const curInterdiffRevision =
+            this.model.revision.get('interdiffRevision');
 
         if (curInterdiffRevision) {
             revisionRange += `-${curInterdiffRevision}`;
@@ -166,15 +166,13 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *     This instance, for chaining.
      */
     render() {
-        const revisionModel = this.model.get('revision');
-
         RB.ReviewablePageView.prototype.render.call(this);
 
         this._$controls = $('#view_controls');
 
         this._diffFileIndexView = new RB.DiffFileIndexView({
             el: $('#diff_index'),
-            collection: this.model.get('files'),
+            collection: this.model.files,
         });
         this._diffFileIndexView.render();
 
@@ -183,7 +181,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._diffRevisionLabelView = new RB.DiffRevisionLabelView({
             el: $('#diff_revision_label'),
-            model: revisionModel,
+            model: this.model.revision,
         });
         this._diffRevisionLabelView.render();
 
@@ -199,7 +197,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         if (numDiffs > 1) {
             this._diffRevisionSelectorView = new RB.DiffRevisionSelectorView({
                 el: $('#diff_revision_selector'),
-                model: revisionModel,
+                model: this.model.revision,
                 numDiffs: numDiffs,
             });
             this._diffRevisionSelectorView.render();
@@ -208,10 +206,9 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                           this._onRevisionSelected);
         }
 
-        this._commentsHintModel = this.options.commentsHint;
         this._commentsHintView = new RB.DiffCommentsHintView({
             el: $('#diff_comments_hint'),
-            model: this.model.get('commentsHint'),
+            model: this.model.commentsHint,
         });
         this._commentsHintView.render();
         this.listenTo(this._commentsHintView, 'revisionSelected',
@@ -219,7 +216,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._paginationView1 = new RB.PaginationView({
             el: $('#pagination1'),
-            model: this.model.get('pagination'),
+            model: this.model.pagination,
         });
         this._paginationView1.render();
         this.listenTo(this._paginationView1, 'pageSelected',
@@ -227,7 +224,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._paginationView2 = new RB.PaginationView({
             el: $('#pagination2'),
-            model: this.model.get('pagination'),
+            model: this.model.pagination,
         });
         this._paginationView2.render();
         this.listenTo(this._paginationView2, 'pageSelected',
@@ -264,7 +261,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this._highlightedChunk = null;
 
-        this.model.get('files').each(file => {
+        this.model.files.each(file => {
             const filediff = file.get('filediff');
             const interfilediff = file.get('interfilediff');
             let interdiffRevision = null;
@@ -784,7 +781,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *     The current page URL, given the revision information.
      */
     _getCurrentURL() {
-        const revision = this.model.get('revision');
+        const revision = this.model.revision;
         let url = revision.get('revision');
 
         if (revision.get('interdiffRevision') !== null) {
