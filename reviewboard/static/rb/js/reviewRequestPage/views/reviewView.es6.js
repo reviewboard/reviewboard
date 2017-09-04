@@ -62,7 +62,7 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
             if ($issueState.length > 0) {
                 const issueStatus = $issueState.data('issue-status');
 
-                if (issueStatus === RB.BaseComment.STATE_OPEN) {
+                if (RB.BaseComment.isStateOpen(issueStatus)) {
                     this._openIssueCount++;
                 }
 
@@ -77,11 +77,17 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
 
                 issueBar.render();
 
-                this.listenTo(issueBar, 'statusChanged', newStatus => {
-                    if (newStatus === RB.BaseComment.STATE_OPEN) {
-                        this._openIssueCount++;
-                    } else {
-                        this._openIssueCount--;
+                this.listenTo(issueBar, 'statusChanged',
+                              (oldStatus, newStatus) => {
+                    const oldOpen = RB.BaseComment.isStateOpen(oldStatus);
+                    const newOpen = RB.BaseComment.isStateOpen(newStatus);
+
+                    if (oldOpen !== newOpen) {
+                        if (newOpen) {
+                            this._openIssueCount++;
+                        } else {
+                            this._openIssueCount--;
+                        }
                     }
 
                     this.trigger('openIssuesChanged');

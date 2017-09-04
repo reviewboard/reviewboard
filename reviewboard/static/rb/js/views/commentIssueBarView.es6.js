@@ -12,10 +12,6 @@ RB.CommentIssueBarView = Backbone.View.extend({
         'click .drop': '_onDropClicked'
     },
 
-    STATUS_OPEN: 'open',
-    STATUS_FIXED: 'resolved',
-    STATUS_DROPPED: 'dropped',
-
     statusInfo: {
         open: {
             visibleButtons: ['.drop', '.resolve'],
@@ -28,7 +24,15 @@ RB.CommentIssueBarView = Backbone.View.extend({
         dropped: {
             visibleButtons: ['.reopen'],
             text: gettext('The issue has been dropped.'),
-        }
+        },
+        'verifying-dropped': {
+            visibleButtons: ['.reopen'],
+            text: gettext('Waiting for verification before dropping...'),
+        },
+        'verifying-resolved': {
+            visibleButtons: ['.reopen'],
+            text: gettext('Waiting for verification before resolving...'),
+        },
     },
 
     template: _.template(dedent`
@@ -45,6 +49,10 @@ RB.CommentIssueBarView = Backbone.View.extend({
                     value="<%- dropLabel %>">
              <input type="button" class="issue-button reopen"
                     value="<%- reopenLabel %>">
+             <input type="button" class="issue-button reopen"
+                    value="<%- verifyFixedLabel %>">
+             <input type="button" class="issue-button reopen"
+                    value="<%- verifyDroppedLabel %>">
             </span>
            <% } %>
           </span>
@@ -81,6 +89,8 @@ RB.CommentIssueBarView = Backbone.View.extend({
                 fixedLabel: gettext('Fixed'),
                 dropLabel: gettext('Drop'),
                 reopenLabel: gettext('Re-open'),
+                verifyDroppedLabel: gettext('Verify Dropped'),
+                verifyFixedLabel: gettext('Verify Fixed'),
             }));
         }
 
@@ -145,7 +155,7 @@ RB.CommentIssueBarView = Backbone.View.extend({
             this._$buttons.prop('disabled', false);
         }
 
-        this.trigger('statusChanged', issueStatus);
+        this.trigger('statusChanged', prevStatus, issueStatus);
     },
 
     /**
@@ -154,7 +164,7 @@ RB.CommentIssueBarView = Backbone.View.extend({
      * Reopens the issue.
      */
     _onReopenClicked() {
-        this._setStatus(this.STATUS_OPEN);
+        this._setStatus(RB.BaseComment.STATUS_OPEN);
     },
 
     /**
@@ -163,7 +173,7 @@ RB.CommentIssueBarView = Backbone.View.extend({
      * Marks the issue as fixed.
      */
     _onResolveClicked() {
-        this._setStatus(this.STATUS_FIXED);
+        this._setStatus(RB.BaseComment.STATUS_FIXED);
     },
 
     /**
@@ -172,7 +182,7 @@ RB.CommentIssueBarView = Backbone.View.extend({
      * Marks the issue as dropped.
      */
     _onDropClicked() {
-        this._setStatus(this.STATUS_DROPPED);
+        this._setStatus(RB.BaseComment.STATUS_DROPPED);
     },
 
     /**

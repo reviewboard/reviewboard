@@ -199,6 +199,23 @@ RB.BaseComment = RB.BaseResource.extend({
     STATE_VERIFYING_DROPPED: 'verifying-dropped',
     STATE_VERIFYING_RESOLVED: 'verifying-resolved',
 
+    /**
+     * Return whether the given state should be considered open or closed.
+     *
+     * Args:
+     *     state (string):
+     *         The state to check.
+     *
+     * Returns:
+     *     boolean:
+     *     true if the given state is open.
+     */
+    isStateOpen(state) {
+        return (state === RB.BaseComment.STATE_OPEN ||
+                state === RB.BaseComment.STATE_VERIFYING_DROPPED ||
+                state === RB.BaseComment.STATE_VERIFYING_RESOLVED);
+    },
+
     strings: {
         INVALID_ISSUE_STATUS: 'issueStatus must be one of STATE_DROPPED, ' +
                               'STATE_OPEN, STATE_RESOLVED, ' +

@@ -2261,7 +2261,8 @@ class ReviewRequestInfoboxView(ReviewRequestViewMixin, TemplateView):
             'review_request_details': draft or review_request,
             'issue_total_count': (review_request.issue_open_count +
                                   review_request.issue_resolved_count +
-                                  review_request.issue_dropped_count),
+                                  review_request.issue_dropped_count +
+                                  review_request.issue_verifying_count),
             'review_count': review_count,
             'diffset': diffset,
             'diff_url': diff_url,

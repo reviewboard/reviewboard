@@ -24,6 +24,8 @@ class BaseComment(models.Model):
         (OPEN, _('Open')),
         (RESOLVED, _('Resolved')),
         (DROPPED, _('Dropped')),
+        (VERIFYING_RESOLVED, _('Waiting for verification to resolve')),
+        (VERIFYING_DROPPED, _('Waiting for verification to drop')),
     )
 
     ISSUE_STATUS_TO_STRING = {

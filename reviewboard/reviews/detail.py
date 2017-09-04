@@ -221,6 +221,7 @@ class ReviewRequestPageData(object):
             'open': 0,
             'resolved': 0,
             'dropped': 0,
+            'verifying': 0,
         }
 
         self.status_updates_enabled = status_updates_feature.is_enabled(
@@ -490,6 +491,13 @@ class ReviewRequestPageData(object):
                     if review.public and comment.issue_opened:
                         status_key = comment.issue_status_to_string(
                             comment.issue_status)
+
+                        # Both "verifying" states get lumped together in the
+                        # same section in the issue summary table.
+                        if status_key in ('verifying-resolved',
+                                          'verifying-dropped'):
+                            status_key = 'verifying'
+
                         self.issue_counts[status_key] += 1
                         self.issue_counts['total'] += 1
                         self.issues.append(comment)
@@ -1448,7 +1456,9 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
         if comment.issue_opened:
             self.has_issues = True
 
-            if comment.issue_status == BaseComment.OPEN:
+            if comment.issue_status in (BaseComment.OPEN,
+                                        BaseComment.VERIFYING_RESOLVED,
+                                        BaseComment.VERIFYING_DROPPED):
                 self.issue_open_count += 1
 
                 if self.review_request.submitter == self.request.user:

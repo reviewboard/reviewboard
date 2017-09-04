@@ -18,6 +18,7 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
         open: '.open',
         dropped: '.dropped',
         resolved: '.resolved',
+        verifying: '.verifying-resolved, .verifying-dropped',
         all: '',
     },
 
@@ -26,6 +27,7 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
         open: 'rb-icon-issue-open',
         dropped: 'rb-icon-issue-dropped',
         resolved: 'rb-icon-issue-resolved',
+        verifying: 'rb-icon-issue-verifying',
     },
 
     COLUMN_DESCRIPTION: 1,
@@ -156,6 +158,10 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
                     text = interpolate(
                         gettext('There are no open issues from %s'),
                         [this.reviewerFilterState]);
+                } else if (this.statusFilterState === 'verifying') {
+                    text = interpolate(
+                        gettext('There are no issues waiting for verification from %s'),
+                        [this.reviewerFilterState]);
                 } else if (this.statusFilterState === 'dropped') {
                     text = interpolate(
                         gettext('There are no dropped issues from %s'),
@@ -168,6 +174,8 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
             } else {
                 if (this.statusFilterState === 'open') {
                     text = gettext('There are no open issues');
+                } else if (this.statusFilterState === 'verifying') {
+                    text = gettext('There are no issues waiting for verification');
                 } else if (this.statusFilterState === 'dropped') {
                     text = gettext('There are no dropped issues');
                 } else if (this.statusFilterState === 'resolved') {
