@@ -104,12 +104,12 @@ const UpdatesBubbleView = Backbone.View.extend({
  * request, such as the diff viewer, review UI, or the review request page
  * itself.
  */
-RB.ReviewablePageView = Backbone.View.extend({
-    events: {
+RB.ReviewablePageView = RB.PageView.extend({
+    events: _.defaults({
         'click #review-action': '_onEditReviewClicked',
         'click #ship-it-action': '_onShipItClicked',
         'click #general-comment-action': '_onAddCommentClicked',
-    },
+    }, RB.PageView.prototype.events),
 
     /**
      * Initialize the page.
