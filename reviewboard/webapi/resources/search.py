@@ -161,7 +161,7 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
                 data={
                     'q': q,
                     'id_q': id_q,
-                    'filter': [RBSearchForm.FILTER_USERS],
+                    'model_filter': [RBSearchForm.FILTER_USERS],
                 }
             )
 
@@ -202,7 +202,7 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
 
             users = users.filter(query)
 
-            return users[:max_results]
+        return users[:max_results]
 
     def _search_groups(self, request, max_results, local_site=None, q=None,
                        *args, **kwargs):
@@ -281,7 +281,7 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
                 data={
                     'q': q,
                     'id': id_q,
-                    'filter': [RBSearchForm.FILTER_REVIEW_REQUESTS],
+                    'model_filter': [RBSearchForm.FILTER_REVIEW_REQUESTS],
                 }
             )
 

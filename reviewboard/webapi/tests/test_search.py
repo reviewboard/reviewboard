@@ -942,10 +942,10 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
                            expected_mimetype=search_mimetype)
 
         self.assertEqual(len(rsp['search']['groups']), 0)
-        self.assertEqual(len(rsp['search']['review_requests']), 1)
+        self.assertEqual(len(rsp['search']['review_requests']), 0)
         self.assertEqual(len(rsp['search']['users']), 1)
 
-        self.assertTrue(resources.review_request.serialize_object.spy.called)
+        self.assertFalse(resources.review_request.serialize_object.spy.called)
         self.assertTrue(resources.user.serialize_object.spy.called)
 
     @webapi_test_template
@@ -958,7 +958,6 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
 
         with search_enabled():
             reindex_search()
-
             rsp = self.api_get(get_search_url(),
                                query={'q': self.user.username},
                                expected_mimetype=search_mimetype)

@@ -142,7 +142,6 @@ def webapi_check_local_site(view_func):
                 # used on a local site.
                 logging.warning(
                     'OAuth token is for root, not local site.',
-                    local_site_name,
                     request=request,
                 )
                 return PERMISSION_DENIED
