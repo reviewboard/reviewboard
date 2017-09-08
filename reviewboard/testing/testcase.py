@@ -660,13 +660,43 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             invite_only=invite_only,
             is_default_group=is_default_group)
 
-    def create_reply(self, review, user='grumpy', username=None,
-                     body_top='Test Body Top', timestamp=None,
-                     publish=False):
-        """Creates a review reply for testing.
+    def create_reply(self, review, user='grumpy', body_top='Test Body Top',
+                     timestamp=None, publish=False, **kwargs):
+        """Create a review reply for testing.
 
         The reply is tied to the given Review. It's populated with default
         data that can be overridden by the caller.
+
+        To reply to a ``body_top`` or ``body_bottom`` field, pass either
+        ``body_top_reply_to=`` or ``body_bottom_reply_to=`` to this method.
+        This will be passed to the review's constructor.
+
+        Args:
+            review (reviewboard.reviews.models.review.Review):
+                The review being replied to.
+
+            user (django.contrib.auth.models.User or unicode, optional):
+                Either the user model or the username of the user who is
+                replying to the review.
+
+            body_top (unicode, optional):
+                The body top text.
+
+            timestamp (datetime.datetime, optional):
+                The timestamp of the review.
+
+            publish (bool, optional):
+                Whether the review should be published. By default it's in
+                draft form.
+
+            **kwargs (dict):
+                Additional arguments to pass to the
+                :py:class:`~reviewboard.reviews.models.review.Review`
+                constructor.
+
+        Returns:
+            reviewboard.reviews.models.review.Review:
+            The resulting review.
         """
         if not isinstance(user, User):
             user = User.objects.get(username=user)
@@ -676,7 +706,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             user=user,
             body_top=body_top,
             base_reply_to=review,
-            timestamp=timestamp)
+            timestamp=timestamp,
+            **kwargs)
 
         if publish:
             reply.publish()

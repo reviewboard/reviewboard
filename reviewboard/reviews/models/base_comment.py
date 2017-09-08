@@ -187,7 +187,7 @@ class BaseComment(models.Model):
         if hasattr(self, '_replies'):
             return self._replies
 
-        if user:
+        if user and user.is_authenticated():
             return self.replies.filter(Q(review__public=True) |
                                        Q(review__user=user))
         else:

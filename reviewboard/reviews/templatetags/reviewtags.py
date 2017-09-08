@@ -111,95 +111,154 @@ def ifneatnumber(context, nodelist, rid):
     return s
 
 
-@register.simple_tag(takes_context=True)
-def reply_list(context, review, comment, context_type, context_id):
+def _generate_reply_html(context, context_id, reply, timestamp, text,
+                         rich_text, use_avatars, extra_context={}):
+    """Generate HTML for a single reply.
+
+    Args:
+        context (django.template.RequestContext):
+            The template context for the page.
+
+        context_id (unicode):
+            An internal ID used by the JavaScript code for storing and
+            categorizing replies.
+
+        reply (reviewboard.reviews.models.review.Review):
+            The reply to the review.
+
+        timestamp (datetime.datetime):
+            The timestamp of the reply.
+
+        text (unicode):
+            The reply text.
+
+        rich_text (bool):
+            Whether the reply text is in Markdown format.
+
+        use_avatars (bool):
+            Whether avatars are enabled on Review Board. This will control
+            whether avatars are shown in the replies.
+
+        extra_context (dict):
+            Extra template context to include when rendering the page.
+
+    Returns:
+        django.utils.safestring.SafeText:
+        The HTML for the reply.
     """
-    Renders a list of comments of a specified type.
+    # Note that update() implies push().
+    context.update(dict({
+        'context_id': context_id,
+        'draft': not reply.public,
+        'id': reply.pk,
+        'reply_user': reply.user,
+        'rich_text': rich_text,
+        'text': text,
+        'timestamp': timestamp,
+        'use_avatars': use_avatars,
+    }, **extra_context))
 
-    This is a complex, confusing function accepts lots of inputs in order
-    to display replies to a type of object. In each case, the replies will
-    be rendered using the template :template:`reviews/review_reply.html`.
-
-    If ``context_type`` is ``"diff_comments"``, ``"screenshot_comments"``,
-    ``"general_comments"`` or ``"file_attachment_comments"``, the generated
-    list of replies are to ``comment``.
-
-    If ``context_type`` is ``"body_top"`` or ```"body_bottom"``,
-    the generated list of replies are to ``review``. Depending on the
-    ``context_type``, these will either be replies to the top of the
-    review body or to the bottom.
-
-    The ``context_id`` parameter has to do with the internal IDs used by
-    the JavaScript code for storing and categorizing the comments.
-    """
-    def generate_reply_html(reply, timestamp, text, rich_text,
-                            use_avatars, comment_id=None):
-        context.push()
-        context.update({
-            'context_id': context_id,
-            'id': reply.id,
-            'review': review,
-            'timestamp': timestamp,
-            'text': text,
-            'reply_user': reply.user,
-            'draft': not reply.public,
-            'comment_id': comment_id,
-            'rich_text': rich_text,
-            'use_avatars': use_avatars,
-        })
-
-        result = render_to_string('reviews/review_reply.html', context)
+    try:
+        return render_to_string('reviews/review_reply.html', context)
+    finally:
         context.pop()
 
-        return result
 
-    def process_body_replies(queryset, attrname, user):
-        if user.is_anonymous():
-            queryset = queryset.filter(public=True)
-        else:
-            queryset = queryset.filter(Q(public=True) | Q(user=user))
+@register.simple_tag(takes_context=True)
+def comment_replies(context, comment, context_id):
+    """Render a list of replies to a comment.
 
-        s = ""
-        for reply_comment in queryset:
-            s += generate_reply_html(reply, reply.timestamp,
-                                     getattr(reply, attrname))
+    This loads all the replies made to a particular comment and renders
+    them in order by timestamp, showing the author of each comment, the
+    timestamp, and the text in the appropriate format.
 
-        return s
+    Args:
+        context (django.template.RequestContext):
+            The template context for the page.
+
+        comment (reviewboard.reviews.models.base_comment.BaseComment):
+            The comment being replied to.
+
+        context_id (unicode):
+            An internal ID used by the JavaScript code for storing and
+            categorizing replies.
+
+    Returns:
+        django.utils.safestring.SafeText:
+        The resulting HTML for the replies.
+    """
+    siteconfig = SiteConfiguration.objects.get_current()
+    use_avatars = siteconfig.get('avatars_enabled')
+    user = context['request'].user
+
+    return mark_safe(''.join(
+        _generate_reply_html(
+            context=context,
+            context_id=context_id,
+            reply=reply_comment.get_review(),
+            rich_text=reply_comment.rich_text,
+            text=reply_comment.text,
+            timestamp=reply_comment.timestamp,
+            use_avatars=use_avatars,
+            extra_context={
+                'comment_id': reply_comment.pk,
+            })
+        for reply_comment in comment.public_replies(user)
+    ))
+
+
+@register.simple_tag(takes_context=True)
+def review_body_replies(context, review, body_field, context_id):
+    """Render a list of replies to a body field of a review.
+
+    This loads all the replies made to a review's header/footer body field and
+    renders them in order by timestamp, showing the author of each comment,
+    the timestamp, and the text in the appropriate format.
+
+    Args:
+        context (django.template.RequestContext):
+            The template context for the page.
+
+        review (reviewboard.reviews.models.review.Review):
+            The review being replied to.
+
+        body_field (unicode):
+            The body field to look up replies to. This can be either
+            ``body_top`` or ``body_bottom``.
+
+        context_id (unicode):
+            An internal ID used by the JavaScript code for storing and
+            categorizing replies.
+
+    Returns:
+        django.utils.safestring.SafeText:
+        The resulting HTML for the replies.
+
+    Raises:
+        django.template.TemplateSyntaxError:
+            There was an invalid ``body_field`` provided.
+    """
+    if body_field not in ('body_top', 'body_bottom'):
+        raise TemplateSyntaxError('Invalid body field "%s" provided.'
+                                  % body_field)
 
     siteconfig = SiteConfiguration.objects.get_current()
     use_avatars = siteconfig.get('avatars_enabled')
+    user = context['request'].user
 
-    user = context.get('user', None)
-    if user.is_anonymous():
-        user = None
+    replies = getattr(review, 'public_%s_replies' % body_field)(user)
 
-    s = ""
-
-    if context_type in ('diff_comments', 'screenshot_comments',
-                        'file_attachment_comments', 'general_comments'):
-        for reply_comment in comment.public_replies(user):
-            s += generate_reply_html(reply_comment.get_review(),
-                                     reply_comment.timestamp,
-                                     reply_comment.text,
-                                     reply_comment.rich_text,
-                                     use_avatars,
-                                     reply_comment.pk)
-    elif context_type == 'body_top' or context_type == 'body_bottom':
-        replies = getattr(review, 'public_%s_replies' % context_type)()
-
-        for reply in replies:
-            s += generate_reply_html(
-                reply,
-                reply.timestamp,
-                getattr(reply, context_type),
-                getattr(reply, '%s_rich_text' % context_type),
-                use_avatars)
-
-        return s
-    else:
-        raise TemplateSyntaxError("Invalid context type passed")
-
-    return s
+    return mark_safe(''.join(
+        _generate_reply_html(
+            context=context,
+            context_id=context_id,
+            reply=reply,
+            rich_text=getattr(reply, '%s_rich_text' % body_field),
+            text=getattr(reply, body_field),
+            timestamp=reply.timestamp,
+            use_avatars=use_avatars)
+        for reply in replies
+    ))
 
 
 @register.inclusion_tag('reviews/review_reply_section.html',

@@ -271,7 +271,7 @@ class Review(models.Model):
         else:
             q = Q(public=True)
 
-            if user:
+            if user and user.is_authenticated():
                 q = q | Q(user=user)
 
             return self.body_top_replies.filter(q).order_by('timestamp')
@@ -283,7 +283,7 @@ class Review(models.Model):
         else:
             q = Q(public=True)
 
-            if user:
+            if user and user.is_authenticated():
                 q = q | Q(user=user)
 
             return self.body_bottom_replies.filter(q).order_by('timestamp')
