@@ -41,15 +41,16 @@ class ChangeDescription(models.Model):
     rich_text = models.BooleanField(_("rich text"), default=False)
     fields_changed = JSONField(_("fields changed"))
 
-    def get_user(self, model):
+    def get_user(self, model=None):
         """Return the user associated with the change description.
 
-        This function delegates to the model it is associated with to determine
-        the user if it has not been previously determined. Once the user has
-        been determined, it will be saved to the database.
+        This function delegates to the model it is associated with (if
+        provided) to determine the user if it has not been previously
+        determined. Once the user has been determined, it will be saved to the
+        database.
 
         Args:
-            model (django.db.models.Model):
+            model (django.db.models.Model, optional):
                 The model instance this change description is associated with.
 
         Returns:
@@ -58,11 +59,41 @@ class ChangeDescription(models.Model):
             :py:data:`None` if it could not be determined.
         """
         if (self.user is None and
+            model and
             hasattr(model, 'determine_user_for_changedesc')):
             self.user = model.determine_user_for_changedesc(self)
             self.save(update_fields=('user',))
 
         return self.user
+
+    def is_new_for_user(self, user, last_visited, model=None):
+        """Return whether this change description is new for a user.
+
+        The change description is considered new if their last visited
+        time is older than the change description's timestamp and the
+        user is not the one who created the change description.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user accessing the change description.
+
+            last_visited (datetime.datetime):
+                The last time the user accessed a page where the change
+                description would be shown.
+
+            model (django.db.models.Model, optional):
+                The model instance this change description is associated with.
+                This is needed for calculating a user, if one is not
+                associated, and should generally be provided.
+
+        Returns:
+            bool:
+            ``True`` if the change description is new to this user. ``False``
+            if it's older than the last visited time or the user created it.
+        """
+        owner = self.get_user(model)
+
+        return owner and user != owner and last_visited < self.timestamp
 
     def record_field_change(self, field, old_value, new_value,
                             name_field=None):

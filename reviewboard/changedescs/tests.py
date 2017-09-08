@@ -1,5 +1,9 @@
 from __future__ import unicode_literals
 
+from datetime import datetime
+
+from django.contrib.auth.models import User
+
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.testing.testcase import TestCase
 
@@ -92,3 +96,32 @@ class ChangeDescTests(TestCase):
         self.assertRaises(ValueError,
                           changedesc.record_field_change,
                           "test", 123, True)
+
+    def test_is_new_for_user_with_non_owner(self):
+        """Testing ChangeDescription.is_new_for_user with non-owner"""
+        user1 = User.objects.create(username='test-user-1')
+        user2 = User.objects.create(username='test-user-2')
+
+        changedesc = ChangeDescription(
+            user=user1,
+            timestamp=datetime(2017, 9, 7, 15, 27, 0))
+        self.assertTrue(changedesc.is_new_for_user(
+            user=user2,
+            last_visited=datetime(2017, 9, 7, 10, 0, 0)))
+        self.assertFalse(changedesc.is_new_for_user(
+            user=user2,
+            last_visited=datetime(2017, 9, 7, 16, 0, 0)))
+        self.assertFalse(changedesc.is_new_for_user(
+            user=user2,
+            last_visited=datetime(2017, 9, 7, 15, 27, 0)))
+
+    def test_is_new_for_user_with_owner(self):
+        """Testing ChangeDescription.is_new_for_user with owner"""
+        user = User.objects.create(username='test-user')
+
+        changedesc = ChangeDescription(
+            user=user,
+            timestamp=datetime(2017, 9, 7, 15, 27, 0))
+        self.assertFalse(changedesc.is_new_for_user(
+            user=user,
+            last_visited=datetime(2017, 9, 7, 16, 0, 0)))

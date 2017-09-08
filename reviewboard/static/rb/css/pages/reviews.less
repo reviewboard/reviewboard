@@ -40,8 +40,12 @@
         display: inline-block;
         overflow: hidden;
 
-        time {
+        .timestamp {
           display: block;
+
+          time {
+            vertical-align: middle;
+          }
         }
       }
     }
@@ -320,6 +324,10 @@
       .on-mobile-medium-screen-720({
         float: none;
       });
+
+      .review-request-page-entry-title {
+        vertical-align: middle;
+      }
     }
 
     .timestamp {
@@ -344,6 +352,12 @@
       margin-top: 0;
     }
   }
+}
+
+.new-review-request-page-entry .review-request-page-entry-contents {
+  border-color: @review-request-entry-new-border-color;
+
+  .left-arrow-callout-border-color(@review-request-entry-new-border-color);
 }
 
 
@@ -565,8 +579,13 @@
     padding: 0;
 
     > li {
+      border-left: 2px transparent solid;
       list-style: none;
       padding: 2em;
+
+      &.new-reply {
+        border-left-color: @review-request-entry-new-border-color;
+      }
 
       .review-comments-inline();
     }

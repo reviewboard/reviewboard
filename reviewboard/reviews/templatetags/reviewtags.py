@@ -111,23 +111,33 @@ def ifneatnumber(context, nodelist, rid):
     return s
 
 
-def _generate_reply_html(context, context_id, reply, timestamp, text,
-                         rich_text, use_avatars, extra_context={}):
+def _generate_reply_html(context, user, context_id, review, reply, timestamp,
+                         last_visited, text, rich_text, use_avatars,
+                         extra_context={}):
     """Generate HTML for a single reply.
 
     Args:
         context (django.template.RequestContext):
             The template context for the page.
 
+        user (django.contrib.auth.models.User):
+            The user who is viewing the replies.
+
         context_id (unicode):
             An internal ID used by the JavaScript code for storing and
             categorizing replies.
+
+        review (reviewboard.reviews.models.review.Review):
+            The review being replied to.
 
         reply (reviewboard.reviews.models.review.Review):
             The reply to the review.
 
         timestamp (datetime.datetime):
             The timestamp of the reply.
+
+        last_visited (datetime.datetime):
+            The last time the user visited the page containing the replies.
 
         text (unicode):
             The reply text.
@@ -151,6 +161,11 @@ def _generate_reply_html(context, context_id, reply, timestamp, text,
         'context_id': context_id,
         'draft': not reply.public,
         'id': reply.pk,
+        'reply_is_new': (
+            user is not None and
+            last_visited is not None and
+            reply.is_new_for_user(user, last_visited) and
+            not review.is_new_for_user(user, last_visited)),
         'reply_user': reply.user,
         'rich_text': rich_text,
         'text': text,
@@ -165,7 +180,7 @@ def _generate_reply_html(context, context_id, reply, timestamp, text,
 
 
 @register.simple_tag(takes_context=True)
-def comment_replies(context, comment, context_id):
+def comment_replies(context, review, comment, context_id):
     """Render a list of replies to a comment.
 
     This loads all the replies made to a particular comment and renders
@@ -175,6 +190,9 @@ def comment_replies(context, comment, context_id):
     Args:
         context (django.template.RequestContext):
             The template context for the page.
+
+        review (reviewboard.reviews.models.review.Review):
+            The review being replied to.
 
         comment (reviewboard.reviews.models.base_comment.BaseComment):
             The comment being replied to.
@@ -190,16 +208,20 @@ def comment_replies(context, comment, context_id):
     siteconfig = SiteConfiguration.objects.get_current()
     use_avatars = siteconfig.get('avatars_enabled')
     user = context['request'].user
+    last_visited = context.get('last_visited')
 
     return mark_safe(''.join(
         _generate_reply_html(
             context=context,
             context_id=context_id,
+            last_visited=last_visited,
             reply=reply_comment.get_review(),
+            review=review,
             rich_text=reply_comment.rich_text,
             text=reply_comment.text,
             timestamp=reply_comment.timestamp,
             use_avatars=use_avatars,
+            user=user,
             extra_context={
                 'comment_id': reply_comment.pk,
             })
@@ -245,6 +267,7 @@ def review_body_replies(context, review, body_field, context_id):
     siteconfig = SiteConfiguration.objects.get_current()
     use_avatars = siteconfig.get('avatars_enabled')
     user = context['request'].user
+    last_visited = context.get('last_visited')
 
     replies = getattr(review, 'public_%s_replies' % body_field)(user)
 
@@ -252,11 +275,14 @@ def review_body_replies(context, review, body_field, context_id):
         _generate_reply_html(
             context=context,
             context_id=context_id,
+            last_visited=last_visited,
             reply=reply,
+            review=review,
             rich_text=getattr(reply, '%s_rich_text' % body_field),
             text=getattr(reply, body_field),
             timestamp=reply.timestamp,
-            use_avatars=use_avatars)
+            use_avatars=use_avatars,
+            user=user)
         for reply in replies
     ))
 
@@ -292,6 +318,7 @@ def reply_section(context, review, comment, context_type, context_id,
         'local_site_name': context.get('local_site_name'),
         'reply_to_is_empty': reply_to_text == '',
         'request': context['request'],
+        'last_visited': context.get('last_visited'),
     }
 
 
@@ -489,7 +516,7 @@ def for_review_request_fieldset(context, nodelist, review_request_details):
                     logging.error('Error instantiating ReviewRequestFieldset '
                                   '%r: %s', fieldset_cls, e, exc_info=1)
 
-                context.push()
+                # Note that update() implies push().
                 context.update({
                     'fieldset': fieldset,
                     'show_fieldset_required': (
@@ -501,8 +528,11 @@ def for_review_request_fieldset(context, nodelist, review_request_details):
                         'first': is_first,
                     }
                 })
-                s.append(nodelist.render(context))
-                context.pop()
+
+                try:
+                    s.append(nodelist.render(context))
+                finally:
+                    context.pop()
 
                 is_first = False
         except Exception as e:

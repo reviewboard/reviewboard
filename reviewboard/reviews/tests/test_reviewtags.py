@@ -516,7 +516,7 @@ class CommentRepliesTests(TestCase):
 
         t = Template(
             '{% load reviewtags %}'
-            '{% comment_replies comment "123" %}'
+            '{% comment_replies review comment "123" %}'
         )
 
         request = RequestFactory().request()
@@ -528,6 +528,7 @@ class CommentRepliesTests(TestCase):
 
         html = t.render(RequestContext(request, {
             'comment': comment,
+            'review': review,
         }))
 
         self.assertIn('data-comment-id="%s"' % reply_comment1.pk, html)

@@ -28,9 +28,12 @@
 {% endblock entry_labels %}
 
 
-{% block entry_summary %}
+{% block entry_title %}
 <a href="{% url 'user' entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a>
-{% endblock entry_summary %}
+{% endblock entry_title %}
+
+
+{% block entry_new_label %}{% trans "New review" %}{% endblock %}
 
 
 {% block entry_content %}

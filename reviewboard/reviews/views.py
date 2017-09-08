@@ -480,6 +480,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
         self.visited = None
         self.blocks = None
         self.last_activity_time = None
+        self.last_visited = None
 
     def get_etag_data(self, request, *args, **kwargs):
         """Return an ETag for the view.
@@ -506,14 +507,14 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
 
         # Track the visit to this review request, so the dashboard can
         # reflect whether there are new updates.
-        self.visited, last_visited = self.track_review_request_visit()
+        self.visited, self.last_visited = self.track_review_request_visit()
 
         # Begin building data for the contents of the page. This will include
         # the reviews, change descriptions, and other content shown on the
         # page.
         data = ReviewRequestPageData(review_request=review_request,
                                      request=request,
-                                     last_visited=last_visited)
+                                     last_visited=self.last_visited)
         self.data = data
 
         data.query_data_pre_etag()
@@ -548,6 +549,8 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
             [r.pk for r in self.blocks],
             starred,
             self.visited and self.visited.visibility,
+            (self.last_visited and
+             self.last_visited < self.last_activity_time),
             settings.AJAX_SERIAL,
         ))
 
@@ -572,7 +575,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
         """
         user = self.request.user
         visited = None
-        last_visited = 0
+        last_visited = None
 
         if user.is_authenticated():
             review_request = self.review_request
@@ -665,6 +668,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
             'review_request_visit': self.visited,
             'entries': entries,
             'last_activity_time': self.last_activity_time,
+            'last_visited': self.last_visited,
             'review': review,
             'request': request,
             'close_description': close_description,
