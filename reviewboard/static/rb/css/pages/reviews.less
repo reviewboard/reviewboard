@@ -3,12 +3,9 @@
 @import (reference) "djblets/css/mixins/markdown.less";
 
 
-@entry-padding: 12px;
 @img_base: '../../images';
 @djblets_img_base: '../../../djblets/images';
 
-@base-entry-bg: #ffffff;
-@collapsed-entry-bg: #ececee;
 @changedesc-bg: lighten(@review-request-bg, 5%);
 
 
@@ -234,6 +231,7 @@
   }
 }
 
+
 /****************************************************************************
  * Entries (status updates, reviews, change descriptions)
  ****************************************************************************/
@@ -261,13 +259,13 @@
 }
 
 .review-request-page-entry-contents {
-  background-color: @base-entry-bg;
+  background-color: @review-request-entry-base-bg;
   border: 1px @box-border-color solid;
   border-radius: @box-border-radius;
   box-shadow: @box-shadow;
 
   &.collapsed {
-    background-color: @collapsed-entry-bg !important;
+    background-color: @review-request-entry-collapsed-bg !important;
     background-image: none !important; // Override any gradients used.
 
     .body,
@@ -284,20 +282,20 @@
     margin-left: 80px;
     width: auto;
 
-    .left-arrow-callout(@base-entry-bg);
+    .left-arrow-callout(@review-request-entry-base-bg);
 
     .on-mobile-medium-screen-720({
       margin-left: 0;
     });
 
     &.collapsed {
-      .left-arrow-callout-color(@collapsed-entry-bg);
+      .left-arrow-callout-color(@review-request-entry-collapsed-bg);
     }
   }
 
   .header {
     border-radius: @box-border-radius @box-border-radius 0 0;
-    padding: @entry-padding;
+    padding: @review-request-entry-padding;
 
     a {
       color: black;
@@ -334,7 +332,7 @@
     border-width: 0 0 1px 0;
     box-sizing: border-box;
     margin: 0;
-    padding: @entry-padding;
+    padding: @review-request-entry-padding;
 
     &.floating {
       border-top: 0;
@@ -360,9 +358,9 @@
 
   .review-request-page-entry-contents:not(.collapsed) .header {
     /*
-     * When the box is expanded, there's @entry-padding space between the
-     * header and the banner. We take that space out of the header instead
-     * of the banner to ensure that nothing jumps when the banner is
+     * When the box is expanded, there's @review-request-entry-padding space
+     * between the header and the banner. We take that space out of the header
+     * instead of the banner to ensure that nothing jumps when the banner is
      * switching between fixed and floating modes.
      */
     padding-bottom: 0;
@@ -799,7 +797,7 @@
 
   .changed-fields {
     clear: both;
-    padding: @entry-padding;
+    padding: @review-request-entry-padding;
 
     &>ul {
       list-style: none;
@@ -2477,7 +2475,7 @@
     overflow: hidden;
 
     &.collapsed .header {
-      background-color: @collapsed-entry-bg;
+      background-color: @review-request-entry-collapsed-bg;
       border-width: 0;
     }
   }
@@ -2486,7 +2484,7 @@
 .status-update-review-header {
   border-width: 1px 0;
   margin: 0.75rem 0 -1px;
-  padding: (@entry-padding / 2) @entry-padding;
+  padding: (@review-request-entry-padding / 2) @review-request-entry-padding;
 
   &.status-update-state-failure {
     .status-update-header(@diff-delete-color, @diff-delete-border-color);
@@ -2522,7 +2520,7 @@
 
   .status-update-state(@color) {
     color: @color;
-    padding: @entry-padding;
+    padding: @review-request-entry-padding;
 
     .fa {
       margin-right: 0.5em;
