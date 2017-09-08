@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 import json
 
 from django.conf.urls import include, url
+from django.core.urlresolvers import clear_url_caches
 from djblets.features import Feature, get_features_registry
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
@@ -263,7 +264,6 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         else:
             enabled_globally = feature_enabled
 
-
         method = getattr(self.client, method)
 
         local_site_name = None
@@ -278,16 +278,24 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
             'ROOT_URLCONF': 'reviewboard.webapi.tests.test_base',
         }
 
-        with self.settings(**settings):
-            if obj_id is None:
-                resource_url = self.resource.get_list_url(
-                    local_site_name=local_site_name)
-            else:
-                resource_url = self.resource.get_item_url(
-                    local_site_name=local_site_name,
-                    obj_id=obj_id)
+        try:
+            # If we don't clear the URL caches then lookups for the URL will
+            # break (due to using the URLs cached from the regular Review Board
+            # URL conf).
+            clear_url_caches()
 
-            rsp = method(resource_url)
+            with self.settings(**settings):
+                if obj_id is None:
+                    resource_url = self.resource.get_list_url(
+                        local_site_name=local_site_name)
+                else:
+                    resource_url = self.resource.get_item_url(
+                        local_site_name=local_site_name,
+                        obj_id=obj_id)
+
+                rsp = method(resource_url)
+        finally:
+            clear_url_caches()
 
         content = json.loads(rsp.content)
 
