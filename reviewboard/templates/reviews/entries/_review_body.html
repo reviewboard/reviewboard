@@ -12,47 +12,27 @@
 </li>
 {% endif %}
 
+{# General comments #}
 {% for comment in general_comments %}
-<li id="{{comment.anchor_prefix}}{{comment.id}}">
- <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
- <div class="review-comment-thread">
-  <div class="review-comment">
-   {% comment_detail_display_hook comment 'review' %}
-   {% comment_issue review_request_details comment 'general_comments' %}
-
-   <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}">{{comment.text|render_markdown:comment.rich_text}}</pre>
-  </div>
-
-  {% reply_section review comment 'general_comments' 'rc' comment.text %}
- </div>
-</li>
+{%  include "reviews/entries/_review_comment.html" with comment_type="general_comments" %}
 {% endfor %}
 
+{# Screenshot comments #}
 {% for comment in screenshot_comments %}
-<li id="{{comment.anchor_prefix}}{{comment.id}}">
- <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
+{%  definevar "comment_context" %}
  <div class="review-comment-screenshot">
   <a class="filename" href="{{comment.screenshot.get_absolute_url}}">
    {{comment.screenshot.caption|default_if_none:comment.screenshot.filename}}
   </a>
   <div class="thumbnail">{{comment.image|safe}}</div>
  </div>
- <div class="review-comment-thread">
-  <div class="review-comment">
-   {% comment_detail_display_hook comment 'review' %}
-   {% comment_issue review_request_details comment 'screenshot_comments' %}
-
-   <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}">{{comment.text|render_markdown:comment.rich_text}}</pre>
-  </div>
-
-  {% reply_section review comment 'screenshot_comments' 'rc' comment.text %}
- </div>
-</li>
+{%  enddefinevar %}
+{%  include "reviews/entries/_review_comment.html" with comment_type="screenshot_comments" %}
 {% endfor %}
 
+{# File attachment comments #}
 {% for comment in file_attachment_comments %}
-<li id="{{comment.anchor_prefix}}{{comment.id}}">
- <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.id}}"></a>
+{%  definevar "comment_context" %}
  <div class="review-comment-file-attachment">
   <a class="filename" href="{{comment.get_absolute_url}}">
    {{comment.get_link_text}}
@@ -76,22 +56,13 @@
 {%   endif %}
 {%  endwith %}
  </div>
- <div class="review-comment-thread">
-  <div class="review-comment">
-   {% comment_detail_display_hook comment 'review' %}
-   {% comment_issue review_request_details comment 'file_attachment_comments' %}
-
-   <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}">{{comment.text|render_markdown:comment.rich_text}}</pre>
-  </div>
-
-  {% reply_section review comment 'file_attachment_comments' 'rc' comment.text %}
- </div>
-</li>
+{%  enddefinevar %}
+{%  include "reviews/entries/_review_comment.html" with comment_type="file_attachment_comments" %}
 {% endfor %}
 
+{# Diff comments #}
 {% for comment in diff_comments %}
-<li id="{{comment.anchor_prefix}}{{comment.pk}}">
- <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.pk}}"></a>
+{%  definevar "comment_context" %}
  <div class="review-comment-diff" id="comment_container_{{comment.pk}}">
   <table class="sidebyside loading">
    <thead>
@@ -120,17 +91,8 @@
    </tbody>
   </table>
  </div>
- <div class="review-comment-thread">
-  <div class="review-comment">
-   {% comment_detail_display_hook comment 'review' %}
-   {% comment_issue review_request_details comment 'diff_comments' %}
-
-   <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}">{{comment.text|render_markdown:comment.rich_text}}</pre>
-  </div>
-
-  {% reply_section review comment 'diff_comments' 'rc' comment.text %}
- </div>
-</li>
+{%  enddefinevar %}
+{%  include "reviews/entries/_review_comment.html" with comment_type="diff_comments" %}
 {% endfor %}
 
 <li{% if not review.body_bottom %} style="display: none;"{% endif %}>
