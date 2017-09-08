@@ -46,18 +46,24 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
     def setup_basic_get_test(self, user, with_local_site, local_site_name,
                              populate_items):
         if populate_items:
-            if not with_local_site:
-                try:
-                    LocalSite.objects.create(name=self.self.local_site_name)
-                except IntegrityError:
-                    pass
+            if with_local_site:
+                local_site = LocalSite.objects.get(name=local_site_name)
 
-            items = [
-                self.create_review_group(name='group1',
-                                         with_local_site=with_local_site)
-            ]
-            self.create_review_group(name='group2',
-                                     with_local_site=not with_local_site)
+                items = [
+                    self.create_review_group(name='group1',
+                                             local_site=local_site),
+                ]
+                self.create_review_group(name='group2')
+            else:
+                local_site = LocalSite.objects.get_or_create(
+                    name=self.local_site_name
+                )[0]
+
+                items = [
+                    self.create_review_group(name='group1'),
+                ]
+                self.create_review_group(name='group2',
+                                         local_site=local_site)
         else:
             items = []
 
