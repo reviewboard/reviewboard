@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals
 
+import logging
 from collections import Counter, defaultdict
 from datetime import datetime
 from itertools import chain
@@ -775,6 +776,73 @@ class BaseReviewRequestPageEntry(object):
             default, it will be empty.
         """
         return {}
+
+    def get_extra_context(self, request, context):
+        """Return extra template context for the entry.
+
+        Subclasses can override this to provide additional context needed by
+        the template for the page. By default, this returns an empty
+        dictionary.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            context (django.template.RequestContext):
+                The existing template context on the page.
+
+        Returns:
+            dict:
+            Extra context to use for the entry's template.
+        """
+        return {}
+
+    def render_to_string(self, request, context):
+        """Render the entry to a string.
+
+        If the entry doesn't have a template associated, or doesn't have
+        any content (as determined by :py:attr:`has_content`), then this
+        will return an empty string.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            context (django.template.RequestContext):
+                The existing template context on the page.
+
+        Returns:
+            unicode:
+            The resulting HTML for the entry.
+        """
+        if not self.template_name or not self.has_content:
+            return ''
+
+        try:
+            new_context = {
+                'entry': self,
+                'show_entry_statuses_area': (
+                    self.entry_pos !=
+                    BaseReviewRequestPageEntry.ENTRY_POS_INITIAL),
+            }
+            new_context.update(self.get_extra_context(request, context))
+        except Exception as e:
+            logging.exception('Error generating template context for %s '
+                              '(ID=%s): %s',
+                              self.__class__.__name__, self.entry_id, e)
+            return ''
+
+        try:
+            # Note that update() implies push().
+            context.update(new_context)
+
+            return render_to_string(self.template_name, context)
+        except Exception as e:
+            logging.exception('Error rendering template for %s (ID=%s): %s',
+                              self.__class__.__name__, self.entry_id, e)
+            return ''
+        finally:
+            context.pop()
 
     def finalize(self):
         """Perform final computations after all comments have been added."""

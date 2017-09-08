@@ -2,21 +2,134 @@
 
 from __future__ import unicode_literals
 
+import logging
 from datetime import timedelta
 
 from django.contrib.auth.models import AnonymousUser
+from django.template import RequestContext
 from django.test.client import RequestFactory
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
+from kgb import SpyAgency
 
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.reviews.detail import (ChangeEntry,
+from reviewboard.reviews.detail import (BaseReviewRequestPageEntry,
+                                        ChangeEntry,
                                         InitialStatusUpdatesEntry,
                                         ReviewEntry,
                                         ReviewRequestPageData,
                                         StatusUpdatesEntryMixin)
 from reviewboard.reviews.models import GeneralComment, StatusUpdate
 from reviewboard.testing import TestCase
+
+
+class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
+    """Unit tests for BaseReviewRequestPageEntry."""
+
+    def test_render_to_string(self):
+        """Testing BaseReviewRequestPageEntry.render_to_string"""
+        entry = BaseReviewRequestPageEntry(
+            entry_id='test',
+            timestamp=None,
+            collapsed=False)
+        entry.template_name = 'reviews/entries/base.html'
+
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        self.assertNotEqual(
+            entry.render_to_string(request, RequestContext(request, {})),
+            '')
+
+    def test_render_to_string_with_entry_pos_main(self):
+        """Testing BaseReviewRequestPageEntry.render_to_string with
+        entry_pos=ENTRY_POS_MAIN
+        """
+        entry = BaseReviewRequestPageEntry(
+            entry_id='test',
+            timestamp=None,
+            collapsed=False)
+        entry.template_name = 'reviews/entries/base.html'
+        entry.entry_pos = BaseReviewRequestPageEntry.ENTRY_POS_MAIN
+
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        html = entry.render_to_string(request, RequestContext(request, {}))
+        self.assertIn('<div class="box-statuses">', html)
+
+    def test_render_to_string_with_entry_pos_initial(self):
+        """Testing BaseReviewRequestPageEntry.render_to_string with
+        entry_pos=ENTRY_POS_INITIAL
+        """
+        entry = BaseReviewRequestPageEntry(
+            entry_id='test',
+            timestamp=None,
+            collapsed=False)
+        entry.template_name = 'reviews/entries/base.html'
+        entry.entry_pos = BaseReviewRequestPageEntry.ENTRY_POS_INITIAL
+
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        html = entry.render_to_string(request, RequestContext(request, {}))
+        self.assertNotIn('<div class="box-statuses">', html)
+
+    def test_render_to_string_with_no_template(self):
+        """Testing BaseReviewRequestPageEntry.render_to_string with
+        template_name=None
+        """
+        entry = BaseReviewRequestPageEntry(
+            entry_id='test',
+            timestamp=None,
+            collapsed=False)
+
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        self.assertEqual(
+            entry.render_to_string(request, RequestContext(request, {})),
+            '')
+
+    def test_render_to_string_with_has_content_false(self):
+        """Testing BaseReviewRequestPageEntry.render_to_string with
+        has_content=False
+        """
+        entry = BaseReviewRequestPageEntry(
+            entry_id='test',
+            timestamp=None,
+            collapsed=False)
+        entry.template_name = 'reviews/entries/base.html'
+        entry.has_content = False
+
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        self.assertEqual(
+            entry.render_to_string(request, RequestContext(request, {})),
+            '')
+
+    def test_render_to_string_with_exception(self):
+        """Testing BaseReviewRequestPageEntry.render_to_string with
+        exception
+        """
+        entry = BaseReviewRequestPageEntry(
+            entry_id='test',
+            timestamp=None,
+            collapsed=False)
+        entry.template_name = 'reviews/entries/NOT_FOUND.html'
+
+        self.spy_on(logging.exception)
+
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        self.assertEqual(
+            entry.render_to_string(request, RequestContext(request, {})),
+            '')
+        self.assertTrue(logging.exception.spy.called)
+        self.assertEqual(logging.exception.spy.calls[0].args[0],
+                         'Error rendering template for %s (ID=%s): %s')
 
 
 class StatusUpdatesEntryMixinTests(TestCase):

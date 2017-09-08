@@ -1113,3 +1113,27 @@ def reviewable_page_model_data(context):
         'extraReviewRequestDraftData': extra_review_request_draft_data,
         'editorData': editor_data,
     })
+
+
+@register.simple_tag(takes_context=True)
+def render_review_request_entries(context, entries):
+    """Render a series of entries on the page.
+
+    Args:
+        context (django.template.RequestContext):
+            The existing template context on the page.
+
+        entries (list of
+                 reviewboard.reviews.detail.BaseReviewRequestPageEntry):
+            The entries to render.
+
+    Returns:
+        unicode:
+        The resulting HTML for the entries.
+    """
+    request = context['request']
+
+    return ''.join(
+        entry.render_to_string(request, context)
+        for entry in entries
+    )

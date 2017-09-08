@@ -27,11 +27,7 @@
 </div>
 
 <div id="reviews">
-{%  for entry in entries.initial %}
-{%   if entry.template_name and entry.has_content %}
-{%    include entry.template_name with show_entry_statuses_area=False %}
-{%   endif %}
-{%  endfor %}
+{%  render_review_request_entries entries.initial %}
 
  <ul id="view_controls">
 {%  if entries %}
@@ -50,11 +46,7 @@
 {%  endif %}
  </ul>
 
-{%  for entry in entries.main %}
-{%   if entry.template_name and entry.has_content %}
-{%    include entry.template_name with show_entry_statuses_area=True %}
-{%   endif %}
-{%  endfor %}
+{%  render_review_request_entries entries.main %}
 </div>
 {% endblock content %}
 
