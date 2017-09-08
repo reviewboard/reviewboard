@@ -211,6 +211,11 @@ CACHES = {
 
 LOGGING_NAME = "reviewboard"
 LOGGING_REQUEST_FORMAT = "%(_local_site_name)s - %(user)s - %(path)s"
+LOGGING_BLACKLIST = [
+    'django.db.backends',
+    'MARKDOWN',
+    'PIL.Image',
+]
 
 AUTH_PROFILE_MODULE = "accounts.Profile"
 
