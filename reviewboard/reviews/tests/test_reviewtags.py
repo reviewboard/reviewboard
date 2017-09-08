@@ -14,8 +14,8 @@ from reviewboard.reviews.models import Comment
 from reviewboard.testing import TestCase
 
 
-class ReviewTagTests(SpyAgency, TestCase):
-    """Tests for reviewboard.reviews.templatetags."""
+class ForReviewRequestFieldTests(SpyAgency, TestCase):
+    """Tests for the for_review_request_field template tag."""
 
     @add_fixtures(['test_users'])
     def test_render_instantiated_fields(self):
@@ -70,7 +70,11 @@ class ReviewTagTests(SpyAgency, TestCase):
             logging.exception.spy.calls[0].args[2].args,
             (exception_id,))
 
-    def test_diff_comment_line_numbers_with_delete_single_lines(self):
+
+class DiffCommentLineNumbersTests(TestCase):
+    """Tests for the diff_comment_line_numbers template tag."""
+
+    def test_delete_single_lines(self):
         """Testing diff_comment_line_numbers with delete chunk and single
         commented line
         """
@@ -95,7 +99,7 @@ class ReviewTagTests(SpyAgency, TestCase):
 
         self.assertEqual(result, 'Line 30 (original)')
 
-    def test_diff_comment_line_numbers_with_delete_mutiple_lines(self):
+    def test_delete_mutiple_lines(self):
         """Testing diff_comment_line_numbers with delete chunk and multiple
         commented lines
         """
@@ -120,7 +124,7 @@ class ReviewTagTests(SpyAgency, TestCase):
 
         self.assertEqual(result, 'Lines 30-31 (original)')
 
-    def test_diff_comment_line_numbers_with_replace_single_line(self):
+    def test_replace_single_line(self):
         """Testing diff_comment_line_numbers with replace chunk and single
         commented line
         """
@@ -146,7 +150,7 @@ class ReviewTagTests(SpyAgency, TestCase):
         self.assertEqual(result,
                          'Line 30 (original), 30 (patched)')
 
-    def test_diff_comment_line_numbers_with_replace_multiple_lines(self):
+    def test_replace_multiple_lines(self):
         """Testing diff_comment_line_numbers with replace chunk and multiple
         commented lines
         """
@@ -172,7 +176,7 @@ class ReviewTagTests(SpyAgency, TestCase):
         self.assertEqual(result,
                          'Lines 30-31 (original), 30-31 (patched)')
 
-    def test_diff_comment_line_numbers_with_insert_single_line(self):
+    def test_insert_single_line(self):
         """Testing diff_comment_line_numbers with insert chunk and single
         comented line
         """
@@ -197,7 +201,7 @@ class ReviewTagTests(SpyAgency, TestCase):
 
         self.assertEqual(result, 'Lines 30 (patched)')
 
-    def test_diff_comment_line_numbers_with_insert_multiple_lines(self):
+    def test_insert_multiple_lines(self):
         """Testing diff_comment_line_numbers with insert chunk and multiple
         commented lines
         """
@@ -222,7 +226,7 @@ class ReviewTagTests(SpyAgency, TestCase):
 
         self.assertEqual(result, 'Lines 30-31 (patched)')
 
-    def test_diff_comment_line_numbers_with_fake_equal_orig(self):
+    def test_fake_equal_orig(self):
         """Testing diff_comment_line_numbers with fake equal from original
         side of interdiff
         """
@@ -247,7 +251,7 @@ class ReviewTagTests(SpyAgency, TestCase):
 
         self.assertEqual(result, 'Lines 30-31 (patched)')
 
-    def test_diff_comment_line_numbers_with_fake_equal_patched(self):
+    def test_fake_equal_patched(self):
         """Testing diff_comment_line_numbers with fake equal from patched
         side of interdiff
         """
@@ -272,7 +276,7 @@ class ReviewTagTests(SpyAgency, TestCase):
 
         self.assertEqual(result, 'Lines 30-31 (original)')
 
-    def test_diff_comment_line_numbers_with_spanning_inserts_deletes(self):
+    def test_spanning_inserts_deletes(self):
         """Testing diff_comment_line_numbers with spanning delete and insert"""
         t = Template(
             '{% load reviewtags %}'
@@ -313,7 +317,7 @@ class ReviewTagTests(SpyAgency, TestCase):
 
         self.assertEqual(result, 'Lines 30-60 (original), 61-79 (patched)')
 
-    def test_diff_comment_line_numbers_with_spanning_deletes_inserts(self):
+    def test_spanning_deletes_inserts(self):
         """Testing diff_comment_line_numbers with spanning insert and delete"""
         t = Template(
             '{% load reviewtags %}'
@@ -354,7 +358,7 @@ class ReviewTagTests(SpyAgency, TestCase):
 
         self.assertEqual(result, 'Lines 61-79 (original), 30-60 (patched)')
 
-    def test_diff_comment_line_numbers_with_spanning_last_chunk(self):
+    def test_spanning_last_chunk(self):
         """Testing diff_comment_line_numbers with spanning chunks through last
         chunk
         """
