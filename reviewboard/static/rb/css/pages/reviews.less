@@ -20,13 +20,6 @@
     label {
       .inline-editor-label();
 
-      a {
-        color: @review-comment-author-color;
-        font-size: 1.1em;
-        font-weight: bold;
-        text-decoration: none;
-      }
-
       .avatar-container {
         background: white;
         border-radius: 50%;
@@ -36,23 +29,31 @@
         height: 32px;
       }
 
+      .user {
+        color: @review-comment-author-color;
+        font-size: 1.1em;
+        font-weight: bold;
+        text-decoration: none;
+      }
+
       .user-reply-info {
         display: inline-block;
         overflow: hidden;
 
         .timestamp {
+          color: #487858;
           display: block;
+          text-decoration: none;
+
+          &:hover {
+            text-decoration: underline;
+          }
 
           time {
             vertical-align: middle;
           }
         }
       }
-    }
-
-    span {
-      color: #487858;
-      font-weight: normal;
     }
   }
 
@@ -332,12 +333,17 @@
 
     .timestamp {
       color: #555;
+      display: block;
       text-align: right;
 
       .on-mobile-medium-screen-720({
         margin-top: 0.5rem;
         text-align: left;
       });
+
+      &:hover {
+        text-decoration: underline;
+      }
     }
   }
 
@@ -421,7 +427,7 @@
     margin-top: 0.5em;
   }
 
-  li:not(:first-child) > & {
+  li:not(:first-child) > .review-comment-details > & {
     margin-top: @review-comment-section-margin-top;
   }
 }
@@ -537,8 +543,85 @@
   }
 }
 
+/*
+ * An anchor beside a review box.
+ *
+ * This is used to help generate a link to a particular comment or reply on
+ * a page. It will appear to the left of the review box, aligned with the
+ * linked item, when hovering over the item.
+ *
+ * Consumers need to call ``.setup-floating-anchor()`` on the container that
+ * should respond to the hover.
+ */
+.floating-anchor {
+  box-sizing: border-box;
+  display: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  text-align: right;
+  padding-top: 1em;
+  z-index: @z-index-deco;
+
+  a {
+    color: #BBB;
+    font-size: 120%;
+    padding: 1em;
+    text-decoration: none;
+
+    &:hover {
+      color: #888;
+    }
+  }
+}
+
+/*
+ * Set up the floating anchor for a parent container.
+ *
+ * Args:
+ *     container-offset-left (number):
+ *          An additional offset to get the floating anchor's right-hand
+ *          side to match the left-hand side of the review box. This should
+ *          be the value of any parent container's padding.
+ */
+.setup-floating-anchor(@container-offset-left: 0) {
+  &:hover .floating-anchor {
+    display: block;
+  }
+
+  .floating-anchor {
+    @width: 8em;
+
+    left: -@width - @container-offset-left;
+    width: @width + @container-offset-left;
+    padding-right: @container-offset-left;
+
+    .on-mobile-medium-screen-720({
+      /*
+       * On mobile, we're going to show this on the right-hand side of the box
+       * instead, optimistically.
+       */
+      left: auto;
+      right: 0;
+      padding-right: 0;
+      margin-right: -@container-offset-left;
+      width: auto;
+    });
+  }
+}
+
+.review-comment-details {
+  position: relative;
+
+  .setup-floating-anchor();
+
+  .review-comment {
+    padding: 2em;
+  }
+}
+
 .review-comment-thread {
-  padding: 2em;
+  padding: 0 2em 2em 2em;
 
   .controls {
     list-style: none;
@@ -570,10 +653,6 @@
     }
   }
 
-  .review-comment {
-    margin-bottom: 2em;
-  }
-
   .reply-comments {
     margin: 0;
     padding: 0;
@@ -582,11 +661,13 @@
       border-left: 2px transparent solid;
       list-style: none;
       padding: 2em;
+      position: relative;
 
       &.new-reply {
         border-left-color: @review-request-entry-new-border-color;
       }
 
+      .setup-floating-anchor(@review-comment-padding);
       .review-comments-inline();
     }
   }
@@ -742,19 +823,6 @@
 
     pre {
       white-space: pre-wrap;
-    }
-
-    /*
-     * The first selector highlights top-level comments. The second
-     * highlights just comments on replies. This ensures that highlighting
-     * a top-level comment won't highlight replies (which are all in the
-     * same container for the top-level comment).
-     */
-    li:target .review-comment > .comment-text,
-    li:target > .reply-comment > .comment-text {
-      background-color: #E7EDF3;
-      border: 1px solid @dark-blue;
-      padding: 1em;
     }
   }
 }

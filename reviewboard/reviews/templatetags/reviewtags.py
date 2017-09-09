@@ -112,8 +112,8 @@ def ifneatnumber(context, nodelist, rid):
 
 
 def _generate_reply_html(context, user, context_id, review, reply, timestamp,
-                         last_visited, text, rich_text, use_avatars,
-                         extra_context={}):
+                         last_visited, text, rich_text, anchor_name,
+                         use_avatars, extra_context={}):
     """Generate HTML for a single reply.
 
     Args:
@@ -145,6 +145,10 @@ def _generate_reply_html(context, user, context_id, review, reply, timestamp,
         rich_text (bool):
             Whether the reply text is in Markdown format.
 
+        anchor_name (unicode):
+            The name of the anchor for the comment, for use in linking to
+            this reply.
+
         use_avatars (bool):
             Whether avatars are enabled on Review Board. This will control
             whether avatars are shown in the replies.
@@ -158,6 +162,7 @@ def _generate_reply_html(context, user, context_id, review, reply, timestamp,
     """
     # Note that update() implies push().
     context.update(dict({
+        'anchor_name': anchor_name,
         'context_id': context_id,
         'draft': not reply.public,
         'id': reply.pk,
@@ -212,6 +217,8 @@ def comment_replies(context, review, comment, context_id):
 
     return mark_safe(''.join(
         _generate_reply_html(
+            anchor_name='%s%d' % (reply_comment.anchor_prefix,
+                                  reply_comment.pk),
             context=context,
             context_id=context_id,
             last_visited=last_visited,
@@ -268,11 +275,17 @@ def review_body_replies(context, review, body_field, context_id):
     use_avatars = siteconfig.get('avatars_enabled')
     user = context['request'].user
     last_visited = context.get('last_visited')
+    anchor_field_alias = {
+        'body_top': 'header',
+        'body_bottom': 'footer',
+    }
 
     replies = getattr(review, 'public_%s_replies' % body_field)(user)
 
     return mark_safe(''.join(
         _generate_reply_html(
+            anchor_name='%s-reply%d' % (anchor_field_alias[body_field],
+                                        reply.pk),
             context=context,
             context_id=context_id,
             last_visited=last_visited,
