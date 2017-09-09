@@ -23,10 +23,11 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
     /**
      * Initialize the page.
      */
-    initialize(options) {
-        RB.ReviewablePageView.prototype.initialize.call(this, options);
+    initialize() {
+        RB.ReviewablePageView.prototype.initialize.apply(this, arguments);
 
         this._entryViews = [];
+        this._entryViewsByID = {};
         this._rendered = false;
         this._issueSummaryTableView = null;
 
@@ -37,6 +38,46 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
             containerPrefix: 'comment_container',
             queueName: 'diff_fragments',
             el: document.getElementById('content'),
+        });
+
+        /*
+         * Listen for when a new set of updates have been processed. After
+         * processing, this will attempt to load any new diff fragments that
+         * may have been added in any updated views.
+         */
+        this.listenTo(this.model, 'updatesProcessed',
+                      () => this.diffFragmentQueue.loadFragments());
+
+        /*
+         * Listen for updates to any entries on the page. When updated,
+         * we'll store the collapse state on the entry so we can re-apply it
+         * after. We listen to the other events that are part of the update so
+         * we can update the DOM and restore state at the correct time.
+         */
+        this.listenTo(this.model, 'applyingUpdate:entry', (metadata, html) => {
+            const entryID = metadata.entryID;
+            const entryView = this._entryViewsByID[entryID];
+            const collapsed = entryView.isCollapsed();
+
+            this._onApplyingUpdate(entryView, metadata);
+
+            this.listenToOnce(
+                this.model,
+                `appliedModelUpdate:entry:${entryID}`,
+                (metadata, html) => this._reloadView(entryView, html));
+
+            this.listenToOnce(
+                this.model,
+                `appliedUpdate:entry:${entryID}`,
+                metadata => {
+                    this._onAppliedUpdate(entryView, metadata);
+
+                    if (collapsed) {
+                        entryView.collapse();
+                    } else {
+                        entryView.expand();
+                    }
+                });
         });
     },
 
@@ -86,6 +127,10 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
         this.listenTo(this._issueSummaryTableView,
                       'issueClicked',
                       this._onIssueClicked);
+        this.listenTo(this.model, 'appliedUpdate:issue-summary-table',
+                      (metadata, html) => {
+            this._reloadView(this._issueSummaryTableView, html);
+        });
 
         this._rendered = true;
 
@@ -100,7 +145,11 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
      *         The new entry's view to add.
      */
     addEntryView(entryView) {
+        const entry = entryView.model;
+
         this._entryViews.push(entryView);
+        this._entryViewsByID[entry.id] = entryView;
+        this.model.addEntry(entry);
 
         if (this._rendered) {
             entryView.render();
@@ -150,6 +199,66 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
                 reviewReplyEditorView.openCommentEditor();
                 break;
             }
+        }
+    },
+
+    /**
+     * Reload the HTML for a view.
+     *
+     * This will replace the view's element with a new one consisting of the
+     * provided HTML. This is done in response to an update from the server.
+     *
+     * Args:
+     *     view (Backbone.View):
+     *         The view to set new HTML for.
+     *
+     *     html (string):
+     *         The new HTML to set.
+     */
+    _reloadView(view, html) {
+        const $oldEl = view.$el;
+        const $newEl = $(html);
+
+        view.setElement($newEl);
+        $oldEl.replaceWith($newEl);
+        view.render();
+    },
+
+    /**
+     * Handler for when a new update is being applied to a view.
+     *
+     * This will call the ``beforeApplyUpdate`` method on the view, if it
+     * exists. This is called before the model's equivalent handler.
+     *
+     * Args:
+     *     view (Backbone.View):
+     *         The view being updated.
+     *
+     *     metadata (object):
+     *         The metadata set in the update.
+     */
+    _onApplyingUpdate(view, metadata) {
+        if (view && _.isFunction(view.beforeApplyUpdate)) {
+            view.beforeApplyUpdate(metadata);
+        }
+    },
+
+    /**
+     * Handler for when a new update has been applied to a view.
+     *
+     * This will call the ``afterApplyUpdate`` method on the view, if it
+     * exists. This is called after the model's equivalent handler.
+     *
+     * Args:
+     *     view (Backbone.View):
+     *         The view that has been updated.
+     *
+     *     metadata (object):
+     *         The metadata set in the update.
+     */
+    _onAppliedUpdate(view, metadata) {
+        if (view && _.isFunction(view.afterApplyUpdate)) {
+            view.afterApplyUpdate(metadata);
         }
     },
 

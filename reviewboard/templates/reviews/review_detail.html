@@ -58,6 +58,7 @@
     RB.PageManager.setPage(new RB.ReviewRequestPage.ReviewRequestPageView({
         el: document.body,
         model: new RB.ReviewRequestPage.ReviewRequestPage({
+            updatesURL: "{% url 'review-request-updates' review_request.display_id %}",
 {%  localtime off %}
             lastActivityTimestamp: {{last_activity_time|json_dumps}},
 {%  endlocaltime %}

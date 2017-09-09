@@ -1,7 +1,7 @@
 {
 
 
-const ParentView = RB.ReviewRequestPage.EntryView;
+const ParentView = RB.ReviewRequestPage.BaseStatusUpdatesEntryView;
 
 
 /**
@@ -23,24 +23,12 @@ RB.ReviewRequestPage.ChangeEntryView = ParentView.extend({
      *         The review request editor.
      */
     initialize(options) {
+        ParentView.prototype.initialize.apply(this, arguments);
+
         const reviewRequestEditor = this.model.get('reviewRequestEditor');
 
         this.reviewRequest = reviewRequestEditor.get('reviewRequest');
         this.reviewRequestEditorView = options.reviewRequestEditorView;
-        this._reviews = this.model.get('reviews');
-
-        this._reviewViews = this._reviews.map(review => {
-            const $reviewEl = this.$(`#review${review.id}`);
-
-            return new RB.ReviewRequestPage.ReviewView({
-                el: $reviewEl,
-                model: review,
-                entryModel: this.model,
-                $bannerFloatContainer: $reviewEl,
-                $bannerParent: $reviewEl.children('.banners'),
-                bannerNoFloatContainerClass: 'collapsed',
-            });
-        });
 
         this._$boxStatus = null;
         this._$fixItLabel = null;
@@ -62,11 +50,6 @@ RB.ReviewRequestPage.ChangeEntryView = ParentView.extend({
             .appendTo(this.$('.labels-container'));
 
         this.reviewRequestEditorView.formatText(this.$('.changedesc-text'));
-
-        this._reviewViews.forEach(view => {
-            this.listenTo(view, 'openIssuesChanged', this._updateLabels);
-            view.render();
-        });
 
         this._updateLabels();
 
@@ -106,6 +89,20 @@ RB.ReviewRequestPage.ChangeEntryView = ParentView.extend({
         });
 
         return this;
+    },
+
+    /**
+     * Set up a review view.
+     *
+     * This will begin listening for changes to the issue counts and
+     * update the labels on the box.
+     *
+     * Args:
+     *     view (RB.ReviewRequestPage.ReviewView):
+     *         The review view being set up.
+     */
+    setupReviewView(view) {
+        this.listenTo(view, 'openIssuesChanged', this._updateLabels);
     },
 
     /**

@@ -13,6 +13,9 @@
  *         a value for internal use that indicates the filediff or
  *         interfilediff range to use for loading diff fragments.
  *
+ *     pendingStatusUpdates (boolean):
+ *         Whether this entry is still pending completed status updates.
+ *
  *     reviews (Array):
  *         An array of objects representing attributes for reviews for the
  *         status updates.
@@ -20,6 +23,7 @@
 RB.ReviewRequestPage.StatusUpdatesEntry = RB.ReviewRequestPage.Entry.extend({
     defaults: _.defaults({
         diffCommentsData: [],
+        pendingStatusUpdates: false,
         reviews: [],
     }, RB.ReviewRequestPage.Entry.prototype.defaults),
 
@@ -49,6 +53,7 @@ RB.ReviewRequestPage.StatusUpdatesEntry = RB.ReviewRequestPage.Entry.extend({
             RB.ReviewRequestPage.Entry.prototype.parse.call(this, attrs),
             {
                 diffCommentsData: attrs.diffCommentsData,
+                pendingStatusUpdates: attrs.pendingStatusUpdates,
                 reviews: reviews,
             });
     },

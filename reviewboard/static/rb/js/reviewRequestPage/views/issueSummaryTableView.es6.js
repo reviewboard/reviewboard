@@ -87,6 +87,10 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
         this._$window.on('resize', this._onWindowResize);
         this._onWindowResize();
 
+        this.$('.user').user_infobox();
+        this.$('time.timesince').timesince();
+        this.$('.avatar').retinaAvatar();
+
         return this;
     },
 

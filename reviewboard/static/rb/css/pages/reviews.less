@@ -2607,7 +2607,9 @@
   &::before {
     font-size: 14px/1;
     font-family: FontAwesome;
-    margin-right: 5px;
+
+    /* Set this up to allow for animations. We need position: absolute. */
+    position: absolute;
   }
 
   .status-update-state(@color) {
@@ -2631,7 +2633,10 @@
     .status-update-state(goldenrod);
 
     &::before {
+      animation: fa-spin 2s infinite linear;
       content: '\f021';
+      width: 11px;
+      height: 14px;
     }
   }
 
@@ -2645,6 +2650,9 @@
 
   .summary {
     font-weight: bold;
+
+    /* This will cover the icon with spacing after. */
+    margin-left: 2em;
   }
 
   a {
