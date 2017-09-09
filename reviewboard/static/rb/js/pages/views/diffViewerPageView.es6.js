@@ -37,12 +37,12 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                  id="file_container_<%- id %>">
            <thead>
             <tr class="filename-row">
-             <th><%- filename %></th>
+             <th>
+              <span class="fa fa-spinner fa-pulse"></span>
+              <%- filename %>
+             </th>
             </tr>
            </thead>
-           <tbody>
-            <tr><td><span class="fa fa-spinner fa-pulse"></span></td></tr>
-           </tbody>
           </table>
          </div>
         </div>
