@@ -99,16 +99,16 @@ class RBResourceMixin(APIQueryUtilsMixin, ResourceAPITokenMixin,
     mimetype_vendor = 'reviewboard.org'
     api_token_model = WebAPIToken
 
-
-class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
-    """A specialization of the Djblets WebAPIResource for Review Board."""
-
     #: An optional set of required features to communicate with this resource.
     #:
     #: If no features are listed here, the resource will behave normally.
     #: However, if one or more features are listed here and are **not**
     #: enabled, the resource will return a 403 Forbidden error.
     required_features = []
+
+
+class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
+    """A specialization of the Djblets WebAPIResource for Review Board."""
 
     def __init__(self, *args, **kwargs):
         super(WebAPIResource, self).__init__(*args, **kwargs)
