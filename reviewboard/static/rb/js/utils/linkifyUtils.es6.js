@@ -1,4 +1,19 @@
 RB.LinkifyUtils = {
+    URL_RE: new RegExp(
+        '\\b((' + [
+            'https://',
+            'http://',
+            'ftp://',
+            'ftps://',
+            'gopher://',
+            'mailto:',
+            'news:',
+            'sms:'
+        ].join('|') +
+        ')[\\-A-Za-z0-9+&@#\/%?=~_()|!:,.;]*([\\-A-Za-z0-9+@#\/%=~_();|]|))',
+        'g'
+    ),
+
     /**
      * Linkify all URLs within some text.
      *
@@ -14,7 +29,7 @@ RB.LinkifyUtils = {
      */
     linkifyURLs(text) {
         return text.replace(
-            /\b([a-z]+:\/\/[\-A-Za-z0-9+&@#\/%?=~_()|!:,.;]*([\-A-Za-z0-9+@#\/%=~_();|]|))/g,
+            RB.LinkifyUtils.URL_RE,
             function(url) {
                 /*
                  * We might catch an entity at the end of the URL. This is hard

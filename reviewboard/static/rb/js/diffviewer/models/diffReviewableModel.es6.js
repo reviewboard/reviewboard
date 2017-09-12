@@ -1,13 +1,29 @@
 /**
  * Provides state and utility functions for loading and reviewing diffs.
+ *
+ * Model Attributes:
+ *     fileDiffID (number):
+ *         The ID of the FileDiff.
+ *
+ *     file (RB.DiffFile):
+ *         Information on the file associated with this diff.
+ *
+ *     interdiffRevision (number):
+ *         The revision on the end of an interdiff range.
+ *
+ *     interFileDiffID (number):
+ *         The ID of the FileDiff on the end of an interdiff range.
+ *
+ *     revision (number):
+ *         The revision of the FileDiff.
  */
 RB.DiffReviewable = RB.AbstractReviewable.extend({
     defaults: _.defaults({
-        fileIndex: null,
+        file: null,
         fileDiffID: null,
+        interdiffRevision: null,
         interFileDiffID: null,
         revision: null,
-        interdiffRevision: null,
     }, RB.AbstractReviewable.prototype.defaults),
 
     commentBlockModel: RB.DiffCommentBlock,
@@ -56,7 +72,7 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
      */
     getRenderedDiff(callbacks, context, options={}) {
         let url = this._buildRenderedDiffURL() + '?index=' +
-                  this.get('fileIndex');
+                  this.get('file').get('index');
 
         if (options.showDeleted) {
             url += '&show-deleted=1';
@@ -97,7 +113,7 @@ RB.DiffReviewable = RB.AbstractReviewable.extend({
         this._fetchFragment({
             url: `${this._buildRenderedDiffURL()}chunk/${options.chunkIndex}/`,
             data: {
-                'index': this.get('fileIndex'),
+                'index': this.get('file').get('index'),
                 'lines-of-context': options.linesOfContext
             }
         }, callbacks, context);

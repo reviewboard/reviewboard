@@ -90,8 +90,9 @@ review_request_urls = [
     url(r'^diff/', include(diffviewer_urls)),
 
     # Fragments
-    url(r'^fragments/diff-comments/(?P<comment_ids>[\d,]+)/$',
-        views.CommentDiffFragmentsView.as_view()),
+    url(r'^_fragments/diff-comments/(?P<comment_ids>[\d,]+)/$',
+        views.CommentDiffFragmentsView.as_view(),
+        name='diff-comment-fragments'),
 
     # File attachments
     url(r'^file/(?P<file_attachment_id>\d+)/$',

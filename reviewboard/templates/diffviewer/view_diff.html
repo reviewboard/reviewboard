@@ -73,13 +73,17 @@
 {%  if not error %}
 <script>
     RB.PageManager.setPage(new RB.DiffViewerPageView({
-        model: new RB.DiffViewerPageModel({{diff_context|json_dumps}},
-                                          {parse: true}),
-        checkUpdatesType: 'diff',
+        el: document.body,
+        model: new RB.DiffViewerPage({
+            {{diff_context|json_dumps_items}},
+            checkUpdatesType: 'diff',
 {%  localtime off %}
-        lastActivityTimestamp: {{last_activity_time|json_dumps}},
+            lastActivityTimestamp: {{last_activity_time|json_dumps}},
 {%  endlocaltime %}
-{%  include "reviews/reviewable_page_data.js" %}
+            {% reviewable_page_model_data %}
+        }, {
+            parse: true
+        })
     }));
 </script>
 {%  endif %}{# !error #}

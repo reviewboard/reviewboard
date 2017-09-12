@@ -1,37 +1,49 @@
 suite('rb/pages/views/ReviewablePageView', function() {
-    var $editReview,
-        $shipIt,
-        pageView;
+    const pageTemplate = dedent`
+        <div id="review-banner"></div>
+        <a href="#" id="review-action">Edit Review</a>
+        <a href="#" id="ship-it-action">Ship It</a>
+    `;
+
+    let $editReview;
+    let $shipIt;
+    let page;
+    let pageView;
 
     beforeEach(function() {
-        var $container = $('<div/>')
+        const $container = $('<div/>')
+            .html(pageTemplate)
             .appendTo($testsScratch);
 
         RB.DnDUploader.instance = null;
 
-        $editReview = $('<a href="#" id="review-action">Edit Review</a>')
-            .appendTo($container);
-        $shipIt = $('<a href="#" id="ship-it-action">Ship It</a>')
-            .appendTo($container);
+        $editReview = $container.find('#review-action');
+        $shipIt = $container.find('#ship-it-action');
 
-        pageView = new RB.ReviewablePageView({
-            el: $container,
+        page = new RB.ReviewablePage({
+            checkForUpdates: false,
             reviewRequestData: {
                 id: 123,
                 loaded: true,
-                state: RB.ReviewRequest.PENDING
+                state: RB.ReviewRequest.PENDING,
             },
             editorData: {
                 mutableByUser: true,
-                statusMutableByUser: true
-            }
+                statusMutableByUser: true,
+            },
+        }, {
+            parse: true,
         });
 
-        spyOn(pageView.reviewRequest, 'ready').and.callFake(
-            function(options, context) {
-                options.ready.call(context);
-            });
-        spyOn(pageView.reviewRequest, 'beginCheckForUpdates');
+        pageView = new RB.ReviewablePageView({
+            el: $container,
+            model: page,
+        });
+
+        const reviewRequest = page.get('reviewRequest');
+
+        spyOn(reviewRequest, 'ready').and.callFake(
+            (options, context) => options.ready.call(context));
 
         pageView.render();
     });
@@ -44,104 +56,108 @@ suite('rb/pages/views/ReviewablePageView', function() {
 
     describe('Public objects', function() {
         it('reviewRequest', function() {
-            expect(pageView.reviewRequest).not.toBe(undefined);
+            expect(page.get('reviewRequest')).not.toBe(undefined);
         });
 
         it('pendingReview', function() {
-            expect(pageView.pendingReview).not.toBe(undefined);
-            expect(pageView.pendingReview.get('parentObject'))
-                .toBe(pageView.reviewRequest);
+            const pendingReview = page.get('pendingReview');
+
+            expect(pendingReview).not.toBe(undefined);
+            expect(pendingReview.get('parentObject'))
+                .toBe(page.get('reviewRequest'));
         });
 
         it('commentIssueManager', function() {
-            expect(pageView.commentIssueManager).not.toBe(undefined);
-            expect(pageView.commentIssueManager.get('reviewRequest'))
-                .toBe(pageView.reviewRequest);
+            expect(page.commentIssueManager).not.toBe(undefined);
+            expect(page.commentIssueManager.get('reviewRequest'))
+                .toBe(page.get('reviewRequest'));
         });
 
         it('reviewRequestEditor', function() {
-            expect(pageView.reviewRequestEditor).not.toBe(undefined);
-            expect(pageView.reviewRequestEditor.get('reviewRequest'))
-                .toBe(pageView.reviewRequest);
-            expect(pageView.reviewRequestEditor.get('commentIssueManager'))
-                .toBe(pageView.commentIssueManager);
-            expect(pageView.reviewRequestEditor.get('editable')).toBe(true);
+            const reviewRequestEditor = page.reviewRequestEditor;
+
+            expect(reviewRequestEditor).not.toBe(undefined);
+            expect(reviewRequestEditor.get('reviewRequest'))
+                .toBe(page.get('reviewRequest'));
+            expect(reviewRequestEditor.get('commentIssueManager'))
+                .toBe(page.commentIssueManager);
+            expect(reviewRequestEditor.get('editable')).toBe(true);
         });
 
         it('reviewRequestEditorView', function() {
             expect(pageView.reviewRequestEditorView).not.toBe(undefined);
             expect(pageView.reviewRequestEditorView.model)
-                .toBe(pageView.reviewRequestEditor);
+                .toBe(page.reviewRequestEditor);
         });
     });
 
     describe('Actions', function() {
         it('Edit Review', function() {
-            var options;
-
             spyOn(RB.ReviewDialogView, 'create');
 
             $editReview.click();
 
             expect(RB.ReviewDialogView.create).toHaveBeenCalled();
 
-            options = RB.ReviewDialogView.create.calls.argsFor(0)[0];
-            expect(options.review).toBe(pageView.pendingReview);
-            expect(options.reviewRequestEditor).toBe(pageView.reviewRequestEditor);
+            const options = RB.ReviewDialogView.create.calls.argsFor(0)[0];
+            expect(options.review).toBe(page.get('pendingReview'));
+            expect(options.reviewRequestEditor).toBe(page.reviewRequestEditor);
         });
 
         describe('Ship It', function() {
+            let pendingReview;
+
+            beforeEach(function() {
+                pendingReview = page.get('pendingReview');
+            });
+
             it('Confirmed', function() {
                 spyOn(window, 'confirm').and.returnValue(true);
-                spyOn(pageView.pendingReview, 'ready').and.callFake(
-                    function(options, context) {
-                        options.ready.call(context);
-                    });
-                spyOn(pageView.pendingReview, 'save').and.callFake(
-                    function(options, context) {
-                        options.success.call(context);
-                    });
-                spyOn(pageView.pendingReview, 'publish').and.callThrough();
+                spyOn(pendingReview, 'ready').and.callFake(
+                    (options, context) => options.ready.call(context));
+                spyOn(pendingReview, 'save').and.callFake(
+                    (options, context) => options.success.call(context));
+                spyOn(pendingReview, 'publish').and.callThrough();
                 spyOn(pageView.draftReviewBanner, 'hideAndReload');
 
                 $shipIt.click();
 
                 expect(window.confirm).toHaveBeenCalled();
-                expect(pageView.pendingReview.ready).toHaveBeenCalled();
-                expect(pageView.pendingReview.publish).toHaveBeenCalled();
-                expect(pageView.pendingReview.save).toHaveBeenCalled();
+                expect(pendingReview.ready).toHaveBeenCalled();
+                expect(pendingReview.publish).toHaveBeenCalled();
+                expect(pendingReview.save).toHaveBeenCalled();
                 expect(pageView.draftReviewBanner.hideAndReload)
                     .toHaveBeenCalled();
-                expect(pageView.pendingReview.get('shipIt')).toBe(true);
-                expect(pageView.pendingReview.get('bodyTop')).toBe('Ship It!');
+                expect(pendingReview.get('shipIt')).toBe(true);
+                expect(pendingReview.get('bodyTop')).toBe('Ship It!');
             });
 
             it('Canceled', function() {
                 spyOn(window, 'confirm').and.returnValue(false);
-                spyOn(pageView.pendingReview, 'ready');
+                spyOn(pendingReview, 'ready');
 
                 $shipIt.click();
 
                 expect(window.confirm).toHaveBeenCalled();
-                expect(pageView.pendingReview.ready).not.toHaveBeenCalled();
+                expect(pendingReview.ready).not.toHaveBeenCalled();
             });
         });
     });
 
     describe('Update bubble', function() {
-        var summary = 'My summary',
-            user = {
-                url: '/users/foo/',
-                fullname: 'Mr. User',
-                username: 'user'
-            },
-            $bubble,
-            bubbleView;
+        const summary = 'My summary';
+        const user = {
+            url: '/users/foo/',
+            fullname: 'Mr. User',
+            username: 'user',
+        };
+        let $bubble;
+        let bubbleView;
 
         beforeEach(function() {
-            pageView.reviewRequest.trigger('updated', {
+            page.get('reviewRequest').trigger('updated', {
                 summary: summary,
-                user: user
+                user: user,
             });
 
             $bubble = $('#updates-bubble');
@@ -182,10 +198,10 @@ suite('rb/pages/views/ReviewablePageView', function() {
             });
 
             it('Update Page calls notify if shouldNotify', function() {
-                var info = {
+                const info = {
                     user: {
-                        fullname: 'Hello'
-                    }
+                        fullname: 'Hello',
+                    },
                 };
 
                 RB.NotificationManager.instance._canNotify = true;

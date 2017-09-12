@@ -480,6 +480,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
         self.visited = None
         self.blocks = None
         self.last_activity_time = None
+        self.last_visited = None
 
     def get_etag_data(self, request, *args, **kwargs):
         """Return an ETag for the view.
@@ -506,14 +507,14 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
 
         # Track the visit to this review request, so the dashboard can
         # reflect whether there are new updates.
-        self.visited, last_visited = self.track_review_request_visit()
+        self.visited, self.last_visited = self.track_review_request_visit()
 
         # Begin building data for the contents of the page. This will include
         # the reviews, change descriptions, and other content shown on the
         # page.
         data = ReviewRequestPageData(review_request=review_request,
                                      request=request,
-                                     last_visited=last_visited)
+                                     last_visited=self.last_visited)
         self.data = data
 
         data.query_data_pre_etag()
@@ -548,6 +549,8 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
             [r.pk for r in self.blocks],
             starred,
             self.visited and self.visited.visibility,
+            (self.last_visited and
+             self.last_visited < self.last_activity_time),
             settings.AJAX_SERIAL,
         ))
 
@@ -572,7 +575,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
         """
         user = self.request.user
         visited = None
-        last_visited = 0
+        last_visited = None
 
         if user.is_authenticated():
             review_request = self.review_request
@@ -663,9 +666,9 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
             'draft': data.draft,
             'review_request_details': data.review_request_details,
             'review_request_visit': self.visited,
-            'send_email': siteconfig.get('mail_send_review_mail'),
             'entries': entries,
             'last_activity_time': self.last_activity_time,
+            'last_visited': self.last_visited,
             'review': review,
             'request': request,
             'close_description': close_description,
@@ -1135,7 +1138,6 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin, DiffViewerView):
             'all_file_attachments': file_attachments,
             'screenshots': screenshots,
             'comments': comments,
-            'send_email': siteconfig.get('mail_send_review_mail'),
             'social_page_image_url': social_page_image_url,
             'social_page_title': (
                 'Diff for Review Request #%s: %s'
@@ -1278,28 +1280,45 @@ class DownloadRawDiffView(ReviewRequestViewMixin, View):
 
 
 class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
-                               TemplateView):
+                               ContextMixin, View):
     """View for rendering a section of a diff that a comment pertains to.
 
     This takes in one or more
     :py:class:`~reviewboard.reviews.models.diff_comment.Comment` IDs
-    (comma-separated) as part of the URL and returns JavaScript content for
-    populating the correct elements with the contents of each section of the
-    diff for each comment. This allows this HTML to be lazy-loaded.
+    (comma-separated) as part of the URL and returns a payload containing
+    data and HTML for each comment's diff fragment, which the client can
+    parse in order to dynamically load the fragments into the page.
 
-    Clients can provide the following additional query arguments:
+    The resulting format is a custom, condensed format containing the comment
+    ID and HTML for each diff fragment. It's designed to be quick to parse and
+    reduces the amount of data to send across the wire (unlike a format like
+    JSON, which would add overhead to the serialization/deserialization time
+    and data size when storing HTML, or JavaScript, which releases prior to
+    3.0 used to handle injecting fragments into the DOM).
+
+    Each entry in the payload is in the following format, with all entries
+    joined together:
+
+        <comment ID>\\n
+        <html length>\\n
+        <html content>
+
+    The format is subject to change without notice, and should not be relied
+    upon by third parties.
+
+    The following URL query options are supported:
+
+    ``allow_expansion``:
+        Whether expansion controls should be shown to the user. To enable
+        this, the caller must pass a value of ``1``. This is disabled by
+        default.
 
     ``lines_of_context``:
         The number of lines of context before and after the commented region
         of the diff. This is in the form of ``pre,post``, where both are the
         numbers of lines. This defaults to ``0,0``.
-
-    ``container_prefix``:
-        A prefix to use when building the element ID of the container to inject
-        the HTML into for each comment.
     """
 
-    template_name = 'reviews/load_diff_comment_fragments.js'
     comment_template_name = 'reviews/diff_comment_fragment.html'
     error_template_name = 'diffviewer/diff_fragment_error.html'
 
@@ -1349,23 +1368,25 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
         return '%s:%s:%s' % (comment_ids, latest_timestamp,
                              settings.TEMPLATE_SERIAL)
 
-    def get_context_data(self, **kwargs):
-        """Return context data for the template.
+    def get(self, request, **kwargs):
+        """Handle HTTP GET requests for this view.
 
-        This will generate the HTML for the lines of code in the diff for
-        each comment, along with generating other state used in the template.
+        This will generate a payload for the diff comments being loaded and
+        pass them in a format that can be parsed by the client.
 
         Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
             **kwargs (dict):
                 Keyword arguments passed to the view.
 
         Returns:
-            django.template.RequestContext:
-            The resulting context data for the template.
+            django.http.HttpResponse:
+            The HTTP response containing the fragments payload.
         """
-        request = self.request
         lines_of_context = request.GET.get('lines_of_context', '0,0')
-        container_prefix = request.GET.get('container_prefix', '')
+        allow_expansion = (request.GET.get('allow_expansion') == '1')
 
         try:
             lines_of_context = [int(i) for i in lines_of_context.split(',')]
@@ -1384,26 +1405,26 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
         except ValueError:
             lines_of_context = [0, 0]
 
-        context = (
-            super(CommentDiffFragmentsView, self)
-            .get_context_data(**kwargs)
-        )
-        context.update({
-            'comment_entries': [],
-            'container_prefix': container_prefix,
-            'queue_name': request.GET.get('queue'),
-            'show_controls': request.GET.get('show_controls', False),
-        })
-        context['comment_entries'] = build_diff_comment_fragments(
+        payload = StringIO()
+        comment_entries = build_diff_comment_fragments(
             self.comments,
-            context,
+            super(CommentDiffFragmentsView, self).get_context_data(**kwargs),
             self.comment_template_name,
             self.error_template_name,
             lines_of_context=lines_of_context,
-            show_controls=(container_prefix and
-                           'draft' not in container_prefix))[1]
+            show_controls=allow_expansion)[1]
 
-        return context
+        for entry in comment_entries:
+            html = entry['html'].strip().encode('utf-8')
+
+            payload.write(b'%s\n' % entry['comment'].pk)
+            payload.write(b'%d\n' % len(html))
+            payload.write(html)
+
+        result = payload.getvalue()
+        payload.close()
+
+        return HttpResponse(result, content_type='text/plain; charset=utf-8')
 
 
 class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):

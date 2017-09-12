@@ -1,7 +1,5 @@
 suite('rb/views/DiffFragmentQueueView', function() {
-    const URL_PREFIX = '/r/123/fragments/diff-comments/';
-    const URL_SUFFIX = '/?container_prefix=container1&queue=diff_fragments&' +
-                       TEMPLATE_SERIAL;
+    const URL_PREFIX = '/r/123/_fragments/diff-comments/';
 
     let fragmentQueue;
 
@@ -45,32 +43,35 @@ suite('rb/views/DiffFragmentQueueView', function() {
 
         it('Batch loading', function() {
             const urls = [
-                `${URL_PREFIX}123,124${URL_SUFFIX}`,
-                `${URL_PREFIX}125${URL_SUFFIX}`,
+                `${URL_PREFIX}123,124/`,
+                `${URL_PREFIX}125/`,
             ];
 
-            spyOn(fragmentQueue, '_addScript').and.callFake(
-                function(url, callback) {
+            spyOn($, 'ajax').and.callFake(
+                function(options) {
+                    const url = options.url;
+
                     if (url === urls[0]) {
-                        $container1.html('<span>Comment 1</span>');
-                        $container2.html('<span>Comment 2</span>');
+                        const html1 = '<span>Comment 1</span>';
+                        const html2 = '<span>Comment 2</span>';
+
+                        options.success('123\n' +
+                                        `${html1.length}\n` +
+                                        html1 +
+                                        '124\n' +
+                                        `${html2.length}\n` +
+                                        html2);
                     } else if (url === urls[1]) {
-                        $container3.html('<span>Comment 3</span>');
+                        const html = '<span>Comment 3</span>';
+                        options.success(`125\n${html.length}\n${html}`);
                     } else {
                         fail(`Unexpected URL ${url}`);
-                        return;
                     }
-
-                    if (callback !== undefined) {
-                        callback();
-                    }
-
-                    $.funcQueue('diff_fragments').next();
                 });
 
             fragmentQueue.loadFragments();
 
-            expect(fragmentQueue._addScript.calls.count()).toBe(2);
+            expect($.ajax.calls.count()).toBe(2);
 
             expect($container1.data('diff-fragment-view')).toBeTruthy();
             expect($container1.html()).toBe('<span>Comment 1</span>');
@@ -84,26 +85,23 @@ suite('rb/views/DiffFragmentQueueView', function() {
 
         it('With saved fragments', function() {
             const urls = [
-                `${URL_PREFIX}124${URL_SUFFIX}`,
-                `${URL_PREFIX}125${URL_SUFFIX}`,
+                `${URL_PREFIX}124/`,
+                `${URL_PREFIX}125/`,
             ];
 
-            spyOn(fragmentQueue, '_addScript').and.callFake(
-                function(url, callback) {
+            spyOn($, 'ajax').and.callFake(
+                function(options) {
+                    const url = options.url;
+
                     if (url === urls[0]) {
-                        $container2.html('<span>New comment 2</span>');
+                        const html = '<span>New comment 2</span>';
+                        options.success(`124\n${html.length}\n${html}`);
                     } else if (url === urls[1]) {
-                        $container3.html('<span>New comment 3</span>');
+                        const html = '<span>New comment 3</span>';
+                        options.success(`125\n${html.length}\n${html}`);
                     } else {
                         fail(`Unexpected URL ${url}`);
-                        return;
                     }
-
-                    if (callback !== undefined) {
-                        callback();
-                    }
-
-                    $.funcQueue('diff_fragments').next();
                 });
 
             /*
@@ -128,7 +126,7 @@ suite('rb/views/DiffFragmentQueueView', function() {
 
             fragmentQueue.loadFragments();
 
-            expect(fragmentQueue._addScript.calls.count()).toBe(2);
+            expect($.ajax.calls.count()).toBe(2);
 
             expect($container1.data('diff-fragment-view')).toBeTruthy();
             expect($container1.html()).toBe('<span>Comment 1</span>');

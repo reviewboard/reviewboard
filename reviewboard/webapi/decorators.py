@@ -9,7 +9,10 @@ from djblets.webapi.decorators import (webapi_decorator,
                                        webapi_login_required,
                                        webapi_response_errors,
                                        _find_httprequest)
-from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
+from djblets.webapi.errors import (DOES_NOT_EXIST,
+                                   NOT_LOGGED_IN,
+                                   OAUTH_ACCESS_DENIED_ERROR,
+                                   OAUTH_MISSING_SCOPE_ERROR,
                                    PERMISSION_DENIED)
 from djblets.webapi.responses import WebAPIResponse, WebAPIResponseError
 
@@ -93,16 +96,24 @@ def webapi_check_local_site(view_func):
     This decorator can be added to get/get_list methods to check whether or not
     a user should be able to view them given the local site name in the URL.
     """
-    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
+    @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN,
+                            OAUTH_ACCESS_DENIED_ERROR,
+                            OAUTH_MISSING_SCOPE_ERROR, PERMISSION_DENIED)
     def _check(*args, **kwargs):
         request = _find_httprequest(args)
         local_site_name = kwargs.get('local_site_name', None)
         webapi_token = getattr(request, '_webapi_token', None)
+        oauth_token = getattr(request, '_oauth2_token', None)
 
         if webapi_token:
             restrict_to_local_site = request._webapi_token.local_site_id
+            token_type = 'API'
+        elif oauth_token:
+            restrict_to_local_site = oauth_token.application.local_site_id
+            token_type = 'OAuth'
         else:
             restrict_to_local_site = None
+            token_type = None
 
         if local_site_name:
             local_site = get_object_or_none(LocalSite, name=local_site_name)
@@ -111,27 +122,46 @@ def webapi_check_local_site(view_func):
                 return DOES_NOT_EXIST
             elif not local_site.is_accessible_by(request.user):
                 if request.user.is_authenticated():
-                    logging.warning('%s %s: user %s does not have access to '
-                                    'local site "%s".',
-                                    request.method, request.path_info,
-                                    request.user.username, local_site_name)
+                    logging.warning(
+                        'User does not have access to local site.',
+                        request=request,
+                    )
                     return PERMISSION_DENIED
                 else:
                     return NOT_LOGGED_IN
+            elif oauth_token and not oauth_token.application.enabled:
+                logging.warning(
+                    'OAuth token using disabled application "%s" (%d).',
+                    oauth_token.application.name,
+                    oauth_token.application.pk,
+                    request=request,
+                )
+                return PERMISSION_DENIED
+            elif oauth_token and not restrict_to_local_site:
+                # OAuth tokens for applications on the global site cannot be
+                # used on a local site.
+                logging.warning(
+                    'OAuth token is for root, not local site.',
+                    request=request,
+                )
+                return PERMISSION_DENIED
             elif (restrict_to_local_site and
                   restrict_to_local_site != local_site.pk):
-                logging.warning('%s %s: API token for user %s does not have '
-                                'access to local site "%s".',
-                                request.method, request.path_info,
-                                request.user.username, local_site_name)
+                logging.warning(
+                    '%s token does not have access to local site.',
+                    token_type,
+                    request=request,
+                )
                 return PERMISSION_DENIED
 
             kwargs['local_site'] = local_site
         elif restrict_to_local_site is not None:
-            logging.warning('%s %s: API token for user %s is limited to a '
-                            'local site but the request was for the root.',
-                            request.method, request.path_info,
-                            request.user.username)
+            logging.warning(
+                '%s token is limited to a local site but the request was for '
+                'the root.',
+                token_type,
+                request=request,
+            )
             return PERMISSION_DENIED
         else:
             kwargs['local_site'] = None

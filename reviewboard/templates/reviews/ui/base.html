@@ -69,10 +69,15 @@
 
 <script>
     RB.PageManager.setPage(new RB.ReviewablePageView({
+        el: document.body,
+        model: new RB.ReviewablePage({
 {%  localtime off %}
-        lastActivityTimestamp: {{last_activity_time|json_dumps}},
+            lastActivityTimestamp: {{last_activity_time|json_dumps}},
 {%  endlocaltime %}
-{%  include "reviews/reviewable_page_data.js" %}
+            {% reviewable_page_model_data %}
+        }, {
+            parse: true
+        })
     }));
 </script>
 

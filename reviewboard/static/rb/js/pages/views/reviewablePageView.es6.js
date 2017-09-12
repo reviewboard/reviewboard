@@ -104,12 +104,13 @@ const UpdatesBubbleView = Backbone.View.extend({
  * request, such as the diff viewer, review UI, or the review request page
  * itself.
  */
-RB.ReviewablePageView = Backbone.View.extend({
-    events: {
+RB.ReviewablePageView = RB.PageView.extend({
+    events: _.defaults({
         'click #review-action': '_onEditReviewClicked',
         'click #ship-it-action': '_onShipItClicked',
         'click #general-comment-action': '_onAddCommentClicked',
-    },
+        'click #update-file-action': '_onUploadFileClicked',
+    }, RB.PageView.prototype.events),
 
     /**
      * Initialize the page.
@@ -138,42 +139,11 @@ RB.ReviewablePageView = Backbone.View.extend({
     initialize(options) {
         this.options = options;
 
-        console.assert(options.reviewRequestData);
-        console.assert(options.editorData);
-
         RB.DnDUploader.create();
-
-        this.reviewRequest = new RB.ReviewRequest(
-            this.options.reviewRequestData,
-            {
-                extraDraftAttrs: this.options.extraReviewRequestDraftData,
-            });
-
-        this.pendingReview = this.reviewRequest.createReview();
-        this.commentIssueManager = new RB.CommentIssueManager({
-            reviewRequest: this.reviewRequest,
-        });
-
-        const fileAttachments = _.map(
-            this.options.editorData.fileAttachments,
-            this.options.editorData.mutableByUser
-            ? _.bind(this.reviewRequest.draft.createFileAttachment,
-                     this.reviewRequest.draft)
-            : _.bind(this.reviewRequest.createFileAttachment,
-                     this.reviewRequest));
-
-        this.reviewRequestEditor = new RB.ReviewRequestEditor(
-            _.defaults({
-                commentIssueManager: this.commentIssueManager,
-                reviewRequest: this.reviewRequest,
-                fileAttachments: new Backbone.Collection(
-                    fileAttachments,
-                    { model: RB.FileAttachment }),
-            }, this.options.editorData));
 
         this.reviewRequestEditorView = new RB.ReviewRequestEditorView({
             el: $('#review-request'),
-            model: this.reviewRequestEditor,
+            model: this.model.reviewRequestEditor,
         });
 
         this._updatesBubble = null;
@@ -189,6 +159,9 @@ RB.ReviewablePageView = Backbone.View.extend({
                 el: this.$('.star').parent(),
             });
         }
+
+        this.listenTo(this.model, 'reviewRequestUpdated',
+                      this._onReviewRequestUpdated);
     },
 
     /**
@@ -205,22 +178,18 @@ RB.ReviewablePageView = Backbone.View.extend({
         this._favIconNotifyURL = STATIC_URLS['rb/images/favicon_notify.ico'];
         this._logoNotificationsURL = STATIC_URLS['rb/images/logo.png'];
 
+        const pendingReview = this.model.get('pendingReview');
+
         this.draftReviewBanner = RB.DraftReviewBannerView.create({
             el: $('#review-banner'),
-            model: this.pendingReview,
-            reviewRequestEditor: this.reviewRequestEditor,
+            model: pendingReview,
+            reviewRequestEditor: this.model.reviewRequestEditor,
         });
 
-        this.listenTo(this.pendingReview, 'destroy published',
+        this.listenTo(pendingReview, 'destroy published',
                       () => this.draftReviewBanner.hideAndReload());
 
         this.reviewRequestEditorView.render();
-
-        this._registerForUpdates();
-
-        // Assign handler for the 'Add File' button
-        this.$('#upload-file-action').click(
-            _.bind(this._onUploadFileClicked, this));
 
         return this;
     },
@@ -231,24 +200,6 @@ RB.ReviewablePageView = Backbone.View.extend({
     remove() {
         this.draftReviewBanner.remove();
         _super(this).remove.call(this);
-    },
-
-    /**
-     * Register for update notifications to the review request from the
-     * server.
-     *
-     * The server will be periodically checked for new updates. When a new
-     * update arrives, an update bubble will be displayed in the
-     * bottom-right of the page, and if the user has allowed desktop
-     * notifications in their account settings, a desktop notification
-     * will be shown with the update information.
-     */
-    _registerForUpdates() {
-        this.listenTo(this.reviewRequest, 'updated', this._onReviewRequestUpdated);
-
-        this.reviewRequest.beginCheckForUpdates(
-            this.options.checkUpdatesType,
-            this.options.lastActivityTimestamp);
     },
 
     /**
@@ -283,16 +234,18 @@ RB.ReviewablePageView = Backbone.View.extend({
             this._updatesBubble.remove();
         }
 
+        const reviewRequest = this.model.get('reviewRequest');
+
         this._updatesBubble = new UpdatesBubbleView({
             updateInfo: info,
-            reviewRequest: this.reviewRequest,
+            reviewRequest: reviewRequest,
         });
 
         this.listenTo(this._updatesBubble, 'closed',
                       () => this._updateFavIcon(this._favIconURL));
 
         this.listenTo(this._updatesBubble, 'updatePage', () => {
-            window.location = this.reviewRequest.get('reviewURL');
+            window.location = reviewRequest.get('reviewURL');
         });
 
         this._updatesBubble.render().$el.appendTo(this.$el);
@@ -354,8 +307,8 @@ RB.ReviewablePageView = Backbone.View.extend({
      */
     _onEditReviewClicked() {
         RB.ReviewDialogView.create({
-            review: this.pendingReview,
-            reviewRequestEditor: this.reviewRequestEditor,
+            review: this.model.get('pendingReview'),
+            reviewRequestEditor: this.model.reviewRequestEditor,
         });
 
         return false;
@@ -371,7 +324,8 @@ RB.ReviewablePageView = Backbone.View.extend({
      *    false, always.
      */
     _onAddCommentClicked() {
-        const comment = this.pendingReview.createGeneralComment(
+        const pendingReview = this.model.get('pendingReview');
+        const comment = pendingReview.createGeneralComment(
             undefined,
             RB.UserSession.instance.get('commentsOpenAnIssue'));
 
@@ -380,7 +334,7 @@ RB.ReviewablePageView = Backbone.View.extend({
 
         RB.CommentDialogView.create({
             comment: comment,
-            reviewRequestEditor: this.reviewRequestEditor,
+            reviewRequestEditor: this.model.reviewRequestEditor,
         });
 
         return false;
@@ -397,7 +351,7 @@ RB.ReviewablePageView = Backbone.View.extend({
      */
     _onUploadFileClicked() {
         const uploadDialog = new RB.UploadAttachmentView({
-            reviewRequest: this.reviewRequest,
+            reviewRequest: this.model.get('reviewRequest'),
         });
         uploadDialog.render();
 
@@ -416,15 +370,7 @@ RB.ReviewablePageView = Backbone.View.extend({
      */
     _onShipItClicked() {
         if (confirm(gettext('Are you sure you want to post this review?'))) {
-            this.pendingReview.ready({
-                ready: () => {
-                    this.pendingReview.set({
-                        shipIt: true,
-                        bodyTop: gettext('Ship It!'),
-                    });
-                    this.pendingReview.publish();
-                },
-            });
+            this.model.markShipIt();
         }
 
         return false;

@@ -58,9 +58,8 @@ RB.CommentIssueBarView = Backbone.View.extend({
     initialize() {
         const page = RB.PageManager.getPage();
 
-        this._manager = (
-            this.options.commentIssueManager ||
-            page.reviewRequestEditor.get('commentIssueManager'));
+        this._manager = (this.options.commentIssueManager ||
+                         page.model.commentIssueManager);
         this._issueStatus = this.options.issueStatus;
         this._$buttons = null;
         this._$state = null;

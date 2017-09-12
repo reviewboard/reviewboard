@@ -6,13 +6,11 @@ from djblets.webapi.errors import PERMISSION_DENIED
 from reviewboard.reviews.models import ReviewRequestDraft, Screenshot
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
-from reviewboard.webapi.tests.mimetypes import (screenshot_item_mimetype,
-                                                screenshot_draft_item_mimetype,
+from reviewboard.webapi.tests.mimetypes import (screenshot_draft_item_mimetype,
                                                 screenshot_draft_list_mimetype)
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import (get_screenshot_draft_item_url,
-                                           get_screenshot_draft_list_url,
-                                           get_screenshot_list_url)
+                                           get_screenshot_draft_list_url)
 
 
 @six.add_metaclass(BasicTestsMetaclass)
@@ -62,8 +60,8 @@ class ResourceListTests(BaseWebAPITestCase):
             submitter=user,
             publish=True)
 
-        return (get_screenshot_list_url(review_request, local_site_name),
-                screenshot_item_mimetype,
+        return (get_screenshot_draft_list_url(review_request, local_site_name),
+                screenshot_draft_item_mimetype,
                 {
                     'caption': 'Trophy',
                     'path': open(self.get_sample_image_filename(), 'r'),

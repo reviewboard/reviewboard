@@ -4,7 +4,7 @@
  * This renders the datagrid, handles events, and allows for multi-row
  * actions.
  */
-RB.DatagridPageView = Backbone.View.extend({
+RB.DatagridPageView = RB.PageView.extend({
     RELOAD_INTERVAL_MS: 5 * 60 * 1000,
 
     /* The View class to use for an actions menu, if any. */
@@ -19,6 +19,8 @@ RB.DatagridPageView = Backbone.View.extend({
      * Initializes the datagrid page.
      */
     initialize: function(options) {
+        RB.PageView.prototype.initialize.call(this, options);
+
         options = options || {};
 
         this.periodicReload = !!options.periodicReload;

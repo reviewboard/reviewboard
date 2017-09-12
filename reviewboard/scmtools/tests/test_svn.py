@@ -537,6 +537,16 @@ class CommonSVNTestCase(SpyAgency, SCMTestCase):
                    '',
                    'Commit 1'))
 
+    def test_get_commits_with_exception(self):
+        """Testing SVN (<backend>) get_commits with exception"""
+        def _get_log(*args, **kwargs):
+            raise Exception('Bad things happened')
+
+        self.spy_on(self.tool.client.get_log, _get_log)
+
+        with self.assertRaisesMessage(SCMError, 'Bad things happened'):
+            self.tool.get_commits(start='5')
+
     def test_get_change(self):
         """Testing SVN (<backend>) get_change"""
         commit = self.tool.get_change('5')

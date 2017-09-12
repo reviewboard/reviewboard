@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals
 
+import logging
 from collections import Counter, defaultdict
 from datetime import datetime
 from itertools import chain
@@ -737,6 +738,30 @@ class BaseReviewRequestPageEntry(object):
                self.timestamp, self.collapsed)
         )
 
+    def is_entry_new(self, last_visited, user, **kwargs):
+        """Return whether the entry is new, from the user's perspective.
+
+        By default, this compares the last visited time to the timestamp
+        on the object. Subclasses can override this to provide additional
+        logic.
+
+        Args:
+            last_visited (datetime.datetime):
+                The last visited timestamp.
+
+            user (django.contrib.auth.models.User):
+                The user viewing the page.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+
+        Returns:
+            bool:
+            ``True`` if the entry will be shown as new. ``False`` if it
+            will be shown as an existing entry.
+        """
+        return self.timestamp is not None and last_visited < self.timestamp
+
     def get_dom_element_id(self):
         """Return the ID used for the DOM element for this entry.
 
@@ -775,6 +800,81 @@ class BaseReviewRequestPageEntry(object):
             default, it will be empty.
         """
         return {}
+
+    def get_extra_context(self, request, context):
+        """Return extra template context for the entry.
+
+        Subclasses can override this to provide additional context needed by
+        the template for the page. By default, this returns an empty
+        dictionary.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            context (django.template.RequestContext):
+                The existing template context on the page.
+
+        Returns:
+            dict:
+            Extra context to use for the entry's template.
+        """
+        return {}
+
+    def render_to_string(self, request, context):
+        """Render the entry to a string.
+
+        If the entry doesn't have a template associated, or doesn't have
+        any content (as determined by :py:attr:`has_content`), then this
+        will return an empty string.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            context (django.template.RequestContext):
+                The existing template context on the page.
+
+        Returns:
+            unicode:
+            The resulting HTML for the entry.
+        """
+        if not self.template_name or not self.has_content:
+            return ''
+
+        user = request.user
+        last_visited = context.get('last_visited')
+
+        try:
+            new_context = {
+                'entry': self,
+                'entry_is_new': (
+                    user.is_authenticated() and
+                    last_visited is not None and
+                    self.is_entry_new(last_visited=last_visited,
+                                      user=user)),
+                'show_entry_statuses_area': (
+                    self.entry_pos !=
+                    BaseReviewRequestPageEntry.ENTRY_POS_INITIAL),
+            }
+            new_context.update(self.get_extra_context(request, context))
+        except Exception as e:
+            logging.exception('Error generating template context for %s '
+                              '(ID=%s): %s',
+                              self.__class__.__name__, self.entry_id, e)
+            return ''
+
+        try:
+            # Note that update() implies push().
+            context.update(new_context)
+
+            return render_to_string(self.template_name, context)
+        except Exception as e:
+            logging.exception('Error rendering template for %s (ID=%s): %s',
+                              self.__class__.__name__, self.entry_id, e)
+            return ''
+        finally:
+            context.pop()
 
     def finalize(self):
         """Perform final computations after all comments have been added."""
@@ -1285,6 +1385,27 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
         """
         return '%s%s' % (self.entry_type_id, self.review.pk)
 
+    def is_entry_new(self, last_visited, user, **kwargs):
+        """Return whether the entry is new, from the user's perspective.
+
+        Args:
+            last_visited (datetime.datetime):
+                The last visited timestamp.
+
+            user (django.contrib.auth.models.User):
+                The user viewing the page.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
+
+        Returns:
+            bool:
+            ``True`` if the entry will be shown as new. ``False`` if it
+            will be shown as an existing entry.
+        """
+        return self.review.is_new_for_user(user=user,
+                                           last_visited=last_visited)
+
     def add_comment(self, comment_type, comment):
         """Add a comment to this entry.
 
@@ -1407,6 +1528,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
             StatusUpdatesEntryMixin.__init__(self)
 
         self.changedesc = changedesc
+        self.review_request = review_request
         self.fields_changed_groups = []
         cur_field_changed_group = None
 
@@ -1462,6 +1584,28 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
             The ID used for the element.
         """
         return '%s%s' % (self.entry_type_id, self.changedesc.pk)
+
+    def is_entry_new(self, last_visited, user, **kwargs):
+        """Return whether the entry is new, from the user's perspective.
+
+        Args:
+            last_visited (datetime.datetime):
+                The last visited timestamp.
+
+            user (django.contrib.auth.models.User):
+                The user viewing the page.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
+
+        Returns:
+            bool:
+            ``True`` if the entry will be shown as new. ``False`` if it
+            will be shown as an existing entry.
+        """
+        return self.changedesc.is_new_for_user(user=user,
+                                               last_visited=last_visited,
+                                               model=self.review_request)
 
 
 class ReviewRequestPageEntryRegistry(OrderedRegistry):

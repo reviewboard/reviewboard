@@ -5,7 +5,10 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from django.utils import six
 from djblets.testing.decorators import add_fixtures
+from djblets.webapi.testing.decorators import webapi_test_template
+from kgb import SpyAgency
 
+from reviewboard.search.testing import reindex_search, search_enabled
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -15,7 +18,7 @@ from reviewboard.webapi.tests.urls import get_search_url
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceTests(BaseWebAPITestCase):
+class ResourceTests(SpyAgency, BaseWebAPITestCase):
     """Testing the SearchResource APIs."""
 
     fixtures = ['test_users']
@@ -921,3 +924,47 @@ class ResourceTests(BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['search']['review_requests']), 1)
+
+    @webapi_test_template
+    def testing_get_serializing_unindexed(self):
+        """Testing the GET <URL> API with the search index disabled"""
+        self.create_review_request(
+            submitter=self.user,
+            summary='Review request by %s' % self.user.username,
+            public=True,
+        )
+
+        self.spy_on(resources.review_request.serialize_object)
+        self.spy_on(resources.user.serialize_object)
+
+        rsp = self.api_get(get_search_url(),
+                           query={'q': self.user.username},
+                           expected_mimetype=search_mimetype)
+
+        self.assertEqual(len(rsp['search']['groups']), 0)
+        self.assertEqual(len(rsp['search']['review_requests']), 0)
+        self.assertEqual(len(rsp['search']['users']), 1)
+
+        self.assertFalse(resources.review_request.serialize_object.spy.called)
+        self.assertTrue(resources.user.serialize_object.spy.called)
+
+    @webapi_test_template
+    def test_get_from_search_index(self):
+        """Testing the GET <URL> API with the search index enabled"""
+        self.create_review_request(submitter=self.user, public=True)
+
+        self.spy_on(resources.review_request.serialize_object)
+        self.spy_on(resources.user.serialize_object)
+
+        with search_enabled():
+            reindex_search()
+            rsp = self.api_get(get_search_url(),
+                               query={'q': self.user.username},
+                               expected_mimetype=search_mimetype)
+
+        self.assertEqual(len(rsp['search']['groups']), 0)
+        self.assertEqual(len(rsp['search']['review_requests']), 1)
+        self.assertEqual(len(rsp['search']['users']), 1)
+
+        self.assertFalse(resources.review_request.serialize_object.spy.called)
+        self.assertFalse(resources.user.serialize_object.spy.called)

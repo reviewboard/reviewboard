@@ -646,7 +646,7 @@ RB.CommentDialogView = Backbone.View.extend({
 
         const reviewRequestEditor =
             options.reviewRequestEditor ||
-            RB.PageManager.getPage().reviewRequestEditor;
+            RB.PageManager.getPage().model.reviewRequestEditor;
 
         const dlg = new RB.CommentDialogView({
             animate: options.animate,

@@ -4,11 +4,11 @@
  * This will keep track of any selected objects, allowing subclasses to easily
  * perform operations on them.
  */
-RB.DatagridPage = Backbone.Model.extend({
-    defaults: {
+RB.DatagridPage = RB.Page.extend({
+    defaults: _.defaults({
         count: 0,
         localSiteName: null
-    },
+    }, RB.Page.prototype.defaults),
 
     /* The type of object each row represents, for use in batch selection. */
     rowObjectType: null,

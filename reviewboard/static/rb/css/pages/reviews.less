@@ -3,12 +3,9 @@
 @import (reference) "djblets/css/mixins/markdown.less";
 
 
-@entry-padding: 12px;
 @img_base: '../../images';
 @djblets_img_base: '../../../djblets/images';
 
-@base-entry-bg: #ffffff;
-@collapsed-entry-bg: #ececee;
 @changedesc-bg: lighten(@review-request-bg, 5%);
 
 
@@ -23,13 +20,6 @@
     label {
       .inline-editor-label();
 
-      a {
-        color: @review-comment-author-color;
-        font-size: 1.1em;
-        font-weight: bold;
-        text-decoration: none;
-      }
-
       .avatar-container {
         background: white;
         border-radius: 50%;
@@ -39,19 +29,31 @@
         height: 32px;
       }
 
+      .user {
+        color: @review-comment-author-color;
+        font-size: 1.1em;
+        font-weight: bold;
+        text-decoration: none;
+      }
+
       .user-reply-info {
         display: inline-block;
         overflow: hidden;
 
-        time {
+        .timestamp {
+          color: #487858;
           display: block;
+          text-decoration: none;
+
+          &:hover {
+            text-decoration: underline;
+          }
+
+          time {
+            vertical-align: middle;
+          }
         }
       }
-    }
-
-    span {
-      color: #487858;
-      font-weight: normal;
     }
   }
 
@@ -234,6 +236,7 @@
   }
 }
 
+
 /****************************************************************************
  * Entries (status updates, reviews, change descriptions)
  ****************************************************************************/
@@ -261,13 +264,13 @@
 }
 
 .review-request-page-entry-contents {
-  background-color: @base-entry-bg;
+  background-color: @review-request-entry-base-bg;
   border: 1px @box-border-color solid;
   border-radius: @box-border-radius;
   box-shadow: @box-shadow;
 
   &.collapsed {
-    background-color: @collapsed-entry-bg !important;
+    background-color: @review-request-entry-collapsed-bg !important;
     background-image: none !important; // Override any gradients used.
 
     .body,
@@ -284,20 +287,25 @@
     margin-left: 80px;
     width: auto;
 
-    .left-arrow-callout(@base-entry-bg);
+    .left-arrow-callout(@review-request-entry-base-bg);
 
     .on-mobile-medium-screen-720({
       margin-left: 0;
+      margin-top: 1em;
+
+      &:after, &:before {
+        content: none;
+      }
     });
 
     &.collapsed {
-      .left-arrow-callout-color(@collapsed-entry-bg);
+      .left-arrow-callout-color(@review-request-entry-collapsed-bg);
     }
   }
 
   .header {
     border-radius: @box-border-radius @box-border-radius 0 0;
-    padding: @entry-padding;
+    padding: @review-request-entry-padding;
 
     a {
       color: black;
@@ -317,16 +325,25 @@
       .on-mobile-medium-screen-720({
         float: none;
       });
+
+      .review-request-page-entry-title {
+        vertical-align: middle;
+      }
     }
 
     .timestamp {
       color: #555;
+      display: block;
       text-align: right;
 
       .on-mobile-medium-screen-720({
         margin-top: 0.5rem;
         text-align: left;
       });
+
+      &:hover {
+        text-decoration: underline;
+      }
     }
   }
 
@@ -334,13 +351,19 @@
     border-width: 0 0 1px 0;
     box-sizing: border-box;
     margin: 0;
-    padding: @entry-padding;
+    padding: @review-request-entry-padding;
 
     &.floating {
       border-top: 0;
       margin-top: 0;
     }
   }
+}
+
+.new-review-request-page-entry .review-request-page-entry-contents {
+  border-color: @review-request-entry-new-border-color;
+
+  .left-arrow-callout-border-color(@review-request-entry-new-border-color);
 }
 
 
@@ -360,9 +383,9 @@
 
   .review-request-page-entry-contents:not(.collapsed) .header {
     /*
-     * When the box is expanded, there's @entry-padding space between the
-     * header and the banner. We take that space out of the header instead
-     * of the banner to ensure that nothing jumps when the banner is
+     * When the box is expanded, there's @review-request-entry-padding space
+     * between the header and the banner. We take that space out of the header
+     * instead of the banner to ensure that nothing jumps when the banner is
      * switching between fixed and floating modes.
      */
     padding-bottom: 0;
@@ -404,7 +427,7 @@
     margin-top: 0.5em;
   }
 
-  li:not(:first-child) > & {
+  li:not(:first-child) > .review-comment-details > & {
     margin-top: @review-comment-section-margin-top;
   }
 }
@@ -520,8 +543,85 @@
   }
 }
 
+/*
+ * An anchor beside a review box.
+ *
+ * This is used to help generate a link to a particular comment or reply on
+ * a page. It will appear to the left of the review box, aligned with the
+ * linked item, when hovering over the item.
+ *
+ * Consumers need to call ``.setup-floating-anchor()`` on the container that
+ * should respond to the hover.
+ */
+.floating-anchor {
+  box-sizing: border-box;
+  display: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  text-align: right;
+  padding-top: 1em;
+  z-index: @z-index-deco;
+
+  a {
+    color: #BBB;
+    font-size: 120%;
+    padding: 1em;
+    text-decoration: none;
+
+    &:hover {
+      color: #888;
+    }
+  }
+}
+
+/*
+ * Set up the floating anchor for a parent container.
+ *
+ * Args:
+ *     container-offset-left (number):
+ *          An additional offset to get the floating anchor's right-hand
+ *          side to match the left-hand side of the review box. This should
+ *          be the value of any parent container's padding.
+ */
+.setup-floating-anchor(@container-offset-left: 0) {
+  &:hover .floating-anchor {
+    display: block;
+  }
+
+  .floating-anchor {
+    @width: 8em;
+
+    left: -@width - @container-offset-left;
+    width: @width + @container-offset-left;
+    padding-right: @container-offset-left;
+
+    .on-mobile-medium-screen-720({
+      /*
+       * On mobile, we're going to show this on the right-hand side of the box
+       * instead, optimistically.
+       */
+      left: auto;
+      right: 0;
+      padding-right: 0;
+      margin-right: -@container-offset-left;
+      width: auto;
+    });
+  }
+}
+
+.review-comment-details {
+  position: relative;
+
+  .setup-floating-anchor();
+
+  .review-comment {
+    padding: 2em;
+  }
+}
+
 .review-comment-thread {
-  padding: 2em;
+  padding: 0 2em 2em 2em;
 
   .controls {
     list-style: none;
@@ -553,18 +653,21 @@
     }
   }
 
-  .review-comment {
-    margin-bottom: 2em;
-  }
-
   .reply-comments {
     margin: 0;
     padding: 0;
 
     > li {
+      border-left: 2px transparent solid;
       list-style: none;
       padding: 2em;
+      position: relative;
 
+      &.new-reply {
+        border-left-color: @review-request-entry-new-border-color;
+      }
+
+      .setup-floating-anchor(@review-comment-padding);
       .review-comments-inline();
     }
   }
@@ -721,19 +824,6 @@
     pre {
       white-space: pre-wrap;
     }
-
-    /*
-     * The first selector highlights top-level comments. The second
-     * highlights just comments on replies. This ensures that highlighting
-     * a top-level comment won't highlight replies (which are all in the
-     * same container for the top-level comment).
-     */
-    li:target .review-comment > .comment-text,
-    li:target > .reply-comment > .comment-text {
-      background-color: #E7EDF3;
-      border: 1px solid @dark-blue;
-      padding: 1em;
-    }
   }
 }
 
@@ -768,12 +858,11 @@
 }
 
 .sidebyside.loading {
-  /* Helps us better keep the size, as long as the comment is within a chunk. */
-  padding: 2px 2px 1px 2px;
-  width: 100%;
-
   tbody {
     background-color: #F3F3F3;
+
+    // Helps us better keep the size, as long as the comment is within a chunk.
+    padding: 2px 2px 1px 2px;
 
     td {
       padding: 4px;
@@ -799,7 +888,7 @@
 
   .changed-fields {
     clear: both;
-    padding: @entry-padding;
+    padding: @review-request-entry-padding;
 
     &>ul {
       list-style: none;
@@ -2477,7 +2566,7 @@
     overflow: hidden;
 
     &.collapsed .header {
-      background-color: @collapsed-entry-bg;
+      background-color: @review-request-entry-collapsed-bg;
       border-width: 0;
     }
   }
@@ -2486,7 +2575,7 @@
 .status-update-review-header {
   border-width: 1px 0;
   margin: 0.75rem 0 -1px;
-  padding: (@entry-padding / 2) @entry-padding;
+  padding: (@review-request-entry-padding / 2) @review-request-entry-padding;
 
   &.status-update-state-failure {
     .status-update-header(@diff-delete-color, @diff-delete-border-color);
@@ -2517,12 +2606,14 @@
   &::before {
     font-size: 14px/1;
     font-family: FontAwesome;
-    margin-right: 5px;
+
+    /* Set this up to allow for animations. We need position: absolute. */
+    position: absolute;
   }
 
   .status-update-state(@color) {
     color: @color;
-    padding: @entry-padding;
+    padding: @review-request-entry-padding;
 
     .fa {
       margin-right: 0.5em;
@@ -2541,7 +2632,10 @@
     .status-update-state(goldenrod);
 
     &::before {
+      animation: fa-spin 2s infinite linear;
       content: '\f021';
+      width: 11px;
+      height: 14px;
     }
   }
 
@@ -2555,6 +2649,9 @@
 
   .summary {
     font-weight: bold;
+
+    /* This will cover the icon with spacing after. */
+    margin-left: 2em;
   }
 
   a {

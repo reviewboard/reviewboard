@@ -26,6 +26,11 @@
 		<IfModule mod_php5.c>
 			php_flag engine off
 		</IfModule>
+
+		# Force all uploaded media files to download.
+		<IfModule mod_headers.c>
+			Header set Content-Disposition "attachment"
+		</IfModule>
 	</Location>
 
 	# Alias static media requests to filesystem

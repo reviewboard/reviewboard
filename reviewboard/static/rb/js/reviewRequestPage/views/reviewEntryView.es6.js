@@ -29,6 +29,22 @@ RB.ReviewRequestPage.ReviewEntryView = ParentView.extend({
     },
 
     /**
+     * Save state before applying an update from the server.
+     *
+     * This will save all the loaded diff fragments on the entry so that
+     * they'll be loaded from cache when processing the fragments again for
+     * the entry after reload.
+     */
+    beforeApplyUpdate() {
+        const diffFragmentQueue = RB.PageManager.getPage().diffFragmentQueue;
+        const diffCommentsData = this.model.get('diffCommentsData');
+
+        for (let i = 0; i < diffCommentsData.length; i++) {
+            diffFragmentQueue.saveFragment(diffCommentsData[i][0]);
+        }
+    },
+
+    /**
      * Render the review box.
      *
      * This will prepare a reply draft banner, used if the user is replying

@@ -27,7 +27,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
     initialize(options) {
         this._containerPrefix = options.containerPrefix;
         this._fragmentsBasePath =
-            `${options.reviewRequestPath}fragments/diff-comments/`;
+            `${options.reviewRequestPath}_fragments/diff-comments/`;
         this._queueName = options.queueName;
 
         this._queue = {};
@@ -129,11 +129,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                      */
                     this._loadDiff(pendingCommentIDs.join(','), {
                         queueName: queueName,
-                        onDone: () => {
-                            _.each(pendingCommentIDs,
-                                   this._setupDiffFragmentView,
-                                   this);
-                        },
+                        onDone: () => $.funcQueue(queueName).next(),
                     });
                 } else {
                     /*
@@ -194,82 +190,103 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
      *         fragments sequentially.
      */
     _loadDiff(commentIDs, options={}) {
-        const queryArgs = [
-            `container_prefix=${this._containerPrefix}`,
-        ];
-
-        if (options.queueName !== undefined) {
-            queryArgs.push(`queue=${options.queueName}`);
-        }
+        const containerPrefix = this._containerPrefix;
+        const queryArgs = [];
 
         if (options.linesOfContext !== undefined) {
             queryArgs.push(`lines_of_context=${options.linesOfContext}`);
         }
 
-        queryArgs.push(TEMPLATE_SERIAL);
-
-        this._addScript(
-            `${this._fragmentsBasePath}${commentIDs}/?${queryArgs.join('&')}`,
-            options.onDone);
-    },
-
-    /*
-     * Add a script tag to the page and set up a callback handler for load.
-     *
-     * The browser will load the script at the specified URL, execute it, and
-     * call a handler when the load has finished. It's expected this will be
-     * called after the page is already otherwise loaded.
-     *
-     * Args:
-     *     url (string):
-     *         The URL of the script to load.
-     *
-     *     callback (function, optional):
-     *         An optional callback function to call once the script has
-     *         loaded.
-     */
-    _addScript(url, callback) {
-        const e = document.createElement('script');
-
-        e.type = 'text/javascript';
-        e.src = url;
-
-        if (callback !== undefined) {
-            e.addEventListener('load', callback);
+        if (!containerPrefix.includes('draft')) {
+            queryArgs.push('allow_expansion=1');
         }
 
-        document.body.appendChild(e);
+        queryArgs.push(TEMPLATE_SERIAL);
+
+        $.ajax({
+            url: `${this._fragmentsBasePath}${commentIDs}/`,
+            data: queryArgs.join('&'),
+            dataType: 'text',
+            success: data => {
+                let i = 0;
+
+                while (i < data.length) {
+                    /* Read the comment ID. */
+                    let j = data.indexOf('\n', i);
+                    const commentID = data.substr(i, j - i);
+                    i = j + 1;
+
+                    /* Read the length of the HTML. */
+                    j = data.indexOf('\n', i);
+                    const htmlLen = parseInt(data.substr(i, j - i), 10);
+                    i = j + 1;
+
+                    /* Read the HTML. */
+                    const html = data.substr(i, htmlLen);
+                    i += htmlLen;
+
+                    /* Set the HTML in the container. */
+                    this._renderFragment($(`#${containerPrefix}_${commentID}`),
+                                         commentID,
+                                         html);
+                }
+
+                if (_.isFunction(options.onDone)) {
+                    options.onDone();
+                }
+            }
+        });
     },
 
     /**
-     * Set up state for a fragment when it's first loaded.
+     * Render a diff fragment on the page.
      *
-     * When a comment container loads its contents for the first time, the
-     * controls will be hidden and the hover-related events will be registered
-     * to allow the fragment to be expanded/collapsed.
+     * This will set up a view for the diff fragment, if one is not already
+     * created, and render it on the page.
+     *
+     * It will also mark the fragment for updates with the scroll manager
+     * so that if the user is scrolled to a location past the fragment, the
+     * resulting size change for the fragment won't cause the page to jump.
      *
      * Args:
-     *     commentID (string):
-     *         The ID of the comment used to build the container ID.
+     *     $container (jQuery):
+     *         The container element where the fragment will be injected.
+     *
+     *     commentID (number):
+     *         The ID of the comment.
+     *
+     *     html (string):
+     *         The HTML contents of the fragment.
      */
-    _setupDiffFragmentView(commentID) {
-        const view = new RB.DiffFragmentView({
-            el: this._getCommentContainer(commentID),
-            loadDiff: options => {
-                RB.setActivityIndicator(true, {type: 'GET'});
+    _renderFragment($container, commentID, html) {
+        RB.scrollManager.markForUpdate($container);
 
-                this._loadDiff(commentID, _.defaults({
-                    onDone() {
-                        RB.setActivityIndicator(false, {});
+        $container.html(html);
 
-                        if (options.onDone) {
-                            options.onDone();
-                        }
-                    },
-                }, options));
-            },
-        });
-        view.render().$el
-            .data('diff-fragment-view', view);
+        let view = $container.data('diff-fragment-view');
+
+        if (!view) {
+            view = new RB.DiffFragmentView({
+                el: $container,
+                loadDiff: options => {
+                    RB.setActivityIndicator(true, {type: 'GET'});
+
+                    this._loadDiff(commentID, _.defaults({
+                        onDone() {
+                            RB.setActivityIndicator(false, {});
+
+                            if (options.onDone) {
+                                options.onDone();
+                            }
+                        },
+                    }, options));
+                },
+            });
+            $container.data('diff-fragment-view', view);
+        }
+
+        view.render();
+
+        RB.scrollManager.markUpdated($container);
     },
 });

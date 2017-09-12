@@ -205,10 +205,13 @@ class SVNTool(SCMTool):
 
     def get_commits(self, branch=None, start=None):
         """Return a list of commits."""
-        commits = self.client.get_log(branch or '/',
-                                      start=start,
-                                      limit=self.COMMITS_PAGE_LIMIT,
-                                      limit_to_path=False)
+        try:
+            commits = self.client.get_log(branch or '/',
+                                          start=start,
+                                          limit=self.COMMITS_PAGE_LIMIT,
+                                          limit_to_path=False)
+        except Exception as e:
+            raise self.normalize_error(e)
 
         results = []
 

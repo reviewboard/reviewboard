@@ -6,8 +6,8 @@
 {% block content %}
 <div id="search_results">
  <div class="search-results-filters">
-{%  for filter_type in filter_types %}
-  <a href="?q={{query}}{% if filter_type.id %}&filter={{filter_type.id}}{% endif %}"{% if filter_type.active %} class="active"{% endif %}>{{filter_type.name}}</a>
+{%  for filter_id, filter_type in filter_types %}
+  <a href="?q={{query}}{% if filter_id %}&model_filter={{filter_id}}{% endif %}"{% if filter_type.active %} class="active"{% endif %}>{{filter_type.name}}</a>
 {%  endfor %}
  </div>
 
@@ -26,7 +26,7 @@
 {%  endif %}
  <br><br>
  <form method="get" action=".">
-{%  for result in page.object_list %}
+{%  for result in page_obj %}
 {%   if result.content_type == "reviews.reviewrequest" %}
 {%    include "search/_review_request.html" %}
 {%   elif result.content_type == "auth.user" %}
@@ -39,20 +39,20 @@
 {%   if show_first_page %}
    <a href="?q={{query}}&amp;page=1">&laquo; {% trans "First Page" %}</a>
 {%   endif %}
-{%   if page.has_previous %}
-   <a href="?q={{query}}&amp;page={{page.previous_page_number}}">&lt; {% trans "Previous" %}</a>
+{%   if page_obj.has_previous %}
+   <a href="?q={{query}}&amp;page={{page_obj.previous_page_number}}">&lt; {% trans "Previous" %}</a>
 {%   endif %}
 
 {%   for pagenum in page_numbers %}
-{%    if page.number == pagenum %}
+{%    if page_obj.number == pagenum %}
    <strong>{{pagenum}}</strong>
 {%    else %}
    <a href="?q={{query}}&amp;page={{pagenum}}">{{pagenum}}</a>
 {%    endif %}
 {%   endfor %}
 
-{%   if page.has_next %}
-   <a href="?q={{query}}&amp;page={{page.next_page_number}}">{% trans "Next" %} &gt;</a>
+{%   if page_obj.has_next %}
+   <a href="?q={{query}}&amp;page={{page_obj.next_page_number}}">{% trans "Next" %} &gt;</a>
 {%   endif %}
 {%   if show_last_page %}
    <a href="?q={{query}}&amp;page={{pages}}">{% trans "Last Page" %} &raquo;</a>

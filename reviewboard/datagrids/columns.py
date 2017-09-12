@@ -468,7 +468,7 @@ class NewUpdatesColumn(Column):
     def __init__(self, *args, **kwargs):
         """Initialize the column."""
         super(NewUpdatesColumn, self).__init__(
-            image_class='rb-icon rb-icon-datagrid-new-updates',
+            image_class='rb-icon rb-icon-new-updates',
             image_alt=_('New Updates'),
             detailed_label=_('New Updates'),
             shrink=True,

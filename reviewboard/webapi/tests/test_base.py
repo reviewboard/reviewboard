@@ -4,7 +4,8 @@ from __future__ import unicode_literals
 
 import json
 
-from django.test.client import RequestFactory
+from django.conf.urls import include, url
+from django.core.urlresolvers import clear_url_caches
 from djblets.features import Feature, get_features_registry
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
@@ -14,19 +15,23 @@ from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 
 
-class DummyFeature(Feature):
+# The URL conf for testing.
+urlpatterns = []
+
+
+class TestingFeature(Feature):
     """A dummy feature for testing."""
 
-    feature_id = 'dummy.feature'
-    name = 'Dummy Feature'
-    summary = 'A dummy feature'
+    feature_id = 'test.feature'
+    name = 'Test Feature'
+    summary = 'A testing feature'
 
 
-class BaseDummyResource(WebAPIResource):
-    """A dummy resource for testing required_features."""
+class BaseTestingResource(WebAPIResource):
+    """A testing resource for testing required_features."""
 
     allowed_methods = ('GET', 'POST', 'PUT', 'DELETE')
-    uri_object_key = 'dummy'
+    uri_object_key = 'obj_id'
 
     def has_access_permissions(self, *args, **kwargs):
         return True
@@ -40,41 +45,56 @@ class BaseDummyResource(WebAPIResource):
     def has_delete_permissions(self, *args, **kwargs):
         return True
 
-    def get(self, request, dummy=None, *args, **kwargs):
-        return 418, {'dummy': dummy}
+    def get(self, request, obj_id=None, *args, **kwargs):
+        return 418, {'obj_id': obj_id}
 
-    def get_list(self, request, dummy=None, *args, **kwargs):
-        return 418, {'dummy': dummy}
+    def get_list(self, request, obj_id=None, *args, **kwargs):
+        return 418, {'obj_id': obj_id}
 
-    def update(self, request, dummy=None, *args, **kwargs):
-        return 418, {'dummy': dummy}
+    def update(self, request, obj_id=None, *args, **kwargs):
+        return 418, {'obj_id': obj_id}
 
-    def create(self, request, dummy=None, *args, **kwargs):
-        return 418, {'dummy': dummy}
+    def create(self, request, obj_id=None, *args, **kwargs):
+        return 418, {'obj_id': obj_id}
 
-    def delete(self, request, dummy=None, *args, **kwargs):
-        return 418, {'dummy': dummy}
+    def delete(self, request, obj_id=None, *args, **kwargs):
+        return 418, {'obj_id': obj_id}
 
 
 class WebAPIResourceFeatureTests(BaseWebAPITestCase):
     """Tests for Web API Resources with required features"""
 
-    def setUp(self):
-        super(WebAPIResourceFeatureTests, self).setUp()
+    @classmethod
+    def setUpClass(cls):
+        super(WebAPIResourceFeatureTests, cls).setUpClass()
 
-        self.feature = DummyFeature()
+        cls.feature = TestingFeature()
 
-        class DummyResource(BaseDummyResource):
-            required_features = [self.feature]
+        class TestingResource(BaseTestingResource):
+            required_features = [cls.feature]
 
-        self.resource_cls = DummyResource
-        self.resource = self.resource_cls()
+        cls.resource_cls = TestingResource
+        cls.resource = cls.resource_cls()
 
-    def tearDown(self):
-        super(WebAPIResourceFeatureTests, self).tearDown()
+        # We are going to be using a different URLconf from Review Board for
+        # these tests so that we can use cls.client to perform the requests.
+        # That way, the requests will go through all of our middleware.
+        urlpatterns.append(
+            url(r'^/api/', include(cls.resource.get_url_patterns()))
+        )
+        urlpatterns.append(
+            url(r'^s/(?P<local_site_name>[\w\.-]+)',
+                include(list(urlpatterns)))
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        super(WebAPIResourceFeatureTests, cls).tearDownClass()
 
         registry = get_features_registry()
-        registry.unregister(self.feature)
+        registry.unregister(cls.feature)
+
+        del urlpatterns[:]
 
     def test_disabled_feature_post(self):
         """Testing POST with a disabled required feature returns
@@ -92,19 +112,19 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         """Testing GET with a disabled required feature returns
         PERMISSION_DENIED
         """
-        self._test_method('get', False, dummy=123)
+        self._test_method('get', False, obj_id='123')
 
     def test_disabled_feature_delete(self):
         """Testing DELETE with a disabled required feature returns
         PERMISSION_DENIED
         """
-        self._test_method('delete', False, dummy=123)
+        self._test_method('delete', False, obj_id='123')
 
     def test_disabled_feature_forbidden_update(self):
         """Testing PUT with a disabled required feature returns
         PERMISSION_DENIED
         """
-        self._test_method('put', False, dummy=123)
+        self._test_method('put', False, obj_id='123')
 
     def test_enabled_feature_post(self):
         """Testing POST with an enabled required feature returns the correct
@@ -122,19 +142,19 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         """Testing GET with an enabled required feature returns the correct
         response
         """
-        self._test_method('get', True, dummy=123)
+        self._test_method('get', True, obj_id='123')
 
     def test_enabled_feature_delete(self):
         """Testing DELETE with an enabled required feature returns the correct
         response
         """
-        self._test_method('delete', True, dummy=123)
+        self._test_method('delete', True, obj_id='123')
 
     def test_enabled_feature_update(self):
         """Testing PUT with an enabled required feature returns the correct
         response
         """
-        self._test_method('put', True, dummy=123)
+        self._test_method('put', True, obj_id='123')
 
     @add_fixtures(['test_site'])
     def test_disabled_feature_post_local_site(self):
@@ -158,7 +178,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         PERMISSION_DENIED on a LocalSite
         """
         self._test_method(
-            'get', False, dummy=123,
+            'get', False, obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
     @add_fixtures(['test_site'])
@@ -167,7 +187,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         PERMISSION_DENIED on a LocalSite
         """
         self._test_method(
-            'delete', False, dummy=123,
+            'delete', False, obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
     @add_fixtures(['test_site'])
@@ -176,7 +196,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         PERMISSION_DENIED on a LocalSite
         """
         self._test_method(
-            'put', False, dummy=123,
+            'put', False, obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
     @add_fixtures(['test_site'])
@@ -203,7 +223,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         response on a LocalSite
         """
         self._test_method(
-            'get', True, dummy=123,
+            'get', True, obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
     @add_fixtures(['test_site'])
@@ -212,7 +232,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         response on a LocalSite
         """
         self._test_method(
-            'delete', True, dummy=123,
+            'delete', True, obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
     @add_fixtures(['test_site'])
@@ -221,11 +241,11 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         response on a LocalSite
         """
         self._test_method(
-            'put', True, dummy=123,
+            'put', True, obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
     def _test_method(self, method, feature_enabled, local_site=None,
-                     dummy=None):
+                     obj_id=None):
         # When a LocalSite is provided, we want to enable/disable the feature
         # only for that LocalSite and do the opposite for the global settings
         # to ensure that we are picking up the setting from the LocalSite and
@@ -237,32 +257,52 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
                 local_site.extra_data = {}
 
             local_site.extra_data['enabled_features'] = {
-                DummyFeature.feature_id: feature_enabled,
+                TestingFeature.feature_id: feature_enabled,
             }
 
             local_site.save(update_fields=('extra_data',))
         else:
             enabled_globally = feature_enabled
 
+        method = getattr(self.client, method)
+
+        local_site_name = None
+
+        if local_site:
+            local_site_name = local_site.name
+
         settings = {
             'ENABLED_FEATURES': {
-                DummyFeature.feature_id: enabled_globally,
+                TestingFeature.feature_id: enabled_globally,
             },
+            'ROOT_URLCONF': 'reviewboard.webapi.tests.test_base',
         }
 
-        request = getattr(RequestFactory(), method)('/')
-        request.local_site = local_site
-        request.session = {}
+        try:
+            # If we don't clear the URL caches then lookups for the URL will
+            # break (due to using the URLs cached from the regular Review Board
+            # URL conf).
+            clear_url_caches()
 
-        with self.settings(**settings):
-            rsp = self.resource(request, dummy=dummy)
+            with self.settings(**settings):
+                if obj_id is None:
+                    resource_url = self.resource.get_list_url(
+                        local_site_name=local_site_name)
+                else:
+                    resource_url = self.resource.get_item_url(
+                        local_site_name=local_site_name,
+                        obj_id=obj_id)
+
+                rsp = method(resource_url)
+        finally:
+            clear_url_caches()
 
         content = json.loads(rsp.content)
 
         if feature_enabled:
             self.assertEqual(rsp.status_code, 418)
             self.assertEqual(content['stat'], 'ok')
-            self.assertEqual(content['dummy'], dummy)
+            self.assertEqual(content['obj_id'], obj_id)
         else:
             self.assertEqual(rsp.status_code, 403)
             self.assertEqual(content['stat'], 'fail')

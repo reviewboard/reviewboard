@@ -160,6 +160,13 @@
   }
 }
 
+/* Changes the border color of an existing callout arrow. */
+.left-arrow-callout-border-color(@color) {
+  &:before {
+    border-right-color: @color;
+  }
+}
+
 /* Styles the status label of a review request. */
 .review-request-label(@color, @border-color, @text-color) {
   background-color: @color;

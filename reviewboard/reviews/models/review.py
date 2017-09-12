@@ -260,6 +260,28 @@ class Review(models.Model):
         return self.base_reply_to_id is not None
     is_reply.boolean = True
 
+    def is_new_for_user(self, user, last_visited):
+        """Return whether this review is new for a user.
+
+        The review is considered new if their last visited time is older than
+        the review's published timestamp and the user is not the one who
+        created the review.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user accessing the review.
+
+            last_visited (datetime.datetime):
+                The last time the user accessed a page where the review would
+                be shown.
+
+        Returns:
+            bool:
+            ``True`` if the review is new to this user. ``False`` if it's older
+            than the last visited time or the user created it.
+        """
+        return user.pk != self.user_id and last_visited < self.timestamp
+
     def public_replies(self):
         """Returns a list of public replies to this review."""
         return self.replies.filter(public=True)
@@ -271,7 +293,7 @@ class Review(models.Model):
         else:
             q = Q(public=True)
 
-            if user:
+            if user and user.is_authenticated():
                 q = q | Q(user=user)
 
             return self.body_top_replies.filter(q).order_by('timestamp')
@@ -283,7 +305,7 @@ class Review(models.Model):
         else:
             q = Q(public=True)
 
-            if user:
+            if user and user.is_authenticated():
                 q = q | Q(user=user)
 
             return self.body_bottom_replies.filter(q).order_by('timestamp')

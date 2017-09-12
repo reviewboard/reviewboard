@@ -1,11 +1,15 @@
 {% load i18n reviewtags %}
 
-<div id="{{context_id}}-{{review.id}}" class="comment-section"
+<div id="{{context_id}}-{{review.pk}}" class="comment-section"
      data-context-type="{{context_type}}"
-     {% if comment %}data-context-id="{{comment.id}}"{% endif %}>
+     {% if comment %}data-context-id="{{comment.pk}}"{% endif %}>
  <div class="issue-indicator"></div>
  <ol class="reply-comments">
-  {% reply_list review comment context_type context_id %}
+{% if comment %}
+  {% comment_replies review comment context_id %}
+{% else %}
+  {% review_body_replies review context_type context_id %}
+{% endif %}
  </ol>
 {% if user.is_authenticated %}
  <ul class="controls">

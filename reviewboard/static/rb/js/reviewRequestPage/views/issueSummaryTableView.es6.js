@@ -28,6 +28,10 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
         resolved: 'rb-icon-issue-resolved',
     },
 
+    COLUMN_DESCRIPTION: 1,
+    COLUMN_REVIEWER: 2,
+    COLUMN_LAST_UPDATED: 3,
+
     _noIssuesTemplate: _.template(dedent`
         <tr class="no-issues">
          <td colspan="5"><em><%- text %></em></td>
@@ -82,6 +86,10 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
         this._$window.off('resize', this._onWindowResize);
         this._$window.on('resize', this._onWindowResize);
         this._onWindowResize();
+
+        this.$('.user').user_infobox();
+        this.$('time.timesince').timesince();
+        this.$('.avatar').retinaAvatar();
 
         return this;
     },
@@ -177,43 +185,77 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
     /**
      * Sort the issues by the selected column in ascending order.
      *
-     * Entries with timestamps will be sorted using the timestamp attribute.
-     * Entries with comment ids will be sorted using the comment-id attribute.
-     * All other entries will be sorted alphabetically.
+     * The Last Updated column will be sorted based on its timestamp. All
+     * other columns will be sorted based on their normalized text contents.
      *
      * Args:
      *     colIndex (number):
      *         The 0-based index of the column clicked.
+     *
+     *     ascending (boolean):
+     *         Whether to sort by ascending order.
      */
-    _sortByCol(colIndex) {
-        this._$tbody.html($('.issue').sort((a, b) => {
-            const firstElement = $(a).find(`td:nth-child(${colIndex})`);
-            const secondElement = $(b).find(`td:nth-child(${colIndex})`);
-            const firstElementText = firstElement.text().toLowerCase();
-            const secondElementText = secondElement.text().toLowerCase();
+    _sortByCol(colIndex, ascending) {
+        this._$tbody.html($('.issue').sort((issueA, issueB) => {
+            const $issueA = $(issueA);
+            const $issueB = $(issueB);
+            const $columnA = $issueA.children(`td:nth-child(${colIndex})`);
+            const $columnB = $issueB.children(`td:nth-child(${colIndex})`);
+            let value1;
+            let value2;
 
-            if (firstElement.attr('timestamp')) {
-                return parseInt(firstElement.attr('timestamp'), 10) -
-                       parseInt(secondElement.attr('timestamp'), 10);
-            } else if (firstElement.hasClass('comment-id')) {
-                 const firstText = firstElementText.split(' ');
-                 const secondText = secondElementText.split(' ');
-
-                 if (firstText[0] > secondText[0]) {
-                     return 1;
-                 } else if (firstText[0] < secondText[0]) {
-                    return -1;
-                 } else {
-                     return parseInt(firstText[1], 10) -
-                            parseInt(secondText[1], 10);
-                 }
-            } else if (firstElementText > secondElementText) {
-                return 1;
-            } else if (firstElementText === secondElementText) {
-                return 0;
+            if (colIndex === this.COLUMN_LAST_UPDATED) {
+                /*
+                 * Note that we're reversing the values here. We want newer
+                 * timestamps (which is "greater", comparison-wise).
+                 */
+                value1 = $columnB.children('time').attr('datetime');
+                value2 = $columnA.children('time').attr('datetime');
             } else {
-                return -1;
+                value1 = $columnA.text().strip().toLowerCase();
+                value2 = $columnB.text().strip().toLowerCase();
             }
+
+            /*
+             * If the two values are the same, we'll want to order by
+             * issue ID instead, helping to keep ordering consistent within
+             * an author or published timestamp.
+             *
+             * They should always be in ascending order, relative to the
+             * column being sorted.
+             */
+            if (value1 === value2) {
+                const issueID1 = $issueA.data('issue-id');
+                const issueID2 = $issueB.data('issue-id');
+
+                if (ascending) {
+                    value1 = issueID1;
+                    value2 = issueID2;
+                } else {
+                    value1 = issueID2;
+                    value2 = issueID1;
+                }
+            }
+
+            /*
+             * Compute an initial value intended for ascending order. Then
+             * we'll negate it if sorting in descending order.
+             */
+            let result;
+
+            if (value1 < value2) {
+                result = -1;
+            } else if (value1 > value2) {
+                result = 1;
+            } else {
+                result = 0;
+            }
+
+            if (!ascending) {
+                result = -result;
+            }
+
+            return result;
         }));
     },
 
@@ -251,8 +293,8 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
     _onIssueStatusChanged(comment, oldStatus, timestamp) {
         const $entry = $(`#summary-table-entry-${comment.id}`);
         const newStatus = comment.get('issueStatus');
-        const oldHeight = this.$el.height();
-        const oldScrollTop = window.pageYOffset;
+
+        RB.scrollManager.markForUpdate(this.$el);
 
         /* Update the icon for this entry to reflect the new status. */
         $entry
@@ -299,21 +341,8 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
          * Update the scroll position to counteract the addition/deletion
          * of the entry in the issue summary table, so the page doesn't
          * appear to jump.
-         *
-         * Ideally we would update the DOM and set the scroll position at
-         * exactly the same time, synchronized, so there would never be a jump
-         * in the page. Chrome and Firefox are pretty good at not jumping, but
-         * Safari (as of 10.1), Internet Explorer (as of 11), and Edge (as of
-         * 38.14393) will jump.
-         *
-         * We can minimize that jump by performing the scroll update during an
-         * animation frame, getting it as close as possible to DOM layout
-         * update.
          */
-        requestAnimationFrame(() => {
-            window.scrollTo(window.pageXOffset,
-                            oldScrollTop + this.$el.height() - oldHeight);
-        });
+        RB.scrollManager.markUpdated(this.$el);
     },
 
     /**
@@ -330,7 +359,8 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
 
         if (this._$tbody.find('tr.issue').not('.hidden').length !== 0) {
             this._sortByCol(
-                $(evt.target).parent().children().index(evt.target) + 1);
+                $(evt.target).parent().children().index(evt.target) + 1,
+                !evt.shiftKey);
         }
     },
 

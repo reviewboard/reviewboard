@@ -43,7 +43,8 @@ class ApplicationAdmin(admin.ModelAdmin):
 
         (_('Authorization Settings'), {
             'fields': ('authorization_grant_type',
-                       'skip_authorization'),
+                       'skip_authorization',
+                       'local_site',),
         }),
 
         (_('Internal State'), {
@@ -51,8 +52,7 @@ class ApplicationAdmin(admin.ModelAdmin):
                 '<p>This is advanced state that should not be modified unless '
                 'something is wrong.</p>'
             ),
-            'fields': ('local_site',
-                       'original_user',
+            'fields': ('original_user',
                        'extra_data'),
             'classes': ('collapse',),
         }),

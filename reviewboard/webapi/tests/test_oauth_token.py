@@ -36,6 +36,7 @@ class ResourceListTests(BaseWebAPITestCase):
     sample_api_url = 'oauth-tokens/'
 
     test_api_token_access = False
+    test_oauth_token_access = False
 
     compare_item = _compare_item
 
@@ -104,6 +105,7 @@ class ResourceItemTests(BaseWebAPITestCase):
     not_owner_status_code = 404
     not_owner_error = DOES_NOT_EXIST
     test_api_token_access = False
+    test_oauth_token_access = False
 
     compare_item = _compare_item
 

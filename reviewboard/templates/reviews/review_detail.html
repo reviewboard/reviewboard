@@ -21,17 +21,13 @@
 {%   include "reviews/review_request_header.html" %}
 
   <div class="review-request-body">
-{%   include "reviews/review_request_box.html" %}
+{%   include "reviews/review_request_box.html" with show_issue_summary_table=True %}
   </div>
  </div>
 </div>
 
 <div id="reviews">
-{%  for entry in entries.initial %}
-{%   if entry.template_name and entry.has_content %}
-{%    include entry.template_name with show_entry_statuses_area=False %}
-{%   endif %}
-{%  endfor %}
+{%  render_review_request_entries entries.initial %}
 
  <ul id="view_controls">
 {%  if entries %}
@@ -50,11 +46,7 @@
 {%  endif %}
  </ul>
 
-{%  for entry in entries.main %}
-{%   if entry.template_name and entry.has_content %}
-{%    include entry.template_name with show_entry_statuses_area=True %}
-{%   endif %}
-{%  endfor %}
+{%  render_review_request_entries entries.main %}
 </div>
 {% endblock content %}
 
@@ -64,10 +56,16 @@
 
 <script>
     RB.PageManager.setPage(new RB.ReviewRequestPage.ReviewRequestPageView({
+        el: document.body,
+        model: new RB.ReviewRequestPage.ReviewRequestPage({
+            updatesURL: "{% url 'review-request-updates' review_request.display_id %}",
 {%  localtime off %}
-        lastActivityTimestamp: {{last_activity_time|json_dumps}},
+            lastActivityTimestamp: {{last_activity_time|json_dumps}},
 {%  endlocaltime %}
-{%  include "reviews/reviewable_page_data.js" %}
+            {% reviewable_page_model_data %}
+        }, {
+            parse: true
+        })
     }));
 
     RB.PageManager.beforeRender(function(page) {

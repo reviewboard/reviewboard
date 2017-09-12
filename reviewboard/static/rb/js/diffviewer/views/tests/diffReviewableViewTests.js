@@ -568,9 +568,11 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
         beforeEach(function() {
             model = new RB.DiffReviewable({
                 reviewRequest: reviewRequest,
-                fileIndex: 1,
                 fileDiffID: 10,
-                revision: 1
+                revision: 1,
+                file: new RB.DiffFile({
+                    index: 1
+                })
             });
         });
 

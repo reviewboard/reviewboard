@@ -11,6 +11,10 @@ suite('rb/reviewRequestPage/models/StatusUpdatesEntry',
 
         const entry = new RB.ReviewRequestPage.StatusUpdatesEntry({
             diffCommentsData: diffCommentsData,
+            id: '0',
+            typeID: 'initial_status_updates',
+            timestamp: '2017-08-18T13:40:25Z',
+            pendingStatusUpdates: true,
             reviewsData: [
                 {
                     id: 123,
@@ -26,8 +30,13 @@ suite('rb/reviewRequestPage/models/StatusUpdatesEntry',
             parse: true,
         });
 
+        expect(entry.id).toBe('0');
         expect(entry.get('diffCommentsData')).toBe(diffCommentsData);
         expect(entry.get('reviewRequestEditor')).toBe(reviewRequestEditor);
+        expect(entry.get('typeID')).toBe('initial_status_updates');
+        expect(entry.get('timestamp')).toEqual(
+            new Date(Date.UTC(2017, 7, 18, 13, 40, 25)));
+        expect(entry.get('pendingStatusUpdates')).toBe(true);
         expect(entry.get('ignoredAttr')).toBe(undefined);
 
         const reviews = entry.get('reviews');

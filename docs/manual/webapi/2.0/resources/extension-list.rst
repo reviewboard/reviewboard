@@ -1,3 +1,3 @@
 .. webapi-resource::
-   :classname: djblets.extensions.resources.ExtensionResource
+   :classname: reviewboard.webapi.resources.extension.ExtensionResource
    :is-list:

@@ -27,6 +27,17 @@ RB.ReviewRequestPage.EntryView = Backbone.View.extend({
     },
 
     /**
+     * Return whether the entry is currently collapsed.
+     *
+     * Returns:
+     *     boolean:
+     *     ``True`` if the entry is currently collapsed. ``False`` if expanded.
+     */
+    isCollapsed() {
+        return this._$box.hasClass('collapsed');
+    },
+
+    /**
      * Expand the box.
      */
     expand() {
@@ -47,12 +58,43 @@ RB.ReviewRequestPage.EntryView = Backbone.View.extend({
     },
 
     /**
+     * Handle operations before applying an update from the server.
+     *
+     * This can be overridden by views to store state or before cleanup before
+     * reloading and re-rendering the HTML from the server.
+     *
+     * Subclasses do not need to call the parent method.
+     *
+     * Args:
+     *     entryData (object):
+     *         The metadata provided by the server in the update.
+     */
+    beforeApplyUpdate(entryData) {
+    },
+
+    /**
+     * Handle operations after applying an update from the server.
+     *
+     * This can be overridden by views to restore state or perform other
+     * post-update tasks after reloading and re-rendering the HTML from the
+     * server.
+     *
+     * Subclasses do not need to call the parent method.
+     *
+     * Args:
+     *     entryData (object):
+     *         The metadata provided by the server in the update.
+     */
+    afterApplyUpdate(entryData) {
+    },
+
+    /**
      * Handle a click on the expand/collapse button.
      *
      * Toggles the collapsed state of the box.
      */
     _onToggleCollapseClicked() {
-        if (this._$box.hasClass('collapsed')) {
+        if (this.isCollapsed()) {
             this.expand();
         } else {
             this.collapse();

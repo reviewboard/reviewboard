@@ -71,6 +71,35 @@ class ReviewTests(SpyAgency, TestCase):
         self.assertEqual(comments[1].text, comment_text_2)
         self.assertEqual(comments[2].text, comment_text_3)
 
+    def test_is_new_for_user_with_non_owner(self):
+        """Testing Review.is_new_for_user with non-owner"""
+        user1 = User.objects.create(username='test-user-1')
+        user2 = User.objects.create(username='test-user-2')
+
+        review = Review(
+            user=user1,
+            timestamp=datetime(2017, 9, 7, 15, 27, 0))
+        self.assertTrue(review.is_new_for_user(
+            user=user2,
+            last_visited=datetime(2017, 9, 7, 10, 0, 0)))
+        self.assertFalse(review.is_new_for_user(
+            user=user2,
+            last_visited=datetime(2017, 9, 7, 16, 0, 0)))
+        self.assertFalse(review.is_new_for_user(
+            user=user2,
+            last_visited=datetime(2017, 9, 7, 15, 27, 0)))
+
+    def test_is_new_for_user_with_owner(self):
+        """Testing Review.is_new_for_user with owner"""
+        user = User.objects.create(username='test-user')
+
+        review = Review(
+            user=user,
+            timestamp=datetime(2017, 9, 7, 15, 27, 0))
+        self.assertFalse(review.is_new_for_user(
+            user=user,
+            last_visited=datetime(2017, 9, 7, 16, 0, 0)))
+
     def test_can_user_revoke_ship_it_with_owner(self):
         """Testing Review.can_user_revoke_ship_it with review owner"""
         review_request = self.create_review_request(create_repository=True,

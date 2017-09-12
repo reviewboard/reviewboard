@@ -1,0 +1,19 @@
+{% load rb_extensions reviewtags %}
+
+<li id="{{comment.anchor_prefix}}{{comment.pk}}">
+ <div class="review-comment-details">
+  <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment.pk}}"></a>
+  <div class="floating-anchor"><a href="#{{comment.anchor_prefix}}{{comment.pk}}" class="fa fa-link fa-flip-horizontal"></a></div>
+  {{comment_context}}
+   <div class="review-comment">
+    {% comment_detail_display_hook comment 'review' %}
+    {% comment_issue review_request_details comment comment_type %}
+
+    <pre class="reviewtext comment-text {% rich_text_classname comment.rich_text %}">{{comment.text|render_markdown:comment.rich_text}}</pre>
+  </div>
+ </div>
+
+ <div class="review-comment-thread">
+  {% reply_section review comment comment_type 'rc' comment.text %}
+ </div>
+</li>

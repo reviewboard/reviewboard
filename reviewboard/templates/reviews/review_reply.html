@@ -1,7 +1,8 @@
 {% load avatars djblets_utils i18n reviewtags tz %}
 
-<li{% if draft %} class="draft"{% endif %}{% if comment_id %} data-comment-id="{{comment_id}}"{% endif %} id="{{comment.anchor_prefix}}{{comment_id}}">
- <a class="comment-anchor" name="{{comment.anchor_prefix}}{{comment_id}}"></a>
+<li{% attr "class" %}{% if draft %}draft{% elif reply_is_new %}new-reply{% endif %}{% endattr %}{% if comment_id %} data-comment-id="{{comment_id}}"{% endif %} id="{{anchor_name}}">
+ <a class="comment-anchor" name="{{anchor_name}}"></a>
+ <div class="floating-anchor"><a href="#{{anchor_name}}" class="fa fa-link fa-flip-horizontal"></a></div>
  <div class="comment-author">
   <label for="{% if draft %}draft{% endif %}comment_{{context_id}}-{{id}}">
    <div class="avatar-container">
@@ -10,8 +11,12 @@
 {% endif %}
    </div>
    <div class="user-reply-info">
+{% if reply_is_new %}
+    <div class="rb-icon rb-icon-new-updates" title="{% trans 'New reply' %}"></div>
+{% endif %}
     <a href="{% url 'user' reply_user %}" class="user">{{reply_user|user_displayname}}</a>
-    <span class="timestamp">{% localtime on %}{% blocktrans with timestamp as timestamp and timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</span>
+    <a href="#{{anchor_name}}" class="timestamp">
+     {% localtime on %}{% blocktrans with timestamp as timestamp and timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</a>
    </div>
   </label>
  </div>

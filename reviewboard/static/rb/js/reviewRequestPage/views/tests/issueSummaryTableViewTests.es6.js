@@ -42,7 +42,7 @@ suite('rb/reviewRequestPage/views/IssueSummaryTable', function() {
             <td>user1</td>
             <td class="last-updated">
              <time class="timesince" datetime="2017-02-01T20:30:00-07:00">
-              February 2, 2017, 8:30 p.m.
+              February 1, 2017, 8:30 p.m.
              </time>
             </td>
            </tr>
@@ -59,7 +59,7 @@ suite('rb/reviewRequestPage/views/IssueSummaryTable', function() {
             <td>user2</td>
             <td class="last-updated">
              <time class="timesince" datetime="2017-02-02T20:30:00-07:00">
-              February 1, 2017, 8:30 p.m.
+              February 2, 2017, 8:30 p.m.
              </time>
             </td>
            </tr>
@@ -93,7 +93,7 @@ suite('rb/reviewRequestPage/views/IssueSummaryTable', function() {
             <td>user1</td>
             <td class="last-updated">
              <time class="timesince" datetime="2017-02-01T20:30:00-07:00">
-              February 2, 2017, 8:30 p.m.
+              February 1, 2017, 8:30 p.m.
              </time>
             </td>
            </tr>
@@ -110,7 +110,7 @@ suite('rb/reviewRequestPage/views/IssueSummaryTable', function() {
             <td>user2</td>
             <td class="last-updated">
              <time class="timesince" datetime="2017-02-02T20:30:00-07:00">
-              February 1, 2017, 8:30 p.m.
+              February 2, 2017, 8:30 p.m.
              </time>
             </td>
            </tr>
@@ -127,7 +127,7 @@ suite('rb/reviewRequestPage/views/IssueSummaryTable', function() {
             <td>user1</td>
             <td class="last-updated">
              <time class="timesince" datetime="2017-02-01T20:30:00-07:00">
-              February 2, 2017, 8:30 p.m.
+              February 1, 2017, 8:30 p.m.
              </time>
             </td>
            </tr>
@@ -418,7 +418,10 @@ suite('rb/reviewRequestPage/views/IssueSummaryTable', function() {
             function testHeaderSorting(options) {
                 it(options.description, function() {
                     view.render();
-                    view.$(options.headerSel).click();
+
+                    const event = $.Event('click');
+                    event.shiftKey = !!options.shiftKey;
+                    view.$(options.headerSel).trigger(event);
 
                     const $issues = view.$('.issue');
                     expect($issues.length).toBe(6);
@@ -432,22 +435,47 @@ suite('rb/reviewRequestPage/views/IssueSummaryTable', function() {
                 });
             }
 
-            testHeaderSorting({
-                description: 'Description',
-                headerSel: '.description-header',
-                expectedIDs: [6, 4, 5, 1, 2, 3],
+            describe('Ascending', function() {
+                testHeaderSorting({
+                    description: 'Description',
+                    headerSel: '.description-header',
+                    expectedIDs: [6, 4, 5, 1, 2, 3],
+                });
+
+                testHeaderSorting({
+                    description: 'From',
+                    headerSel: '.from-header',
+                    expectedIDs: [1, 4, 6, 2, 5, 3],
+                });
+
+                testHeaderSorting({
+                    description: 'Last Updated',
+                    headerSel: '.last-updated-header',
+                    expectedIDs: [3, 2, 5, 1, 4, 6],
+                });
             });
 
-            testHeaderSorting({
-                description: 'From',
-                headerSel: '.from-header',
-                expectedIDs: [1, 4, 6, 2, 5, 3],
-            });
+            describe('Descending', function() {
+                testHeaderSorting({
+                    description: 'Description',
+                    headerSel: '.description-header',
+                    expectedIDs: [3, 2, 1, 5, 4, 6],
+                    shiftKey: true,
+                });
 
-            testHeaderSorting({
-                description: 'Last Updated',
-                headerSel: '.last-updated-header',
-                expectedIDs: [2, 5, 1, 4, 6, 3],
+                testHeaderSorting({
+                    description: 'From',
+                    headerSel: '.from-header',
+                    expectedIDs: [3, 2, 5, 1, 4, 6],
+                    shiftKey: true,
+                });
+
+                testHeaderSorting({
+                    description: 'Last Updated',
+                    headerSel: '.last-updated-header',
+                    expectedIDs: [1, 4, 6, 2, 5, 3],
+                    shiftKey: true,
+                });
             });
         });
     });

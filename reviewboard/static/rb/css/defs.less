@@ -81,6 +81,12 @@
 @review-request-warning-bg: #F5A9A9;
 @review-request-warning-border-color: #FF0000;
 
+// Review request entries
+@review-request-entry-base-bg: #FFFFFF;
+@review-request-entry-collapsed-bg: #ECECEE;
+@review-request-entry-padding: 12px;
+@review-request-entry-new-border-color: #2278FC;
+
 // Reviews
 @reviews-padding-horiz: 0.5em;
 @review-box-border-color: #999999;
@@ -88,7 +94,8 @@
 @review-comment-author-color-draft: #4E9A06;
 @review-comment-filename-background-color: #F0F0F0;
 @review-comment-filename-border-color: #C0C0C0;
-@review-comment-section-margin-top: 2em;
+@review-comment-padding: 2em;
+@review-comment-section-margin-top: (2 * @review-comment-padding);
 
 // Review UIs
 @review-ui-header-bg: @review-request-bg;

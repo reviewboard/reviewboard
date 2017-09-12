@@ -10,6 +10,9 @@ suite('rb/reviewRequestPage/models/ReviewEntry', function() {
 
         const entry = new RB.ReviewRequestPage.ReviewEntry({
             diffCommentsData: diffCommentsData,
+            id: '100',
+            typeID: 'review',
+            timestamp: '2017-08-18T13:40:25Z',
             reviewData: {
                 id: 123,
                 bodyTop: 'My body top',
@@ -23,8 +26,12 @@ suite('rb/reviewRequestPage/models/ReviewEntry', function() {
             parse: true,
         });
 
+        expect(entry.id).toBe('100');
         expect(entry.get('diffCommentsData')).toBe(diffCommentsData);
         expect(entry.get('reviewRequestEditor')).toBe(reviewRequestEditor);
+        expect(entry.get('typeID')).toBe('review');
+        expect(entry.get('timestamp')).toEqual(
+            new Date(Date.UTC(2017, 7, 18, 13, 40, 25)));
         expect(entry.get('ignoredAttr')).toBe(undefined);
 
         const review = entry.get('review');

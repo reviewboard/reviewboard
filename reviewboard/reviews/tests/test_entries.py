@@ -2,21 +2,218 @@
 
 from __future__ import unicode_literals
 
-from datetime import timedelta
+import logging
+from datetime import datetime, timedelta
 
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import AnonymousUser, User
+from django.template import RequestContext
 from django.test.client import RequestFactory
-from django.utils import six
+from django.utils import six, timezone
 from djblets.testing.decorators import add_fixtures
+from kgb import SpyAgency
 
 from reviewboard.changedescs.models import ChangeDescription
-from reviewboard.reviews.detail import (ChangeEntry,
+from reviewboard.reviews.detail import (BaseReviewRequestPageEntry,
+                                        ChangeEntry,
                                         InitialStatusUpdatesEntry,
                                         ReviewEntry,
                                         ReviewRequestPageData,
                                         StatusUpdatesEntryMixin)
 from reviewboard.reviews.models import GeneralComment, StatusUpdate
 from reviewboard.testing import TestCase
+
+
+class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
+    """Unit tests for BaseReviewRequestPageEntry."""
+
+    def test_render_to_string(self):
+        """Testing BaseReviewRequestPageEntry.render_to_string"""
+        entry = BaseReviewRequestPageEntry(
+            entry_id='test',
+            timestamp=None,
+            collapsed=False)
+        entry.template_name = 'reviews/entries/base.html'
+
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        html = entry.render_to_string(request, RequestContext(request, {
+            'last_visited': timezone.now(),
+        }))
+
+        self.assertNotEqual(html, '')
+
+    def test_render_to_string_with_entry_pos_main(self):
+        """Testing BaseReviewRequestPageEntry.render_to_string with
+        entry_pos=ENTRY_POS_MAIN
+        """
+        entry = BaseReviewRequestPageEntry(
+            entry_id='test',
+            timestamp=None,
+            collapsed=False)
+        entry.template_name = 'reviews/entries/base.html'
+        entry.entry_pos = BaseReviewRequestPageEntry.ENTRY_POS_MAIN
+
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        html = entry.render_to_string(request, RequestContext(request, {
+            'last_visited': timezone.now(),
+        }))
+        self.assertIn('<div class="box-statuses">', html)
+
+    def test_render_to_string_with_entry_pos_initial(self):
+        """Testing BaseReviewRequestPageEntry.render_to_string with
+        entry_pos=ENTRY_POS_INITIAL
+        """
+        entry = BaseReviewRequestPageEntry(
+            entry_id='test',
+            timestamp=None,
+            collapsed=False)
+        entry.template_name = 'reviews/entries/base.html'
+        entry.entry_pos = BaseReviewRequestPageEntry.ENTRY_POS_INITIAL
+
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        html = entry.render_to_string(request, RequestContext(request, {
+            'last_visited': timezone.now(),
+        }))
+        self.assertNotIn('<div class="box-statuses">', html)
+
+    def test_render_to_string_with_new_entry(self):
+        """Testing BaseReviewRequestPageEntry.render_to_string with
+        entry_is_new=True
+        """
+        entry = BaseReviewRequestPageEntry(
+            entry_id='test',
+            timestamp=datetime(2017, 9, 7, 17, 0, 0),
+            collapsed=False)
+        entry.template_name = 'reviews/entries/base.html'
+
+        request = RequestFactory().request()
+        request.user = User.objects.create(username='test-user')
+
+        html = entry.render_to_string(request, RequestContext(request, {
+            'last_visited': datetime(2017, 9, 7, 10, 0, 0),
+        }))
+
+        self.assertIn(
+            'class="review-request-page-entry new-review-request-page-entry',
+            html)
+
+    def test_render_to_string_without_new_entry(self):
+        """Testing BaseReviewRequestPageEntry.render_to_string with
+        entry_is_new=False
+        """
+        entry = BaseReviewRequestPageEntry(
+            entry_id='test',
+            timestamp=datetime(2017, 9, 7, 17, 0, 0),
+            collapsed=False)
+        entry.template_name = 'reviews/entries/base.html'
+
+        request = RequestFactory().request()
+        request.user = User.objects.create(username='test-user')
+
+        html = entry.render_to_string(request, RequestContext(request, {
+            'last_visited': datetime(2017, 9, 7, 18, 0, 0),
+        }))
+
+        self.assertNotEqual(html, '')
+        self.assertNotIn(
+            'class="review-request-page-entry new-review-request-page-entry"',
+            html)
+
+    def test_render_to_string_with_no_template(self):
+        """Testing BaseReviewRequestPageEntry.render_to_string with
+        template_name=None
+        """
+        entry = BaseReviewRequestPageEntry(
+            entry_id='test',
+            timestamp=None,
+            collapsed=False)
+
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        html = entry.render_to_string(request, RequestContext(request, {
+            'last_visited': timezone.now(),
+        }))
+        self.assertEqual(html, '')
+
+    def test_render_to_string_with_has_content_false(self):
+        """Testing BaseReviewRequestPageEntry.render_to_string with
+        has_content=False
+        """
+        entry = BaseReviewRequestPageEntry(
+            entry_id='test',
+            timestamp=None,
+            collapsed=False)
+        entry.template_name = 'reviews/entries/base.html'
+        entry.has_content = False
+
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        html = entry.render_to_string(request, RequestContext(request, {
+            'last_visited': timezone.now(),
+        }))
+        self.assertEqual(html, '')
+
+    def test_render_to_string_with_exception(self):
+        """Testing BaseReviewRequestPageEntry.render_to_string with
+        exception
+        """
+        entry = BaseReviewRequestPageEntry(
+            entry_id='test',
+            timestamp=None,
+            collapsed=False)
+        entry.template_name = 'reviews/entries/NOT_FOUND.html'
+
+        self.spy_on(logging.exception)
+
+        request = RequestFactory().request()
+        request.user = AnonymousUser()
+
+        html = entry.render_to_string(request, RequestContext(request, {
+            'last_visited': timezone.now(),
+        }))
+
+        self.assertEqual(html, '')
+        self.assertTrue(logging.exception.spy.called)
+        self.assertEqual(logging.exception.spy.calls[0].args[0],
+                         'Error rendering template for %s (ID=%s): %s')
+
+    def test_is_entry_new_with_timestamp(self):
+        """Testing BaseReviewRequestPageEntry.is_entry_new with timestamp"""
+        entry = BaseReviewRequestPageEntry(
+            entry_id='test',
+            timestamp=datetime(2017, 9, 7, 15, 36, 0),
+            collapsed=False)
+
+        user = User.objects.create(username='test-user')
+
+        self.assertTrue(entry.is_entry_new(
+            last_visited=datetime(2017, 9, 7, 10, 0, 0),
+            user=user))
+        self.assertFalse(entry.is_entry_new(
+            last_visited=datetime(2017, 9, 7, 16, 0, 0),
+            user=user))
+        self.assertFalse(entry.is_entry_new(
+            last_visited=datetime(2017, 9, 7, 15, 36, 0),
+            user=user))
+
+    def test_is_entry_new_without_timestamp(self):
+        """Testing BaseReviewRequestPageEntry.is_entry_new without timestamp
+        """
+        entry = BaseReviewRequestPageEntry(
+            entry_id='test',
+            timestamp=None,
+            collapsed=False)
+
+        self.assertFalse(entry.is_entry_new(
+            last_visited=datetime(2017, 9, 7, 10, 0, 0),
+            user=User.objects.create(username='test-user')))
 
 
 class StatusUpdatesEntryMixinTests(TestCase):
@@ -811,3 +1008,24 @@ class ChangeEntryTests(TestCase):
         self.assertEqual(entry.changedesc, changedesc1)
         self.assertTrue(entry.collapsed)
         self.assertEqual(entry.status_updates, [])
+
+    def test_is_entry_new_with_timestamp(self):
+        """Testing ChangeEntry.is_entry_new with timestamp"""
+        entry = ChangeEntry(
+            request=self.request,
+            review_request=self.review_request,
+            changedesc=self.changedesc,
+            collapsed=False,
+            data=self.data)
+
+        user = User.objects.create(username='test-user')
+
+        self.assertTrue(entry.is_entry_new(
+            last_visited=self.changedesc.timestamp - timedelta(days=1),
+            user=user))
+        self.assertFalse(entry.is_entry_new(
+            last_visited=self.changedesc.timestamp,
+            user=user))
+        self.assertFalse(entry.is_entry_new(
+            last_visited=self.changedesc.timestamp + timedelta(days=1),
+            user=user))

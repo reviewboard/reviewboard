@@ -59,6 +59,12 @@ class SearchBackendRegistry(Registry):
         return siteconfig.get('search_enable')
 
     @property
+    def results_per_page(self):
+        """The number of search results per page."""
+        siteconfig = SiteConfiguration.objects.get_current()
+        return siteconfig.get('search_results_per_page')
+
+    @property
     def current_backend(self):
         """The current search backend, or ``None`` if search is disabled."""
         if not self.search_enabled:

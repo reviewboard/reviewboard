@@ -3,7 +3,9 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from django.core.management import call_command
+from django.core.urlresolvers import reverse
 from django.utils import six
+from django.utils.six.moves.urllib.parse import urlencode
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from haystack import signal_processor
@@ -12,6 +14,7 @@ from kgb import SpyAgency
 from reviewboard.admin.server import build_server_url
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.reviews.models import ReviewRequestDraft
+from reviewboard.search.testing import reindex_search
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing.testcase import TestCase
 
@@ -36,19 +39,29 @@ class SearchTests(SpyAgency, TestCase):
 
         load_site_config()
 
+    @classmethod
+    def tearDownClass(cls):
+        super(SearchTests, cls).tearDownClass()
+
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('search_enable', False)
+        siteconfig.save()
+
+        load_site_config()
+
     def test_search_all(self):
         """Testing search with review requests and users"""
         # We already have doc. Now let's create a review request.
         review_request = self.create_review_request(submitter='doc',
                                                     publish=True)
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search('doc')
         context = response.context
         self.assertEqual(context['hits_returned'], 2)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'auth.user')
         self.assertEqual(results[0].username, 'doc')
         self.assertEqual(results[1].content_type(), 'reviews.reviewrequest')
@@ -59,14 +72,14 @@ class SearchTests(SpyAgency, TestCase):
         # We already have doc. Now let's create a review request.
         review_request = self.create_review_request(submitter='doc',
                                                     publish=True)
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search('doc', filter_by='reviewrequests')
         context = response.context
         self.assertEqual(context['hits_returned'], 1)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'reviews.reviewrequest')
         self.assertEqual(results[0].summary, review_request.summary)
 
@@ -74,14 +87,14 @@ class SearchTests(SpyAgency, TestCase):
         """Testing search with filtering for review requests"""
         # We already have doc. Now let's create a review request.
         self.create_review_request(submitter='doc', publish=True)
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search('doc', filter_by='users')
         context = response.context
         self.assertEqual(context['hits_returned'], 1)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'auth.user')
         self.assertEqual(results[0].username, 'doc')
 
@@ -97,7 +110,7 @@ class SearchTests(SpyAgency, TestCase):
         review_request = self.create_review_request(repository=repository,
                                                     publish=True)
         self.assertFalse(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
@@ -118,14 +131,14 @@ class SearchTests(SpyAgency, TestCase):
                                                     publish=True)
 
         self.assertTrue(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
         context = response.context
         self.assertEqual(context['hits_returned'], 1)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'reviews.reviewrequest')
         self.assertEqual(results[0].summary, review_request.summary)
 
@@ -146,14 +159,14 @@ class SearchTests(SpyAgency, TestCase):
                                                     publish=True)
 
         self.assertTrue(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
         context = response.context
         self.assertEqual(context['hits_returned'], 1)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'reviews.reviewrequest')
         self.assertEqual(results[0].summary, review_request.summary)
 
@@ -170,7 +183,7 @@ class SearchTests(SpyAgency, TestCase):
         review_request.target_groups.add(group)
 
         self.assertFalse(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
@@ -191,14 +204,14 @@ class SearchTests(SpyAgency, TestCase):
         review_request.target_groups.add(group)
 
         self.assertTrue(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
         context = response.context
         self.assertEqual(context['hits_returned'], 1)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'reviews.reviewrequest')
         self.assertEqual(results[0].summary, review_request.summary)
 
@@ -220,7 +233,7 @@ class SearchTests(SpyAgency, TestCase):
         review_request.target_groups.add(group)
 
         self.assertFalse(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
@@ -243,14 +256,14 @@ class SearchTests(SpyAgency, TestCase):
                                                     publish=True)
 
         self.assertTrue(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
         context = response.context
         self.assertEqual(context['hits_returned'], 1)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'reviews.reviewrequest')
         self.assertEqual(results[0].summary, review_request.summary)
 
@@ -268,7 +281,7 @@ class SearchTests(SpyAgency, TestCase):
         review_request.target_people.add(user)
 
         self.assertFalse(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
@@ -288,14 +301,14 @@ class SearchTests(SpyAgency, TestCase):
         review_request.target_people.add(user)
 
         self.assertTrue(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search(review_request.summary)
         context = response.context
         self.assertEqual(context['hits_returned'], 1)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'reviews.reviewrequest')
         self.assertEqual(results[0].summary, review_request.summary)
 
@@ -311,7 +324,7 @@ class SearchTests(SpyAgency, TestCase):
         review_request = self.create_review_request(publish=True)
 
         self.assertTrue(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search('%d' % review_request.id)
@@ -330,20 +343,16 @@ class SearchTests(SpyAgency, TestCase):
                                                     publish=True)
 
         self.assertTrue(review_request.is_accessible_by(user))
-        self.reindex()
+        reindex_search()
 
         # Perform the search.
         response = self.search('456')
         context = response.context
         self.assertEqual(context['hits_returned'], 1)
 
-        results = context['page'].object_list
+        results = context['object_list']
         self.assertEqual(results[0].content_type(), 'reviews.reviewrequest')
         self.assertEqual(results[0].summary, review_request.summary)
-
-    def reindex(self):
-        """Re-index the search database for the unit tests."""
-        call_command('rebuild_index', interactive=False)
 
     def search(self, q, filter_by=None):
         """Perform a search with the given query and optional filters.
@@ -356,13 +365,13 @@ class SearchTests(SpyAgency, TestCase):
         }
 
         if filter_by:
-            options['filter'] = filter_by
+            options['model_filter'] = filter_by
 
         return self.client.get(local_site_reverse('search'), options)
 
     def test_on_the_fly_indexing_review_requests(self):
         """Testing on-the-fly indexing for review requests"""
-        self.reindex()
+        reindex_search()
 
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set('search_on_the_fly_indexing', True)
@@ -407,7 +416,7 @@ class SearchTests(SpyAgency, TestCase):
 
     def test_on_the_fly_indexing_users(self):
         """Testing on-the-fly indexing for users"""
-        self.reindex()
+        reindex_search()
 
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set('search_on_the_fly_indexing', True)
@@ -449,3 +458,60 @@ class SearchTests(SpyAgency, TestCase):
         self.assertEqual(result.url, '/users/not_doc/')
         self.assertEqual(result.username, 'not_doc')
         self.assertEqual(result.full_name, 'Not Doc Dwarf')
+
+
+class ViewTests(TestCase):
+    """Tests for the search view."""
+
+    def test_get_enabled_no_query(self):
+        """Testing the search view without a query redirects to all review
+        requests
+        """
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('search_enable', True)
+        siteconfig.save()
+
+        try:
+            rsp = self.client.get(reverse('search'))
+        finally:
+            siteconfig.set('search_enable', False)
+            siteconfig.save()
+
+        self.assertEqual(rsp.status_code, 302)
+        self.assertEqual(rsp.get('Location'), 'http://testserver/r/')
+
+    def test_get_enabled_query(self):
+        """Testing the search view with a query"""
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('search_enable', True)
+        siteconfig.save()
+
+        try:
+            rsp = self.client.get(
+                '%s?%s'
+                % (reverse('search'),
+                   urlencode({'q': 'foo'}))
+            )
+        finally:
+            siteconfig.set('search_enable', False)
+            siteconfig.save()
+
+        self.assertEqual(rsp.status_code, 200)
+        # Check for the search form.
+        self.assertIn('<form method="get" action="/search/">', rsp.content)
+        # And the filtered search links.
+        self.assertIn('<a href="?q=foo&model_filter=r">', rsp.content)
+        self.assertIn('<a href="?q=foo&model_filter=u">', rsp.content)
+
+    def test_get_disabled(self):
+        """Testing the search view with search disabled"""
+        siteconfig = SiteConfiguration.objects.get_current()
+        self.assertFalse(siteconfig.get('search_enable'))
+
+        rsp = self.client.get(reverse('search'))
+
+        self.assertEqual(rsp.status_code, 200)
+        self.assertIn(
+            '<title>Indexed searched not enabled | Review Board</title>',
+            rsp.content)
+        self.assertNotIn('<form', rsp.content)

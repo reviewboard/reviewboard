@@ -1,35 +1,45 @@
 suite('rb/pages/views/DiffViewerPageView', function() {
-    var tableTemplate = _.template([
-            '<div class="diff-container">',
-            ' <table class="sidebyside">',
-            '  <thead>',
-            '   <tr class="filename-row">',
-            '    <th colspan="4">',
-            '     <a name="<%- fileID %>" class="file-anchor"></a>',
-            '    </th>',
-            '   </tr>',
-            '  </thead>',
-            '  <% _.each(chunks, function(chunk) { %>',
-            '   <tbody class="<%- chunk.type %>">',
-            '    <% _.each(chunk.lines, function(line, i) { %>',
-            '     <tr line="<%- line.vNumber %>">',
-            '      <th>',
-            '       <% if (i === 0 && chunk.type !== "equal") { %>',
-            '        <a name="<%- chunk.id %>" class="chunk-anchor"></a>',
-            '       <% } %>',
-            '       <%- line.leftNumber || "" %>',
-            '      </th>',
-            '      <td class="l"></td>',
-            '      <th><%- line.rightNumber || "" %></th>',
-            '      <td class="r"></td>',
-            '     </tr>',
-            '    <% }); %>',
-            '   </tbody>',
-            '  <% }); %>',
-            ' </table>',
-            '</div>'
-        ].join('')),
-        pageView;
+    const tableTemplate = _.template(dedent`
+        <div class="diff-container">
+         <table class="sidebyside">
+          <thead>
+           <tr class="filename-row">
+            <th colspan="4">
+             <a name="<%- fileID %>" class="file-anchor"></a>
+            </th>
+           </tr>
+          </thead>
+          <% _.each(chunks, function(chunk) { %>
+           <tbody class="<%- chunk.type %>">
+            <% _.each(chunk.lines, function(line, i) { %>
+             <tr line="<%- line.vNumber %>">
+              <th>
+               <% if (i === 0 && chunk.type !== "equal") { %>
+                <a name="<%- chunk.id %>" class="chunk-anchor"></a>
+               <% } %>
+               <%- line.leftNumber || "" %>
+              </th>
+              <td class="l"></td>
+              <th><%- line.rightNumber || "" %></th>
+              <td class="r"></td>
+             </tr>
+            <% }); %>
+           </tbody>
+          <% }); %>
+         </table>
+        </div>
+    `);
+
+    const pageTemplate = dedent`
+        <div>
+         <div id="review-banner"></div>
+         <div id="diffs"></div>
+        </div>
+    `;
+
+    let page;
+    let pageView;
+    let $diffs;
 
     beforeEach(function() {
         /*
@@ -38,30 +48,34 @@ suite('rb/pages/views/DiffViewerPageView', function() {
          */
         spyOn(Backbone.history, 'start');
 
-        pageView = new RB.DiffViewerPageView({
-            el: $('<div/>').appendTo($testsScratch),
-            model: new RB.DiffViewerPageModel({
-                revision: 1,
-                is_interdiff: false,
-                interdiff_revision: null
-            }, {parse: true}),
+        page = new RB.DiffViewerPage({
+            revision: 1,
+            is_interdiff: false,
+            interdiff_revision: null,
+            checkForUpdates: false,
             reviewRequestData: {
                 id: 123,
                 loaded: true,
-                state: RB.ReviewRequest.PENDING
+                state: RB.ReviewRequest.PENDING,
             },
             editorData: {
                 mutableByUser: true,
-                statusMutableByUser: true
-            }
+                statusMutableByUser: true,
+            },
+        }, {
+            parse: true,
         });
 
+        pageView = new RB.DiffViewerPageView({
+            el: $(pageTemplate).appendTo($testsScratch),
+            model: page,
+        });
+
+        $diffs = pageView.$el.children('#diffs');
+
         /* Don't communicate with the server for page updates. */
-        spyOn(pageView.reviewRequest, 'ready').and.callFake(
-            function(options, context) {
-                options.ready.call(context);
-            });
-        spyOn(pageView.reviewRequest, 'beginCheckForUpdates');
+        spyOn(page.get('reviewRequest'), 'ready').and.callFake(
+            (options, context) => options.ready.call(context));
     });
 
     afterEach(function() {
@@ -70,7 +84,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
     describe('Anchors', function() {
         it('Tracks all types', function() {
-            pageView.$el.html(tableTemplate({
+            $diffs.html(tableTemplate({
                 fileID: 'file1',
                 chunks: [
                     {
@@ -80,9 +94,9 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                 type: 'insert',
                                 vNumber: 100,
                                 leftNumber: 100,
-                                rightNumber: 101
-                            }
-                        ]
+                                rightNumber: 101,
+                            },
+                        ],
                     },
                     {
                         id: '1.2',
@@ -91,9 +105,9 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                 type: 'equal',
                                 vNumber: 101,
                                 leftNumber: 101,
-                                rightNumber: 101
-                            }
-                        ]
+                                rightNumber: 101,
+                            },
+                        ],
                     },
                     {
                         id: '1.3',
@@ -102,11 +116,11 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                 type: 'delete',
                                 vNumber: 102,
                                 leftNumber: 102,
-                                rightNumber: 101
-                            }
-                        ]
-                    }
-                ]
+                                rightNumber: 101,
+                            },
+                        ],
+                    },
+                ],
             }));
 
             pageView.render();
@@ -122,7 +136,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
         describe('Navigation', function() {
             beforeEach(function() {
-                pageView.$el.html([
+                $diffs.html([
                     tableTemplate({
                         fileID: 'file1',
                         chunks: [
@@ -133,9 +147,9 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                         type: 'insert',
                                         vNumber: 100,
                                         leftNumber: 100,
-                                        rightNumber: 101
-                                    }
-                                ]
+                                        rightNumber: 101,
+                                    },
+                                ],
                             },
                             {
                                 id: '1.2',
@@ -144,15 +158,15 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                         type: 'equal',
                                         vNumber: 101,
                                         leftNumber: 101,
-                                        rightNumber: 101
-                                    }
-                                ]
-                            }
-                        ]
+                                        rightNumber: 101,
+                                    },
+                                ],
+                            },
+                        ],
                     }),
                     tableTemplate({
                         fileID: 'file2',
-                        chunks: []
+                        chunks: [],
                     }),
                     tableTemplate({
                         fileID: 'file3',
@@ -164,7 +178,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                         type: 'insert',
                                         vNumber: 100,
                                         leftNumber: 100,
-                                        rightNumber: 101
+                                        rightNumber: 101,
                                     }
                                 ]
                             },
@@ -175,12 +189,12 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                                         type: 'equal',
                                         vNumber: 101,
                                         leftNumber: 101,
-                                        rightNumber: 101
-                                    }
-                                ]
-                            }
-                        ]
-                    })
+                                        rightNumber: 101,
+                                    },
+                                ],
+                            },
+                        ],
+                    }),
                 ]);
 
                 pageView.render();
@@ -346,7 +360,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
     describe('Key bindings', function() {
         function triggerKeyPress(c) {
-            var evt = $.Event('keypress');
+            const evt = $.Event('keypress');
             evt.which = c.charCodeAt(0);
 
             pageView.$el.trigger(evt);
@@ -354,9 +368,9 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
         function testKeys(description, funcName, keyList) {
             describe(description, function() {
-                _.each(keyList, function(key) {
-                    var label,
-                        c;
+                keyList.forEach(key => {
+                    let label;
+                    let c;
 
                     if (key.length === 2) {
                         label = key[0];
@@ -400,5 +414,67 @@ suite('rb/pages/views/DiffViewerPageView', function() {
         testKeys('Create comment',
                  '_createComment',
                  ['r', 'R']);
+    });
+
+    describe('Reviewable Management', function() {
+        beforeEach(function() {
+            spyOn(pageView, 'queueLoadDiff');
+
+            pageView.render();
+        });
+
+        it('File added', function() {
+            expect($diffs.find('.diff-container').length).toBe(0);
+            expect(pageView.queueLoadDiff.calls.count()).toBe(0);
+
+            page.files.reset([
+                new RB.DiffFile({
+                    id: 100,
+                    filediff: {
+                        id: 200,
+                        revision: 1,
+                    },
+                }),
+            ]);
+
+            expect($diffs.find('.diff-container').length).toBe(1);
+            expect(pageView.queueLoadDiff.calls.count()).toBe(1);
+        });
+
+        it('Files reset', function() {
+            expect($diffs.find('.diff-container').length).toBe(0);
+            expect(pageView.queueLoadDiff.calls.count()).toBe(0);
+
+            /* Add an initial batch of files. */
+            page.files.reset([
+                new RB.DiffFile({
+                    id: 100,
+                    filediff: {
+                        id: 200,
+                        revision: 1,
+                    },
+                }),
+            ]);
+
+            expect($diffs.find('.diff-container').length).toBe(1);
+            expect(pageView.queueLoadDiff.calls.count()).toBe(1);
+
+            /* Now do another. */
+            page.files.reset([
+                new RB.DiffFile({
+                    id: 101,
+                    filediff: {
+                        id: 201,
+                        revision: 2,
+                    },
+                }),
+            ]);
+
+            const $containers = $diffs.find('.diff-container');
+            expect($containers.length).toBe(1);
+            expect($containers.find('.sidebyside')[0].id)
+                .toBe('file_container_101');
+            expect(pageView.queueLoadDiff.calls.count()).toBe(2);
+        });
     });
 });

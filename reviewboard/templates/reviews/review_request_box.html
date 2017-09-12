@@ -107,5 +107,7 @@
   </div>
  </div>
 
-{% include "reviews/review_issue_summary_table.html" %}
+{% if show_issue_summary_table %}
+{%  include "reviews/review_issue_summary_table.html" %}
+{% endif %}
 </div>
