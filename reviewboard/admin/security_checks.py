@@ -152,10 +152,30 @@ class ExecutableCodeCheck(BaseSecurityCheck):
                 for ext in extensions_list:
                     self.storage.delete('exec_check' + ext)
 
-    def download_and_compare(self, to_download):
+    def download_and_compare(self, filename):
+        """Download a file and compare the resulting response to the file.
+
+        This makes sure that when we fetch a file via its URL, the returned
+        contents are identical to the file contents. This returns True if the
+        file contents match, and False otherwise.
+
+        Args:
+            filename (unicode):
+                The name of the filename to download.
+
+        Returns:
+            bool:
+            ``True`` if the file could be downloaded (or a HTTP 403 was hit)
+            and the contents matched the expected value.
+
+            ``False`` if the download failed for some reason or the contents
+            didn't match expectations.
+        """
+        url = build_server_url('%s/%s' % (self.directory.rstrip('/'),
+                                          filename))
+
         try:
-            data = urlopen(build_server_url(self.directory,
-                                            to_download)).read()
+            data = urlopen(url).read()
         except HTTPError as e:
             # An HTTP 403 is also an acceptable response
             if e.code == 403:
@@ -163,7 +183,7 @@ class ExecutableCodeCheck(BaseSecurityCheck):
             else:
                 raise e
 
-        with self.storage.open(to_download, 'r') as f:
+        with self.storage.open(filename, 'r') as f:
             return data == f.read()
 
     def _using_default_storage(self):
