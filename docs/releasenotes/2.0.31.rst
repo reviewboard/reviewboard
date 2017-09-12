@@ -1,0 +1,80 @@
+.. default-intersphinx:: rb2.0
+
+
+=================================
+Review Board 2.0.31 Release Notes
+=================================
+
+**Release date**: September 12, 2017
+
+
+Security Updates
+================
+
+This release fixes two security vulnerabilities. Thanks to Dylan Ayrey for
+reporting and discussing these issues with us.
+
+* URLs beginning with ``javascript:`` in text fields were being turned into
+  clickable links, which could be used to run malicious code on a user's
+  behalf if clicked. We no longer convert these into links.
+
+* Attempting to download an SVG file attachment would default to displaying
+  it in the web browser, allowing any malicious JavaScript within the SVG
+  to load and run on the user's behalf when served from a standard Review
+  Board install. (If you use a CDN hosted on a separate domain, you are not
+  at risk.)
+
+  We now force all file attachments to download when clicking
+  :guilabel:`Download` or when accessing its URL directly in the browser.
+  This applies only to new and existing Apache-based installs. If using
+  Nginx or a custom server configuration, you will need to ensure that all
+  uploaded media files are served with a
+  :mailheader:`Content-Disposition: attachment` header.
+
+We also fixed an issue that could cause uploaded file security checks in the
+Security Checklist page to fail.
+
+We recommend that everyone upgrade at their earliest convenience in order to
+stay secure. Please also view the Security Checklist in the administration UI
+once you have upgraded and make sure that all tests have passed.
+
+
+Reporting Security Vulnerabilities
+----------------------------------
+
+Security vulnerabilities can be reported by `filing a bug`_ and choosing
+:guilabel:`Security issue` or by e-mailing security@beanbaginc.com. Patches
+can be sent by posting a review request to https://reviews.reviewboard.org and
+choosing *only* the "security" review group. These methods ensure security
+vulnerabilities are sent safely and confidentially to the Review Board team.
+
+
+.. _filing a bug: https://hellosplat.com/s/beanbag/tickets/new/
+
+
+Upgrade Instructions
+====================
+
+To upgrade to Review Board 2.0.31, run::
+
+    pip install ReviewBoard==2.0.31
+
+or::
+
+    easy_install ReviewBoard==2.0.31
+
+
+Bug Fixes
+=========
+
+GitLab
+------
+
+* Fixed viewing diffs of files on GitLab that contain Unicode characters.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Dylan Ayrey

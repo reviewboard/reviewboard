@@ -76,6 +76,7 @@ if settings.DEBUG and not settings.PRODUCTION:
                           show_indexes=True)
     urlpatterns += static(settings.MEDIA_DIRECTORY,
                           document_root=settings.MEDIA_ROOT,
+                          view='reviewboard.attachments.views.serve_safe',
                           show_indexes=True)
 
     urlpatterns += [
