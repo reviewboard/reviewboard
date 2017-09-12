@@ -53,16 +53,62 @@ suite('rb/utils/linkifyUtils', function() {
 
     describe('linkifyText', function() {
         describe('URLs', function() {
-            it('http-based URLs', function() {
+            it('http://', function() {
                 expect(RB.LinkifyUtils.linkifyText('http://example.com')).toBe(
                        '<a target="_blank" href="http://example.com">' +
                        'http://example.com</a>');
             });
 
-            it('https-based URLs', function() {
+            it('https://', function() {
                 expect(RB.LinkifyUtils.linkifyText('https://example.com')).toBe(
                        '<a target="_blank" href="https://example.com">' +
                        'https://example.com</a>');
+            });
+
+            it('ftp://', function() {
+                expect(RB.LinkifyUtils.linkifyText('ftp://example.com')).toBe(
+                       '<a target="_blank" href="ftp://example.com">' +
+                       'ftp://example.com</a>');
+            });
+
+            it('ftps://', function() {
+                expect(RB.LinkifyUtils.linkifyText('ftps://example.com')).toBe(
+                       '<a target="_blank" href="ftps://example.com">' +
+                       'ftps://example.com</a>');
+            });
+
+            it('gopher://', function() {
+                expect(RB.LinkifyUtils.linkifyText('gopher://example.com')).toBe(
+                       '<a target="_blank" href="gopher://example.com">' +
+                       'gopher://example.com</a>');
+            });
+
+            it('mailto:', function() {
+                expect(RB.LinkifyUtils.linkifyText('mailto:user@example.com'))
+                    .toBe('<a target="_blank" href="mailto:user@example.com">' +
+                          'mailto:user@example.com</a>');
+            });
+
+            it('news:', function() {
+                expect(RB.LinkifyUtils.linkifyText('news:example.com'))
+                    .toBe('<a target="_blank" href="news:example.com">' +
+                          'news:example.com</a>');
+            });
+
+            it('sms:', function() {
+                expect(RB.LinkifyUtils.linkifyText('sms:example.com'))
+                    .toBe('<a target="_blank" href="sms:example.com">' +
+                          'sms:example.com</a>');
+            });
+
+            it('javascript: (unlinked)', function() {
+                expect(RB.LinkifyUtils.linkifyText('javascript:test'))
+                    .toBe('javascript:test');
+            });
+
+            it('javascript:// (unlinked)', function() {
+                expect(RB.LinkifyUtils.linkifyText('javascript://test'))
+                    .toBe('javascript://test');
             });
 
             it('Trailing slashes', function() {

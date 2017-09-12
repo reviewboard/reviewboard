@@ -262,7 +262,7 @@ class Site(object):
 
         # Generate .htaccess files that enable compression and
         # never expires various file types.
-        htaccess = '\n'.join([
+        common_htaccess = [
             '<IfModule mod_expires.c>',
             '  <FilesMatch "\.(jpg|gif|png|css|js|htc)">',
             '    ExpiresActive on',
@@ -284,11 +284,23 @@ class Site(object):
             ]
         ] + [
             '</IfModule>',
-        ])
+        ]
 
-        for dirname in (static_dir, media_dir):
-            with open(os.path.join(dirname, '.htaccess'), 'w') as fp:
-                fp.write(htaccess)
+        static_htaccess = common_htaccess
+
+        media_htaccess = common_htaccess + [
+            '<IfModule mod_headers.c>',
+            '  Header set Content-Disposition "attachment"',
+            '</IfModule>',
+        ]
+
+        with open(os.path.join(static_dir, '.htaccess'), 'w') as fp:
+            fp.write('\n'.join(static_htaccess))
+            fp.write('\n')
+
+        with open(os.path.join(media_dir, '.htaccess'), 'w') as fp:
+            fp.write('\n'.join(media_htaccess))
+            fp.write('\n')
 
     def setup_settings(self):
         """Set up the environment for running django management commands."""
