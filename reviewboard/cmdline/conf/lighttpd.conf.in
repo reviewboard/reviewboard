@@ -55,7 +55,6 @@ $HTTP["host"] =~ "@sitedomain_escaped@" {
     )
     compress.cache-dir = "@sitedir@/tmp/"
 
-
     mimetype.assign = (
         ".gif"  => "image/gif",
         ".jpg"  => "image/jpeg",
@@ -70,4 +69,9 @@ $HTTP["host"] =~ "@sitedomain_escaped@" {
         ".txt"  => "text/plain",
         ".js"   => "text/javascript",
     )
+
+    # Force all uploaded media files to download.
+    $HTTP["url"] =~ "/media/.*" {
+        setenv.add-response-header = ( "Content-Disposition" => "attachment" )
+    }
 }
