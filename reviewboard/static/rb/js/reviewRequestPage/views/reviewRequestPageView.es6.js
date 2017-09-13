@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 const commentTypeToIDPrefix = {
@@ -369,4 +369,4 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
 });
 
 
-}
+})();

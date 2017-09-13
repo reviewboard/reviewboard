@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 /**
@@ -872,4 +872,4 @@ RB.TextEditorView = Backbone.View.extend({
 });
 
 
-}
+})();

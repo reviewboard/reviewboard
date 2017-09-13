@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 const POLICY_READ_WRITE = 'rw';
@@ -702,4 +702,4 @@ RB.APITokensView = Backbone.View.extend({
 });
 
 
-}
+})();

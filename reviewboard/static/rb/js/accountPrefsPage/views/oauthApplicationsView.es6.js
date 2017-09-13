@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 const addApplicationText = gettext('Add application');
@@ -271,4 +271,4 @@ RB.OAuthApplicationsView = Backbone.View.extend({
 });
 
 
-}
+})();

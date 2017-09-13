@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 const emptyText = gettext('You do not have any OAuth2 tokens.');
@@ -99,4 +99,4 @@ RB.OAuthTokensView = Backbone.View.extend({
 });
 
 
-}
+})();

@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 /**
@@ -732,4 +732,4 @@ RB.CommentDialogView = Backbone.View.extend({
 });
 
 
-}
+})();

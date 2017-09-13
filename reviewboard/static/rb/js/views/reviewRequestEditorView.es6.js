@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 /**
@@ -1875,4 +1875,4 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 });
 
 
-}
+})();

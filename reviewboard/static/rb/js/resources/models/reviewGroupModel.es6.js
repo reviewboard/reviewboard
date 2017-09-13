@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 /**
@@ -192,4 +192,4 @@ RB.ReviewGroup = RB.BaseResource.extend({
 });
 
 
-}
+})();

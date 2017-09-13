@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 /**
@@ -1346,4 +1346,4 @@ RB.ReviewDialogView = Backbone.View.extend({
 });
 
 
-}
+})();

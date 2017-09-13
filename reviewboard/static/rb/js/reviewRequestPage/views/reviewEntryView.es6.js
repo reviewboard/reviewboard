@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 const ParentView = RB.ReviewRequestPage.EntryView;
@@ -221,4 +221,4 @@ RB.ReviewRequestPage.ReviewEntryView = ParentView.extend({
 });
 
 
-}
+})();
