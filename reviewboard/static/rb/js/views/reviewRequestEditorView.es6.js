@@ -521,14 +521,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 this._uploadFile.bind(this));
         }
 
-        /*
-         * Update the layout constraints any time these properties
-         * change. Also, right away.
-         */
-        $(window).resize(this._scheduleResizeLayout);
-        this.listenTo(this.model, 'change:editCount', this._checkResizeLayout);
-        this._checkResizeLayout();
-
         $("#review-request-files-placeholder").remove();
 
         fileAttachments.each(
@@ -559,6 +551,14 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 this._fieldViews[fieldID].render();
             }
         }
+
+        /*
+         * Update the layout constraints any time these properties
+         * change. Also, right away.
+         */
+        $(window).resize(this._scheduleResizeLayout);
+        this.listenTo(this.model, 'change:editCount', this._checkResizeLayout);
+        this._checkResizeLayout();
 
         this._setupActions();
 
@@ -670,7 +670,8 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
      */
     publishDraft(options) {
         // Save all the fields if we need to.
-        const fields = this.$(".editable:inlineEditorDirty");
+        const fields = Object.values(this._fieldViews)
+            .filter(view => view.needsSave());
 
         this.model.set({
             publishing: true,
@@ -680,7 +681,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         if (fields.length === 0) {
             this.model.publishDraft(options);
         } else {
-            fields.inlineEditor('submit');
+            fields.forEach(field => field.finishSave());
         }
     },
 
@@ -876,9 +877,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     _resizeLayout() {
         const $lastContent = this._$main.children('.review-request-section:last-child');
         const $lastFieldContainer = $lastContent.children('.field-container');
-        const $lastEditable = $lastFieldContainer.children('.editable');
+        const $lastField = $lastFieldContainer.children('.editable');
+        const lastFieldView = this._fieldViews[$lastField.data('field-id')];
         const lastContentTop = Math.ceil($lastContent.position().top);
-        const editor = $lastEditable.inlineEditor('field').data('text-editor');
+        const editor = lastFieldView.inlineEditorView.textEditor;
         const detailsWidth = 300; // Defined as @details-width in reviews.less
         const detailsPadding = 10;
         const $detailsBody = $('#review-request-details tbody');
@@ -903,7 +905,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
          */
         this._$main.height('auto');
         $lastContent.height('auto');
-        $lastEditable.height('auto');
+        $lastField.height('auto');
 
         if (editor) {
             editor.setSize(null, 'auto');
@@ -936,11 +938,11 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
              * both, since this logic will be called again when the state
              * changes.
              */
-            if ($lastEditable.inlineEditor('editing') && editor) {
+            if (lastFieldView.inlineEditorView.editing() && editor) {
                 editor.setSize(
                     null,
                     contentHeight -
-                    $lastEditable.inlineEditor('buttons').height());
+                    lastFieldView.inlineEditorView._$buttons.height());
             } else {
                 /*
                  * It's possible to squish the editable element if we force
@@ -948,10 +950,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                  * height.
                  */
                 const newEditableHeight = contentHeight +
-                                          $lastEditable.getExtents('m', 'tb');
+                                          $lastField.getExtents('m', 'tb');
 
-                if (newEditableHeight > $lastEditable.outerHeight()) {
-                    $lastEditable.outerHeight(newEditableHeight);
+                if (newEditableHeight > $lastField.outerHeight()) {
+                    $lastField.outerHeight(newEditableHeight);
                 }
             }
         }
