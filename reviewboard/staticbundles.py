@@ -147,7 +147,7 @@ PIPELINE_JAVASCRIPT = dict({
             'rb/js/extensions/models/reviewRequestActionHookModel.js',
             'rb/js/pages/models/pageManagerModel.js',
             'rb/js/pages/models/pageModel.es6.js',
-            'rb/js/pages/views/pageView.es6.js',
+            'rb/js/pages/views/basePageView.es6.js',
             'rb/js/models/extraDataModel.js',
             'rb/js/models/extraDataMixin.js',
             'rb/js/resources/utils/serializers.es6.js',
