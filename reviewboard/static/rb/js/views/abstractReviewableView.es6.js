@@ -70,6 +70,12 @@ RB.AbstractReviewableView = Backbone.View.extend({
      *         Options for the comment block creation.
      */
     createAndEditCommentBlock(options) {
+        if (this.commentDlg !== null &&
+            this.commentDlg.model.get('dirty') &&
+            !confirm(gettext('You are currently editing another comment. Would you like to discard it and create a new one?'))) {
+            return;
+        }
+
         let defaultCommentBlockFields =
             _.result(this.model, 'defaultCommentBlockFields');
 
