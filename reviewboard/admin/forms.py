@@ -101,6 +101,12 @@ class GeneralSettingsForm(SiteSettingsForm):
                     "contain the subdirectory Review Board is installed in."),
         widget=forms.TextInput(attrs={'size': '30'}))
 
+    site_read_only = forms.BooleanField(
+        label=_('Enable read-only mode'),
+        help_text=_('Prevent non-superusers from making any changes to '
+                    'Review Board.'),
+        required=False)
+
     site_media_url = forms.CharField(
         label=_("Media URL"),
         help_text=_("The URL to the media files. Leave blank to use the "
@@ -363,7 +369,8 @@ class GeneralSettingsForm(SiteSettingsForm):
                 'title': _("Site Settings"),
                 'fields': ('company', 'server', 'site_media_url',
                            'site_static_url', 'site_admin_name',
-                           'site_admin_email', 'locale_timezone'),
+                           'site_admin_email', 'locale_timezone',
+                           'site_read_only'),
             },
             {
                 'classes': ('wide',),
