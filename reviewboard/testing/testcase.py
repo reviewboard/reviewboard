@@ -303,13 +303,45 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def create_filediff(self, diffset, source_file='/test-file',
                         dest_file='/test-file', source_revision='123',
                         dest_detail='124', status=FileDiff.MODIFIED,
-                        diff=DEFAULT_FILEDIFF_DATA):
-        """Creates a FileDiff for testing.
+                        diff=DEFAULT_FILEDIFF_DATA, save=True):
+        """Create a FileDiff for testing.
 
         The FileDiff is tied to the given DiffSet. It's populated with
         default data that can be overridden by the caller.
+
+        Args:
+            diffset (reviewboard.diffviewer.models.DiffSet):
+                The parent diff set that will own this file.
+
+            source_file (unicode, optional):
+                The source filename.
+
+            dest_file (unicode, optional):
+                The destination filename, which will be the same as
+                ``source_file`` unless the file was moved/renamed/copied.
+
+            source_revision (unicode, optional):
+                The source revision.
+
+            dest_detail (unicode, optional):
+                The destination revision or other detail as found in the
+                parsed diff. This may be a timestamp or some other value.
+
+            status (unicode, optional):
+                The status of the file. This is the operation performed
+                as indicated in the diff.
+
+            diff (bytes, optional):
+                The diff contents.
+
+            save (bool, optional):
+                Whether to automatically save the resulting object.
+
+        Returns:
+            reviewboard.diffviewer.models.FileDiff:
+            The resulting FileDiff.
         """
-        return FileDiff.objects.create(
+        filediff = FileDiff(
             diffset=diffset,
             source_file=source_file,
             dest_file=dest_file,
@@ -317,6 +349,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             dest_detail=dest_detail,
             status=status,
             diff=diff)
+
+        if save:
+            filediff.save()
+
+        return filediff
 
     def create_repository(self, with_local_site=False, name='Test Repo',
                           tool_name='Git', path=None, local_site=None,
