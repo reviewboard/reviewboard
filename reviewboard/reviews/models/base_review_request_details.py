@@ -249,7 +249,7 @@ class BaseReviewRequestDetails(models.Model):
         DiffSet.objects.create_from_data(
             repository=self.repository,
             diff_file_name='diff',
-            diff_file_contents=commit.diff.encode('utf-8'),
+            diff_file_contents=commit.diff,
             parent_diff_file_name=None,
             parent_diff_file_contents=None,
             diffset_history=self.get_review_request().diffset_history,
