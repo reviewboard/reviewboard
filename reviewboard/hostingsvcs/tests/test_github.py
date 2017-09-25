@@ -637,7 +637,7 @@ class GitHubTests(ServiceTests):
         self.assertTrue(service.client.http_get.called)
 
         self.assertEqual(change.message, 'Move .clearfix to defs.less')
-        self.assertEqual(md5(change.diff.encode('utf-8')).hexdigest(),
+        self.assertEqual(md5(change.diff).hexdigest(),
                          '2e928c77c0bf703960eb49f04e76bc11')
 
     def test_get_change_exception(self):
