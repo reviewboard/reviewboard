@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 import json
 
+from django.contrib.auth.models import User
 from django.conf.urls import include, url
 from django.core.urlresolvers import clear_url_caches
 from djblets.features import Feature, get_features_registry
@@ -12,6 +13,7 @@ from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.base import WebAPIResource
+from reviewboard.webapi.errors import READ_ONLY_ERROR
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 
 
@@ -62,7 +64,7 @@ class BaseTestingResource(WebAPIResource):
 
 
 class WebAPIResourceFeatureTests(BaseWebAPITestCase):
-    """Tests for Web API Resources with required features"""
+    """Tests for Web API Resources with required features."""
 
     @classmethod
     def setUpClass(cls):
@@ -308,3 +310,164 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
             self.assertEqual(content['stat'], 'fail')
             self.assertEqual(content['err']['msg'], PERMISSION_DENIED.msg)
             self.assertEqual(content['err']['code'], PERMISSION_DENIED.code)
+
+
+class WebAPIResourceReadOnlyTests(BaseWebAPITestCase):
+    """Tests for WebAPI resources with read-only mode."""
+
+    fixtures = ['test_users']
+
+    @classmethod
+    def setUpClass(cls):
+        super(WebAPIResourceReadOnlyTests, cls).setUpClass()
+
+        cls.resource = BaseTestingResource()
+        urlpatterns.append(
+            url(r'^api/', include(cls.resource.get_url_patterns()))
+        )
+
+    @classmethod
+    def tearDownClass(cls):
+        super(WebAPIResourceReadOnlyTests, cls).tearDownClass()
+
+        del urlpatterns[:]
+
+    def tearDown(self):
+        super(WebAPIResourceReadOnlyTests, self).tearDown()
+
+        defaults = self.siteconfig.get_defaults()
+        self.siteconfig.set('site_read_only', defaults.get('site_read_only'))
+        self.siteconfig.save()
+
+    def _test_method(self, method, read_only_enabled, is_superuser,
+                     expect_503):
+        """Test a request.
+
+        This tests various states related to read-only mode.
+
+        Args:
+            method (unicode):
+                The HTTP method to test.
+
+            read_only_enabled (bool):
+                Whether read-only mode should be enabled during the test.
+
+            is_superuser (bool):
+                Whether to test using a superuser.
+
+            expect_503 (bool):
+                Whether the response is expected to be an HTTP 503 or not.
+        """
+        self.siteconfig.set('site_read_only', read_only_enabled)
+        self.siteconfig.save()
+
+        if is_superuser:
+            self.client.login(username='admin', password='admin')
+        else:
+            self.client.login(username='doc', password='doc')
+
+        try:
+            settings = {
+                'ROOT_URLCONF': 'reviewboard.webapi.tests.test_base',
+            }
+            with self.settings(**settings):
+                # If we don't clear the URL caches then lookups for the URL will
+                # break (due to using the URLs cached from the regular Review Board
+                # URL conf).
+                clear_url_caches()
+
+                if method == 'post':
+                    resource_url = self.resource.get_list_url()
+                else:
+                    resource_url = self.resource.get_item_url(obj_id='123')
+
+                method = getattr(self.client, method)
+                rsp = method(resource_url)
+        finally:
+            clear_url_caches()
+
+        content = json.loads(rsp.content)
+
+        if expect_503:
+            self.assertEqual(rsp.status_code, 503)
+            self.assertEqual(content['stat'], 'fail')
+            self.assertEqual(content['err']['msg'], READ_ONLY_ERROR.msg)
+            self.assertEqual(content['err']['code'], READ_ONLY_ERROR.code)
+        else:
+            self.assertEqual(rsp.status_code, 418)
+            self.assertEqual(content['stat'], 'ok')
+
+    def test_read_only_update(self):
+        """Testing PUT with read only mode enabled returns READ_ONLY_ERROR"""
+        self._test_method('put', read_only_enabled=True, is_superuser=False,
+                          expect_503=True)
+
+    def test_read_only_create(self):
+        """Testing POST with read only mode enabled returns READ_ONLY_ERROR"""
+        self._test_method('post', read_only_enabled=True, is_superuser=False,
+                          expect_503=True)
+
+    def test_read_only_delete(self):
+        """Testing DELETE with read only mode enabled returns
+        READ_ONLY_ERROR
+        """
+        self._test_method('delete', read_only_enabled=True, is_superuser=False,
+                          expect_503=True)
+
+    def test_read_only_get(self):
+        """Testing GET with read only mode enabled returns a valid response
+        """
+        self._test_method('get', read_only_enabled=True, is_superuser=False,
+                          expect_503=False)
+
+    def test_no_read_only_update(self):
+        """Testing PUT with read only mode disabled returns a valid response
+        """
+        self._test_method('put', read_only_enabled=False, is_superuser=False,
+                          expect_503=False)
+
+    def test_no_read_only_create(self):
+        """Testing POST with read only mode disabled returns a valid response
+        """
+        self._test_method('post', read_only_enabled=False, is_superuser=False,
+                          expect_503=False)
+
+    def test_no_read_only_delete(self):
+        """Testing PUT with read only mode disabled returns a valid response
+        """
+        self._test_method('delete', read_only_enabled=False,
+                          is_superuser=False, expect_503=False)
+
+    def test_no_read_only_get(self):
+        """Testing GET with read only mode disabled returns a valid response
+        """
+        self._test_method('get', read_only_enabled=False, is_superuser=False,
+                          expect_503=False)
+
+    def test_read_only_superuser_update(self):
+        """Testing PUT with read only mode enabled for superusers returns a
+        valid response
+        """
+        self._test_method('put', read_only_enabled=True, is_superuser=True,
+                          expect_503=False)
+
+    def test_read_only_superuser_create(self):
+        """Testing POST with read only mode enabled for superusers returns a
+        valid response
+        """
+        self._test_method('post', read_only_enabled=True, is_superuser=True,
+                          expect_503=False)
+
+    def test_read_only_superuser_delete(self):
+        """Testing DELETE with read only mode enabled for superusers returns a
+        valid response
+        """
+        self._test_method('delete', read_only_enabled=True, is_superuser=True,
+                          expect_503=False)
+
+    def test_read_only_superuser_get(self):
+        """Testing GET with read only mode enabled for superusers returns a
+        valid response
+        """
+        self._test_method('get', read_only_enabled=True, is_superuser=True,
+                          expect_503=False)
