@@ -332,10 +332,10 @@ RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
 
         console.assert(entry.get('typeID') === metadata.entryType);
 
-        /* Only reload this entry if its timestamp has changed. */
-        const newTimestamp = new Date(metadata.timestamp);
+        /* Only reload this entry if its updated timestamp has changed. */
+        const newTimestamp = new Date(metadata.updatedTimestamp);
 
-        if (newTimestamp <= entry.get('timestamp')) {
+        if (newTimestamp <= entry.get('updatedTimestamp')) {
             return;
         }
 

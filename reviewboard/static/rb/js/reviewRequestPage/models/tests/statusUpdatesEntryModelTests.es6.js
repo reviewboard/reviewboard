@@ -13,7 +13,8 @@ suite('rb/reviewRequestPage/models/StatusUpdatesEntry',
             diffCommentsData: diffCommentsData,
             id: '0',
             typeID: 'initial_status_updates',
-            timestamp: '2017-08-18T13:40:25Z',
+            addedTimestamp: '2017-08-18T13:40:25Z',
+            updatedTimestamp: '2017-08-18T16:20:00Z',
             pendingStatusUpdates: true,
             reviewsData: [
                 {
@@ -34,8 +35,10 @@ suite('rb/reviewRequestPage/models/StatusUpdatesEntry',
         expect(entry.get('diffCommentsData')).toBe(diffCommentsData);
         expect(entry.get('reviewRequestEditor')).toBe(reviewRequestEditor);
         expect(entry.get('typeID')).toBe('initial_status_updates');
-        expect(entry.get('timestamp')).toEqual(
+        expect(entry.get('addedTimestamp')).toEqual(
             new Date(Date.UTC(2017, 7, 18, 13, 40, 25)));
+        expect(entry.get('updatedTimestamp')).toEqual(
+            new Date(Date.UTC(2017, 7, 18, 16, 20, 0)));
         expect(entry.get('pendingStatusUpdates')).toBe(true);
         expect(entry.get('ignoredAttr')).toBe(undefined);
 
