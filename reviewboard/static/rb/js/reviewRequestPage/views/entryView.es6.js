@@ -45,6 +45,8 @@ RB.ReviewRequestPage.EntryView = Backbone.View.extend({
         this._$expandCollapseButton
             .removeClass('rb-icon-expand-review')
             .addClass('rb-icon-collapse-review');
+
+        this.model.set('collapsed', false);
     },
 
     /**
@@ -55,6 +57,8 @@ RB.ReviewRequestPage.EntryView = Backbone.View.extend({
         this._$expandCollapseButton
             .removeClass('rb-icon-collapse-review')
             .addClass('rb-icon-expand-review');
+
+        this.model.set('collapsed', true);
     },
 
     /**

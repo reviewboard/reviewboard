@@ -11,6 +11,9 @@
  *     addedTimestamp (Date):
  *         The date/time the entry was added.
  *
+ *     collapsed (boolean):
+ *         Whether this entry is in a collapsed state.
+ *
  *     page (RB.ReviewRequestPage):
  *         The page that owns this entry.
  *
@@ -27,6 +30,7 @@
 RB.ReviewRequestPage.Entry = Backbone.Model.extend({
     defaults: {
         addedTimestamp: null,
+        collapsed: false,
         page: null,
         reviewRequestEditor: null,
         typeID: null,
@@ -47,6 +51,7 @@ RB.ReviewRequestPage.Entry = Backbone.Model.extend({
     parse(attrs) {
         return {
             id: attrs.id,
+            collapsed: attrs.collapsed,
             addedTimestamp: moment.utc(attrs.addedTimestamp).toDate(),
             updatedTimestamp: moment.utc(attrs.updatedTimestamp).toDate(),
             typeID: attrs.typeID,
