@@ -35,10 +35,19 @@ suite('rb/views/DiffFragmentQueueView', function() {
             expect(queue.length).not.toBe(0);
 
             expect(queue.key1.length).toBe(2);
-            expect(queue.key1).toContain('123');
-            expect(queue.key1).toContain('124');
+            expect(queue.key1).toContain({
+                commentID: '123',
+                onFragmentRendered: null,
+            });
+            expect(queue.key1).toContain({
+                commentID: '124',
+                onFragmentRendered: null,
+            });
             expect(queue.key2.length).toBe(1);
-            expect(queue.key2).toContain('125');
+            expect(queue.key2).toContain({
+                commentID: '125',
+                onFragmentRendered: null,
+            });
         });
 
         it('Batch loading', function() {

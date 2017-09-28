@@ -66,7 +66,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
 
         queue[key].push({
             commentID: commentID,
-            onFragmentRendered: onFragmentRendered,
+            onFragmentRendered: onFragmentRendered || null,
         });
     },
 

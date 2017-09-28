@@ -42,6 +42,7 @@ suite('rb/views/DiffFragmentView', function() {
 
         view = new RB.DiffFragmentView({
             loadDiff: loadDiff,
+            collapsible: true,
         });
         view.$el.html(fragmentTemplate());
         $testsScratch.append(view.$el);
@@ -51,31 +52,70 @@ suite('rb/views/DiffFragmentView', function() {
         spyOn(_, 'delay').and.callFake(cb => cb());
     });
 
-    it('render', function() {
-        view.render();
+    describe('render', function() {
+        it('With visible and collapsible === true', function() {
+            view.render();
 
-        expect(view.$el.hasClass('allow-transitions')).toBe(true);
-        expect(view._$table.hasClass('expanded')).toBe(false);
-        expect(view._$table.hasClass('collapsed')).toBe(true);
+            expect(view.$el.hasClass('allow-transitions')).toBe(true);
+            expect(view._$table.hasClass('expanded')).toBe(false);
+            expect(view._$table.hasClass('collapsed')).toBe(true);
 
-        /*
-         * Ideally we'd check for the proper transform values we're setting
-         * (or part of them anyway), but browsers may turn those into
-         * "matrix(...)" values. So this is better than nothing.
-         */
-        expect(view._$thead.css('transform')).not.toBe('none');
+            /*
+             * Ideally we'd check for the proper transform values we're setting
+             * (or part of them anyway), but browsers may turn those into
+             * "matrix(...)" values. So this is better than nothing.
+             */
+            expect(view._$thead.css('transform')).not.toBe('none');
 
-        _.each(view._$diffHeaders, headerEl => {
-            expect($(headerEl).css('transform')).not.toBe('none');
+            _.each(view._$diffHeaders, headerEl => {
+                expect($(headerEl).css('transform')).not.toBe('none');
+            });
+        });
+
+        it('With hidden and collapsible === true', function() {
+            view.$el.hide();
+            view.render();
+
+            expect(view.$el.hasClass('allow-transitions')).toBe(true);
+            expect(view._$table.hasClass('expanded')).toBe(true);
+            expect(view._$table.hasClass('collapsed')).toBe(false);
+
+            /*
+             * Ideally we'd check for the proper transform values we're setting
+             * (or part of them anyway), but browsers may turn those into
+             * "matrix(...)" values. So this is better than nothing.
+             */
+            expect(view._$thead.css('transform')).toBe('none');
+
+            _.each(view._$diffHeaders, headerEl => {
+                expect($(headerEl).css('transform')).toBe('none');
+            });
+        });
+
+        it('With collapsible === false', function() {
+            view._collapsible = false;
+            view.render();
+
+            expect(view.$el.hasClass('allow-transitions')).toBe(false);
+            expect(view._$table.hasClass('expanded')).toBe(true);
+            expect(view._$table.hasClass('collapsed')).toBe(false);
+
+            /*
+             * Ideally we'd check for the proper transform values we're setting
+             * (or part of them anyway), but browsers may turn those into
+             * "matrix(...)" values. So this is better than nothing.
+             */
+            expect(view._$thead.css('transform')).toBe('none');
+
+            _.each(view._$diffHeaders, headerEl => {
+                expect($(headerEl).css('transform')).toBe('none');
+            });
         });
     });
 
     describe('Events', function() {
-        beforeEach(function() {
-            view.render();
-        });
-
         it('click expansion button', function() {
+            view.render();
             view.$('.diff-expand-btn').eq(0).click();
 
             expect(loadDiff).toHaveBeenCalled();
@@ -84,6 +124,7 @@ suite('rb/views/DiffFragmentView', function() {
         });
 
         it('click collapse button', function() {
+            view.render();
             view.$('.diff-collapse-btn').eq(0).click();
 
             expect(loadDiff).toHaveBeenCalled();
@@ -91,44 +132,99 @@ suite('rb/views/DiffFragmentView', function() {
                 .toBe('0,0');
         });
 
-        it('mouseenter', function() {
-            spyOn(view.$el, 'is').and.callFake(sel => {
-                expect(sel).toBe(':hover');
+        describe('mouseenter', function() {
+            it('With collapsible === true', function() {
+                view.render();
 
-                return true;
+                spyOn(view.$el, 'is').and.callFake(sel => {
+                    expect(sel).toBe(':hover');
+
+                    return true;
+                });
+                view.$el.trigger('mouseenter');
+
+                expect(view._$table.hasClass('collapsed')).toBe(false);
+                expect(view._$table.hasClass('expanded')).toBe(true);
+                expect(view._$thead.css('transform')).toBe('none');
+
+                _.each(view._$diffHeaders, headerEl => {
+                    expect($(headerEl).css('transform')).toBe('none');
+                });
             });
-            view.$el.trigger('mouseenter');
 
-            expect(view._$table.hasClass('collapsed')).toBe(false);
-            expect(view._$table.hasClass('expanded')).toBe(true);
-            expect(view._$thead.css('transform')).toBe('none');
+            it('With collapsible === false', function() {
+                view._collapsible = false;
+                view.render();
 
-            _.each(view._$diffHeaders, headerEl => {
-                expect($(headerEl).css('transform')).toBe('none');
+                spyOn(view.$el, 'is').and.callFake(sel => {
+                    expect(sel).toBe(':hover');
+
+                    return true;
+                });
+                view.$el.trigger('mouseenter');
+
+                expect(view._$table.hasClass('collapsed')).toBe(false);
+                expect(view._$table.hasClass('expanded')).toBe(true);
+                expect(view._$thead.css('transform')).toBe('none');
+
+                _.each(view._$diffHeaders, headerEl => {
+                    expect($(headerEl).css('transform')).toBe('none');
+                });
             });
         });
 
-        it('mouseleave', function() {
-            let isHovering = true;
+        describe('mouseleave', function() {
+            it('With collapsible === true', function() {
+                let isHovering = true;
 
-            /* First, trigger a mouseenter. */
-            spyOn(view.$el, 'is').and.callFake(sel => {
-                expect(sel).toBe(':hover');
+                view.render();
 
-                return isHovering;
+                /* First, trigger a mouseenter. */
+                spyOn(view.$el, 'is').and.callFake(sel => {
+                    expect(sel).toBe(':hover');
+
+                    return isHovering;
+                });
+                view.$el.trigger('mouseenter');
+
+                /* Now the mouse leave. */
+                isHovering = false;
+                view.$el.trigger('mouseleave');
+
+                expect(view._$table.hasClass('collapsed')).toBe(true);
+                expect(view._$table.hasClass('expanded')).toBe(false);
+                expect(view._$thead.css('transform')).not.toBe('none');
+
+                _.each(view._$diffHeaders, headerEl => {
+                    expect($(headerEl).css('transform')).not.toBe('none');
+                });
             });
-            view.$el.trigger('mouseenter');
 
-            /* Now the mouse leave. */
-            isHovering = false;
-            view.$el.trigger('mouseleave');
+            it('With collapsible === false', function() {
+                let isHovering = true;
 
-            expect(view._$table.hasClass('collapsed')).toBe(true);
-            expect(view._$table.hasClass('expanded')).toBe(false);
-            expect(view._$thead.css('transform')).not.toBe('none');
+                view._collapsible = false;
+                view.render();
 
-            _.each(view._$diffHeaders, headerEl => {
-                expect($(headerEl).css('transform')).not.toBe('none');
+                /* First, trigger a mouseenter. */
+                spyOn(view.$el, 'is').and.callFake(sel => {
+                    expect(sel).toBe(':hover');
+
+                    return isHovering;
+                });
+                view.$el.trigger('mouseenter');
+
+                /* Now the mouse leave. */
+                isHovering = false;
+                view.$el.trigger('mouseleave');
+
+                expect(view._$table.hasClass('collapsed')).toBe(false);
+                expect(view._$table.hasClass('expanded')).toBe(true);
+                expect(view._$thead.css('transform')).toBe('none');
+
+                _.each(view._$diffHeaders, headerEl => {
+                    expect($(headerEl).css('transform')).toBe('none');
+                });
             });
         });
     });

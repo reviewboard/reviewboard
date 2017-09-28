@@ -72,16 +72,24 @@ RB.DiffFragmentView = Backbone.View.extend({
 
         if (this._collapsible && this.$el.is(':visible')) {
             this.hideControls();
+        } else {
+            /*
+             * If we're not collapsible, then we're always expanded
+             * by default.
+             */
+            this.showControls();
         }
 
-        /*
-         * Once we've hidden the controls, we want to enable transitions for
-         * hovering. We don't apply this before (or make it implicit) because
-         * we don't want all the transitions to take place on page load, as
-         * it's both visually weird and messes with the height calculation for
-         * the collapsed areas.
-         */
-        _.defer(() => this.$el.addClass('allow-transitions'));
+        if (this._collapsible) {
+            /*
+             * Once we've hidden the controls, we want to enable transitions for
+             * hovering. We don't apply this before (or make it implicit)
+             * because we don't want all the transitions to take place on page
+             * load, as it's both visually weird and messes with the height
+             * calculation for the collapsed areas.
+             */
+            _.defer(() => this.$el.addClass('allow-transitions'));
+        }
 
         return this;
     },
