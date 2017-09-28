@@ -9,6 +9,8 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import CounterField, JSONField
 from djblets.db.managers import ConcurrencyManager
 
+from reviewboard.admin.read_only import is_site_read_only_for
+
 
 @python_2_unicode_compatible
 class BaseComment(models.Model):
@@ -237,8 +239,9 @@ class BaseComment(models.Model):
         if not (user and user.is_authenticated()):
             return False
 
-        return (self.get_review_request().is_mutable_by(user) or
-                user == self.get_review().user)
+        return ((self.get_review_request().is_mutable_by(user) or
+                 user == self.get_review().user) and
+                not is_site_read_only_for(user))
 
     def can_verify_issue_status(self, user):
         """Return whether the user can verify the issue status.

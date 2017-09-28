@@ -217,49 +217,59 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
 
                 if (_.isFunction(options.error)) {
                     const rsp = xhr.errorPayload;
-                    const fieldValue = rsp.fields[jsonFieldName];
-                    const fieldValueLen = fieldValue.length;
 
-                    /* Wrap each term in quotes or a leading 'and'. */
-                    _.each(fieldValue, (value, i) => {
-                        // XXX: This method isn't localizable.
-                        if (i === fieldValueLen - 1 && fieldValueLen > 1) {
-                            if (i > 2) {
-                                message += ', ';
+                    if (rsp.fields === undefined) {
+                        /*
+                         * An error can be caused by a 503 when the site is in
+                         * read-only mode, in which case the fields will be
+                         * empty.
+                         */
+                        message = xhr.errorText;
+                    } else {
+                        const fieldValue = rsp.fields[jsonFieldName];
+                        const fieldValueLen = fieldValue.length;
+
+                        /* Wrap each term in quotes or a leading 'and'. */
+                        _.each(fieldValue, (value, i) => {
+                            // XXX: This method isn't localizable.
+                            if (i === fieldValueLen - 1 && fieldValueLen > 1) {
+                                if (i > 2) {
+                                    message += ', ';
+                                }
+
+                                message += ` and "${value}"`;
+                            } else {
+                                if (i > 0) {
+                                    message += ', ';
+                                }
+
+                                message += `"${value}"`;
                             }
+                        });
 
-                            message += ` and "${value}"`;
-                        } else {
-                            if (i > 0) {
-                                message += ', ';
-                            }
-
-                            message += `"${value}"`;
+                        if (fieldName === 'targetGroups') {
+                            message = interpolate(
+                                ngettext('Group %s does not exist.',
+                                         'Groups %s do not exist.',
+                                         fieldValue.length),
+                                [message]);
+                        } else if (fieldName === 'targetPeople') {
+                            message = interpolate(
+                                ngettext('User %s does not exist.',
+                                         'Users %s do not exist.',
+                                         fieldValue.length),
+                                [message]);
+                        } else if (fieldName === 'submitter') {
+                            message = interpolate(
+                                gettext('User %s does not exist.'),
+                                [message]);
+                        } else if (fieldName === 'dependsOn') {
+                            message = interpolate(
+                                ngettext('Review Request %s does not exist.',
+                                         'Review Requests %s do not exist.',
+                                         fieldValue.length),
+                                [message]);
                         }
-                    });
-
-                    if (fieldName === 'targetGroups') {
-                        message = interpolate(
-                            ngettext('Group %s does not exist.',
-                                     'Groups %s do not exist.',
-                                     fieldValue.length),
-                            [message]);
-                    } else if (fieldName === 'targetPeople') {
-                        message = interpolate(
-                            ngettext('User %s does not exist.',
-                                     'Users %s do not exist.',
-                                     fieldValue.length),
-                            [message]);
-                    } else if (fieldName === 'submitter') {
-                        message = interpolate(
-                            gettext('User %s does not exist.'),
-                            [message]);
-                    } else if (fieldName === 'dependsOn') {
-                        message = interpolate(
-                            ngettext('Review Request %s does not exist.',
-                                     'Review Requests %s do not exist.',
-                                     fieldValue.length),
-                            [message]);
                     }
 
                     options.error.call(context, {

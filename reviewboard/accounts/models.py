@@ -16,6 +16,7 @@ from reviewboard.accounts.managers import (ProfileManager,
                                            ReviewRequestVisitManager,
                                            TrophyManager)
 from reviewboard.accounts.trophies import trophies_registry
+from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.avatars import avatar_services
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.signals import (reply_published,
@@ -288,6 +289,22 @@ class Profile(models.Model):
         """
         self.settings.setdefault('avatars', {})['avatar_service_id'] = \
             service.avatar_service_id
+
+    def save(self, *args, **kwargs):
+        """Save the profile to the database.
+
+        The profile will only be saved if the user is not affected by read-only
+        mode.
+
+        Args:
+            *args (tuple):
+                Positional arguments to pass through to the superclass.
+
+            **kwargs (dict):
+                Keyword arguments to pass through to the superclass.
+        """
+        if not is_site_read_only_for(self.user):
+            super(Profile, self).save(*args, **kwargs)
 
     class Meta:
         db_table = 'accounts_profile'

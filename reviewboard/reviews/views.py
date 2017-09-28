@@ -37,6 +37,7 @@ from reviewboard.accounts.mixins import (CheckLoginRequiredViewMixin,
                                          LoginRequiredViewMixin,
                                          UserProfileRequiredViewMixin)
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
+from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.attachments.models import (FileAttachment,
                                             get_latest_file_attachments)
 from reviewboard.diffviewer.diffutils import (convert_to_unicode,
@@ -547,6 +548,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
             data.latest_review_timestamp,
             review_request.last_review_activity_timestamp,
             is_rich_text_default_for_user(request.user),
+            is_site_read_only_for(request.user),
             [r.pk for r in self.blocks],
             starred,
             self.visited and self.visited.visibility,

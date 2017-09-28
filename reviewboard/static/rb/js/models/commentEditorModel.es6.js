@@ -323,6 +323,7 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
 
         this.set('canEdit',
                  userSession.get('authenticated') &&
+                 !userSession.get('readOnly') &&
                  !reviewRequest.get('hasDraft'));
     },
 

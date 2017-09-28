@@ -11,7 +11,7 @@
   {% review_body_replies review context_type context_id %}
 {% endif %}
  </ol>
-{% if user.is_authenticated %}
+{% if user.is_authenticated and not is_read_only %}
  <ul class="controls">
   <li>
    <a href="#" class="add_comment_link">

@@ -22,7 +22,9 @@
  </a>
 {%  endspaceless %}
  <ul>
+{%  if not is_read_only %}
   <li><a href="{% url 'user-preferences' %}">{% trans "My account" %}</a></li>
+{%  endif %}
 {%  if request.user.is_staff %}
   <li><a href="{% url 'reviewboard.admin.views.dashboard' %}">{% trans "Admin" %}</a></li>
 {%  endif %}

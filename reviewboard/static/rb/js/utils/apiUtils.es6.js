@@ -270,6 +270,13 @@ RB.apiCall = function(options) {
 
     options.type = options.type || 'POST';
 
+    if (options.type !== 'GET' && options.type !== 'HEAD' &&
+        RB.UserSession.instance.get('readOnly')) {
+        console.error('%s request not sent. Site is in read-only mode.',
+                      options.type);
+        return;
+    }
+
     // We allow disabling the function queue for the sake of unit tests.
     if (RB.ajaxOptions.enableQueuing && options.type !== 'GET') {
         $.funcQueue('rbapicall').add(doCall);

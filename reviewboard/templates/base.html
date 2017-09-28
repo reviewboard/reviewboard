@@ -125,6 +125,7 @@
 {% endif %}
         username: "{{request.user.username|escapejs}}",
         userPageURL: "{% url 'user' request.user %}",
+        readOnly: {{is_read_only|yesno:"true,false"}},
         sessionURL: "{% url 'session-resource' %}",
         timezoneOffset: "{% now 'O' %}",
         watchedReviewGroupsURL: "{% url 'watched-review-groups-resource' request.user %}",

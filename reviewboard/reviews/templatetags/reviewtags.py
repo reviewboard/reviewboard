@@ -20,6 +20,7 @@ from djblets.util.templatetags.djblets_js import json_dumps_items
 
 from reviewboard.accounts.models import Profile, Trophy
 from reviewboard.accounts.trophies import UnknownTrophy
+from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.diffviewer.diffutils import get_displayed_diff_line_ranges
 from reviewboard.reviews.actions import get_top_level_actions
 from reviewboard.reviews.fields import (get_review_request_field,
@@ -263,15 +264,45 @@ def review_body_replies(context, review, body_field, context_id):
                         takes_context=True)
 def reply_section(context, review, comment, context_type, context_id,
                   reply_to_text=''):
-    """
-    Renders a template for displaying a reply.
+    """Render a template for displaying a reply.
 
     This takes the same parameters as :tag:`reply_list`. The template
     rendered by this function, :template:`reviews/review_reply_section.html`,
     is responsible for invoking :tag:`reply_list` and as such passes these
     variables through. It does not make use of them itself.
+
+    Args:
+        context (django.template.Context):
+            The collection of key-value pairs available in the template.
+
+        review (reviewboard.reviews.models.Review):
+            The review being replied to.
+
+        comment (reviewboard.reviews.models.BaseComment):
+            The comment being replied to.
+
+        context_type (unicode):
+            The type of comment being replied to. This is one of
+            ``diff_comments``, ``screenshot_comments``,
+            ``file_attachment_comments``, ``general_comments`` (if the reply is
+            to a comment), or ``body_top`` or ``body_bottom`` if the reply is
+            to the header or footer text of the review.
+
+        context_id (unicode):
+            The internal ID used by the JavaScript code for storing and
+            categorizing comments.
+
+        reply_to_text (unicode):
+            The text in the review being replied to.
+
+    Returns:
+        dict:
+        The context to use when rendering the template included by the
+        inclusion tag.
     """
-    if comment != "":
+    user = context.get('user', None)
+
+    if comment != '':
         if type(comment) is ScreenshotComment:
             context_id += 's'
         elif type(comment) is FileAttachmentComment:
@@ -286,8 +317,9 @@ def reply_section(context, review, comment, context_type, context_id,
         'comment': comment,
         'context_type': context_type,
         'context_id': context_id,
-        'user': context.get('user', None),
+        'user': context.get('user'),
         'local_site_name': context.get('local_site_name'),
+        'is_read_only': is_site_read_only_for(user),
         'reply_to_is_empty': reply_to_text == '',
         'request': context['request'],
         'last_visited': context.get('last_visited'),

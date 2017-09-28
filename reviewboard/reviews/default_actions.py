@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.utils.translation import ugettext_lazy as _
 
+from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.reviews.actions import (BaseReviewRequestAction,
                                          BaseReviewRequestMenuAction)
 from reviewboard.reviews.features import general_comments_feature
@@ -17,9 +18,21 @@ class CloseMenuAction(BaseReviewRequestMenuAction):
     label = _('Close')
 
     def should_render(self, context):
+        """Return whether the action should render.
+
+        Args:
+            context (dict):
+                The current render context.
+
+        Returns:
+            bool:
+            Whether the action should render.
+        """
         review_request = context['review_request']
+        user = context['request'].user
 
         return (review_request.status == ReviewRequest.PENDING_REVIEW and
+                not is_site_read_only_for(user) and
                 (context['request'].user.pk == review_request.submitter_id or
                  (context['perms']['reviews']['can_change_status'] and
                   review_request.public)))
@@ -32,7 +45,18 @@ class SubmitAction(BaseReviewRequestAction):
     label = _('Submitted')
 
     def should_render(self, context):
-        return context['review_request'].public
+        """Return whether the action should render.
+
+        Args:
+            context (dict):
+                The current render context.
+
+        Returns:
+            bool:
+            Whether the action should render.
+        """
+        return (context['review_request'].public and
+                not is_site_read_only_for(context['request'].user))
 
 
 class DiscardAction(BaseReviewRequestAction):
@@ -49,7 +73,18 @@ class DeleteAction(BaseReviewRequestAction):
     label = _('Delete Permanently')
 
     def should_render(self, context):
-        return context['perms']['reviews']['delete_reviewrequest']
+        """Return whether the action should render.
+
+        Args:
+            context (dict):
+                The current render context.
+
+        Returns:
+            bool:
+            Whether the action should render.
+        """
+        return (context['perms']['reviews']['delete_reviewrequest'] and
+                not is_site_read_only_for(context['request'].user))
 
 
 class UpdateMenuAction(BaseReviewRequestMenuAction):
@@ -59,10 +94,22 @@ class UpdateMenuAction(BaseReviewRequestMenuAction):
     label = _('Update')
 
     def should_render(self, context):
+        """Return whether the action should render.
+
+        Args:
+            context (dict):
+                The current render context.
+
+        Returns:
+            bool:
+            Whether the action should render.
+        """
         review_request = context['review_request']
+        user = context['request'].user
 
         return (review_request.status == ReviewRequest.PENDING_REVIEW and
-                (context['request'].user.pk == review_request.submitter_id or
+                not is_site_read_only_for(user) and
+                (user.pk == review_request.submitter_id or
                  context['perms']['reviews']['can_edit_reviewrequest']))
 
 
@@ -106,7 +153,8 @@ class UploadDiffAction(BaseReviewRequestAction):
         Returns:
             bool: Determines if this action should render.
         """
-        return context['review_request'].repository_id is not None
+        return (context['review_request'].repository_id is not None and
+                not is_site_read_only_for(context['request'].user))
 
 
 class UploadFileAction(BaseReviewRequestAction):
@@ -190,7 +238,20 @@ class EditReviewAction(BaseReviewRequestAction):
     label = _('Review')
 
     def should_render(self, context):
-        return context['request'].user.is_authenticated()
+        """Return whether the action should render.
+
+        Args:
+            context (dict):
+                The current render context.
+
+        Returns:
+            bool:
+            Whether the action should render.
+        """
+        user = context['request'].user
+
+        return (user.is_authenticated() and
+                not is_site_read_only_for(user))
 
 
 class AddGeneralCommentAction(BaseReviewRequestAction):
@@ -200,8 +261,21 @@ class AddGeneralCommentAction(BaseReviewRequestAction):
     label = _('Add General Comment')
 
     def should_render(self, context):
+        """Return whether the action should render.
+
+        Args:
+            context (dict):
+                The current render context.
+
+        Returns:
+            bool:
+            Whether the action should render.
+        """
         request = context['request']
-        return (request.user.is_authenticated() and
+        user = request.user
+
+        return (user.is_authenticated() and
+                not is_site_read_only_for(user) and
                 general_comments_feature.is_enabled(request=request))
 
 
@@ -212,7 +286,19 @@ class ShipItAction(BaseReviewRequestAction):
     label = _('Ship It!')
 
     def should_render(self, context):
-        return context['request'].user.is_authenticated()
+        """Return whether the action should render.
+
+        Args:
+            context (dict):
+                The current render context.
+
+        Returns:
+            bool:
+            Whether the action should render.
+        """
+        user = context['request'].user
+        return (user.is_authenticated() and
+                not is_site_read_only_for(user))
 
 
 def get_default_actions():

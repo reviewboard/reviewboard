@@ -132,6 +132,10 @@ RB.StarManagerView = Backbone.View.extend({
         e.preventDefault();
         e.stopPropagation();
 
+        if (RB.UserSession.instance.get('readOnly')) {
+            return;
+        }
+
         obj.setStarred(objStarred);
         starred[objID] = objStarred;
 

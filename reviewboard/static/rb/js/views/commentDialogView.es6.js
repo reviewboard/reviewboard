@@ -130,6 +130,8 @@ RB.CommentDialogView = Backbone.View.extend({
          </h1>
          <% if (!authenticated) { %>
           <p class="login-text"><%= loginText %></p>
+         <% } else if (readOnly) { %>
+          <p class="read-only-text"><%= readOnlyText %></p>
          <% } else if (hasDraft) { %>
           <p class="draft-warning"><%= draftWarning %></p>
          <% } %>
@@ -205,6 +207,8 @@ RB.CommentDialogView = Backbone.View.extend({
                 cancelButton: RB.CommentDialogView._cancelText,
                 deleteButton: RB.CommentDialogView._deleteText,
                 closeButton: RB.CommentDialogView._closeText,
+                readOnly: userSession.get('readOnly'),
+                readOnlyText: gettext('Review Board is currently in read-only mode.'),
                 showVerify: RB.EnabledFeatures.issueVerification,
                 verifyIssueText: RB.CommentDialogView._verifyIssueText,
             }));

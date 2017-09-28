@@ -78,12 +78,14 @@ const BannerView = Backbone.View.extend({
      *     This object, for chaining.
      */
     render() {
+        const readOnly = RB.UserSession.instance.get('readOnly');
+
         if (this.$el.children().length === 0) {
             this.$el.html(this.template({
                 title: this.title,
                 subtitle: this.subtitle,
-                actions: this.actions,
-                showChangesField: this.showChangesField,
+                actions: readOnly ? [] : this.actions,
+                showChangesField: this.showChangesField && !readOnly,
                 describeText: this.describeText,
                 descriptionFieldID: this.descriptionFieldID,
                 descriptionFieldHTML: this.descriptionFieldHTML,
@@ -1225,6 +1227,10 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
         this.$('#hide-review-request-link')
             .html(`<span class="rb-icon ${iconClass}"></span>`);
+
+        if (RB.UserSession.instance.get('readOnly')) {
+            this.$('#hide-review-request-menu').hide();
+        }
     },
 
     /**

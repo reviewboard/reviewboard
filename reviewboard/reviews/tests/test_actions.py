@@ -480,24 +480,32 @@ class DeleteActionTests(ActionsTestCase):
 
     def test_should_render_with_published(self):
         """Testing DeleteAction.should_render with standard user"""
+        request = RequestFactory().request()
+        request.user = User()
+
         self.assertFalse(self.action.should_render({
             'perms': {
                 'reviews': {
                     'delete_reviewrequest': False,
                 },
             },
+            'request': request,
         }))
 
     def test_should_render_with_permission(self):
         """Testing SubmitAction.should_render with delete_reviewrequest
         permission
         """
+        request = RequestFactory().request()
+        request.user = User()
+
         self.assertTrue(self.action.should_render({
             'perms': {
                 'reviews': {
                     'delete_reviewrequest': True,
                 },
             },
+            'request': request,
         }))
 
 
@@ -752,15 +760,27 @@ class SubmitActionTests(ActionsTestCase):
 
     def test_should_render_with_published(self):
         """Testing SubmitAction.should_render with published review request"""
+        review_request = self.create_review_request(public=True)
+
+        request = RequestFactory().request()
+        request.user = review_request.submitter
+
         self.assertTrue(self.action.should_render({
-            'review_request': self.create_review_request(public=True),
+            'request': request,
+            'review_request': review_request,
         }))
 
     def test_should_render_with_unpublished(self):
         """Testing SubmitAction.should_render with unpublished review request
         """
+        review_request = self.create_review_request(public=False)
+
+        request = RequestFactory().request()
+        request.user = review_request.submitter
+
         self.assertFalse(self.action.should_render({
-            'review_request': self.create_review_request(public=False),
+            'request': request,
+            'review_request': review_request,
         }))
 
 
@@ -914,14 +934,22 @@ class UploadDiffActionTests(ActionsTestCase):
         """Testing UploadDiffAction.should_render with repository"""
         review_request = self.create_review_request(create_repository=True)
 
+        request = RequestFactory().request()
+        request.user = review_request.submitter
+
         self.assertTrue(self.action.should_render({
             'review_request': review_request,
+            'request': request,
         }))
 
     def test_should_render_without_repository(self):
         """Testing UploadDiffAction.should_render without repository"""
         review_request = self.create_review_request()
 
+        request = RequestFactory().request()
+        request.user = review_request.submitter
+
         self.assertFalse(self.action.should_render({
             'review_request': review_request,
+            'request': request,
         }))
