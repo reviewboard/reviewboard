@@ -399,12 +399,12 @@ class ReviewRequestPageData(object):
             review_ids = self.reviews_by_id.keys()
 
             for model, key, ordering in (
-                (Comment, 'diff_comments', ('comment__filediff',
-                                            'comment__first_line',
-                                            'comment__timestamp')),
+                (GeneralComment, 'general_comments', None),
                 (ScreenshotComment, 'screenshot_comments', None),
                 (FileAttachmentComment, 'file_attachment_comments', None),
-                (GeneralComment, 'general_comments', None)):
+                (Comment, 'diff_comments', ('comment__filediff',
+                                            'comment__first_line',
+                                            'comment__timestamp'))):
                 # Due to mistakes in how we initially made the schema, we have
                 # a ManyToManyField in between comments and reviews, instead of
                 # comments having a ForeignKey to the review. This makes it

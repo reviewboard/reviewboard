@@ -299,14 +299,14 @@ class ReviewRequestPageDataTests(TestCase):
             self.assertEqual(
                 data.all_comments,
                 [
-                    self.diff_comment1,
-                    self.diff_comment2,
+                    self.general_comment1,
+                    self.general_comment2,
                     self.screenshot_comment1,
                     self.screenshot_comment2,
                     self.file_attachment_comment1,
                     self.file_attachment_comment2,
-                    self.general_comment1,
-                    self.general_comment2,
+                    self.diff_comment1,
+                    self.diff_comment2,
                 ])
         else:
             self.assertEqual(data.all_comments, [])
@@ -315,12 +315,12 @@ class ReviewRequestPageDataTests(TestCase):
             self.assertEqual(
                 data.issues,
                 [
-                    self.diff_comment1,
-                    self.diff_comment2,
-                    self.file_attachment_comment1,
-                    self.file_attachment_comment2,
                     self.general_comment1,
                     self.general_comment2,
+                    self.file_attachment_comment1,
+                    self.file_attachment_comment2,
+                    self.diff_comment1,
+                    self.diff_comment2,
                 ])
             self.assertEqual(
                 data.issue_counts,
