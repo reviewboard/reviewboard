@@ -18,7 +18,8 @@
  *
  *     issueStatus (string):
  *         The current state of the issue. This must be one of
- *         ``STATE_DROPPED``, ``STATE_OPEN``, or ``STATE_RESOLVED``.
+ *         ``STATE_DROPPED``, ``STATE_OPEN``, ``STATE_RESOLVED``,
+ *         ``STATE_VERIFYING_DROPPED`` or ``STATE_VERIFYING_RESOLVED``.
  *
  *     markdownTextFields (object):
  *         The source contents of any Markdown text fields, if forceTextType is
@@ -48,7 +49,7 @@ RB.BaseComment = RB.BaseResource.extend({
             markdownTextFields: {},
             rawTextFields: {},
             richText: null,
-            text: ''
+            text: '',
         }, RB.BaseResource.prototype.defaults());
     },
 
@@ -183,19 +184,54 @@ RB.BaseComment = RB.BaseResource.extend({
         if (attrs.issueStatus &&
             attrs.issueStatus !== RB.BaseComment.STATE_DROPPED &&
             attrs.issueStatus !== RB.BaseComment.STATE_OPEN &&
-            attrs.issueStatus !== RB.BaseComment.STATE_RESOLVED) {
+            attrs.issueStatus !== RB.BaseComment.STATE_RESOLVED &&
+            attrs.issueStatus !== RB.BaseComment.STATE_VERIFYING_DROPPED &&
+            attrs.issueStatus !== RB.BaseComment.STATE_VERIFYING_RESOLVED) {
             return RB.BaseComment.strings.INVALID_ISSUE_STATUS;
         }
 
         return RB.BaseResource.prototype.validate.apply(this, arguments);
-    }
+    },
+
+    /**
+     * Return whether this comment issue requires verification before closing.
+     *
+     * Returns:
+     *     boolean:
+     *     True if the issue is marked to require verification.
+     */
+    requiresVerification() {
+        const extraData = this.get('extraData');
+        return extraData && extraData.require_verification === true;
+    },
 }, {
     STATE_DROPPED: 'dropped',
     STATE_OPEN: 'open',
     STATE_RESOLVED: 'resolved',
+    STATE_VERIFYING_DROPPED: 'verifying-dropped',
+    STATE_VERIFYING_RESOLVED: 'verifying-resolved',
+
+    /**
+     * Return whether the given state should be considered open or closed.
+     *
+     * Args:
+     *     state (string):
+     *         The state to check.
+     *
+     * Returns:
+     *     boolean:
+     *     true if the given state is open.
+     */
+    isStateOpen(state) {
+        return (state === RB.BaseComment.STATE_OPEN ||
+                state === RB.BaseComment.STATE_VERIFYING_DROPPED ||
+                state === RB.BaseComment.STATE_VERIFYING_RESOLVED);
+    },
 
     strings: {
         INVALID_ISSUE_STATUS: 'issueStatus must be one of STATE_DROPPED, ' +
-                              'STATE_OPEN, or STATE_RESOLVED'
-    }
+                              'STATE_OPEN, STATE_RESOLVED, ' +
+                              'STATE_VERIFYING_DROPPED, or ' +
+                              'STATE_VERIFYING_RESOLVED',
+    },
 });

@@ -67,6 +67,20 @@
             parse: true
         })
     }));
+</script>
+{% endblock scripts-post %}
+
+{% block js_extensions %}
+{%  comment %}
+We have to load all of the review request fields after the extensions JS,
+because extension-provided field classes have to be defined at the time that
+this code runs.
+{%  endcomment %}
+
+{{block.super}}
+
+<script>
+{%  include "reviews/review_request_box.js" %}
 
     RB.PageManager.beforeRender(function(page) {
 {%  for entry in entries.initial %}
@@ -89,4 +103,4 @@
     });
 {%  endif %}
 </script>
-{% endblock scripts-post %}
+{% endblock %}

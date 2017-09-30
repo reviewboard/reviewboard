@@ -9,6 +9,7 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
      */
     initialize(options) {
         this.options = options;
+        this.entryModel = options.entryModel;
 
         this._bannerView = null;
         this._draftBannerShown = false;
@@ -16,6 +17,7 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
         this._reviewReply = null;
         this._replyEditors = [];
         this._replyEditorViews = [];
+        this._diffFragmentViews = [];
 
         this._$reviewComments = null;
         this._$bodyTop = null;
@@ -24,6 +26,13 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
         this.model.set('includeTextTypes', 'html,raw,markdown');
 
         this._setupNewReply();
+
+        this.listenTo(this.entryModel, 'change:collapsed', () => {
+            if (!this.entryModel.get('collapsed')) {
+                this._diffFragmentViews.forEach(
+                    view => view.hideControls(false));
+            }
+        });
     },
 
     /**
@@ -34,14 +43,14 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
      *     This object, for chaining.
      */
     render() {
-        const reviewRequestEditor =
-            this.options.entryModel.get('reviewRequestEditor');
+        const reviewRequestEditor = this.entryModel.get('reviewRequestEditor');
 
         this._$reviewComments = this.$('.review-comments');
-        this._$bodyTop = this._$reviewComments.find(
-            '.review-comment-thread .review-comment .body_top');
-        this._$bodyBottom = this._$reviewComments.find(
-            '.review-comment-thread .review-comment .body_bottom');
+
+        const $comment = this._$reviewComments.find(
+            '.review-comment-thread .review-comment');
+        this._$bodyTop = $comment.find('.body_top');
+        this._$bodyBottom = $comment.find('.body_bottom');
 
         _.each(this._$reviewComments.find('.issue-indicator'), el => {
             const $issueState = $('.issue-state', el);
@@ -53,13 +62,14 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
             if ($issueState.length > 0) {
                 const issueStatus = $issueState.data('issue-status');
 
-                if (issueStatus === RB.BaseComment.STATE_OPEN) {
+                if (RB.BaseComment.isStateOpen(issueStatus)) {
                     this._openIssueCount++;
                 }
 
                 const issueBar = new RB.CommentIssueBarView({
                     el: el,
                     reviewID: this.model.id,
+                    canVerify: $issueState.data('can-verify'),
                     commentID: $issueState.data('comment-id'),
                     commentType: $issueState.data('comment-type'),
                     interactive: $issueState.data('interactive'),
@@ -68,11 +78,17 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
 
                 issueBar.render();
 
-                this.listenTo(issueBar, 'statusChanged', newStatus => {
-                    if (newStatus === RB.BaseComment.STATE_OPEN) {
-                        this._openIssueCount++;
-                    } else {
-                        this._openIssueCount--;
+                this.listenTo(issueBar, 'statusChanged',
+                              (oldStatus, newStatus) => {
+                    const oldOpen = RB.BaseComment.isStateOpen(oldStatus);
+                    const newOpen = RB.BaseComment.isStateOpen(newStatus);
+
+                    if (oldOpen !== newOpen) {
+                        if (newOpen) {
+                            this._openIssueCount++;
+                        } else {
+                            this._openIssueCount--;
+                        }
                     }
 
                     this.trigger('openIssuesChanged');
@@ -113,14 +129,16 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
          * Load any diff fragments for comments made on this review. Each
          * will be queued up and loaded when the page is rendered.
          */
+        this._diffFragmentViews = [];
+
         const page = RB.PageManager.getPage();
-        const diffCommentsData =
-            this.options.entryModel.get('diffCommentsData');
+        const diffCommentsData = this.entryModel.get('diffCommentsData');
 
         for (let i = 0; i < diffCommentsData.length; i++) {
             const diffCommentData = diffCommentsData[i];
 
-            page.queueLoadDiff(diffCommentData[0], diffCommentData[1]);
+            page.queueLoadDiff(diffCommentData[0], diffCommentData[1],
+                               view => this._diffFragmentViews.push(view));
         }
 
         /*
@@ -305,7 +323,7 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
                     $floatContainer: this.options.$bannerFloatContainer,
                     noFloatContainerClass:
                         this.options.bannerNoFloatContainerClass,
-                    reviewRequestEditor: this.options.entryModel.get(
+                    reviewRequestEditor: this.entryModel.get(
                         'reviewRequestEditor'),
                 });
 

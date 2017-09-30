@@ -878,7 +878,8 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
             entries = (
                 entry
                 for entry in entries
-                if entry.timestamp > since
+                if (entry.updated_timestamp is not None and
+                    entry.updated_timestamp > since)
             )
 
         # We can now begin to serialize the payload for all the updates.
@@ -891,7 +892,8 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
                 'type': 'entry',
                 'entryType': entry.entry_type_id,
                 'entryID': entry.entry_id,
-                'timestamp': six.text_type(entry.timestamp),
+                'addedTimestamp': six.text_type(entry.added_timestamp),
+                'updatedTimestamp': six.text_type(entry.updated_timestamp),
                 'modelData': entry.get_js_model_data(),
                 'viewOptions': entry.get_js_view_data(),
             }
@@ -906,15 +908,21 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
                 entry_context.update(
                     make_review_request_context(request, review_request))
 
-            entry_context.push()
+            # Note that update() implies push().
             entry_context.update({
                 'show_entry_statuses_area': (
                     entry.entry_pos == entry.ENTRY_POS_MAIN),
                 'entry': entry,
             })
 
-            html = render_to_string(entry.template_name, entry_context)
-            entry_context.pop()
+            try:
+                html = render_to_string(entry.template_name, entry_context)
+            except Exception as e:
+                logging.error('Error rendering review request page entry '
+                              '%r: %s',
+                              entry, e, request=request)
+            finally:
+                entry_context.pop()
 
             self._write_update(payload, metadata, html)
 
@@ -2253,7 +2261,8 @@ class ReviewRequestInfoboxView(ReviewRequestViewMixin, TemplateView):
             'review_request_details': draft or review_request,
             'issue_total_count': (review_request.issue_open_count +
                                   review_request.issue_resolved_count +
-                                  review_request.issue_dropped_count),
+                                  review_request.issue_dropped_count +
+                                  review_request.issue_verifying_count),
             'review_count': review_count,
             'diffset': diffset,
             'diff_url': diff_url,

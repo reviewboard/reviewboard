@@ -749,6 +749,7 @@ def comment_issue(context, review_request, comment, comment_type):
         'issue_status': issue_status,
         'review': comment.get_review(),
         'interactive': comment.can_change_issue_status(user),
+        'can_verify': comment.can_verify_issue_status(user),
     }
 
 
@@ -777,6 +778,11 @@ def issue_status_icon(status):
         return 'rb-icon-issue-resolved'
     elif status == BaseComment.DROPPED:
         return 'rb-icon-issue-dropped'
+    elif status in (BaseComment.VERIFYING_RESOLVED,
+                    BaseComment.VERIFYING_DROPPED):
+        # TODO: change once the icon is landed
+        return 'rb-icon-issue-open'
+        #return 'rb-icon-issue-verifying'
     else:
         raise ValueError('Unknown comment issue status "%s"' % status)
 

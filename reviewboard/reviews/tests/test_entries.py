@@ -9,6 +9,7 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.template import RequestContext
 from django.test.client import RequestFactory
 from django.utils import six, timezone
+from django.utils.timezone import utc
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
@@ -26,11 +27,23 @@ from reviewboard.testing import TestCase
 class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
     """Unit tests for BaseReviewRequestPageEntry."""
 
+    def test_init_with_no_updated_timestamp(self):
+        """Testing BaseReviewRequestPageEntry.__init__ without an
+        updated_timestamp specified
+        """
+        entry = BaseReviewRequestPageEntry(
+            entry_id='test',
+            added_timestamp=datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc),
+            collapsed=False)
+
+        self.assertEqual(entry.updated_timestamp,
+                         datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
+
     def test_render_to_string(self):
         """Testing BaseReviewRequestPageEntry.render_to_string"""
         entry = BaseReviewRequestPageEntry(
             entry_id='test',
-            timestamp=None,
+            added_timestamp=None,
             collapsed=False)
         entry.template_name = 'reviews/entries/base.html'
 
@@ -49,7 +62,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         """
         entry = BaseReviewRequestPageEntry(
             entry_id='test',
-            timestamp=None,
+            added_timestamp=None,
             collapsed=False)
         entry.template_name = 'reviews/entries/base.html'
         entry.entry_pos = BaseReviewRequestPageEntry.ENTRY_POS_MAIN
@@ -68,7 +81,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         """
         entry = BaseReviewRequestPageEntry(
             entry_id='test',
-            timestamp=None,
+            added_timestamp=None,
             collapsed=False)
         entry.template_name = 'reviews/entries/base.html'
         entry.entry_pos = BaseReviewRequestPageEntry.ENTRY_POS_INITIAL
@@ -87,7 +100,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         """
         entry = BaseReviewRequestPageEntry(
             entry_id='test',
-            timestamp=datetime(2017, 9, 7, 17, 0, 0),
+            added_timestamp=datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc),
             collapsed=False)
         entry.template_name = 'reviews/entries/base.html'
 
@@ -95,7 +108,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         request.user = User.objects.create(username='test-user')
 
         html = entry.render_to_string(request, RequestContext(request, {
-            'last_visited': datetime(2017, 9, 7, 10, 0, 0),
+            'last_visited': datetime(2017, 9, 7, 10, 0, 0, tzinfo=utc),
         }))
 
         self.assertIn(
@@ -108,7 +121,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         """
         entry = BaseReviewRequestPageEntry(
             entry_id='test',
-            timestamp=datetime(2017, 9, 7, 17, 0, 0),
+            added_timestamp=datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc),
             collapsed=False)
         entry.template_name = 'reviews/entries/base.html'
 
@@ -116,7 +129,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         request.user = User.objects.create(username='test-user')
 
         html = entry.render_to_string(request, RequestContext(request, {
-            'last_visited': datetime(2017, 9, 7, 18, 0, 0),
+            'last_visited': datetime(2017, 9, 7, 18, 0, 0, tzinfo=utc),
         }))
 
         self.assertNotEqual(html, '')
@@ -130,7 +143,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         """
         entry = BaseReviewRequestPageEntry(
             entry_id='test',
-            timestamp=None,
+            added_timestamp=None,
             collapsed=False)
 
         request = RequestFactory().request()
@@ -147,7 +160,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         """
         entry = BaseReviewRequestPageEntry(
             entry_id='test',
-            timestamp=None,
+            added_timestamp=None,
             collapsed=False)
         entry.template_name = 'reviews/entries/base.html'
         entry.has_content = False
@@ -166,7 +179,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         """
         entry = BaseReviewRequestPageEntry(
             entry_id='test',
-            timestamp=None,
+            added_timestamp=None,
             collapsed=False)
         entry.template_name = 'reviews/entries/NOT_FOUND.html'
 
@@ -188,19 +201,19 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         """Testing BaseReviewRequestPageEntry.is_entry_new with timestamp"""
         entry = BaseReviewRequestPageEntry(
             entry_id='test',
-            timestamp=datetime(2017, 9, 7, 15, 36, 0),
+            added_timestamp=datetime(2017, 9, 7, 15, 36, 0, tzinfo=utc),
             collapsed=False)
 
         user = User.objects.create(username='test-user')
 
         self.assertTrue(entry.is_entry_new(
-            last_visited=datetime(2017, 9, 7, 10, 0, 0),
+            last_visited=datetime(2017, 9, 7, 10, 0, 0, tzinfo=utc),
             user=user))
         self.assertFalse(entry.is_entry_new(
-            last_visited=datetime(2017, 9, 7, 16, 0, 0),
+            last_visited=datetime(2017, 9, 7, 16, 0, 0, tzinfo=utc),
             user=user))
         self.assertFalse(entry.is_entry_new(
-            last_visited=datetime(2017, 9, 7, 15, 36, 0),
+            last_visited=datetime(2017, 9, 7, 15, 36, 0, tzinfo=utc),
             user=user))
 
     def test_is_entry_new_without_timestamp(self):
@@ -208,11 +221,11 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         """
         entry = BaseReviewRequestPageEntry(
             entry_id='test',
-            timestamp=None,
+            added_timestamp=None,
             collapsed=False)
 
         self.assertFalse(entry.is_entry_new(
-            last_visited=datetime(2017, 9, 7, 10, 0, 0),
+            last_visited=datetime(2017, 9, 7, 10, 0, 0, tzinfo=utc),
             user=User.objects.create(username='test-user')))
 
 
@@ -591,15 +604,45 @@ class InitialStatusUpdatesEntryTests(TestCase):
         self.request = RequestFactory().get('/r/1/')
         self.request.user = AnonymousUser()
 
-        self.review_request = self.create_review_request()
-        self.review = self.create_review(self.review_request, public=True)
+        self.review_request = self.create_review_request(
+            time_added=datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
+        self.review = self.create_review(
+            self.review_request,
+            public=True,
+            timestamp=datetime(2017, 9, 14, 15, 40, 0, tzinfo=utc))
         self.general_comment = self.create_general_comment(self.review,
                                                            issue_opened=False)
-        self.status_update = self.create_status_update(self.review_request,
-                                                       review=self.review)
+        self.status_update = self.create_status_update(
+            self.review_request,
+            review=self.review,
+            timestamp=datetime(2017, 9, 14, 15, 40, 0, tzinfo=utc))
 
         self.data = ReviewRequestPageData(review_request=self.review_request,
                                           request=self.request)
+
+    def test_added_timestamp(self):
+        """Testing InitialStatusUpdatesEntry.added_timestamp"""
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = InitialStatusUpdatesEntry(review_request=self.review_request,
+                                          collapsed=False,
+                                          data=self.data)
+
+        self.assertEqual(entry.added_timestamp,
+                         datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
+
+    def test_updated_timestamp(self):
+        """Testing InitialStatusUpdatesEntry.updated_timestamp"""
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = InitialStatusUpdatesEntry(review_request=self.review_request,
+                                          collapsed=False,
+                                          data=self.data)
+
+        self.assertEqual(entry.updated_timestamp,
+                         datetime(2017, 9, 14, 15, 40, 0, tzinfo=utc))
 
     def test_build_entries(self):
         """Testing InitialStatusUpdatesEntry.build_entries"""
@@ -610,6 +653,10 @@ class InitialStatusUpdatesEntryTests(TestCase):
         self.assertEqual(len(entries), 1)
 
         entry = entries[0]
+        self.assertEqual(entry.added_timestamp,
+                         datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
+        self.assertEqual(entry.updated_timestamp,
+                         datetime(2017, 9, 14, 15, 40, 0, tzinfo=utc))
         self.assertFalse(entry.collapsed)
         self.assertEqual(entry.status_updates, [self.status_update])
         self.assertEqual(
@@ -672,11 +719,60 @@ class ReviewEntryTests(TestCase):
         self.request.user = AnonymousUser()
 
         self.review_request = self.create_review_request()
-        self.review = self.create_review(self.review_request,
-                                         id=123,
-                                         public=True)
+        self.review = self.create_review(
+            self.review_request,
+            id=123,
+            public=True,
+            timestamp=datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
         self.data = ReviewRequestPageData(review_request=self.review_request,
                                           request=self.request)
+
+    def test_added_timestamp(self):
+        """Testing ReviewEntry.added_timestamp"""
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ReviewEntry(request=self.request,
+                            review_request=self.review_request,
+                            review=self.review,
+                            collapsed=False,
+                            data=self.data)
+
+        self.assertEqual(entry.added_timestamp,
+                         datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
+
+    def test_updated_timestamp(self):
+        """Testing ReviewEntry.updated_timestamp"""
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ReviewEntry(request=self.request,
+                            review_request=self.review_request,
+                            review=self.review,
+                            collapsed=False,
+                            data=self.data)
+
+        self.assertEqual(entry.updated_timestamp,
+                         datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
+
+    def test_updated_timestamp_with_replies(self):
+        """Testing ReviewEntry.updated_timestamp with replies"""
+        self.create_reply(self.review,
+                          timestamp=datetime(2017, 9, 14, 15, 40, 0,
+                                             tzinfo=utc),
+                          publish=True)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ReviewEntry(request=self.request,
+                            review_request=self.review_request,
+                            review=self.review,
+                            collapsed=False,
+                            data=self.data)
+
+        self.assertEqual(entry.updated_timestamp,
+                         datetime(2017, 9, 14, 15, 40, 0, tzinfo=utc))
 
     def test_get_dom_element_id(self):
         """Testing ReviewEntry.get_dom_element_id"""
@@ -883,11 +979,60 @@ class ChangeEntryTests(TestCase):
         self.request.user = AnonymousUser()
 
         self.review_request = self.create_review_request()
-        self.changedesc = ChangeDescription.objects.create(id=123,
-                                                           public=True)
+        self.changedesc = ChangeDescription.objects.create(
+            id=123,
+            public=True,
+            timestamp=datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
         self.review_request.changedescs.add(self.changedesc)
         self.data = ReviewRequestPageData(review_request=self.review_request,
                                           request=self.request)
+
+    def test_added_timestamp(self):
+        """Testing ChangeEntry.added_timestamp"""
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ChangeEntry(request=self.request,
+                            review_request=self.review_request,
+                            changedesc=self.changedesc,
+                            collapsed=False,
+                            data=self.data)
+
+        self.assertEqual(entry.added_timestamp,
+                         datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
+
+    def test_updated_timestamp(self):
+        """Testing ChangeEntry.updated_timestamp"""
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ChangeEntry(request=self.request,
+                            review_request=self.review_request,
+                            changedesc=self.changedesc,
+                            collapsed=False,
+                            data=self.data)
+
+        self.assertEqual(entry.updated_timestamp,
+                         datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
+
+    def test_updated_timestamp_with_status_update(self):
+        """Testing ChangeEntry.updated_timestamp with status updates"""
+        self.create_status_update(
+            self.review_request,
+            change_description=self.changedesc,
+            timestamp=datetime(2017, 9, 14, 15, 40, 0, tzinfo=utc))
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ChangeEntry(request=self.request,
+                            review_request=self.review_request,
+                            changedesc=self.changedesc,
+                            collapsed=False,
+                            data=self.data)
+
+        self.assertEqual(entry.updated_timestamp,
+                         datetime(2017, 9, 14, 15, 40, 0, tzinfo=utc))
 
     def test_get_dom_element_id(self):
         """Testing ChangeEntry.get_dom_element_id"""

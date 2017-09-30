@@ -17,12 +17,33 @@ class BaseComment(models.Model):
     OPEN = 'O'
     RESOLVED = 'R'
     DROPPED = 'D'
+    VERIFYING_RESOLVED = 'A'
+    VERIFYING_DROPPED = 'B'
 
     ISSUE_STATUSES = (
         (OPEN, _('Open')),
         (RESOLVED, _('Resolved')),
         (DROPPED, _('Dropped')),
+        (VERIFYING_RESOLVED, _('Waiting for verification to resolve')),
+        (VERIFYING_DROPPED, _('Waiting for verification to drop')),
     )
+
+    ISSUE_STATUS_TO_STRING = {
+        OPEN: 'open',
+        RESOLVED: 'resolved',
+        DROPPED: 'dropped',
+        VERIFYING_RESOLVED: 'verifying-resolved',
+        VERIFYING_DROPPED: 'verifying-dropped',
+    }
+
+    ISSUE_STRING_TO_STATUS = {
+        'open': OPEN,
+        'resolved': RESOLVED,
+        'dropped': DROPPED,
+        'verifying-resolved': VERIFYING_RESOLVED,
+        'verifying-dropped': VERIFYING_DROPPED,
+    }
+
     issue_opened = models.BooleanField(_('Issue Opened'), default=False)
     issue_status = models.CharField(_('Issue Status'),
                                     max_length=1,
@@ -56,13 +77,9 @@ class BaseComment(models.Model):
             A string representation of the status used for the API and other
             interfaces.
         """
-        if status == BaseComment.OPEN:
-            return 'open'
-        elif status == BaseComment.RESOLVED:
-            return 'resolved'
-        elif status == BaseComment.DROPPED:
-            return 'dropped'
-        else:
+        try:
+            return BaseComment.ISSUE_STATUS_TO_STRING[status]
+        except KeyError:
             return ''
 
     @staticmethod
@@ -77,14 +94,23 @@ class BaseComment(models.Model):
             unicode:
             A value suitable for storing in the ``issue_status`` field.
         """
-        if status == 'open':
-            return BaseComment.OPEN
-        elif status == 'resolved':
-            return BaseComment.RESOLVED
-        elif status == 'dropped':
-            return BaseComment.DROPPED
-        else:
+        try:
+            return BaseComment.ISSUE_STRING_TO_STATUS[status]
+        except KeyError:
             raise Exception('Invalid issue status "%s"' % status)
+
+    def _get_require_verification(self):
+        return self.extra_data.get('require_verification', False)
+
+    def _set_require_verification(self, value):
+        if not isinstance(value, bool):
+            raise ValueError('require_verification must be a bool')
+
+        self.extra_data['require_verification'] = value
+
+    require_verification = property(
+        _get_require_verification, _set_require_verification,
+        doc='Whether this comment requires verification before closing.')
 
     def __init__(self, *args, **kwargs):
         """Initialize the comment.
@@ -214,6 +240,32 @@ class BaseComment(models.Model):
         return (self.get_review_request().is_mutable_by(user) or
                 user == self.get_review().user)
 
+    def can_verify_issue_status(self, user):
+        """Return whether the user can verify the issue status.
+
+        Currently this is allowed for:
+
+        - The user who opened the issue.
+        - Administrators.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user being checked.
+
+        Returns:
+            bool:
+            True if the given user is allowed to verify the issue status.
+        """
+        if not (user and user.is_authenticated()):
+            return False
+
+        review = self.get_review()
+        local_site = review.review_request.local_site
+
+        return (user.is_superuser or
+                user.pk == review.user or
+                (local_site and local_site.is_mutable_by(user)))
+
     def save(self, **kwargs):
         """Save the comment.
 
@@ -247,12 +299,13 @@ class BaseComment(models.Model):
                     new_field = ReviewRequest.ISSUE_COUNTER_FIELDS[
                         self.issue_status]
 
-                    CounterField.increment_many(
-                        self.get_review_request(),
-                        {
-                            old_field: -1,
-                            new_field: 1,
-                        })
+                    if old_field != new_field:
+                        CounterField.increment_many(
+                            self.get_review_request(),
+                            {
+                                old_field: -1,
+                                new_field: 1,
+                            })
 
                 q = ReviewRequest.objects.filter(pk=review.review_request_id)
                 q.update(last_review_activity_timestamp=self.timestamp)

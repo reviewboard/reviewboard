@@ -39,7 +39,8 @@ suite('rb/reviewRequestPage/views/BaseStatusUpdatesEntryView', function() {
             reviewRequestEditor: editor,
             id: '0',
             typeID: 'initial_status_updates',
-            timestamp: new Date(Date.UTC(2017, 7, 18, 13, 40, 25)),
+            addedTimestamp: new Date(Date.UTC(2017, 7, 18, 13, 40, 25)),
+            updatedTimestamp: new Date(Date.UTC(2017, 7, 18, 16, 20, 0)),
             pendingStatusUpdates: true,
             diffCommentsData: [
                 ['1', '100'],

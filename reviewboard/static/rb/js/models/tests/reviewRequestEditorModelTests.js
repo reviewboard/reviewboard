@@ -88,21 +88,21 @@ suite('rb/models/ReviewRequestEditor', function() {
             it('For closeDescription', function() {
                 reviewRequest.set('closeDescription', 'Test');
 
-                value = editor.getDraftField('closeDescription', {});
+                value = editor.getDraftField('closeDescription');
                 expect(value).toBe('Test');
             });
 
             it('For closeDescriptionRichText', function() {
                 reviewRequest.set('closeDescriptionRichText', true);
 
-                value = editor.getDraftField('closeDescriptionRichText', {});
+                value = editor.getDraftField('closeDescriptionRichText');
                 expect(value).toBe(true);
             });
 
             it('For draft fields', function() {
                 reviewRequest.draft.set('description', 'Test');
 
-                value = editor.getDraftField('description', {});
+                value = editor.getDraftField('description');
                 expect(value).toBe('Test');
             });
 
@@ -228,54 +228,6 @@ suite('rb/models/ReviewRequestEditor', function() {
                         });
                     });
                 });
-
-                describe('closeDescription', function() {
-                    function testCloseDescription(closeType, richText) {
-                        spyOn(reviewRequest, 'close')
-                            .and.callFake(function(options) {
-                                expect(options.type).toBe(closeType);
-                                expect(options.description)
-                                    .toBe('My description');
-                                expect(options.richText).toBe(richText);
-                            });
-
-                        editor.setDraftField('closeDescription',
-                                             'My description', {
-                            closeType: closeType,
-                            richText: richText
-                        });
-
-                        expect(reviewRequest.close).toHaveBeenCalled();
-                    }
-
-                    describe('Discarded description', function() {
-                        it('For Markdown', function() {
-                            testCloseDescription(
-                                RB.ReviewRequest.CLOSE_DISCARDED,
-                                true);
-                        });
-
-                        it('For plain text', function() {
-                            testCloseDescription(
-                                RB.ReviewRequest.CLOSE_DISCARDED,
-                                false);
-                        });
-                    });
-
-                    describe('Submitted description', function() {
-                        it('For Markdown', function() {
-                            testCloseDescription(
-                                RB.ReviewRequest.CLOSE_SUBMITTED,
-                                true);
-                        });
-
-                        it('For plain text', function() {
-                            testCloseDescription(
-                                RB.ReviewRequest.CLOSE_SUBMITTED,
-                                false);
-                        });
-                    });
-                });
             });
 
             describe('Special list fields', function() {
@@ -321,8 +273,8 @@ suite('rb/models/ReviewRequestEditor', function() {
                         }, callbacks));
 
                         expect(callbacks.error).toHaveBeenCalledWith({
-                            errorText: "Groups 'group1' and 'group2' do " +
-                                       "not exist."
+                            errorText: 'Groups "group1" and "group2" do ' +
+                                       'not exist.'
                         });
                     });
                 });
@@ -375,7 +327,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                             }, callbacks));
 
                         expect(callbacks.error).toHaveBeenCalledWith({
-                            errorText: "Users 'user1' and 'user2' do not exist."
+                            errorText: 'Users "user1" and "user2" do not exist.'
                         });
                     });
                 });
@@ -428,7 +380,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                             }, callbacks));
 
                         expect(callbacks.error).toHaveBeenCalledWith({
-                            errorText: "User 'user1' does not exist."
+                            errorText: 'User "user1" does not exist.'
                         });
                     });
                 });

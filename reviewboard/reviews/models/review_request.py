@@ -48,7 +48,9 @@ def fetch_issue_counts(review_request, extra_query=None):
     issue_counts = {
         BaseComment.OPEN: 0,
         BaseComment.RESOLVED: 0,
-        BaseComment.DROPPED: 0
+        BaseComment.DROPPED: 0,
+        BaseComment.VERIFYING_RESOLVED: 0,
+        BaseComment.VERIFYING_DROPPED: 0,
     }
 
     q = Q(public=True) & Q(base_reply_to__isnull=True)
@@ -118,6 +120,9 @@ def _initialize_issue_counts(review_request):
     review_request.issue_open_count = issue_counts[BaseComment.OPEN]
     review_request.issue_resolved_count = issue_counts[BaseComment.RESOLVED]
     review_request.issue_dropped_count = issue_counts[BaseComment.DROPPED]
+    review_request.issue_verifying_count = (
+        issue_counts[BaseComment.VERIFYING_RESOLVED] +
+        issue_counts[BaseComment.VERIFYING_DROPPED])
 
     review_request.save(update_fields=[
         'issue_open_count',
@@ -153,6 +158,8 @@ class ReviewRequest(BaseReviewRequestDetails):
         BaseComment.OPEN: 'issue_open_count',
         BaseComment.RESOLVED: 'issue_resolved_count',
         BaseComment.DROPPED: 'issue_dropped_count',
+        BaseComment.VERIFYING_RESOLVED: 'issue_verifying_count',
+        BaseComment.VERIFYING_DROPPED: 'issue_verifying_count',
     }
 
     summary = models.CharField(
@@ -256,6 +263,10 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     issue_dropped_count = CounterField(
         _('dropped issue count'),
+        initializer=_initialize_issue_counts)
+
+    issue_verifying_count = CounterField(
+        _('verifying issue count'),
         initializer=_initialize_issue_counts)
 
     local_site = models.ForeignKey(LocalSite, blank=True, null=True,
@@ -1122,6 +1133,9 @@ class ReviewRequest(BaseReviewRequestDetails):
         elif self.issue_open_count > 0:
             approved = False
             failure = 'The review request has open issues.'
+        elif self.issue_verifying_count > 0:
+            approved = False
+            failure = 'The review request has unverified issues.'
 
         for hook in ReviewRequestApprovalHook.hooks:
             try:

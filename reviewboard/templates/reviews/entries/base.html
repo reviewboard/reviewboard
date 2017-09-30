@@ -37,7 +37,7 @@
    <div class="collapse-button btn"><div class="rb-icon rb-icon-{{entry.collapsed|yesno:'expand-review,collapse-review'}}"></div></div>
    <div class="header-details">
     <div class="summary">{% if entry_is_new %}<div class="rb-icon rb-icon-new-updates" title="{% block entry_new_label %}New{% endblock %}"></div>{% endif %} {% block entry_summary %}<span class="review-request-page-entry-title">{% block entry_title %}{% endblock %}</span>{% endblock %}</div>
-    <a href="#{{element_id}}" class="timestamp">{% localtime on %}{% blocktrans with entry.timestamp as timestamp and entry.timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</a>
+    <a href="#{{element_id}}" class="timestamp">{% localtime on %}{% blocktrans with entry.added_timestamp as timestamp and entry.added_timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</a>
    </div>
 {%  template_hook_point post_template_hook_name %}
   </div>

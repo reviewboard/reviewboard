@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 /**
@@ -335,4 +335,4 @@ RB.JoinedGroupsView = Backbone.View.extend({
 });
 
 
-}
+})();

@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 /**
@@ -1397,4 +1397,4 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
 });
 
 
-}
+})();

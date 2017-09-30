@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 /**
@@ -378,4 +378,4 @@ RB.ReviewablePageView = RB.PageView.extend({
 });
 
 
-}
+})();

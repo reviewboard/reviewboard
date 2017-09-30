@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 const ParentView = RB.ReviewRequestPage.BaseStatusUpdatesEntryView;
@@ -49,7 +49,10 @@ RB.ReviewRequestPage.ChangeEntryView = ParentView.extend({
             .hide()
             .appendTo(this.$('.labels-container'));
 
-        this.reviewRequestEditorView.formatText(this.$('.changedesc-text'));
+        RB.formatText(this.$('.changedesc-text'), {
+            bugTrackerURL: this.reviewRequest.get('bugTrackerURL'),
+            isHTMLEncoded: true,
+        });
 
         this._updateLabels();
 
@@ -141,4 +144,4 @@ RB.ReviewRequestPage.ChangeEntryView = ParentView.extend({
 });
 
 
-}
+})();

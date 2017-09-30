@@ -22,6 +22,22 @@ class GeneralCommentsFeature(Feature):
                 'attachment or diff.')
 
 
+class IssueVerificationFeature(Feature):
+    """A feature for issue verification.
+
+    Issue verification allows reviewers to mark that an issue requires
+    verification before closing. In this case, the author of the change will be
+    able to mark the issue as "Fixed", but then the original author of the
+    comment will need to verify it before the issue is closed.
+    """
+
+    feature_id = 'reviews.issue_verification'
+    name = _('Issue Verification')
+    level = FeatureLevel.EXPERIMENTAL
+    summary = _('Allow comment authors to require that issues be verified by '
+                'them before being closed')
+
+
 class StatusUpdatesFeature(Feature):
     """A feature for status updates.
 
@@ -40,4 +56,5 @@ class StatusUpdatesFeature(Feature):
 
 
 general_comments_feature = GeneralCommentsFeature()
+issue_verification_feature = IssueVerificationFeature()
 status_updates_feature = StatusUpdatesFeature()

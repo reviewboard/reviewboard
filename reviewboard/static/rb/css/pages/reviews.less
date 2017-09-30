@@ -2000,7 +2000,7 @@
     margin: 0 0.2em;
   }
 
-  &.dropped, &.open, &.resolved {
+  &.dropped, &.open, &.resolved, &.verifying-resolved, &.verifying-dropped {
     visibility: visible;
   }
 
@@ -2028,6 +2028,16 @@
 
     .back-to-issue-summary, .back-to-issue-summary:visited {
       color: @issue-resolved-link-color;
+    }
+  }
+
+  &.verifying-resolved,
+  &.verifying-dropped {
+    background: @issue-verifying-bg;
+    border-color: @issue-opened-border-color;
+
+    .back-to-issue-summary, .back-to-issue-summary:visited {
+      color: @issue-opened-link-color;
     }
   }
 
@@ -2325,6 +2335,11 @@
 
     &.resolved {
       .issue-row-colors(@issue-resolved-bg, @issue-resolved-hover-bg);
+    }
+
+    &.verifying-dropped,
+    &.verifying-resolved {
+      .issue-row-colors(@issue-verifying-bg, @issue-verifying-hover-bg);
     }
 
     .reviewer {

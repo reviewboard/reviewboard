@@ -202,7 +202,6 @@ class ReviewRequestPageData(object):
         self.initial_status_updates = []
         self.change_status_updates = {}
         self.reviews_by_id = {}
-        self.latest_reviews_by_timestamp = {}
         self.latest_timestamps_by_review_id = {}
         self.body_top_replies = defaultdict(list)
         self.body_bottom_replies = defaultdict(list)
@@ -222,6 +221,7 @@ class ReviewRequestPageData(object):
             'open': 0,
             'resolved': 0,
             'dropped': 0,
+            'verifying': 0,
         }
 
         self.status_updates_enabled = status_updates_feature.is_enabled(
@@ -491,6 +491,13 @@ class ReviewRequestPageData(object):
                     if review.public and comment.issue_opened:
                         status_key = comment.issue_status_to_string(
                             comment.issue_status)
+
+                        # Both "verifying" states get lumped together in the
+                        # same section in the issue summary table.
+                        if status_key in ('verifying-resolved',
+                                          'verifying-dropped'):
+                            status_key = 'verifying'
+
                         self.issue_counts[status_key] += 1
                         self.issue_counts['total'] += 1
                         self.issues.append(comment)
@@ -534,7 +541,7 @@ class ReviewRequestPageData(object):
         # Sort all the main entries (such as reviews and change descriptions)
         # by their timestamp. We don't sort the initial entries, which are
         # displayed in registration order.
-        main_entries.sort(key=lambda item: item.timestamp)
+        main_entries.sort(key=lambda item: item.added_timestamp)
 
         return {
             'initial': initial_entries,
@@ -566,20 +573,26 @@ class BaseReviewRequestPageEntry(object):
     page.
 
     Attributes:
+        added_timestamp (datetime.datetime):
+            The timestamp of the entry. This represents the added time for the
+            entry, and is used for sorting the entry in the page. This
+            timestamp should never change.
+
         avatar_user (django.contrib.auth.models.User):
             The user to display an avatar for. This can be ``None``, in which
             case no avatar will be displayed. Templates can also override the
             avatar HTML instead of using this.
 
+        collapsed (bool):
+            Whether the entry should be initially collapsed.
+
         entry_id (unicode):
             The ID of the entry. This will be unique across this type of entry,
             and may refer to a database object ID.
 
-        timestamp (datetime.datetime):
-            The timestamp of the entry.
-
-        collasped (bool):
-            Whether the entry should be initially collapsed.
+        updated_timestamp (datetime.datetime):
+            The timestamp when the entry was last updated. This reflects new
+            updates or activity on the entry.
     """
 
     #: An initial entry appearing above the review-like boxes.
@@ -689,7 +702,7 @@ class BaseReviewRequestPageEntry(object):
         """Build ETag data for the entry.
 
         This will be incorporated into the ETag for the page. By default,
-        no additional data will be returned.
+        the updated timestamp is used.
 
         Args:
             data (ReviewRequestPageData):
@@ -701,7 +714,8 @@ class BaseReviewRequestPageEntry(object):
         """
         return ''
 
-    def __init__(self, entry_id, timestamp, collapsed, avatar_user=None):
+    def __init__(self, entry_id, added_timestamp, updated_timestamp=None,
+                 collapsed=False, avatar_user=None):
         """Initialize the entry.
 
         Args:
@@ -709,10 +723,16 @@ class BaseReviewRequestPageEntry(object):
                 The ID of the entry. This must be unique across this type
                 of entry, and may refer to a database object ID.
 
-            timestamp (datetime.datetime):
-                The timestamp of the entry.
+            added_timestamp (datetime.datetime):
+                The timestamp of the entry. This represents the added time
+                for the entry, and is used for sorting the entry in the page.
+                This timestamp should never change.
 
-            collapsed (bool):
+            updated_timestamp (datetime.datetime, optional):
+                The timestamp when the entry was last updated. This should
+                reflect new updates or activity on the entry.
+
+            collapsed (bool, optional):
                 Whether the entry is collapsed by default.
 
             avatar_user (django.contrib.auth.models.User, optional):
@@ -721,7 +741,8 @@ class BaseReviewRequestPageEntry(object):
                 override the avatar HTML instead of using this.
         """
         self.entry_id = entry_id
-        self.timestamp = timestamp
+        self.added_timestamp = added_timestamp
+        self.updated_timestamp = updated_timestamp or added_timestamp
         self.collapsed = collapsed
         self.avatar_user = avatar_user
 
@@ -733,9 +754,10 @@ class BaseReviewRequestPageEntry(object):
             A string representation for the entry.
         """
         return (
-            '%s(entry_type_id=%s, entry_id=%s, timestamp=%s, collapsed=%s)'
+            '%s(entry_type_id=%s, entry_id=%s, added_timestamp=%s, '
+            'updated_timestamp=%s, collapsed=%s)'
             % (self.__class__.__name__, self.entry_type_id, self.entry_id,
-               self.timestamp, self.collapsed)
+               self.added_timestamp, self.updated_timestamp, self.collapsed)
         )
 
     def is_entry_new(self, last_visited, user, **kwargs):
@@ -760,7 +782,8 @@ class BaseReviewRequestPageEntry(object):
             ``True`` if the entry will be shown as new. ``False`` if it
             will be shown as an existing entry.
         """
-        return self.timestamp is not None and last_visited < self.timestamp
+        return (self.added_timestamp is not None and
+                last_visited < self.added_timestamp)
 
     def get_dom_element_id(self):
         """Return the ID used for the DOM element for this entry.
@@ -1235,11 +1258,17 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
             data (ReviewRequestPageData):
                 Pre-queried data for the review request page.
         """
+        timestamps = [review_request.time_added] + [
+            status_update.timestamp
+            for status_update in data.initial_status_updates
+        ]
+
         StatusUpdatesEntryMixin.__init__(self)
         BaseReviewRequestPageEntry.__init__(
             self,
             entry_id='0',
-            timestamp=review_request.time_added,
+            added_timestamp=review_request.time_added,
+            updated_timestamp=get_latest_timestamp(timestamps),
             collapsed=collapsed)
 
     @property
@@ -1354,8 +1383,13 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
             data (ReviewRequestPageData):
                 Pre-queried data for the review request page.
         """
+        updated_timestamp = \
+            data.latest_timestamps_by_review_id.get(review.pk,
+                                                    review.timestamp)
+
         super(ReviewEntry, self).__init__(entry_id=six.text_type(review.pk),
-                                          timestamp=review.timestamp,
+                                          added_timestamp=review.timestamp,
+                                          updated_timestamp=updated_timestamp,
                                           collapsed=collapsed,
                                           avatar_user=review.user)
 
@@ -1422,7 +1456,9 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
         if comment.issue_opened:
             self.has_issues = True
 
-            if comment.issue_status == BaseComment.OPEN:
+            if comment.issue_status in (BaseComment.OPEN,
+                                        BaseComment.VERIFYING_RESOLVED,
+                                        BaseComment.VERIFYING_DROPPED):
                 self.issue_open_count += 1
 
                 if self.review_request.submitter == self.request.user:
@@ -1517,14 +1553,21 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
             data (ReviewRequestPageData):
                 Pre-queried data for the review request page.
         """
+        status_updates = data.change_status_updates.get(changedesc.pk, [])
+        timestamps = [changedesc.timestamp] + [
+            status_update.timestamp
+            for status_update in status_updates
+        ]
+
         BaseReviewRequestPageEntry.__init__(
             self,
             entry_id=six.text_type(changedesc.pk),
-            timestamp=changedesc.timestamp,
+            added_timestamp=changedesc.timestamp,
+            updated_timestamp=get_latest_timestamp(timestamps),
             collapsed=collapsed,
             avatar_user=changedesc.get_user(review_request))
 
-        if status_updates_feature.is_enabled(request=request):
+        if data.status_updates_enabled:
             StatusUpdatesEntryMixin.__init__(self)
 
         self.changedesc = changedesc

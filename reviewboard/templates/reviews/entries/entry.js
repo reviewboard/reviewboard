@@ -6,7 +6,9 @@ page.addEntryView(new {{entry.js_view_class}}({
     reviewRequestEditorView: page.reviewRequestEditorView,
     model: new {{entry.js_model_class}}({
         id: '{{entry.entry_id|escapejs}}',
-        timestamp: {{entry.timestamp|json_dumps}},
+        collapsed: {{entry.collapsed|yesno:'true,false'}},
+        addedTimestamp: {{entry.added_timestamp|json_dumps}},
+        updatedTimestamp: {{entry.updated_timestamp|json_dumps}},
         typeID: '{{entry.entry_type_id|escapejs}}',
         {{entry.get_js_model_data|json_dumps_items:','}}
         reviewRequestEditor: page.model.reviewRequestEditor

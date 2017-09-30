@@ -673,14 +673,46 @@ class ShipItColumn(Column):
             *args, **kwargs)
 
     def render_data(self, state, review_request):
-        """Return the rendered contents of the column."""
-        if review_request.issue_open_count > 0:
+        """Return the rendered contents of the column.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The state for the datagrid.
+
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request.
+
+        Returns:
+            unicode:
+            The rendered HTML for the column.
+        """
+        open_issues = review_request.issue_open_count
+        verifying_issues = review_request.issue_verifying_count
+
+        if open_issues > 0 and verifying_issues > 0:
             return ('<span class="issue-count">'
                     ' <div class="rb-icon rb-icon-datagrid-open-issues"'
-                    '      title="%s"></div> %s'
+                    '      title="%s"></div>'
+                    ' %s'
+                    ' <span class="issue-verifying-count">(%s)</span>'
                     '</span>'
-                    % (_('Open issue count'), review_request.issue_open_count))
-        elif review_request.shipit_count > 0:
+                    % (_('Open issue count'), open_issues, verifying_issues))
+        elif open_issues > 0:
+            return ('<span class="issue-count">'
+                    ' <div class="rb-icon rb-icon-datagrid-open-issues"'
+                    '      title="%s"></div>'
+                    ' %s'
+                    '</span>'
+                    % (_('Open issue count'), open_issues))
+        elif verifying_issues > 0:
+            return ('<span class="issue-count">'
+                    ' <div class="rb-icon rb-icon-datagrid-open-issues"'
+                    '      title="%s"></div>'
+                    ' <span class="issue-verifying-count">(%s)</span>'
+                    '</span>'
+                    % (_('Verifying issue count'), verifying_issues))
+        elif review_request.shipit_count:
             return ('<span class="shipit-count">'
                     ' <div class="rb-icon rb-icon-datagrid-shipit"'
                     '      title="%s"></div> %s'

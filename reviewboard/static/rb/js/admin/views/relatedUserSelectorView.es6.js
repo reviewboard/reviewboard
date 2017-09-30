@@ -1,4 +1,4 @@
-{
+(function() {
 
 const optionTemplate = _.template(dedent`
     <div>
@@ -119,4 +119,4 @@ RB.RelatedUserSelectorView = RB.RelatedObjectSelectorView.extend({
 });
 
 
-}
+})();

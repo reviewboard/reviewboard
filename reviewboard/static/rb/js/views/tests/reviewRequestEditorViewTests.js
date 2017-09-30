@@ -57,6 +57,10 @@ suite('rb/views/ReviewRequestEditorView', function() {
             '          data-field-id="text"',
             '          class="field field-text-area editable"',
             '          data-allow-markdown="True"></pre>',
+            '     <input id="field_checkbox"',
+            '            data-field-id="checkbox"',
+            '            class="field"',
+            '            type="checkbox">',
             '    </div>',
             '   </div>',
             '  </div>',
@@ -104,6 +108,97 @@ suite('rb/views/ReviewRequestEditorView', function() {
             el: $el,
             model: editor
         });
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.SummaryFieldView({
+                el: $el.find('#field_summary'),
+                fieldID: 'summary',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.BranchFieldView({
+                el: $el.find('#field_branch'),
+                fieldID: 'branch',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.SubmitterFieldView({
+                el: $el.find('#field_submitter'),
+                fieldID: 'submitter',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.BugsFieldView({
+                el: $el.find('#field_bugs_closed'),
+                fieldID: 'bugs_closed',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.DependsOnFieldView({
+                el: $el.find('#field_depends_on'),
+                fieldID: 'depends_on',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.TargetGroupsFieldView({
+                el: $el.find('#field_target_groups'),
+                fieldID: 'target_groups',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.TargetPeopleFieldView({
+                el: $el.find('#field_target_people'),
+                fieldID: 'target_people',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.DescriptionFieldView({
+                el: $el.find('#field_description'),
+                fieldID: 'description',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.TestingDoneFieldView({
+                el: $el.find('#field_testing_done'),
+                fieldID: 'testing_done',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.TextFieldView({
+                el: $el.find('#field_my_custom'),
+                fieldID: 'my_custom',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.MultilineTextFieldView({
+                el: $el.find('#field_my_rich_text_custom'),
+                fieldID: 'my_rich_text_custom',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.MultilineTextFieldView({
+                el: $el.find('#field_text'),
+                fieldID: 'text',
+                model: editor
+            }));
+
+        view.addFieldView(
+            new RB.ReviewRequestFields.CheckboxFieldView({
+                el: $el.find('#field_checkbox'),
+                fieldID: 'checkbox',
+                model: editor
+            }));
 
         $filesContainer = $testsScratch.find('#file-list');
         $screenshotsContainer = $testsScratch.find('#screenshot-thumbnails');
@@ -403,6 +498,58 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     expect(reviewRequest.reopen).toHaveBeenCalled();
                 });
             });
+
+            describe('Close description', function() {
+                var $field,
+                    $input;
+
+                beforeEach(function() {
+                    view.showBanner();
+                    $field = view.banner.$('#field_close_description');
+                    $input = $field.inlineEditor('field');
+                });
+
+                function testCloseDescription(testName, richText) {
+                    it(testName, function(done) {
+                        var textEditor,
+                            t;
+
+                        $field.inlineEditor('startEdit');
+
+                        textEditor =
+                            RB.TextEditorView.getFromInlineEditor($input);
+                        textEditor.setText('My description');
+                        textEditor.setRichText(richText);
+
+                        $input.triggerHandler('keyup');
+
+                        t = setInterval(function() {
+                            if ($field.inlineEditor('dirty')) {
+                                clearInterval(t);
+
+                                spyOn(reviewRequest, 'close')
+                                    .and.callFake(function(options) {
+                                        expect(options.type)
+                                            .toBe(RB.ReviewRequest.CLOSE_DISCARDED);
+                                        expect(options.description)
+                                            .toBe('My description');
+                                        expect(options.richText).toBe(richText);
+                                    });
+
+                                $field.inlineEditor('submit');
+                                expect(reviewRequest.close).toHaveBeenCalled();
+
+                                done();
+                            }
+                        }, 100);
+                    });
+                }
+
+                describe('Saves', function() {
+                    testCloseDescription('For Markdown', true);
+                    testCloseDescription('For plain text', false);
+                });
+            });
         });
 
         describe('Submitted banner', function() {
@@ -433,6 +580,58 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     $('#btn-review-request-reopen').click();
 
                     expect(reviewRequest.reopen).toHaveBeenCalled();
+                });
+            });
+
+            describe('Close description', function() {
+                var $field,
+                    $input;
+
+                beforeEach(function() {
+                    view.showBanner();
+                    $field = view.banner.$('#field_close_description');
+                    $input = $field.inlineEditor('field');
+                });
+
+                function testCloseDescription(testName, richText) {
+                    it(testName, function(done) {
+                        var textEditor,
+                            t;
+
+                        $field.inlineEditor('startEdit');
+
+                        textEditor =
+                            RB.TextEditorView.getFromInlineEditor($input);
+                        textEditor.setText('My description');
+                        textEditor.setRichText(richText);
+
+                        $input.triggerHandler('keyup');
+
+                        t = setInterval(function() {
+                            if ($field.inlineEditor('dirty')) {
+                                clearInterval(t);
+
+                                spyOn(reviewRequest, 'close')
+                                    .and.callFake(function(options) {
+                                        expect(options.type)
+                                            .toBe(RB.ReviewRequest.CLOSE_SUBMITTED);
+                                        expect(options.description)
+                                            .toBe('My description');
+                                        expect(options.richText).toBe(richText);
+                                    });
+
+                                $field.inlineEditor('submit');
+                                expect(reviewRequest.close).toHaveBeenCalled();
+
+                                done();
+                            }
+                        }, 100);
+                    });
+                }
+
+                describe('Saves', function() {
+                    testCloseDescription('For Markdown', true);
+                    testCloseDescription('For plain text', false);
                 });
             });
         });
@@ -727,8 +926,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 setupFieldTests({
                     fieldName: 'closeDescription',
-                    jsonFieldName: 'changedescription',
-                    selector: options.bannerSel + ' #field_changedescription'
+                    jsonFieldName: 'close_description',
+                    selector: options.bannerSel + ' #field_close_description'
                 });
 
                 hasEditorTest();
@@ -824,9 +1023,9 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
                 setupFieldTests({
                     supportsRichText: true,
-                    fieldName: 'closeDescription',
+                    fieldName: 'changeDescription',
                     jsonFieldName: 'changedescription',
-                    selector: '#draft-banner #field_changedescription'
+                    selector: '#draft-banner #field_change_description'
                 });
 
                 hasEditorTest();
@@ -1081,6 +1280,31 @@ suite('rb/views/ReviewRequestEditorView', function() {
             richTextSavingTest();
             editCountTests();
             securityTests();
+        });
+
+        describe('Custom checkbox field', function() {
+            beforeEach(function() {
+                $field = view.$('#field_checkbox');
+
+                saveSpyFunc = function(options, context) {
+                    expect(options.data['extra_data.checkbox'])
+                        .toBe(true);
+                    options.success.call(context);
+                };
+                reviewRequest.draft.save.and.callFake(saveSpyFunc);
+            });
+
+            it('Saves', function() {
+                var expectedData = {
+                    'extra_data.checkbox': true
+                };
+
+                $field.click();
+
+                expect(reviewRequest.draft.save).toHaveBeenCalled();
+                expect(reviewRequest.draft.save.calls.argsFor(0)[0].data)
+                    .toEqual(expectedData);
+            });
         });
     });
 

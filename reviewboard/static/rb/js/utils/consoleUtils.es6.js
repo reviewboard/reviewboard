@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 if (typeof window.console === 'undefined') {
@@ -37,4 +37,4 @@ console.assert = function(conditional, msg) {
 };
 
 
-}
+})();

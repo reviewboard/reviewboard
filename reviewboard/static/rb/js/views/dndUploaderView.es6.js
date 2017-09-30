@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 /**
@@ -357,4 +357,4 @@ RB.DnDUploader = Backbone.View.extend({
 });
 
 
-}
+})();

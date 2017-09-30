@@ -27,12 +27,18 @@ RB.DiffFragmentView = Backbone.View.extend({
      *         ``loadDiff``.
      *
      * Option Args:
+     *     collapsible (bool, optional):
+     *         Whether or not the controls on the view can be collapsed. If
+     *         collapsible, they will also start collapsed. This defaults to
+     *         ``false``.
+     *
      *     loadDiff (function):
      *         The function to call to load more of the diff. This must be
      *         provided by the caller.
      */
     initialize(options={}) {
         this._loadDiff = options.loadDiff;
+        this._collapsible = !!options.collapsible;
 
         this._$table = null;
         this._$thead = null;
@@ -64,66 +70,34 @@ RB.DiffFragmentView = Backbone.View.extend({
         this._$thead = this._$table.children('thead');
         this._$controls = this._$diffHeaders.find('td > div');
 
-        this._hideControls();
+        if (this._collapsible && this.$el.is(':visible')) {
+            this.hideControls();
+        } else {
+            /*
+             * If we're not collapsible, then we're always expanded
+             * by default.
+             */
+            this.showControls();
+        }
 
-        /*
-         * Once we've hidden the controls, we want to enable transitions for
-         * hovering. We don't apply this before (or make it implicit) because
-         * we don't want all the transitions to take place on page load, as
-         * it's both visually weird and messes with the height calculation for
-         * the collapsed areas.
-         */
-        _.defer(() => this.$el.addClass('allow-transitions'));
+        if (this._collapsible) {
+            /*
+             * Once we've hidden the controls, we want to enable transitions for
+             * hovering. We don't apply this before (or make it implicit)
+             * because we don't want all the transitions to take place on page
+             * load, as it's both visually weird and messes with the height
+             * calculation for the collapsed areas.
+             */
+            _.defer(() => this.$el.addClass('allow-transitions'));
+        }
 
         return this;
-    },
-
-    /*
-     * Common functionality around expand or collapsing the diff fragment.
-     *
-     * This will grab information from the expand/collapse button provided
-     * and load a new diff fragment representing the state described in that
-     * button. The new diff will represent either an expanded or collapsed
-     * state.
-     *
-     * Args:
-     *     $btn (jQuery):
-     *         The button element that triggered the event leading to this
-     *         function call.
-     */
-    _expandOrCollapse($btn) {
-        this._loadDiff({
-            linesOfContext: $btn.data('lines-of-context'),
-            onDone: this._onExpandOrCollapseFinished.bind(this),
-        });
-    },
-
-    /**
-     * Attempt to hide the controls in the given container after a delay.
-     */
-    _tryShowControlsDelayed() {
-        _.delay(() => {
-            if (this.$el.is(':hover')) {
-                this._showControls();
-            }
-        }, this._controlsHoverTimeout);
-    },
-
-    /**
-     * Attempt to hide the controls in the given container after a delay.
-     */
-    _tryHideControlsDelayed() {
-        _.delay(() => {
-            if (!this.$el.is(':hover')) {
-                this._hideControls();
-            }
-        }, this._controlsHoverTimeout);
     },
 
     /**
      * Show the controls on the specified comment container.
      */
-    _showControls() {
+    showControls() {
         /* This will effectively control the opacity of the controls. */
         this._$table
             .removeClass('collapsed')
@@ -139,14 +113,23 @@ RB.DiffFragmentView = Backbone.View.extend({
 
     /**
      * Hide the controls on the specified comment container.
+     *
+     * Args:
+     *     animate (boolean, optional):
+     *         Whether to animate hiding the controls. By default, this is
+     *         ``true``.
      */
-    _hideControls() {
+    hideControls(animate) {
         /*
          * Never hide the controls when context has been expanded. It creates
          * a sort of jarring initial effect.
          */
         if (this._contextExpanded) {
             return;
+        }
+
+        if (animate === false) {
+            this.$el.removeClass('allow-transitions');
         }
 
         this._$table
@@ -176,6 +159,56 @@ RB.DiffFragmentView = Backbone.View.extend({
 
             $diffHeader.css('transform', `scaleY(${scale})`);
         });
+
+        if (animate === false) {
+            _.defer(() => this.$el.addClass('allow-transitions'));
+        }
+    },
+
+    /*
+     * Common functionality around expand or collapsing the diff fragment.
+     *
+     * This will grab information from the expand/collapse button provided
+     * and load a new diff fragment representing the state described in that
+     * button. The new diff will represent either an expanded or collapsed
+     * state.
+     *
+     * Args:
+     *     $btn (jQuery):
+     *         The button element that triggered the event leading to this
+     *         function call.
+     */
+    _expandOrCollapse($btn) {
+        this._loadDiff({
+            linesOfContext: $btn.data('lines-of-context'),
+            onDone: this._onExpandOrCollapseFinished.bind(this),
+        });
+    },
+
+    /**
+     * Attempt to hide the controls in the given container after a delay.
+     */
+    _tryShowControlsDelayed() {
+        if (this._collapsible) {
+            _.delay(() => {
+                if (this.$el.is(':hover')) {
+                    this.showControls();
+                }
+            }, this._controlsHoverTimeout);
+        }
+    },
+
+    /**
+     * Attempt to hide the controls in the given container after a delay.
+     */
+    _tryHideControlsDelayed() {
+        if (this._collapsible) {
+            _.delay(() => {
+                if (!this.$el.is(':hover')) {
+                    this.hideControls();
+                }
+            }, this._controlsHoverTimeout);
+        }
     },
 
     /*

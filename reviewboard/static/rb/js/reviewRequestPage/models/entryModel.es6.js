@@ -8,25 +8,33 @@
  * storing custom state, but can be used as-is for simple entries.
  *
  * Model Attributes:
+ *     addedTimestamp (Date):
+ *         The date/time the entry was added.
+ *
+ *     collapsed (boolean):
+ *         Whether this entry is in a collapsed state.
+ *
  *     page (RB.ReviewRequestPage):
  *         The page that owns this entry.
  *
  *     reviewRequestEditor (RB.ReviewRequestEditor):
  *         The review request editor managing state on the page.
  *
- *     timestamp (Date):
- *         The date/time of the content of the timestamp.
- *
  *     typeID (string):
  *         The type of this entry, corresponding to a entry type ID that's
  *         been registered server-side.
+ *
+ *     updatedTimestamp (Date):
+ *         The date/time the entry was last updated.
  */
 RB.ReviewRequestPage.Entry = Backbone.Model.extend({
     defaults: {
+        addedTimestamp: null,
+        collapsed: false,
         page: null,
         reviewRequestEditor: null,
-        timestamp: null,
         typeID: null,
+        updatedTimestamp: null,
     },
 
     /**
@@ -43,7 +51,9 @@ RB.ReviewRequestPage.Entry = Backbone.Model.extend({
     parse(attrs) {
         return {
             id: attrs.id,
-            timestamp: moment.utc(attrs.timestamp).toDate(),
+            collapsed: attrs.collapsed,
+            addedTimestamp: moment.utc(attrs.addedTimestamp).toDate(),
+            updatedTimestamp: moment.utc(attrs.updatedTimestamp).toDate(),
             typeID: attrs.typeID,
             reviewRequestEditor: attrs.reviewRequestEditor,
         };

@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 const commentTypeToIDPrefix = {
@@ -38,6 +38,9 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
             containerPrefix: 'comment_container',
             queueName: 'diff_fragments',
             el: document.getElementById('content'),
+            diffFragmentViewOptions: {
+                collapsible: true,
+            },
         });
 
         /*
@@ -168,9 +171,13 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
      *     key (string):
      *         Either a single filediff ID, or a pair (filediff ID and
      *         interfilediff ID) separated by a hyphen.
+     *
+     *     onFragmentRendered (function, optional):
+     *         Optional callback for when the view for the fragment has
+     *         rendered. Contains the view as a parameter.
      */
-    queueLoadDiff(commentID, key) {
-        this.diffFragmentQueue.queueLoad(commentID, key);
+    queueLoadDiff(commentID, key, onFragmentRendered) {
+        this.diffFragmentQueue.queueLoad(commentID, key, onFragmentRendered);
     },
 
     /**
@@ -369,4 +376,4 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
 });
 
 
-}
+})();

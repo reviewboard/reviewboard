@@ -207,13 +207,15 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                 entry1 = new TestEntry({
                     typeID: 'my-entry',
                     id: '1',
-                    timestamp: new Date(2017, 7, 1, 0, 0, 0),
+                    addedTimestamp: new Date(2017, 7, 1, 0, 0, 0),
+                    updatedTimestamp: new Date(2017, 7, 1, 12, 0, 0),
                 });
 
                 entry2 = new TestEntry({
                     typeID: 'my-entry',
                     id: '2',
-                    timestamp: new Date(2017, 7, 1, 0, 0, 0),
+                    addedTimestamp: new Date(2017, 7, 1, 0, 0, 0),
+                    updatedTimestamp: new Date(2017, 7, 1, 12, 0, 0),
                 });
 
                 page.addEntry(entry1);
@@ -227,15 +229,17 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                 spyOn(entry2, 'afterApplyUpdate');
 
                 page._processUpdates([
-                    '129\n',
+                    '177\n',
                     '{"type": "entry", "entryType": "my-entry", ',
-                    '"entryID": "1", "timestamp": "2017-09-04T14:30:20", ',
+                    '"entryID": "1", "addedTimestamp": "2017-07-01T00:00:00", ',
+                    '"updatedTimestamp": "2017-09-04T14:30:20", ',
                     '"modelData": {"myAttr": "value1"}}',
                     '15\n',
                     '<p>My HTML!</p>',
-                    '129\n',
+                    '177\n',
                     '{"type": "entry", "entryType": "my-entry", ',
-                    '"entryID": "2", "timestamp": "2017-09-03T14:30:20", ',
+                    '"entryID": "2", "addedTimestamp": "2017-07-01T00:00:00", ',
+                    '"updatedTimestamp": "2017-09-03T14:30:20", ',
                     '"modelData": {"myAttr": "value2"}}',
                     '13\n',
                     '<p>Oh hi!</p>',
@@ -246,7 +250,8 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                     type: 'entry',
                     entryType: 'my-entry',
                     entryID: '1',
-                    timestamp: '2017-09-04T14:30:20',
+                    addedTimestamp: '2017-07-01T00:00:00',
+                    updatedTimestamp: '2017-09-04T14:30:20',
                     modelData: {
                         myAttr: 'value1',
                     },
@@ -274,7 +279,8 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                     type: 'entry',
                     entryType: 'my-entry',
                     entryID: '2',
-                    timestamp: '2017-09-03T14:30:20',
+                    addedTimestamp: '2017-07-01T00:00:00',
+                    updatedTimestamp: '2017-09-03T14:30:20',
                     modelData: {
                         myAttr: 'value2',
                     },
@@ -307,9 +313,10 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                 spyOn(entry1, 'afterApplyUpdate');
 
                 page._processUpdates([
-                    '129\n',
+                    '177\n',
                     '{"type": "entry", "entryType": "my-entry", ',
-                    '"entryID": "1", "timestamp": "2016-09-04T14:30:20", ',
+                    '"entryID": "1", "addedTimestamp": "2016-09-04T14:30:20", ',
+                    '"updatedTimestamp": "2016-12-10T12:24:14", ',
                     '"modelData": {"myAttr": "value1"}}',
                     '15\n',
                     '<p>My HTML!</p>',
@@ -320,7 +327,8 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                     type: 'entry',
                     entryType: 'my-entry',
                     entryID: '1',
-                    timestamp: '2016-09-04T14:30:20',
+                    addedTimestamp: '2016-09-04T14:30:20',
+                    updatedTimestamp: '2016-09-04T14:30:20',
                     modelData: {
                         myAttr: 'value1',
                     },

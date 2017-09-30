@@ -15,6 +15,11 @@
     <label><span class="rb-icon rb-icon-issue-open"></span></label>
     <span id="open-counter" class="issue-counter-value">{{issue_counts.open}}</span>
    </li>
+   <li class="issue-summary-tab" title="{% trans 'Issues waiting for verification' %}"
+       data-issue-state="verifying">
+    <label><span class="rb-icon rb-icon-issue-verifying"></span></label>
+    <span id="open-counter" class="issue-counter-value">{{issue_counts.verifying}}</span>
+   </li>
    <li class="issue-summary-tab" title="{% trans 'Resolved issues' %}"
        data-issue-state="resolved">
     <label><span class="rb-icon rb-icon-issue-resolved"></span></label>

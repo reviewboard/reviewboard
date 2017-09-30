@@ -17,6 +17,10 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
      *         The prefix to prepend to diff comment IDs when forming
      *         container element IDs.
      *
+     *     diffFragmentViewOptions (object, optional):
+     *         Options to pass to each :js:class:`RB.DiffFragmentView` that's
+     *         created.
+     *
      *     reviewRequestPath (string):
      *         The URL for the review request that diff fragments will be
      *         loaded from.
@@ -26,6 +30,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
      */
     initialize(options) {
         this._containerPrefix = options.containerPrefix;
+        this._diffFragmentViewOptions = options.diffFragmentViewOptions;
         this._fragmentsBasePath =
             `${options.reviewRequestPath}_fragments/diff-comments/`;
         this._queueName = options.queueName;
@@ -47,15 +52,22 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
      *     key (string):
      *         The key for the queue. Each comment with the same key will be
      *         loaded in a batch. This will generally be the ID of a file.
+     *
+     *     onFragmentRendered (function, optional):
+     *         Optional callback for when the view for the fragment has
+     *         rendered. Contains the view as a parameter.
      */
-    queueLoad(commentID, key) {
+    queueLoad(commentID, key, onFragmentRendered) {
         const queue = this._queue;
 
         if (!queue[key]) {
             queue[key] = [];
         }
 
-        queue[key].push(commentID);
+        queue[key].push({
+            commentID: commentID,
+            onFragmentRendered: onFragmentRendered || null,
+        });
     },
 
     /**
@@ -94,16 +106,22 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
 
         const queueName = this._queueName;
 
-        _.each(this._queue, commentIDs => {
+        _.each(this._queue, queuedLoads => {
             $.funcQueue(queueName).add(() => {
                 const pendingCommentIDs = [];
+                const onFragmentRenderedFuncs = {};
 
                 /*
                  * Check if there are any comment IDs that have been saved.
                  * We don't need to reload these from the server.
                  */
-                for (let i = 0; i < commentIDs.length; i++) {
-                    const commentID = commentIDs[i];
+                for (let i = 0; i < queuedLoads.length; i++) {
+                    const queuedLoad = queuedLoads[i];
+                    const commentID = queuedLoad.commentID;
+                    const onFragmentRendered =
+                        _.isFunction(queuedLoad.onFragmentRendered)
+                        ? queuedLoad.onFragmentRendered
+                        : null;
 
                     if (this._saved.hasOwnProperty(commentID)) {
                         const view = this._getCommentContainer(commentID)
@@ -113,9 +131,15 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                         view.$el.html(this._saved[commentID]);
                         view.render();
 
+                        if (onFragmentRendered) {
+                            onFragmentRendered(view);
+                        }
+
                         delete this._saved[commentID];
                     } else {
                         pendingCommentIDs.push(commentID);
+                        onFragmentRenderedFuncs[commentID] =
+                            onFragmentRendered;
                     }
                 }
 
@@ -129,7 +153,12 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                      */
                     this._loadDiff(pendingCommentIDs.join(','), {
                         queueName: queueName,
-                        onDone: () => $.funcQueue(queueName).next(),
+                        onFragmentRendered: (commentID, view) => {
+                            if (onFragmentRenderedFuncs[commentID]) {
+                                onFragmentRenderedFuncs[commentID](view);
+                            }
+                        },
+                        onDone: $.funcQueue(queueName).next(),
                     });
                 } else {
                     /*
@@ -192,6 +221,9 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
     _loadDiff(commentIDs, options={}) {
         const containerPrefix = this._containerPrefix;
         const queryArgs = [];
+        const onFragmentRendered = (_.isFunction(options.onFragmentRendered)
+                                    ? options.onFragmentRendered
+                                    : null);
 
         if (options.linesOfContext !== undefined) {
             queryArgs.push(`lines_of_context=${options.linesOfContext}`);
@@ -226,9 +258,14 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                     i += htmlLen;
 
                     /* Set the HTML in the container. */
-                    this._renderFragment($(`#${containerPrefix}_${commentID}`),
-                                         commentID,
-                                         html);
+                    const view = this._renderFragment(
+                        $(`#${containerPrefix}_${commentID}`),
+                        commentID,
+                        html);
+
+                    if (onFragmentRendered) {
+                        onFragmentRendered(commentID, view);
+                    }
                 }
 
                 if (_.isFunction(options.onDone)) {
@@ -266,7 +303,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
         let view = $container.data('diff-fragment-view');
 
         if (!view) {
-            view = new RB.DiffFragmentView({
+            view = new RB.DiffFragmentView(_.defaults({
                 el: $container,
                 loadDiff: options => {
                     RB.setActivityIndicator(true, {type: 'GET'});
@@ -281,12 +318,14 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                         },
                     }, options));
                 },
-            });
+            }, this._diffFragmentViewOptions)),
             $container.data('diff-fragment-view', view);
         }
 
         view.render();
 
         RB.scrollManager.markUpdated($container);
+
+        return view;
     },
 });

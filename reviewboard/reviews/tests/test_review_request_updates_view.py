@@ -2,10 +2,11 @@
 
 from __future__ import unicode_literals
 
-from datetime import timedelta
 import json
+from datetime import datetime, timedelta
 
 from django.core.urlresolvers import reverse
+from django.utils.timezone import utc
 
 from reviewboard.reviews.views import ReviewRequestUpdatesView
 from reviewboard.testing import TestCase
@@ -19,12 +20,15 @@ class ReviewRequestUpdatesViewTests(TestCase):
     def setUp(self):
         super(ReviewRequestUpdatesViewTests, self).setUp()
 
-        self.review_request = self.create_review_request(publish=True)
+        self.review_request = self.create_review_request(
+            publish=True,
+            time_added=datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc),
+            last_updated=datetime(2017, 9, 7, 23, 10, 0, tzinfo=utc))
 
         # Create the first review.
         self.review1 = self.create_review(
             self.review_request,
-            timestamp=self.review_request.last_updated + timedelta(days=10),
+            timestamp=self.review_request.time_added + timedelta(days=10),
             publish=True)
         self.general_comment = self.create_general_comment(
             self.review1,
@@ -53,6 +57,10 @@ class ReviewRequestUpdatesViewTests(TestCase):
         self.assertEqual(metadata['type'], 'entry')
         self.assertEqual(metadata['entryType'], 'review')
         self.assertEqual(metadata['entryID'], '1')
+        self.assertEqual(metadata['addedTimestamp'],
+                         '2017-09-17 17:00:00+00:00')
+        self.assertEqual(metadata['updatedTimestamp'],
+                         '2017-09-17 17:00:00+00:00')
         self.assertEqual(metadata['viewOptions'], {})
         self.assertEqual(metadata['modelData'], {
             'reviewData': {
@@ -70,6 +78,10 @@ class ReviewRequestUpdatesViewTests(TestCase):
         self.assertEqual(metadata['type'], 'entry')
         self.assertEqual(metadata['entryType'], 'review')
         self.assertEqual(metadata['entryID'], '2')
+        self.assertEqual(metadata['addedTimestamp'],
+                         '2017-09-27 17:00:00+00:00')
+        self.assertEqual(metadata['updatedTimestamp'],
+                         '2017-09-27 17:00:00+00:00')
         self.assertEqual(metadata['viewOptions'], {})
         self.assertEqual(metadata['modelData'], {
             'reviewData': {
@@ -87,6 +99,10 @@ class ReviewRequestUpdatesViewTests(TestCase):
         self.assertEqual(metadata['type'], 'entry')
         self.assertEqual(metadata['entryType'], 'initial_status_updates')
         self.assertEqual(metadata['entryID'], '0')
+        self.assertEqual(metadata['addedTimestamp'],
+                         '2017-09-07 17:00:00+00:00')
+        self.assertEqual(metadata['updatedTimestamp'],
+                         '2017-09-07 17:00:00+00:00')
         self.assertEqual(metadata['viewOptions'], {})
         self.assertEqual(metadata['modelData'], {
             'pendingStatusUpdates': False,
@@ -110,6 +126,10 @@ class ReviewRequestUpdatesViewTests(TestCase):
         self.assertEqual(metadata['type'], 'entry')
         self.assertEqual(metadata['entryType'], 'review')
         self.assertEqual(metadata['entryID'], '2')
+        self.assertEqual(metadata['addedTimestamp'],
+                         '2017-09-27 17:00:00+00:00')
+        self.assertEqual(metadata['updatedTimestamp'],
+                         '2017-09-27 17:00:00+00:00')
         self.assertEqual(metadata['viewOptions'], {})
         self.assertEqual(metadata['modelData'], {
             'reviewData': {
@@ -127,6 +147,10 @@ class ReviewRequestUpdatesViewTests(TestCase):
         self.assertEqual(metadata['type'], 'entry')
         self.assertEqual(metadata['entryType'], 'initial_status_updates')
         self.assertEqual(metadata['entryID'], '0')
+        self.assertEqual(metadata['addedTimestamp'],
+                         '2017-09-07 17:00:00+00:00')
+        self.assertEqual(metadata['updatedTimestamp'],
+                         '2017-09-07 17:00:00+00:00')
         self.assertEqual(metadata['viewOptions'], {})
         self.assertEqual(metadata['modelData'], {
             'pendingStatusUpdates': False,
@@ -153,6 +177,10 @@ class ReviewRequestUpdatesViewTests(TestCase):
         self.assertEqual(metadata['type'], 'entry')
         self.assertEqual(metadata['entryType'], 'review')
         self.assertEqual(metadata['entryID'], '2')
+        self.assertEqual(metadata['addedTimestamp'],
+                         '2017-09-27 17:00:00+00:00')
+        self.assertEqual(metadata['updatedTimestamp'],
+                         '2017-09-27 17:00:00+00:00')
         self.assertEqual(metadata['viewOptions'], {})
         self.assertEqual(metadata['modelData'], {
             'reviewData': {
@@ -192,6 +220,10 @@ class ReviewRequestUpdatesViewTests(TestCase):
         self.assertEqual(metadata['type'], 'entry')
         self.assertEqual(metadata['entryType'], 'review')
         self.assertEqual(metadata['entryID'], '2')
+        self.assertEqual(metadata['addedTimestamp'],
+                         '2017-09-27 17:00:00+00:00')
+        self.assertEqual(metadata['updatedTimestamp'],
+                         '2017-09-27 17:00:00+00:00')
         self.assertEqual(metadata['viewOptions'], {})
         self.assertEqual(metadata['modelData'], {
             'reviewData': {

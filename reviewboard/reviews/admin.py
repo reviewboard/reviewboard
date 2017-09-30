@@ -148,7 +148,7 @@ class ReviewRequestAdmin(admin.ModelAdmin):
                        'last_review_activity_timestamp',
                        'shipit_count', 'issue_open_count',
                        'issue_resolved_count', 'issue_dropped_count',
-                       'local_id', 'extra_data'),
+                       'issue_verifying_count', 'local_id', 'extra_data'),
             'classes': ['collapse'],
         }),
     )

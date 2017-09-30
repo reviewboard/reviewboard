@@ -1,27 +1,32 @@
 suite('rb/views/CommentIssueBarView', function() {
     var commentIssueManager,
-        statuses = RB.CommentIssueBarView.prototype,
         view,
         $dropButton,
         $reopenButton,
-        $fixedButton;
-
+        $fixedButton,
+        $verifyFixedButton,
+        $verifyDroppedButton;
 
     beforeEach(function() {
-        commentIssueManager = new RB.CommentIssueManager();
+        commentIssueManager = new RB.CommentIssueManager({
+            reviewRequest: new RB.ReviewRequest()
+        });
         view = new RB.CommentIssueBarView({
             commentIssueManager: commentIssueManager,
             issueStatus: 'open',
             reviewID: 1,
             commentID: 2,
-            commentType: 'diff',
-            interactive: true
+            commentType: 'diff_comments',
+            interactive: true,
+            canVerify: true
         });
         view.render().$el.appendTo($testsScratch);
 
         $dropButton = view._$buttons.filter('.drop');
         $reopenButton = view._$buttons.filter('.reopen');
         $fixedButton = view._$buttons.filter('.resolve');
+        $verifyFixedButton = view._$buttons.filter('.verify-resolved');
+        $verifyDroppedButton = view._$buttons.filter('.verify-dropped');
     });
 
     describe('Actions', function() {
@@ -36,7 +41,7 @@ suite('rb/views/CommentIssueBarView', function() {
             expect(view._$buttons.prop('disabled')).toBe(true);
 
             expect(commentIssueManager.setCommentState)
-                .toHaveBeenCalledWith(1, 2, 'diff', 'resolved');
+                .toHaveBeenCalledWith(1, 2, 'diff_comments', 'resolved');
         });
 
         it('Dropping', function() {
@@ -45,19 +50,45 @@ suite('rb/views/CommentIssueBarView', function() {
             expect(view._$buttons.prop('disabled')).toBe(true);
 
             expect(commentIssueManager.setCommentState)
-                .toHaveBeenCalledWith(1, 2, 'diff', 'dropped');
+                .toHaveBeenCalledWith(1, 2, 'diff_comments', 'dropped');
         });
 
         it('Re-opening', function() {
-            view._showStatus(statuses.STATUS_FIXED);
+            view._showStatus(RB.BaseComment.STATE_RESOLVED);
 
             $reopenButton.click();
 
             expect(view._$buttons.prop('disabled')).toBe(true);
 
             expect(commentIssueManager.setCommentState)
-                .toHaveBeenCalledWith(1, 2, 'diff', 'open');
+                .toHaveBeenCalledWith(1, 2, 'diff_comments', 'open');
         });
+
+        it('Resolving with verification', function() {
+            var comment = commentIssueManager.getComment(1, 2, 'diff_comments');
+            comment.get('extraData').require_verification = true;
+
+            $fixedButton.click();
+
+            expect(view._$buttons.prop('disabled')).toBe(true);
+
+            expect(commentIssueManager.setCommentState)
+                .toHaveBeenCalledWith(1, 2, 'diff_comments',
+                                      'verifying-resolved');
+         });
+
+        it('Dropping with verification', function() {
+            var comment = commentIssueManager.getComment(1, 2, 'diff_comments');
+            comment.get('extraData').require_verification = true;
+
+            $dropButton.click();
+
+            expect(view._$buttons.prop('disabled')).toBe(true);
+
+            expect(commentIssueManager.setCommentState)
+                .toHaveBeenCalledWith(1, 2, 'diff_comments',
+                                      'verifying-dropped');
+         });
     });
 
     describe('Event handling', function() {
@@ -93,13 +124,15 @@ suite('rb/views/CommentIssueBarView', function() {
     describe('Issue states', function() {
         describe('Open', function() {
             beforeEach(function() {
-                view._showStatus(statuses.STATUS_OPEN);
+                view._showStatus(RB.BaseComment.STATE_OPEN);
             });
 
             it('CSS class', function() {
                 expect(view._$state.hasClass('open')).toBe(true);
                 expect(view._$state.hasClass('resolved')).toBe(false);
                 expect(view._$state.hasClass('dropped')).toBe(false);
+                expect(view._$state.hasClass('verifying-resolved')).toBe(false);
+                expect(view._$state.hasClass('verifying-dropped')).toBe(false);
             });
 
             it('Text', function() {
@@ -118,18 +151,28 @@ suite('rb/views/CommentIssueBarView', function() {
                 it('"Re-open" hidden', function() {
                     expect($reopenButton.is(':visible')).toBe(false);
                 });
+
+                it('"Verify Fixed" hidden', function() {
+                    expect($verifyFixedButton.is(':visible')).toBe(false);
+                });
+
+                it('"Verify Dropped" hidden', function() {
+                    expect($verifyDroppedButton.is(':visible')).toBe(false);
+                });
             });
         });
 
         describe('Fixed', function() {
             beforeEach(function() {
-                view._showStatus(statuses.STATUS_FIXED);
+                view._showStatus(RB.BaseComment.STATE_RESOLVED);
             });
 
             it('CSS class', function() {
                 expect(view._$state.hasClass('open')).toBe(false);
                 expect(view._$state.hasClass('resolved')).toBe(true);
                 expect(view._$state.hasClass('dropped')).toBe(false);
+                expect(view._$state.hasClass('verifying-resolved')).toBe(false);
+                expect(view._$state.hasClass('verifying-dropped')).toBe(false);
             });
 
             it('Text', function() {
@@ -149,18 +192,28 @@ suite('rb/views/CommentIssueBarView', function() {
                 it('"Re-open" shown', function() {
                     expect($reopenButton.is(':visible')).toBe(true);
                 });
+
+                it('"Verify Fixed" hidden', function() {
+                    expect($verifyFixedButton.is(':visible')).toBe(false);
+                });
+
+                it('"Verify Dropped" hidden', function() {
+                    expect($verifyDroppedButton.is(':visible')).toBe(false);
+                });
             });
         });
 
         describe('Dropped', function() {
             beforeEach(function() {
-                view._showStatus(statuses.STATUS_DROPPED);
+                view._showStatus(RB.BaseComment.STATE_DROPPED);
             });
 
             it('CSS class', function() {
                 expect(view._$state.hasClass('open')).toBe(false);
                 expect(view._$state.hasClass('resolved')).toBe(false);
                 expect(view._$state.hasClass('dropped')).toBe(true);
+                expect(view._$state.hasClass('verifying-resolved')).toBe(false);
+                expect(view._$state.hasClass('verifying-dropped')).toBe(false);
             });
 
             it('Text', function() {
@@ -179,6 +232,96 @@ suite('rb/views/CommentIssueBarView', function() {
 
                 it('"Re-open" shown', function() {
                     expect($reopenButton.is(':visible')).toBe(true);
+                });
+
+                it('"Verify Fixed" hidden', function() {
+                    expect($verifyFixedButton.is(':visible')).toBe(false);
+                });
+
+                it('"Verify Dropped" hidden', function() {
+                    expect($verifyDroppedButton.is(':visible')).toBe(false);
+                });
+            });
+        });
+
+        describe('Verifying Fixed', function() {
+            beforeEach(function() {
+                view._showStatus(RB.BaseComment.STATE_VERIFYING_RESOLVED);
+            });
+
+            it('CSS class', function() {
+                expect(view._$state.hasClass('open')).toBe(false);
+                expect(view._$state.hasClass('resolved')).toBe(false);
+                expect(view._$state.hasClass('dropped')).toBe(false);
+                expect(view._$state.hasClass('verifying-resolved')).toBe(true);
+                expect(view._$state.hasClass('verifying-dropped')).toBe(false);
+            });
+
+            it('Text', function() {
+                expect(view._$message.text()).toBe(
+                    'Waiting for verification before resolving...');
+            });
+
+            describe('Button visibility', function() {
+                it('"Drop" hidden', function() {
+                    expect($dropButton.is(':visible')).toBe(false);
+                });
+
+                it('"Fixed" hidden', function() {
+                    expect($fixedButton.is(':visible')).toBe(false);
+                });
+
+                it('"Re-open" shown', function() {
+                    expect($reopenButton.is(':visible')).toBe(true);
+                });
+
+                it('"Verify Fixed" shown', function() {
+                    expect($verifyFixedButton.is(':visible')).toBe(true);
+                });
+
+                it('"Verify Dropped" hidden', function() {
+                    expect($verifyDroppedButton.is(':visible')).toBe(false);
+                });
+            });
+        });
+
+        describe('Verifying Dropped', function() {
+            beforeEach(function() {
+                view._showStatus(RB.BaseComment.STATE_VERIFYING_DROPPED);
+            });
+
+            it('CSS class', function() {
+                expect(view._$state.hasClass('open')).toBe(false);
+                expect(view._$state.hasClass('resolved')).toBe(false);
+                expect(view._$state.hasClass('dropped')).toBe(false);
+                expect(view._$state.hasClass('verifying-resolved')).toBe(false);
+                expect(view._$state.hasClass('verifying-dropped')).toBe(true);
+            });
+
+            it('Text', function() {
+                expect(view._$message.text()).toBe(
+                    'Waiting for verification before dropping...');
+            });
+
+            describe('Button visibility', function() {
+                it('"Drop" hidden', function() {
+                    expect($dropButton.is(':visible')).toBe(false);
+                });
+
+                it('"Fixed" hidden', function() {
+                    expect($fixedButton.is(':visible')).toBe(false);
+                });
+
+                it('"Re-open" shown', function() {
+                    expect($reopenButton.is(':visible')).toBe(true);
+                });
+
+                it('"Verify Fixed" hidden', function() {
+                    expect($verifyFixedButton.is(':visible')).toBe(false);
+                });
+
+                it('"Verify Dropped" shown', function() {
+                    expect($verifyDroppedButton.is(':visible')).toBe(true);
                 });
             });
         });

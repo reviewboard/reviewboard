@@ -529,7 +529,8 @@ suite('rb/models/CommentEditor', function() {
                 expect(comment.get('issueOpened')).toBe(issue_opened);
                 expect(comment.get('richText')).toBe(true);
                 expect(comment.get('extraData')).toEqual({
-                    mykey: 'myvalue'
+                    mykey: 'myvalue',
+                    require_verification: false
                 });
                 expect(editor.get('dirty')).toBe(false);
                 expect(editor.trigger).toHaveBeenCalledWith('saved');

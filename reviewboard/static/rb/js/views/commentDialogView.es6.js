@@ -1,4 +1,4 @@
-{
+(function() {
 
 
 /**
@@ -139,6 +139,10 @@ RB.CommentDialogView = Backbone.View.extend({
            <li class="comment-issue-options">
             <input type="checkbox" id="comment_issue">
             <label for="comment_issue" accesskey="i"><%= openAnIssueText %></label>
+            <% if (showVerify) { %>
+             <input type="checkbox" id="comment_issue_verify">
+             <label for="comment_issue_verify"><%= verifyIssueText %></label>
+            <% } %>
            </li>
            <li class="comment-markdown-options">
             <input type="checkbox" id="enable_markdown">
@@ -201,6 +205,8 @@ RB.CommentDialogView = Backbone.View.extend({
                 cancelButton: RB.CommentDialogView._cancelText,
                 deleteButton: RB.CommentDialogView._deleteText,
                 closeButton: RB.CommentDialogView._closeText,
+                showVerify: RB.EnabledFeatures.issueVerification,
+                verifyIssueText: RB.CommentDialogView._verifyIssueText,
             }));
 
         this._$commentsPane = this.$('.other-comments');
@@ -219,19 +225,29 @@ RB.CommentDialogView = Backbone.View.extend({
             this._$commentOptions.children('.comment-markdown-options')
                 .bindVisibility(this.model, 'canEdit');
 
-        this._$issueField = this._$issueOptions.find('input')
-            .bindProperty('checked', this.model, 'openIssue')
-            .bindProperty('disabled', this.model, 'editing', {
-                elementToModel: false,
-                inverse: true,
-            });
+        this._$issueField = this._$issueOptions
+            .find('#comment_issue')
+                .bindProperty('checked', this.model, 'openIssue')
+                .bindProperty('disabled', this.model, 'editing', {
+                    elementToModel: false,
+                    inverse: true,
+                });
 
-        this._$enableMarkdownField = this._$markdownOptions.find('input')
-            .bindProperty('checked', this.model, 'richText')
-            .bindProperty('disabled', this.model, 'editing', {
-                elementToModel: false,
-                inverse: true,
-            });
+        this._$issueVerificationField = this._$issueOptions
+            .find('#comment_issue_verify')
+                .bindProperty('checked', this.model, 'requireVerification')
+                .bindProperty('disabled', this.model, 'editing', {
+                    elementToModel: false,
+                    inverse: true,
+                });
+
+        this._$enableMarkdownField = this._$markdownOptions
+            .find('#enable_markdown')
+                .bindProperty('checked', this.model, 'richText')
+                .bindProperty('disabled', this.model, 'editing', {
+                    elementToModel: false,
+                    inverse: true,
+                });
 
         this.$buttons = this._$footer.find('.buttons');
 
@@ -727,9 +743,10 @@ RB.CommentDialogView = Backbone.View.extend({
     _otherReviewsText: gettext('Other reviews'),
     _saveText: gettext('Save'),
     _shouldExitText: gettext('You have unsaved changes. Are you sure you want to exit?'),
+    _verifyIssueText: gettext('Require Verification'),
     _yourCommentText: gettext('Your comment'),
     _yourCommentDirtyText: gettext('Your comment (unsaved)'),
 });
 
 
-}
+})();

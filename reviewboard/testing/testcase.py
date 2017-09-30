@@ -505,6 +505,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                               local_id=1001,
                               bugs_closed='', status='P', public=False,
                               publish=False, commit_id=None, changenum=None,
+                              time_added=None, last_updated=None,
                               repository=None, id=None,
                               create_repository=False):
         """Create a ReviewRequest for testing.
@@ -560,6 +561,21 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         if publish:
             review_request.publish(review_request.submitter)
+
+        if time_added and last_updated:
+            ReviewRequest.objects.filter(pk=review_request.pk).update(
+                time_added=time_added,
+                last_updated=last_updated)
+            review_request.time_added = time_added
+            review_request.last_updated = last_updated
+        elif time_added:
+            ReviewRequest.objects.filter(pk=review_request.pk).update(
+                time_added=time_added)
+            review_request.time_added = time_added
+        elif last_updated:
+            ReviewRequest.objects.filter(pk=review_request.pk).update(
+                last_updated=last_updated)
+            review_request.last_updated = last_updated
 
         return review_request
 
@@ -706,11 +722,14 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             user=user,
             body_top=body_top,
             base_reply_to=review,
-            timestamp=timestamp,
             **kwargs)
 
         if publish:
             reply.publish()
+
+        if timestamp:
+            Review.objects.filter(pk=reply.pk).update(timestamp=timestamp)
+            reply.timestamp = timestamp
 
         return reply
 
@@ -950,8 +969,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def create_status_update(self, review_request, user='dopey',
                              service_id='service', summary='Status Update',
                              state=StatusUpdate.PENDING,
-                             review=None,
-                             change_description=None):
+                             review=None, change_description=None,
+                             timestamp=None):
         """Create a status update for testing.
 
         It is populated with default data that can be overridden by the caller.
@@ -981,6 +1000,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                                 ChangeDescription, optional):
                 The change description for this status update.
 
+            timestamp (datetime.datetime):
+                The timestamp for the status update.
+
         Returns:
             reviewboard.reviews.models.StatusUpdate:
             The new status update.
@@ -988,7 +1010,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         if not isinstance(user, User):
             user = User.objects.get(username=user)
 
-        return StatusUpdate.objects.create(
+        status_update = StatusUpdate.objects.create(
             review_request=review_request,
             change_description=change_description,
             service_id=service_id,
@@ -996,6 +1018,13 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             state=state,
             review=review,
             user=user)
+
+        if timestamp:
+            StatusUpdate.objects.filter(pk=status_update.pk).update(
+                timestamp=timestamp)
+            status_update.timestamp = timestamp
+
+        return status_update
 
     def create_webhook(self, enabled=False, events=WebHookTarget.ALL_EVENTS,
                        url='http://example.com',

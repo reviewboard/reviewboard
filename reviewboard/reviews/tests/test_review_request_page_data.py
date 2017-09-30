@@ -329,6 +329,7 @@ class ReviewRequestPageDataTests(TestCase):
                     'open': 2,
                     'resolved': 2,
                     'dropped': 2,
+                    'verifying': 0,
                 })
         else:
             self.assertEqual(data.issues, [])

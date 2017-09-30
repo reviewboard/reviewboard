@@ -70,6 +70,7 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
             openIssue: userSession.get('commentsOpenAnIssue'),
             publishedComments: [],
             publishedCommentsType: null,
+            requireVerification: false, // TODO: add a user preference for this.
             reviewRequest: null,
             richText: userSession.get('defaultUseRichText'),
             text: '',
@@ -106,12 +107,15 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
             }
         });
 
-        this.on('change:openIssue change:richText change:text', () => {
-            if (this.get('editing')) {
-                this.set('dirty', true);
-                this._updateState();
-            }
-        });
+        this.on(
+            'change:openIssue change:requireVerification ' +
+            'change:richText change:text',
+            () => {
+                if (this.get('editing')) {
+                    this.set('dirty', true);
+                    this._updateState();
+                }
+            });
 
         this._updateState();
 
@@ -218,11 +222,14 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
         console.assert(this.get('canSave'),
                        'save() called when canSave is false.');
 
+        const extraData =  _.clone(this.get('extraData'));
+        extraData.require_verification = this.get('requireVerification');
+
         const comment = this.get('comment');
         comment.set({
             text: this.get('text'),
             issueOpened: this.get('openIssue'),
-            extraData: _.clone(this.get('extraData')),
+            extraData: extraData,
             richText: this.get('richText'),
             includeTextTypes: 'html,raw,markdown',
         });
@@ -279,6 +286,7 @@ RB.CommentEditor = Backbone.Model.extend(_.defaults({
                 openIssue: comment.get('issueOpened') === null
                            ? this.defaults().openIssue
                            : comment.get('issueOpened'),
+                requireVerification: comment.requiresVerification(),
                 richText: defaultRichText || !!comment.get('richText'),
             });
 

@@ -6,7 +6,8 @@
       data-comment-id="{{comment.pk}}"
       data-comment-type="{{comment_type}}"
       data-issue-status="{{issue_status}}"
-      data-interactive="{{interactive|yesno:"true,false"}}">
+      data-interactive="{{interactive|yesno:'true,false'}}"
+      data-can-verify="{{can_verify|yesno:'true,false'}}">
   <div class="issue-container">
    <span class="rb-icon"></span>
    <span class="issue-details">
@@ -15,6 +16,8 @@
      <input type="button" value="Fixed" class="issue-button resolve" style="display:none;"/>
      <input type="button" value="Drop" class="issue-button drop" style="display:none;"/>
      <input type="button" value="Re-open" class="issue-button reopen" style="display:none;"/>
+     <input type="button" value="Verify Dropped" class="issue-button verify-dropped" style="display:none;"/>
+     <input type="button" value="Verify Fixed" class="issue-button verify-resolved" style="display:none;"/>
     </span>
     <a class="back-to-issue-summary" href="#issue-summary">{% trans "Show all issues" %}</a>
    </span>
