@@ -193,7 +193,7 @@ RB.OAuthApplicationsView = Backbone.View.extend({
             Object.entries(options.apps)
                 .map(([localSiteName, apps]) => ([
                     localSiteName || null,
-                    new Backbone.Collections(apps, {
+                    new Backbone.Collection(apps, {
                         model: OAuthAppItem,
                         parse: true,
                         baseEditURL: options.editURL,
@@ -256,7 +256,7 @@ RB.OAuthApplicationsView = Backbone.View.extend({
 
         const $lists = this.$('.app-lists');
 
-        this.collections.forEach((localSiteName, collections) => {
+        this.collections.forEach((collection, localSiteName) => {
             const $entry = this._renderAppList(localSiteName, collection);
 
             if (localSiteName) {
