@@ -30,9 +30,19 @@ suite('rb/views/CommentIssueBarView', function() {
     });
 
     describe('Actions', function() {
+        var comment;
+
         beforeEach(function() {
             spyOn(commentIssueManager, 'setCommentState');
             expect(view._$buttons.prop('disabled')).toBe(false);
+
+            comment = commentIssueManager.getComment(1, 2, 'diff_comments');
+            spyOn(comment, 'ready')
+                .and.callFake(function(options) {
+                    if (_.isFunction(options.ready)) {
+                        options.ready.call(comment);
+                    }
+                });
         });
 
         it('Resolving as fixed', function() {
@@ -65,7 +75,6 @@ suite('rb/views/CommentIssueBarView', function() {
         });
 
         it('Resolving with verification', function() {
-            var comment = commentIssueManager.getComment(1, 2, 'diff_comments');
             comment.get('extraData').require_verification = true;
 
             $fixedButton.click();
@@ -78,7 +87,6 @@ suite('rb/views/CommentIssueBarView', function() {
          });
 
         it('Dropping with verification', function() {
-            var comment = commentIssueManager.getComment(1, 2, 'diff_comments');
             comment.get('extraData').require_verification = true;
 
             $dropButton.click();

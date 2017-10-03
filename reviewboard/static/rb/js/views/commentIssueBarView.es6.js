@@ -196,11 +196,15 @@ RB.CommentIssueBarView = Backbone.View.extend({
                                                  this.options.commentID,
                                                  this.options.commentType);
 
-        if (comment.requiresVerification()) {
-            this._setStatus(RB.BaseComment.STATE_VERIFYING_RESOLVED);
-        } else {
-            this._setStatus(RB.BaseComment.STATE_RESOLVED);
-        }
+        comment.ready({
+            ready: () => {
+                if (comment.requiresVerification()) {
+                    this._setStatus(RB.BaseComment.STATE_VERIFYING_RESOLVED);
+                } else {
+                    this._setStatus(RB.BaseComment.STATE_RESOLVED);
+                }
+            },
+        });
     },
 
     /**
@@ -213,11 +217,15 @@ RB.CommentIssueBarView = Backbone.View.extend({
                                                  this.options.commentID,
                                                  this.options.commentType);
 
-        if (comment.requiresVerification()) {
-            this._setStatus(RB.BaseComment.STATE_VERIFYING_DROPPED);
-        } else {
-            this._setStatus(RB.BaseComment.STATE_DROPPED);
-        }
+        comment.ready({
+            ready: () => {
+                if (comment.requiresVerification()) {
+                    this._setStatus(RB.BaseComment.STATE_VERIFYING_DROPPED);
+                } else {
+                    this._setStatus(RB.BaseComment.STATE_DROPPED);
+                }
+            },
+        });
     },
 
     /**
