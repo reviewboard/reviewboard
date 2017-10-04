@@ -127,7 +127,8 @@ def _initialize_issue_counts(review_request):
     review_request.save(update_fields=[
         'issue_open_count',
         'issue_resolved_count',
-        'issue_dropped_count'
+        'issue_dropped_count',
+        'issue_verifying_count',
     ])
 
     # Tell CounterField not to set or save any values.

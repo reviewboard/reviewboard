@@ -310,6 +310,7 @@ class IssueCounterTests(TestCase):
         self.assertEqual(self.review_request.issue_open_count, 0)
         self.assertEqual(self.review_request.issue_resolved_count, 0)
         self.assertEqual(self.review_request.issue_dropped_count, 0)
+        self.assertEqual(self.review_request.issue_verifying_count, 0)
 
         self._reset_counts()
 
@@ -400,6 +401,7 @@ class IssueCounterTests(TestCase):
         self.assertEqual(self.review_request.issue_open_count, 0)
         self.assertEqual(self.review_request.issue_resolved_count, 0)
         self.assertEqual(self.review_request.issue_dropped_count, 0)
+        self.assertEqual(self.review_request.issue_verifying_count, 0)
 
         # Now publish. We should have 10 open issues, by way of incrementing
         # during publish.
@@ -409,12 +411,14 @@ class IssueCounterTests(TestCase):
         self.assertEqual(self.review_request.issue_open_count, 10)
         self.assertEqual(self.review_request.issue_dropped_count, 0)
         self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_verifying_count, 0)
 
         # Make sure we get the same number back when initializing counters.
         self._reload_object(clear_counters=True)
         self.assertEqual(self.review_request.issue_open_count, 10)
         self.assertEqual(self.review_request.issue_dropped_count, 0)
         self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_verifying_count, 0)
 
     def test_init_file_attachment_comment_with_replies(self):
         """Testing ReviewRequest file attachment comment issue counter
@@ -545,27 +549,41 @@ class IssueCounterTests(TestCase):
             create_comment_func(review, issue_opened=True)
         ]
 
+        # One comment will be in Verifying Dropped mode.
+        verify_dropped_comments = [
+            create_comment_func(review, issue_opened=True)
+        ]
+
+        # Two comments will be in Verifying Resolved mode.
+        verify_resolved_comments = [
+            create_comment_func(review, issue_opened=True)
+            for i in range(2)
+        ]
+
         # The issue counts should be end up being 0, since they'll initialize
         # during load.
         self._reload_object(clear_counters=True)
         self.assertEqual(self.review_request.issue_open_count, 0)
         self.assertEqual(self.review_request.issue_resolved_count, 0)
         self.assertEqual(self.review_request.issue_dropped_count, 0)
+        self.assertEqual(self.review_request.issue_verifying_count, 0)
 
         # Now publish. We should have 6 open issues, by way of incrementing
         # during publish.
         review.publish()
 
         self._reload_object()
-        self.assertEqual(self.review_request.issue_open_count, 6)
+        self.assertEqual(self.review_request.issue_open_count, 9)
         self.assertEqual(self.review_request.issue_dropped_count, 0)
         self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_verifying_count, 0)
 
         # Make sure we get the same number back when initializing counters.
         self._reload_object(clear_counters=True)
-        self.assertEqual(self.review_request.issue_open_count, 6)
+        self.assertEqual(self.review_request.issue_open_count, 9)
         self.assertEqual(self.review_request.issue_dropped_count, 0)
         self.assertEqual(self.review_request.issue_resolved_count, 0)
+        self.assertEqual(self.review_request.issue_verifying_count, 0)
 
         # Set the issue statuses.
         for comment in dropped_comments:
@@ -576,6 +594,14 @@ class IssueCounterTests(TestCase):
             comment.issue_status = Comment.RESOLVED
             comment.save()
 
+        for comment in verify_resolved_comments:
+            comment.issue_status = Comment.VERIFYING_RESOLVED
+            comment.save()
+
+        for comment in verify_dropped_comments:
+            comment.issue_status = Comment.VERIFYING_DROPPED
+            comment.save()
+
         closed_with_status_comment.issue_status = Comment.OPEN
         closed_with_status_comment.save()
 
@@ -583,12 +609,14 @@ class IssueCounterTests(TestCase):
         self.assertEqual(self.review_request.issue_open_count, 3)
         self.assertEqual(self.review_request.issue_dropped_count, 2)
         self.assertEqual(self.review_request.issue_resolved_count, 1)
+        self.assertEqual(self.review_request.issue_verifying_count, 3)
 
         # Make sure we get the same number back when initializing counters.
         self._reload_object(clear_counters=True)
         self.assertEqual(self.review_request.issue_open_count, 3)
         self.assertEqual(self.review_request.issue_dropped_count, 2)
         self.assertEqual(self.review_request.issue_resolved_count, 1)
+        self.assertEqual(self.review_request.issue_verifying_count, 3)
 
     def _reload_object(self, clear_counters=False):
         if clear_counters:
@@ -608,6 +636,7 @@ class IssueCounterTests(TestCase):
         self.review_request.issue_open_count = None
         self.review_request.issue_resolved_count = None
         self.review_request.issue_dropped_count = None
+        self.review_request.issue_verifying_count = None
         self.review_request.save()
 
     def test_approval_states_ship_it(self):
