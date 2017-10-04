@@ -285,10 +285,39 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                                draft=False,
                                active=True,
                                **kwargs):
-        """Creates a FileAttachment for testing.
+        """Create a FileAttachment for testing.
 
-        The FileAttachment is tied to the given ReviewRequest. It's populated
-        with default data that can be overridden by the caller.
+        The attachment is tied to the given
+        :py:class:`~reviewboard.reviews.models.review_request.ReviewRequest`.
+        It's populated with default data that can be overridden by the caller.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request that ultimately owns the file attachment.
+
+            orig_filename (unicode, optional):
+                The filename to use for the file attachment.
+
+            caption (unicode, optional):
+                The caption to use for the file attachment.
+
+            draft (bool or
+                   reviewboard.reviews.models.review_request_draft.
+                   ReviewRequestDraft):
+                A draft to associate the attachment with. This can also be
+                a boolean, for legacy reasons, which will attempt to look up
+                or create a draft for the review request.
+
+            active (bool):
+                Whether this attachment is considered active (not deleted).
+
+            **kwargs (dict):
+                Additional fields to set on the attachment.
+
+        Returns:
+            reviewboard.attachments.models.FileAttachment:
+            The resulting file attachment.
         """
         file_attachment = self._create_base_file_attachment(
             caption=caption,
@@ -296,7 +325,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             **kwargs)
 
         if draft:
-            review_request_draft = ReviewRequestDraft.create(review_request)
+            if isinstance(draft, ReviewRequestDraft):
+                review_request_draft = draft
+            else:
+                review_request_draft = \
+                    ReviewRequestDraft.create(review_request)
 
             if active:
                 attachments = review_request_draft.file_attachments
@@ -734,13 +767,39 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         return reply
 
     def create_screenshot(self, review_request, caption='My caption',
-                          draft=False, active=True):
-        """Creates a Screenshot for testing.
+                          draft=False, active=True, **kwargs):
+        """Create a Screenshot for testing.
 
-        The Screenshot is tied to the given ReviewRequest. It's populated
-        with default data that can be overridden by the caller.
+        The screenshot is tied to the given
+        :py:class:`~reviewboard.reviews.models.review_request.ReviewRequest`.
+        It's populated with default data that can be overridden by the caller.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request that ultimately owns the screenshot.
+
+            caption (unicode, optional):
+                The caption to use for the screenshot.
+
+            draft (bool or
+                   reviewboard.reviews.models.review_request_draft.
+                   ReviewRequestDraft):
+                A draft to associate the screenshot with. This can also be
+                a boolean, for legacy reasons, which will attempt to look up
+                or create a draft for the review request.
+
+            active (bool):
+                Whether this screenshot is considered active (not deleted).
+
+            **kwargs (dict):
+                Additional fields to set on the screenshot.
+
+        Returns:
+            reviewboard.reviews.models.screenshot.Screenshot:
+            The resulting screenshot.
         """
-        screenshot = Screenshot(caption=caption)
+        screenshot = Screenshot(caption=caption, **kwargs)
         filename = os.path.join(settings.STATIC_ROOT, 'rb', 'images',
                                 'logo.png')
 
@@ -748,7 +807,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             screenshot.image.save(filename, File(f), save=True)
 
         if draft:
-            review_request_draft = ReviewRequestDraft.create(review_request)
+            if isinstance(draft, ReviewRequestDraft):
+                review_request_draft = draft
+            else:
+                review_request_draft = \
+                    ReviewRequestDraft.create(review_request)
 
             if active:
                 screenshots = review_request_draft.screenshots

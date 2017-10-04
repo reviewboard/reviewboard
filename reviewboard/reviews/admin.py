@@ -144,11 +144,22 @@ class ReviewRequestAdmin(admin.ModelAdmin):
         (_('State'), {
             'description': _('<p>This is advanced state that should not be '
                              'modified unless something is wrong.</p>'),
-            'fields': ('email_message_id', 'time_emailed',
-                       'last_review_activity_timestamp',
-                       'shipit_count', 'issue_open_count',
-                       'issue_resolved_count', 'issue_dropped_count',
-                       'issue_verifying_count', 'local_id', 'extra_data'),
+            'fields': (
+                'email_message_id',
+                'time_emailed',
+                'last_review_activity_timestamp',
+                'shipit_count',
+                'issue_open_count',
+                'issue_resolved_count',
+                'issue_dropped_count',
+                'issue_verifying_count',
+                'file_attachments_count',
+                'inactive_file_attachments_count',
+                'screenshots_count',
+                'inactive_screenshots_count',
+                'local_id',
+                'extra_data',
+            ),
             'classes': ['collapse'],
         }),
     )
@@ -226,7 +237,13 @@ class ReviewRequestDraftAdmin(admin.ModelAdmin):
             'classes': ['collapse'],
         }),
         (_('State'), {
-            'fields': ('extra_data',),
+            'fields': (
+                'file_attachments_count',
+                'inactive_file_attachments_count',
+                'screenshots_count',
+                'inactive_screenshots_count',
+                'extra_data',
+            ),
         }),
     )
 

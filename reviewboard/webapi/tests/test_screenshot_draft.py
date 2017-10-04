@@ -69,8 +69,11 @@ class ResourceListTests(BaseWebAPITestCase):
                 [review_request])
 
     def check_post_result(self, user, rsp, review_request):
-        screenshots = list(review_request.get_draft().screenshots.all())
+        draft = review_request.get_draft()
+
+        screenshots = list(draft.screenshots.all())
         self.assertEqual(len(screenshots), 1)
+        self.assertEqual(draft.screenshots_count, 1)
 
         screenshot = screenshots[0]
         self.assertEqual(screenshot.draft_caption, 'Trophy')

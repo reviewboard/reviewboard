@@ -63,45 +63,58 @@ class BaseReviewRequestDetails(models.Model):
         return bugs
 
     def get_screenshots(self):
-        """Returns the list of all screenshots on a review request.
+        """Return a generator for all active screenshots.
 
-        This includes all current screenshots, but not previous ones.
+        This includes all current screenshots, but not previous inactive ones.
 
         By accessing screenshots through this method, future review request
         lookups from the screenshots will be avoided.
-        """
-        review_request = self.get_review_request()
 
-        for screenshot in self.screenshots.all():
-            screenshot._review_request = review_request
-            yield screenshot
+        Yields:
+            reviewboard.reviews.models.screenshot.Screenshot:
+            A screenshot on the review request or draft.
+        """
+        if self.screenshots_count > 0:
+            review_request = self.get_review_request()
+
+            for screenshot in self.screenshots.all():
+                screenshot._review_request = review_request
+                yield screenshot
 
     def get_inactive_screenshots(self):
-        """Returns the list of all inactive screenshots on a review request.
+        """Return a generator for all inactive screenshots.
 
         This only includes screenshots that were previously visible but
         have since been removed.
 
         By accessing screenshots through this method, future review request
         lookups from the screenshots will be avoided.
-        """
-        review_request = self.get_review_request()
 
-        for screenshot in self.inactive_screenshots.all():
-            screenshot._review_request = review_request
-            yield screenshot
+        Yields:
+            reviewboard.reviews.models.screenshot.Screenshot:
+            An inactive screenshot on the review request or draft.
+        """
+        if self.inactive_screenshots_count > 0:
+            review_request = self.get_review_request()
+
+            for screenshot in self.inactive_screenshots.all():
+                screenshot._review_request = review_request
+                yield screenshot
 
     def get_file_attachments(self):
-        """Returns the list of all file attachments on a review request.
+        """Return a list for all active file attachments.
 
-        This includes all current file attachments, but not previous ones.
+        This includes all current file attachments, but not previous inactive
+        ones.
 
         By accessing file attachments through this method, future review
         request lookups from the file attachments will be avoided.
-        """
-        review_request = self.get_review_request()
 
-        def get_attachments():
+        Returns:
+            list of reviewboard.attachments.models.FileAttachment:
+            The active file attachments on the review request or draft.
+        """
+        def get_attachments(review_request):
             for file_attachment in self.file_attachments.all():
                 file_attachment._review_request = review_request
 
@@ -127,23 +140,33 @@ class BaseReviewRequestDetails(models.Model):
             else:
                 return 0
 
-        return sorted(list(get_attachments()),
-                      key=get_display_position)
+        if self.file_attachments_count > 0:
+            review_request = self.get_review_request()
+
+            return sorted(get_attachments(review_request),
+                          key=get_display_position)
+        else:
+            return []
 
     def get_inactive_file_attachments(self):
-        """Returns all inactive file attachments on a review request.
+        """Return a generator for all inactive file attachments.
 
         This only includes file attachments that were previously visible
         but have since been removed.
 
         By accessing file attachments through this method, future review
         request lookups from the file attachments will be avoided.
-        """
-        review_request = self.get_review_request()
 
-        for file_attachment in self.inactive_file_attachments.all():
-            file_attachment._review_request = review_request
-            yield file_attachment
+        Yields:
+            reviewboard.attachments.models.FileAttachment:
+            An inactive file attachment on the review request or draft.
+        """
+        if self.inactive_file_attachments_count > 0:
+            review_request = self.get_review_request()
+
+            for file_attachment in self.inactive_file_attachments.all():
+                file_attachment._review_request = review_request
+                yield file_attachment
 
     def add_default_reviewers(self):
         """Add default reviewers based on the diffset.

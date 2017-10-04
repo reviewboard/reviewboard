@@ -36,4 +36,5 @@ SEQUENCE = [
     'add_owner_to_draft',
     'status_update_timeout',
     'comment_issue_verification',
+    'review_request_screenshot_attachment_counters',
 ]

@@ -105,7 +105,7 @@
 {%  endwith %}
 
 
-{%  if review_request.file_attachments.count %}
+{%  if review_request.file_attachments_count > 0 %}
 <h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">File Attachments {% if changes and changes.files %}(updated){% endif %}</h1>
 
 {%   for file in review_request.file_attachments.all %}
@@ -114,7 +114,7 @@
 </ul>
 {%  endif %}
 
-{%  if review_request.screenshots.count %}
+{%  if review_request.screenshots_count > 0 %}
 <h1 style="color: #575012; font-size: 10pt; margin-top: 1.5em;">Screenshots {% if changes and changes.screenshots %}(updated){% endif %}</h1>
 
 <div>
