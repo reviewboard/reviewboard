@@ -42,7 +42,7 @@
 
  <div class="auth-form-row login-links">
 {%  if auth_backends.0.supports_registration %}
-{%   if siteconfig_settings.auth_enable_registration %}
+{%   if siteconfig_settings.auth_enable_registration and not siteconfig_settings.site_read_only %}
   <p>
    <a href="{% url 'register' %}">{% trans "Create an account" %}</a>
   </p>

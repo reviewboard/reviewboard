@@ -29,6 +29,7 @@ from reviewboard.accounts.forms.registration import RegistrationForm
 from reviewboard.accounts.mixins import CheckLoginRequiredViewMixin
 from reviewboard.accounts.models import Profile
 from reviewboard.accounts.pages import AccountPage, OAuth2Page
+from reviewboard.admin.decorators import check_read_only
 from reviewboard.avatars import avatar_services
 from reviewboard.notifications.email.decorators import preview_email
 from reviewboard.notifications.email.message import \
@@ -198,7 +199,8 @@ def account_register(request, next_url='dashboard'):
     auth_backends = get_enabled_auth_backends()
 
     if (auth_backends[0].supports_registration and
-            siteconfig.get("auth_enable_registration")):
+        siteconfig.get('auth_enable_registration') and
+        not siteconfig.get('site_read_only')):
         response = register(request, next_page=reverse(next_url),
                             form_class=RegistrationForm)
 
@@ -228,6 +230,7 @@ class MyAccountView(ConfigPagesView):
     ]
 
     @method_decorator(login_required)
+    @method_decorator(check_read_only)
     @augment_method_from(ConfigPagesView)
     def dispatch(self, *args, **kwargs):
         """Handle the view.

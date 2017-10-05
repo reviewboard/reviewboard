@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% load djblets_deco i18n %}
+
+{% block title %}{% trans 'Review Board is in read-only mode' %}{% endblock %}
+
+{% block content %}
+{%  box 'important' %}
+<h1>{% trans 'Review Board is in read-only mode.' %}</h1>
+<p>
+{%   blocktrans %}
+ The site is currently in read-only mode and some features are unavailable.
+{%   endblocktrans %}
+</p>
+{%  endbox %}
+{% endblock %}

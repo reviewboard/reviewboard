@@ -37,6 +37,8 @@ from reviewboard.accounts.mixins import (CheckLoginRequiredViewMixin,
                                          LoginRequiredViewMixin,
                                          UserProfileRequiredViewMixin)
 from reviewboard.accounts.models import ReviewRequestVisit, Profile
+from reviewboard.admin.decorators import check_read_only
+from reviewboard.admin.mixins import CheckReadOnlyViewMixin
 from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.attachments.models import (FileAttachment,
                                             get_latest_file_attachments)
@@ -392,6 +394,7 @@ class RootView(CheckLoginRequiredViewMixin,
 
 class NewReviewRequestView(LoginRequiredViewMixin,
                            CheckLocalSiteAccessViewMixin,
+                           CheckReadOnlyViewMixin,
                            TemplateView):
     """View for the New Review Request page.
 
