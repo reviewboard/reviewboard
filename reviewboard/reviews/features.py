@@ -33,7 +33,7 @@ class IssueVerificationFeature(Feature):
 
     feature_id = 'reviews.issue_verification'
     name = _('Issue Verification')
-    level = FeatureLevel.EXPERIMENTAL
+    level = FeatureLevel.STABLE
     summary = _('Allow comment authors to require that issues be verified by '
                 'them before being closed')
 

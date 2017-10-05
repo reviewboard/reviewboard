@@ -11,7 +11,7 @@ class OAuth2ServiceFeature(Feature):
 
     feature_id = 'oauth.service'
     name = _('OAuth2 Service Integration')
-    level = FeatureLevel.EXPERIMENTAL
+    level = FeatureLevel.STABLE
     summary = _('Allow Review Board to act as an OAuth2 authentication '
                 'service for third-party apps.')
 
