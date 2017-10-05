@@ -704,7 +704,7 @@ class HostingService(object):
 
             local_site_name (unicode):
                 The name of the local site associated with the repository, or
-                ``None`.
+                ``None``.
 
             *args (tuple):
                 Additional positional arguments, unique to each hosting

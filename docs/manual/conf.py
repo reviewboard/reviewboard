@@ -321,6 +321,11 @@ napoleon_beanbag_docstring = True
 napoleon_google_docstring = False
 napoleon_numpy_docstring = False
 
+webapi_docname_map = {
+    'o-auth-application': 'oauth-application',
+    'o-auth-token': 'oauth-token',
+}
+
 
 def linkcode_resolve(domain, info):
     return github_linkcode_resolve(domain=domain,
