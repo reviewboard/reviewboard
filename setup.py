@@ -18,7 +18,8 @@ from setuptools.command.egg_info import egg_info
 
 from reviewboard import get_package_version, VERSION
 from reviewboard.dependencies import (build_dependency_list,
-                                      package_dependencies)
+                                      package_dependencies,
+                                      package_only_dependencies)
 
 
 # Make sure this is a version of Python we are compatible with. This should
@@ -46,6 +47,17 @@ for scheme in INSTALL_SCHEMES.values():
     scheme['data'] = scheme['purelib']
 
 
+is_packaging = ('sdist' in sys.argv or
+                'bdist_egg' in sys.argv or
+                'bdist_wheel' in sys.argv or
+                'install' in sys.argv)
+
+if is_packaging:
+    # If we're packaging, include the package-only dependencies.
+    package_dependencies = package_dependencies.copy()
+    package_dependencies.update(package_only_dependencies)
+
+
 class BuildEggInfoCommand(egg_info):
     """Build the egg information for the package.
 
@@ -56,10 +68,7 @@ class BuildEggInfoCommand(egg_info):
 
     def run(self):
         """Build the egg information."""
-        if ('sdist' in sys.argv or
-            'bdist_egg' in sys.argv or
-            'bdist_wheel' in sys.argv or
-            'install' in sys.argv):
+        if is_packaging:
             self.run_command('build_media')
             self.run_command('build_i18n')
 

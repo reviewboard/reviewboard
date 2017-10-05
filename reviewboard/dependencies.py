@@ -47,6 +47,15 @@ package_dependencies = {
     'Whoosh': '>=2.6',
 }
 
+#: Dependencies only specified during the packaging process.
+#:
+#: These dependencies are not used when simply developing Review Board.
+#: The dependencies here are generally intended to be those that themselves
+#: require Review Board.
+package_only_dependencies = {
+    'rbintegrations': '==0.5b2',
+}
+
 
 def build_dependency_list(deps, version_prefix=''):
     """Build a list of dependency specifiers from a dependency map.
