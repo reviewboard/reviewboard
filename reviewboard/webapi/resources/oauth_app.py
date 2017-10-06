@@ -105,7 +105,7 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
                            'This field is only editable by administrators.',
         },
         'user': {
-            'type': resources.user,
+            'type': 'reviewboard.webapi.resources.user.UserResource',
             'description': 'The user who created the application.',
         },
     }

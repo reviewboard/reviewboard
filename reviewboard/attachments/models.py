@@ -290,7 +290,7 @@ def get_latest_file_attachments(file_attachments):
 
     Args:
         file_attachments (list of
-        reviewboard.attachments.models.FileAttachment):
+                          reviewboard.attachments.models.FileAttachment):
             The file attachments to filter.
 
     Returns:

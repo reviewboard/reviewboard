@@ -19,8 +19,8 @@ class ReviewRequestDraftTests(TestCase):
 
     fixtures = ['test_users', 'test_scmtools']
 
-    def test_draft_changes(self):
-        """Testing recording of draft changes"""
+    def test_publish_records_fields(self):
+        """Testing ReviewRequestDraft.publish records changes"""
         draft = self._get_draft()
         review_request = draft.review_request
 
@@ -63,7 +63,264 @@ class ReviewRequestDraftTests(TestCase):
         self.assertEqual(set(fields['bugs_closed']['removed']), old_bugs_norm)
         self.assertEqual(set(fields['bugs_closed']['added']), new_bugs_norm)
 
-    def test_draft_changes_with_custom_fields(self):
+    def test_publish_with_add_first_file_attachment(self):
+        """Testing ReviewRequestDraft.publish with adding first file
+        attachment
+        """
+        draft = self._get_draft()
+        review_request = draft.review_request
+
+        self.assertEqual(draft.file_attachments_count, 0)
+        self.assertEqual(draft.inactive_file_attachments_count, 0)
+        self.assertEqual(review_request.file_attachments_count, 0)
+        self.assertEqual(review_request.inactive_file_attachments_count, 0)
+
+        attachment = self.create_file_attachment(review_request, draft=draft)
+        self.assertEqual(draft.file_attachments_count, 1)
+        self.assertEqual(draft.inactive_file_attachments_count, 0)
+        self.assertEqual(review_request.file_attachments_count, 0)
+        self.assertEqual(review_request.inactive_file_attachments_count, 0)
+
+        changes = draft.publish()
+        fields = changes.fields_changed
+
+        self.assertEqual(fields['files'], {
+            'new': [
+                (attachment.display_name,
+                 attachment.get_absolute_url(),
+                 attachment.pk)
+            ],
+            'added': [
+                (attachment.display_name,
+                 attachment.get_absolute_url(),
+                 attachment.pk)
+            ],
+            'old': [],
+            'removed': [],
+        })
+        self.assertEqual(review_request.file_attachments_count, 1)
+        self.assertEqual(review_request.inactive_file_attachments_count, 0)
+
+    def test_publish_with_add_another_file_attachment(self):
+        """Testing ReviewRequestDraft.publish with adding another file
+        attachment
+        """
+        review_request = self.create_review_request()
+        attachment1 = self.create_file_attachment(review_request,
+                                                  caption='File 1')
+        review_request.publish(review_request.submitter)
+
+        draft = ReviewRequestDraft.create(review_request)
+        self.assertEqual(draft.file_attachments_count, 1)
+        self.assertEqual(draft.inactive_file_attachments_count, 0)
+        self.assertEqual(review_request.file_attachments_count, 1)
+        self.assertEqual(review_request.inactive_file_attachments_count, 0)
+
+        attachment2 = self.create_file_attachment(review_request,
+                                                  caption='File 2',
+                                                  draft_caption='File 2',
+                                                  draft=draft)
+        self.assertEqual(draft.file_attachments_count, 2)
+        self.assertEqual(draft.inactive_file_attachments_count, 0)
+        self.assertEqual(review_request.file_attachments_count, 1)
+        self.assertEqual(review_request.inactive_file_attachments_count, 0)
+
+        changes = draft.publish()
+        fields = changes.fields_changed
+
+        self.assertEqual(fields['files'], {
+            'new': [
+                (attachment1.display_name,
+                 attachment1.get_absolute_url(),
+                 attachment1.pk),
+                (attachment2.display_name,
+                 attachment2.get_absolute_url(),
+                 attachment2.pk),
+            ],
+            'added': [
+                (attachment2.display_name,
+                 attachment2.get_absolute_url(),
+                 attachment2.pk),
+            ],
+            'old': [
+                (attachment1.display_name,
+                 attachment1.get_absolute_url(),
+                 attachment1.pk),
+            ],
+            'removed': [],
+        })
+        self.assertEqual(review_request.file_attachments_count, 2)
+        self.assertEqual(review_request.inactive_file_attachments_count, 0)
+
+    def test_publish_with_delete_file_attachment(self):
+        """Testing ReviewRequestDraft.publish with deleting a file attachment
+        """
+        review_request = self.create_review_request()
+        attachment = self.create_file_attachment(review_request,
+                                                 caption='File 1')
+        review_request.publish(review_request.submitter)
+
+        draft = ReviewRequestDraft.create(review_request)
+        self.assertEqual(draft.file_attachments_count, 1)
+        self.assertEqual(draft.inactive_file_attachments_count, 0)
+        self.assertEqual(review_request.file_attachments_count, 1)
+        self.assertEqual(review_request.inactive_file_attachments_count, 0)
+
+        draft.file_attachments.remove(attachment)
+        draft.inactive_file_attachments.add(attachment)
+
+        self.assertEqual(draft.file_attachments_count, 0)
+        self.assertEqual(draft.inactive_file_attachments_count, 1)
+        self.assertEqual(review_request.file_attachments_count, 1)
+        self.assertEqual(review_request.inactive_file_attachments_count, 0)
+
+        changes = draft.publish()
+        fields = changes.fields_changed
+
+        self.assertEqual(fields['files'], {
+            'new': [],
+            'added': [],
+            'old': [
+                (attachment.display_name,
+                 attachment.get_absolute_url(),
+                 attachment.pk),
+            ],
+            'removed': [
+                (attachment.display_name,
+                 attachment.get_absolute_url(),
+                 attachment.pk),
+            ],
+        })
+        self.assertEqual(review_request.file_attachments_count, 0)
+        self.assertEqual(review_request.inactive_file_attachments_count, 1)
+
+    def test_publish_with_add_first_screenshot(self):
+        """Testing ReviewRequestDraft.publish with adding first screenshot"""
+        draft = self._get_draft()
+        review_request = draft.review_request
+
+        self.assertEqual(draft.screenshots_count, 0)
+        self.assertEqual(draft.inactive_screenshots_count, 0)
+        self.assertEqual(review_request.screenshots_count, 0)
+        self.assertEqual(review_request.inactive_screenshots_count, 0)
+
+        attachment = self.create_screenshot(review_request, draft=draft)
+        self.assertEqual(draft.screenshots_count, 1)
+        self.assertEqual(draft.inactive_screenshots_count, 0)
+        self.assertEqual(review_request.screenshots_count, 0)
+        self.assertEqual(review_request.inactive_screenshots_count, 0)
+
+        changes = draft.publish()
+        fields = changes.fields_changed
+
+        self.assertEqual(fields['screenshots'], {
+            'new': [
+                (attachment.caption,
+                 attachment.get_absolute_url(),
+                 attachment.pk)
+            ],
+            'added': [
+                (attachment.caption,
+                 attachment.get_absolute_url(),
+                 attachment.pk)
+            ],
+            'old': [],
+            'removed': [],
+        })
+        self.assertEqual(review_request.screenshots_count, 1)
+        self.assertEqual(review_request.inactive_screenshots_count, 0)
+
+    def test_publish_with_add_another_screenshot(self):
+        """Testing ReviewRequestDraft.publish with adding another screenshot"""
+        review_request = self.create_review_request()
+        attachment1 = self.create_screenshot(review_request,
+                                             caption='File 1')
+        review_request.publish(review_request.submitter)
+
+        draft = ReviewRequestDraft.create(review_request)
+        self.assertEqual(draft.screenshots_count, 1)
+        self.assertEqual(draft.inactive_screenshots_count, 0)
+        self.assertEqual(review_request.screenshots_count, 1)
+        self.assertEqual(review_request.inactive_screenshots_count, 0)
+
+        attachment2 = self.create_screenshot(review_request,
+                                             caption='File 2',
+                                             draft_caption='File 2',
+                                             draft=draft)
+        self.assertEqual(draft.screenshots_count, 2)
+        self.assertEqual(draft.inactive_screenshots_count, 0)
+        self.assertEqual(review_request.screenshots_count, 1)
+        self.assertEqual(review_request.inactive_screenshots_count, 0)
+
+        changes = draft.publish()
+        fields = changes.fields_changed
+
+        self.assertEqual(fields['screenshots'], {
+            'new': [
+                (attachment1.caption,
+                 attachment1.get_absolute_url(),
+                 attachment1.pk),
+                (attachment2.caption,
+                 attachment2.get_absolute_url(),
+                 attachment2.pk),
+            ],
+            'added': [
+                (attachment2.caption,
+                 attachment2.get_absolute_url(),
+                 attachment2.pk),
+            ],
+            'old': [
+                (attachment1.caption,
+                 attachment1.get_absolute_url(),
+                 attachment1.pk),
+            ],
+            'removed': [],
+        })
+        self.assertEqual(review_request.screenshots_count, 2)
+        self.assertEqual(review_request.inactive_screenshots_count, 0)
+
+    def test_publish_with_delete_screenshot(self):
+        """Testing ReviewRequestDraft.publish with deleting a screenshot"""
+        review_request = self.create_review_request()
+        attachment = self.create_screenshot(review_request,
+                                            caption='File 1')
+        review_request.publish(review_request.submitter)
+
+        draft = ReviewRequestDraft.create(review_request)
+        self.assertEqual(draft.screenshots_count, 1)
+        self.assertEqual(draft.inactive_screenshots_count, 0)
+        self.assertEqual(review_request.screenshots_count, 1)
+        self.assertEqual(review_request.inactive_screenshots_count, 0)
+
+        draft.screenshots.remove(attachment)
+        draft.inactive_screenshots.add(attachment)
+
+        self.assertEqual(draft.screenshots_count, 0)
+        self.assertEqual(draft.inactive_screenshots_count, 1)
+        self.assertEqual(review_request.screenshots_count, 1)
+        self.assertEqual(review_request.inactive_screenshots_count, 0)
+
+        changes = draft.publish()
+        fields = changes.fields_changed
+
+        self.assertEqual(fields['screenshots'], {
+            'new': [],
+            'added': [],
+            'old': [
+                (attachment.caption,
+                 attachment.get_absolute_url(),
+                 attachment.pk),
+            ],
+            'removed': [
+                (attachment.caption,
+                 attachment.get_absolute_url(),
+                 attachment.pk),
+            ],
+        })
+        self.assertEqual(review_request.screenshots_count, 0)
+        self.assertEqual(review_request.inactive_screenshots_count, 1)
+
+    def test_publish_with_custom_fields(self):
         """Testing ReviewRequestDraft.publish with custom fields propagating
         from draft to review request
         """

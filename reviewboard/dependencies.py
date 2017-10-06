@@ -23,7 +23,7 @@ djblets_doc_major_version = '0.10'
 django_version = '>=1.6.11,<1.6.999'
 
 #: The version range required for Djblets.
-djblets_version = '>=0.10b1,<=0.10.999'
+djblets_version = '>=0.10b2,<=0.10.999'
 
 #: All dependencies required to install Review Board.
 package_dependencies = {
@@ -45,6 +45,15 @@ package_dependencies = {
     'python-memcached': '',
     'pytz': '>=2015.2',
     'Whoosh': '>=2.6',
+}
+
+#: Dependencies only specified during the packaging process.
+#:
+#: These dependencies are not used when simply developing Review Board.
+#: The dependencies here are generally intended to be those that themselves
+#: require Review Board.
+package_only_dependencies = {
+    'rbintegrations': '==0.5b2',
 }
 
 

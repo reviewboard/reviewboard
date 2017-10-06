@@ -16,6 +16,10 @@ Errors
    108-disable-extension-failed
    109-extension-installed
    110-install-extension-failed
+   111-duplicate-item
+   112-oauth-missing-scope-error
+   113-oauth-access-denied-error
+   114-rate-limit-exceeded
    203-invalid-change-number
    204-change-number-in-use
    205-missing-repository
@@ -43,3 +47,4 @@ Errors
    228-token-generation-failed
    230-close-error
    231-reopen-error
+   232-revoke-ship-it-error

@@ -1477,9 +1477,9 @@ class APIExtraDataAccessHook(ExtensionHook):
     certain access states on subclasses of
     :py:data:`~reviewboard.webapi.base.WebAPIResource`.
 
-    This accepts a list of ``field_set``s specified by the Extension and
+    This accepts a list of ``field_set`` values specified by the Extension and
     registers them when the hook is created. Likewise, it unregisters the same
-    list of ``field_set``s when the Extension is disabled.
+    list of ``field_set`` values when the Extension is disabled.
 
     Each element of ``field_set`` is a 2-:py:class:`tuple` where the first
     element of the tuple is the field's path (as a :py:class:`tuple`) and the

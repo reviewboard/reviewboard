@@ -11,7 +11,8 @@ from django.db.models import Count, Q
 from django.utils import six, timezone
 from django.utils.translation import ugettext_lazy as _
 from djblets.cache.backend import make_cache_key
-from djblets.db.fields import CounterField, ModificationTimestampField
+from djblets.db.fields import (CounterField, ModificationTimestampField,
+                               RelationCounterField)
 from djblets.db.query import get_object_or_none
 
 from reviewboard.attachments.models import (FileAttachment,
@@ -127,7 +128,8 @@ def _initialize_issue_counts(review_request):
     review_request.save(update_fields=[
         'issue_open_count',
         'issue_resolved_count',
-        'issue_dropped_count'
+        'issue_dropped_count',
+        'issue_verifying_count',
     ])
 
     # Tell CounterField not to set or save any values.
@@ -265,9 +267,26 @@ class ReviewRequest(BaseReviewRequestDetails):
         _('dropped issue count'),
         initializer=_initialize_issue_counts)
 
+
     issue_verifying_count = CounterField(
         _('verifying issue count'),
         initializer=_initialize_issue_counts)
+
+    screenshots_count = RelationCounterField(
+        'screenshots',
+        verbose_name=_('screenshots count'))
+
+    inactive_screenshots_count = RelationCounterField(
+        'inactive_screenshots',
+        verbose_name=_('inactive screenshots count'))
+
+    file_attachments_count = RelationCounterField(
+        'file_attachments',
+        verbose_name=_('file attachments count'))
+
+    inactive_file_attachments_count = RelationCounterField(
+        'inactive_file_attachments',
+        verbose_name=_('inactive file attachments count'))
 
     local_site = models.ForeignKey(LocalSite, blank=True, null=True,
                                    related_name='review_requests')

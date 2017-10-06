@@ -7,7 +7,7 @@ from django.db import models
 from django.db.models import F
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
-from djblets.db.fields import ModificationTimestampField
+from djblets.db.fields import ModificationTimestampField, RelationCounterField
 from djblets.db.managers import ConcurrencyManager
 
 from reviewboard.attachments.models import FileAttachment
@@ -101,6 +101,22 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                                         verbose_name=_('Dependencies'),
                                         related_name='draft_blocks')
 
+    screenshots_count = RelationCounterField(
+        'screenshots',
+        verbose_name=_('screenshots count'))
+
+    inactive_screenshots_count = RelationCounterField(
+        'inactive_screenshots',
+        verbose_name=_('inactive screenshots count'))
+
+    file_attachments_count = RelationCounterField(
+        'file_attachments',
+        verbose_name=_('file attachments count'))
+
+    inactive_file_attachments_count = RelationCounterField(
+        'inactive_file_attachments',
+        verbose_name=_('inactive file attachments count'))
+
     # Set this up with a ConcurrencyManager to help prevent race conditions.
     objects = ConcurrencyManager()
 
@@ -154,21 +170,26 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             draft.extra_data = copy.deepcopy(review_request.extra_data)
             draft.save()
 
-            review_request.screenshots.update(draft_caption=F('caption'))
-            draft.screenshots = review_request.screenshots.all()
+            if review_request.screenshots_count > 0:
+                review_request.screenshots.update(draft_caption=F('caption'))
+                draft.screenshots = review_request.screenshots.all()
 
-            review_request.inactive_screenshots.update(
-                draft_caption=F('caption'))
-            draft.inactive_screenshots = \
-                review_request.inactive_screenshots.all()
+            if review_request.inactive_screenshots_count > 0:
+                review_request.inactive_screenshots.update(
+                    draft_caption=F('caption'))
+                draft.inactive_screenshots = \
+                    review_request.inactive_screenshots.all()
 
-            review_request.file_attachments.update(draft_caption=F('caption'))
-            draft.file_attachments = review_request.file_attachments.all()
+            if review_request.file_attachments_count > 0:
+                review_request.file_attachments.update(
+                    draft_caption=F('caption'))
+                draft.file_attachments = review_request.file_attachments.all()
 
-            review_request.inactive_file_attachments.update(
-                draft_caption=F('caption'))
-            draft.inactive_file_attachments = \
-                review_request.inactive_file_attachments.all()
+            if review_request.inactive_file_attachments_count > 0:
+                review_request.inactive_file_attachments.update(
+                    draft_caption=F('caption'))
+                draft.inactive_file_attachments = \
+                    review_request.inactive_file_attachments.all()
 
         return draft
 
@@ -401,71 +422,87 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         # Screenshots are a bit special.  The list of associated screenshots
         # can change, but so can captions within each screenshot.
-        screenshots = list(self.screenshots.all())
-        caption_changes = {}
+        if review_request.screenshots_count > 0:
+            screenshots = list(self.screenshots.all())
+            caption_changes = {}
 
-        for s in review_request.screenshots.all():
-            if s in screenshots and s.caption != s.draft_caption:
-                caption_changes[s.id] = {
-                    'old': (s.caption,),
-                    'new': (s.draft_caption,),
-                }
+            for s in review_request.screenshots.all():
+                if s in screenshots and s.caption != s.draft_caption:
+                    caption_changes[s.id] = {
+                        'old': (s.caption,),
+                        'new': (s.draft_caption,),
+                    }
 
-                s.caption = s.draft_caption
-                s.save(update_fields=['caption'])
+                    s.caption = s.draft_caption
+                    s.save(update_fields=['caption'])
 
-        # Now scan through again and set the caption correctly for newly-added
-        # screenshots by copying the draft_caption over. We don't need to
-        # include this in the changedescs here because it's a new screenshot,
-        # and update_list will record the newly-added item.
-        for s in screenshots:
-            if s.caption != s.draft_caption:
-                s.caption = s.draft_caption
-                s.save(update_fields=['caption'])
+            # Now scan through again and set the caption correctly for
+            # newly-added screenshots by copying the draft_caption over. We
+            # don't need to include this in the changedescs here because it's a
+            # new screenshot, and update_list will record the newly-added item.
+            for s in screenshots:
+                if s.caption != s.draft_caption:
+                    s.caption = s.draft_caption
+                    s.save(update_fields=['caption'])
 
-        if caption_changes and self.changedesc:
-            self.changedesc.fields_changed['screenshot_captions'] = \
-                caption_changes
+            if caption_changes and self.changedesc:
+                self.changedesc.fields_changed['screenshot_captions'] = \
+                    caption_changes
 
-        update_list(review_request.screenshots, self.screenshots,
-                    'screenshots', name_field="caption")
+        if (review_request.screenshots_count > 0 or
+            self.screenshots_count > 0):
+            update_list(review_request.screenshots,
+                        self.screenshots,
+                        name='screenshots',
+                        name_field="caption")
 
-        # There's no change notification required for this field.
-        review_request.inactive_screenshots = self.inactive_screenshots.all()
+        if (review_request.inactive_screenshots_count > 0 or
+            self.inactive_screenshots_count > 0):
+            # There's no change notification required for this field.
+            review_request.inactive_screenshots = \
+                self.inactive_screenshots.all()
 
         # Files are treated like screenshots. The list of files can
         # change, but so can captions within each file.
-        files = list(self.file_attachments.all())
-        caption_changes = {}
+        if review_request.file_attachments_count > 0:
+            files = list(self.file_attachments.all())
+            caption_changes = {}
 
-        for f in review_request.file_attachments.all():
-            if f in files and f.caption != f.draft_caption:
-                caption_changes[f.id] = {
-                    'old': (f.caption,),
-                    'new': (f.draft_caption,),
-                }
+            for f in review_request.file_attachments.all():
+                if f in files and f.caption != f.draft_caption:
+                    caption_changes[f.id] = {
+                        'old': (f.caption,),
+                        'new': (f.draft_caption,),
+                    }
 
-                f.caption = f.draft_caption
-                f.save(update_fields=['caption'])
+                    f.caption = f.draft_caption
+                    f.save(update_fields=['caption'])
 
-        # Now scan through again and set the caption correctly for newly-added
-        # files by copying the draft_caption over. We don't need to include
-        # this in the changedescs here because it's a new screenshot, and
-        # update_list will record the newly-added item.
-        for f in files:
-            if f.caption != f.draft_caption:
-                f.caption = f.draft_caption
-                f.save(update_fields=['caption'])
+            # Now scan through again and set the caption correctly for
+            # newly-added files by copying the draft_caption over. We don't
+            # need to include this in the changedescs here because it's a new
+            # screenshot, and update_list will record the newly-added item.
+            for f in files:
+                if f.caption != f.draft_caption:
+                    f.caption = f.draft_caption
+                    f.save(update_fields=['caption'])
 
-        if caption_changes and self.changedesc:
-            self.changedesc.fields_changed['file_captions'] = caption_changes
+            if caption_changes and self.changedesc:
+                self.changedesc.fields_changed['file_captions'] = \
+                    caption_changes
 
-        update_list(review_request.file_attachments, self.file_attachments,
-                    'files', name_field="display_name")
+        if (review_request.file_attachments_count > 0 or
+            self.file_attachments_count > 0):
+            update_list(review_request.file_attachments,
+                        self.file_attachments,
+                        name='files',
+                        name_field="display_name")
 
-        # There's no change notification required for this field.
-        review_request.inactive_file_attachments = \
-            self.inactive_file_attachments.all()
+        if (review_request.inactive_file_attachments_count > 0 or
+            self.inactive_file_attachments_count > 0):
+            # There's no change notification required for this field.
+            review_request.inactive_file_attachments = \
+                self.inactive_file_attachments.all()
 
     def get_review_request(self):
         """Returns the associated review request."""

@@ -119,16 +119,16 @@ class ResourceDirective(Directive):
             return e.error_node
 
         # Add the class's file and this extension to the dependencies.
-        self.state.document.settings.env.note_dependency(__file__)
-        self.state.document.settings.env.note_dependency(
-            sys.modules[resource_class.__module__].__file__)
+        env = self.state.document.settings.env
+        env.note_dependency(__file__)
+        env.note_dependency(sys.modules[resource_class.__module__].__file__)
 
         resource = get_resource_from_class(resource_class)
 
         is_list = 'is-list' in self.options
 
         docname = 'webapi2.0-%s-resource' % \
-            get_resource_docname(resource, is_list)
+            get_resource_docname(env.app, resource, is_list)
         resource_title = get_resource_title(resource, is_list)
 
         targetnode = nodes.target('', '', ids=[docname], names=[docname])
@@ -270,6 +270,9 @@ class ResourceDirective(Directive):
         return [targetnode, main_section]
 
     def build_details_table(self, resource):
+        env = self.state.document.settings.env
+        app = env.app
+
         is_list = 'is-list' in self.options
 
         table = nodes.table(classes=['resource-info'])
@@ -353,7 +356,8 @@ class ResourceDirective(Directive):
 
         if parent_resource:
             paragraph = nodes.paragraph()
-            paragraph += get_ref_to_resource(parent_resource, is_parent_list)
+            paragraph += get_ref_to_resource(app, parent_resource,
+                                             is_parent_list)
         else:
             paragraph = 'None.'
 
@@ -381,8 +385,8 @@ class ResourceDirective(Directive):
             tocnode['hidden'] = False
 
             docnames = sorted([
-                docname_join(self.state.document.settings.env.docname,
-                             get_resource_docname(child_resource,
+                docname_join(env.docname,
+                             get_resource_docname(app, child_resource,
                                                   are_children_lists))
                 for child_resource in child_resources
             ])
@@ -486,13 +490,15 @@ class ResourceDirective(Directive):
         links = resource.get_links(child_resources, request=DummyRequest(),
                                    obj=obj)
 
+        app = self.state.document.settings.env.app
+
         for linkname in sorted(links.iterkeys()):
             info = links[linkname]
             child, is_child_link = \
                 names_to_resource.get(linkname, (resource, is_list))
 
             paragraph = nodes.paragraph()
-            paragraph += get_ref_to_resource(child, is_child_link)
+            paragraph += get_ref_to_resource(app, child, is_child_link)
 
             append_row(tbody,
                        [nodes.strong(text=linkname),
@@ -932,7 +938,8 @@ class ResourceFieldDirective(Directive):
             return [nodes.inline(text='One of ')] + value_nodes
         elif (inspect.isclass(field_type) and
               issubclass(field_type, WebAPIResource)):
-            return [get_ref_to_resource(field_type, False)]
+            return [get_ref_to_resource(self.state.document.settings.env.app,
+                                        field_type, False)]
         elif field_type in self.type_mapping:
             return [nodes.inline(text=self.type_mapping[field_type])]
         else:
@@ -1008,7 +1015,8 @@ class ResourceTreeDirective(Directive):
             ':ref:`%s <%s>`' %
             (get_resource_title(resource, is_list, False),
              'webapi2.0-%s-resource'
-             % get_resource_docname(resource, is_list)))
+             % get_resource_docname(self.state.document.settings.env.app,
+                                    resource, is_list)))
 
         bullet_list = nodes.bullet_list()
         item += bullet_list
@@ -1251,10 +1259,11 @@ def get_from_module(name):
     module, attr = name[:i], name[i + 1:]
 
     try:
-        mod = __import__(module, {}, {}, [attr])
+        mod = __import__(module.encode('utf-8'), {}, {},
+                         [attr.encode('utf-8')])
         return getattr(mod, attr)
-    except (ImportError, AttributeError):
-        raise ImportError
+    except AttributeError:
+        raise ImportError('Unable to load "%s" from "%s"' % (attr, module))
 
 
 def append_row(tbody, cells):
@@ -1318,7 +1327,7 @@ def get_resource_title(resource, is_list, append_resource=True):
     return s
 
 
-def get_resource_docname(resource, is_list):
+def get_resource_docname(app, resource, is_list):
     """Returns the name of the page used for a resource's documentation."""
     if inspect.isclass(resource):
         class_name = resource.__name__
@@ -1327,6 +1336,7 @@ def get_resource_docname(resource, is_list):
 
     class_name = class_name.replace('Resource', '')
     docname = uncamelcase(class_name, '-')
+    docname = app.config.webapi_docname_map.get(docname, docname)
 
     if is_list and resource.name != resource.name_plural:
         docname = '%s-list' % docname
@@ -1342,10 +1352,10 @@ def get_ref_to_doc(refname, title=''):
     return ref
 
 
-def get_ref_to_resource(resource, is_list):
+def get_ref_to_resource(app, resource, is_list):
     """Returns a node that links to a resource's documentation."""
     return get_ref_to_doc('webapi2.0-%s-resource' %
-                          get_resource_docname(resource, is_list))
+                          get_resource_docname(app, resource, is_list))
 
 
 def get_ref_to_error(error, title=''):
@@ -1397,7 +1407,8 @@ def create_fake_resource_path(request, resource, child_keys, include_child):
 
                 if q.count() == 0:
                     logging.critical('Resource "%s" requires objects in the '
-                                     'database', resource.__class__)
+                                     'database. Tried with URL child keys: %r',
+                                     resource.__class__, child_keys)
 
                     # Do the assert so it shows up in the logs.
                     assert q.count() > 0
@@ -1441,6 +1452,8 @@ def fetch_response_data(response_class, mimetype, request=None, **kwargs):
 
 
 def setup(app):
+    app.add_config_value(b'webapi_docname_map', {}, b'env')
+
     app.add_directive('webapi-resource', ResourceDirective)
     app.add_directive('webapi-resource-field-list', ResourceFieldListDirective)
     app.add_directive('webapi-resource-field', ResourceFieldDirective)

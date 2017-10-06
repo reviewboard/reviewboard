@@ -372,29 +372,29 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
     def get_extra_data_field_state(self, key_path):
         """Return the state of a registered ``extra_data`` key path.
 
-        Example:
-        .. code-block:: python
-
-           resource.extra_data = {
-               'public': 'foo',
-               'private': 'secret',
-               'data': {
-                   'secret_key': 'secret_data',
-               },
-               'readonly': 'bar',
-           }
-
-           key_path = ('data', 'secret_key',)
-           resource.get_extra_data_field_state(key_path)
-
         Args:
             key_path (tuple):
-                The path of the ``extra_data`` key as a :py:class`tuple` of
+                The path of the ``extra_data`` key as a :py:class:`tuple` of
                 :py:class:`unicode` strings.
 
         Returns:
             int:
             The access state of the provided key.
+
+        Example:
+            .. code-block:: python
+
+               resource.extra_data = {
+                   'public': 'foo',
+                   'private': 'secret',
+                   'data': {
+                       'secret_key': 'secret_data',
+                   },
+                   'readonly': 'bar',
+               }
+
+               key_path = ('data', 'secret_key',)
+               resource.get_extra_data_field_state(key_path)
         """
         for callback in self.extra_data_access_callbacks:
             value = callback(key_path)

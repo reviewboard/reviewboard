@@ -86,7 +86,9 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         self.assertIsNotNone(draft)
 
         self.assertEqual(draft.screenshots.count(), 1)
+        self.assertEqual(draft.screenshots_count, 1)
         self.assertEqual(review_request.screenshots.count(), 0)
+        self.assertEqual(review_request.screenshots_count, 0)
 
     def test_post_with_permission_denied_error(self):
         """Testing the POST review-requests/<id>/screenshots/ API

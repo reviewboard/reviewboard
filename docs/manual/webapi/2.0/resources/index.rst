@@ -61,6 +61,18 @@ Hosting Services
    remote-repository
 
 
+OAuth2
+======
+
+.. toctree::
+   :maxdepth: 1
+
+   oauth-application-list
+   oauth-application
+   oauth-token-list
+   oauth-token
+
+
 Repositories
 ============
 
@@ -199,6 +211,8 @@ Users
    session
    user-list
    user
+   user-file-attachment-list
+   user-file-attachment
    watched-review-group-list
    watched-review-group
    watched-review-request-list
