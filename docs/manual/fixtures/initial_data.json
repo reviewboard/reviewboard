@@ -2802,6 +2802,23 @@
 },
 {
     "pk": 1, 
+    "model": "notifications.webhooktarget", 
+    "fields": {
+        "encoding": "application/json", 
+        "url": "http://example.com/webhook", 
+        "repositories": [], 
+        "local_site": null, 
+        "enabled": true, 
+        "events": "*", 
+        "secret": "", 
+        "use_custom_content": false, 
+        "apply_to": "A", 
+        "extra_data": "{}", 
+        "custom_content": null
+    }
+},
+{
+    "pk": 1, 
     "model": "oauth2_provider.accesstoken", 
     "fields": {
         "application": 1, 
@@ -3145,6 +3162,7 @@
         "diffset_history": 1, 
         "screenshots": [], 
         "issue_dropped_count": 0, 
+        "inactive_file_attachments_count": 0, 
         "bugs_closed": "", 
         "testing_done": "", 
         "description_rich_text": false, 
@@ -3154,8 +3172,10 @@
         "public": false, 
         "commit_id": null, 
         "shipit_count": 0, 
+        "file_attachments_count": 0, 
         "description": "", 
         "repository": 1, 
+        "inactive_screenshots_count": 0, 
         "issue_resolved_count": 0, 
         "issue_open_count": 0, 
         "inactive_file_attachments": [], 
@@ -3172,6 +3192,7 @@
         "submitter": 2, 
         "time_emailed": null, 
         "rich_text": false, 
+        "screenshots_count": 0, 
         "file_attachments": []
     }
 },
@@ -3190,6 +3211,7 @@
         "diffset_history": 2, 
         "screenshots": [], 
         "issue_dropped_count": 0, 
+        "inactive_file_attachments_count": 0, 
         "bugs_closed": "123", 
         "testing_done": "Works.", 
         "description_rich_text": false, 
@@ -3199,8 +3221,10 @@
         "public": true, 
         "commit_id": null, 
         "shipit_count": 0, 
+        "file_attachments_count": 0, 
         "description": "Be compatible with cleaned_data changes in Django.", 
         "repository": 1, 
+        "inactive_screenshots_count": 0, 
         "issue_resolved_count": 0, 
         "issue_open_count": 0, 
         "inactive_file_attachments": [], 
@@ -3217,6 +3241,7 @@
         "submitter": 3, 
         "time_emailed": null, 
         "rich_text": false, 
+        "screenshots_count": 0, 
         "file_attachments": []
     }
 },
@@ -3238,6 +3263,7 @@
         "diffset_history": 3, 
         "screenshots": [], 
         "issue_dropped_count": 0, 
+        "inactive_file_attachments_count": 0, 
         "bugs_closed": "1234, 5678, 8765, 4321", 
         "testing_done": "Tested some functions.", 
         "description_rich_text": false, 
@@ -3247,8 +3273,10 @@
         "public": true, 
         "commit_id": null, 
         "shipit_count": 0, 
+        "file_attachments_count": 0, 
         "description": "Added some user permissions checking for JSON API functions.", 
         "repository": 1, 
+        "inactive_screenshots_count": 0, 
         "issue_resolved_count": 0, 
         "issue_open_count": 0, 
         "inactive_file_attachments": [], 
@@ -3265,6 +3293,7 @@
         "submitter": 1, 
         "time_emailed": null, 
         "rich_text": false, 
+        "screenshots_count": 0, 
         "file_attachments": []
     }
 },
@@ -3285,6 +3314,7 @@
         "diffset_history": 4, 
         "screenshots": [], 
         "issue_dropped_count": 0, 
+        "inactive_file_attachments_count": 0, 
         "bugs_closed": "12345", 
         "testing_done": "Tested.", 
         "description_rich_text": false, 
@@ -3294,8 +3324,10 @@
         "public": true, 
         "commit_id": "1234", 
         "shipit_count": 0, 
+        "file_attachments_count": 0, 
         "description": "Test description.", 
         "repository": 1, 
+        "inactive_screenshots_count": 0, 
         "issue_resolved_count": 0, 
         "issue_open_count": 0, 
         "inactive_file_attachments": [], 
@@ -3310,6 +3342,7 @@
         "submitter": 4, 
         "time_emailed": null, 
         "rich_text": false, 
+        "screenshots_count": 0, 
         "file_attachments": []
     }
 },
@@ -3328,6 +3361,7 @@
         "diffset_history": 6, 
         "screenshots": [], 
         "issue_dropped_count": 0, 
+        "inactive_file_attachments_count": 0, 
         "bugs_closed": "", 
         "testing_done": "Bar", 
         "description_rich_text": false, 
@@ -3337,8 +3371,10 @@
         "public": true, 
         "commit_id": null, 
         "shipit_count": 0, 
+        "file_attachments_count": 0, 
         "description": "Foo", 
         "repository": 1, 
+        "inactive_screenshots_count": 0, 
         "issue_resolved_count": 0, 
         "issue_open_count": 0, 
         "inactive_file_attachments": [], 
@@ -3355,6 +3391,7 @@
         "submitter": 3, 
         "time_emailed": null, 
         "rich_text": false, 
+        "screenshots_count": 0, 
         "file_attachments": []
     }
 },
@@ -3376,6 +3413,7 @@
         "diffset_history": 7, 
         "screenshots": [], 
         "issue_dropped_count": 0, 
+        "inactive_file_attachments_count": 0, 
         "bugs_closed": "", 
         "testing_done": "", 
         "description_rich_text": false, 
@@ -3385,8 +3423,10 @@
         "public": true, 
         "commit_id": null, 
         "shipit_count": 0, 
+        "file_attachments_count": 0, 
         "description": "", 
         "repository": 1, 
+        "inactive_screenshots_count": 0, 
         "issue_resolved_count": 0, 
         "issue_open_count": 0, 
         "inactive_file_attachments": [], 
@@ -3401,6 +3441,7 @@
         "submitter": 2, 
         "time_emailed": null, 
         "rich_text": false, 
+        "screenshots_count": 0, 
         "file_attachments": []
     }
 },
@@ -3426,6 +3467,7 @@
             1
         ], 
         "issue_dropped_count": 0, 
+        "inactive_file_attachments_count": 0, 
         "bugs_closed": "", 
         "testing_done": "", 
         "description_rich_text": false, 
@@ -3435,8 +3477,10 @@
         "public": true, 
         "commit_id": null, 
         "shipit_count": 0, 
+        "file_attachments_count": 1, 
         "description": "This is a test designed for interdiffs.", 
         "repository": 1, 
+        "inactive_screenshots_count": 0, 
         "issue_resolved_count": 0, 
         "issue_open_count": 0, 
         "inactive_file_attachments": [], 
@@ -3451,6 +3495,7 @@
         "submitter": 1, 
         "time_emailed": null, 
         "rich_text": false, 
+        "screenshots_count": 1, 
         "file_attachments": [
             1
         ]
@@ -3471,6 +3516,7 @@
         "diffset_history": 9, 
         "screenshots": [], 
         "issue_dropped_count": 0, 
+        "inactive_file_attachments_count": 0, 
         "bugs_closed": "", 
         "testing_done": "", 
         "description_rich_text": false, 
@@ -3480,8 +3526,10 @@
         "public": true, 
         "commit_id": "", 
         "shipit_count": 0, 
+        "file_attachments_count": 3, 
         "description": "Just some tests for diff file attachments", 
         "repository": 1, 
+        "inactive_screenshots_count": 0, 
         "issue_resolved_count": 0, 
         "issue_open_count": 0, 
         "inactive_file_attachments": [], 
@@ -3498,6 +3546,7 @@
         "submitter": 2, 
         "time_emailed": null, 
         "rich_text": true, 
+        "screenshots_count": 0, 
         "file_attachments": [
             2, 
             3, 
@@ -3864,7 +3913,9 @@
         "target_people": [
             4
         ], 
-        "depends_on": [], 
+        "inactive_screenshots": [
+            2
+        ], 
         "file_attachments": [
             1
         ], 
@@ -3873,23 +3924,25 @@
         "screenshots": [
             1
         ], 
+        "inactive_file_attachments_count": 0, 
         "bugs_closed": "12,34", 
         "testing_done": "This is the new testing that was done.", 
         "description_rich_text": false, 
-        "inactive_screenshots": [
-            2
-        ], 
+        "depends_on": [], 
         "extra_data": "{}", 
         "review_request": 8, 
         "rich_text": false, 
         "commit_id": null, 
+        "file_attachments_count": 1, 
         "description": "This is the new description.", 
+        "inactive_screenshots_count": 1, 
         "inactive_file_attachments": [], 
         "branch": "master", 
         "testing_done_rich_text": false, 
         "diffset": 10, 
         "target_groups": [], 
-        "summary": "This is the new summary"
+        "summary": "This is the new summary", 
+        "screenshots_count": 1
     }
 },
 {
@@ -4029,23 +4082,6 @@
         "policy": "{\"perms\": \"rw\"}", 
         "time_added": "2014-07-08T10:58:04.652Z", 
         "extra_data": "{}"
-    }
-},
-{
-    "pk": 1,
-    "model": "notifications.webhooktarget",
-    "fields": {
-        "enabled": true,
-        "events": "*",
-        "url": "http://example.com/webhook",
-        "encoding": "application/json",
-        "use_custom_content": false,
-        "custom_content": null,
-        "secret": "",
-        "apply_to": "A",
-        "repositories": [],
-        "local_site": null,
-        "extra_data": null
     }
 }
 ]
