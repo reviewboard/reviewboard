@@ -2,7 +2,7 @@
 Review Board 3.0 Beta 2 Release Notes
 =====================================
 
-**Release date**: TBD
+**Release date**: October 5, 2017
 
 
 This release contains all bug fixes and features from Review Board version
