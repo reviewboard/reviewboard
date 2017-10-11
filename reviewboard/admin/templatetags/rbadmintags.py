@@ -76,16 +76,3 @@ def admin_actions(context):
     }
 
     return RequestContext(request, request_context)
-
-
-@register.simple_tag
-def nav_active(request, pattern):
-    """Helper to render a class name for active navigation items.
-
-    This will check to see if the given pattern is part of the current page's
-    URL, and if so, return a class name to add to the navigation element.
-    """
-    if pattern in request.path:
-        return 'nav-active'
-
-    return ''

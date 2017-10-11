@@ -9,37 +9,6 @@ from reviewboard.accounts.models import Profile
 from reviewboard.testing import TestCase
 
 
-class IfNeatNumberTagTests(TestCase):
-    """Unit tests for {% ifneatnumber %} template tag."""
-
-    def test_milestones(self):
-        """Testing the ifneatnumber tag with milestone numbers"""
-        self.assertNeatNumberResult(100, '')
-        self.assertNeatNumberResult(1000, 'milestone')
-        self.assertNeatNumberResult(10000, 'milestone')
-        self.assertNeatNumberResult(20000, 'milestone')
-        self.assertNeatNumberResult(20001, '')
-
-    def test_palindrome(self):
-        """Testing the ifneatnumber tag with palindrome numbers"""
-        self.assertNeatNumberResult(101, '')
-        self.assertNeatNumberResult(1001, 'palindrome')
-        self.assertNeatNumberResult(12321, 'palindrome')
-        self.assertNeatNumberResult(20902, 'palindrome')
-        self.assertNeatNumberResult(912219, 'palindrome')
-        self.assertNeatNumberResult(912218, '')
-
-    def assertNeatNumberResult(self, rid, expected):
-        t = Template(
-            '{% load reviewtags %}'
-            '{% ifneatnumber ' + six.text_type(rid) + ' %}'
-            '{%  if milestone %}milestone{% else %}'
-            '{%  if palindrome %}palindrome{% endif %}{% endif %}'
-            '{% endifneatnumber %}')
-
-        self.assertEqual(t.render(Context({})), expected)
-
-
 class MarkdownTemplateTagsTests(TestCase):
     """Unit tests for Markdown-related template tags."""
 

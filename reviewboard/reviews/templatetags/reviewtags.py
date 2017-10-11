@@ -70,47 +70,6 @@ def display_review_request_trophies(review_request):
     return render_to_string('reviews/trophy_box.html', {'trophies': trophies})
 
 
-@register.tag
-@blocktag
-def ifneatnumber(context, nodelist, rid):
-    """
-    Returns whether or not the specified number is a "neat" number.
-    This is a number with a special property, such as being a
-    palindrome or having trailing zeroes.
-
-    If the number is a neat number, the contained content is rendered,
-    and two variables, ``milestone`` and ``palindrome`` are defined.
-    """
-    if rid is None or rid < 1000:
-        return ""
-
-    ridstr = six.text_type(rid)
-    interesting = False
-
-    context.push()
-    context['milestone'] = False
-    context['palindrome'] = False
-
-    if rid >= 1000:
-        trailing = ridstr[1:]
-        if trailing == "0" * len(trailing):
-            context['milestone'] = True
-            interesting = True
-
-    if not interesting:
-        if ridstr == ''.join(reversed(ridstr)):
-            context['palindrome'] = True
-            interesting = True
-
-    if not interesting:
-        context.pop()
-        return ""
-
-    s = nodelist.render(context)
-    context.pop()
-    return s
-
-
 def _generate_reply_html(context, user, context_id, review, reply, timestamp,
                          last_visited, text, rich_text, anchor_name,
                          use_avatars, extra_context={}):
@@ -332,60 +291,6 @@ def reply_section(context, review, comment, context_type, context_id,
         'reply_to_is_empty': reply_to_text == '',
         'request': context['request'],
         'last_visited': context.get('last_visited'),
-    }
-
-
-@register.inclusion_tag('datagrids/dashboard_entry.html', takes_context=True)
-def dashboard_entry(context, level, text, view, param=None):
-    """
-    Renders an entry in the dashboard sidebar.
-
-    This includes the name of the entry and the list of review requests
-    associated with it. The entry is rendered by the template
-    :template:`datagrids/dashboard_entry.html`.
-    """
-    user = context.get('user', None)
-    sidebar_counts = context.get('sidebar_counts', None)
-    starred = False
-    show_count = True
-    count = 0
-    url = None
-    group_name = None
-
-    if view == 'to-group':
-        group_name = param
-        count = sidebar_counts['groups'].get(
-            group_name,
-            sidebar_counts['starred_groups'].get(group_name, 0))
-    elif view == 'watched-groups':
-        starred = True
-        show_count = False
-    elif view in sidebar_counts:
-        count = sidebar_counts[view]
-
-        if view == 'starred':
-            starred = True
-    elif view == "url":
-        url = param
-        show_count = False
-    else:
-        raise template.TemplateSyntaxError(
-            "Invalid view type '%s' passed to 'dashboard_entry' tag." % view)
-
-    return {
-        'level': level,
-        'text': text,
-        'view': view,
-        'group_name': group_name,
-        'url': url,
-        'count': count,
-        'show_count': show_count,
-        'user': user,
-        'starred': starred,
-        'selected': (context.get('view', None) == view and
-                     (not group_name or
-                      context.get('group', None) == group_name)),
-        'local_site_name': context.get('local_site_name'),
     }
 
 
