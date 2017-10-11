@@ -1290,6 +1290,28 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
         """
         return self.entry_type_id
 
+    def is_entry_new(self, last_visited, user, **kwargs):
+        """Return whether the entry is new, from the user's perspective.
+
+        The initial status updates entry is basically part of the review
+        request, and is never shown as new.
+
+        Args:
+            last_visited (datetime.datetime, unused):
+                The last visited timestamp.
+
+            user (django.contrib.auth.models.User, unused):
+                The user viewing the page.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
+
+        Returns:
+            bool:
+            ``False``, always.
+        """
+        return False
+
 
 class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
                   BaseReviewRequestPageEntry):

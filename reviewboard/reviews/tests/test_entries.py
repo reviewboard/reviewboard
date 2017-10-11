@@ -706,6 +706,20 @@ class InitialStatusUpdatesEntryTests(TestCase):
                 'general_comments': [self.general_comment],
             })
 
+    def test_is_entry_new_with_timestamp(self):
+        """Testing InitialStatusUpdatesEntry.is_entry_new"""
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        user = User.objects.create(username='test-user')
+        entry = InitialStatusUpdatesEntry(review_request=self.review_request,
+                                          collapsed=False,
+                                          data=self.data)
+
+        self.assertFalse(entry.is_entry_new(
+            last_visited=self.review_request.last_updated - timedelta(days=1),
+            user=user))
+
 
 class ReviewEntryTests(TestCase):
     """Unit tests for ReviewEntry."""
