@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+from djblets.siteconfig.models import SiteConfiguration
+
 from reviewboard import (get_manual_url, get_package_version,
                          get_version_string, is_release, VERSION)
 from reviewboard.admin.read_only import is_site_read_only_for
@@ -16,8 +18,11 @@ def read_only(request):
         dict:
         State to add to the context.
     """
+    siteconfig = SiteConfiguration.objects.get_current()
+
     return {
         'is_read_only': is_site_read_only_for(request.user),
+        'read_only_message': siteconfig.get('read_only_message', ''),
     }
 
 

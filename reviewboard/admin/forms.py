@@ -107,6 +107,13 @@ class GeneralSettingsForm(SiteSettingsForm):
                     'Review Board.'),
         required=False)
 
+    read_only_message = forms.CharField(
+        label=_('Read-only message'),
+        help_text=_('A custom message displayed when the site is in '
+                    'read-only mode.'),
+        required=False,
+        widget=forms.TextInput(attrs={'size': '30'}))
+
     site_media_url = forms.CharField(
         label=_("Media URL"),
         help_text=_("The URL to the media files. Leave blank to use the "
@@ -370,7 +377,7 @@ class GeneralSettingsForm(SiteSettingsForm):
                 'fields': ('company', 'server', 'site_media_url',
                            'site_static_url', 'site_admin_name',
                            'site_admin_email', 'locale_timezone',
-                           'site_read_only'),
+                           'site_read_only', 'read_only_message'),
             },
             {
                 'classes': ('wide',),
