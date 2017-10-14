@@ -416,7 +416,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     ],
 
     events: {
-        'click .has-menu .has-menu': '_onMenuClicked',
         'click #archive-review-request-link': '_onArchiveClicked',
         'click #unarchive-review-request-link': '_onUnarchiveClicked',
         'click #mute-review-request-link': '_onMuteClicked',
@@ -442,7 +441,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                   '_onCloseDiscardedClicked', '_onCloseSubmittedClicked',
                   '_onDeleteReviewRequestClicked', '_onUpdateDiffClicked',
                   '_onArchiveClicked', '_onUnarchiveClicked',
-                  '_onMuteClicked', '_onUnmuteClicked');
+                  '_onMuteClicked', '_onUnmuteClicked', '_onUploadFileClicked');
 
         this._fieldViews = {};
         this.rendered = false;
@@ -712,6 +711,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         const $closeSubmitted = this.$('#submit-review-request-action');
         const $deletePermanently = this.$('#delete-review-request-action');
         const $updateDiff = this.$('#upload-diff-action');
+        const $uploadFile = this.$('#upload-file-action');
 
         /*
          * We don't want the click event filtering from these down to the
@@ -721,6 +721,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         $closeSubmitted.click(this._onCloseSubmittedClicked);
         $deletePermanently.click(this._onDeleteReviewRequestClicked);
         $updateDiff.click(this._onUpdateDiffClicked);
+        $uploadFile.click(this._onUploadFileClicked);
 
         RB.ReviewRequestActionHook.each(hook => {
             _.each(hook.get('callbacks'),
@@ -1080,6 +1081,25 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     },
 
     /**
+     * Handle a click on the "Add File" button.
+     *
+     * This method displays a popup for attachment upload.
+     *
+     * Args:
+     *     e (Event):
+     *         The event which triggered the action.
+     */
+    _onUploadFileClicked(e) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        const uploadDialog = new RB.UploadAttachmentView({
+            reviewRequest: this.model.get('reviewRequest'),
+        });
+        uploadDialog.render();
+    },
+
+    /**
      * Handle a click on "Archive -> Archive".
      *
      * Returns:
@@ -1189,22 +1209,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
 
         this.$('#hide-review-request-link')
             .html(`<span class="rb-icon ${iconClass}"></span>`);
-    },
-
-    /**
-     * Generic handler for menu clicks.
-     *
-     * This simply prevents the click from bubbling up or invoking the
-     * default action.  This function is used for dropdown menu titles
-     * so that their links do not send a request to the server when one
-     * of their dropdown actions are clicked.
-     *
-     * Returns:
-     *     boolean:
-     *     False, always.
-     */
-    _onMenuClicked() {
-        return false;
     },
 
     /**
