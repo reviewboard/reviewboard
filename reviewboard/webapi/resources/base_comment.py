@@ -414,10 +414,20 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             raise PermissionDenied
 
         comment._review_request = review_request
-
-        # We can only update the status of the issue
         issue_status = \
             BaseComment.issue_string_to_status(kwargs.get('issue_status'))
+
+        # If the issue requires verification, ensure that only people who are
+        # authorized can close it.
+        if (comment.require_verification and
+            issue_status in (BaseComment.RESOLVED, BaseComment.DROPPED) and
+            comment.issue_status in (BaseComment.OPEN,
+                                     BaseComment.VERIFYING_RESOLVED,
+                                     BaseComment.VERIFYING_DROPPED) and
+            not comment.can_verify_issue_status(request.user)):
+            return self.get_no_access_error(request)
+
+        # We can only update the status of the issue
         comment.issue_status = issue_status
         comment.save(update_fields=['issue_status'])
 
