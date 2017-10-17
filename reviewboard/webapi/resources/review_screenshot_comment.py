@@ -86,16 +86,12 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
                 }
             }
 
-        new_comment = self.create_comment(
+        return self.create_comment(
             review=review,
+            comments_m2m=review.screenshot_comments,
             screenshot=screenshot,
             fields=('screenshot', 'x', 'y', 'w', 'h'),
             **kwargs)
-        review.screenshot_comments.add(new_comment)
-
-        return 201, {
-            self.item_result_key: new_comment,
-        }
 
     @webapi_check_local_site
     @webapi_login_required
@@ -134,18 +130,11 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        # Determine whether or not we're updating the issue status.
-        if self.should_update_issue_status(screenshot_comment, **kwargs):
-            return self.update_issue_status(request, self, *args, **kwargs)
-
-        if not resources.review.has_modify_permissions(request, review):
-            return self.get_no_access_error(request)
-
-        self.update_comment(screenshot_comment, ('x', 'y', 'w', 'h'), **kwargs)
-
-        return 200, {
-            self.item_result_key: screenshot_comment,
-        }
+        return self.update_comment(request=request,
+                                   review=review,
+                                   comment=screenshot_comment,
+                                   update_fields=('x', 'y', 'w', 'h'),
+                                   **kwargs)
 
     @webapi_check_local_site
     @augment_method_from(BaseScreenshotCommentResource)

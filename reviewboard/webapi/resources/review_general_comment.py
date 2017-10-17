@@ -53,12 +53,10 @@ class ReviewGeneralCommentResource(BaseReviewGeneralCommentResource):
         if not resources.review.has_modify_permissions(request, review):
             return self.get_no_access_error(request.user)
 
-        new_comment = self.create_comment(fields=(), review=review, **kwargs)
-        review.general_comments.add(new_comment)
-
-        return 201, {
-            self.item_result_key: new_comment,
-        }
+        return self.create_comment(fields=(),
+                                   review=review,
+                                   comments_m2m=review.general_comments,
+                                   **kwargs)
 
     @webapi_check_local_site
     @webapi_login_required
@@ -80,18 +78,10 @@ class ReviewGeneralCommentResource(BaseReviewGeneralCommentResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        # Determine whether or not we're updating the issue status.
-        if self.should_update_issue_status(general_comment, **kwargs):
-            return self.update_issue_status(request, self, *args, **kwargs)
-
-        if not resources.review.has_modify_permissions(request, review):
-            return self.get_no_access_error(request)
-
-        self.update_comment(general_comment, **kwargs)
-
-        return 200, {
-            self.item_result_key: general_comment,
-        }
+        return self.update_comment(request=request,
+                                   review=review,
+                                   comment=general_comment,
+                                   **kwargs)
 
     @webapi_check_local_site
     @augment_method_from(BaseReviewGeneralCommentResource)

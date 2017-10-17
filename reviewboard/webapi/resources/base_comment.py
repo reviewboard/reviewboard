@@ -1,8 +1,9 @@
 from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
+from django.db.models import Q
 from django.utils import six
-from djblets.webapi.errors import DOES_NOT_EXIST
+from djblets.webapi.errors import DOES_NOT_EXIST, WebAPIError
 
 from reviewboard.reviews.models import BaseComment
 from reviewboard.webapi.base import WebAPIResource
@@ -164,8 +165,56 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
     def has_delete_permissions(self, request, obj, *args, **kwargs):
         return obj.is_mutable_by(request.user)
 
-    def create_comment(self, review, fields, text, issue_opened=False,
-                       text_type=False, extra_fields={}, **kwargs):
+    def create_comment(self,
+                       review,
+                       fields,
+                       text,
+                       comments_m2m,
+                       issue_opened=False,
+                       text_type=MarkdownFieldsMixin.TEXT_TYPE_PLAIN,
+                       extra_fields={},
+                       **kwargs):
+        """Create a comment based on the requested data.
+
+        This will construct a comment of the type represented by the resource,
+        setting the issue states, text, extra_data, and any additional fields
+        provided by the caller.
+
+        Args:
+            review (reviewboard.reviews.models.review.Review):
+                The review owning the comment.
+
+            fields (list of unicode):
+                The model fields that can be set through the API.
+
+            text (unicode):
+                The comment text.
+
+            comments_m2m (django.db.models.ManyToManyField):
+                The review's comments relation, where the new comment will
+                be added.
+
+            issue_opened (bool, optional):
+                Whether this comment opens an issue.
+
+            text_type (unicode, optional):
+                The text type for the comment. This defaults to plain text.
+
+            extra_fields (dict, optional):
+                Extra fields from the request not otherwise handled by the
+                API resource. Any ``extra_data`` modifications from this will
+                be applied to the comment.
+
+            **kwargs (dict):
+                Keyword arguments representing additional fields handled by
+                the API resource. Any that are also listed in ``fields`` will
+                be set on the model.
+
+        Returns:
+            tuple or djblets.webapi.errors.WebAPIError:
+            Either a successful payload containing the comment, or an error
+            payload.
+        """
         comment_kwargs = {
             'issue_opened': bool(issue_opened),
             'rich_text': text_type == self.TEXT_TYPE_MARKDOWN,
@@ -185,13 +234,133 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             new_comment.issue_status = None
 
         new_comment.save()
+        comments_m2m.add(new_comment)
 
-        return new_comment
+        return 201, {
+            self.item_result_key: new_comment,
+        }
 
-    def update_comment(self, comment, update_fields=(), extra_fields={},
-                       is_reply=False,
-                       **kwargs):
-        if not is_reply:
+    def create_or_update_comment_reply(self, request, comment, reply,
+                                       comments_m2m, default_attrs={},
+                                       *args, **kwargs):
+        """Create a reply to a comment based on the requested data.
+
+        If there's an existing reply to a comment, that one will be updated
+        instead.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            comment (reviewboard.reviews.models.base_commet.BaseComment):
+                The comment being replied to.
+
+            reply (reviewboard.reviews.models.review.Review):
+                The review reply owning the comment.
+
+            comments_m2m (django.db.models.ManyToManyField):
+                The reply's comments relation, where the new comment will
+                be added.
+
+            default_attrs (dict, optional):
+                Default attributes to add to the new comment reply, if an
+                existing one does not exist.
+
+            *args (tuple):
+                Positional arguments from the caller.
+
+            **kwargs (dict):
+                Keyword arguments from the caller.
+
+        Returns:
+            tuple or djblets.webapi.errors.WebAPIError:
+            Either a successful payload containing the comment, or an error
+            payload.
+        """
+        q = self._get_queryset(request, *args, **kwargs)
+        q = q.filter(Q(reply_to=comment) & Q(review=reply))
+
+        try:
+            new_comment = q.get()
+
+            # This already exists. Go ahead and update, but we're going to
+            # redirect the user to the right place.
+            is_new = False
+        except self.model.DoesNotExist:
+            new_comment = self.model(reply_to=comment, **default_attrs)
+            is_new = True
+
+        rsp = self.update_comment(request=request,
+                                  review=reply,
+                                  comment=new_comment,
+                                  is_reply=True,
+                                  **kwargs)
+
+        if isinstance(rsp, WebAPIError):
+            return rsp
+
+        data = rsp[1]
+
+        if is_new:
+            comments_m2m.add(new_comment)
+            reply.save()
+
+            return 201, data
+        else:
+            return 303, data, {
+                'Location': self.get_href(new_comment, request, *args,
+                                          **kwargs)
+            }
+
+    def update_comment(self, request, review, comment, update_fields=(),
+                       extra_fields={}, is_reply=False, **kwargs):
+        """Update an existing comment based on the requested data.
+
+        This will modify a comment, setting new fields requested by the caller.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            review (reviewboard.reviews.models.review.Review):
+                The review owning the comment.
+
+            comment (reviewboard.reviews.models.base_comment.BaseComment):
+                The comment to update.
+
+            update_fields (list of unicode, optional):
+                The model fields that can be updated through the API.
+
+            extra_fields (dict, optional):
+                Extra fields from the request not otherwise handled by the
+                API resource. Any ``extra_data`` modifications from this will
+                be applied to the comment.
+
+            is_reply (bool, optional):
+                Whether this is a reply to another comment.
+
+            **kwargs (dict):
+                Keyword arguments representing additional fields handled by
+                the API resource. Any that are also listed in ``fields`` will
+                be set on the model.
+
+        Returns:
+            tuple or djblets.webapi.errors.WebAPIError:
+            Either a successful payload containing the comment, or an error
+            payload.
+        """
+        if is_reply:
+            if not resources.review_reply.has_modify_permissions(request,
+                                                                 review):
+                return self.get_no_access_error(request)
+        else:
+            # Determine whether or not we're updating the issue status.
+            if self.should_update_issue_status(comment, **kwargs):
+                return self.update_issue_status(request, self, **kwargs)
+
+            if not resources.review.has_modify_permissions(request, review):
+                return self.get_no_access_error(request)
+
             # If we've updated the comment from having no issue opened,
             # to having an issue opened, we need to set the issue status
             # to OPEN.
@@ -218,6 +387,10 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             self.import_extra_data(comment, comment.extra_data, extra_fields)
 
         comment.save()
+
+        return 200, {
+            self.item_result_key: comment,
+        }
 
     def update_issue_status(self, request, comment_resource, *args, **kwargs):
         """Updates the issue status for a comment.
