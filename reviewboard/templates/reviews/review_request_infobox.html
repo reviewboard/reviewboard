@@ -86,6 +86,12 @@
      {{review_request.issue_open_count}}
     </li>
 {%  endif %}
+{%  if review_request.issue_verifying_count > 0 %}
+    <li title="{% trans 'Number of issues pending verification' %}">
+     <span class="rb-icon rb-icon-issue-verifying"></span>
+     {{review_request.issue_verifying_count}}
+    </li>
+{%  endif %}
 {%  if review_request.issue_resolved_count > 0 %}
     <li title="{% trans 'Number of resolved issues' %}">
      <span class="rb-icon rb-icon-issue-resolved"></span>
