@@ -479,7 +479,7 @@ PIPELINE = {
         # happens on the back-end instead of in the browser.
         '--global-var=STATIC_ROOT=""',
     ],
-    'UGLIFYJS_BINARY': os.path.join(NODE_PATH, 'uglifyjs', 'bin', 'uglifyjs'),
+    'UGLIFYJS_BINARY': os.path.join(NODE_PATH, 'uglify-js', 'bin', 'uglifyjs'),
 }
 
 
