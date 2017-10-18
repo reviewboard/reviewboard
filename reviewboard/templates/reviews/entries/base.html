@@ -4,8 +4,8 @@
 {# This can be used by child templates that want to override the avatar. #}
 {% definevar "avatar_size" %}48{% enddefinevar %}
 
-{% definevar "pre_template_hook_name" %}{{entry.entry_id}}-summary-header-pre{% enddefinevar %}
-{% definevar "post_template_hook_name" %}{{entry.entry_id}}-summary-header-post{% enddefinevar %}
+{% definevar "pre_template_hook_name" %}{{entry.entry_type_id}}-summary-header-pre{% enddefinevar %}
+{% definevar "post_template_hook_name" %}{{entry.entry_type_id}}-summary-header-post{% enddefinevar %}
 
 {% definevar "element_id" %}{{entry.get_dom_element_id}}{% enddefinevar %}
 
