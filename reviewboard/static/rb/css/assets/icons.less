@@ -1,4 +1,4 @@
-@import (reference) "../mixins/retina.less";
+@import (reference) "djblets/css/mixins/retina.less";
 
 
 @img_base: '../../images';
@@ -11,8 +11,7 @@
   text-indent: -99999px;
   vertical-align: middle;
 
-  background-image: url("@{img_base}/icons.png");
-  .at2x('@{img_base}/icons.png', 155px, 125px);
+  .retina('@{img_base}/icons.png', 155px 125px, @has-svg: true);
 
   // For IE7
   zoom: 1;

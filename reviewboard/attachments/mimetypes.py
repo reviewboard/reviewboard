@@ -6,7 +6,7 @@ import subprocess
 
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.contrib.staticfiles.templatetags.staticfiles import static
-from django.utils.html import escape
+from django.utils.html import format_html
 from django.utils.encoding import smart_str, force_unicode
 from django.utils.safestring import mark_safe
 from djblets.cache.backend import cache_memoize
@@ -305,13 +305,14 @@ class ImageMimetype(MimetypeHandler):
 
     def get_thumbnail(self):
         """Return a thumbnail of the image."""
-        return mark_safe(
+        return format_html(
             '<div class="file-thumbnail">'
-            ' <img src="%s" data-at2x="%s" alt="%s" />'
-            '</div>'
-            % (thumbnail(self.attachment.file, (300, None)),
-               thumbnail(self.attachment.file, (600, None)),
-               escape(self.attachment.caption)))
+            ' <img src="{src_1x}" srcset="{src_1x} 1x, {src_2x} 2x"'
+            ' alt="{caption}" width="300" />'
+            '</div>',
+            src_1x=thumbnail(self.attachment.file, (300, None)),
+            src_2x=thumbnail(self.attachment.file, (600, None)),
+            caption=self.attachment.caption)
 
 
 class TextMimetype(MimetypeHandler):

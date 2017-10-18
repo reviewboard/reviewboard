@@ -6,7 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
-from django.utils.html import escape
+from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.templatetags.djblets_images import thumbnail
@@ -48,9 +48,12 @@ class Screenshot(models.Model):
     def thumb(self):
         """Creates and returns HTML for this screenshot's thumbnail."""
         url = self.get_thumbnail_url()
-        return mark_safe('<img src="%s" data-at2x="%s" alt="%s" />' %
-                         (url, thumbnail(self.image, '800x200'),
-                          escape(self.caption)))
+        return format_html(
+            '<img src="{src_1x}" srcset="{src_1x} 1x, {src_2x} 2x"'
+            ' alt="{caption}" width="400" />',
+            src_1x=url,
+            src_2x=thumbnail(self.image, '800x200'),
+            caption=self.caption)
     thumb.allow_tags = True
 
     def __str__(self):

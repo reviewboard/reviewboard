@@ -21,7 +21,6 @@ PIPELINE_JAVASCRIPT = dict({
             'lib/js/jquery.timesince.js',
             'lib/js/moment-2.12.0.js',
             'lib/js/moment-timezone-0.5.2.js',
-            'lib/js/retina.js',
             'lib/js/selectize-0.12.1.js',
             'lib/js/ui.autocomplete.js',
             'lib/js/codemirror-5.26.min.js',
