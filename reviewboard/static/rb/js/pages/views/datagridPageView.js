@@ -45,12 +45,17 @@ RB.DatagridPageView = RB.PageView.extend({
             {
                 /*
                  * The order on the side matters. If the Summary column is
-                 * on the left-hand side of the datagrid, we'll always end up
-                 * in "L", but if it's on the right-hand side, we want to
-                 * prioritize "l" so it's anchored more to the left so there's
-                 * less chance of overlapping the summary cells.
+                 * on the left-hand side of the datagrid, and "l" is first,
+                 * it can end up taking priority, even if "L" was a better
+                 * fit (since, if the infobox would need to be pushed a bit
+                 * to fit on screen, it will prefer "l"). If the column is on
+                 * the right-hand side of the dashboard, it will prefer "l",
+                 * given the room available (taking into account the sidebar).
+                 *
+                 * So "L" is a better priority for the common use, and "l"
+                 * works well as a fallback.
                  */
-                side: 'lL',
+                side: 'Ll',
                 LDistance: 300,
                 lDistance: 20,
                 yOffset: -20
