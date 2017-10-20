@@ -1225,7 +1225,7 @@ class ReviewPublishedEmailHook(EmailHook):
             signals=[review_published])
 
     def get_to_field(self, to_field, review, user, review_request,
-                     to_submitter_only):
+                     to_submitter_only, **kwargs):
         """Return the To field for the e-mail.
 
         Args:
@@ -1247,13 +1247,17 @@ class ReviewPublishedEmailHook(EmailHook):
                 Whether or not the review was marked as being targeted at only
                 the submitter.
 
+            **kwargs (dict):
+                Additional keyword arguments, since the signature may change in
+                the future.
+
         Returns:
             set: The desired To field.
         """
         return to_field
 
     def get_cc_field(self, cc_field, review, user, review_request,
-                     to_submitter_only):
+                     to_submitter_only, **kwargs):
         """Return the CC field for the e-mail.
 
         Args:
@@ -1274,6 +1278,10 @@ class ReviewPublishedEmailHook(EmailHook):
             to_submitter_only (bool):
                 Whether or not the review was marked as being targeted at only
                 the submitter.
+
+            **kwargs (dict):
+                Additional keyword arguments, since the signature may change in
+                the future.
 
         Returns:
             set: The desired CC field.
@@ -1296,7 +1304,7 @@ class ReviewReplyPublishedEmailHook(EmailHook):
             extension,
             signals=[reply_published])
 
-    def get_to_field(self, to_field, reply, user, review_request):
+    def get_to_field(self, to_field, reply, user, review_request, **kwargs):
         """Return the To field for the e-mail.
 
         Args:
@@ -1317,12 +1325,16 @@ class ReviewReplyPublishedEmailHook(EmailHook):
             review_request (reviewboard.reviews.models.ReviewRequest):
                 The review request that was reviewed.
 
+            **kwargs (dict):
+                Additional keyword arguments, since the signature may change in
+                the future.
+
         Returns:
             set: The desired To field.
         """
         return to_field
 
-    def get_cc_field(self, cc_field, reply, user, review_request):
+    def get_cc_field(self, cc_field, reply, user, review_request, **kwargs):
         """Return the CC field for the e-mail.
 
         Args:
@@ -1339,6 +1351,10 @@ class ReviewReplyPublishedEmailHook(EmailHook):
 
             review_request (reviewboard.reviews.models.ReviewRequest):
                 The review request that was reviewed.
+
+            **kwargs (dict):
+                Additional keyword arguments, since the signature may change in
+                the future.
 
         Returns:
             set: The desired CC field.
@@ -1360,7 +1376,8 @@ class ReviewRequestClosedEmailHook(EmailHook):
             extension,
             signals=[review_request_closed])
 
-    def get_to_field(self, to_field, review_request, user, close_type):
+    def get_to_field(self, to_field, review_request, user, close_type,
+                     **kwargs):
         """Return the To field for the e-mail.
 
         Args:
@@ -1381,12 +1398,17 @@ class ReviewRequestClosedEmailHook(EmailHook):
                 or
                 :py:attr:`~reviewboard.reviews.models.ReviewRequest.DISCARDED`.
 
+            **kwargs (dict):
+                Additional keyword arguments, since the signature may change in
+                the future.
+
         Returns:
             set: The desired To field.
         """
         return to_field
 
-    def get_cc_field(self, cc_field, review_request, user, close_type):
+    def get_cc_field(self, cc_field, review_request, user, close_type,
+                     **kwargs):
         """Return the CC field for the e-mail.
 
         Args:
@@ -1406,6 +1428,10 @@ class ReviewRequestClosedEmailHook(EmailHook):
                 :py:attr:`~reviewboard.reviews.models.ReviewRequest.SUBMITTED`
                 or
                 :py:attr:`~reviewboard.reviews.models.ReviewRequest.DISCARDED`.
+
+            **kwargs (dict):
+                Additional keyword arguments, since the signature may change in
+                the future.
 
         Returns:
             set: The desired CC field.
@@ -1428,7 +1454,7 @@ class ReviewRequestPublishedEmailHook(EmailHook):
             extension,
             signals=[review_request_published])
 
-    def get_to_field(self, to_field, review_request, user):
+    def get_to_field(self, to_field, review_request, user, **kwargs):
         """Return the To field for the e-mail.
 
         Args:
@@ -1443,12 +1469,16 @@ class ReviewRequestPublishedEmailHook(EmailHook):
             user (django.contrib.auth.models.User):
                 The user who published the review request.
 
+            **kwargs (dict):
+                Additional keyword arguments, since the signature may change in
+                the future.
+
         Returns:
             set: The desired To field.
         """
         return to_field
 
-    def get_cc_field(self, cc_field, review_request, user):
+    def get_cc_field(self, cc_field, review_request, user, **kwargs):
         """Return the CC field for the e-mail.
 
         Args:
@@ -1462,6 +1492,10 @@ class ReviewRequestPublishedEmailHook(EmailHook):
 
             user (django.contrib.auth.models.User):
                 The user who published the review request.
+
+            **kwargs (dict):
+                Additional keyword arguments, since the signature may change in
+                the future.
 
         Returns:
             set: The desired CC field.
