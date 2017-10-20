@@ -9,6 +9,9 @@ extensions to create grouped sets of fields on the review request page.
 These are equivalent to the :guilabel:`Information` and :guilabel:`Reviewers`
 sections.
 
+See :ref:`extension-review-request-fields` for a thorough guide on adding new
+fields.
+
 A caller must subclass
 :py:class:`reviewboard.reviews.fields.BaseReviewRequestFieldSet` and fill in
 the required fields, :py:attr:`fieldset_id` and :py:attr:`label`. It may also
@@ -32,12 +35,19 @@ Example
 
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import ReviewRequestFieldSetsHook
-    from reviewboard.reviews.fields import BaseReviewRequestFieldSet
+    from reviewboard.reviews.fields import (BaseEditableField,
+                                            BaseReviewRequestFieldSet)
+
+
+    class MilestoneField(BaseEditableField):
+        field_id = 'myvendor_milestone'
+        label = 'Milestone'
 
 
     class SampleFieldSet(BaseReviewRequestFieldSet):
         fieldset_id = 'myvendor_my_fields'
         label = 'My Fields'
+        field_classes = [MilestoneField]
 
 
     class SampleExtension(Extension):
