@@ -756,9 +756,8 @@ suite('rb/views/ReviewDialogView', function() {
                 spyOn(comment, 'save');
 
                 /* Set some new state for the comment. */
-                commentView.$editor
-                    .inlineEditor('startEdit')
-                    .inlineEditor('setValue', newCommentText);
+                commentView.inlineEditorView.startEdit();
+                commentView.inlineEditorView.setValue(newCommentText);
                 commentView.textEditor.setRichText(richText);
                 commentView.save();
 
@@ -783,9 +782,8 @@ suite('rb/views/ReviewDialogView', function() {
                 spyOn(comment, 'save');
 
                 /* Set some new state for the comment. */
-                commentView.$editor
-                    .inlineEditor('startEdit')
-                    .inlineEditor('setValue', newCommentText);
+                commentView.inlineEditorView.startEdit();
+                commentView.inlineEditorView.setValue(newCommentText);
                 commentView.textEditor.setRichText(true);
                 commentView.save();
 

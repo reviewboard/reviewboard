@@ -14,9 +14,7 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
         '    <img src="<%- avatarURL %>" width="32" height="32" ',
         '         alt="<%- fullName %>" class="avatar"',
         '         srcset="<%- avatarURL %> 1x',
-        '<% if (avatarURL2x) { %>',
-        '         <%- avatarURL2x %> 2x',
-        '<% }%>',
+        '<% if (avatarURL2x) { %>, <%- avatarURL2x %> 2x<% }%>',
         '         ">',
         '   </div>',
         '   <div class="user-reply-info">',
@@ -204,11 +202,9 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
             .end()
             .find('time.timesince')
                 .timesince()
-            .end()
-            .find('.avatar')
-                .retinaAvatar()
-            .end()
-            .appendTo(this._$commentsList);
+            .end();
+
+        Djblets.enableRetinaImages($el);
 
         if (options.text) {
             RB.formatText($el.find('.reviewtext'), {
@@ -217,6 +213,8 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
                 bugTrackerURL: reviewRequest.get('bugTrackerURL')
             });
         }
+
+        $el.appendTo(this._$commentsList);
 
         return $el;
     },

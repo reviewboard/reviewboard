@@ -11,6 +11,7 @@ from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from django.utils import six
 from django.utils.datastructures import MultiValueDict
+from django.utils.six.moves import range
 from django.utils.six.moves.urllib.request import OpenerDirector
 from djblets.mail.testing import DmarcDnsTestsMixin
 from djblets.mail.utils import (build_email_address,
@@ -912,25 +913,33 @@ class ReviewRequestEmailTests(EmailTestHelper, DmarcDnsTestsMixin, SpyAgency,
         diffset = self.create_diffset(review_request=review_request)
         prefix = 'X' * 97
 
-        for i in range(400):
+        filediffs = []
+
+        # Each filename is 100 characters long. For each header we add 26
+        # characters: the key, a ': ', and the terminating '\r\n'.
+        # 8192 / (100 + 26) rounds down to 65. We'll bump it up to 70 just
+        # to be careful.
+        for i in range(70):
             filename = '%s%#03d' % (prefix, i)
             self.assertEqual(len(filename), 100)
-            self.create_filediff(diffset=diffset,
-                                 source_file=filename,
-                                 dest_file=filename,
-                                 source_revision=PRE_CREATION)
+            filediffs.append(self.create_filediff(
+                diffset=diffset,
+                source_file=filename,
+                dest_file=filename,
+                source_revision=PRE_CREATION,
+                diff='',
+                save=False))
+
+        FileDiff.objects.bulk_create(filediffs)
 
         review_request.publish(review_request.submitter)
 
         self.assertEqual(len(mail.outbox), 1)
         message = mail.outbox[0]
 
-        self.assertTrue('X-ReviewBoard-Diff-For' in message._headers)
+        self.assertIn('X-ReviewBoard-Diff-For', message._headers)
         diff_headers = message._headers.getlist('X-ReviewBoard-Diff-For')
 
-        # Each filename is 100 characters long. For each header we add 26
-        # characters: the key, a ': ', and the terminating '\r\n'.
-        # 8192 / (100 + 26) rounds down to 65.
         self.assertEqual(len(logging.warning.spy.calls), 1)
         self.assertEqual(len(diff_headers), 65)
 

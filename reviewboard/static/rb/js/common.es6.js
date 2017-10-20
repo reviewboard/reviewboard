@@ -7,5 +7,5 @@ $(document).ready(function() {
     $('.review-request-link').review_request_infobox();
     $('time.timesince').timesince();
 
-    $('.avatar').retinaAvatar();
+    Djblets.enableRetinaImages();
 });

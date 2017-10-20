@@ -566,40 +566,51 @@ body.datagrid-page {
     background-color: #E9E9E9;
   }
 
-  .issue-count,
-  .shipit-count {
+  .issue-count-container,
+  .shipit-count-container {
     border-radius: 10px;
     display: inline-block;
     font-weight: bold;
-    padding: 0.05em 0.8em;
+    overflow: hidden;
     vertical-align: bottom;
     white-space: nowrap;
   }
 
-  .issue-count {
+  .issue-count,
+  .issue-verifying-count,
+  .shipit-count {
+    display: inline-block;
+    padding: 0.05em 0.8em;
+    vertical-align: bottom;
+  }
+
+  .issue-count + .issue-verifying-count {
+    padding-left: 0;
+  }
+
+  .issue-count-container {
     border: 1px darken(@issue-opened-bg, 50%) solid;
     color: #205003;
     #gradient > .vertical-three-colors(@issue-opened-bg, @issue-opened-bg, 25%,
                                        darken(@issue-opened-bg, 30%));
 
     .rb-icon-datagrid-open-issues {
-      margin: 2px 1px;
+      margin: 2px 3px 2px 0;
     }
 
-    .issue-verifying-count {
-      font-size: 90%;
-      font-weight: normal;
+    .rb-icon-datagrid-issue-verifying {
+      margin: 0 3px 0 0;
     }
   }
 
-  .shipit-count {
+  .shipit-count-container {
     border: 1px @shipit-border-color solid;
     color: @shipit-text-color;
     #gradient > .vertical-three-colors(@shipit-bg, @shipit-bg, 25%,
                                        darken(@shipit-bg, 8%));
 
     .rb-icon-datagrid-shipit {
-      margin: 1px 0;
+      margin: 1px 4px 1px 0;
     }
   }
 

@@ -76,7 +76,7 @@ const BaseCommentView = Backbone.View.extend({
      *     Whether the comment needs to be saved.
      */
     needsSave() {
-        return (this.$editor.inlineEditor('dirty') ||
+        return (this.inlineEditorView.isDirty() ||
                 !_.isEqual(this.model.get('extraData'), this._origExtraData));
     },
 
@@ -96,9 +96,9 @@ const BaseCommentView = Backbone.View.extend({
          * call this.model.save(). If it does not, just save the model
          * directly.
          */
-        if (this.$editor.inlineEditor('dirty')) {
+        if (this.inlineEditorView.isDirty()) {
             this.model.once('sync', () => options.success());
-            this.$editor.inlineEditor('submit');
+            this.inlineEditorView.submit();
         } else {
             this.model.save(_.extend({
                 attrs: ['forceTextType', 'includeTextTypes', 'extraData'],
@@ -176,44 +176,45 @@ const BaseCommentView = Backbone.View.extend({
 
         const $editFields = this.$('.edit-fields');
 
-        this.$editor = this.$('pre.reviewtext')
-            .inlineEditor(_.extend({
-                cls: 'inline-comment-editor',
-                editIconClass: 'rb-icon rb-icon-edit',
-                notifyUnchangedCompletion: true,
-                multiline: true,
-            }, RB.TextEditorView.getInlineEditorOptions({
+        this.$editor = this.$('pre.reviewtext');
+
+        this.inlineEditorView = new RB.RichTextInlineEditorView({
+            el: this.$editor,
+            editIconClass: 'rb-icon rb-icon-edit',
+            notifyUnchangedCompletion: true,
+            multiline: true,
+            textEditorOptions: {
                 bindRichText: {
                     model: this.model,
                     attrName: 'richText',
                 },
-            })))
-            .on({
-                complete: (e, value) => {
-                    const attrs = ['forceTextType', 'includeTextTypes',
-                                   'richText', 'text'];
+            },
+        });
+        this.inlineEditorView.render();
 
-                    if (this.model.isNew()) {
-                        /*
-                         * If this is a new comment, we have to send whether or
-                         * not an issue was opened because toggling the
-                         * issue opened checkbox before it is completed won't
-                         * save the status to the server.
-                         */
-                        attrs.push('extra_data.require_verification', 'issueOpened');
-                    }
+        this.textEditor = this.inlineEditorView.textEditor;
 
-                    this.model.set({
-                        text: value,
-                        richText: this.textEditor.richText,
-                    });
-                    this.model.save({
-                        attrs: attrs,
-                    });
-                },
+        this.listenTo(this.inlineEditorView, 'complete', value => {
+            const attrs = ['forceTextType', 'includeTextTypes',
+                           'richText', 'text'];
+
+            if (this.model.isNew()) {
+                /*
+                 * If this is a new comment, we have to send whether or not an
+                 * issue was opened because toggling the issue opened checkbox
+                 * before it is completed won't save the status to the server.
+                 */
+                attrs.push('extra_data.require_verification', 'issueOpened');
+            }
+
+            this.model.set({
+                text: value,
+                richText: this.textEditor.richText,
             });
-
-        this.textEditor = RB.TextEditorView.getFromInlineEditor(this.$editor);
+            this.model.save({
+                attrs: attrs,
+            });
+        });
 
         this.listenTo(this.model, `change:${this._getRawValueFieldsName()}`,
                       this._updateRawValue);
@@ -291,10 +292,9 @@ const BaseCommentView = Backbone.View.extend({
      */
     _updateRawValue() {
         if (this.$editor) {
-            this.$editor.inlineEditor('option', {
-                hasRawValue: true,
-                rawValue: this.model.get(this._getRawValueFieldsName()).text,
-            });
+            this.inlineEditorView.options.hasRawValue = true;
+            this.inlineEditorView.options.rawValue =
+                this.model.get(this._getRawValueFieldsName()).text;
         }
     },
 
@@ -583,37 +583,40 @@ const HeaderFooterCommentView = Backbone.View.extend({
                 .timesince()
             .end();
 
-        this.$editor = this.$('pre.reviewtext')
-            .inlineEditor(_.extend({
-                cls: 'inline-comment-editor',
-                editIconClass: 'rb-icon rb-icon-edit',
-                notifyUnchangedCompletion: true,
-                multiline: true,
-            }, RB.TextEditorView.getInlineEditorOptions({
+
+        this.$editor = this.$('pre.reviewtext');
+
+        this.inlineEditorView = new RB.RichTextInlineEditorView({
+            el: this.$editor,
+            editIconClass: 'rb-icon rb-icon-edit',
+            notifyUnchangedCompletion: true,
+            multiline: true,
+            textEditorOptions: {
                 bindRichText: {
                     model: this.model,
                     attrName: this.richTextPropertyName,
-                }
-            })))
-            .on({
-                complete: (e, value) => {
-                    this.model.set(this.propertyName, value);
-                    this.model.set(this.richTextPropertyName,
-                                   this.textEditor.richText);
-                    this.model.save({
-                        attrs: [this.propertyName, this.richTextPropertyName,
-                                'forceTextType', 'includeTextTypes'],
-                    });
                 },
-                cancel: () => {
-                    if (!this.model.get(this.propertyName)) {
-                        this._$editorContainer.hide();
-                        this._$linkContainer.show();
-                    }
-                },
-            });
+            },
+        });
+        this.inlineEditorView.render();
 
-        this.textEditor = RB.TextEditorView.getFromInlineEditor(this.$editor);
+        this.textEditor = this.inlineEditorView.textEditor;
+
+        this.listenTo(this.inlineEditorView, 'complete', value => {
+            this.model.set(this.propertyName, value);
+            this.model.set(this.richTextPropertyName,
+                           this.textEditor.richText);
+            this.model.save({
+                attrs: [this.propertyName, this.richTextPropertyName,
+                        'forceTextType', 'includeTextTypes'],
+            });
+        });
+        this.listenTo(this.inlineEditorView, 'cancel', () => {
+            if (!this.model.get(this.propertyName)) {
+                this._$editorContainer.hide();
+                this._$linkContainer.show();
+            }
+        });
 
         this._$editorContainer = this.$('.comment-text-field');
         this._$linkContainer = this.$('.add-link-container');
@@ -662,7 +665,7 @@ const HeaderFooterCommentView = Backbone.View.extend({
      *     Whether the comment needs to be saved.
      */
     needsSave() {
-        return this.$editor.inlineEditor('dirty');
+        return this.inlineEditorView.isDirty();
     },
 
     /**
@@ -674,7 +677,7 @@ const HeaderFooterCommentView = Backbone.View.extend({
      */
     save(options) {
         this.model.once('sync', () => options.success());
-        this.$editor.inlineEditor('submit');
+        this.inlineEditorView.submit();
     },
 
     /**
@@ -695,7 +698,7 @@ const HeaderFooterCommentView = Backbone.View.extend({
         this._$linkContainer.hide();
         this._$editorContainer.show();
 
-        this.$editor.inlineEditor('startEdit');
+        this.inlineEditorView.startEdit();
 
         if (ev) {
             ev.preventDefault();
@@ -722,10 +725,9 @@ const HeaderFooterCommentView = Backbone.View.extend({
         if (this.$editor) {
             const rawValues = this.model.get(this._getRawValueFieldsName());
 
-            this.$editor.inlineEditor('option', {
-                hasRawValue: true,
-                rawValue: rawValues[this.propertyName],
-            });
+            this.inlineEditorView.options.hasRawValue = true;
+            this.inlineEditorView.options.rawValue =
+                rawValues[this.propertyName];
         }
     },
 
@@ -1208,8 +1210,7 @@ RB.ReviewDialogView = Backbone.View.extend({
         this._generalCommentsCollection.add(comment);
         this._bodyBottomView.$el.show();
         this._commentViews[this._commentViews.length - 1]
-            .$editor
-            .inlineEditor('startEdit');
+            .inlineEditorView.startEdit();
 
         return false;
     },

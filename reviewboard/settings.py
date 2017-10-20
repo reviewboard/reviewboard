@@ -323,6 +323,13 @@ TEMPLATE_CONTEXT_PROCESSORS = [
 ]
 
 
+# A list of extensions that will be enabled by default when first loading the
+# extension registration. These won't be re-enabled automatically if disabled.
+EXTENSIONS_ENABLED_BY_DEFAULT = [
+    'rbintegrations.extension.RBIntegrationsExtension',
+]
+
+
 # Load local settings.  This can override anything in here, but at the very
 # least it needs to define database connectivity.
 try:
@@ -472,7 +479,7 @@ PIPELINE = {
         # happens on the back-end instead of in the browser.
         '--global-var=STATIC_ROOT=""',
     ],
-    'UGLIFYJS_BINARY': os.path.join(NODE_PATH, 'uglifyjs', 'bin', 'uglifyjs'),
+    'UGLIFYJS_BINARY': os.path.join(NODE_PATH, 'uglify-js', 'bin', 'uglifyjs'),
 }
 
 

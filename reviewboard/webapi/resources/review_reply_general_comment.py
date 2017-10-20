@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.db.models import Q
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
@@ -81,35 +80,13 @@ class ReviewReplyGeneralCommentResource(BaseReviewGeneralCommentResource):
                 }
             }
 
-        q = self._get_queryset(request, *args, **kwargs)
-        q = q.filter(Q(reply_to=comment) & Q(review=reply))
-
-        try:
-            new_comment = q.get()
-
-            # This already exists. Go ahead and update, but we're going to
-            # redirect the user to the right place.
-            is_new = False
-        except self.model.DoesNotExist:
-            new_comment = self.model(reply_to=comment)
-            is_new = True
-
-        self.update_comment(new_comment, is_reply=True, **kwargs)
-
-        data = {
-            self.item_result_key: new_comment,
-        }
-
-        if is_new:
-            reply.general_comments.add(new_comment)
-            reply.save()
-
-            return 201, data
-        else:
-            return 303, data, {
-                'Location': self.get_href(new_comment, request, *args,
-                                          **kwargs)
-            }
+        return self.create_or_update_comment_reply(
+            request=request,
+            comment=comment,
+            reply=reply,
+            comments_m2m=reply.general_comments,
+            *args,
+            **kwargs)
 
     @webapi_check_local_site
     @webapi_login_required
@@ -131,14 +108,11 @@ class ReviewReplyGeneralCommentResource(BaseReviewGeneralCommentResource):
         except ObjectDoesNotExist:
             return DOES_NOT_EXIST
 
-        if not resources.review_reply.has_modify_permissions(request, reply):
-            return self.get_no_access_error(request)
-
-        self.update_comment(general_comment, is_reply=True, **kwargs)
-
-        return 200, {
-            self.item_result_key: general_comment,
-        }
+        return self.update_comment(request=request,
+                                   review=reply,
+                                   comment=general_comment,
+                                   is_reply=True,
+                                   **kwargs)
 
     @augment_method_from(BaseReviewGeneralCommentResource)
     def delete(self, *args, **kwargs):

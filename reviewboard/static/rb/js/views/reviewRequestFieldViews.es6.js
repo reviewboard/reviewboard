@@ -32,6 +32,7 @@ Fields.BaseFieldView = Backbone.View.extend({
         this.options = options;
         this.fieldID = options.fieldID;
         this._fieldName = undefined;
+        this.$el.data('field-id', this.fieldID);
     },
 
     /**
@@ -74,6 +75,27 @@ Fields.BaseFieldView = Backbone.View.extend({
                 jsonFieldName: this.jsonFieldName || this.fieldID,
                 useExtraData: this.useExtraData,
             }));
+    },
+
+    /**
+     * Return whether the field has an unsaved editor open.
+     *
+     * This should be overridden by subclasses, if necessary.
+     *
+     * Returns:
+     *     boolean:
+     *     Whether the field is unsaved.
+     */
+    needsSave() {
+        return false;
+    },
+
+    /**
+     * Finish the field's save operation.
+     *
+     * This should be overridden by subclasses, if necessary.
+     */
+    finishSave() {
     },
 });
 
@@ -121,6 +143,19 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
     },
 
     /**
+     * Return the type to use for the inline editor view.
+     *
+     * Returns:
+     *     function:
+     *     The constructor for the inline editor class to instantiate.
+     */
+    _getInlineEditorClass() {
+        return (this.allowRichText
+                ? RB.RichTextInlineEditorView
+                : RB.InlineEditorView);
+    },
+
+    /**
      * Render the view.
      *
      * Returns:
@@ -133,8 +168,11 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
         }
 
         const fieldName = _.result(this, 'fieldName');
+        const EditorClass = this._getInlineEditorClass();
+
         const inlineEditorOptions = {
-            cls: `${this.$el.prop('id')}-editor`,
+            el: this.$el,
+            formClass: `${this.$el.prop('id')}-editor`,
             editIconClass: 'rb-icon rb-icon-edit',
             enabled: this.model.get(this.editableProp),
             multiline: this.multiline,
@@ -144,72 +182,75 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
         };
 
         if (this.allowRichText) {
-            _.extend(
-                inlineEditorOptions,
-                RB.TextEditorView.getInlineEditorOptions({
+            _.extend(inlineEditorOptions, {
+                textEditorOptions: {
                     minHeight: 0,
                     richText: this.model.getDraftField(
                         _.result(this, 'richTextAttr'),
                         { useExtraData: this.useExtraData }),
-                }),
-                {
-                    matchHeight: false,
-                    hasRawValue: true,
-                    rawValue: this.model.getDraftField(
-                        fieldName, {useExtraData: this.useExtraData }) || '',
-                });
+                },
+                matchHeight: false,
+                hasRawValue: true,
+                rawValue: this.model.getDraftField(
+                    fieldName, { useExtraData: this.useExtraData }) || '',
+            });
         }
 
-        this.$el
-            .inlineEditor(inlineEditorOptions)
-            .on({
-                beginEdit: () => this.model.incr('editCount'),
-                cancel: () => {
-                    this.trigger('resize');
-                    this.model.decr('editCount');
+        this.inlineEditorView = new EditorClass(inlineEditorOptions);
+        this.inlineEditorView.render();
+
+        this.listenTo(this.inlineEditorView, 'beginEdit',
+                      () => this.model.incr('editCount'));
+
+        this.listenTo(this.inlineEditorView, 'cancel', () => {
+            this.trigger('resize');
+            this.model.decr('editCount');
+        });
+
+        this.listenTo(this.inlineEditorView, 'complete', value => {
+            this.trigger('resize');
+            this.model.decr('editCount');
+
+            const jsonFieldName = this.jsonFieldName || this.fieldID;
+            const saveOptions = {
+                allowMarkdown: this.allowRichText,
+                error: err => {
+                    this._formatField();
+                    this.trigger('fieldError', err);
                 },
-                complete: (e, value) => {
-                    this.trigger('resize');
-                    this.model.decr('editCount');
-
-                    const jsonFieldName = this.jsonFieldName || this.fieldID;
-                    const saveOptions = {
-                        allowMarkdown: this.allowRichText,
-                        error: err => {
-                            this._formatField();
-                            this.trigger('fieldError', err);
-                        },
-                        success: () => {
-                            this._formatField();
-                            this.trigger('fieldSaved');
-                        },
-                    };
-
-                    if (this.allowRichText) {
-                        const textEditor =
-                            RB.TextEditorView.getFromInlineEditor(this.$el);
-                        saveOptions.richText = textEditor.richText;
-                        saveOptions.jsonTextTypeFieldName = (
-                            this.fieldID === 'text'
-                            ? 'text_type'
-                            : `${jsonFieldName}_text_type`);
-                    }
-
-                    this._saveValue(value, saveOptions);
+                success: () => {
+                    this._formatField();
+                    this.trigger('fieldSaved');
                 },
-                resize: () => this.trigger('resize'),
-            });
+            };
+
+            if (this.allowRichText) {
+                saveOptions.richText =
+                    this.inlineEditorView.textEditor.richText;
+                saveOptions.jsonTextTypeFieldName = (
+                    this.fieldID === 'text'
+                    ? 'text_type'
+                    : `${jsonFieldName}_text_type`);
+            }
+
+            this._saveValue(value, saveOptions);
+        });
 
         if (this.autocomplete !== null) {
             this._buildAutoComplete();
-            this.$el.inlineEditor('setupEvents');
+            this.inlineEditorView.setupEvents();
         }
 
         this.listenTo(
             this.model,
             `change:${this.editableProp}`,
-            (model, editable) => this.$el.inlineEditor(
-                editable ? 'enable': 'disable'));
+            (model, editable) => {
+                if (editable) {
+                    this.inlineEditorView.enable();
+                } else {
+                    this.inlineEditorView.disable();
+                }
+            });
 
         this.listenTo(this.model, `fieldChanged:${fieldName}`,
                       this._formatField);
@@ -269,7 +310,7 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
         const ac = this.autocomplete;
         const reviewRequest = this.model.get('reviewRequest');
 
-        this.$el.inlineEditor('field')
+        this.inlineEditorView.$field
             .rbautocomplete({
                 formatItem: data => {
                     let s = data[ac.nameKey];
@@ -356,6 +397,24 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
         } else {
             this.$el.text(value);
         }
+    },
+
+    /**
+     * Return whether the field has an unsaved editor open.
+     *
+     * Returns:
+     *     boolean:
+     *     Whether the field is unsaved.
+     */
+    needsSave() {
+        return this.inlineEditorView && this.inlineEditorView.isDirty();
+    },
+
+    /**
+     * Finish the field's save operation.
+     */
+    finishSave() {
+        this.inlineEditorView.submit();
     },
 });
 
@@ -593,7 +652,7 @@ Fields.DateFieldView = Fields.TextFieldView.extend({
     render() {
         Fields.TextFieldView.prototype.render.call(this);
 
-        this.$el.inlineEditor('field')
+        this.inlineEditorView.$field
             .datepicker({
                 changeMonth: true,
                 changeYear: true,

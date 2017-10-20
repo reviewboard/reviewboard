@@ -301,6 +301,25 @@ class Commit(object):
         # equality test.
         self.diff = diff
 
+    @property
+    def diff(self):
+        """The diff contents for the commit."""
+        return self._diff
+
+    @diff.setter
+    def diff(self, new_diff):
+        """Set the diff contents for a commit.
+
+        Args:
+            new_diff (basestring):
+                The diff contents. This will be converted to a byte string
+                if a unicode string is provided.
+        """
+        if isinstance(new_diff, six.text_type):
+            new_diff = new_diff.encode('utf-8')
+
+        self._diff = new_diff
+
     def __eq__(self, other):
         """Return whether this commit is equal to another commit.
 

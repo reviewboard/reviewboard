@@ -1,6 +1,9 @@
-{% load staticfiles %}
+{% load djblets_utils staticfiles %}
+
+{% definevar "logo_png" %}{% static "rb/images/logo.png" %}{% enddefinevar %}
+
 <div id="rbinfo">
- <a href="{% url 'root' %}"><img id="logo" src="{% static "rb/images/logo.png" %}" data-at2x="{% static "rb/images/logo@2x.png" %}" alt="" border="0" width="60" height="57" /></a>
+ <a href="{% url 'root' %}"><img id="logo" src="{{logo_png}}" srcset="{{logo_png}} 1x, {% static "rb/images/logo@2x.png" %} 2x" alt="" border="0" width="60" height="57" /></a>
  <h1 id="title">
   <a href="{% url 'root' %}">Review Board</a>
   <span class="version">{{version}}{% if section_title %} - <strong>{{section_title}}</strong>{% endif %}</span>

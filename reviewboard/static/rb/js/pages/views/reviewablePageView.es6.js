@@ -109,7 +109,7 @@ RB.ReviewablePageView = RB.PageView.extend({
         'click #review-action': '_onEditReviewClicked',
         'click #ship-it-action': '_onShipItClicked',
         'click #general-comment-action': '_onAddCommentClicked',
-        'click #update-file-action': '_onUploadFileClicked',
+        'click .has-menu .has-menu': '_onMenuClicked',
     }, RB.PageView.prototype.events),
 
     /**
@@ -341,24 +341,6 @@ RB.ReviewablePageView = RB.PageView.extend({
     },
 
     /**
-     * Handle a click on the "Add File" button.
-     *
-     * Displays popup for attachment upload.
-     *
-     * Returns:
-     *    boolean:
-     *    false, always.
-     */
-    _onUploadFileClicked() {
-        const uploadDialog = new RB.UploadAttachmentView({
-            reviewRequest: this.model.get('reviewRequest'),
-        });
-        uploadDialog.render();
-
-        return false;
-    },
-
-    /**
      * Handle a click on the "Ship It" button.
      *
      * Confirms that the user wants to post the review, and then posts it
@@ -374,6 +356,23 @@ RB.ReviewablePageView = RB.PageView.extend({
         }
 
         return false;
+    },
+
+    /**
+     * Generic handler for menu clicks.
+     *
+     * This simply prevents the click from bubbling up or invoking the
+     * default action. This function is used for dropdown menu titles
+     * so that their links do not send a request to the server when one
+     * of their dropdown actions are clicked.
+     *
+     * Args:
+     *     e (Event):
+     *         The event which triggered the action.
+     */
+    _onMenuClicked(e) {
+        e.preventDefault();
+        e.stopPropagation();
     },
 });
 

@@ -181,7 +181,7 @@ class ReviewBoardGatewayTests(ServiceTests):
                 'dced80a85fe1e8f13dd5ea19923e5d2e8680020d 100644\n'
                 '--- a/test\n+++ b/test\n@@ -1 +1,3 @@\n test\n+\n+test\n')
 
-        diff_encoding = md5(diff.encode('utf-8')).hexdigest()
+        diff_encoding = md5(diff).hexdigest()
 
         change_api_response = json.dumps(
             {
@@ -214,5 +214,4 @@ class ReviewBoardGatewayTests(ServiceTests):
         self.assertTrue(service.client.http_get.called)
 
         self.assertEqual(change.message, 'mymessage')
-        self.assertEqual(md5(change.diff.encode('utf-8')).hexdigest(),
-                         diff_encoding)
+        self.assertEqual(md5(change.diff).hexdigest(), diff_encoding)

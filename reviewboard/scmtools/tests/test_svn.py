@@ -553,7 +553,7 @@ class CommonSVNTestCase(SpyAgency, SCMTestCase):
 
         self.assertEqual(md5(commit.message.encode('utf-8')).hexdigest(),
                          '928336c082dd756e3f7af4cde4724ebf')
-        self.assertEqual(md5(commit.diff.encode('utf-8')).hexdigest(),
+        self.assertEqual(md5(commit.diff).hexdigest(),
                          '56e50374056931c03a333f234fa63375')
 
     def test_utf8_keywords(self):
