@@ -699,11 +699,15 @@ class DiffSetManager(models.Manager):
                 binary=f.binary,
                 status=status)
 
+            filediff.extra_data = {
+                'is_symlink': f.is_symlink,
+            }
+
             if (parent_file and
                 (parent_file.moved or parent_file.copied) and
                 parent_file.insert_count == 0 and
                 parent_file.delete_count == 0):
-                filediff.extra_data = {'parent_moved': True}
+                filediff.extra_data['parent_moved'] = True
 
             if not validate_only:
                 # This state all requires making modifications to the database.

@@ -657,6 +657,7 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             'copied': filediff.copied,
             'moved_or_copied': filediff.moved or filediff.copied,
             'newfile': newfile,
+            'is_symlink': filediff.extra_data.get('is_symlink', False),
             'index': len(files),
             'chunks_loaded': False,
             'is_new_file': (newfile and not interfilediff and

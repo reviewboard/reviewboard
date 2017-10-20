@@ -72,6 +72,7 @@
 {%    endif %}
 {%   endif %}
     {{file.depot_filename}}
+    {% if file.is_symlink %}{% trans " (symlink)" %}{% endif %}
   </th>
 {%  else %}
 {%   if not file.is_new_file %}
@@ -81,7 +82,7 @@
 {%   if file.is_new_file %}
     <a name="{{file.index}}" class="file-anchor"></a>
 {%   endif %}
-    {{file.dest_filename}}{% if file.moved %}{% trans " (moved)" %}{% elif file.copied %}{% trans " (copied)" %}{% endif %}</th>
+    {{file.dest_filename}}{% if file.moved %}{% trans " (moved)" %}{% elif file.copied %}{% trans " (copied)" %}{% endif %}{% if file.is_symlink %}{% trans " (symlink)" %}{% endif %}</th>
 {%  endif %}{# file.dest_filename == file.depot_filename #}
   </tr>
   <tr class="revision-row">
