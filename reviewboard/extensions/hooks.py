@@ -8,6 +8,7 @@ from django.template.loader import render_to_string
 from django.utils import six
 from djblets.extensions.hooks import (AppliesToURLMixin,
                                       BaseRegistryHook,
+                                      BaseRegistryMultiItemHook,
                                       DataGridColumnsHook,
                                       ExtensionHook,
                                       ExtensionHookPoint,
@@ -17,11 +18,8 @@ from djblets.extensions.hooks import (AppliesToURLMixin,
 from djblets.integrations.hooks import BaseIntegrationHook
 from djblets.registries.errors import ItemLookupError
 
-from reviewboard.accounts.backends import (register_auth_backend,
-                                           unregister_auth_backend)
-from reviewboard.accounts.pages import (get_page_class,
-                                        register_account_page_class,
-                                        unregister_account_page_class)
+from reviewboard.accounts.backends import auth_backends
+from reviewboard.accounts.pages import AccountPage
 from reviewboard.admin.widgets import (register_admin_widget,
                                        unregister_admin_widget)
 from reviewboard.attachments.mimetypes import (register_mimetype_handler,
@@ -50,7 +48,7 @@ from reviewboard.webapi.server_info import (register_webapi_capabilities,
 
 
 @six.add_metaclass(ExtensionHookPoint)
-class AuthBackendHook(ExtensionHook):
+class AuthBackendHook(BaseRegistryHook):
     """A hook for registering an authentication backend.
 
     Authentication backends control user authentication, registration, user
@@ -59,16 +57,21 @@ class AuthBackendHook(ExtensionHook):
     This hook takes the class of an authentication backend that should
     be made available to the server.
     """
-    def __init__(self, extension, backend_cls):
-        super(AuthBackendHook, self).__init__(extension)
 
-        self.backend_cls = backend_cls
-        register_auth_backend(backend_cls)
+    registry = auth_backends
 
-    def shutdown(self):
-        super(AuthBackendHook, self).shutdown()
+    def initialize(self, backend_cls):
+        """Initialize the hook.
 
-        unregister_auth_backend(self.backend_cls)
+        This will register the provided authentication backend.
+
+        Args:
+            backend_cls (type):
+                The authentication backend to register. This should be a
+                subclass of
+                :py:class:`~reviewboard.accounts.backends.AuthBackend`.
+        """
+        super(AuthBackendHook, self).initialize(backend_cls)
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -81,24 +84,21 @@ class AvatarServiceHook(BaseRegistryHook):
 
     registry = avatar_services
 
-    def __init__(self, extension, service, **kwargs):
+    def initialize(self, service):
         """Initialize the avatar service hook with the given service.
 
         Args:
-            extension (djblets.extensions.extension.Extension):
-                The extension registering this hook.
-
             service (type):
                 The avatar service class to register.
 
                 This must be a subclass of
                 :py:class:`djblets.avatars.services.base.AvatarService`.
         """
-        super(AvatarServiceHook, self).__init__(extension, service, **kwargs)
+        super(AvatarServiceHook, self).initialize(service)
 
 
 @six.add_metaclass(ExtensionHookPoint)
-class AccountPagesHook(ExtensionHook):
+class AccountPagesHook(BaseRegistryMultiItemHook):
     """A hook for adding new pages to the My Account page.
 
     A page can contain one or more forms or even a custom template allowing
@@ -108,19 +108,20 @@ class AccountPagesHook(ExtensionHook):
     later instantiate as necessary. Each page can be pre-populated with
     one or more custom AccountPageForm classes.
     """
-    def __init__(self, extension, page_classes):
-        super(AccountPagesHook, self).__init__(extension)
 
-        self.page_classes = page_classes
+    registry = AccountPage.registry
 
-        for page_class in page_classes:
-            register_account_page_class(page_class)
+    def initialize(self, page_classes):
+        """Initialize the hook.
 
-    def shutdown(self):
-        super(AccountPagesHook, self).shutdown()
+        This will register each of the provided account page classes.
 
-        for page_class in self.page_classes:
-            unregister_account_page_class(page_class)
+        Args:
+            page_classes (list of type):
+                The list of page classes to register. Each must be a subclass
+                of :py:class:`~reviewboard.accounts.pages.AccountPage`.
+        """
+        super(AccountPagesHook, self).initialize(page_classes)
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -145,21 +146,38 @@ class AccountPageFormsHook(ExtensionHook):
 
     Form classes can only be added to a single page.
     """
-    def __init__(self, extension, page_id, form_classes):
-        super(AccountPageFormsHook, self).__init__(extension)
 
+    def initialize(self, page_id, form_classes):
+        """Initialize the hook.
+
+        This will register each of the provided page form classes on the
+        account page matching the provided ID.
+
+        Args:
+            page_id (unicode):
+                The page ID corresponding to a registered
+                :py:class:`~reviewboard.accounts.pages.AccountPage`.
+
+            form_classes (list of type):
+                The list of form classes to register on the page. Each class
+                must be a subclass of
+                :py:class:`~reviewboard.accounts.forms.pages.AccountPageForm`.
+        """
         self.page_id = page_id
         self.form_classes = form_classes
 
-        page_class = get_page_class(page_id)
+        page_class = AccountPage.registry.get('page_id', page_id)
 
         for form_class in form_classes:
             page_class.add_form(form_class)
 
     def shutdown(self):
-        super(AccountPageFormsHook, self).shutdown()
+        """Shut down the hook.
 
-        page_class = get_page_class(self.page_id)
+        This will unregister each of the page form classes from the associated
+        page.
+        """
+        page_class = AccountPage.registry.get('page_id', self.page_id)
 
         for form_class in self.form_classes:
             page_class.remove_form(form_class)
@@ -173,15 +191,37 @@ class AdminWidgetHook(ExtensionHook):
     of the admin page. To instead add the new widget as a large widget in the
     center of the admin page, pass in True for ``primary``.
     """
-    def __init__(self, extension, widget_cls, primary=False):
-        super(AdminWidgetHook, self).__init__(extension)
 
+    def initialize(self, widget_cls, primary=False):
+        """Initialize the hook.
+
+        This will register the provided administration widget as either a
+        primary or secondary widget.
+
+        Args:
+            widget_cls (type):
+                The widget class to register. This must be a subclass of
+                :py:class:`~reviewboard.admin.widgets.Widget`.
+
+            primary (bool, optional):
+                Whether this is a primary or a secondary widget. Primary
+                widgets are displayed first and more prominently.
+
+        Raises:
+            KeyError:
+                The widget was already registered.
+
+            ValueError:
+                The widget is missing an ID.
+        """
         self.widget_cls = widget_cls
         register_admin_widget(widget_cls, primary)
 
     def shutdown(self):
-        super(AdminWidgetHook, self).shutdown()
+        """Shut down the hook.
 
+        This will unregister the administration widget.
+        """
         unregister_admin_widget(self.widget_cls)
 
 
@@ -197,9 +237,27 @@ class DataGridSidebarItemsHook(ExtensionHook):
     built-in :py:class:`reviewboard.datagrids.sidebar.BaseSidebarSection` and
     built-in :py:class:`reviewboard.datagrids.sidebar.SidebarNavItem`.
     """
-    def __init__(self, extension, datagrid, item_classes):
-        super(DataGridSidebarItemsHook, self).__init__(extension)
 
+    def initialize(self, datagrid, item_classes):
+        """Initialize the hook.
+
+        This will register the provided datagrid sidebar item classes in the
+        provided datagrid.
+
+        Args:
+            datagrid (type):
+                The datagrid class to register the items on. The datagrid
+                must have a sidebar, or an error will occur.
+
+            item_classes (list of type):
+                The list of item classes to register on the datagrid's
+                sidebar. Each must be a subclass of
+                :py:class:`~reviewboard.datagrids.sidebar.BaseSidebarItem`.
+
+        Raises:
+            ValueError:
+                A datagrid was provided that does not contain a sidebar.
+        """
         if not hasattr(datagrid, 'sidebar'):
             raise ValueError('The datagrid provided does not have a sidebar')
 
@@ -210,8 +268,10 @@ class DataGridSidebarItemsHook(ExtensionHook):
             datagrid.sidebar.add_item(item)
 
     def shutdown(self):
-        super(DataGridSidebarItemsHook, self).shutdown()
+        """Shut down the hook.
 
+        This will unregister each item class from the datagrid's sidebar.
+        """
         for item in self.item_classes:
             self.datagrid.sidebar.remove_item(item)
 
@@ -232,9 +292,18 @@ class DashboardColumnsHook(DataGridColumnsHook):
     the dashboard. It is recommended to use a vendor-specific prefix to the
     ID, in order to avoid conflicts.
     """
-    def __init__(self, extension, columns):
-        super(DashboardColumnsHook, self).__init__(
-            extension, DashboardDataGrid, columns)
+
+    def initialize(self, columns):
+        """Initialize the hook.
+
+        This will register each of the provided columns on the Dashboard.
+
+        Args:
+            columns (list of djblets.datagrid.grids.Column):
+                The list of column instances to register on the Dashboard.
+        """
+        super(DashboardColumnsHook, self).initialize(DashboardDataGrid,
+                                                     columns)
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -249,23 +318,46 @@ class DashboardSidebarItemsHook(DataGridSidebarItemsHook):
     built-in :py:class:`reviewboard.datagrids.sidebar.BaseSidebarSection` and
     built-in :py:class:`reviewboard.datagrids.sidebar.SidebarNavItem`.
     """
-    def __init__(self, extension, item_classes):
-        super(DashboardSidebarItemsHook, self).__init__(
-            extension, DashboardDataGrid, item_classes)
+
+    def initialize(self, item_classes):
+        """Initialize the hook.
+
+        This will register the provided datagrid sidebar item classes in the
+        Dashboard.
+
+        Args:
+            item_classes (list of type):
+                The list of item classes to register on the datagrid's
+                sidebar. Each must be a subclass of
+                :py:class:`~reviewboard.datagrids.sidebar.BaseSidebarItem`.
+        """
+        super(DashboardSidebarItemsHook, self).initialize(DashboardDataGrid,
+                                                          item_classes)
 
 
 @six.add_metaclass(ExtensionHookPoint)
 class HostingServiceHook(ExtensionHook):
     """A hook for registering a hosting service."""
-    def __init__(self, extension, service_cls):
-        super(HostingServiceHook, self).__init__(extension)
 
+    def initialize(self, service_cls):
+        """Initialize the hook.
+
+        This will register the hosting service.
+
+        Args:
+            service_cls (type):
+                The hosting service class to register. This must be a
+                subclass of
+                :py:class:`~reviewboard.hostingsvcs.service.HostingService`.
+        """
         self.name = service_cls.name
         register_hosting_service(service_cls.name, service_cls)
 
     def shutdown(self):
-        super(HostingServiceHook, self).shutdown()
+        """Shut down the hook.
 
+        This will unregister the hosting service.
+        """
         unregister_hosting_service(self.name)
 
 
@@ -286,9 +378,14 @@ class NavigationBarHook(ExtensionHook):
     This takes a list of entries. Each entry represents something
     on the navigation bar, and is a dictionary with the following keys:
 
-    * ``label``:    The label to display
-    * ``url``:      The URL to point to.
-    * ``url_name``: The name of the URL to point to.
+    ``label``:
+        The label to display
+
+    ``url``:
+        The URL to point to.
+
+    ``url_name``:
+        The name of the URL to point to.
 
     Only one of ``url`` or ``url_name`` is required. ``url_name`` will
     take precedence.
@@ -299,12 +396,39 @@ class NavigationBarHook(ExtensionHook):
     always shown (including for anonymous users).
 
     If your hook needs to access the template context, it can override
-    get_entries and return results from there.
+    :py:meth:`get_entries` and return results from there.
     """
-    def __init__(self, extension, entries={}, is_enabled_for=None,
-                 *args, **kwargs):
-        super(NavigationBarHook, self).__init__(extension, *args,
-                                                **kwargs)
+
+    def initialize(self, entries=[], is_enabled_for=None, *args, **kwargs):
+        """Initialize the hook.
+
+        This will register each of the entries in the navigation bar.
+
+        Args:
+            entries (list of dict):
+                The list of dictionary entries representing navigation
+                bar items, as documented above.
+
+            is_enabled_for (callable, optional):
+                The optional function used to determine if these entries
+                should appear for a given page. This is in the format of:
+
+                .. code-block:: python
+
+                   def is_enabled_for(user, request, local_site_name,
+                                      **kwargs):
+                       return True
+
+                If not provided, the entries will be visible on every page.
+
+            *args (tuple):
+                Additional positional arguments. Subclasses should always
+                pass these to this class.
+
+            **kwargs (dict):
+                Additional keyword arguments. Subclasses should always pass
+                these to this class.
+        """
         self.entries = entries
         self.is_enabled_for = is_enabled_for
 
@@ -316,13 +440,27 @@ class NavigationBarHook(ExtensionHook):
                     'NavigationBarHook.is_enabled_for is being passed '
                     'a function without keyword arguments by %r. This '
                     'is deprecated.'
-                    % extension,
+                    % self.extension,
                     DeprecationWarning)
 
                 self.is_enabled_for = \
                     lambda user, **kwargs: is_enabled_for(user)
 
     def get_entries(self, context):
+        """Return the navigation bar entries defined in this hook.
+
+        This can be overridden by subclasses if they need more control over
+        the entries or need to access the template context.
+
+        Args:
+            context (django.template.RequestContext):
+                The template context for the page.
+
+        Returns:
+            list of dict:
+            The list of navigation bar entries. This will be empty if the
+            entries are not enabled for this page.
+        """
         request = context['request']
 
         if (not callable(self.is_enabled_for) or
@@ -342,8 +480,9 @@ class ReviewRequestApprovalHook(ExtensionHook):
     review request approval, which may impact any scripts integrating
     with Review Board to, for example, allow committing to a repository.
     """
+
     def is_approved(self, review_request, prev_approved, prev_failure):
-        """Determines if the review request is approved.
+        """Determine if the review request is approved.
 
         This function is provided with the review request and the previously
         calculated approved state (either from a prior hook, or from the
@@ -358,6 +497,25 @@ class ReviewRequestApprovalHook(ExtensionHook):
         state is False). This is, however, fully up to the hook.
 
         The approval decision may be overridden by any following hooks.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request being checked for approval.
+
+            prev_approved (bool):
+                The previously-calculated approval result, either from another
+                hook or by Review Board.
+
+            prev_failure (unicode):
+                The previously-calculated approval failure message, either
+                from another hook or by Review Board.
+
+        Returns:
+            bool or tuple:
+            Either a boolean indicating approval (re-using ``prev_failure``,
+            if not approved), or a tuple in the form of
+            ``(approved, failure_message)``.
         """
         raise NotImplementedError
 
@@ -373,17 +531,34 @@ class ReviewRequestFieldSetsHook(ExtensionHook):
     later instantiate as necessary. Each fieldset can be pre-populated with
     one or more custom field classes.
     """
-    def __init__(self, extension, fieldsets):
-        super(ReviewRequestFieldSetsHook, self).__init__(extension)
 
+    def initialize(self, fieldsets):
+        """Initialize the hook.
+
+        This will register each of the provided fieldsets for review
+        requests.
+
+        Args:
+            fieldsets (list of type):
+                The list of fieldset classes to register. Each must be a
+                subclass of
+                :py:class:`~reviewboard.reviews.fields.BaseReviewRequestFieldSet`.
+
+        Raises:
+            djblets.registries.errors.ItemLookupError:
+                A fieldset was already registered matching an ID from this
+                list.
+        """
         self.fieldsets = fieldsets
 
         for fieldset in fieldsets:
             register_review_request_fieldset(fieldset)
 
     def shutdown(self):
-        super(ReviewRequestFieldSetsHook, self).shutdown()
+        """Shut down the hook.
 
+        This will unregister each of the fieldsets from the review requests.
+        """
         for fieldset in self.fieldsets:
             unregister_review_request_fieldset(fieldset)
 
@@ -402,18 +577,38 @@ class ReviewRequestFieldsHook(ExtensionHook):
     field classes should be added. Review Board supplies three built-in
     fieldset IDs:
 
-    * ``main``      - The fieldset with Description and Testing Done.
-    * ``info``      - The "Information" fieldset on the side.
-    * ``reviewers`` - The "Reviewers" fieldset on the side.
+    ``main``:
+        The fieldset with Description and Testing Done.
+
+    ``info``:
+        The "Information" fieldset on the side.
+
+    ``reviewers``:
+        The "Reviewers" fieldset on the side.
 
     Any registered fieldset ID can be provided, whether from this extension
     or another.
 
     Field classes can only be added to a single fieldset.
     """
-    def __init__(self, extension, fieldset_id, fields):
-        super(ReviewRequestFieldsHook, self).__init__(extension)
 
+    def initialize(self, fieldset_id, fields):
+        """Initialize the hook.
+
+        This will register each of the provided field classes into the
+        fieldset with the given ID.
+
+        Args:
+            fieldset_id (unicode):
+                The ID of the
+                :py:class:`~reviewboard.reviews.fields.BaseReviewRequestFieldSet`
+                to register.
+
+            fields (list of type):
+                The list of fields to register into the fieldset. Each must be
+                a subclass of
+                :py:class:`~reviewboard.reviews.fields.BaseReviewRequestField`.
+        """
         self.fieldset_id = fieldset_id
         self.fields = fields
 
@@ -423,8 +618,10 @@ class ReviewRequestFieldsHook(ExtensionHook):
             fieldset.add_field(field_cls)
 
     def shutdown(self):
-        super(ReviewRequestFieldsHook, self).shutdown()
+        """Shut down the hook.
 
+        This will unregister each of the field classes from the fieldset.
+        """
         fieldset = get_review_request_fieldset(self.fieldset_id)
 
         for field_cls in self.fields:
@@ -437,15 +634,33 @@ class WebAPICapabilitiesHook(ExtensionHook):
 
     Note that this does not add the functionality, but adds to the server
     info listing.
-    """
-    def __init__(self, extension, caps):
-        super(WebAPICapabilitiesHook, self).__init__(extension)
 
-        register_webapi_capabilities(extension.id, caps)
+    Extensions may only provide one instance of this hook. All capabilities
+    must be registered at once.
+    """
+
+    def initialize(self, caps):
+        """Initialize the hook.
+
+        This will register each of the capabilities for the API.
+
+        Args:
+            caps (dict):
+                The dictionary of capabilities to register. Each key msut
+                be a string, and each value should be a boolean or a
+                dictionary of string keys to booleans.
+
+        Raises:
+            KeyError:
+                Capabilities have already been registered by this extension.
+        """
+        register_webapi_capabilities(self.extension.id, caps)
 
     def shutdown(self):
-        super(WebAPICapabilitiesHook, self).shutdown()
+        """Shut down the hook.
 
+        This will unregister each of the capabilities from the API.
+        """
         unregister_webapi_capabilities(self.extension.id)
 
 
@@ -456,10 +671,46 @@ class CommentDetailDisplayHook(ExtensionHook):
     The hook can provide additional details to display for a comment in a
     review and e-mails.
     """
+
     def render_review_comment_detail(self, comment):
+        """Render additional HTML for a comment on the page.
+
+        Subclasses must implement this to provide HTML for use on the
+        review request page or review dialog.
+
+        The result is assumed to be HTML-safe. It's important that subclasses
+        escape any data as needed.
+
+        Args:
+            comment (reviewboard.reviews.models.base_comment.BaseComment):
+                The comment to render HTML for,
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The resulting HTML for the comment. This can be an empty string.
+        """
         raise NotImplementedError
 
     def render_email_comment_detail(self, comment, is_html):
+        """Render additional text or HTML for a comment in an e-mail.
+
+        Subclasses must implement this to provide text or HTML (depending on
+        the ``is_html`` flag) for use in an e-mail.
+
+        If rendering HTML, the result is assumed to be HTML-safe. It's
+        important that subclasses escape any data as needed.
+
+        Args:
+            comment (reviewboard.reviews.models.base_comment.BaseComment):
+                The comment to render HTML for,
+
+            is_html (bool):
+                Whether this must return HTML content.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The resulting HTML for the comment. This can be an empty string.
+        """
         raise NotImplementedError
 
 
@@ -471,16 +722,33 @@ class ReviewUIHook(ExtensionHook):
     registers them when the hook is created. Likewise, it unregisters
     the same list of Review UIs when the Extension is disabled.
     """
-    def __init__(self, extension, review_uis):
-        super(ReviewUIHook, self).__init__(extension)
+
+    def initialize(self, review_uis):
+        """Initialize the hook.
+
+        This will register the list of review UIs for use in reviewing
+        file attachments.
+
+        Args:
+            review_uis (list of type):
+                The list of review UI classes to register. Each must be a
+                subclass of
+                :py:class:`~reviewboard.reviews.ui.base.FileAttachmentReviewUI`.
+
+        Raises:
+            TypeError:
+                The provided review UI class is not of a compatible type.
+        """
         self.review_uis = review_uis
 
         for review_ui in self.review_uis:
             register_ui(review_ui)
 
     def shutdown(self):
-        super(ReviewUIHook, self).shutdown()
+        """Shut down the hook.
 
+        This will unregister the list of review UIs.
+        """
         for review_ui in self.review_uis:
             unregister_ui(review_ui)
 
@@ -489,29 +757,46 @@ class ReviewUIHook(ExtensionHook):
 class FileAttachmentThumbnailHook(ExtensionHook):
     """This hook allows custom thumbnails to be defined for file attachments.
 
-    This accepts a list of Mimetype Handlers specified by the Extension
+    This accepts a list of mimetype handlers specified by the Extension
     that must:
 
     * Subclass :py:class:`reviewboard.attachments.mimetypes.MimetypeHandler`
     * Define a list of file mimetypes it can handle in a class variable
-      called `supported_mimetypes`
+      called ``supported_mimetypes``
     * Define how to generate a thumbnail of that mimetype by overriding
-      the instance function `def get_thumbnail(self):`
+      the instance function ``def get_thumbnail(self):``
 
-    These MimetypeHandlers are registered when the hook is created. Likewise,
-    it unregisters the same list of MimetypeHandlers when the Extension is
+    These mimetype handlers are registered when the hook is created. Likewise,
+    it unregisters the same list of mimetype handlers when the extension is
     disabled.
     """
-    def __init__(self, extension, mimetype_handlers):
-        super(FileAttachmentThumbnailHook, self).__init__(extension)
+
+    def initialize(self, mimetype_handlers):
+        """Initialize the hook.
+
+        This will register each of the provided mimetype handler classes.
+
+        Args:
+            mimetype_handlers (list of type):
+                The list of mimetype handlers to register. Each must be a
+                subclass of
+                :py:class:`~reviewboard.attachments.mimetypes.MimetypeHandler`.
+
+        Raises:
+            TypeError:
+                One or more of the provided classes are not of the correct
+                type.
+        """
         self.mimetype_handlers = mimetype_handlers
 
         for mimetype_handler in self.mimetype_handlers:
             register_mimetype_handler(mimetype_handler)
 
     def shutdown(self):
-        super(FileAttachmentThumbnailHook, self).shutdown()
+        """Shut down the hook.
 
+        This will unregister each of the mimetype handler classes.
+        """
         for mimetype_handler in self.mimetype_handlers:
             unregister_mimetype_handler(mimetype_handler)
 
@@ -552,25 +837,20 @@ class ActionHook(ExtensionHook):
     :py:meth:`get_actions` and return results from there.
     """
 
-    def __init__(self, extension, actions=None, *args, **kwargs):
+    def initialize(self, actions=None, *args, **kwargs):
         """Initialize this action hook.
 
         Args:
-            extension (djblets.extensions.extension.Extension):
-                The extension that is creating this action hook.
-
             actions (list, optional):
                 The list of actions (of type :py:class:`dict` or
                 :py:class:`~.actions.BaseReviewRequestAction`) to be added.
 
             *args (tuple):
-                Extra arguments.
+                Extra positional arguments.
 
             **kwargs (dict):
                 Extra keyword arguments.
         """
-        super(ActionHook, self).__init__(extension, *args, **kwargs)
-
         self.actions = actions or []
 
     def get_actions(self, context):
@@ -684,13 +964,13 @@ class BaseReviewRequestActionHook(AppliesToURLMixin, ActionHook):
     actions such as :guilabel:`Download Diff` and :guilabel:`Ship It!`) of each
     review request. This action bar is displayed on three main types of pages:
 
-    #. **Review Request Pages**:
+    **Review Request Pages**:
        Where reviews are displayed.
 
-    #. **File Attachment Pages**:
+    **File Attachment Pages**:
        Where files like screenshots can be reviewed.
 
-    #. **Diff Viewer Pages**:
+    **Diff Viewer Pages**:
        Where diffs/interdiffs can be viewed side-by-side.
 
     Each action should be an instance of
@@ -701,14 +981,10 @@ class BaseReviewRequestActionHook(AppliesToURLMixin, ActionHook):
     :py:class:`ActionHook`-style dictionaries.
     """
 
-    def __init__(self, extension, actions=None, apply_to=None, *args,
-                 **kwargs):
+    def initialize(self, actions=None, apply_to=None, *args, **kwargs):
         """Initialize this action hook.
 
         Args:
-            extension (djblets.extensions.extension.Extension):
-                The extension that is creating this action hook.
-
             actions (list, optional):
                 The list of actions (of type :py:class:`dict` or
                 :py:class:`~.actions.BaseReviewRequestAction`) to be added.
@@ -717,7 +993,7 @@ class BaseReviewRequestActionHook(AppliesToURLMixin, ActionHook):
                 The list of URL names that this action hook will apply to.
 
             *args (tuple):
-                Extra arguments.
+                Extra positional arguments.
 
             **kwargs (dict):
                 Extra keyword arguments.
@@ -732,8 +1008,9 @@ class BaseReviewRequestActionHook(AppliesToURLMixin, ActionHook):
                 :py:class:`~.actions.BaseReviewRequestAction` nor a
                 :py:class:`dict` instance.
         """
-        super(BaseReviewRequestActionHook, self).__init__(
-            extension, apply_to=apply_to or [], *args, **kwargs)
+        super(BaseReviewRequestActionHook, self).initialize(
+            apply_to=apply_to or [],
+            *args, **kwargs)
 
         self.actions = self._register_actions(actions or [])
 
@@ -844,26 +1121,18 @@ class ReviewRequestActionHook(BaseReviewRequestActionHook):
     viewer pages.
     """
 
-    def __init__(self, extension, actions=None, apply_to=None, *args,
-                 **kwargs):
+    def initialize(self, actions=None, apply_to=None):
         """Initialize this action hook.
 
         Args:
-            extension (djblets.extensions.extension.Extension):
-                The extension that is creating this action hook.
-
             actions (list, optional):
                 The list of actions (of type :py:class:`dict` or
                 :py:class:`~.actions.BaseReviewRequestAction`) to be added.
 
             apply_to (list of unicode, optional):
                 The list of URL names that this action hook will apply to.
-
-            *args (tuple):
-                Extra arguments.
-
-            **kwargs (dict):
-                Extra keyword arguments.
+                By default, this will apply to the main review request page
+                only.
 
         Raises:
             KeyError:
@@ -875,9 +1144,9 @@ class ReviewRequestActionHook(BaseReviewRequestActionHook):
                 :py:class:`~.actions.BaseReviewRequestAction` nor a
                 :py:class:`dict` instance.
         """
-        apply_to = apply_to or [main_review_request_url_name]
-        super(ReviewRequestActionHook, self).__init__(
-            extension, actions, apply_to, *args, **kwargs)
+        super(ReviewRequestActionHook, self).initialize(
+            actions=actions,
+            apply_to=apply_to or [main_review_request_url_name])
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -964,26 +1233,16 @@ class DiffViewerActionHook(BaseReviewRequestActionHook):
     pages.
     """
 
-    def __init__(self, extension, actions=None, apply_to=diffviewer_url_names,
-                 *args, **kwargs):
+    def initialize(self, actions=None, apply_to=diffviewer_url_names):
         """Initialize this action hook.
 
         Args:
-            extension (djblets.extensions.extension.Extension):
-                The extension that is creating this action hook.
-
             actions (list, optional):
                 The list of actions (of type :py:class:`dict` or
                 :py:class:`~.actions.BaseReviewRequestAction`) to be added.
 
             apply_to (list of unicode, optional):
                 The list of URL names that this action hook will apply to.
-
-            *args (tuple):
-                Extra arguments.
-
-            **kwargs (dict):
-                Extra keyword arguments.
 
         Raises:
             KeyError:
@@ -995,8 +1254,9 @@ class DiffViewerActionHook(BaseReviewRequestActionHook):
                 :py:class:`~.actions.BaseReviewRequestAction` nor a
                 :py:class:`dict` instance.
         """
-        super(DiffViewerActionHook, self).__init__(
-            extension, actions, apply_to, *args, **kwargs)
+        super(DiffViewerActionHook, self).initialize(
+            actions,
+            apply_to=apply_to or diffviewer_url_names)
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -1017,19 +1277,14 @@ class UserInfoboxHook(ExtensionHook):
     which pops up when hovering the mouse over a user.
     """
 
-    def __init__(self, extension, template_name=None):
+    def initialize(self, template_name=None):
         """Initialize the hook.
 
         Args:
-            extension (reviewboard.extensions.base.Extension):
-                The extension instance.
-
             template_name (six.text_type):
                 The template to render with the default :py:func:`render`
                 method.
         """
-        super(UserInfoboxHook, self).__init__(extension)
-
         self.template_name = template_name
 
     def get_extra_context(self, user, request, local_site):
@@ -1120,9 +1375,21 @@ class UserPageSidebarItemsHook(DataGridSidebarItemsHook):
     built-in :py:class:`reviewboard.datagrids.sidebar.BaseSidebarSection` and
     built-in :py:class:`reviewboard.datagrids.sidebar.SidebarNavItem`.
     """
-    def __init__(self, extension, item_classes):
-        super(UserPageSidebarItemsHook, self).__init__(
-            extension, UserPageReviewRequestDataGrid, item_classes)
+
+    def initialize(self, item_classes):
+        """Initialize the hook.
+
+        This will register the provided datagrid sidebar item classes in the
+        user page's datagrid.
+
+        Args:
+            item_classes (list of type):
+                The list of item classes to register on the datagrid's
+                sidebar. Each must be a subclass of
+                :py:class:`~reviewboard.datagrids.sidebar.BaseSidebarItem`.
+        """
+        super(UserPageSidebarItemsHook, self).initialize(
+            UserPageReviewRequestDataGrid, item_classes)
 
 
 @six.add_metaclass(ExtensionHookPoint)
@@ -1133,7 +1400,7 @@ class EmailHook(ExtensionHook):
     of e-mails. This should be subclassed in an extension to provide the
     desired behaviour. This class is a base class for more specialized
     extension hooks. If modifying only one type of e-mail's fields is desired,
-    one of the following classes should be sub-classed instead.
+    one of the following classes should be subclassed instead.
 
     * :py:class:`ReviewPublishedEmailHook`
     * :py:class:`ReviewReplyPublishedEmailHook`
@@ -1141,16 +1408,13 @@ class EmailHook(ExtensionHook):
     * :py:class:`ReviewRequestClosedEmailHook`
 
     However, if more specialized behaviour is desired, this class can be
-    sub-classed.
+    subclassed.
     """
 
-    def __init__(self, extension, signals=None):
-        """Initialize the EmailHook.
+    def initialize(self, signals):
+        """Initialize the hook.
 
         Args:
-            extension (reviewboard.extensions.base.Extension):
-                The extension creating this hook.
-
             signals (list):
                 A list of :py:class:`Signals <django.dispatch.Signal>` that,
                 when triggered, will cause e-mails to be sent. Valid signals
@@ -1161,15 +1425,16 @@ class EmailHook(ExtensionHook):
                 * :py:data:`~reviewboard.reviews.signals.review_published`
                 * :py:data:`~reviewboard.reviews.signals.reply_published`
         """
-        super(EmailHook, self).__init__(extension)
+        self.signals = signals
 
-        self.signals = set(signals or [])
-
-        for signal in self.signals:
+        for signal in signals:
             register_email_hook(signal, self)
 
     def shutdown(self):
-        """Unregister the e-mail handlers."""
+        """Shut down the hook.
+
+        This will unregister each of the e-mail handlers.
+        """
         for signal in self.signals:
             unregister_email_hook(signal, self)
 
@@ -1211,17 +1476,15 @@ class EmailHook(ExtensionHook):
 
 
 class ReviewPublishedEmailHook(EmailHook):
-    """A hook for changing the recipients of review publishing e-mails."""
+    """A hook for changing the recipients of review publishing e-mails.
 
-    def __init__(self, extension):
-        """Initialize the ReviewPublishedEmailHook.
+    This hook must be subclassed. The caller is expected to override
+    :py:meth:`get_to_field` and/or :py:meth:`get_cc_field`.
+    """
 
-        Args:
-            extension (reviewboard.extensions.base.Extension):
-                The extension registering this hook.
-        """
-        super(ReviewPublishedEmailHook, self).__init__(
-            extension,
+    def initialize(self):
+        """Initialize the hook."""
+        super(ReviewPublishedEmailHook, self).initialize(
             signals=[review_published])
 
     def get_to_field(self, to_field, review, user, review_request,
@@ -1291,17 +1554,14 @@ class ReviewPublishedEmailHook(EmailHook):
 
 class ReviewReplyPublishedEmailHook(EmailHook):
     """A hook for changing the recipients of review reply publishing e-mails.
+
+    This hook must be subclassed. The caller is expected to override
+    :py:meth:`get_to_field` and/or :py:meth:`get_cc_field`.
     """
 
-    def __init__(self, extension):
-        """Initialize the ReviewReplyPublishedEmailHook.
-
-        Args:
-            extension (djblets.extensions.Extension):
-                The extension registering this hook.
-        """
-        super(ReviewReplyPublishedEmailHook, self).__init__(
-            extension,
+    def initialize(self):
+        """Initialize the hook."""
+        super(ReviewReplyPublishedEmailHook, self).initialize(
             signals=[reply_published])
 
     def get_to_field(self, to_field, reply, user, review_request, **kwargs):
@@ -1363,17 +1623,15 @@ class ReviewReplyPublishedEmailHook(EmailHook):
 
 
 class ReviewRequestClosedEmailHook(EmailHook):
-    """A hook for changing the recipients of review request closing e-mails."""
+    """A hook for changing the recipients of review request closing e-mails.
 
-    def __init__(self, extension):
-        """Initialize the ReviewRequestClosedEmailHook.
+    This hook must be subclassed. The caller is expected to override
+    :py:meth:`get_to_field` and/or :py:meth:`get_cc_field`.
+    """
 
-        Args:
-            extension (reviewboard.extensions.base.Extension):
-                The extension registering this hook.
-        """
-        super(ReviewRequestClosedEmailHook, self).__init__(
-            extension,
+    def initialize(self):
+        """Initialize the hook."""
+        super(ReviewRequestClosedEmailHook, self).initialize(
             signals=[review_request_closed])
 
     def get_to_field(self, to_field, review_request, user, close_type,
@@ -1441,17 +1699,14 @@ class ReviewRequestClosedEmailHook(EmailHook):
 
 class ReviewRequestPublishedEmailHook(EmailHook):
     """A hook for changing the recipients of review request publishing e-mails.
+
+    This hook must be subclassed. The caller is expected to override
+    :py:meth:`get_to_field` and/or :py:meth:`get_cc_field`.
     """
 
-    def __init__(self, extension):
-        """Initialize the ReviewRequestPublishedEmailHook.
-
-        Args:
-            extension (reviewboard.extensions.base.Extension):
-                The extension registering this hook.
-        """
-        super(ReviewRequestPublishedEmailHook, self).__init__(
-            extension,
+    def initialize(self):
+        """Initialize the hook. """
+        super(ReviewRequestPublishedEmailHook, self).initialize(
             signals=[review_request_published])
 
     def get_to_field(self, to_field, review_request, user, **kwargs):
@@ -1534,13 +1789,10 @@ class APIExtraDataAccessHook(ExtensionHook):
             field_set = [(('foo', 'bar'), 'ACCESS_STATE_PRIVATE')]
     """
 
-    def __init__(self, extension, resource, field_set):
+    def initialize(self, resource, field_set):
         """Initialize the APIExtraDataAccessHook.
 
         Args:
-            extension (reviewboard.extensions.base.Extension):
-                The extension registering this hook.
-
             resource (reviewboard.webapi.base.WebAPIResource):
                 The resource to modify access states for.
 
@@ -1552,8 +1804,6 @@ class APIExtraDataAccessHook(ExtensionHook):
                 :py:data:`~reviewboard.webapi.base.ExtraDataAccessLevel.ACCESS_STATE_PUBLIC`
                 or :py:data:`~reviewboard.webapi.base.ExtraDataAccessLevel.ACCESS_STATE_PRIVATE`).
         """
-        super(APIExtraDataAccessHook, self).__init__(extension)
-
         self.resource = resource
         self.field_set = field_set
 
@@ -1569,7 +1819,7 @@ class APIExtraDataAccessHook(ExtensionHook):
                 field.
 
         Returns:
-            unicode:
+            int:
             The access state of the provided field or ``None``.
         """
         for path, access_state in self.field_set:
@@ -1579,9 +1829,10 @@ class APIExtraDataAccessHook(ExtensionHook):
         return None
 
     def shutdown(self):
-        """Shutdown the hook and unregister the associated ``field_set``."""
-        super(APIExtraDataAccessHook, self).shutdown()
+        """Shut down the hook.
 
+        This will unregister the access levels from the resource.
+        """
         try:
             self.resource.extra_data_access_callbacks.unregister(
                 self.get_extra_data_state)
