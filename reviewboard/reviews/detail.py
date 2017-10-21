@@ -299,7 +299,7 @@ class ReviewRequestPageData(object):
         # Get all status updates.
         if self.status_updates_enabled and self._needs_status_updates:
             self.all_status_updates = list(
-                self.review_request.status_updates.all())
+                self.review_request.status_updates.order_by('summary'))
 
     def query_data_post_etag(self):
         """Perform remaining queries for the page.

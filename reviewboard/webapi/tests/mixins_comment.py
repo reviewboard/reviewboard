@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+from django.contrib.auth.models import User
 from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.webapi.tests.mixins_extra_data import (ExtraDataItemMixin,
@@ -175,6 +176,7 @@ class BaseCommentItemMixin(object):
 
     @webapi_test_template
     def test_put_with_multiple_include_text_types(self):
+        """Testing the PUT <URL> API with multiple include-text-types"""
         url, mimetype, data, reply_comment, objs = \
             self.setup_basic_put_test(self.user, False, None, True)
 
@@ -186,6 +188,43 @@ class BaseCommentItemMixin(object):
         rsp = self.api_put(url, data, expected_mimetype=mimetype)
 
         self.assertEqual(rsp['stat'], 'ok')
+
+    @webapi_test_template
+    def test_put_with_issue_verification_success(self):
+        """Testing the PUT <URL> API with issue verification success"""
+        url, mimetype, data, comment, objs = \
+            self.setup_basic_put_test(self.user, False, None, True)
+
+        comment.require_verification = True
+        comment.save()
+
+        rsp = self.api_put(
+            url,
+            {'issue_status': 'resolved'},
+            expected_mimetype=mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+    @webapi_test_template
+    def test_put_with_issue_verification_permission_denied(self):
+        """Testing the PUT <URL> API with issue verification permission denied
+        """
+        user = User.objects.get(username='doc')
+        self.assertNotEqual(user, self.user)
+
+        url, mimetype, data, comment, objs = \
+            self.setup_basic_put_test(user, False, None, True)
+
+        comment.require_verification = True
+        comment.save()
+
+        rsp = self.api_put(
+            url,
+            {'issue_status': 'resolved'},
+            expected_status=self.not_owner_status_code)
+
+        self.assertEqual(rsp['stat'], 'fail')
+        self.assertEqual(rsp['err']['code'], self.not_owner_error.code)
 
     def _test_get_with_force_text_type(self, text, rich_text,
                                        force_text_type, expected_text):

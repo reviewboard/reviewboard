@@ -34,6 +34,7 @@ class ParsedDiffFile(object):
         self.deleted = False
         self.moved = False
         self.copied = False
+        self.is_symlink = False
         self.insert_count = 0
         self.delete_count = 0
 
@@ -193,27 +194,18 @@ class DiffParser(object):
                     return linenum, None
 
             parsed_file = ParsedDiffFile()
-            parsed_file.binary = info.get('binary', False)
-            parsed_file.deleted = info.get('deleted', False)
-            parsed_file.moved = info.get('moved', False)
-            parsed_file.copied = info.get('copied', False)
-            parsed_file.origFile = info.get('origFile')
-            parsed_file.newFile = info.get('newFile')
-            parsed_file.origInfo = info.get('origInfo')
-            parsed_file.newInfo = info.get('newInfo')
             parsed_file.origChangesetId = info.get('origChangesetId')
 
-            if isinstance(parsed_file.origFile, six.binary_type):
-                parsed_file.origFile = parsed_file.origFile.decode('utf-8')
+            for attr in ('binary', 'deleted', 'moved', 'copied', 'is_symlink'):
+                setattr(parsed_file, attr, info.get(attr, False))
 
-            if isinstance(parsed_file.newFile, six.binary_type):
-                parsed_file.newFile = parsed_file.newFile.decode('utf-8')
+            for attr in ('origFile', 'newFile', 'origInfo', 'newInfo'):
+                attr_value = info.get(attr)
 
-            if isinstance(parsed_file.origInfo, six.binary_type):
-                parsed_file.origInfo = parsed_file.origInfo.decode('utf-8')
+                if isinstance(attr_value, six.binary_type):
+                    attr_value = attr_value.decode('utf-8')
 
-            if isinstance(parsed_file.newInfo, six.binary_type):
-                parsed_file.newInfo = parsed_file.newInfo.decode('utf-8')
+                setattr(parsed_file, attr, attr_value)
 
             # The header is part of the diff, so make sure it gets in the
             # diff content.

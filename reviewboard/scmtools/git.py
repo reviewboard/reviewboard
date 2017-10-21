@@ -2,8 +2,9 @@ from __future__ import unicode_literals
 
 import logging
 import os
-import re
 import platform
+import re
+import stat
 
 from django.utils import six
 from django.utils.six.moves import cStringIO as StringIO
@@ -103,6 +104,41 @@ class GitTool(SCMTool):
         except (FileNotFoundError, InvalidRevisionFormatError):
             return False
 
+    def normalize_patch(self, patch, filename, revision):
+        """Normalize the provided patch file.
+
+        This will make new, changed, and deleted symlinks look like
+        regular files.
+
+        Otherwise patch fails to apply the diff, complaining about the
+        file not being a symlink.
+
+        Args:
+            patch (bytes):
+                The diff/patch file to normalize.
+
+            filename (unicode):
+                The name of the file being changed in the diff.
+
+            revision (unicode):
+                The revision of the file being changed in the diff.
+
+        Returns:
+            bytes:
+            The resulting diff/patch file.
+        """
+        m = GitDiffParser.FILE_MODE_RE.search(patch)
+
+        if m:
+            mode = int(m.group('mode'), 8)
+
+            if stat.S_ISLNK(mode):
+                mode = stat.S_IFREG | stat.S_IMODE(mode)
+                patch = b'%s%o%s' % (patch[:m.start('mode')], mode,
+                                     patch[m.end('mode'):])
+
+        return patch
+
     def parse_diff_revision(self, file_str, revision_str, moved=False,
                             copied=False, *args, **kwargs):
         revision = revision_str
@@ -151,6 +187,10 @@ class GitDiffParser(DiffParser):
     This class is able to parse diffs created with Git
     """
     pre_creation_regexp = re.compile(b"^0+$")
+
+    FILE_MODE_RE = re.compile(
+        b'^(?:(?:new|deleted) file mode|index \w+\.\.\w+) (?P<mode>\d+)$',
+        re.M)
 
     DIFF_GIT_LINE_RES = [
         # Match with a/ and b/ prefixes. Common case.
@@ -280,6 +320,8 @@ class GitDiffParser(DiffParser):
         # a deleted file with no content
         # then skip
 
+        start_linenum = linenum
+
         # Now we have a diff we are going to use so get the filenames + commits
         diff_git_line = self.lines[linenum]
 
@@ -300,6 +342,16 @@ class GitDiffParser(DiffParser):
         file_info.newInfo = self.new_commit_id
 
         headers, linenum = self._parse_extended_headers(linenum)
+
+        for line in self.lines[start_linenum:linenum]:
+            m = GitDiffParser.FILE_MODE_RE.search(line)
+
+            if m:
+                mode = int(m.group('mode'), 8)
+
+                if stat.S_ISLNK(mode):
+                    file_info.is_symlink = True
+                    break
 
         if self._is_new_file(headers):
             file_info.append_data(headers[b'new file mode'][1])

@@ -641,12 +641,22 @@ class LDAPBackend(AuthBackend):
             # toss and I went with a left split for the first name and
             # dumped the remainder into the last name field.  The system
             # admin can handle the corner cases.
+            #
+            # If the full name has no white space to split on, then the
+            # entire full name is dumped into the first name and the
+            # last name becomes an empty string.
             try:
                 if settings.LDAP_FULL_NAME_ATTRIBUTE:
                     full_name = \
                         user_info[settings.LDAP_FULL_NAME_ATTRIBUTE][0]
                     full_name = full_name.decode('utf-8')
-                    first_name, last_name = full_name.split(' ', 1)
+
+                    try:
+                        first_name, last_name = full_name.split(' ', 1)
+                    except ValueError:
+                        first_name = full_name
+                        last_name = ''
+
             except AttributeError:
                 pass
 

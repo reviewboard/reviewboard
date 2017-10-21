@@ -77,6 +77,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(file.newInfo, 'bcae657')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
+        self.assertFalse(file.is_symlink)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/testing b/testing")
         self.assertEqual(file.data.splitlines()[-1], "+ADD")
@@ -94,6 +95,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(file.newInfo, 'bcae657')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
+        self.assertFalse(file.is_symlink)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/testing b/testing")
         self.assertEqual(file.data.splitlines()[-1], "+ADD")
@@ -122,6 +124,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(file.newInfo, '5e70b73')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
+        self.assertFalse(file.is_symlink)
         self.assertEqual(len(file.data), 249)
         self.assertEqual(file.data.splitlines()[0],
                          "diff --git a/cfg/testcase.ini b/cfg/testcase.ini")
@@ -152,6 +155,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(file.newInfo, '5e70b73')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
+        self.assertFalse(file.is_symlink)
         self.assertEqual(file.data.splitlines()[0].decode('utf-8'),
                          'diff --git a/cfg/téstcase.ini b/cfg/téstcase.ini')
         self.assertEqual(file.data.splitlines()[-1].decode('utf-8'),
@@ -195,6 +199,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(file.newInfo, 'e69de29')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
+        self.assertFalse(file.is_symlink)
         self.assertEqual(len(file.data), 123)
         self.assertEqual(file.data.splitlines()[0],
                          'diff --git a/IAMNEW b/IAMNEW')
@@ -215,6 +220,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(file.newInfo, 'e69de29')
         self.assertFalse(file.binary)
         self.assertFalse(file.deleted)
+        self.assertFalse(file.is_symlink)
         lines = file.data.splitlines()
         self.assertEqual(len(lines), 3)
         self.assertEqual(lines[0], 'diff --git a/newfile b/newfile')
@@ -233,6 +239,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[0].newInfo, 'e69de29')
         self.assertFalse(files[0].binary)
         self.assertFalse(files[0].deleted)
+        self.assertFalse(files[0].is_symlink)
         lines = files[0].data.splitlines()
         self.assertEqual(len(lines), 3)
         self.assertEqual(lines[0], 'diff --git a/newfile b/newfile')
@@ -262,6 +269,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(file.newInfo, '0000000')
         self.assertFalse(file.binary)
         self.assertTrue(file.deleted)
+        self.assertFalse(file.is_symlink)
         self.assertEqual(len(file.data), 132)
         self.assertEqual(file.data.splitlines()[0],
                          'diff --git a/OLDFILE b/OLDFILE')
@@ -286,6 +294,7 @@ class GitTests(SpyAgency, SCMTestCase):
                          '0000000000000000000000000000000000000000')
         self.assertFalse(files[0].binary)
         self.assertTrue(files[0].deleted)
+        self.assertFalse(files[0].is_symlink)
         self.assertEqual(len(files[0].data), 141)
         self.assertEqual(files[0].data.splitlines()[0],
                          'diff --git a/empty b/empty')
@@ -319,6 +328,7 @@ class GitTests(SpyAgency, SCMTestCase):
                          '0000000000000000000000000000000000000000')
         self.assertFalse(files[0].binary)
         self.assertTrue(files[0].deleted)
+        self.assertFalse(files[0].is_symlink)
         self.assertEqual(len(files[0].data), 141)
         self.assertEqual(files[0].data.splitlines()[0],
                          'diff --git a/empty b/empty')
@@ -333,6 +343,7 @@ class GitTests(SpyAgency, SCMTestCase):
                          '0ae4095ddfe7387d405bd53bd59bbb5d861114c5')
         self.assertFalse(files[1].binary)
         self.assertFalse(files[1].deleted)
+        self.assertFalse(files[1].is_symlink)
         lines = files[1].data.splitlines()
         self.assertEqual(len(lines), 7)
         self.assertEqual(lines[0], 'diff --git a/foo/bar b/foo/bar')
@@ -351,6 +362,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(file.newInfo, '86b520c')
         self.assertTrue(file.binary)
         self.assertFalse(file.deleted)
+        self.assertFalse(file.is_symlink)
         lines = file.data.splitlines()
         self.assertEqual(len(lines), 4)
         self.assertEqual(
@@ -371,6 +383,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[0].newInfo, 'e254ef4')
         self.assertFalse(files[0].binary)
         self.assertFalse(files[0].deleted)
+        self.assertFalse(files[0].is_symlink)
         self.assertEqual(files[0].insert_count, 2)
         self.assertEqual(files[0].delete_count, 1)
         self.assertEqual(len(files[0].data), 549)
@@ -385,6 +398,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[1].newInfo, 'e69de29')
         self.assertFalse(files[1].binary)
         self.assertFalse(files[1].deleted)
+        self.assertFalse(files[1].is_symlink)
         self.assertEqual(files[1].insert_count, 0)
         self.assertEqual(files[1].delete_count, 0)
         lines = files[1].data.splitlines()
@@ -398,6 +412,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[2].newInfo, 'e279a06')
         self.assertFalse(files[2].binary)
         self.assertFalse(files[2].deleted)
+        self.assertFalse(files[2].is_symlink)
         self.assertEqual(files[2].insert_count, 2)
         self.assertEqual(files[2].delete_count, 0)
         lines = files[2].data.splitlines()
@@ -413,6 +428,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[3].newInfo, '86b520c')
         self.assertTrue(files[3].binary)
         self.assertFalse(files[3].deleted)
+        self.assertFalse(files[3].is_symlink)
         self.assertEqual(files[3].insert_count, 0)
         self.assertEqual(files[3].delete_count, 0)
         lines = files[3].data.splitlines()
@@ -429,6 +445,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[4].newInfo, 'e254ef4')
         self.assertFalse(files[4].binary)
         self.assertFalse(files[4].deleted)
+        self.assertFalse(files[4].is_symlink)
         self.assertEqual(files[4].insert_count, 1)
         self.assertEqual(files[4].delete_count, 1)
         lines = files[4].data.splitlines()
@@ -442,6 +459,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[5].newInfo, '0000000')
         self.assertFalse(files[5].binary)
         self.assertTrue(files[5].deleted)
+        self.assertFalse(files[5].is_symlink)
         self.assertEqual(files[5].insert_count, 0)
         self.assertEqual(files[5].delete_count, 1)
         lines = files[5].data.splitlines()
@@ -455,6 +473,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[6].newInfo, 'e248ef4')
         self.assertFalse(files[6].binary)
         self.assertFalse(files[6].deleted)
+        self.assertFalse(files[6].is_symlink)
         self.assertEqual(files[6].insert_count, 1)
         self.assertEqual(files[6].delete_count, 1)
         lines = files[6].data.splitlines()
@@ -500,12 +519,14 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(files[0].newFile, 'foo.bin')
         self.assertEqual(files[0].binary, True)
         self.assertEqual(files[0].deleted, True)
+        self.assertFalse(files[0].is_symlink)
         self.assertEqual(files[0].insert_count, 0)
         self.assertEqual(files[0].delete_count, 0)
         self.assertEqual(files[1].origFile, 'bar.bin')
         self.assertEqual(files[1].newFile, 'bar.bin')
         self.assertEqual(files[1].binary, True)
         self.assertEqual(files[1].deleted, True)
+        self.assertFalse(files[1].is_symlink)
         self.assertEqual(files[1].insert_count, 0)
         self.assertEqual(files[1].delete_count, 0)
 
@@ -611,6 +632,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(f.delete_count, 0)
         self.assertFalse(f.moved)
         self.assertTrue(f.copied)
+        self.assertFalse(f.is_symlink)
 
         f = files[1]
         self.assertEqual(f.origFile, 'foo/bar')
@@ -623,6 +645,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(f.delete_count, 1)
         self.assertTrue(f.moved)
         self.assertFalse(f.copied)
+        self.assertFalse(f.is_symlink)
 
     def test_parse_diff_with_mode_change_and_rename(self):
         """Testing Git diff parsing with mode change and rename"""
@@ -653,6 +676,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(f.delete_count, 1)
         self.assertTrue(f.moved)
         self.assertFalse(f.copied)
+        self.assertFalse(f.is_symlink)
 
     def test_diff_git_line_without_a_b(self):
         """Testing parsing Git diff with deleted file without a/ and
@@ -670,6 +694,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(f.origFile, 'foo')
         self.assertEqual(f.newFile, 'foo')
         self.assertTrue(f.deleted)
+        self.assertFalse(f.is_symlink)
 
     def test_diff_git_line_without_a_b_quotes(self):
         """Testing parsing Git diff with deleted file without a/ and
@@ -687,6 +712,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(f.origFile, 'foo')
         self.assertEqual(f.newFile, 'foo')
         self.assertTrue(f.deleted)
+        self.assertFalse(f.is_symlink)
 
     def test_diff_git_line_without_a_b_and_spaces(self):
         """Testing parsing Git diff with deleted file without a/ and
@@ -704,6 +730,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(f.origFile, 'foo bar1')
         self.assertEqual(f.newFile, 'foo bar1')
         self.assertTrue(f.deleted)
+        self.assertFalse(f.is_symlink)
 
     def test_diff_git_line_without_a_b_and_spaces_quotes(self):
         """Testing parsing Git diff with deleted file without a/ and
@@ -761,6 +788,7 @@ class GitTests(SpyAgency, SCMTestCase):
         self.assertEqual(f.origFile, 'foo bar1')
         self.assertEqual(f.newFile, 'foo bar2')
         self.assertTrue(f.deleted)
+        self.assertFalse(f.is_symlink)
 
         f = files[1]
         self.assertEqual(f.origFile, 'foo bar1')
@@ -769,6 +797,61 @@ class GitTests(SpyAgency, SCMTestCase):
         f = files[2]
         self.assertEqual(f.origFile, 'foo')
         self.assertEqual(f.newFile, 'foo bar1')
+
+    def test_diff_git_symlink_added(self):
+        """Testing parsing Git diff with symlink added"""
+        diff = (b'diff --git a/link b/link\n'
+                b'new file mode 120000\n'
+                b'index 0000000..100b938\n'
+                b'--- /dev/null\n'
+                b'+++ b/link\n'
+                b'@@ -0,0 +1 @@\n'
+                b'+README\n'
+                b'\\ No newline at end of file\n')
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 1)
+
+        f = files[0]
+        self.assertEqual(f.origInfo, PRE_CREATION)
+        self.assertEqual(f.newFile, 'link')
+        self.assertTrue(f.is_symlink)
+
+    def test_diff_git_symlink_changed(self):
+        """Testing parsing Git diff with symlink changed"""
+        diff = (b'diff --git a/link b/link\n'
+                b'index 100b937..100b938 120000\n'
+                b'--- a/link\n'
+                b'+++ b/link\n'
+                b'@@ -1 +1 @@\n'
+                b'-README\n'
+                b'\\ No newline at end of file\n'
+                b'+README.md\n'
+                b'\\ No newline at end of file\n')
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 1)
+
+        f = files[0]
+        self.assertEqual(f.newFile, 'link')
+        self.assertEqual(f.origFile, 'link')
+        self.assertTrue(f.is_symlink)
+
+    def test_diff_git_symlink_removed(self):
+        """Testing parsing Git diff with symlink removed"""
+        diff = (b'diff --git a/link b/link\n'
+                b'deleted file mode 120000\n'
+                b'index 100b938..0000000\n'
+                b'--- a/link\n'
+                b'+++ /dev/null\n'
+                b'@@ -1 +0,0 @@\n'
+                b'-README.txt\n'
+                b'\\ No newline at end of file\n')
+        files = self.tool.get_parser(diff).parse()
+        self.assertEqual(len(files), 1)
+
+        f = files[0]
+        self.assertEqual(f.origFile, 'link')
+        self.assertTrue(f.deleted)
+        self.assertTrue(f.is_symlink)
 
     def test_file_exists(self):
         """Testing GitTool.file_exists"""

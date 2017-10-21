@@ -836,10 +836,8 @@ class WebAPICapabilitiesHookTests(ExtensionManagerMixin, BaseWebAPITestCase):
         self.assertNotIn('WebAPICapabilitiesExtension', caps)
         self.assertNotIn(None, caps)
 
-        self.assertRaisesMessage(
-            KeyError,
-            '"None" is not a registered web API capabilities set',
-            self.extension.shutdown)
+        # Note that the hook failed to enable, so there's no need to test
+        # shutdown().
 
     def test_register_fails_default_capability(self):
         """Testing WebAPICapabilitiesHook initializing with default key"""
@@ -868,10 +866,8 @@ class WebAPICapabilitiesHookTests(ExtensionManagerMixin, BaseWebAPITestCase):
         self.assertTrue(diffs_caps['base_commit_ids'])
         self.assertTrue(diffs_caps['moved_files'])
 
-        self.assertRaisesMessage(
-            KeyError,
-            '"diffs" is not a registered web API capabilities set',
-            self.extension.shutdown)
+        # Note that the hook failed to enable, so there's no need to test
+        # shutdown().
 
     def test_unregister(self):
         """Testing WebAPICapabilitiesHook uninitializing"""
