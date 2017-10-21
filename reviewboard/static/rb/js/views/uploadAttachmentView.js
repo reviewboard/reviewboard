@@ -69,7 +69,7 @@ RB.UploadAttachmentView = Backbone.View.extend({
      * @param {object} rsp  The server response.
      */
     displayErrors: function(rsp) {
-        var errorStr = rsp.err.msg,
+        var errorStr = (rsp && rsp.err) ? rsp.err.msg : gettext('Unknown Error'),
             fieldName,
             $errorList,
             i,
@@ -79,7 +79,7 @@ RB.UploadAttachmentView = Backbone.View.extend({
             .text(errorStr)
             .show();
 
-        if (rsp.fields) {
+        if (rsp && rsp.fields) {
             /* Invalid form data */
             for (fieldName in rsp.fields) {
                 if (rsp.fields.hasOwnProperty(fieldName)) {

@@ -331,6 +331,48 @@ class LDAPAuthBackendTests(SpyAgency, TestCase):
         self.assertIsNone(user)
         self.assertEqual(User.objects.count(), 0)
 
+    def test_get_or_create_user_with_fullname_without_space(self):
+        """Testing LDAPBackend.get_or_create_user with a user whose full name
+        does not contain a space
+        """
+        class TestLDAPObject(BaseTestLDAPObject):
+            def search_s(ldapo, base, scope,
+                         filter_str=self.DEFAULT_FILTER_STR,
+                         *args, **kwargs):
+                user_dn = 'CN=Bob,OU=MyOrg,DC=example,DC=COM'
+                settings.LDAP_FULL_NAME_ATTRIBUTE = 'fn'
+
+                if base == 'CN=admin,DC=example,DC=com':
+                    self.assertEqual(scope, ldap.SCOPE_SUBTREE)
+                    self.assertEqual(filter_str, '(uid=doc)')
+
+                    return [[user_dn]]
+                elif base == user_dn:
+                    self.assertEqual(scope, ldap.SCOPE_BASE)
+                    self.assertEqual(filter_str, self.DEFAULT_FILTER_STR)
+
+                    return [[
+                        user_dn,
+                        {
+                            'fn': ['Bob'],
+                            'email': ['imbob@example.com']
+                        }
+                    ]]
+                else:
+                    self.fail('Unexpected LDAP base "%s" in search_s() call.'
+                              % base)
+
+        self._patch_ldap(TestLDAPObject)
+
+        self.assertEqual(User.objects.count(), 0)
+
+        user = self.backend.get_or_create_user(username='doc', request=None)
+        self.assertIsNotNone(user)
+        self.assertEqual(User.objects.count(), 1)
+
+        self.assertEqual(user.first_name, 'Bob')
+        self.assertEqual(user.last_name, '')
+
     def _patch_ldap(self, cls):
         self.spy_on(ldap.initialize, call_fake=lambda uri, *args: cls(uri))
 
