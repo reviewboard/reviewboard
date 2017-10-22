@@ -151,6 +151,12 @@ RB.ReviewablePageView = RB.PageView.extend({
         this._favIconNotifyURL = null;
         this._logoNotificationsURL = null;
 
+        /*
+         * Power Pack (and possibly other extensions) expect a "reviewRequest"
+         * attribute on the view, so associate that here.
+         */
+        this.reviewRequest = this.model.get('reviewRequest');
+
         RB.NotificationManager.instance.setup();
 
         if (RB.UserSession.instance.get('authenticated')) {
