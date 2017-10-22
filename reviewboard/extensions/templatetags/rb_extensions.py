@@ -18,7 +18,7 @@ register = template.Library()
 def action_hooks(context, hook_cls, action_key="action",
                  template_name="extensions/action.html"):
     """Displays all registered action hooks from the specified ActionHook."""
-    s = ""
+    html = []
 
     for hook in hook_cls.hooks:
         try:
@@ -28,7 +28,7 @@ def action_hooks(context, hook_cls, action_key="action",
                     context[action_key] = actions
 
                     try:
-                        s += render_to_string(template_name, context)
+                        html.append(render_to_string(template_name, context))
                     except Exception as e:
                         logging.error(
                             'Error when rendering template for action "%s" '
@@ -42,27 +42,29 @@ def action_hooks(context, hook_cls, action_key="action",
                           'in extension "%s": %s',
                           hook, hook.extension.id, e, exc_info=1)
 
-    return s
+    return ''.join(html)
 
 
 @register.simple_tag(takes_context=True)
 def navigation_bar_hooks(context):
     """Displays all registered navigation bar entries."""
-    s = ""
+    html = []
 
     for hook in NavigationBarHook.hooks:
         try:
             for nav_info in hook.get_entries(context):
                 if nav_info:
                     url_name = nav_info.get('url_name', None)
+
                     if url_name:
                         nav_info['url'] = local_site_reverse(
                             url_name, request=context.get('request'))
 
                     context.push()
                     context['entry'] = nav_info
-                    s += render_to_string("extensions/navbar_entry.html",
-                                          context)
+                    html.append(render_to_string(
+                        'extensions/navbar_entry.html',
+                        context))
                     context.pop()
         except Exception as e:
             extension = hook.extension
@@ -70,7 +72,7 @@ def navigation_bar_hooks(context):
                           'get_entries function in extension: "%s": %s',
                           extension.id, e, exc_info=1)
 
-    return s
+    return ''.join(html)
 
 
 @register.simple_tag(takes_context=True)
@@ -93,19 +95,19 @@ def comment_detail_display_hook(context, comment, render_mode):
     """Displays all additional detail from CommentDetailDisplayHooks."""
     assert render_mode in ('review', 'text-email', 'html-email')
 
-    s = ''
+    html = []
 
     for hook in CommentDetailDisplayHook.hooks:
         try:
             if render_mode == 'review':
-                s += hook.render_review_comment_detail(comment)
+                html.append(hook.render_review_comment_detail(comment))
             elif render_mode in ('text-email', 'html-email'):
-                s += hook.render_email_comment_detail(
-                    comment, render_mode == 'html-email')
+                html.append(hook.render_email_comment_detail(
+                    comment, render_mode == 'html-email'))
         except Exception as e:
             extension = hook.extension
             logging.error('Error when running CommentDetailDisplayHook with '
                           'render mode "%s" in extension: %s: %s',
                           render_mode, extension.id, e, exc_info=1)
 
-    return s
+    return ''.join(html)

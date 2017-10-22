@@ -24,7 +24,7 @@ def highlightregion(value, regions):
     if not regions:
         return value
 
-    s = ''
+    html = []
 
     # We need to insert span tags into a string already consisting
     # of span tags. We have a list of ranges that our span tags should
@@ -49,33 +49,33 @@ def highlightregion(value, regions):
 
         if c == '<':
             if in_hl:
-                s += '</span>'
+                html.append('</span>')
                 in_hl = False
 
             k = value.find('>', i)
             assert k != -1
 
-            s += value[i:k + 1]
+            html.append(value[i:k + 1])
             i = k
         else:
             if not in_hl and region_start <= j < region_end:
-                s += '<span class="hl">'
+                html.append('<span class="hl">')
                 in_hl = True
 
             if c == '&':
                 k = value.find(';', i)
                 assert k != -1
 
-                s += value[i:k + 1]
+                html.append(value[i:k + 1])
                 i = k
                 j += 1
             else:
                 j += 1
-                s += c
+                html.append(c)
 
         if j == region_end:
             if in_hl:
-                s += '</span>'
+                html.append('</span>')
                 in_hl = False
 
             r += 1
@@ -88,10 +88,9 @@ def highlightregion(value, regions):
         i += 1
 
     if i + 1 < len(value):
-        s += value[i + 1:]
+        html.append(value[i + 1:])
 
-    return s
-highlightregion.is_safe = True
+    return mark_safe(''.join(html))
 
 
 extraWhitespace = re.compile(r'(\s+(</span>)?$| +\t)')
