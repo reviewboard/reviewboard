@@ -714,11 +714,14 @@ class BaseReviewRequestPageEntry(object):
         """
         return ''
 
-    def __init__(self, entry_id, added_timestamp, updated_timestamp=None,
-                 collapsed=False, avatar_user=None):
+    def __init__(self, data, entry_id, added_timestamp,
+                 updated_timestamp=None, collapsed=False, avatar_user=None):
         """Initialize the entry.
 
         Args:
+            data (ReviewRequestPageData):
+                The computed data for the page.
+
             entry_id (unicode):
                 The ID of the entry. This must be unique across this type
                 of entry, and may refer to a database object ID.
@@ -740,6 +743,7 @@ class BaseReviewRequestPageEntry(object):
                 which case no avatar will be displayed. Templates can also
                 override the avatar HTML instead of using this.
         """
+        self.data = data
         self.entry_id = entry_id
         self.added_timestamp = added_timestamp
         self.updated_timestamp = updated_timestamp or added_timestamp
@@ -1051,7 +1055,7 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin,
                 'url_text': update.url_text,
             })
 
-    def populate_status_updates(self, status_updates, data):
+    def populate_status_updates(self, status_updates):
         """Populate the list of status updates for the entry.
 
         This will add all the provided status updates and all comments from
@@ -1062,10 +1066,9 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin,
             status_updates (list of reviewboard.reviews.models.status_update.
                             StatusUpdate):
                 The list of status updates to add.
-
-            data (ReviewRequestPageData):
-                The data used for the entries on the page.
         """
+        data = self.data
+
         for update in status_updates:
             self.add_update(update)
 
@@ -1238,27 +1241,23 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
             InitialStatusUpdatesEntry:
             The entry to include on the page.
         """
-        entry = cls(review_request=data.review_request,
-                    collapsed=(len(data.changedescs) > 0),
-                    data=data)
-        entry.populate_status_updates(data.initial_status_updates, data)
+        entry = cls(data=data,
+                    collapsed=(len(data.changedescs) > 0))
+        entry.populate_status_updates(data.initial_status_updates)
 
         yield entry
 
-    def __init__(self, review_request, collapsed, data):
+    def __init__(self, collapsed, data):
         """Initialize the entry.
 
         Args:
-            review_request (reviewboard.reviews.models.ReviewRequest):
-                The review request that the change is for.
-
             collapsed (bool):
                 Whether the entry is collapsed by default.
 
             data (ReviewRequestPageData):
                 Pre-queried data for the review request page.
         """
-        timestamps = [review_request.time_added] + [
+        timestamps = [data.review_request.time_added] + [
             status_update.timestamp
             for status_update in data.initial_status_updates
         ]
@@ -1266,8 +1265,9 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
         StatusUpdatesEntryMixin.__init__(self)
         BaseReviewRequestPageEntry.__init__(
             self,
+            data=data,
             entry_id='0',
-            added_timestamp=review_request.time_added,
+            added_timestamp=data.review_request.time_added,
             updated_timestamp=get_latest_timestamp(timestamps),
             collapsed=collapsed)
 
@@ -1375,26 +1375,21 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
                      data.last_visited < latest_reply)
             )
 
-            entry = cls(request=data.request,
-                        review_request=data.review_request,
-                        review=review,
+            entry = cls(data=data,
                         collapsed=collapsed,
-                        data=data)
+                        review=review)
 
             for comment in data.review_comments.get(review.pk, []):
                 entry.add_comment(comment._type, comment)
 
             yield entry
 
-    def __init__(self, request, review_request, review, collapsed, data):
+    def __init__(self, data, review, collapsed):
         """Initialize the entry.
 
         Args:
-            request (django.http.HttpRequest):
-                The request object.
-
-            review_request (reviewboard.reviews.models.ReviewRequest):
-                The review request that the change is for.
+            data (ReviewRequestPageData):
+                Pre-queried data for the review request page.
 
             review (reviewboard.reviews.models.Review):
                 The review.
@@ -1402,21 +1397,18 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
             collapsed (bool):
                 Whether the entry is collapsed by default.
 
-            data (ReviewRequestPageData):
-                Pre-queried data for the review request page.
         """
         updated_timestamp = \
             data.latest_timestamps_by_review_id.get(review.pk,
                                                     review.timestamp)
 
-        super(ReviewEntry, self).__init__(entry_id=six.text_type(review.pk),
+        super(ReviewEntry, self).__init__(data=data,
+                                          entry_id=six.text_type(review.pk),
                                           added_timestamp=review.timestamp,
                                           updated_timestamp=updated_timestamp,
                                           collapsed=collapsed,
                                           avatar_user=review.user)
 
-        self.request = request
-        self.review_request = review_request
         self.review = review
         self.issue_open_count = 0
         self.has_issues = False
@@ -1430,7 +1422,7 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
     @property
     def can_revoke_ship_it(self):
         """Whether the Ship It can be revoked by the current user."""
-        return self.review.can_user_revoke_ship_it(self.request.user)
+        return self.review.can_user_revoke_ship_it(self.data.request.user)
 
     def get_dom_element_id(self):
         """Return the ID used for the DOM element for this entry.
@@ -1473,6 +1465,8 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
             comment (reviewboard.reviews.models.BaseComment):
                 The comment to add.
         """
+        data = self.data
+
         self.comments[comment_type].append(comment)
 
         if comment.issue_opened:
@@ -1483,7 +1477,7 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
                                         BaseComment.VERIFYING_DROPPED):
                 self.issue_open_count += 1
 
-                if self.review_request.submitter == self.request.user:
+                if data.review_request.submitter == data.request.user:
                     self.collapsed = False
 
     def get_js_model_data(self):
@@ -1545,37 +1539,31 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
             collapsed = \
                 changedesc.timestamp < data.latest_changedesc_timestamp
 
-            entry = cls(request=data.request,
-                        review_request=data.review_request,
-                        changedesc=changedesc,
+            entry = cls(data=data,
                         collapsed=collapsed,
-                        data=data)
+                        changedesc=changedesc)
             entry.populate_status_updates(
-                data.change_status_updates.get(changedesc.pk, []),
-                data)
+                data.change_status_updates.get(changedesc.pk, []))
 
             yield entry
 
-    def __init__(self, request, review_request, changedesc, collapsed, data):
+    def __init__(self, data, changedesc, collapsed):
         """Initialize the entry.
 
         Args:
-            request (django.http.HttpRequest):
-                The request object.
-
-            review_request (reviewboard.reviews.models.ReviewRequest):
-                The review request that the change is for.
+            data (ReviewRequestPageData):
+                Pre-queried data for the review request page.
 
             changedesc (reviewboard.changedescs.models.ChangeDescription):
                 The change description for this entry.
 
             collapsed (bool):
                 Whether the entry is collapsed by default.
-
-            data (ReviewRequestPageData):
-                Pre-queried data for the review request page.
         """
         status_updates = data.change_status_updates.get(changedesc.pk, [])
+        review_request = data.review_request
+        request = data.request
+
         timestamps = [changedesc.timestamp] + [
             status_update.timestamp
             for status_update in status_updates
@@ -1583,6 +1571,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
 
         BaseReviewRequestPageEntry.__init__(
             self,
+            data=data,
             entry_id=six.text_type(changedesc.pk),
             added_timestamp=changedesc.timestamp,
             updated_timestamp=get_latest_timestamp(timestamps),
@@ -1593,7 +1582,6 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
             StatusUpdatesEntryMixin.__init__(self)
 
         self.changedesc = changedesc
-        self.review_request = review_request
         self.fields_changed_groups = []
         cur_field_changed_group = None
 
@@ -1670,7 +1658,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
         """
         return self.changedesc.is_new_for_user(user=user,
                                                last_visited=last_visited,
-                                               model=self.review_request)
+                                               model=self.data.review_request)
 
 
 class ReviewRequestPageEntryRegistry(OrderedRegistry):
