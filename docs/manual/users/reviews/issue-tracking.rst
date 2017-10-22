@@ -4,8 +4,6 @@
 Issue Tracking
 ==============
 
-.. versionadded:: 1.6
-
 When reviewing code or other files, some comments are more critical than
 others. The reviewer may just have a question or suggest something optional,
 but they may also have a critical issue that must be resolved before the

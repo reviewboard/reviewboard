@@ -4,8 +4,6 @@
 Rich Text Fields and Types
 ==========================
 
-.. versionadded:: 2.0
-
 Several resources in the API provide text fields that can store either plain
 text or Markdown text. These text fields are accompanied by a text type
 field that indicates the type of text being stored (see
@@ -144,8 +142,6 @@ handle any styling.
 
 Including Extra Text Types
 --------------------------
-
-.. versionadded:: 2.0.12
 
 While forcing text types will result in changes to the text fields in the
 payload, that's not always what's wanted. Sometimes the caller needs to get

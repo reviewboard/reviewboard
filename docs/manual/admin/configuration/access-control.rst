@@ -4,8 +4,6 @@
 Access Control
 ==============
 
-.. versionadded:: 1.6
-
 Review Board can limit who can view certain review requests, access
 repositories, and join groups. This can be useful in large organizations
 or companies where not everyone has access to every project.

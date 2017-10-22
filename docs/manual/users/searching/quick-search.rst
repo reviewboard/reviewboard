@@ -4,8 +4,6 @@
 Quick Search
 ============
 
-.. versionadded:: 1.6
-
 The search field found on every page can be used to quickly locate
 review requests, users, and groups without needing to do a full search.
 

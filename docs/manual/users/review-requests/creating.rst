@@ -98,8 +98,6 @@ information.
 Post-commit Review Requests
 ---------------------------
 
-.. versionadded:: 2.0
-
 The web UI now allows you to create review requests for :term:`post-commit
 review`.
 

@@ -21,8 +21,6 @@ Once a review has been marked Ship It and published, it cannot be undone.
 Quick Ship-It
 -------------
 
-.. versionadded:: 1.6
-
 If you're approving a change and you don't have any other comments to add, you
 can click the :guilabel:`Ship It!` button on the review request action bar
 instead. A confirmation dialog will appear asking if you're sure, and once

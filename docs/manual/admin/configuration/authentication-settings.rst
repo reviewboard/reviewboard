@@ -199,10 +199,6 @@ This is available if `Authentication Method`_ is set to ``NIS``.
 Legacy Authentication Module Settings
 =====================================
 
-.. versionchanged:: 1.6
-   This authentication module used to be named "Custom."
-
-
 This is available if `Authentication Method`_ is set to
 ``Legacy Authentication Module``.
 
