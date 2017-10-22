@@ -62,8 +62,6 @@ General Information
 .. _review-group-visible:
 
 * **Visible**
-    .. versionadded:: 1.6
-
     If checked, the group is visible to all users. Otherwise, it will be
     hidden from all lists. This is often used in conjunction with
     `Invite only`_.
@@ -73,8 +71,6 @@ General Information
 
 Access Control
 ~~~~~~~~~~~~~~
-
-.. versionadded:: 1.6
 
 Review group access can be made invite-only and limited only to the users
 the administrator specifically added.

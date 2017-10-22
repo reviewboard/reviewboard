@@ -4,8 +4,6 @@
 AuthBackendHook
 ===============
 
-.. versionadded:: 2.0
-
 :py:class:`reviewboard.extensions.hooks.AuthBackendHook` allows extensions to
 register new authentication backends, which can be used to integrate with
 databases or servers to handle authentication, user lookup, and profile

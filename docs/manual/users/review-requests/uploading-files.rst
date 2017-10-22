@@ -4,8 +4,6 @@
 Uploading File Attachments
 ==========================
 
-.. versionadded:: 1.6
-
 Any type of file can be added to a review request. Log files, binaries, test
 data, audio, or anything else. This is especially helpful for files that are
 part of a change but can't be represented in diffs, as well as things like

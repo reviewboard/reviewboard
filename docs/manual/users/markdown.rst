@@ -4,8 +4,6 @@
 Using Markdown
 ==============
 
-.. versionadded:: 2.0
-
 Many of the multi-line text fields in Review Board support a simple markup
 language called :term:`Markdown`. This allows you to perform basic formatting
 of your text (such as creating lists or denoting emphasis), as well as more

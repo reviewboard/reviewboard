@@ -4,8 +4,6 @@
 Extensions
 ==========
 
-.. versionadded:: 1.7
-
 Review Board provides an extension API that can be used to extend the
 available features across the product.
 

@@ -32,8 +32,6 @@ the diffs.
 The File Index
 --------------
 
-.. versionchanged:: 2.0
-
 The file index is a list of all the files which are shown on the current page.
 There are several parts to this display:
 
@@ -52,12 +50,6 @@ There are several parts to this display:
 
 Viewing Other Diff Revisions
 ----------------------------
-
-.. versionchanged:: 2.0
-   The diff revision selector used to use two rows of revisions that could be
-   clicked to jump to various revisions or interdiffs. Please see older
-   versions of the user manual if you're running a version of Review Board
-   prior to 2.0.
 
 Every public revision of a diff that was posted is available for review. The
 diff revision selector allows you to look at previous versions of the change.
@@ -119,8 +111,6 @@ indicators can be clicked to jump to the other end of the move.
 
 Indentation Change Indicators
 -----------------------------
-
-.. versionadded:: 2.0
 
 Historically, Review Board would show lines that differed only in their
 indentation as being equal. This is nice in most cases, but can hide important

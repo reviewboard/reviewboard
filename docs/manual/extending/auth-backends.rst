@@ -4,11 +4,6 @@
 Writing Authentication Backends
 ===============================
 
-.. versionadded:: 1.6
-   The authentication backends described here are new in Review Board 1.6.
-   For Review Board 1.0 and 1.5, see :ref:`writing-legacy-auth-backends`.
-
-
 Overview
 ========
 
