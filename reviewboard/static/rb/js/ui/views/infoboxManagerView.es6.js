@@ -11,10 +11,10 @@
  */
 RB.InfoboxManagerView = Backbone.View.extend({
     /** The delay after hovering over a target before displaying an infobox. */
-    POPUP_DELAY_MS: 500,
+    POPUP_DELAY_MS: 700,
 
     /** The delay after leaving a target before hiding an infobox. */
-    HIDE_DELAY_MS: 300,
+    HIDE_DELAY_MS: 400,
 
     /** The animation time for fading in an infobox. */
     FADE_IN_MS: 200,
@@ -266,6 +266,9 @@ RB.InfoboxManagerView = Backbone.View.extend({
      *         The type of infobox to show.
      */
     _onTargetMouseEnter($target, infoboxViewType) {
+        clearTimeout(this._hideTimeout);
+        this._hideTimeout = null;
+
         this._showTimeout = setTimeout(
             () => {
                 this._showTimeout = null;
@@ -295,6 +298,8 @@ RB.InfoboxManagerView = Backbone.View.extend({
              * leaving it. Since there's no other infobox queued up,
              * begin the process of fading it out, after a delay.
              */
+            clearTimeout(this._hideTimeout);
+
             this._hideTimeout = setTimeout(
                 () => {
                     this._hideInfobox();
