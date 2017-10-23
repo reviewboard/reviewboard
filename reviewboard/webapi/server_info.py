@@ -1,3 +1,5 @@
+"""Server information and capability registration for the API."""
+
 from __future__ import unicode_literals
 
 import logging
@@ -45,10 +47,14 @@ _capabilities_defaults = {
 
 
 def get_server_info(request=None):
-    """Returns server information for use in the API.
+    """Return server information for use in the API.
 
     This is used for the root resource and for the deprecated server
     info resource.
+
+    Args:
+        request (django.http.HttpRequest, optional):
+            The HTTP request from the client.
     """
     capabilities = _capabilities_defaults.copy()
     capabilities.update(_registered_capabilities)
@@ -71,18 +77,32 @@ def get_server_info(request=None):
             ],
             'time_zone': settings.TIME_ZONE,
         },
-        'capabilities': capabilities
+        'capabilities': capabilities,
     }
 
 
 def register_webapi_capabilities(capabilities_id, caps):
-    """Registers a set of web API capabilities.
+    """Register a set of web API capabilities.
 
     These capabilities will appear in the dictionary of available
     capabilities with the ID as their key.
 
     A capabilties_id attribute passed in, and can only be registerd once.
     A KeyError will be thrown if attempting to register a second time.
+
+    Args:
+        capabilities_id (unicode):
+            A unique ID representing this collection of capabilities.
+            This can only be used once until unregistered.
+
+        caps (dict):
+            The dictionary of capabilities to register. Each key msut
+            be a string, and each value should be a boolean or a
+            dictionary of string keys to booleans.
+
+    Raises:
+        KeyError:
+            The capabilities ID has already been used.
     """
     if not capabilities_id:
         raise ValueError('The capabilities_id attribute must not be None')
@@ -99,7 +119,16 @@ def register_webapi_capabilities(capabilities_id, caps):
 
 
 def unregister_webapi_capabilities(capabilities_id):
-    """Unregisters a previously registered set of web API capabilities."""
+    """Unregister a previously registered set of web API capabilities.
+
+    Args:
+        capabilities_id (unicode):
+            The unique ID representing a registered collection of capabilities.
+
+    Raises:
+        KeyError:
+            A set of capabilities matching the ID were not found.
+    """
     try:
         del _registered_capabilities[capabilities_id]
     except KeyError:
