@@ -298,8 +298,45 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
 
     def update_review(self, request, review, public=None,
                       publish_to_submitter_only=False, extra_fields={},
-                      ship_it=None, *args, **kwargs):
-        """Common function to update fields on a draft review."""
+                      ship_it=None, **kwargs):
+        """Update an existing review based on the requested data.
+
+        This will modify a review, setting new fields requested by the
+        caller.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            review (reviewboard.reviews.models.review.Review):
+                The review being modified.
+
+            public (bool, optional):
+                Whether the review is being made public for the first
+                time.
+
+            publish_to_submitter_only (bool, optional):
+                Whether an e-mail for the published review should only be
+                sent to the owner of the review request. This is ignored if
+                ``public`` is not ``True``.
+
+            extra_fields (dict, optional):
+                Extra fields from the request not otherwise handled by the
+                API resource. Any ``extra_data`` modifications from this will
+                be applied to the comment.
+
+            ship_it (bool, optional):
+                The new Ship It state for the review.
+
+            **kwargs (dict):
+                Keyword arguments representing additional fields handled by
+                the API resource.
+
+        Returns:
+            tuple or djblets.webapi.errors.WebAPIError:
+            Either a successful payload containing the review, or an error
+            payload.
+        """
         if not self.has_modify_permissions(request, review):
             # Can't modify published reviews or those not belonging
             # to the user.
