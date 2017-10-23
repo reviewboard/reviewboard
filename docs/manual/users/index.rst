@@ -112,7 +112,7 @@ Managing reviews
 Discussing reviews
 ------------------
 
-* :doc:`Replying to comments <reviews/approving-changes>`
+* :doc:`Replying to comments <reviews/replying>`
 
 
 Editing in Markdown
