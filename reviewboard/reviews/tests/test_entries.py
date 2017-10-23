@@ -693,8 +693,10 @@ class InitialStatusUpdatesEntryTests(TestCase):
             review=self.review,
             timestamp=datetime(2017, 9, 14, 15, 40, 0, tzinfo=utc))
 
-        self.data = ReviewRequestPageData(review_request=self.review_request,
-                                          request=self.request)
+        self.data = ReviewRequestPageData(
+            review_request=self.review_request,
+            request=self.request,
+            last_visited=self.review_request.time_added + timedelta(days=10))
 
     def test_added_timestamp(self):
         """Testing InitialStatusUpdatesEntry.added_timestamp"""
@@ -758,7 +760,6 @@ class InitialStatusUpdatesEntryTests(TestCase):
         self.assertEqual(len(entries), 1)
 
         entry = entries[0]
-        self.assertTrue(entry.collapsed)
         self.assertEqual(entry.status_updates, [self.status_update])
         self.assertEqual(
             entry.status_updates_by_review,
@@ -797,6 +798,8 @@ class InitialStatusUpdatesEntryTests(TestCase):
         self.data.query_data_pre_etag()
         self.data.query_data_post_etag()
 
+        self.assertTrue(len(self.data.changedescs) == 0)
+
         entry = InitialStatusUpdatesEntry(data=self.data)
         self.assertFalse(entry.collapsed)
 
@@ -807,6 +810,8 @@ class InitialStatusUpdatesEntryTests(TestCase):
 
         self.data.query_data_pre_etag()
         self.data.query_data_post_etag()
+
+        self.assertTrue(len(self.data.changedescs) > 0)
 
         entry = InitialStatusUpdatesEntry(data=self.data)
         self.assertTrue(entry.collapsed)
@@ -842,6 +847,54 @@ class InitialStatusUpdatesEntryTests(TestCase):
         self.data.query_data_pre_etag()
         self.data.query_data_post_etag()
 
+        self.assertIn(review.pk, self.data.draft_reply_comments)
+
+        entry = InitialStatusUpdatesEntry(data=self.data)
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_with_status_updates_and_draft_body_top_replies(self):
+        """Testing InitialStatusUpdatesEntry.collapsed with status updates
+        containing draft replies to body_top
+        """
+        self.request.user = self.review_request.submitter
+
+        review = self.create_review(self.review_request, publish=True)
+        self.create_status_update(self.review_request, review=review)
+
+        self.create_reply(review,
+                          user=self.request.user,
+                          body_top_reply_to=review)
+
+        self.review_request.changedescs.create(public=True)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        self.assertIn(review.pk, self.data.draft_body_top_replies)
+
+        entry = InitialStatusUpdatesEntry(data=self.data)
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_with_status_updates_and_draft_body_bottom_replies(self):
+        """Testing InitialStatusUpdatesEntry.collapsed with status updates
+        containing draft replies to body_bottom
+        """
+        self.request.user = self.review_request.submitter
+
+        review = self.create_review(self.review_request, publish=True)
+        self.create_status_update(self.review_request, review=review)
+
+        self.create_reply(review,
+                          user=self.request.user,
+                          body_bottom_reply_to=review)
+
+        self.review_request.changedescs.create(public=True)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        self.assertIn(review.pk, self.data.draft_body_bottom_replies)
+
         entry = InitialStatusUpdatesEntry(data=self.data)
         self.assertFalse(entry.collapsed)
 
@@ -869,8 +922,10 @@ class ReviewEntryTests(TestCase):
             timestamp=self.review.timestamp + timedelta(days=10),
             public=True)
 
-        self.data = ReviewRequestPageData(review_request=self.review_request,
-                                          request=self.request)
+        self.data = ReviewRequestPageData(
+            review_request=self.review_request,
+            request=self.request,
+            last_visited=self.changedesc.timestamp)
 
     def test_added_timestamp(self):
         """Testing ReviewEntry.added_timestamp"""
@@ -999,30 +1054,41 @@ class ReviewEntryTests(TestCase):
         self.data.query_data_pre_etag()
         self.data.query_data_post_etag()
 
+        self.assertIn(self.review.pk, self.data.draft_reply_comments)
+
         entry = ReviewEntry(data=self.data,
                             review=self.review)
         self.assertFalse(entry.collapsed)
 
-    def test_collapsed_with_older_than_changedesc(self):
-        """Testing ReviewEntry.collapsed with review older than latest
-        Change Description
-        """
+    def test_collapsed_with_draft_body_top_replies(self):
+        """Testing ReviewEntry.collapsed with draft replies to body_top"""
+        self.request.user = self.review_request.submitter
+
+        self.create_reply(self.review,
+                          user=self.request.user,
+                          body_top_reply_to=self.review)
+
         self.data.query_data_pre_etag()
         self.data.query_data_post_etag()
+
+        self.assertIn(self.review.pk, self.data.draft_body_top_replies)
 
         entry = ReviewEntry(data=self.data,
                             review=self.review)
-        self.assertTrue(entry.collapsed)
+        self.assertFalse(entry.collapsed)
 
-    def test_collapsed_with_newer_than_changedesc(self):
-        """Testing ReviewEntry.collapsed with review newer than latest
-        Change Description
-        """
-        self.changedesc.timestamp = self.review.timestamp - timedelta(days=1)
-        self.changedesc.save()
+    def test_collapsed_with_draft_body_bottom_replies(self):
+        """Testing ReviewEntry.collapsed with draft replies to body_bottom"""
+        self.request.user = self.review_request.submitter
+
+        self.create_reply(self.review,
+                          user=self.request.user,
+                          body_bottom_reply_to=self.review)
 
         self.data.query_data_pre_etag()
         self.data.query_data_post_etag()
+
+        self.assertIn(self.review.pk, self.data.draft_body_bottom_replies)
 
         entry = ReviewEntry(data=self.data,
                             review=self.review)
@@ -1348,6 +1414,64 @@ class ChangeEntryTests(TestCase):
 
         self.data.query_data_pre_etag()
         self.data.query_data_post_etag()
+
+        self.assertIn(review.pk, self.data.draft_reply_comments)
+
+        entry = ChangeEntry(data=self.data,
+                            changedesc=self.changedesc)
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_with_status_updates_and_draft_body_top_replies(self):
+        """Testing ChangeEntry.collapsed with status updates containing draft
+        comment replies to body_top
+        """
+        self.request.user = self.review_request.submitter
+
+        review = self.create_review(self.review_request, publish=True)
+        self.create_status_update(self.review_request,
+                                  review=review,
+                                  change_description=self.changedesc)
+
+        self.create_reply(review,
+                          user=self.request.user,
+                          body_top_reply_to=review)
+
+        self.review_request.changedescs.create(
+            timestamp=self.changedesc.timestamp + timedelta(days=1),
+            public=True)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        self.assertIn(review.pk, self.data.draft_body_top_replies)
+
+        entry = ChangeEntry(data=self.data,
+                            changedesc=self.changedesc)
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_with_status_updates_and_draft_body_bottom_replies(self):
+        """Testing ChangeEntry.collapsed with status updates containing draft
+        comment replies to body_bottom
+        """
+        self.request.user = self.review_request.submitter
+
+        review = self.create_review(self.review_request, publish=True)
+        self.create_status_update(self.review_request,
+                                  review=review,
+                                  change_description=self.changedesc)
+
+        self.create_reply(review,
+                          user=self.request.user,
+                          body_bottom_reply_to=review)
+
+        self.review_request.changedescs.create(
+            timestamp=self.changedesc.timestamp + timedelta(days=1),
+            public=True)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        self.assertIn(review.pk, self.data.draft_body_bottom_replies)
 
         entry = ChangeEntry(data=self.data,
                             changedesc=self.changedesc)
