@@ -1121,9 +1121,12 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
         collapsed state. It's meant to be used along with other logic to
         compute an entry's collapsed state.
 
-        The result is based off the review's collapsed state for each status
-        update. Status updates not containing a review are considered
-        collapsable, and ones containing a review defer to
+        Status updates that are pending or have not yet been seen by the user
+        (assuming they've viewed the page at least once) are not collapsed.
+
+        Otherwise, the result is based off the review's collapsed state for
+        each status update. Status updates not containing a review are
+        considered collapsable, and ones containing a review defer to
         :py:meth:`ReviewEntryMixin.is_review_collapsed` for a result.
 
         Args:
@@ -1139,6 +1142,13 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
         data = self.data
 
         for status_update in status_updates:
+            if (data.last_visited and
+                status_update.timestamp > data.last_visited):
+                return False
+
+            if status_update.effective_state == status_update.PENDING:
+                return False
+
             if status_update.review_id is not None:
                 review = data.reviews_by_id[status_update.review_id]
 
@@ -1452,8 +1462,9 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
         data = self.data
 
         return (
-            # Don't collapse if there aren't any change descriptions yet.
-            len(data.changedescs) > 0 and
+            # Don't collapse if the user has not seen this page before (or
+            # are anonymous) and there aren't any change descriptions yet.
+            (data.last_visited or len(data.changedescs) > 0) and
 
             # Don't collapse if there are status updates containing reviews
             # that should not be collapsed.

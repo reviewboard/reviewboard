@@ -691,7 +691,8 @@ class InitialStatusUpdatesEntryTests(TestCase):
         self.status_update = self.create_status_update(
             self.review_request,
             review=self.review,
-            timestamp=datetime(2017, 9, 14, 15, 40, 0, tzinfo=utc))
+            timestamp=datetime(2017, 9, 14, 15, 40, 0, tzinfo=utc),
+            state=StatusUpdate.DONE_FAILURE)
 
         self.data = ReviewRequestPageData(
             review_request=self.review_request,
@@ -731,7 +732,6 @@ class InitialStatusUpdatesEntryTests(TestCase):
                          datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
         self.assertEqual(entry.updated_timestamp,
                          datetime(2017, 9, 14, 15, 40, 0, tzinfo=utc))
-        self.assertFalse(entry.collapsed)
         self.assertEqual(entry.status_updates, [self.status_update])
         self.assertEqual(
             entry.status_updates_by_review,
@@ -791,10 +791,24 @@ class InitialStatusUpdatesEntryTests(TestCase):
             last_visited=self.review_request.last_updated - timedelta(days=1),
             user=user))
 
-    def test_collapsed_with_no_changedescs(self):
+    def test_collapsed_with_no_changedescs_and_last_visited(self):
         """Testing InitialStatusUpdatesEntry.collapsed with no Change
-        Descriptions
+        Descriptions and page previously visited
         """
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        self.assertTrue(len(self.data.changedescs) == 0)
+
+        entry = InitialStatusUpdatesEntry(data=self.data)
+        self.assertTrue(entry.collapsed)
+
+    def test_collapsed_with_no_changedescs_and_not_last_visited(self):
+        """Testing InitialStatusUpdatesEntry.collapsed with no Change
+        Descriptions and page not previously visited
+        """
+        self.data.last_visited = None
+
         self.data.query_data_pre_etag()
         self.data.query_data_post_etag()
 
@@ -803,8 +817,9 @@ class InitialStatusUpdatesEntryTests(TestCase):
         entry = InitialStatusUpdatesEntry(data=self.data)
         self.assertFalse(entry.collapsed)
 
-    def test_collapsed_with_changedescs(self):
+    def test_collapsed_with_changedescs_and_last_visited(self):
         """Testing InitialStatusUpdatesEntry.collapsed with Change Descriptions
+        and page previously visited
         """
         self.review_request.changedescs.create(public=True)
 
@@ -816,12 +831,78 @@ class InitialStatusUpdatesEntryTests(TestCase):
         entry = InitialStatusUpdatesEntry(data=self.data)
         self.assertTrue(entry.collapsed)
 
+    def test_collapsed_with_changedescs_and_no_last_visited(self):
+        """Testing InitialStatusUpdatesEntry.collapsed with Change Descriptions
+        and page not previously visited
+        """
+        self.data.last_visited = None
+        self.review_request.changedescs.create(public=True)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        self.assertTrue(len(self.data.changedescs) > 0)
+
+        entry = InitialStatusUpdatesEntry(data=self.data)
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_with_pending_status_updates(self):
+        """Testing InitialStatusUpdatesEntry.collapsed with pending status
+        updates
+        """
+        self.status_update.state = StatusUpdate.PENDING
+        self.status_update.review = None
+        self.status_update.save(update_fields=('state', 'review'))
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = InitialStatusUpdatesEntry(data=self.data)
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_with_status_update_timestamp_gt_last_visited(self):
+        """Testing InitialStatusUpdatesEntry.collapsed with status update
+        timestamp newer than last visited
+        """
+        # To update the status update's timestamp, we need to perform an
+        # update() call on the queryset and reload.
+        StatusUpdate.objects.filter(pk=self.status_update.pk).update(
+            timestamp=self.data.last_visited + timedelta(days=1))
+        self.status_update = StatusUpdate.objects.get(pk=self.status_update.pk)
+
+        self.assertTrue(self.status_update.timestamp > self.data.last_visited)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = InitialStatusUpdatesEntry(data=self.data)
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_with_status_update_timestamp_lt_last_visited(self):
+        """Testing InitialStatusUpdatesEntry.collapsed with status update
+        timestamp newer than last visited
+        """
+        # To update the status update's timestamp, we need to perform an
+        # update() call on the queryset and reload.
+        StatusUpdate.objects.filter(pk=self.status_update.pk).update(
+            timestamp=self.data.last_visited - timedelta(days=1))
+        self.status_update = StatusUpdate.objects.get(pk=self.status_update.pk)
+
+        self.assertTrue(self.status_update.timestamp < self.data.last_visited)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = InitialStatusUpdatesEntry(data=self.data)
+        self.assertTrue(entry.collapsed)
+
     def test_collapsed_with_status_updates_and_no_reviews(self):
         """Testing InitialStatusUpdatesEntry.collapsed with status updates
         and no reviews
         """
-        self.create_status_update(self.review_request)
-        self.review_request.changedescs.create(public=True)
+        self.status_update.state = StatusUpdate.DONE_SUCCESS
+        self.status_update.review = None
+        self.status_update.save(update_fields=('state', 'review'))
 
         self.data.query_data_pre_etag()
         self.data.query_data_post_etag()
@@ -835,19 +916,17 @@ class InitialStatusUpdatesEntryTests(TestCase):
         """
         self.request.user = self.review_request.submitter
 
-        review = self.create_review(self.review_request, publish=True)
-        comment = self.create_general_comment(review)
-        self.create_status_update(self.review_request, review=review)
+        self.assertEqual(self.status_update.state, StatusUpdate.DONE_FAILURE)
 
-        reply = self.create_reply(review, user=self.request.user)
-        self.create_general_comment(reply, reply_to=comment)
+        reply = self.create_reply(self.review, user=self.request.user)
+        self.create_general_comment(reply, reply_to=self.general_comment)
 
         self.review_request.changedescs.create(public=True)
 
         self.data.query_data_pre_etag()
         self.data.query_data_post_etag()
 
-        self.assertIn(review.pk, self.data.draft_reply_comments)
+        self.assertIn(self.review.pk, self.data.draft_reply_comments)
 
         entry = InitialStatusUpdatesEntry(data=self.data)
         self.assertFalse(entry.collapsed)
@@ -858,19 +937,18 @@ class InitialStatusUpdatesEntryTests(TestCase):
         """
         self.request.user = self.review_request.submitter
 
-        review = self.create_review(self.review_request, publish=True)
-        self.create_status_update(self.review_request, review=review)
+        self.assertEqual(self.status_update.state, StatusUpdate.DONE_FAILURE)
 
-        self.create_reply(review,
+        self.create_reply(self.review,
                           user=self.request.user,
-                          body_top_reply_to=review)
+                          body_top_reply_to=self.review)
 
         self.review_request.changedescs.create(public=True)
 
         self.data.query_data_pre_etag()
         self.data.query_data_post_etag()
 
-        self.assertIn(review.pk, self.data.draft_body_top_replies)
+        self.assertIn(self.review.pk, self.data.draft_body_top_replies)
 
         entry = InitialStatusUpdatesEntry(data=self.data)
         self.assertFalse(entry.collapsed)
@@ -881,19 +959,18 @@ class InitialStatusUpdatesEntryTests(TestCase):
         """
         self.request.user = self.review_request.submitter
 
-        review = self.create_review(self.review_request, publish=True)
-        self.create_status_update(self.review_request, review=review)
+        self.assertEqual(self.status_update.state, StatusUpdate.DONE_FAILURE)
 
-        self.create_reply(review,
+        self.create_reply(self.review,
                           user=self.request.user,
-                          body_bottom_reply_to=review)
+                          body_bottom_reply_to=self.review)
 
         self.review_request.changedescs.create(public=True)
 
         self.data.query_data_pre_etag()
         self.data.query_data_post_etag()
 
-        self.assertIn(review.pk, self.data.draft_body_bottom_replies)
+        self.assertIn(self.review.pk, self.data.draft_body_bottom_replies)
 
         entry = InitialStatusUpdatesEntry(data=self.data)
         self.assertFalse(entry.collapsed)
@@ -1248,7 +1325,8 @@ class ReviewEntryTests(TestCase):
                                                   public=True)
         self.create_general_comment(status_update_review)
         self.create_status_update(self.review_request,
-                                  review=status_update_review)
+                                  review=status_update_review,
+                                  state=StatusUpdate.DONE_FAILURE)
 
         self.data.query_data_pre_etag()
         self.data.query_data_post_etag()
@@ -1379,7 +1457,8 @@ class ChangeEntryTests(TestCase):
     def test_collapsed_with_status_updates_and_no_reviews(self):
         """Testing ChangeEntry.collapsed with status updates and no reviews"""
         self.create_status_update(self.review_request,
-                                  change_description=self.changedesc)
+                                  change_description=self.changedesc,
+                                  state=StatusUpdate.DONE_SUCCESS)
 
         self.review_request.changedescs.create(
             timestamp=self.changedesc.timestamp + timedelta(days=1),
@@ -1403,7 +1482,8 @@ class ChangeEntryTests(TestCase):
 
         self.create_status_update(self.review_request,
                                   review=review,
-                                  change_description=self.changedesc)
+                                  change_description=self.changedesc,
+                                  state=StatusUpdate.DONE_FAILURE)
 
         reply = self.create_reply(review, user=self.request.user)
         self.create_general_comment(reply, reply_to=comment)
@@ -1421,6 +1501,77 @@ class ChangeEntryTests(TestCase):
                             changedesc=self.changedesc)
         self.assertFalse(entry.collapsed)
 
+    def test_collapsed_with_pending_status_updates(self):
+        """Testing ChangeEntry.collapsed with pending status updates"""
+        self.request.user = self.review_request.submitter
+
+        self.create_status_update(self.review_request,
+                                  change_description=self.changedesc,
+                                  state=StatusUpdate.PENDING)
+
+        self.review_request.changedescs.create(
+            timestamp=self.changedesc.timestamp + timedelta(days=1),
+            public=True)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ChangeEntry(data=self.data,
+                            changedesc=self.changedesc)
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_with_status_update_timestamp_gt_last_visited(self):
+        """Testing ChangeEntry.collapsed with status update timestamp newer
+        than last visited
+        """
+        self.request.user = self.review_request.submitter
+        self.data.last_visited = self.changedesc.timestamp + timedelta(days=1)
+
+        status_update = self.create_status_update(
+            self.review_request,
+            change_description=self.changedesc,
+            state=StatusUpdate.DONE_SUCCESS,
+            timestamp=self.data.last_visited + timedelta(days=1))
+
+        self.assertTrue(status_update.timestamp > self.data.last_visited)
+
+        self.review_request.changedescs.create(
+            timestamp=self.changedesc.timestamp + timedelta(days=1),
+            public=True)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ChangeEntry(data=self.data,
+                            changedesc=self.changedesc)
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_with_status_update_timestamp_lt_last_visited(self):
+        """Testing ChangeEntry.collapsed with status update timestamp older
+        than last visited
+        """
+        self.request.user = self.review_request.submitter
+        self.data.last_visited = self.changedesc.timestamp + timedelta(days=1)
+
+        status_update = self.create_status_update(
+            self.review_request,
+            change_description=self.changedesc,
+            state=StatusUpdate.DONE_SUCCESS,
+            timestamp=self.data.last_visited - timedelta(days=1))
+
+        self.assertTrue(status_update.timestamp < self.data.last_visited)
+
+        self.review_request.changedescs.create(
+            timestamp=self.changedesc.timestamp + timedelta(days=1),
+            public=True)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ChangeEntry(data=self.data,
+                            changedesc=self.changedesc)
+        self.assertTrue(entry.collapsed)
+
     def test_collapsed_with_status_updates_and_draft_body_top_replies(self):
         """Testing ChangeEntry.collapsed with status updates containing draft
         comment replies to body_top
@@ -1430,7 +1581,8 @@ class ChangeEntryTests(TestCase):
         review = self.create_review(self.review_request, publish=True)
         self.create_status_update(self.review_request,
                                   review=review,
-                                  change_description=self.changedesc)
+                                  change_description=self.changedesc,
+                                  state=StatusUpdate.DONE_FAILURE)
 
         self.create_reply(review,
                           user=self.request.user,
@@ -1458,7 +1610,8 @@ class ChangeEntryTests(TestCase):
         review = self.create_review(self.review_request, publish=True)
         self.create_status_update(self.review_request,
                                   review=review,
-                                  change_description=self.changedesc)
+                                  change_description=self.changedesc,
+                                  state=StatusUpdate.DONE_FAILURE)
 
         self.create_reply(review,
                           user=self.request.user,
