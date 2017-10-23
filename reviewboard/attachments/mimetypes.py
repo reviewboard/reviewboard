@@ -2,13 +2,15 @@
 
 from __future__ import unicode_literals
 
+import docutils.core
 import logging
 import os
 import subprocess
 
+import mimeparse
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.contrib.staticfiles.templatetags.staticfiles import static
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 from django.utils.encoding import smart_str, force_unicode
 from django.utils.safestring import mark_safe
 from djblets.cache.backend import cache_memoize
@@ -17,9 +19,8 @@ from djblets.util.templatetags.djblets_images import thumbnail
 from pygments import highlight
 from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
                              TextLexer)
-import docutils.core
-import markdown
-import mimeparse
+
+from reviewboard.reviews.markdown_utils import render_markdown
 
 
 _registered_mimetype_handlers = []
@@ -423,7 +424,7 @@ class TextMimetype(MimetypeHandler):
                 The contents of the attachment.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeText:
             The resulting HTML-safe thumbnail content.
         """
         from reviewboard.diffviewer.chunk_generator import \
@@ -446,10 +447,13 @@ class TextMimetype(MimetypeHandler):
 
         lines = highlight(text, lexer, NoWrapperHtmlFormatter()).splitlines()
 
-        return ''.join([
-            '<pre>%s</pre>' % line
-            for line in lines[:self.TEXT_CROP_NUM_HEIGHT]
-        ])
+        return format_html_join(
+            '',
+            '<pre>{0}</pre>',
+            (
+                (mark_safe(line),)
+                for line in lines[:self.TEXT_CROP_NUM_HEIGHT]
+            ))
 
     def _generate_thumbnail(self):
         """Return the HTML for a thumbnail preview for a text file.
@@ -475,11 +479,11 @@ class TextMimetype(MimetypeHandler):
         finally:
             f.close()
 
-        return mark_safe(
+        return format_html(
             '<div class="file-thumbnail">'
-            ' <div class="file-thumbnail-clipped">%s</div>'
-            '</div>'
-            % self._generate_preview_html(data))
+            ' <div class="file-thumbnail-clipped">{0}</div>'
+            '</div>',
+            self._generate_preview_html(data))
 
     def get_thumbnail(self):
         """Return the thumbnail of the text file as rendered as html.
@@ -517,7 +521,7 @@ class ReStructuredTextMimetype(TextMimetype):
                 The contents of the file.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeText:
             The resulting HTML-safe thumbnail content.
         """
         # Use safe filtering against injection attacks
@@ -532,7 +536,7 @@ class ReStructuredTextMimetype(TextMimetype):
             writer_name='html4css1',
             settings_overrides=docutils_settings)
 
-        return parts['html_body']
+        return mark_safe(parts['html_body'])
 
 
 class MarkDownMimetype(TextMimetype):
@@ -548,16 +552,10 @@ class MarkDownMimetype(TextMimetype):
         """Return the HTML for a thumbnail preview for a Markdown file.
 
         Returns:
-            unicode:
+            django.utils.safestring.SafeText:
             The resulting HTML-safe thumbnail content.
         """
-        # Use safe filtering against injection attacks
-        return markdown.markdown(
-            force_unicode(data_string),
-            enable_attributes=False,
-            extensions=[
-                'djblets.markdown.extensions.escape_html',
-            ])
+        return mark_safe(render_markdown(force_unicode(data_string)))
 
 
 # A mapping of mimetypes to icon names.

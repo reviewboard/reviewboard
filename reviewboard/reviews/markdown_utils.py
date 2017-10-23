@@ -16,6 +16,7 @@ from markdown import markdown
 # We use XHTML1 instead of HTML5 to ensure the results can be parsed by an
 # XML parser, needed for change descriptions and other parts of the web UI.
 MARKDOWN_KWARGS = {
+    'enable_attributes': False,
     'output_format': 'xhtml1',
     'lazy_ol': False,
     'extensions': [
