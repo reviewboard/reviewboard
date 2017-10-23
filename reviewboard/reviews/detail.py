@@ -16,6 +16,7 @@ from djblets.registries.registry import (ALREADY_REGISTERED,
                                          ATTRIBUTE_REGISTERED,
                                          NOT_REGISTERED)
 from djblets.util.dates import get_latest_timestamp
+from djblets.util.decorators import cached_property
 
 from reviewboard.registries.registry import OrderedRegistry
 from reviewboard.reviews.builtin_fields import ReviewRequestPageDataMixin
@@ -282,9 +283,7 @@ class ReviewRequestPageData(object):
             self.changedescs = list(
                 self.review_request.changedescs.filter(public=True))
 
-        if len(self.changedescs) == 0:
-            self.latest_changedesc_timestamp = datetime.fromtimestamp(0, utc)
-        else:
+        if self.changedescs:
             self.latest_changedesc_timestamp = self.changedescs[0].timestamp
 
         # Get the active draft (if any).
@@ -715,7 +714,7 @@ class BaseReviewRequestPageEntry(object):
         return ''
 
     def __init__(self, data, entry_id, added_timestamp,
-                 updated_timestamp=None, collapsed=False, avatar_user=None):
+                 updated_timestamp=None, avatar_user=None):
         """Initialize the entry.
 
         Args:
@@ -735,9 +734,6 @@ class BaseReviewRequestPageEntry(object):
                 The timestamp when the entry was last updated. This should
                 reflect new updates or activity on the entry.
 
-            collapsed (bool, optional):
-                Whether the entry is collapsed by default.
-
             avatar_user (django.contrib.auth.models.User, optional):
                 The user to display an avatar for. This can be ``None``, in
                 which case no avatar will be displayed. Templates can also
@@ -747,7 +743,6 @@ class BaseReviewRequestPageEntry(object):
         self.entry_id = entry_id
         self.added_timestamp = added_timestamp
         self.updated_timestamp = updated_timestamp or added_timestamp
-        self.collapsed = collapsed
         self.avatar_user = avatar_user
 
     def __repr__(self):
@@ -763,6 +758,16 @@ class BaseReviewRequestPageEntry(object):
             % (self.__class__.__name__, self.entry_type_id, self.entry_id,
                self.added_timestamp, self.updated_timestamp, self.collapsed)
         )
+
+    @cached_property
+    def collapsed(self):
+        """Whether the entry is collapsed.
+
+        This will consist of a cached value computed from
+        :py:meth:`calculate_collapsed`. Subclasses should override that
+        method.
+        """
+        return self.calculate_collapsed()
 
     def is_entry_new(self, last_visited, user, **kwargs):
         """Return whether the entry is new, from the user's perspective.
@@ -788,6 +793,33 @@ class BaseReviewRequestPageEntry(object):
         """
         return (self.added_timestamp is not None and
                 last_visited < self.added_timestamp)
+
+    def calculate_collapsed(self):
+        """Calculate whether the entry should currently be collapsed.
+
+        By default, this will collapse the entry if the last update is older
+        than the last time the user visited the entry and older than the last
+        Change Description (or there isn't one on the page yet).
+
+        Subclasses can augment or replace this logic as needed.
+
+        Returns:
+            bool:
+            ``True`` if the entry should be collapsed. ``False`` if it should
+            be expanded.
+        """
+        data = self.data
+
+        return bool(
+            # Collapse if older than the most recent review request
+            # change and there's no recent activity.
+            data.latest_changedesc_timestamp and
+            self.updated_timestamp < data.latest_changedesc_timestamp and
+
+            # Collapse if the page was previously visited and this entry is
+            # older than the last visited time.
+            data.last_visited and self.updated_timestamp < data.last_visited
+        )
 
     def get_dom_element_id(self):
         """Return the ID used for the DOM element for this entry.
@@ -1010,6 +1042,37 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin,
         self.status_updates_by_review = {}
         self.state_counts = Counter()
 
+    def are_status_updates_collapsed(self, status_updates):
+        """Return whether all status updates should be collapsed.
+
+        This considers all provided status updates when computing the
+        collapsed state. It's meant to be used along with other logic to
+        compute an entry's collapsed state.
+
+        The result is based off the review's collapsed state for each status
+        update. Status updates not containing a review are considered
+        collapsable, and ones containing a review are considered collapsed
+        if there aren't replies to comments.
+
+        Args:
+            status_updates (list of reviewboard.reviews.models.status_update.
+                            StatusUpdate):
+                The list of status updates to compute the collapsed state for.
+
+        Returns:
+            bool:
+            ``True`` if all status updates are marked as collapsed. ``False``
+            if any are not marked as collapsed.
+        """
+        data = self.data
+
+        for status_update in status_updates:
+            if (status_update.review_id is not None and
+                data.draft_reply_comments.get(status_update.review_id)):
+                return False
+
+        return True
+
     def add_update(self, update):
         """Add a status update to the entry.
 
@@ -1072,18 +1135,10 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin,
         for update in status_updates:
             self.add_update(update)
 
-            review_id = update.review_id
-
-            if review_id:
-                # Uncollapse this box if there are any status updates with
-                # reviews containing draft replies.
-                if data.draft_reply_comments.get(review_id, []):
-                    self.collapsed = False
-
-                # Add all the comments for the review on this status
-                # update.
-                for comment in data.review_comments.get(review_id, []):
-                    self.add_comment(comment._type, comment)
+            # Add all the comments for the review on this status
+            # update.
+            for comment in data.review_comments.get(update.review_id, []):
+                self.add_comment(comment._type, comment)
 
     def add_comment(self, comment_type, comment):
         """Add a comment to the entry.
@@ -1241,19 +1296,15 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
             InitialStatusUpdatesEntry:
             The entry to include on the page.
         """
-        entry = cls(data=data,
-                    collapsed=(len(data.changedescs) > 0))
+        entry = cls(data=data)
         entry.populate_status_updates(data.initial_status_updates)
 
         yield entry
 
-    def __init__(self, collapsed, data):
+    def __init__(self, data):
         """Initialize the entry.
 
         Args:
-            collapsed (bool):
-                Whether the entry is collapsed by default.
-
             data (ReviewRequestPageData):
                 Pre-queried data for the review request page.
         """
@@ -1268,8 +1319,7 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
             data=data,
             entry_id='0',
             added_timestamp=data.review_request.time_added,
-            updated_timestamp=get_latest_timestamp(timestamps),
-            collapsed=collapsed)
+            updated_timestamp=get_latest_timestamp(timestamps))
 
     @property
     def has_content(self):
@@ -1311,6 +1361,28 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
             ``False``, always.
         """
         return False
+
+    def calculate_collapsed(self):
+        """Calculate whether the entry should currently be collapsed.
+
+        The entry will be collapsed if there aren't yet any Change Descriptions
+        on the page.
+
+        Returns:
+            bool:
+            ``True`` if the entry should be collapsed. ``False`` if it should
+            be expanded.
+        """
+        data = self.data
+
+        return (
+            # Don't collapse if there aren't any change descriptions yet.
+            len(data.changedescs) > 0 and
+
+            # Don't collapse if there are status updates containing reviews
+            # that should not be collapsed.
+            self.are_status_updates_collapsed(data.initial_status_updates)
+        )
 
 
 class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
@@ -1359,24 +1431,7 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
                  hasattr(review, 'status_update'))):
                 continue
 
-            # Mark as collapsed if the review is older than the latest
-            # change, assuming there's no reply newer than last_visited.
-            latest_reply = data.latest_timestamps_by_review_id.get(review.pk)
-
-            collapsed = (
-                # Draft reviews with comments should never be collapsed.
-                not data.draft_reply_comments.get(review.pk, []) and
-
-                # Collapse if older than the most recent review request
-                # change and there's no recent activity.
-                review.timestamp < data.latest_changedesc_timestamp and
-                not (latest_reply and
-                     data.last_visited and
-                     data.last_visited < latest_reply)
-            )
-
             entry = cls(data=data,
-                        collapsed=collapsed,
                         review=review)
 
             for comment in data.review_comments.get(review.pk, []):
@@ -1384,7 +1439,7 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
 
             yield entry
 
-    def __init__(self, data, review, collapsed):
+    def __init__(self, data, review):
         """Initialize the entry.
 
         Args:
@@ -1393,22 +1448,7 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
 
             review (reviewboard.reviews.models.Review):
                 The review.
-
-            collapsed (bool):
-                Whether the entry is collapsed by default.
-
         """
-        updated_timestamp = \
-            data.latest_timestamps_by_review_id.get(review.pk,
-                                                    review.timestamp)
-
-        super(ReviewEntry, self).__init__(data=data,
-                                          entry_id=six.text_type(review.pk),
-                                          added_timestamp=review.timestamp,
-                                          updated_timestamp=updated_timestamp,
-                                          collapsed=collapsed,
-                                          avatar_user=review.user)
-
         self.review = review
         self.issue_open_count = 0
         self.has_issues = False
@@ -1418,6 +1458,16 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
             'file_attachment_comments': [],
             'general_comments': [],
         }
+
+        updated_timestamp = \
+            data.latest_timestamps_by_review_id.get(review.pk,
+                                                    review.timestamp)
+
+        super(ReviewEntry, self).__init__(data=data,
+                                          entry_id=six.text_type(review.pk),
+                                          added_timestamp=review.timestamp,
+                                          updated_timestamp=updated_timestamp,
+                                          avatar_user=review.user)
 
     @property
     def can_revoke_ship_it(self):
@@ -1465,8 +1515,6 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
             comment (reviewboard.reviews.models.BaseComment):
                 The comment to add.
         """
-        data = self.data
-
         self.comments[comment_type].append(comment)
 
         if comment.issue_opened:
@@ -1476,9 +1524,6 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
                                         BaseComment.VERIFYING_RESOLVED,
                                         BaseComment.VERIFYING_DROPPED):
                 self.issue_open_count += 1
-
-                if data.review_request.submitter == data.request.user:
-                    self.collapsed = False
 
     def get_js_model_data(self):
         """Return data to pass to the JavaScript Model during instantiation.
@@ -1502,6 +1547,52 @@ class ReviewEntry(ReviewSerializerMixin, DiffCommentsSerializerMixin,
             model_data['diffCommentsData'] = diff_comments_data
 
         return model_data
+
+    def calculate_collapsed(self):
+        """Calculate whether the entry should currently be collapsed.
+
+        The entry will be collapsed if there are not draft replies to comments
+        on the review, the timestamp of the review is older than the most
+        recent Change Description, and the last reply is older than the last
+        visit to the page.
+
+        Returns:
+            bool:
+            ``True`` if the entry should be collapsed. ``False`` if it should
+            be expanded.
+        """
+        data = self.data
+        review = self.review
+
+        # Mark as collapsed if the review is older than the latest
+        # change, assuming there's no reply newer than last_visited.
+        latest_reply = data.latest_timestamps_by_review_id.get(review.pk)
+
+        has_comments_with_issues = any(
+            (comment.issue_opened and
+             comment.issue_status in (comment.OPEN,
+                                      comment.VERIFYING_RESOLVED,
+                                      comment.VERIFYING_DROPPED))
+            for comment in data.review_comments.get(review.pk, [])
+        )
+
+        return bool(
+            # Reviews containing comments with open issues should never be
+            # collapsed.
+            not has_comments_with_issues and
+
+            # Draft reviews with comments should never be collapsed.
+            not data.draft_reply_comments.get(review.pk) and
+
+            # Collapse if older than the most recent review request
+            # change and there's no recent activity.
+            (data.latest_changedesc_timestamp and
+             review.timestamp < data.latest_changedesc_timestamp) and
+
+            not (latest_reply and
+                 data.last_visited and
+                 data.last_visited < latest_reply)
+        )
 
 
 class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
@@ -1535,19 +1626,14 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
             A change entry to include on the page.
         """
         for changedesc in data.changedescs:
-            # Mark as collapsed if the change is older than a newer change.
-            collapsed = \
-                changedesc.timestamp < data.latest_changedesc_timestamp
-
             entry = cls(data=data,
-                        collapsed=collapsed,
                         changedesc=changedesc)
             entry.populate_status_updates(
                 data.change_status_updates.get(changedesc.pk, []))
 
             yield entry
 
-    def __init__(self, data, changedesc, collapsed):
+    def __init__(self, data, changedesc):
         """Initialize the entry.
 
         Args:
@@ -1556,10 +1642,10 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
 
             changedesc (reviewboard.changedescs.models.ChangeDescription):
                 The change description for this entry.
-
-            collapsed (bool):
-                Whether the entry is collapsed by default.
         """
+        self.changedesc = changedesc
+        self.fields_changed_groups = []
+
         status_updates = data.change_status_updates.get(changedesc.pk, [])
         review_request = data.review_request
         request = data.request
@@ -1575,14 +1661,11 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
             entry_id=six.text_type(changedesc.pk),
             added_timestamp=changedesc.timestamp,
             updated_timestamp=get_latest_timestamp(timestamps),
-            collapsed=collapsed,
             avatar_user=changedesc.get_user(review_request))
 
         if data.status_updates_enabled:
             StatusUpdatesEntryMixin.__init__(self)
 
-        self.changedesc = changedesc
-        self.fields_changed_groups = []
         cur_field_changed_group = None
 
         # See if there was a review request status change.
@@ -1659,6 +1742,32 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
         return self.changedesc.is_new_for_user(user=user,
                                                last_visited=last_visited,
                                                model=self.data.review_request)
+
+    def calculate_collapsed(self):
+        """Calculate whether the entry should currently be collapsed.
+
+        The entry will be collapsed if the timestamp of the Change Description
+        is older than that of the most recent Change Description.
+
+        Returns:
+            bool:
+            ``True`` if the entry should be collapsed. ``False`` if it should
+            be expanded.
+        """
+        data = self.data
+        changedesc = self.changedesc
+        status_updates = data.change_status_updates.get(changedesc.pk, [])
+
+        return (
+            # If the change is older than the newest change, consider it
+            # for collapsing.
+            changedesc.timestamp < data.latest_changedesc_timestamp and
+
+            # Don't collapse if there are status updates containing reviews
+            # that should not be collapsed.
+            (not status_updates or
+             self.are_status_updates_collapsed(status_updates))
+        )
 
 
 class ReviewRequestPageEntryRegistry(OrderedRegistry):

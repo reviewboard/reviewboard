@@ -20,7 +20,8 @@ from reviewboard.reviews.detail import (BaseReviewRequestPageEntry,
                                         ReviewEntry,
                                         ReviewRequestPageData,
                                         StatusUpdatesEntryMixin)
-from reviewboard.reviews.models import GeneralComment, StatusUpdate
+from reviewboard.reviews.models import (BaseComment, GeneralComment,
+                                        StatusUpdate)
 from reviewboard.testing import TestCase
 
 
@@ -32,12 +33,12 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
     def setUp(self):
         super(BaseReviewRequestPageEntryTests, self).setUp()
 
-        review_request = self.create_review_request()
+        self.review_request = self.create_review_request()
 
         self.request = RequestFactory().request()
         self.request.user = AnonymousUser()
 
-        self.data = ReviewRequestPageData(review_request=review_request,
+        self.data = ReviewRequestPageData(review_request=self.review_request,
                                           request=self.request)
 
     def test_init_with_no_updated_timestamp(self):
@@ -47,8 +48,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         entry = BaseReviewRequestPageEntry(
             data=self.data,
             entry_id='test',
-            added_timestamp=datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc),
-            collapsed=False)
+            added_timestamp=datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
 
         self.assertEqual(entry.updated_timestamp,
                          datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
@@ -57,8 +57,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         """Testing BaseReviewRequestPageEntry.render_to_string"""
         entry = BaseReviewRequestPageEntry(data=self.data,
                                            entry_id='test',
-                                           added_timestamp=None,
-                                           collapsed=False)
+                                           added_timestamp=None)
         entry.template_name = 'reviews/entries/base.html'
 
         html = entry.render_to_string(
@@ -75,8 +74,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         """
         entry = BaseReviewRequestPageEntry(data=self.data,
                                            entry_id='test',
-                                           added_timestamp=None,
-                                           collapsed=False)
+                                           added_timestamp=None)
         entry.template_name = 'reviews/entries/base.html'
         entry.entry_pos = BaseReviewRequestPageEntry.ENTRY_POS_MAIN
 
@@ -93,8 +91,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         """
         entry = BaseReviewRequestPageEntry(data=self.data,
                                            entry_id='test',
-                                           added_timestamp=None,
-                                           collapsed=False)
+                                           added_timestamp=None)
         entry.template_name = 'reviews/entries/base.html'
         entry.entry_pos = BaseReviewRequestPageEntry.ENTRY_POS_INITIAL
 
@@ -112,8 +109,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         entry = BaseReviewRequestPageEntry(
             data=self.data,
             entry_id='test',
-            added_timestamp=datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc),
-            collapsed=False)
+            added_timestamp=datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
         entry.template_name = 'reviews/entries/base.html'
 
         self.request.user = User.objects.create(username='test-user')
@@ -135,8 +131,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         entry = BaseReviewRequestPageEntry(
             data=self.data,
             entry_id='test',
-            added_timestamp=datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc),
-            collapsed=False)
+            added_timestamp=datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
         entry.template_name = 'reviews/entries/base.html'
 
         self.request.user = User.objects.create(username='test-user')
@@ -158,8 +153,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         """
         entry = BaseReviewRequestPageEntry(data=self.data,
                                            entry_id='test',
-                                           added_timestamp=None,
-                                           collapsed=False)
+                                           added_timestamp=None)
 
         html = entry.render_to_string(
             self.request,
@@ -174,8 +168,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         """
         entry = BaseReviewRequestPageEntry(data=self.data,
                                            entry_id='test',
-                                           added_timestamp=None,
-                                           collapsed=False)
+                                           added_timestamp=None)
         entry.template_name = 'reviews/entries/base.html'
         entry.has_content = False
 
@@ -192,8 +185,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         """
         entry = BaseReviewRequestPageEntry(data=self.data,
                                            entry_id='test',
-                                           added_timestamp=None,
-                                           collapsed=False)
+                                           added_timestamp=None)
         entry.template_name = 'reviews/entries/NOT_FOUND.html'
 
         self.spy_on(logging.exception)
@@ -214,8 +206,7 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         entry = BaseReviewRequestPageEntry(
             data=self.data,
             entry_id='test',
-            added_timestamp=datetime(2017, 9, 7, 15, 36, 0, tzinfo=utc),
-            collapsed=False)
+            added_timestamp=datetime(2017, 9, 7, 15, 36, 0, tzinfo=utc))
 
         user = User.objects.create(username='test-user')
 
@@ -234,12 +225,84 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
         """
         entry = BaseReviewRequestPageEntry(data=self.data,
                                            entry_id='test',
-                                           added_timestamp=None,
-                                           collapsed=False)
+                                           added_timestamp=None)
 
         self.assertFalse(entry.is_entry_new(
             last_visited=datetime(2017, 9, 7, 10, 0, 0, tzinfo=utc),
             user=User.objects.create(username='test-user')))
+
+    def test_collapsed_with_older_than_last_visited(self):
+        """Testing BaseReviewRequestPageEntry.collapsed with entry older than
+        last visited
+        """
+        self.data.latest_changedesc_timestamp = \
+            self.review_request.time_added + timedelta(days=5)
+        self.data.last_visited = datetime(2017, 9, 7, 10, 0, 0, tzinfo=utc)
+
+        entry = BaseReviewRequestPageEntry(
+            data=self.data,
+            entry_id='test',
+            added_timestamp=self.data.last_visited - timedelta(days=2),
+            updated_timestamp=self.data.last_visited - timedelta(days=1))
+        self.assertTrue(entry.collapsed)
+
+    def test_collapsed_with_newer_than_last_visited(self):
+        """Testing BaseReviewRequestPageEntry.collapsed with entry newer than
+        last visited
+        """
+        self.data.last_visited = datetime(2017, 9, 7, 10, 0, 0, tzinfo=utc)
+
+        entry = BaseReviewRequestPageEntry(
+            data=self.data,
+            entry_id='test',
+            added_timestamp=self.data.last_visited,
+            updated_timestamp=self.data.last_visited + timedelta(days=1))
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_without_last_visited(self):
+        """Testing BaseReviewRequestPageEntry.collapsed without last visited
+        timestamp
+        """
+        entry = BaseReviewRequestPageEntry(
+            data=self.data,
+            entry_id='test',
+            added_timestamp=datetime(2017, 9, 6, 10, 0, 0, tzinfo=utc),
+            updated_timestamp=datetime(2017, 9, 7, 10, 0, 0, tzinfo=utc))
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_with_older_than_changedesc(self):
+        """Testing BaseReviewRequestPageEntry.collapsed with older than latest
+        Change Description
+        """
+        self.data.latest_changedesc_timestamp = \
+            self.review_request.time_added + timedelta(days=5)
+        self.data.last_visited = \
+            self.review_request.time_added + timedelta(days=10)
+
+        entry = BaseReviewRequestPageEntry(
+            data=self.data,
+            entry_id='test',
+            added_timestamp=(self.data.latest_changedesc_timestamp -
+                             timedelta(days=2)),
+            updated_timestamp=(self.data.latest_changedesc_timestamp -
+                               timedelta(days=1)))
+        self.assertTrue(entry.collapsed)
+
+    def test_collapsed_with_newer_than_changedesc(self):
+        """Testing BaseReviewRequestPageEntry.collapsed with newer than latest
+        Change Description
+        """
+        self.data.latest_changedesc_timestamp = self.review_request.time_added
+        self.data.last_visited = \
+            self.review_request.time_added + timedelta(days=10)
+
+        entry = BaseReviewRequestPageEntry(
+            data=self.data,
+            entry_id='test',
+            added_timestamp=self.data.latest_changedesc_timestamp,
+            updated_timestamp=(self.data.latest_changedesc_timestamp +
+                               timedelta(days=1)))
+        self.assertFalse(entry.collapsed)
 
 
 class StatusUpdatesEntryMixinTests(TestCase):
@@ -578,11 +641,9 @@ class StatusUpdatesEntryMixinTests(TestCase):
         data.draft_reply_comments[review.pk] = [reply_comment]
 
         entry = StatusUpdatesEntryMixin()
-        entry.collapsed = True
         entry.data = data
         entry.populate_status_updates(status_updates)
 
-        self.assertFalse(entry.collapsed)
         self.assertEqual(entry.status_updates, status_updates)
 
         status_update = entry.status_updates[0]
@@ -640,8 +701,7 @@ class InitialStatusUpdatesEntryTests(TestCase):
         self.data.query_data_pre_etag()
         self.data.query_data_post_etag()
 
-        entry = InitialStatusUpdatesEntry(data=self.data,
-                                          collapsed=False)
+        entry = InitialStatusUpdatesEntry(data=self.data)
 
         self.assertEqual(entry.added_timestamp,
                          datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
@@ -651,8 +711,7 @@ class InitialStatusUpdatesEntryTests(TestCase):
         self.data.query_data_pre_etag()
         self.data.query_data_post_etag()
 
-        entry = InitialStatusUpdatesEntry(data=self.data,
-                                          collapsed=False)
+        entry = InitialStatusUpdatesEntry(data=self.data)
 
         self.assertEqual(entry.updated_timestamp,
                          datetime(2017, 9, 14, 15, 40, 0, tzinfo=utc))
@@ -725,12 +784,66 @@ class InitialStatusUpdatesEntryTests(TestCase):
         self.data.query_data_post_etag()
 
         user = User.objects.create(username='test-user')
-        entry = InitialStatusUpdatesEntry(data=self.data,
-                                          collapsed=False)
+        entry = InitialStatusUpdatesEntry(data=self.data)
 
         self.assertFalse(entry.is_entry_new(
             last_visited=self.review_request.last_updated - timedelta(days=1),
             user=user))
+
+    def test_collapsed_with_no_changedescs(self):
+        """Testing InitialStatusUpdatesEntry.collapsed with no Change
+        Descriptions
+        """
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = InitialStatusUpdatesEntry(data=self.data)
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_with_changedescs(self):
+        """Testing InitialStatusUpdatesEntry.collapsed with Change Descriptions
+        """
+        self.review_request.changedescs.create(public=True)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = InitialStatusUpdatesEntry(data=self.data)
+        self.assertTrue(entry.collapsed)
+
+    def test_collapsed_with_status_updates_and_no_reviews(self):
+        """Testing InitialStatusUpdatesEntry.collapsed with status updates
+        and no reviews
+        """
+        self.create_status_update(self.review_request)
+        self.review_request.changedescs.create(public=True)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = InitialStatusUpdatesEntry(data=self.data)
+        self.assertTrue(entry.collapsed)
+
+    def test_collapsed_with_status_updates_and_draft_comment_replies(self):
+        """Testing InitialStatusUpdatesEntry.collapsed with status updates
+        containing draft comment replies
+        """
+        self.request.user = self.review_request.submitter
+
+        review = self.create_review(self.review_request, publish=True)
+        comment = self.create_general_comment(review)
+        self.create_status_update(self.review_request, review=review)
+
+        reply = self.create_reply(review, user=self.request.user)
+        self.create_general_comment(reply, reply_to=comment)
+
+        self.review_request.changedescs.create(public=True)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = InitialStatusUpdatesEntry(data=self.data)
+        self.assertFalse(entry.collapsed)
 
 
 class ReviewEntryTests(TestCase):
@@ -745,11 +858,17 @@ class ReviewEntryTests(TestCase):
         self.request.user = AnonymousUser()
 
         self.review_request = self.create_review_request()
+
         self.review = self.create_review(
             self.review_request,
             id=123,
             public=True,
             timestamp=datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
+
+        self.changedesc = self.review_request.changedescs.create(
+            timestamp=self.review.timestamp + timedelta(days=10),
+            public=True)
+
         self.data = ReviewRequestPageData(review_request=self.review_request,
                                           request=self.request)
 
@@ -759,8 +878,7 @@ class ReviewEntryTests(TestCase):
         self.data.query_data_post_etag()
 
         entry = ReviewEntry(data=self.data,
-                            review=self.review,
-                            collapsed=False)
+                            review=self.review)
 
         self.assertEqual(entry.added_timestamp,
                          datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
@@ -771,8 +889,7 @@ class ReviewEntryTests(TestCase):
         self.data.query_data_post_etag()
 
         entry = ReviewEntry(data=self.data,
-                            review=self.review,
-                            collapsed=False)
+                            review=self.review)
 
         self.assertEqual(entry.updated_timestamp,
                          datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
@@ -788,8 +905,7 @@ class ReviewEntryTests(TestCase):
         self.data.query_data_post_etag()
 
         entry = ReviewEntry(data=self.data,
-                            review=self.review,
-                            collapsed=False)
+                            review=self.review)
 
         self.assertEqual(entry.updated_timestamp,
                          datetime(2017, 9, 14, 15, 40, 0, tzinfo=utc))
@@ -797,10 +913,150 @@ class ReviewEntryTests(TestCase):
     def test_get_dom_element_id(self):
         """Testing ReviewEntry.get_dom_element_id"""
         entry = ReviewEntry(data=self.data,
-                            review=self.review,
-                            collapsed=False)
+                            review=self.review)
 
         self.assertEqual(entry.get_dom_element_id(), 'review123')
+
+    def test_collapsed_with_open_issues(self):
+        """Testing ReviewEntry.collapsed with open issues"""
+        self.create_general_comment(self.review,
+                                    issue_opened=True,
+                                    issue_status=BaseComment.OPEN)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ReviewEntry(data=self.data,
+                            review=self.review)
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_with_open_issues_verifying_resolved(self):
+        """Testing ReviewEntry.collapsed with open issues marked Verifying
+        Resolved
+        """
+        self.create_general_comment(
+            self.review,
+            issue_opened=True,
+            issue_status=BaseComment.VERIFYING_RESOLVED)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ReviewEntry(data=self.data,
+                            review=self.review)
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_with_open_issues_verifying_dropped(self):
+        """Testing ReviewEntry.collapsed with open issues marked Verifying
+        Dropped
+        """
+        self.create_general_comment(self.review,
+                                    issue_opened=True,
+                                    issue_status=BaseComment.VERIFYING_DROPPED)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ReviewEntry(data=self.data,
+                            review=self.review)
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_with_dropped_issues(self):
+        """Testing ReviewEntry.collapsed with dropped issues"""
+        self.create_general_comment(self.review,
+                                    issue_opened=True,
+                                    issue_status=BaseComment.DROPPED)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ReviewEntry(data=self.data,
+                            review=self.review)
+        self.assertTrue(entry.collapsed)
+
+    def test_collapsed_with_resolved_issues(self):
+        """Testing ReviewEntry.collapsed with resolved issues"""
+        self.create_general_comment(self.review,
+                                    issue_opened=True,
+                                    issue_status=BaseComment.RESOLVED)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ReviewEntry(data=self.data,
+                            review=self.review)
+        self.assertTrue(entry.collapsed)
+
+    def test_collapsed_with_draft_reply_comments(self):
+        """Testing ReviewEntry.collapsed with draft reply comments"""
+        self.request.user = self.review_request.submitter
+
+        comment = self.create_general_comment(self.review)
+
+        reply = self.create_reply(self.review, user=self.request.user)
+        self.create_general_comment(reply, reply_to=comment)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ReviewEntry(data=self.data,
+                            review=self.review)
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_with_older_than_changedesc(self):
+        """Testing ReviewEntry.collapsed with review older than latest
+        Change Description
+        """
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ReviewEntry(data=self.data,
+                            review=self.review)
+        self.assertTrue(entry.collapsed)
+
+    def test_collapsed_with_newer_than_changedesc(self):
+        """Testing ReviewEntry.collapsed with review newer than latest
+        Change Description
+        """
+        self.changedesc.timestamp = self.review.timestamp - timedelta(days=1)
+        self.changedesc.save()
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ReviewEntry(data=self.data,
+                            review=self.review)
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_with_reply_older_than_last_visited(self):
+        """Testing ReviewEntry.collapsed with reply older than last visited"""
+        reply = self.create_reply(
+            self.review,
+            publish=True,
+            timestamp=self.review.timestamp + timedelta(days=2))
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+        self.data.last_visited = reply.timestamp + timedelta(days=1)
+
+        entry = ReviewEntry(data=self.data,
+                            review=self.review)
+        self.assertTrue(entry.collapsed)
+
+    def test_collapsed_with_reply_newer_than_last_visited(self):
+        """Testing ReviewEntry.collapsed with reply newer than last visited"""
+        reply = self.create_reply(
+            self.review,
+            publish=True,
+            timestamp=self.review.timestamp + timedelta(days=2))
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+        self.data.last_visited = reply.timestamp - timedelta(days=1)
+
+        entry = ReviewEntry(data=self.data,
+                            review=self.review)
+        self.assertFalse(entry.collapsed)
 
     def test_get_js_model_data(self):
         """Testing ReviewEntry.get_js_model_data"""
@@ -808,8 +1064,7 @@ class ReviewEntryTests(TestCase):
         self.review.publish()
 
         entry = ReviewEntry(data=self.data,
-                            review=self.review,
-                            collapsed=False)
+                            review=self.review)
 
         self.assertEqual(entry.get_js_model_data(), {
             'reviewData': {
@@ -841,8 +1096,7 @@ class ReviewEntryTests(TestCase):
         self.data.query_data_post_etag()
 
         entry = ReviewEntry(data=self.data,
-                            review=self.review,
-                            collapsed=False)
+                            review=self.review)
         entry.add_comment('diff_comments', comment1)
         entry.add_comment('diff_comments', comment2)
 
@@ -864,8 +1118,7 @@ class ReviewEntryTests(TestCase):
         """Testing ReviewEntry.add_comment with comment not opening an issue"""
         self.request.user = self.review_request.submitter
         entry = ReviewEntry(data=self.data,
-                            review=self.review,
-                            collapsed=True)
+                            review=self.review)
 
         self.assertFalse(entry.has_issues)
         self.assertEqual(entry.issue_open_count, 0)
@@ -874,13 +1127,11 @@ class ReviewEntryTests(TestCase):
 
         self.assertFalse(entry.has_issues)
         self.assertEqual(entry.issue_open_count, 0)
-        self.assertTrue(entry.collapsed)
 
     def test_add_comment_with_open_issues(self):
         """Testing ReviewEntry.add_comment with comment opening an issue"""
         entry = ReviewEntry(data=self.data,
-                            review=self.review,
-                            collapsed=True)
+                            review=self.review)
 
         self.assertFalse(entry.has_issues)
         self.assertEqual(entry.issue_open_count, 0)
@@ -891,7 +1142,6 @@ class ReviewEntryTests(TestCase):
 
         self.assertTrue(entry.has_issues)
         self.assertEqual(entry.issue_open_count, 1)
-        self.assertTrue(entry.collapsed)
 
     def test_add_comment_with_open_issues_and_viewer_is_owner(self):
         """Testing ReviewEntry.add_comment with comment opening an issue and
@@ -899,8 +1149,7 @@ class ReviewEntryTests(TestCase):
         """
         self.request.user = self.review_request.submitter
         entry = ReviewEntry(data=self.data,
-                            review=self.review,
-                            collapsed=True)
+                            review=self.review)
 
         self.assertFalse(entry.has_issues)
         self.assertEqual(entry.issue_open_count, 0)
@@ -911,7 +1160,6 @@ class ReviewEntryTests(TestCase):
 
         self.assertTrue(entry.has_issues)
         self.assertEqual(entry.issue_open_count, 1)
-        self.assertFalse(entry.collapsed)
 
     def test_build_entries(self):
         """Testing ReviewEntry.build_entries"""
@@ -936,11 +1184,6 @@ class ReviewEntryTests(TestCase):
         self.create_status_update(self.review_request,
                                   review=status_update_review)
 
-        # Create a change description to test collapsing.
-        self.review_request.changedescs.create(
-            timestamp=review2.timestamp - timedelta(days=1),
-            public=True)
-
         self.data.query_data_pre_etag()
         self.data.query_data_post_etag()
 
@@ -952,7 +1195,6 @@ class ReviewEntryTests(TestCase):
         # not the order shown on the page.
         entry = entries[0]
         self.assertEqual(entry.review, review2)
-        self.assertFalse(entry.collapsed)
         self.assertEqual(
             entry.comments,
             {
@@ -964,7 +1206,6 @@ class ReviewEntryTests(TestCase):
 
         entry = entries[1]
         self.assertEqual(entry.review, review1)
-        self.assertTrue(entry.collapsed)
         self.assertEqual(
             entry.comments,
             {
@@ -1001,8 +1242,7 @@ class ChangeEntryTests(TestCase):
         self.data.query_data_post_etag()
 
         entry = ChangeEntry(data=self.data,
-                            changedesc=self.changedesc,
-                            collapsed=False)
+                            changedesc=self.changedesc)
 
         self.assertEqual(entry.added_timestamp,
                          datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
@@ -1013,8 +1253,7 @@ class ChangeEntryTests(TestCase):
         self.data.query_data_post_etag()
 
         entry = ChangeEntry(data=self.data,
-                            changedesc=self.changedesc,
-                            collapsed=False)
+                            changedesc=self.changedesc)
 
         self.assertEqual(entry.updated_timestamp,
                          datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
@@ -1030,8 +1269,7 @@ class ChangeEntryTests(TestCase):
         self.data.query_data_post_etag()
 
         entry = ChangeEntry(data=self.data,
-                            changedesc=self.changedesc,
-                            collapsed=False)
+                            changedesc=self.changedesc)
 
         self.assertEqual(entry.updated_timestamp,
                          datetime(2017, 9, 14, 15, 40, 0, tzinfo=utc))
@@ -1039,17 +1277,87 @@ class ChangeEntryTests(TestCase):
     def test_get_dom_element_id(self):
         """Testing ChangeEntry.get_dom_element_id"""
         entry = ChangeEntry(data=self.data,
-                            changedesc=self.changedesc,
-                            collapsed=False)
+                            changedesc=self.changedesc)
 
         self.assertEqual(entry.get_dom_element_id(), 'changedesc123')
+
+    def test_collapsed_with_older_than_latest_changedesc(self):
+        """Testing ChangeEntry.collapsed with older than latest Change
+        Description
+        """
+        self.review_request.changedescs.create(
+            timestamp=self.changedesc.timestamp + timedelta(days=1),
+            public=True)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ChangeEntry(data=self.data,
+                            changedesc=self.changedesc)
+        self.assertTrue(entry.collapsed)
+
+    def test_collapsed_with_latest_changedesc(self):
+        """Testing ChangeEntry.collapsed with older than latest Change
+        Description
+        """
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        self.assertEqual(self.changedesc.timestamp,
+                         self.data.latest_changedesc_timestamp)
+
+        entry = ChangeEntry(data=self.data,
+                            changedesc=self.changedesc)
+        self.assertFalse(entry.collapsed)
+
+    def test_collapsed_with_status_updates_and_no_reviews(self):
+        """Testing ChangeEntry.collapsed with status updates and no reviews"""
+        self.create_status_update(self.review_request,
+                                  change_description=self.changedesc)
+
+        self.review_request.changedescs.create(
+            timestamp=self.changedesc.timestamp + timedelta(days=1),
+            public=True)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ChangeEntry(data=self.data,
+                            changedesc=self.changedesc)
+        self.assertTrue(entry.collapsed)
+
+    def test_collapsed_with_status_updates_and_draft_comment_replies(self):
+        """Testing ChangeEntry.collapsed with status updates containing draft
+        comment replies
+        """
+        self.request.user = self.review_request.submitter
+
+        review = self.create_review(self.review_request, publish=True)
+        comment = self.create_general_comment(review)
+
+        self.create_status_update(self.review_request,
+                                  review=review,
+                                  change_description=self.changedesc)
+
+        reply = self.create_reply(review, user=self.request.user)
+        self.create_general_comment(reply, reply_to=comment)
+
+        self.review_request.changedescs.create(
+            timestamp=self.changedesc.timestamp + timedelta(days=1),
+            public=True)
+
+        self.data.query_data_pre_etag()
+        self.data.query_data_post_etag()
+
+        entry = ChangeEntry(data=self.data,
+                            changedesc=self.changedesc)
+        self.assertFalse(entry.collapsed)
 
     def test_get_js_model_data(self):
         """Testing ChangeEntry.get_js_model_data for standard ChangeDescription
         """
         entry = ChangeEntry(data=self.data,
-                            changedesc=self.changedesc,
-                            collapsed=False)
+                            changedesc=self.changedesc)
 
         self.assertEqual(entry.get_js_model_data(), {
             'pendingStatusUpdates': False,
@@ -1083,8 +1391,7 @@ class ChangeEntryTests(TestCase):
             change_description=self.changedesc)
 
         entry = ChangeEntry(data=self.data,
-                            changedesc=self.changedesc,
-                            collapsed=False)
+                            changedesc=self.changedesc)
         entry.add_update(status_update)
         entry.add_comment('diff_comments', comment1)
         entry.add_comment('diff_comments', comment2)
@@ -1153,8 +1460,7 @@ class ChangeEntryTests(TestCase):
     def test_is_entry_new_with_timestamp(self):
         """Testing ChangeEntry.is_entry_new with timestamp"""
         entry = ChangeEntry(data=self.data,
-                            changedesc=self.changedesc,
-                            collapsed=False)
+                            changedesc=self.changedesc)
 
         user = User.objects.create(username='test-user')
 
