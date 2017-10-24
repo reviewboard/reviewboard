@@ -7,6 +7,7 @@
 @djblets_img_base: '../../../djblets/images';
 
 @changedesc-bg: lighten(@review-request-bg, 5%);
+@floating-anchor-width: 8em;
 
 
 /****************************************************************************
@@ -575,7 +576,7 @@
   }
 }
 
-/*
+/**
  * Set up the floating anchor for a parent container.
  *
  * Args:
@@ -583,20 +584,19 @@
  *          An additional offset to get the floating anchor's right-hand
  *          side to match the left-hand side of the review box. This should
  *          be the value of any parent container's padding.
+ *
+ *     margin-left (number):
+ *          An additional margin to apply to the floating anchor. This is
+ *          there to help nudge based on a pixel amount (for use in the left
+ *          border for replies).
  */
-.setup-floating-anchor(@container-offset-left: 0) {
+.setup-floating-anchor(@container-offset-left: 0, @margin-left: 0) {
   &:hover .floating-anchor {
     display: block;
   }
 
-  .floating-anchor {
-    @width: 8em;
-
-    left: -@width - @container-offset-left;
-    width: @width + @container-offset-left;
-    padding-right: @container-offset-left;
-
-    .on-mobile-medium-screen-720({
+  .on-mobile-medium-screen-720({
+    .floating-anchor {
       /*
        * On mobile, we're going to show this on the right-hand side of the box
        * instead, optimistically.
@@ -604,8 +604,35 @@
       left: auto;
       right: 0;
       padding-right: 0;
-      margin-right: -@container-offset-left;
+      margin-left: 0;
       width: auto;
+    }
+  });
+
+  .set-floating-anchor-offset(@container-offset-left, @margin-left);
+}
+
+/**
+ * Set the offset for an existing floating anchor.
+ *
+ * Args:
+ *     container-offset-left (number):
+ *         The new offset for the floating anchor.
+ *
+ *     margin-left (number):
+ *          An additional margin to apply to the floating anchor. This is
+ *          there to help nudge based on a pixel amount (for use in the left
+ *          border for replies).
+ */
+.set-floating-anchor-offset(@container-offset-left: 0, @margin-left: 0) {
+  .floating-anchor {
+    left: -@floating-anchor-width - @container-offset-left;
+    width: @floating-anchor-width + max(@container-offset-left, 0);
+    padding-right: max(@container-offset-left, 0);
+    margin-left: @margin-left;
+
+    .on-mobile-medium-screen-720({
+      margin-right: -@container-offset-left;
     });
   }
 }
@@ -613,15 +640,34 @@
 .review-comment-details {
   position: relative;
 
-  .setup-floating-anchor();
+  .setup-floating-anchor(
+    @container-offset-left: @review-request-entry-link-offset,
+    @margin-left: @review-request-entry-link-margin-left);
+
+  .has-avatar & {
+    .set-floating-anchor-offset(
+      @container-offset-left: @review-request-entry-has-avatar-link-offset,
+      @margin-left: @review-request-entry-has-avatar-link-margin-left);
+  }
 
   .review-comment {
-    padding: 2em;
+    padding: @review-comment-padding;
   }
 }
 
 .review-comment-thread {
-  padding: 0 2em 2em 2em;
+  padding: 0 @review-comment-padding @review-comment-padding
+           @review-comment-padding;
+
+  .has-avatar & {
+    .reply-comments > li {
+      .set-floating-anchor-offset(
+          @container-offset-left: @review-comment-padding -
+                                  @review-request-entry-has-avatar-link-offset,
+          @margin-left: -@review-comment-border-left-size +
+                        @review-request-entry-has-avatar-link-margin-left);
+    }
+  }
 
   .controls {
     list-style: none;
@@ -658,7 +704,7 @@
     padding: 0;
 
     > li {
-      border-left: 2px transparent solid;
+      border-left: @review-comment-border-left-size transparent solid;
       list-style: none;
       padding: 2em;
       position: relative;
@@ -667,7 +713,11 @@
         border-left-color: @review-request-entry-new-border-color;
       }
 
-      .setup-floating-anchor(@review-comment-padding);
+      .setup-floating-anchor(
+        @container-offset-left: @review-comment-padding +
+                                @review-request-entry-link-offset,
+        @margin-left: -@review-comment-border-left-size +
+                      @review-request-entry-link-margin-left);
       .review-comments-inline();
     }
   }
@@ -1729,6 +1779,7 @@
   max-width: 400px;
   min-width: 130px;
   text-align: center;
+  overflow: hidden;
   vertical-align: middle;
   position: relative;
   border-radius: @box-border-radius;

@@ -212,8 +212,7 @@ class ReviewRequestPageDataTests(TestCase):
                              self.changedesc2.timestamp)
         else:
             self.assertEqual(data.changedescs, [])
-            self.assertEqual(data.latest_changedesc_timestamp,
-                             datetime.fromtimestamp(0, timezone.utc))
+            self.assertIsNone(data.latest_changedesc_timestamp)
 
         if expect_draft:
             self.assertEqual(data.draft, self.draft)

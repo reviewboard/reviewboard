@@ -6,15 +6,10 @@ ReviewRequestFieldsHook
 
 :py:class:`reviewboard.extensions.hooks.ReviewRequestFieldsHook` allows
 extensions to add new fields to a review request. These fields will act like
-any other field on a review request. They can be edited, saved along with a
-draft, published, and their history can be shown in the "Review request
-changed" boxes. Their data can also be accessed through the
-``extra_data`` fields of :ref:`webapi2.0-review-request-resource` and
-:ref:`webapi2.0-review-request-draft-resource`.
+any other field on a review request.
 
-There are many types of fields that can be created, and developers are
-encouraged to look at the documentation in
-:py:mod:`reviewboard.reviews.fields` for more information on these.
+See :ref:`extension-review-request-fields` for a thorough guide on adding new
+fields.
 
 When registering one or more fields through the hook, a fieldset ID must be
 specified. This can be a custom fieldset registered by the extension, or it

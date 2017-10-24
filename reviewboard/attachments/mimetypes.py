@@ -1,12 +1,16 @@
+"""File attachment mimetype registration and scoring."""
+
 from __future__ import unicode_literals
 
+import docutils.core
 import logging
 import os
 import subprocess
 
+import mimeparse
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.contrib.staticfiles.templatetags.staticfiles import static
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 from django.utils.encoding import smart_str, force_unicode
 from django.utils.safestring import mark_safe
 from djblets.cache.backend import cache_memoize
@@ -15,9 +19,8 @@ from djblets.util.templatetags.djblets_images import thumbnail
 from pygments import highlight
 from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
                              TextLexer)
-import docutils.core
-import markdown
-import mimeparse
+
+from reviewboard.reviews.markdown_utils import render_markdown
 
 
 _registered_mimetype_handlers = []
@@ -107,10 +110,17 @@ def get_uploaded_file_mimetype(uploaded_file):
 def register_mimetype_handler(handler):
     """Register a MimetypeHandler class.
 
-    This will register a Mimetype Handler used by Review Board to render
-    thumbnails for the file attachements across different mimetypes.
+    This will register a mimetype Handler used by Review Board to render
+    thumbnails for the file attachments across different mimetypes.
 
-    Only MimetypeHandler subclasses are supported.
+    Args:
+        handler (type):
+            The mimetype handler to register. This must be a subclass of
+            :py:class:`MimetypeHandler`.
+
+    Raises:
+        TypeError:
+            The provided class is not of the correct type.
     """
     if not issubclass(handler, MimetypeHandler):
         raise TypeError('Only MimetypeHandler subclasses can be registered')
@@ -123,8 +133,17 @@ def unregister_mimetype_handler(handler):
 
     This will unregister a previously registered mimetype handler.
 
-    Only MimetypeHandler subclasses are supported. The class must ahve been
-    registered beforehand or a ValueError will be thrown.
+    Args:
+        handler (type):
+            The mimetype handler to unregister. This must be a subclass of
+            :py:class:`MimetypeHandler`.
+
+    Raises:
+        TypeError:
+            The provided class is not of the correct type.
+
+        ValueError:
+            The mimetype handler was not previously registered.
     """
     if not issubclass(handler, MimetypeHandler):
         raise TypeError('Only MimetypeHandler subclasses can be unregistered')
@@ -140,7 +159,7 @@ def unregister_mimetype_handler(handler):
 def score_match(pattern, mimetype):
     """Return a score for how well the pattern matches the mimetype.
 
-    This is an ordered list of precedence (_ indicates non-match):
+    This is an ordered list of precedence (``_`` indicates non-match):
 
     ======================= ==========
     Format                  Precedence
@@ -153,6 +172,17 @@ def score_match(pattern, mimetype):
     ``Type/_``              1
     ``*/_``                 0.7
     ======================= ==========
+
+    Args:
+        pattern (unicode):
+            The pattern to match.
+
+        mimetype (unicode):
+            The mimetype to check for the pattern.
+
+    Returns:
+        float:
+        The resulting score for the match.
     """
     EXACT_TYPE = 1
     ANY_TYPE = 0.7
@@ -194,26 +224,54 @@ class MimetypeHandler(object):
     """Handles mimetype-specific properties.
 
     This class also acts as a generic handler for mimetypes not matched
-    explicitly by any handler. Note that this is not the same as '*/*'.
+    explicitly by any handler. Note that this is not the same as ``*/*``.
+
+    Attributes:
+        attachment (reviewboard.attachments.models.FileAttachment):
+            The file attachment being handled.
+
+        mimetype (unicode):
+            The mimetype for the file attachment.
     """
 
     MIMETYPES_DIR = 'rb/images/mimetypes'
 
+    #: A list of mimetypes supported by this handler.
     supported_mimetypes = []
 
+    #: Whether HD thumbnails are provided by this handler.
+    #:
     #: Subclasses (especially in extensions) can use this to introspect what
     #: size thumbnails they should generate.
     use_hd_thumbnails = True
 
     def __init__(self, attachment, mimetype):
-        """Initialize the handler."""
+        """Initialize the handler.
+
+        Args:
+            attachment (reviewboard.attachments.models.FileAttachment):
+                The file attachment being handled.
+
+            mimetype (unicode):
+                The mimetype for the file attachment.
+        """
         self.attachment = attachment
         self.mimetype = mimetype
         self.storage = staticfiles_storage
 
     @classmethod
     def get_best_handler(cls, mimetype):
-        """Return the handler and score that that best fit the mimetype."""
+        """Return the handler and score that that best fit the mimetype.
+
+        Args:
+            mimetype (unicode):
+                The mimetype to find the best handler for.
+
+        Returns:
+            tuple:
+            A tuple of ``(best_score, mimetype_handler)``. If no handler
+            was found, this will be ``(0, None)``.
+        """
         best_score, best_fit = (0, None)
 
         for mimetype_handler in _registered_mimetype_handlers:
@@ -231,7 +289,17 @@ class MimetypeHandler(object):
 
     @classmethod
     def for_type(cls, attachment):
-        """Return the handler that is the best fit for provided mimetype."""
+        """Return the handler that is the best fit for provided mimetype.
+
+        Args:
+            attachment (reviewboard.attachments.models.FileAttachment):
+                The file attachment to find the best handler for.
+
+        Returns:
+            MimetypeHandler:
+            The best mimetype handler for the attachment, or ``None`` if
+            one could not be found.
+        """
         if not attachment.mimetype:
             return None
 
@@ -261,7 +329,12 @@ class MimetypeHandler(object):
         return MimetypeHandler(attachment, mimetype)
 
     def get_icon_url(self):
-        """Return the appropriate icon URL for this mimetype."""
+        """Return the appropriate icon URL for this mimetype.
+
+        Returns:
+            unicode:
+            The URL to an icon representing this mimetype.
+        """
         mimetype_string = self.mimetype[0] + '/' + self.mimetype[1]
 
         if mimetype_string in MIMETYPE_ICON_ALIASES:
@@ -282,12 +355,20 @@ class MimetypeHandler(object):
     def get_thumbnail(self):
         """Return HTML that represents a preview of the attachment.
 
-        The outer-most object should have the class 'file-thubmnail'.
+        Subclasses can override this to provide a suitable thumbnail. The
+        outer element of the thumbnail should have a ``file-thumbnail`` CSS
+        class.
+
+        By default, this returns an empty thumbnail.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The HTML for the thumbnail for the associated attachment.
         """
         return mark_safe('<pre class="file-thumbnail"></pre>')
 
     def set_thumbnail(self):
-        """Set the thumbnail data.
+        """Set the thumbnail data for this attachment.
 
         This should be implemented by subclasses if they need the thumbnail to
         be generated client-side.
@@ -304,7 +385,12 @@ class ImageMimetype(MimetypeHandler):
     supported_mimetypes = ['image/*']
 
     def get_thumbnail(self):
-        """Return a thumbnail of the image."""
+        """Return a thumbnail of the image.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The HTML for the thumbnail for the associated attachment.
+        """
         return format_html(
             '<div class="file-thumbnail">'
             ' <img src="{src_1x}" srcset="{src_1x} 1x, {src_2x} 2x"'
@@ -316,7 +402,11 @@ class ImageMimetype(MimetypeHandler):
 
 
 class TextMimetype(MimetypeHandler):
-    """Handles text mimetypes."""
+    """Handles text mimetypes.
+
+    Text mimetypes provide thumbnails containing the first few lines of the
+    file, syntax-highlighted.
+    """
 
     supported_mimetypes = ['text/*']
 
@@ -327,11 +417,21 @@ class TextMimetype(MimetypeHandler):
     TEXT_CROP_NUM_HEIGHT = 50
 
     def _generate_preview_html(self, data):
-        """Return the first few truncated lines of the text file."""
+        """Return the first few truncated lines of the text file.
+
+        Args:
+            data (bytes):
+                The contents of the attachment.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The resulting HTML-safe thumbnail content.
+        """
         from reviewboard.diffviewer.chunk_generator import \
             NoWrapperHtmlFormatter
 
         charset = self.mimetype[2].get('charset', 'ascii')
+
         try:
             text = data.decode(charset)
         except UnicodeDecodeError:
@@ -347,13 +447,21 @@ class TextMimetype(MimetypeHandler):
 
         lines = highlight(text, lexer, NoWrapperHtmlFormatter()).splitlines()
 
-        return ''.join([
-            '<pre>%s</pre>' % line
-            for line in lines[:self.TEXT_CROP_NUM_HEIGHT]
-        ])
+        return format_html_join(
+            '',
+            '<pre>{0}</pre>',
+            (
+                (mark_safe(line),)
+                for line in lines[:self.TEXT_CROP_NUM_HEIGHT]
+            ))
 
     def _generate_thumbnail(self):
-        """Return the HTML for a thumbnail preview for a text file."""
+        """Return the HTML for a thumbnail preview for a text file.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The resulting HTML-safe thumbnail content.
+        """
         try:
             f = self.attachment.file.file
         except IOError as e:
@@ -371,14 +479,21 @@ class TextMimetype(MimetypeHandler):
         finally:
             f.close()
 
-        return mark_safe(
+        return format_html(
             '<div class="file-thumbnail">'
-            ' <div class="file-thumbnail-clipped">%s</div>'
-            '</div>'
-            % self._generate_preview_html(data))
+            ' <div class="file-thumbnail-clipped">{0}</div>'
+            '</div>',
+            self._generate_preview_html(data))
 
     def get_thumbnail(self):
-        """Return the thumbnail of the text file as rendered as html."""
+        """Return the thumbnail of the text file as rendered as html.
+
+        The content will be generated and then cached for future requests.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The resulting HTML-safe thumbnail content.
+        """
         # Caches the generated thumbnail to eliminate the need on each page
         # reload to:
         # 1) re-read the file attachment
@@ -390,12 +505,25 @@ class TextMimetype(MimetypeHandler):
 
 
 class ReStructuredTextMimetype(TextMimetype):
-    """Handles ReStructuredText (.rst) mimetypes."""
+    """Handles ReStructuredText (.rst) mimetypes.
+
+    ReST mimetypes provide thumbnails containing the first few lines of
+    rendered content from the file.
+    """
 
     supported_mimetypes = ['text/x-rst', 'text/rst']
 
     def _generate_preview_html(self, data_string):
-        """Return html of the ReST file as produced by docutils."""
+        """Return the HTML for a thumbnail preview for a ReST file.
+
+        Args:
+            data_string (bytes):
+                The contents of the file.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The resulting HTML-safe thumbnail content.
+        """
         # Use safe filtering against injection attacks
         docutils_settings = {
             'file_insertion_enabled': False,
@@ -408,23 +536,26 @@ class ReStructuredTextMimetype(TextMimetype):
             writer_name='html4css1',
             settings_overrides=docutils_settings)
 
-        return parts['html_body']
+        return mark_safe(parts['html_body'])
 
 
 class MarkDownMimetype(TextMimetype):
-    """Handle MarkDown (.md) mimetypes."""
+    """Handle MarkDown (.md) mimetypes.
+
+    Markdown mimetypes provide thumbnails containing the first few lines of
+    rendered content from the file.
+    """
 
     supported_mimetypes = ['text/x-markdown', 'text/markdown']
 
     def _generate_preview_html(self, data_string):
-        """Return html of the MarkDown file as produced by markdown."""
-        # Use safe filtering against injection attacks
-        return markdown.markdown(
-            force_unicode(data_string),
-            enable_attributes=False,
-            extensions=[
-                'djblets.markdown.extensions.escape_html',
-            ])
+        """Return the HTML for a thumbnail preview for a Markdown file.
+
+        Returns:
+            django.utils.safestring.SafeText:
+            The resulting HTML-safe thumbnail content.
+        """
+        return mark_safe(render_markdown(force_unicode(data_string)))
 
 
 # A mapping of mimetypes to icon names.

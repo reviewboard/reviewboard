@@ -1287,7 +1287,7 @@ class UserInfoboxHook(ExtensionHook):
         """
         self.template_name = template_name
 
-    def get_extra_context(self, user, request, local_site):
+    def get_extra_context(self, user, request, local_site, **kwargs):
         """Return extra context to use when rendering the template.
 
         This may be overridden in order to make use of the default
@@ -1303,13 +1303,16 @@ class UserInfoboxHook(ExtensionHook):
             local_site (reviewboard.site.models.LocalSite):
                 The local site, if any.
 
+            **kwargs (dict):
+                Additional keyword arguments.
+
         Returns:
             dict:
             Additional context to include when rendering the template.
         """
         return {}
 
-    def get_etag_data(self, user, request, local_site):
+    def get_etag_data(self, user, request, local_site, **kwargs):
         """Return data to be included in the user infobox ETag.
 
         The infobox view uses an ETag to enable browser caching of the content.
@@ -1326,13 +1329,16 @@ class UserInfoboxHook(ExtensionHook):
             local_site (reviewboard.site.models.LocalSite):
                 The local site, if any.
 
+            **kwargs (dict):
+                Additional keyword arguments.
+
         Returns:
-            six.text_type:
+            unicode:
             A string to be included in the ETag for the view.
         """
         return ''
 
-    def render(self, user, request, local_site):
+    def render(self, user, request, local_site, **kwargs):
         """Return content to include in the user infobox.
 
         This may be overridden in the case where providing a custom template
@@ -1348,17 +1354,22 @@ class UserInfoboxHook(ExtensionHook):
             local_site (reviewboard.site.models.LocalSite):
                 The local site, if any.
 
+            **kwargs (dict):
+                Additional keyword arguments.
+
         Returns:
             django.utils.safestring.SafeText:
             Text to include in the infobox HTML.
         """
-        context = {
-            'user': user,
-        }
-        context.update(self.get_extra_context(user, request, local_site))
-
         assert self.template_name is not None
 
+        context = {
+            'extension': self.extension,
+            'user': user,
+        }
+        context.update(self.get_extra_context(user=user,
+                                              request=request,
+                                              local_site=local_site))
         return render_to_string(self.template_name,
                                 RequestContext(request, context))
 

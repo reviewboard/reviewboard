@@ -124,7 +124,10 @@ class UserInfoboxView(CheckLoginRequiredViewMixin,
 
         for hook in UserInfoboxHook.hooks:
             try:
-                etag_data.append(hook.get_etag_data(user, request, local_site))
+                etag_data.append(hook.get_etag_data(
+                    user=user,
+                    request=request,
+                    local_site=local_site))
             except Exception as e:
                 logging.exception('Error when running UserInfoboxHook.'
                                   'get_etag_data method in extension "%s": %s',
@@ -158,8 +161,10 @@ class UserInfoboxView(CheckLoginRequiredViewMixin,
 
         for hook in UserInfoboxHook.hooks:
             try:
-                extra_content.append(hook.render(user, self.request,
-                                                 local_site))
+                extra_content.append(hook.render(
+                    user=user,
+                    request=self.request,
+                    local_site=local_site))
             except Exception as e:
                 logging.exception('Error when running UserInfoboxHook.'
                                   'render method in extension "%s": %s',
