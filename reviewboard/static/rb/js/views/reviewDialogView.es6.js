@@ -1120,30 +1120,35 @@ RB.ReviewDialogView = Backbone.View.extend({
      * this view's element as the child.
      */
     _renderDialog() {
-        const buttons = [];
+        const $leftButtons = $('<div class="review-dialog-buttons-left"/>');
+        const $rightButtons = $('<div class="review-dialog-buttons-right"/>');
+        const buttons = [$leftButtons, $rightButtons];
 
         if (RB.EnabledFeatures.generalComments) {
-            buttons.push(
+            $leftButtons.append(
                 $('<input type="button" />')
-                    .val(gettext('Add Comment'))
+                    .val(gettext('Add General Comment'))
+                    .attr('title',
+                          gettext('Add a new general comment to the review'))
                     .click(this._onAddCommentClicked)
             );
         }
 
-        buttons.push(
-            $('<div id="review-form-publish-split-btn-container" />'),
+        $rightButtons.append(
+            $('<div id="review-form-publish-split-btn-container" />'));
 
+        $rightButtons.append(
             $('<input type="button"/>')
                 .val(gettext('Discard Review'))
-                .click(() => this._onDiscardClicked()),
+                .click(() => this._onDiscardClicked()));
 
+        $rightButtons.append(
             $('<input type="button"/>')
                 .val(gettext('Close'))
                 .click(() => {
                     this._saveReview(false);
                     return false;
-                })
-        );
+                }));
 
         const reviewRequest = this.model.get('parentObject');
 
