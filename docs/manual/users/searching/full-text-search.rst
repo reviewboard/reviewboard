@@ -5,9 +5,9 @@ Full-Text Search
 ================
 
 If your Review Board server has full-text search enabled, you will be able to
-search through all public review requests using the search field on any page.
-This will match text in the review request, the files modified, and other
-fields using our query syntax.
+search through all review requests using the search field on any page. This
+will match text in the review request, the files modified, and other fields
+using our query syntax.
 
 Logical operators, such as AND, OR, and NOT, can be used to narrow down your
 search. Individual fields on review requests can also be searched.
@@ -99,9 +99,10 @@ What's Indexed
 The full text of review requests, including the summary, description, and
 testing, is indexed.
 
-Lists of files in the diffs are also indexed. The contents of the diffs are
-not.
+Filenames in the diffs are also indexed, but the contents of the code in the
+diffs are not.
 
 Reviews are not indexed.
 
-:term:`Private review requests` are not indexed.
+:term:`Private review requests` are indexed, but will only show up in search
+results for users who have permission to access them.
