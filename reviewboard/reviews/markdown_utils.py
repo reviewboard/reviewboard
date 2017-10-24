@@ -36,7 +36,7 @@ MARKDOWN_KWARGS = {
             'guess_lang': False,
         },
         'pymdownx.emoji': {
-            'emoji_index': pymdownx.emoji.emojione,
+            'emoji_index': pymdownx.emoji.gemoji,
             'options': {
                 'classes': 'emoji',
             },
