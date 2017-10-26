@@ -22,7 +22,7 @@ from reviewboard.reviews.fields import (get_review_request_fields,
                                         get_review_request_field)
 from reviewboard.reviews.models import Group, ReviewRequest, ReviewRequestDraft
 from reviewboard.scmtools.errors import InvalidChangeNumberError
-from reviewboard.webapi.base import WebAPIResource
+from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.errors import (COMMIT_ID_ALREADY_EXISTS,
                                        INVALID_CHANGE_NUMBER,
@@ -482,7 +482,10 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                 self.set_extra_data_text_fields(draft, field_cls.field_id,
                                                 extra_fields, **kwargs)
 
-        self.import_extra_data(draft, draft.extra_data, extra_fields)
+        try:
+            self.import_extra_data(draft, draft.extra_data, extra_fields)
+        except ImportExtraDataError as e:
+            return e.error_payload
 
         if always_save or not invalid_fields:
             for obj in set(modified_objects):

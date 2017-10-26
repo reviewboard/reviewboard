@@ -89,7 +89,7 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
     def setup_basic_post_test(self, user, with_local_site, local_site_name,
                               post_valid_data):
         if post_valid_data:
-            post_data = self.token_data
+            post_data = self.token_data.copy()
         else:
             post_data = {}
 
@@ -220,7 +220,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
 
         return (get_api_token_item_url(token, local_site_name),
                 api_token_item_mimetype,
-                self.token_data,
+                self.token_data.copy(),
                 token,
                 [])
 

@@ -17,7 +17,9 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.diffutils import (get_diff_files,
                                               populate_diff_chunks)
 from reviewboard.diffviewer.models import FileDiff
-from reviewboard.webapi.base import CUSTOM_MIMETYPE_BASE, WebAPIResource
+from reviewboard.webapi.base import (CUSTOM_MIMETYPE_BASE,
+                                     ImportExtraDataError,
+                                     WebAPIResource)
 from reviewboard.webapi.decorators import (webapi_check_login_required,
                                            webapi_check_local_site)
 from reviewboard.webapi.resources import resources
@@ -416,7 +418,12 @@ class FileDiffResource(WebAPIResource):
             return self.get_no_access_error(request)
 
         if extra_fields:
-            self.import_extra_data(filediff, filediff.extra_data, extra_fields)
+            try:
+                self.import_extra_data(filediff, filediff.extra_data,
+                                       extra_fields)
+            except ImportExtraDataError as e:
+                return e.error_payload
+
             filediff.save(update_fields=['extra_data'])
 
         return 200, {

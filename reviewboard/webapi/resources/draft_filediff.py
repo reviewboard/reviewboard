@@ -10,6 +10,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
 
 from reviewboard.attachments.forms import UploadFileForm
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.webapi.base import ImportExtraDataError
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.filediff import FileDiffResource
@@ -151,7 +152,12 @@ class DraftFileDiffResource(FileDiffResource):
             form.create(filediff)
 
         if extra_fields:
-            self.import_extra_data(filediff, filediff.extra_data, extra_fields)
+            try:
+                self.import_extra_data(filediff, filediff.extra_data,
+                                       extra_fields)
+            except ImportExtraDataError as e:
+                return e.error_payload
+
             filediff.save(update_fields=['extra_data'])
 
         return 200, {

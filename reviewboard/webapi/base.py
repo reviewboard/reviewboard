@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import copy
+import json
 import logging
 
 from django.utils import six
@@ -9,10 +10,12 @@ from django.utils.six.moves.urllib.parse import quote as urllib_quote
 from django.utils.translation import ugettext_lazy as _
 from djblets.registries.errors import RegistrationError
 from djblets.util.decorators import augment_method_from
+from djblets.util.json_utils import (JSONPatchError, json_merge_patch,
+                                     json_patch)
 from djblets.webapi.decorators import (SPECIAL_PARAMS,
                                        webapi_login_required,
                                        webapi_request_fields)
-from djblets.webapi.errors import PERMISSION_DENIED
+from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
 from djblets.webapi.resources.base import \
     WebAPIResource as DjbletsWebAPIResource
 from djblets.webapi.resources.mixins.api_tokens import ResourceAPITokenMixin
@@ -31,6 +34,7 @@ from reviewboard.webapi.models import WebAPIToken
 CUSTOM_MIMETYPE_BASE = 'application/vnd.reviewboard.org'
 EXTRA_DATA_LEN = len('extra_data.')
 PRIVATE_KEY_PREFIX = '__'
+NOT_CALLABLE = 'not_callable'
 
 
 class ExtraDataAccessLevel(object):
@@ -51,7 +55,22 @@ class ExtraDataAccessLevel(object):
     ACCESS_STATE_PRIVATE = 3
 
 
-NOT_CALLABLE = 'not_callable'
+class ImportExtraDataError(ValueError):
+    """Error importing extra_data from a client request.
+
+    This often represents a JSON parse error or format error with a patch.
+    Details are available in the message, and a suitable API error payload
+    is provided.
+    """
+
+    @property
+    def error_payload(self):
+        """The error payload to send to the client."""
+        return INVALID_FORM_DATA, {
+            'fields': {
+                'extra_data': [six.text_type(self)],
+            },
+        }
 
 
 class CallbackRegistry(Registry):
@@ -134,7 +153,7 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
 
         Returns:
             dict:
-                A serialized ``extra_data`` field or, ``None``.
+            A serialized ``extra_data`` field or ``None``.
         """
         if obj.extra_data is not None:
             return self._strip_private_data(obj.extra_data)
@@ -200,12 +219,70 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
         return super(WebAPIResource, self).get_list(request, *args, **kwargs)
 
     def can_import_extra_data_field(self, obj, field):
-        """Returns whether a particular field in extra_data can be imported.
+        """Return whether a top-level field in extra_data can be imported.
 
         Subclasses can use this to limit which fields are imported by
-        import_extra_data. By default, all fields can be imported.
+        :py:meth:`import_extra_data`. By default, all fields can be imported.
+
+        Note that this only supports top-level keys, and is mostly here for
+        legacy reasons. Subclasses generally should override
+        :py:meth:`get_extra_data_field_state` to provide more fine-grained
+        access to content.
+
+        Args:
+            obj (object):
+                The object being serialized for the resource.
+
+            field (unicode):
+                The field being considered for import.
+
+        Returns:
+            bool:
+            ``True`` if the field can be imported. ``False`` if it should be
+            ignored.
         """
         return True
+
+    def get_extra_data_field_state(self, key_path):
+        """Return the state of a registered ``extra_data`` key path.
+
+        Args:
+            key_path (tuple):
+                The path of the ``extra_data`` key as a :py:class:`tuple` of
+                :py:class:`unicode` strings.
+
+        Returns:
+            int:
+            The access state of the provided key.
+
+        Example:
+            .. code-block:: python
+
+               resource.extra_data = {
+                   'public': 'foo',
+                   'private': 'secret',
+                   'data': {
+                       'secret_key': 'secret_data',
+                   },
+                   'readonly': 'bar',
+               }
+
+               key_path = ('data', 'secret_key')
+               resource.get_extra_data_field_state(key_path)
+        """
+        # Check each part of the key, making sure none is private.
+        for key in key_path:
+            if key.startswith(PRIVATE_KEY_PREFIX):
+                return ExtraDataAccessLevel.ACCESS_STATE_PRIVATE
+
+        # Now check for any registered callbacks used to compute access levels.
+        for callback in self.extra_data_access_callbacks:
+            value = callback(key_path)
+
+            if value is not None:
+                return value
+
+        return ExtraDataAccessLevel.ACCESS_STATE_PUBLIC
 
     def call_method_view(self, request, method, view, *args, **kwargs):
         """Call the given method view.
@@ -304,11 +381,111 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
         return fields
 
     def import_extra_data(self, obj, extra_data, fields):
+        """Import new extra_data content from the client.
+
+        There are three methods for injecting new content into the object's
+        ``extra_data`` JSON field:
+
+        1. Simple key/value forms through setting
+           :samp:`extra_data.{key}={value}`. This will convert boolean-like
+           strings to booleans, numeric strings to integers or floats, and the
+           rest are stored as strings. It's only intended for very simple data.
+
+        2. A JSON Merge Patch document through setting
+           :samp:`extra_data:json={patch}`. This is a simple way of setting new
+           structured JSON content.
+
+        3. A more complex JSON Patch document through setting
+           :samp:`extra_data:json-patch={patch}`. This is a more advanced way
+           of manipulating JSON data, allowing for sanity-checking of existing
+           content, adding new keys/array indices, replacing existing
+           keys/indices, deleting data, or copying/moving data. If any
+           operation (including the sanity-checking) fails, the whole patch is
+           aborted.
+
+        All methods respect any access states that apply to the resource, and
+        forbid both writing to keys starting with ``__`` and replacing the
+        entire root of ``extra_data``.
+
+        .. versionchanged:: 3.0
+
+           Added support for ``extra_data:json`` and ``extra_data:json-patch``.
+
+        Args:
+            obj (django.db.models.Model):
+                The object containing an ``extra_data`` field.
+
+            extra_data (dict):
+                The existing contents of the ``extra_data`` field. This will
+                be updated directly.
+
+            fields (dict):
+                The fields being set in the request. This will be checked for
+                ``extra_data:json``, ``extra_data:json-patch``, and any
+                beginning with ``extra_data.``.
+
+        Raises:
+            ImportExtraDataError:
+                There was an error importing content into ``extra_data``. There
+                may be a parse error or access error. Details are in the
+                message.
+        """
+        # Check for a JSON Merge Patch. This is the simplest way to update
+        # extra_data with new structured JSON content.
+        if 'extra_data:json' in fields:
+            try:
+                patch = json.loads(fields['extra_data:json'])
+            except ValueError as e:
+                raise ImportExtraDataError(_('Could not parse JSON data: %s')
+                                           % e)
+
+            new_extra_data = json_merge_patch(
+                extra_data,
+                patch,
+                can_write_key_func=lambda path, **kwargs:
+                    self._can_write_extra_data_key(obj, path))
+
+            # Save extra_data only if it remains a dictionary, so callers
+            # can't replace the entire contents.
+            if not isinstance(new_extra_data, dict):
+                raise ImportExtraDataError(
+                    _('extra_data:json cannot replace extra_data with a '
+                      'non-dictionary type'))
+
+            extra_data.clear()
+            extra_data.update(new_extra_data)
+
+        # Check for a JSON Patch. This is more advanced, and can be used in
+        # conjunction with the JSON Merge Patch.
+        if 'extra_data:json-patch' in fields:
+            try:
+                patch = json.loads(fields['extra_data:json-patch'])
+            except ValueError as e:
+                raise ImportExtraDataError(_('Could not parse JSON data: %s')
+                                           % e)
+
+            try:
+                new_extra_data = json_patch(
+                    extra_data,
+                    patch,
+                    can_read_key_func=self._can_read_extra_data_key,
+                    can_write_key_func=lambda path, **kwargs:
+                        self._can_write_extra_data_key(obj, path))
+
+                extra_data.clear()
+                extra_data.update(new_extra_data)
+            except JSONPatchError as e:
+                raise ImportExtraDataError(_('Failed to patch JSON data: %s')
+                                           % e)
+
+        # Support setting individual keys to simple values. This is the older
+        # method of setting JSON data, and is no longer recommended for new
+        # clients.
         for key, value in six.iteritems(fields):
             if key.startswith('extra_data.'):
                 key = key[EXTRA_DATA_LEN:]
 
-                if self._should_process_extra_data(key, obj):
+                if self._can_write_extra_data_key(obj, (key,)):
                     if value != '':
                         if value in ('true', 'True', 'TRUE'):
                             value = True
@@ -327,24 +504,53 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
                     elif key in extra_data:
                         del extra_data[key]
 
-    def _should_process_extra_data(self, key, obj):
-        """Check if an ``extra_data`` field should be processed.
+    def _can_write_extra_data_key(self, obj, path):
+        """Return whether a particular key can be written to in extra_data.
+
+        This will ensure that the root of the object cannot be directly
+        modified, and that any access states are applied to the path. It will
+        also check top-level keys to make sure the resource allows them to be
+        imported.
 
         Args:
-            key (unicode):
-                A key for an extra_data field.
-
             obj (django.db.models.Model):
-                The model of a given resource.
+                The object that contains ``extra_data``.
+
+            path (tuple):
+                The path components as a tuple. Each will be a Unicode string.
+                This will consist of keys for dictionaries and string-encoded
+                indices for arrays.
 
         Returns:
             bool:
-                Whether the extra_data field should be processed or not.
+            ``True`` if the path can be written to. ``False`` if it cannot.
         """
-        return (self.can_import_extra_data_field(obj, key) and
-                not key.startswith(PRIVATE_KEY_PREFIX) and
-                self.get_extra_data_field_state((key,)) ==
-                ExtraDataAccessLevel.ACCESS_STATE_PUBLIC)
+        return (path != () and
+                self.can_import_extra_data_field(obj, path[0]) and
+                (self.get_extra_data_field_state(path) ==
+                 ExtraDataAccessLevel.ACCESS_STATE_PUBLIC))
+
+    def _can_read_extra_data_key(self, path, **kargs):
+        """Return whether a particular key can be read from in extra_data.
+
+        This will check the path against any registered access restrictions
+        to ensure that private data cannot be read from.
+
+        Args:
+            path (tuple):
+                The path components as a tuple. Each will be a Unicode string.
+                This will consist of keys for dictionaries and string-encoded
+                indices for arrays.
+
+            **kwargs (dict):
+                Additional keyword arguments from the caller.
+
+        Returns:
+            bool:
+            ``True`` if the path can be read from. ``False`` if it cannot.
+        """
+        return (self.get_extra_data_field_state(path) !=
+                ExtraDataAccessLevel.ACCESS_STATE_PRIVATE)
 
     def _build_redirect_with_args(self, request, new_url):
         """Builds a redirect URL with existing query string arguments.
@@ -368,41 +574,6 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
             new_url += '?' + query_str
 
         return new_url
-
-    def get_extra_data_field_state(self, key_path):
-        """Return the state of a registered ``extra_data`` key path.
-
-        Args:
-            key_path (tuple):
-                The path of the ``extra_data`` key as a :py:class:`tuple` of
-                :py:class:`unicode` strings.
-
-        Returns:
-            int:
-            The access state of the provided key.
-
-        Example:
-            .. code-block:: python
-
-               resource.extra_data = {
-                   'public': 'foo',
-                   'private': 'secret',
-                   'data': {
-                       'secret_key': 'secret_data',
-                   },
-                   'readonly': 'bar',
-               }
-
-               key_path = ('data', 'secret_key',)
-               resource.get_extra_data_field_state(key_path)
-        """
-        for callback in self.extra_data_access_callbacks:
-            value = callback(key_path)
-
-            if value is not None:
-                return value
-
-        return ExtraDataAccessLevel.ACCESS_STATE_PUBLIC
 
     def _strip_private_data(self, extra_data, parent_path=None):
         """Strip private fields from an extra data object.
@@ -430,8 +601,7 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
             else:
                 path = (field_name,)
 
-            if (field_name.startswith(PRIVATE_KEY_PREFIX) or
-                self.get_extra_data_field_state(path) ==
+            if (self.get_extra_data_field_state(path) ==
                 ExtraDataAccessLevel.ACCESS_STATE_PRIVATE):
                 del clone[field_name]
             elif isinstance(value, dict):

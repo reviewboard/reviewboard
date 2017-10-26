@@ -18,7 +18,7 @@ from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.forms import UploadDiffForm
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
 from reviewboard.scmtools.errors import FileNotFoundError
-from reviewboard.webapi.base import WebAPIResource
+from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_login_required,
                                            webapi_check_local_site)
 from reviewboard.webapi.errors import (DIFF_EMPTY,
@@ -341,7 +341,12 @@ class DiffResource(WebAPIResource):
         draft.save()
 
         if extra_fields:
-            self.import_extra_data(diffset, diffset.extra_data, extra_fields)
+            try:
+                self.import_extra_data(diffset, diffset.extra_data,
+                                       extra_fields)
+            except ImportExtraDataError as e:
+                return e.error_payload
+
             diffset.save(update_fields=['extra_data'])
 
         if discarded_diffset:
@@ -381,7 +386,12 @@ class DiffResource(WebAPIResource):
             return self.get_no_access_error(request)
 
         if extra_fields:
-            self.import_extra_data(diffset, diffset.extra_data, extra_fields)
+            try:
+                self.import_extra_data(diffset, diffset.extra_data,
+                                       extra_fields)
+            except ImportExtraDataError as e:
+                return e.error_payload
+
             diffset.save(update_fields=['extra_data'])
 
         return 200, {

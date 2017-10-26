@@ -392,7 +392,12 @@ class UpdateFormMixin(DjbletsUpdateFormMixin):
                 pairs in the form of ``extra_data.key = value``.
 
         Returns:
-            django.db.models.Model: The saved model instance.
+            django.db.models.Model:
+            The saved model instance.
+
+        Raises:
+            reviewboard.webapi.base.ImportExtraDataError:
+                Extra data failed to import. The form will not be saved.
         """
         instance = form.save(commit=False)
 
