@@ -16,9 +16,16 @@ RB.SplitButtonView = Backbone.View.extend({
         'mouseleave .drop-down-btn': '_delayCheckHover'
     },
 
+    /*
+     * Note that whitespace really matters here. We don't want any spaces or
+     * newlines between tags. This is why the indentation is missing and why
+     * we're not using dedent``.
+     */
     template: _.template([
         '<div class="btn primary-btn"><%- buttonText %></div>',
-        '<div class="btn drop-down-btn">&#9662;</div>'
+        '<div class="btn drop-down-btn">',
+        '<span class="rb-icon rb-icon-dropdown-arrow"></span>',
+        '</div>',
     ].join('')),
 
     /**

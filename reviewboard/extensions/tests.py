@@ -316,25 +316,45 @@ class ActionHookTests(ExtensionManagerMixin, TestCase):
         self.assertEqual(entries[0].action_id, 'test-menu-instance-action')
         self.assertEqual(entries[1].action_id, 'test-menu-dict-action')
 
+        dropdown_icon_html = \
+            '<span class="rb-icon rb-icon-dropdown-arrow"></span>'
+
         template = Template(
             '{% load reviewtags %}'
             '{% review_request_actions %}'
         )
         content = template.render(context)
         self.assertNotIn('action', context)
-        self.assertIn('>Test Action<', content)
-        self.assertIn('>Menu Instance &#9662;<', content)
-        self.assertEqual(should_render,
-                         'id="test-menu-dict-action"' in content)
-        self.assertEqual(should_render, '>Menu Dict &#9662;<' in content)
-        self.assertEqual(should_render, 'href="with-id-url"' in content)
-        self.assertEqual(should_render, 'id="no-id-dummy-action"' in content)
+        self.assertInHTML('<a href="#" id="test-action">Test Action</a>',
+                          content)
+        self.assertInHTML(
+            ('<a class="menu-title" href="#" id="test-menu-instance-action">'
+             'Menu Instance %s</a>'
+             % dropdown_icon_html),
+            content)
+
+        for s in (('id="test-menu-dict-action"',
+                   'href="with-id-url"',
+                   'id="no-id-dummy-action"')):
+            if should_render:
+                self.assertIn(s, content)
+            else:
+                self.assertNotIn(s, content)
+
+        if should_render:
+            self.assertInHTML(
+                ('<a class="menu-title" href="#" id="test-menu-dict-action">'
+                 'Menu Dict %s</a>'
+                 % dropdown_icon_html),
+                content)
+        else:
+            self.assertNotIn('Menu Dict', content)
 
         clear_all_actions()
 
         content = template.render(context)
-        self.assertNotIn('>Test Action<', content)
-        self.assertNotIn('>Menu Instance &#9662;<', content)
+        self.assertNotIn('Test Action', content)
+        self.assertNotIn('Menu Instance', content)
         self.assertNotIn('id="test-menu-dict-action"', content)
         self.assertNotIn('href="with-id-url"', content)
         self.assertNotIn('id="no-id-dummy-action"', content)
@@ -394,9 +414,13 @@ class ActionHookTests(ExtensionManagerMixin, TestCase):
         content = t.render(context).strip()
 
         self.assertIn(('id="%s"' % action['id']), content)
-        self.assertIn((">%s &#9662;" % action['label']), content)
-        self.assertIn(self._build_action_template(action['items'][0]),
-                      content)
+        self.assertInHTML(
+            ('<a href="#" id="test-menu">%s '
+             '<span class="rb-icon rb-icon-dropdown-arrow"></span></a>'
+             % action['label']),
+            content)
+        self.assertInHTML(self._build_action_template(action['items'][0]),
+                          content)
 
     def _build_action_template(self, action):
         return ('<li><a id="%(id)s" href="%(url)s">'
