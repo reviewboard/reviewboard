@@ -1179,7 +1179,6 @@ RB.ReviewDialogView = Backbone.View.extend({
                 return false;
             },
             direction: 'up',
-            zIndex: $('#review-form-modalbox').css('zIndex'),
             alternatives: [
                 {
                     text: gettext('... to Submitter Only'),

@@ -35,7 +35,6 @@ RB.DraftReviewBannerView = Backbone.View.extend({
             text: gettext('Publish Review'),
             click: _.bind(this._onPublishClicked, this),
             id: 'review-banner-publish',
-            zIndex: this.$('.banner').css('zIndex'),
             alternatives: [
                 {
                     text: gettext('... to Submitter Only'),
