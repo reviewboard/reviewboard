@@ -197,7 +197,7 @@ class AddGeneralCommentAction(BaseReviewRequestAction):
     """An action for adding a new general comment to a review."""
 
     action_id = 'general-comment-action'
-    label = _('Add Comment')
+    label = _('Add General Comment')
 
     def should_render(self, context):
         request = context['request']

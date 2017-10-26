@@ -11,15 +11,14 @@ that you still have a review pending, and lets you quickly interact with it.
 
 The banner has the following buttons:
 
-* :guilabel:`Edit Review`
-* :guilabel:`Publish Review`
-* :guilabel:`Discard`
+.. image:: review-draft-banner.png
 
 Clicking :guilabel:`Edit Review` will display the
-:ref:`review dialog <review-dialog>`, allowing you to make changes to your
+:ref:`Review Dialog <review-dialog>`, allowing you to make changes to your
 review.
 
 Clicking :guilabel:`Publish Review` will immediately
-:ref:`publish your review <publishing-reviews>`.
+:ref:`publish your review <publishing-reviews>`. There are also additional
+options that affect how the change is published.
 
 Clicking :guilabel:`Discard Review` will immediately discard your review.

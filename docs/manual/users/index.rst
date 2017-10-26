@@ -87,8 +87,9 @@ content.
 Basic concepts
 --------------
 
-* :doc:`Issue Tracking <reviews/issue-tracking>`
+* :doc:`Reviews and comments <reviews/reviews>`
 * :doc:`Review draft banner <reviews/draft-banner>`
+* :doc:`Tracking issues <reviews/issue-tracking>`
 
 
 Reviewing content

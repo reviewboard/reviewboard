@@ -1481,6 +1481,33 @@
   }
 }
 
+#review-form-modalbox {
+  .modalbox-buttons {
+    left: 0;
+
+    .review-dialog-buttons-left {
+      /*
+       * We're only absolutely positioning the buttons-left and not
+       * buttons-right. This way, buttons-right dictates the height, and
+       * buttons-left is able to fit in on the same row.
+       */
+      position: absolute;
+      left: 0;
+    }
+
+    .on-mobile-medium-screen-720({
+      .review-dialog-buttons-left {
+        position: relative;
+      }
+
+      .review-dialog-buttons-left,
+      .review-dialog-buttons-right {
+        display: inline;
+      }
+    });
+  }
+}
+
 
 /****************************************************************************
  * Uploaded files
