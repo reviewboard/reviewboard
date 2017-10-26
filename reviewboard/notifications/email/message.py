@@ -316,7 +316,7 @@ def prepare_reply_published_mail(user, reply, review, review_request):
 
 
 def prepare_review_published_mail(user, review, review_request, request,
-                                  to_submitter_only=False):
+                                  to_owner_only=False):
     """Return an e-mail representing the supplied review.
 
     Args:
@@ -329,7 +329,7 @@ def prepare_review_published_mail(user, review, review_request, request,
         review_request (reviewboard.reviews.models.review_request.ReviewRequest):
             The review request that was reviewed.
 
-        to_submitter_only (bool):
+        to_owner_only (bool):
             Whether or not the review should be sent to the submitter only.
 
     Returns:
@@ -363,7 +363,7 @@ def prepare_review_published_mail(user, review, review_request, request,
 
     limit_to = None
 
-    if to_submitter_only:
+    if to_owner_only:
         limit_to = {review_request.submitter, review.user}
 
     to_field, cc_field = build_recipients(review.user, review_request,
@@ -373,7 +373,7 @@ def prepare_review_published_mail(user, review, review_request, request,
         to_field, cc_field, review_published,
         user=user,
         review=review,
-        to_submitter_only=to_submitter_only,
+        to_owner_only=to_owner_only,
         review_request=review_request)
 
     summary = _ensure_unicode(review_request.summary)

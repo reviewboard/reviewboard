@@ -37,9 +37,9 @@ RB.DraftReviewBannerView = Backbone.View.extend({
             id: 'review-banner-publish',
             alternatives: [
                 {
-                    text: gettext('... to Submitter Only'),
+                    text: gettext('... and only e-mail the owner'),
                     click: () => this._onPublishClicked({
-                        publishToSubmitterOnly: true,
+                        publishToOwnerOnly: true,
                     }),
                     id: 'review-banner-publish-submitter-only',
                 },
@@ -178,7 +178,7 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      *         Options that determine special cases for submission.
      *
      * Option Args:
-     *     publishToSubmitterOnly (boolean):
+     *     publishToOwnerOnly (boolean):
      *         Whether or not we should only notify the submitter of the review.
      *
      * Returns:
@@ -186,12 +186,12 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      *     false, always.
      */
     _onPublishClicked(options={}) {
-        if (options.publishToSubmitterOnly) {
-            this.model.set('publishToSubmitterOnly', true);
+        if (options.publishToOwnerOnly) {
+            this.model.set('publishToOwnerOnly', true);
         }
 
         this.model.publish({
-            attrs: ['public', 'publishToSubmitterOnly'],
+            attrs: ['public', 'publishToOwnerOnly'],
         });
 
         return false;

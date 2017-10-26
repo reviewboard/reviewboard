@@ -1499,7 +1499,7 @@ class ReviewPublishedEmailHook(EmailHook):
             signals=[review_published])
 
     def get_to_field(self, to_field, review, user, review_request,
-                     to_submitter_only, **kwargs):
+                     to_owner_only, **kwargs):
         """Return the To field for the e-mail.
 
         Args:
@@ -1517,7 +1517,7 @@ class ReviewPublishedEmailHook(EmailHook):
             review_request (reviewboard.reviews.models.ReviewRequest):
                 The review request that was reviewed.
 
-            to_submitter_only (bool):
+            to_owner_only (bool):
                 Whether or not the review was marked as being targeted at only
                 the submitter.
 
@@ -1531,7 +1531,7 @@ class ReviewPublishedEmailHook(EmailHook):
         return to_field
 
     def get_cc_field(self, cc_field, review, user, review_request,
-                     to_submitter_only, **kwargs):
+                     to_owner_only, **kwargs):
         """Return the CC field for the e-mail.
 
         Args:
@@ -1549,7 +1549,7 @@ class ReviewPublishedEmailHook(EmailHook):
             review_request (reviewboard.reviews.models.ReviewRequest):
                 The review request that was reviewed.
 
-            to_submitter_only (bool):
+            to_owner_only (bool):
                 Whether or not the review was marked as being targeted at only
                 the submitter.
 

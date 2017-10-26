@@ -1818,7 +1818,7 @@ class PreviewReviewEmailView(ReviewRequestViewMixin, BasePreviewEmailView):
             'user': review.user,
             'review': review,
             'review_request': self.review_request,
-            'to_submitter_only': False,
+            'to_owner_only': False,
             'request': request,
         }
 

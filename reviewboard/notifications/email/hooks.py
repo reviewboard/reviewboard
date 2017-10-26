@@ -19,7 +19,7 @@ _hooks = defaultdict(set)
 # See _call_hook_compat.
 _hook_compat = defaultdict(list)
 _hook_compat.update({
-    review_published: ['to_submitter_only'],
+    review_published: ['to_owner_only'],
 })
 
 
