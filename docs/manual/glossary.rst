@@ -8,6 +8,11 @@ Glossary
 
 .. glossary::
 
+   CI
+   Continuous Integration
+       A development process where commits are integrated frequently, and
+       automated builds and tests are triggered for each commit.
+
    Context Diff
        A type of :term:`diff file` that represents changes to a file
        using before/after sections. These are not well supported by

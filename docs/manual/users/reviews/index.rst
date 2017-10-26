@@ -17,3 +17,4 @@ Reviewing
    publishing
    approving-changes
    replying
+   automated-review/index

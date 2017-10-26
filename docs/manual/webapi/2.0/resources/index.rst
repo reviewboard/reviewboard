@@ -186,6 +186,8 @@ Search
    search
 
 
+.. _webapi2.0-status-update-resources:
+
 Status Updates
 ==============
 
