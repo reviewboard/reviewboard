@@ -332,7 +332,7 @@ suite('rb/views/ReviewDialogView', function() {
                         });
 
                         $button = dlg._$buttons.find(
-                            'input[value="Add Comment"]');
+                            'input[value="Add General Comment"]');
                         expect($button.length).toBe(0);
 
                         expect($.ajax).toHaveBeenCalled();
@@ -358,7 +358,7 @@ suite('rb/views/ReviewDialogView', function() {
                             });
 
                             $button = dlg._$buttons.find(
-                                'input[value="Add Comment"]');
+                                'input[value="Add General Comment"]');
                             expect($button.length).toBe(1);
 
                             expect($.ajax).toHaveBeenCalled();

@@ -146,7 +146,7 @@ def _call_hook_compat(hook, method, optional_args, value, **kwargs):
     removed = False
 
     if argspec.keywords is None:
-        for arg in optional_args:
+        for arg in optional_args or []:
             if arg not in argspec.args:
                 removed = True
                 del kwargs[arg]
