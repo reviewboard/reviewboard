@@ -362,7 +362,8 @@ class LDAPAuthBackendTests(SpyAgency, TestCase):
         self.assertEqual(user.last_name, '')
 
     def _patch_ldap(self, cls):
-        self.spy_on(ldap.initialize, call_fake=lambda uri, *args: cls(uri))
+        self.spy_on(ldap.initialize,
+                    call_fake=lambda uri, *args, **kwargs: cls(uri))
 
 
 class ReviewRequestVisitTests(TestCase):
@@ -715,7 +716,7 @@ class SandboxTests(SpyAgency, TestCase):
 
         # Suppresses MessageFailure Exception at the end of save()
         self.spy_on(messages.add_message,
-                    call_fake=lambda x, y, z: None)
+                    call_fake=lambda *args, **kwargs: None)
 
     def tearDown(self):
         """Uninitialize this test case."""
