@@ -480,6 +480,21 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
     },
 
     /**
+     * Return the view for the field with the given ID.
+     *
+     * Args:
+     *     fieldID (string):
+     *        The ID of the field.
+     *
+     * Returns:
+     *     RB.ReviewRequestFields.BaseFieldView:
+     *     The view which handles editing for the field.
+     */
+    getFieldView(fieldID) {
+        return this._fieldViews[fieldID];
+    },
+
+    /**
      * Render the editor.
      *
      * This will import all pre-rendered file attachment and screenshot

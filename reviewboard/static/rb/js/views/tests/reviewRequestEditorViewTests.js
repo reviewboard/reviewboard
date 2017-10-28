@@ -289,7 +289,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
 
                 it('Show when saved', function() {
-                    var summaryField = view._fieldViews.summary,
+                    var summaryField = view.getFieldView('summary'),
                         summaryEditor = summaryField.inlineEditorView;
 
                     expect(view.banner).toBe(null);
@@ -666,7 +666,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                                          : jsonFieldName + '_text_type');
                 supportsRichText = !!options.supportsRichText;
                 useExtraData = options.useExtraData;
-                fieldView = view._fieldViews[options.fieldID || options.jsonFieldName];
+                fieldView = view.getFieldView(options.fieldID || options.jsonFieldName);
                 fieldEditor = fieldView.inlineEditorView;
                 $field = view.$(options.selector);
                 $input = fieldEditor.$field;
@@ -1378,6 +1378,18 @@ suite('rb/views/ReviewRequestEditorView', function() {
                         expect(editor.get('editCount')).toBe(0);
                     });
                 });
+            });
+        });
+    });
+
+    describe('Methods', function() {
+        describe('getFieldView', function() {
+            it('Correct field is returned', function() {
+                var fieldView = view.getFieldView('target_groups');
+                expect(fieldView).not.toBe(undefined);
+                expect(fieldView.fieldID).toBe('target_groups');
+
+                expect(view.getFieldView('some_random_id')).toBe(undefined);
             });
         });
     });
