@@ -28,19 +28,22 @@ To save a field, press the :kbd:`Enter` key or click :guilabel:`OK`. To revert
 your changes, press the :kbd:`Escape` key or click :guilabel:`Cancel`.
 
 
-Submitter
----------
+Owner
+-----
 
-The :guilabel:`Submitter` field represents the original submitter or current
-owner of the review request. This is the person responsible for updating the
-review request and responding to review feedback.
+The :guilabel:`Owner` field represents the current owner of the review
+request. This is the person responsible for updating the review request and
+responding to review feedback.
 
-.. versionadded:: 3.0
-
-If the original submitter is no longer responsible for the change (for
-instance, they've left the team or the company), they (or an administrator)
-can re-assign the review request to another user by editing this field and
+If the original owner is no longer responsible for the change (for instance,
+they've left the team or the company), they (or an administrator) can
+re-assign the review request to another user by editing this field and
 choosing the new owner.
+
+
+.. versionchanged:: 3.0
+   Prior to Review Board 3.0, this field was called "Submitter" and was not
+   editable.
 
 
 Summary

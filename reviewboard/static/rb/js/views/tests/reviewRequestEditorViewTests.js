@@ -124,7 +124,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             }));
 
         view.addFieldView(
-            new RB.ReviewRequestFields.SubmitterFieldView({
+            new RB.ReviewRequestFields.OwnerFieldView({
                 el: $el.find('#field_submitter'),
                 fieldID: 'submitter',
                 model: editor
@@ -1184,7 +1184,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
         });
 
-        describe('Submitter', function() {
+        describe('Owner', function() {
             setupFieldTests({
                 jsonFieldName: 'submitter',
                 selector: '#field_submitter'

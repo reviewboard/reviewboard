@@ -827,9 +827,9 @@ Fields.DescriptionFieldView = Fields.MultilineTextFieldView.extend({
 
 
 /**
- * The "Submitter" field.
+ * The "Owner" field.
  */
-Fields.SubmitterFieldView = Fields.TextFieldView.extend({
+Fields.OwnerFieldView = Fields.TextFieldView.extend({
     autocomplete: {
         fieldName: 'users',
         nameKey: 'username',
