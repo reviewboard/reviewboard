@@ -235,14 +235,14 @@ class ReviewRequestAllDiffFilesChoice(BaseReviewRequestDiffFileChoice):
     require_match_all_items = True
 
 
-class ReviewRequestSubmitterChoice(LocalSiteModelChoiceMixin,
-                                   ReviewRequestConditionChoiceMixin,
-                                   BaseConditionModelMultipleChoice):
-    """A condition choice for matching a review request's submitter."""
+class ReviewRequestOwnerChoice(LocalSiteModelChoiceMixin,
+                               ReviewRequestConditionChoiceMixin,
+                               BaseConditionModelMultipleChoice):
+    """A condition choice for matching a review request's owner."""
 
     queryset = User.objects.all()
-    choice_id = 'submitter'
-    name = _('Submitter')
+    choice_id = 'owner'
+    name = _('Owner')
 
     operators = ConditionOperators([
         IsOneOfOperator,
@@ -250,7 +250,7 @@ class ReviewRequestSubmitterChoice(LocalSiteModelChoiceMixin,
     ])
 
     def get_match_value(self, review_request, **kwargs):
-        """Return the submitter used for matching.
+        """Return the owner used for matching.
 
         Args:
             review_request (reviewboard.scmtools.models.ReviewRequest):
@@ -261,9 +261,9 @@ class ReviewRequestSubmitterChoice(LocalSiteModelChoiceMixin,
 
         Returns:
             django.contrib.auth.models.User:
-            The review request's submitter.
+            The review request's owner.
         """
-        return review_request.submitter
+        return review_request.owner
 
 
 class ReviewRequestSummaryChoice(ReviewRequestConditionChoiceMixin,
@@ -394,7 +394,7 @@ class ReviewRequestConditionChoices(ConditionChoices):
         ReviewRequestRepositoriesChoice,
         ReviewRequestRepositoryTypeChoice,
         ReviewRequestReviewGroupsChoice,
-        ReviewRequestSubmitterChoice,
+        ReviewRequestOwnerChoice,
         ReviewRequestSummaryChoice,
         ReviewRequestTestingDoneChoice,
     ]

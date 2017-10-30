@@ -92,7 +92,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         blank=True)
 
     submitter = property(lambda self: self.owner or
-                         self.review_request.submitter)
+                         self.review_request.owner)
     repository = property(lambda self: self.review_request.repository)
     local_site = property(lambda self: self.review_request.local_site)
 

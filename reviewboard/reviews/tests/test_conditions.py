@@ -13,7 +13,7 @@ from reviewboard.reviews.conditions import (AnyReviewGroupsPublicOperator,
                                             ReviewRequestRepositoriesChoice,
                                             ReviewRequestRepositoryTypeChoice,
                                             ReviewRequestReviewGroupsChoice,
-                                            ReviewRequestSubmitterChoice)
+                                            ReviewRequestOwnerChoice)
 from reviewboard.reviews.models import Group
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
@@ -878,28 +878,28 @@ class ReviewRequestReviewGroupsChoiceTests(TestCase):
         self.assertFalse(condition_set.matches(review_request=review_request))
 
 
-class ReviewRequestSubmitterChoiceTests(TestCase):
-    """Unit tests for ReviewRequestSubmitterChoice."""
+class ReviewRequestOwnerChoiceTests(TestCase):
+    """Unit tests for ReviewRequestOwnerChoice."""
 
     fixtures = ['test_users']
 
     def setUp(self):
-        super(ReviewRequestSubmitterChoiceTests, self).setUp()
+        super(ReviewRequestOwnerChoiceTests, self).setUp()
 
-        self.choice = ReviewRequestSubmitterChoice()
+        self.choice = ReviewRequestOwnerChoice()
         self.user1 = User.objects.get(username='doc')
         self.user2 = User.objects.get(username='grumpy')
         self.user3 = User.objects.get(username='dopey')
 
     def test_get_queryset(self):
-        """Testing ReviewRequestSubmitterChoice.get_queryset"""
+        """Testing ReviewRequestOwnerChoice.get_queryset"""
         self.assertQuerysetEqual(
             self.choice.get_queryset(),
             User.objects.values_list('pk', flat=True),
             transform=lambda user: user.pk)
 
     def test_get_queryset_with_local_site(self):
-        """Testing ReviewRequestSubmitterChoice.get_queryset with LocalSite"""
+        """Testing ReviewRequestOwnerChoice.get_queryset with LocalSite"""
         good_site = LocalSite.objects.create(name='good-site')
         good_site.users.add(self.user2)
 
@@ -914,7 +914,7 @@ class ReviewRequestSubmitterChoiceTests(TestCase):
             transform=lambda user: user.pk)
 
     def test_matches_with_one_of_op(self):
-        """Testing ReviewRequestSubmitterChoice.matches with "one-of"
+        """Testing ReviewRequestOwnerChoice.matches with "one-of"
         operator
         """
         condition_set = ConditionSet(ConditionSet.MODE_ALL, [
@@ -931,7 +931,7 @@ class ReviewRequestSubmitterChoiceTests(TestCase):
             review_request=self.create_review_request(submitter=self.user3)))
 
     def test_matches_with_not_one_of_op(self):
-        """Testing ReviewRequestSubmitterChoice.matches with "not-one-of"
+        """Testing ReviewRequestOwnerChoice.matches with "not-one-of"
         operator
         """
         condition_set = ConditionSet(ConditionSet.MODE_ALL, [
