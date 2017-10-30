@@ -22,19 +22,22 @@ Once you have published a review, you can't go back and edit it (but you can
 later :ref:`revoke a Ship It! <revoking-ship-it>` if you filed one).
 
 
-.. _publish-review-submitter-only:
+.. _publish-review-owner-only:
 
-Publishing to the Submitter Only
-================================
+E-mailing Only the Owner On Publish
+===================================
 
 If your comments are pretty trivial, or not worth e-mailing out to everyone
-who's watching, you can choose to publish reviews only to the submitter/owner
-of the change. Everyone can still see them on the review request page, but
-they won't receive e-mails.
+who's watching, you can choose to publish reviews only to the owner of the
+change. Everyone can still see them on the review request page, but they won't
+receive e-mails.
 
 You can do this by hovering over the drop-down arrow on the :guilabel:`Publish
-Review` and choosing :guilabel:`To Submitter Only` (instead of clicking
-:guilabel:`Publish Review` directly). That will immediately publish your
-change only to the submitter.
+Review` and choosing :guilabel:`and only e-mail the owner` (instead of
+clicking :guilabel:`Publish Review` directly). That will immediately publish
+your change and e-mail only the owner.
 
-.. image:: review-draft-banner-publish-submitter-only.png
+.. image:: review-draft-banner-publish-owner-only.png
+
+Note that Review Board extensions and integrations may change their behavior
+as well when choosing this option.

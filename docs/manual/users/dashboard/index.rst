@@ -94,9 +94,9 @@ The main area of the dashboard lists the review requests belonging to that
 particular view. This is a detailed, sortable, customizable list.
 
 Clicking on any review request in the list will take you to that particular
-review request, while clicking on a submitter's name will take you to the
-list of review requests submitted by that user. Clicking on a bug link will go
-to the associated bug report (assuming a bug tracker has been connected).
+review request, while clicking on an owner's name will take you to the list of
+review requests submitted by that user. Clicking on a bug link will go to the
+associated bug report (assuming a bug tracker has been connected).
 
 There are also a few infoboxes that appear when hovering over certain cells
 that can provide additional information beyond what's normally shown in the
@@ -178,11 +178,11 @@ to clear sorting for that column.
 
 .. image:: column-sorting.png
 
-The dashboard provides two-level sorting. You can primarily sort by one
-column but in the case of multiple entries for a particular submitter,
-timestamp, etc., you can have secondary sorting on another column. This is set
-by simply clicking one column (which will be the secondary column) and then
-clicking another column (which will be the primary).
+The dashboard provides two-level sorting. You can primarily sort by one column
+but in the case of multiple entries for a particular owner, timestamp, etc.,
+you can have secondary sorting on another column. This is set by simply
+clicking one column (which will be the secondary column) and then clicking
+another column (which will be the primary).
 
 The primary column is indicated by a black up/down arrow, and the secondary
 column is indicated by a lighter grey up/down arrow.
@@ -240,6 +240,7 @@ New Updates             Shows a message bubble icon for any review requests that
                         that you have not opened before.
 Number of Reviews       Shows how many reviews have been done on the review
                         request.
+Owner                   Shows the username of the owner of the review request.
 Posted Time             Shows the timestamp of when the review request was first
                         posted. This is color-coded to indicate the age.
 Posted Time (Relative)  Shows the timestamp of when the review request was first
@@ -259,7 +260,6 @@ Starred                 Shows a star indicator that can be toggled. When toggled
                         show up in the "Starred" section of the dashboard, and
                         you will be CC'd on any discussion. Toggling the star
                         off will remove you from the CC list.
-Submitter               Shows the username of the submitter.
 Summary                 Shows the summary text of the review request.
 Target Groups           Shows a list of the assigned groups for the review
                         request.

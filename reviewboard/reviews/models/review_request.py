@@ -400,6 +400,22 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return self._approval_failure
 
+    @property
+    def owner(self):
+        """The owner of a review request.
+
+        This is an alias for :py:attr:`submitter`. It provides compatibilty
+        with :py:attr:`ReviewRequestDraft.owner
+        <reviewboard.reviews.models.review_request_draft.ReviewRequestDraft.owner>`,
+        for functions working with either method, and for review request
+        fields, but it cannot be used for queries.
+        """
+        return self.submitter
+
+    @owner.setter
+    def owner(self, new_owner):
+        self.submitter = new_owner
+
     def get_participants(self):
         """Returns a list of users who have discussed this review request."""
         # See the comment in Review.get_participants for this list

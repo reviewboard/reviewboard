@@ -1179,13 +1179,12 @@ RB.ReviewDialogView = Backbone.View.extend({
                 return false;
             },
             direction: 'up',
-            zIndex: $('#review-form-modalbox').css('zIndex'),
             alternatives: [
                 {
-                    text: gettext('... to Submitter Only'),
+                    text: gettext('... and only e-mail the owner'),
                     click: () => {
                         this._saveReview(true, {
-                            publishToSubmitterOnly: true
+                            publishToOwnerOnly: true
                         });
                         this.close();
                         return false;
@@ -1272,8 +1271,8 @@ RB.ReviewDialogView = Backbone.View.extend({
      *         Options for the model save operation.
      */
     _saveReview(publish, options={}) {
-        if (publish && options.publishToSubmitterOnly) {
-            this.model.set('publishToSubmitterOnly', true);
+        if (publish && options.publishToOwnerOnly) {
+            this.model.set('publishToOwnerOnly', true);
         }
 
         this._$buttons.prop('disabled');
@@ -1311,7 +1310,7 @@ RB.ReviewDialogView = Backbone.View.extend({
 
                 saveFunc.call(this.model, {
                     attrs: ['public', 'shipIt', 'forceTextType',
-                            'includeTextTypes', 'publishToSubmitterOnly'],
+                            'includeTextTypes', 'publishToOwnerOnly'],
                     success: () => $.funcQueue('reviewForm').next(),
                     error: function() {
                         console.error('Failed to save review', arguments);

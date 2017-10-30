@@ -131,7 +131,7 @@ class ReviewRequestDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
     star = ReviewRequestStarColumn()
     ship_it = ShipItColumn()
     summary = SummaryColumn()
-    submitter = UsernameColumn(label=_('Submitter'),
+    submitter = UsernameColumn(label=_('Owner'),
                                user_relation=['submitter'])
 
     branch = Column(
@@ -242,7 +242,7 @@ class ReviewDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
         label=_('Date Reviewed'),
         format='F jS, Y',
         shrink=True)
-    submitter = UsernameColumn(label=_('Submitter'),
+    submitter = UsernameColumn(label=_('Owner'),
                                user_relation=['review_request', 'submitter'])
     review_summary = ReviewSummaryColumn()
 

@@ -6,7 +6,7 @@ from django.utils import six
 from djblets.webapi.errors import DOES_NOT_EXIST, WebAPIError
 
 from reviewboard.reviews.models import BaseComment
-from reviewboard.webapi.base import WebAPIResource
+from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
 from reviewboard.webapi.resources import resources
 
@@ -225,8 +225,12 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             comment_kwargs[field] = kwargs.get(field)
 
         new_comment = self.model(**comment_kwargs)
-        self.import_extra_data(new_comment, new_comment.extra_data,
-                               extra_fields)
+
+        try:
+            self.import_extra_data(new_comment, new_comment.extra_data,
+                                   extra_fields)
+        except ImportExtraDataError as e:
+            return e.error_payload
 
         if issue_opened:
             new_comment.issue_status = BaseComment.OPEN
@@ -384,7 +388,11 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
         self.set_text_fields(comment, 'text', **kwargs)
 
         if not is_reply:
-            self.import_extra_data(comment, comment.extra_data, extra_fields)
+            try:
+                self.import_extra_data(comment, comment.extra_data,
+                                       extra_fields)
+            except ImportExtraDataError as e:
+                return e.error_payload
 
         comment.save()
 

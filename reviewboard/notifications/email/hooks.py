@@ -19,7 +19,7 @@ _hooks = defaultdict(set)
 # See _call_hook_compat.
 _hook_compat = defaultdict(list)
 _hook_compat.update({
-    review_published: ['to_submitter_only'],
+    review_published: ['to_owner_only'],
 })
 
 
@@ -146,7 +146,7 @@ def _call_hook_compat(hook, method, optional_args, value, **kwargs):
     removed = False
 
     if argspec.keywords is None:
-        for arg in optional_args:
+        for arg in optional_args or []:
             if arg not in argspec.args:
                 removed = True
                 del kwargs[arg]

@@ -10,7 +10,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
 
 from reviewboard.notifications.forms import WebHookTargetForm
 from reviewboard.notifications.models import WebHookTarget
-from reviewboard.webapi.base import WebAPIResource
+from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
 from reviewboard.webapi.decorators import (webapi_login_required,
                                            webapi_check_local_site,
                                            webapi_response_errors)
@@ -443,8 +443,13 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
         form = self.create_form(form_data, request)
 
         if form.is_valid():
+            try:
+                instance = self.save_form(form, extra_fields)
+            except ImportExtraDataError as e:
+                return e.error_payload
+
             return 201, {
-                self.item_result_key: self.save_form(form, extra_fields),
+                self.item_result_key: instance,
             }
         else:
             return INVALID_FORM_DATA, {
@@ -542,8 +547,13 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
         form = self.create_form(form_data, request, instance=webhook)
 
         if form.is_valid():
+            try:
+                instance = self.save_form(form, extra_fields)
+            except ImportExtraDataError as e:
+                return e.error_payload
+
             return 200, {
-                self.item_result_key: self.save_form(form, extra_fields),
+                self.item_result_key: instance,
             }
         else:
             return INVALID_FORM_DATA, {

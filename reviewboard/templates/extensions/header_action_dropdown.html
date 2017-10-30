@@ -1,6 +1,7 @@
 {% load djblets_utils i18n staticfiles %}
 <li>
- <a{% attr "id" %}{{actions.id}}{% endattr %} href="#">{{actions.label}} &#9662;</a>
+ <a{% attr "id" %}{{actions.id}}{% endattr %} href="#">{{actions.label}}
+  <span class="rb-icon rb-icon-dropdown-arrow"></span></a>
  <ul>
 {% for action in actions.items %}
 {%  include "extensions/action.html" %}

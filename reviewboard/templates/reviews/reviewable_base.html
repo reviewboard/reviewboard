@@ -50,7 +50,12 @@
  <div class="banner">
   <h1>{% trans "You have a pending review." %}</h1>
   <input id="review-banner-edit" type="button" value="{% trans "Edit Review" %}" />
-  <div id="review-banner-publish-container" class="split-btn"></div>
+  <div id="review-banner-publish-container" class="split-btn">
+   <div class="btn btn-segmented">
+    <div class="btn-segment primary-btn" id="review-banner-publish">{% trans "Publish Review" %}
+    </div><div class="btn-segment drop-down-btn"><span
+     class="rb-icon rb-icon-dropdown-arrow"></span></div></div>
+  </div>
   <input id="review-banner-discard" type="button" value="{% trans "Discard" %}" />
  </div>
 </div>

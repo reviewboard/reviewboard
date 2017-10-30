@@ -95,7 +95,7 @@ def send_reply_published_mail(user, reply, trivial, **kwargs):
         _update_email_info(reply, message.message_id)
 
 
-def send_review_published_mail(user, review, request, to_submitter_only,
+def send_review_published_mail(user, review, request, to_owner_only,
                                **kwargs):
     """Send e-mail when a review is published.
 
@@ -110,7 +110,7 @@ def send_review_published_mail(user, review, request, to_submitter_only,
         review (reviewboard.reviews.models.review.Review):
             The review that was published.
 
-        to_submitter_only (bool):
+        to_owner_only (bool):
             Whether or not the mail should only be sent to the review request
             submitter.
 
@@ -135,7 +135,7 @@ def send_review_published_mail(user, review, request, to_submitter_only,
                                review=review,
                                review_request=review_request,
                                request=request,
-                               to_submitter_only=to_submitter_only)
+                               to_owner_only=to_owner_only)
 
     if sent:
         _update_email_info(review, message.message_id)

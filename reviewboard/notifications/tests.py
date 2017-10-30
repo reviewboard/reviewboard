@@ -430,7 +430,7 @@ class ReviewRequestEmailTests(EmailTestHelper, DmarcDnsTestsMixin, SpyAgency,
             siteconfig.save()
             load_site_config()
 
-    def test_review_to_submitter_only(self):
+    def test_review_to_owner_only(self):
         """Test that e-mails from reviews published to the submitter only will
         only go to the submitter and the reviewer
         """
@@ -445,7 +445,7 @@ class ReviewRequestEmailTests(EmailTestHelper, DmarcDnsTestsMixin, SpyAgency,
         review = self.create_review(review_request=review_request,
                                     publish=False)
 
-        review.publish(to_submitter_only=True)
+        review.publish(to_owner_only=True)
         self.assertEqual(len(mail.outbox), 1)
 
         message = mail.outbox[0]

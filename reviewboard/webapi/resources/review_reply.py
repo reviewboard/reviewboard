@@ -11,6 +11,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
 
 from reviewboard.reviews.errors import PublishError
 from reviewboard.reviews.models import Review
+from reviewboard.webapi.base import ImportExtraDataError
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.errors import PUBLISH_ERROR
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
@@ -309,7 +310,10 @@ class ReviewReplyResource(BaseReviewResource):
         self.set_text_fields(reply, 'body_top', **kwargs)
         self.set_text_fields(reply, 'body_bottom', **kwargs)
 
-        self.import_extra_data(reply, reply.extra_data, extra_fields)
+        try:
+            self.import_extra_data(reply, reply.extra_data, extra_fields)
+        except ImportExtraDataError as e:
+            return e.error_payload
 
         if public:
             try:

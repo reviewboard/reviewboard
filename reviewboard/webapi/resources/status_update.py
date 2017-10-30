@@ -15,7 +15,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST,
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.features import status_updates_feature
 from reviewboard.reviews.models import Review, StatusUpdate
-from reviewboard.webapi.base import WebAPIResource
+from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources import resources
 
@@ -349,26 +349,8 @@ class StatusUpdateResource(WebAPIResource):
         status_update = self.model(review_request=review_request,
                                    user=request.user)
 
-        try:
-            self._update_status(status_update, extra_fields, state=state,
-                                **kwargs)
-            status_update.save()
-        except ChangeDescription.DoesNotExist:
-            return INVALID_FORM_DATA, {
-                'fields': {
-                    'change_id': ['Invalid change description ID'],
-                },
-            }
-        except Review.DoesNotExist:
-            return INVALID_FORM_DATA, {
-                'fields': {
-                    'review_id': ['Invalid review ID'],
-                },
-            }
-
-        return 201, {
-            self.item_result_key: status_update,
-        }
+        return self._update_status(status_update, extra_fields,
+                                   state=state, **kwargs)
 
     @webapi_check_local_site
     @webapi_login_required
@@ -438,25 +420,7 @@ class StatusUpdateResource(WebAPIResource):
         if not self.has_modify_permissions(request, status_update):
             return self.get_no_access_error(request)
 
-        try:
-            self._update_status(status_update, extra_fields, **kwargs)
-            status_update.save()
-        except ChangeDescription.DoesNotExist:
-            return INVALID_FORM_DATA, {
-                'fields': {
-                    'change_id': ['Invalid change description ID'],
-                },
-            }
-        except Review.DoesNotExist:
-            return INVALID_FORM_DATA, {
-                'fields': {
-                    'review_id': ['Invalid review ID'],
-                },
-            }
-
-        return 200, {
-            self.item_result_key: status_update,
-        }
+        return self._update_status(status_update, extra_fields, **kwargs)
 
     def _update_status(self, status_update, extra_fields, **kwargs):
         """Update the fields of the StatusUpdate model.
@@ -481,14 +445,43 @@ class StatusUpdateResource(WebAPIResource):
             status_update.state = StatusUpdate.string_to_state(kwargs['state'])
 
         if 'change_id' in kwargs:
-            status_update.change_description = \
-                ChangeDescription.objects.get(pk=kwargs['change_id'])
+            try:
+                status_update.change_description = \
+                    ChangeDescription.objects.get(pk=kwargs['change_id'])
+            except ChangeDescription.DoesNotExist:
+                return INVALID_FORM_DATA, {
+                    'fields': {
+                        'change_id': ['Invalid change description ID'],
+                    },
+                }
 
         if 'review_id' in kwargs:
-            status_update.review = Review.objects.get(pk=kwargs['review_id'])
+            try:
+                status_update.review = \
+                    Review.objects.get(pk=kwargs['review_id'])
+            except Review.DoesNotExist:
+                return INVALID_FORM_DATA, {
+                    'fields': {
+                        'review_id': ['Invalid review ID'],
+                    },
+                }
 
-        self.import_extra_data(status_update, status_update.extra_data,
-                               extra_fields)
+        try:
+            self.import_extra_data(status_update, status_update.extra_data,
+                                   extra_fields)
+        except ImportExtraDataError as e:
+            return e.error_payload
+
+        if status_update.pk is None:
+            code = 201
+        else:
+            code = 200
+
+        status_update.save()
+
+        return code, {
+            self.item_result_key: status_update,
+        }
 
     @webapi_check_local_site
     @webapi_login_required

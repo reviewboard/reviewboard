@@ -11,7 +11,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
 
 from reviewboard.reviews.models import Group
-from reviewboard.webapi.base import WebAPIResource
+from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.errors import (GROUP_ALREADY_EXISTS,
                                        INVALID_USER)
@@ -250,7 +250,11 @@ class ReviewGroupResource(WebAPIResource):
             return GROUP_ALREADY_EXISTS
 
         if extra_fields:
-            self.import_extra_data(group, group.extra_data, extra_fields)
+            try:
+                self.import_extra_data(group, group.extra_data, extra_fields)
+            except ImportExtraDataError as e:
+                return e.error_payload
+
             group.save(update_fields=['extra_data'])
 
         return 201, {
@@ -331,7 +335,10 @@ class ReviewGroupResource(WebAPIResource):
             if val is not None:
                 setattr(group, field, val)
 
-        self.import_extra_data(group, group.extra_data, extra_fields)
+        try:
+            self.import_extra_data(group, group.extra_data, extra_fields)
+        except ImportExtraDataError as e:
+            return e.error_payload
 
         group.save()
 

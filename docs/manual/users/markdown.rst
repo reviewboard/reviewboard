@@ -181,6 +181,74 @@ For the complete list, look through the Pygments
 "short names" listed can be used.
 
 
+.. _emoji:
+
+Emoji
+=====
+
+.. versionadded:: 3.0
+
+Review Board's Markdown mode supports Emoji Shortcodes. These allow for
+referencing Emoji characters by name (such as ``:thumbsup:``), and should be
+familiar to people using Slack, GitHub, and other services (in fact, we use
+GitHub's Gemoji_ set for Review Board).
+
+The advantage of Emoji Shortcodes is that they work on any database setup
+(MySQL users cannot use normal Unicode-based Emoji by default), and are safer
+for inclusion in commit messages.
+
+Here are some examples of Emoji Shortcodes:
+
+|smile| ``:smile:``
+
+|heart| ``:heart:``
+
+|thumbsup| ``:thumbsup:`` ``:+1:``
+
+|thumbsdown| ``:thumbsdown:`` ``:-1:``
+
+|bug| ``:bug:``
+
+|cloud| ``:cloud:``
+
+|bulb| ``:bulb:``
+
+|trophy| ``:trophy:``
+
+You can see a standard list of Emoji Shortcodes on this `Emoji cheat sheet`_.
+(Note that this is maintained by a third-party, and may not always be
+accurate).
+
+
+.. |smile| image:: https://assets-cdn.github.com/images/icons/emoji/unicode/1f604.png
+   :width: 16
+   :height: 16
+.. |heart| image:: https://assets-cdn.github.com/images/icons/emoji/unicode/2764.png
+   :width: 16
+   :height: 16
+.. |thumbsup| image:: https://assets-cdn.github.com/images/icons/emoji/unicode/1f44d.png
+   :width: 16
+   :height: 16
+.. |thumbsdown| image:: https://assets-cdn.github.com/images/icons/emoji/unicode/1f44e.png
+   :width: 16
+   :height: 16
+.. |bug| image:: https://assets-cdn.github.com/images/icons/emoji/unicode/1f41b.png
+   :width: 16
+   :height: 16
+.. |cloud| image:: https://assets-cdn.github.com/images/icons/emoji/unicode/2601.png
+   :width: 16
+   :height: 16
+.. |bulb| image:: https://assets-cdn.github.com/images/icons/emoji/unicode/1f4a1.png
+   :width: 16
+   :height: 16
+.. |trophy| image:: https://assets-cdn.github.com/images/icons/emoji/unicode/1f3c6.png
+   :width: 16
+   :height: 16
+
+.. _Gemoji: https://github.com/github/gemoji
+.. _Emoji Cheat Sheet: https://gist.github.com/rxaviers/7360908
+
+
 Escaping
 ========
 

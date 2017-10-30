@@ -138,11 +138,11 @@ review_request_reopened = Signal(providing_args=['user', 'review_request',
 #:     review (reviewboard.reviews.models.Review):
 #:         The review that's being published.
 #:
-#:     to_submitter_only (boolean):
+#:     to_owner_only (boolean):
 #:         Whether the review e-mail should be sent only to the review request
 #:         submitter.
 review_publishing = Signal(providing_args=['user', 'review',
-                                           'to_submitter_only'])
+                                           'to_owner_only'])
 
 
 #: Emitted when a Ship It is about to be revoked from a review.
@@ -180,14 +180,14 @@ review_ship_it_revoked = Signal(providing_args=['user', 'review'])
 #:     review (reviewboard.reviews.models.Review):
 #:         The review that was published.
 #:
-#:     to_submitter_only (boolean):
+#:     to_owner_only (boolean):
 #:         Whether the review e-mail should be sent only to the review request
 #:         submitter.
 #:
 #:     request (django.http.HttpRequest):
 #:         The request object if the review was published from an HTTP request.
 review_published = Signal(
-    providing_args=['user', 'review', 'to_submitter_only', 'request'])
+    providing_args=['user', 'review', 'to_owner_only', 'request'])
 
 
 #: Emitted when a reply to a review is being published.

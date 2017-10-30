@@ -40,7 +40,7 @@ from reviewboard.scmtools.errors import (AuthenticationError,
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.ssh.errors import SSHError
 from reviewboard.scmtools.models import Repository
-from reviewboard.webapi.base import WebAPIResource
+from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.errors import (CHANGE_NUMBER_IN_USE,
                                        CLOSE_ERROR,
@@ -730,9 +730,13 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 create_from_commit_id=create_from_commit_id)
 
             if extra_fields:
-                self.import_extra_data(review_request,
-                                       review_request.extra_data,
-                                       extra_fields)
+                try:
+                    self.import_extra_data(review_request,
+                                           review_request.extra_data,
+                                           extra_fields)
+                except ImportExtraDataError as e:
+                    return e.error_payload
+
                 review_request.save(update_fields=['extra_data'])
 
             return 201, {
@@ -969,8 +973,13 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             draft.save()
 
         if extra_fields:
-            self.import_extra_data(review_request, review_request.extra_data,
-                                   extra_fields)
+            try:
+                self.import_extra_data(review_request,
+                                       review_request.extra_data,
+                                       extra_fields)
+            except ImportExtraDataError as e:
+                return e.error_payload
+
             changed_fields.append('extra_data')
 
         if changed_fields:

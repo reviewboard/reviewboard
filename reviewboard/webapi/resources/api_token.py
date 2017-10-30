@@ -13,7 +13,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED,
                                    WebAPITokenGenerationError)
 
-from reviewboard.webapi.base import WebAPIResource
+from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.errors import TOKEN_GENERATION_FAILED
 from reviewboard.webapi.models import WebAPIToken
@@ -157,8 +157,12 @@ class APITokenResource(WebAPIResource):
             return TOKEN_GENERATION_FAILED.with_message(six.text_type(e))
 
         if extra_fields:
-            self.import_extra_data(token, token.extra_data, extra_fields)
-            token.save()
+            try:
+                self.import_extra_data(token, token.extra_data, extra_fields)
+            except ImportExtraDataError as e:
+                return e.error_payload
+
+            token.save(update_fields=('extra_data',))
 
         return 201, {
             self.item_result_key: token,
@@ -210,7 +214,10 @@ class APITokenResource(WebAPIResource):
                 }
 
         if extra_fields:
-            self.import_extra_data(token, token.extra_data, extra_fields)
+            try:
+                self.import_extra_data(token, token.extra_data, extra_fields)
+            except ImportExtraDataError as e:
+                return e.error_payload
 
         token.save()
 

@@ -12,7 +12,7 @@ from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
 
 from reviewboard.reviews.errors import PublishError
 from reviewboard.reviews.models import Review
-from reviewboard.webapi.base import WebAPIResource
+from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.errors import PUBLISH_ERROR
 from reviewboard.webapi.mixins import MarkdownFieldsMixin
@@ -149,10 +149,10 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'added_in': '2.0',
             'deprecated_in': '2.0.12',
         },
-        'publish_to_submitter_only': {
+        'publish_to_owner_only': {
             'type': bool,
             'description': 'If true, the review will only send an e-mail '
-                           'to the review request submitter.',
+                           'to the owner of the review request.',
             'added_in': '3.0',
         },
     }
@@ -297,7 +297,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         pass
 
     def update_review(self, request, review, public=None,
-                      publish_to_submitter_only=False, extra_fields={},
+                      publish_to_owner_only=False, extra_fields={},
                       ship_it=None, **kwargs):
         """Update an existing review based on the requested data.
 
@@ -315,7 +315,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
                 Whether the review is being made public for the first
                 time.
 
-            publish_to_submitter_only (bool, optional):
+            publish_to_owner_only (bool, optional):
                 Whether an e-mail for the published review should only be
                 sent to the owner of the review request. This is ignored if
                 ``public`` is not ``True``.
@@ -348,14 +348,17 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         self.set_text_fields(review, 'body_top', **kwargs)
         self.set_text_fields(review, 'body_bottom', **kwargs)
 
-        self.import_extra_data(review, review.extra_data, extra_fields)
+        try:
+            self.import_extra_data(review, review.extra_data, extra_fields)
+        except ImportExtraDataError as e:
+            return e.error_payload
 
         review.save()
 
         if public:
             try:
                 review.publish(user=request.user,
-                               to_submitter_only=publish_to_submitter_only,
+                               to_owner_only=publish_to_owner_only,
                                request=request)
             except PublishError as e:
                 return PUBLISH_ERROR.with_message(six.text_type(e))

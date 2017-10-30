@@ -1,57 +1,23 @@
 @import (reference) "../defs.less";
 
 .split-btn {
-  box-shadow: @btn-box-shadow;
   cursor: pointer;
   display: inline-block;
+  position: relative;
+  transition: @split-btn-hover-transition-time border linear;
 
-  .btn {
-    border: 1px solid @btn-border-color;
-    border-bottom-color: @btn-border-bottom-color;
-    border-radius: 0;
-
-    &.primary-btn {
-      border-radius: @btn-border-radius 0 0 @btn-border-radius;
-
-      &.drop-down-shown {
-        border-radius: @btn-border-radius 0 0 0;
-        border-bottom: 0;
-      }
-
-      &.drop-up-shown {
-        border-radius: 0 0 0 @btn-border-radius;
-        border-top: 0;
-      }
+  &.drop-down-shown,
+  &.drop-up-shown {
+    .split-btn-alternatives {
+      opacity: 1;
     }
-
-    &.drop-down-btn {
-      border-left: none;
-      border-radius: 0 @btn-border-radius @btn-border-radius 0;
-
-      &.drop-down-shown {
-        border-radius: 0 @btn-border-radius 0 0;
-        border-bottom: 0;
-      }
-
-      &.drop-up-shown {
-        border-radius: 0 0 @btn-border-radius 0;
-        border-top: 0;
-      }
-    }
-  }
-}
-
-.split-btn-alternatives {
-  box-shadow: @btn-box-shadow;
-  cursor: pointer;
-
-  .btn {
-    border-radius: 0;
-    display: block;
   }
 
   &.drop-down-shown {
-    .btn {
+    border-radius: @btn-border-radius @btn-border-radius 0 0;
+    border-bottom-color: transparent;
+
+    .split-btn-alternatives .btn {
       border-bottom: 0;
 
       &:last-child {
@@ -62,14 +28,32 @@
   }
 
   &.drop-up-shown {
-    .btn {
+    border-radius: 0 0 @btn-border-radius @btn-border-radius;
+    border-top-color: transparent;
+
+    .split-btn-alternatives .btn {
       border-top: 0;
 
       &:first-child {
+        border-radius: @btn-border-radius @btn-border-radius 0 0;
+        border-top: 1px solid @btn-border-color;
       }
-      border-radius: @btn-border-radius @btn-border-radius 0 0;
-      border-top: 1px solid @btn-border-color;
     }
+  }
+}
+
+.split-btn-alternatives {
+  box-shadow: @btn-box-shadow;
+  cursor: pointer;
+  opacity: 0;
+  position: absolute;
+  text-align: left;
+  transition: @split-btn-hover-transition-time opacity linear;
+  white-space: nowrap;
+
+  .btn {
+    border-radius: 0;
+    display: block;
   }
 }
 

@@ -407,17 +407,17 @@ class TestingDoneField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
         return self.review_request_details.testing_done_rich_text
 
 
-class SubmitterField(BuiltinFieldMixin, BaseEditableField):
-    """The Submitter field on a review request."""
+class OwnerField(BuiltinFieldMixin, BaseEditableField):
+    """The Owner field on a review request."""
 
     field_id = 'submitter'
-    label = _('Submitter')
+    label = _('Owner')
     model = User
     model_name_attr = 'username'
     is_required = True
 
     #: The class name for the JavaScript view representing this field.
-    js_view_class = 'RB.ReviewRequestFields.SubmitterFieldView'
+    js_view_class = 'RB.ReviewRequestFields.OwnerFieldView'
 
     def render_value(self, user):
         """Render the value in the field.
@@ -491,7 +491,7 @@ class SubmitterField(BuiltinFieldMixin, BaseEditableField):
             dict:
             An appropriate serialization for the field.
         """
-        entry = super(SubmitterField, self).serialize_change_entry(changedesc)
+        entry = super(OwnerField, self).serialize_change_entry(changedesc)
 
         return dict(
             (key, value[0])
@@ -1285,7 +1285,7 @@ class InformationFieldSet(BaseReviewRequestFieldSet):
     fieldset_id = 'info'
     label = _('Information')
     field_classes = [
-        SubmitterField,
+        OwnerField,
         RepositoryField,
         BranchField,
         BugsField,

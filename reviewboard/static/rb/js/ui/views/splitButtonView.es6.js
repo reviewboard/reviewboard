@@ -13,16 +13,28 @@ RB.SplitButtonView = Backbone.View.extend({
     events: {
         'click .primary-btn': '_onClick',
         'mouseenter .drop-down-btn': '_showDropDown',
-        'mouseleave .drop-down-btn': '_delayCheckHover'
+        'mouseleave': '_delayCheckHover',
     },
 
+    /*
+     * Note that whitespace really matters here. We don't want any spaces or
+     * newlines between tags. This is why the indentation is missing and why
+     * we're not using dedent``.
+     */
     template: _.template([
-        '<div class="btn primary-btn"><%- buttonText %></div>',
-        '<div class="btn drop-down-btn">&#9662;</div>'
+        '<div class="btn btn-segmented">',
+        '<div class="btn-segment primary-btn"><%- buttonText %></div>',
+        '<div class="btn-segment drop-down-btn">',
+        '<span class="rb-icon rb-icon-dropdown-arrow"></span>',
+        '</div>',
+        '</div>',
     ].join('')),
 
     /**
-     * The delay time for animations.
+     * The delay time for animations in milliseconds.
+     *
+     * This must be the same value as ``@split-btn-hover-transition-time``
+     * in css/defs.less.
      */
     _delayTime: 250,
 
@@ -47,9 +59,6 @@ RB.SplitButtonView = Backbone.View.extend({
      *         The direction the drop-down will show; either ``up`` or
      *         ``down``.
      *
-     *     zIndex (number):
-     *         The optional z-index for the drop-down menu.
-     *
      *     alternatives (Array of object):
      *         A list of alternative buttons. Each item includes ``text``,
      *         ``click``, and ``id`` keys which are equivalent to the options
@@ -69,9 +78,7 @@ RB.SplitButtonView = Backbone.View.extend({
             this._dropDownShownClass = 'drop-down-shown';
         }
 
-        _.bindAll(this, '_tryHideDropDown', '_onResize', '_delayCheckHover');
-
-        $(window).on('resize', this._onResize);
+        $(window).on('resize', this._onResize.bind(this));
     },
 
     /**
@@ -105,22 +112,19 @@ RB.SplitButtonView = Backbone.View.extend({
                 buttonText: this.options.text
             }));
 
-        this._$primaryBtn = this.$('.primary-btn');
+        const $segments = this.$el.children('.btn-segmented');
+        this._$primaryBtn = $segments.children('.primary-btn');
 
         if (this.options.id) {
             this._$primaryBtn.attr('id', this.options.id);
         }
 
-        this._$dropDownBtn = this.$('.drop-down-btn');
+        this._$dropDownBtn = $segments.children('.drop-down-btn');
         this._$alternatives = $('<div class="split-btn-alternatives" />')
-            .appendTo(document.body)
+            .appendTo(this.$el)
             .hide();
 
-        if (this.options.zIndex) {
-            this._$alternatives.css('zIndex', this.options.zIndex);
-        }
-
-        for (let alt of this.options.alternatives) {
+        this.options.alternatives.forEach(alt => {
             const $btn = $('<div class="btn" />')
                 .text(alt.text)
                 .on('click', alt.click)
@@ -129,19 +133,7 @@ RB.SplitButtonView = Backbone.View.extend({
             if (alt.id) {
                 $btn.attr('id', alt.id);
             }
-        }
-
-        const width = Math.max(this._$alternatives.width(), this.$el.width());
-
-        this._$alternatives.width(width);
-        this._$primaryBtn.width(
-            width - this._$primaryBtn.getExtents('b', 'r') -
-            this._$dropDownBtn.outerWidth() -
-            this._$dropDownBtn.getExtents('mbp', 'lr'));
-
-        this._$alternatives
-            .width(width)
-            .on('mouseleave', this._delayCheckHover);
+        });
 
         return this;
     },
@@ -157,44 +149,55 @@ RB.SplitButtonView = Backbone.View.extend({
      * Show the alternatives in a drop down (or up) menu.
      */
     _showDropDown() {
-
-        if (!this._dropDownShown && !this._animating) {
-            this._$primaryBtn.addClass(this._dropDownShownClass);
-            this._$dropDownBtn.addClass(this._dropDownShownClass + ' hover');
-            this._$alternatives.addClass(this._dropDownShownClass);
-            this._animating = true;
-            this._reposition();
-
-            this._$alternatives
-                .fadeIn(this._delayTime, () => {
-                    this._dropDownShown = true;
-                    this._animating = false;
-                });
-
+        if (this._dropDownShown || this._animating) {
+            return;
         }
+
+        this._animating = true;
+        this._reposition();
+
+        this._$alternatives.show();
+
+        /*
+         * Wait for the menu to be shown so we can start applying the
+         * opacity transition.
+         */
+        _.defer(() => {
+            this.$el.addClass(this._dropDownShownClass);
+            this._$dropDownBtn.addClass('hover');
+
+            setTimeout(() => {
+                this._dropDownShown = true;
+                this._animating = false;
+            }, this._delayTime);
+        });
     },
 
     /**
      * Try to hide the drop down menu.
      *
-     * The menu will only be hidden if it is shown and
+     * The menu will only be hidden if it's shown and not currently animating.
      */
     _tryHideDropDown() {
-        if (this._dropDownShown &&
-            !this._animating &&
-            !this._$dropDownBtn.is(':hover') &&
-            !this._$alternatives.is(':hover')) {
-            this._$dropDownBtn
-                .removeClass(this._dropDownShownClass + ' hover');
-            this._$primaryBtn.removeClass(this._dropDownShownClass);
-            this._animating = true;
-
-            this._$alternatives.fadeOut(this._delayTime, () => {
-                this._dropDownShown = false;
-                this._animating = false;
-                this._$alternatives.removeClass(this._dropDownShownClass);
-            });
+        if (!this._dropDownShown || this._animating || this.$el.is(':hover')) {
+            return;
         }
+
+        this._animating = true;
+
+        this._$dropDownBtn.removeClass('hover');
+        this.$el.removeClass(this._dropDownShownClass);
+
+        setTimeout(() => {
+            this._dropDownShown = false;
+            this._animating = false;
+            this._$alternatives
+                .hide()
+                .css({
+                    top: null,
+                    bottom: null,
+                });
+        }, this._delayTime);
     },
 
     /**
@@ -202,16 +205,16 @@ RB.SplitButtonView = Backbone.View.extend({
      * leaves.
      */
     _delayCheckHover() {
-        _.delay(this._tryHideDropDown, this._delayTime);
+        _.delay(this._tryHideDropDown.bind(this), this._delayTime);
     },
 
     /**
      * Position the drop-down menu above or below the button.
      */
     _reposition() {
-        this._$alternatives.positionToSide(this.$el, {
-            side: this.options.direction === 'down' ? 'b' : 't'
-        });
+       this._$alternatives.css(
+           this.options.direction === 'down' ? 'top' : 'bottom',
+           this._$primaryBtn.outerHeight());
     },
 
     /**
