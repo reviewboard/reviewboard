@@ -6,7 +6,7 @@ Publishing Reviews
 
 You can publish your review by clicking :guilabel:`Publish Review` on the
 :ref:`review draft banner <review-draft-banner>` or
-:ref:`Review Dialog <review-dialog>`.
+:ref:`review dialog <review-dialog>`.
 
 .. image:: review-draft-banner-publish.png
 

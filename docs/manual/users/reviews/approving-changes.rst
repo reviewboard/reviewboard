@@ -40,7 +40,7 @@ Marking "Ship It!" in the Review Dialog
 
 You might want to add a bit more to your review along with your "Ship It!".
 Maybe you want to give some praise for an awesome change. You can do this by
-opening the Review Dialog and clicking the :guilabel:`Ship It!` checkbox.
+opening the review dialog and clicking the :guilabel:`Ship It!` checkbox.
 
 .. image:: review-dialog-shipit.png
 

@@ -16,7 +16,7 @@ be in the form of comments, which allow for :ref:`tracking issues
 
 Reviews are created automatically when filing comments, or when clicking
 :guilabel:`Review` in the review request action bar. You can manage them in the
-:ref:`review draft banner <review-draft-banner>` or in the :ref:`Review Dialog
+:ref:`review draft banner <review-draft-banner>` or in the :ref:`review dialog
 <review-dialog>`.
 
 

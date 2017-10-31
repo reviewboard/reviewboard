@@ -14,7 +14,7 @@ The banner has the following buttons:
 .. image:: review-draft-banner.png
 
 Clicking :guilabel:`Edit Review` will display the
-:ref:`Review Dialog <review-dialog>`, allowing you to make changes to your
+:ref:`review dialog <review-dialog>`, allowing you to make changes to your
 review.
 
 Clicking :guilabel:`Publish Review` will immediately
