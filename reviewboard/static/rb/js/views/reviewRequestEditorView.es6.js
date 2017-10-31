@@ -957,7 +957,7 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
                 editor.setSize(
                     null,
                     contentHeight -
-                    lastFieldView.inlineEditorView._$buttons.height());
+                    lastFieldView.inlineEditorView.$buttons.height());
             } else {
                 /*
                  * It's possible to squish the editable element if we force
