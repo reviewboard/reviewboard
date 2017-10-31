@@ -100,6 +100,7 @@ Reviewing content
 * :doc:`Reviewing image file attachments <reviews/reviewing-images>`
 * :doc:`Reviewing Markdown file attachments <reviews/reviewing-markdown>`
 * :doc:`Reviewing text file attachments <reviews/reviewing-text-files>`
+* :doc:`Automated code review <reviews/automated-review/index>`
 
 
 Managing reviews

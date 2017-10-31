@@ -71,3 +71,21 @@ Clicking the :guilabel:`Status` drop-down will allow you to choose between
 :guilabel:`All issues`. Clicking the :guilabel:`From` drop-down will allow
 you to filter the list by individual reviewers. Clicking on a row will jump
 to the comment.
+
+
+.. _issue-verification:
+
+Issue Verification
+==================
+
+If an issue is particularly important, you can select :guilabel:`Require
+Verification` when creating the comment. This will make it so the owner of the
+review request cannot directly mark the issue as fixed or dropped. Instead, the
+issue will be set to an intermediate state, waiting for verification. The
+reviewer (or an administrator) can then verify whether the issue should be
+closed or reopen it.
+
+Because this adds an extra step to the process, we recommend only requiring
+verification for extremely important issues that should truly block the change.
+Unless you have specific high requirements for your industry, using it on every
+issue is likely to slow down the code review process too much.

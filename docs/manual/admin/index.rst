@@ -58,6 +58,7 @@ The Administration UI is composed of four main areas:
 * :doc:`Settings <configuration/settings>`
 * :doc:`Database <admin-ui/database>`
 * :doc:`Extensions <extensions/index>`
+* :doc:`Integrations <integrations/index>`
 
 
 Configuring Review Board
@@ -117,7 +118,9 @@ That's not all you can set up.
 * :doc:`Configure WebHooks <configuration/webhooks>`, which can notify
   in-house or external web services when things happen on Review Board
 * :doc:`Manage extensions <extensions/index>`, which can add new features
-  to Review Board or add new integrations with other services
+  to Review Board
+* :doc:`Manage Integrations <integrations/index>`, which can add integrations
+  between Review Board and third-party services
 
 
 
@@ -143,4 +146,5 @@ more.
    admin-ui/index
    configuration/index
    extensions/index
+   integrations/index
    sites/index
