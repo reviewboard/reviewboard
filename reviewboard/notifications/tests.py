@@ -1496,6 +1496,17 @@ class WebAPITokenEmailTests(EmailTestHelper, TestCase):
         self.assertIn('A new API token has been added', email.body)
         self.assertIn('A new API token has been added', html_body)
 
+    def test_create_token_no_email(self):
+        """Testing WebAPIToken.objects.generate_token does not send e-mail
+        when auto_generated is True
+        """
+        WebAPIToken.objects.generate_token(user=self.user,
+                                           note='Test',
+                                           policy={},
+                                           auto_generated=True)
+
+        self.assertEqual(len(mail.outbox), 0)
+
     def test_update_token(self):
         """Testing sending e-mail when an existing API Token is updated"""
         webapi_token = WebAPIToken.objects.generate_token(user=self.user,
