@@ -950,13 +950,38 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
 
     @webapi_test_template
     def test_get_from_search_index(self):
-        """Testing the GET <URL> API with the search index enabled"""
+        """Testing the GET <URL> API with the search index enabled and
+        on-the-fly indexing disabled
+        """
         self.create_review_request(submitter=self.user, public=True)
 
         self.spy_on(resources.review_request.serialize_object)
         self.spy_on(resources.user.serialize_object)
 
         with search_enabled():
+            reindex_search()
+            rsp = self.api_get(get_search_url(),
+                               query={'q': self.user.username},
+                               expected_mimetype=search_mimetype)
+
+        self.assertEqual(len(rsp['search']['groups']), 0)
+        self.assertEqual(len(rsp['search']['review_requests']), 0)
+        self.assertEqual(len(rsp['search']['users']), 1)
+
+        self.assertFalse(resources.review_request.serialize_object.spy.called)
+        self.assertTrue(resources.user.serialize_object.spy.called)
+
+    @webapi_test_template
+    def test_get_from_search_index_on_the_fly(self):
+        """Testing the GET <URL> API with the search index enabled and
+        on-the-fly indexing enabled
+        """
+        self.create_review_request(submitter=self.user, public=True)
+
+        self.spy_on(resources.review_request.serialize_object)
+        self.spy_on(resources.user.serialize_object)
+
+        with search_enabled(on_the_fly_indexing=True):
             reindex_search()
             rsp = self.api_get(get_search_url(),
                                query={'q': self.user.username},

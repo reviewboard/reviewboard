@@ -153,7 +153,8 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
             django.db.models.query.QuerySet:
             A query set for users matching the given arguments.
         """
-        if search_backend_registry.search_enabled:
+        if (search_backend_registry.search_enabled and
+            search_backend_registry.on_the_fly_indexing_enabled):
             # If search is enabled, we will use the index to perform the query.
             form = RBSearchForm(
                 user=request.user,
@@ -273,7 +274,8 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
             django.db.models.query.QuerySet or haystack.query.SearchQuerySet:
             A query for review requests matching the given arguments.
         """
-        if search_backend_registry.search_enabled:
+        if (search_backend_registry.search_enabled and
+            search_backend_registry.on_the_fly_indexing_enabled):
             # If search is enabled, we will use the index to perform the query.
             form = RBSearchForm(
                 user=request.user,
