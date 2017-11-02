@@ -408,6 +408,22 @@ suite('rb/reviewRequestPage/views/IssueSummaryTable', function() {
                 expect($icon.hasClass('rb-icon-issue-open')).toBe(true);
             });
 
+            it('After re-renders', function() {
+                view.render();
+                view.render();
+
+                comment.set('issueStatus', 'resolved');
+                view.model.trigger('issueStatusUpdated', comment, 'open',
+                                   date);
+
+                expect(view.$('#resolved-counter').text()).toBe('4');
+                expect(view.$('#open-counter').text()).toBe('1');
+                expect(view.$('#total-counter').text()).toBe('6');
+
+                expect($icon.hasClass('rb-icon-issue-open')).toBe(false);
+                expect($icon.hasClass('rb-icon-issue-resolved')).toBe(true);
+            });
+
             afterEach(function() {
                 expect($issue.find('.last-updated time').attr('datetime'))
                     .toBe(date.toISOString());

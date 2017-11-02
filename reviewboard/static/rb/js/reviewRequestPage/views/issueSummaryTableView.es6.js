@@ -82,6 +82,7 @@ RB.ReviewRequestPage.IssueSummaryTableView = Backbone.View.extend({
         this._buildReviewerFilterMap();
         this._checkIssues();
 
+        this.stopListening(this.model, 'issueStatusUpdated');
         this.listenTo(this.model, 'issueStatusUpdated',
                       this._onIssueStatusChanged);
 
