@@ -17,13 +17,13 @@ from __future__ import unicode_literals
 django_doc_major_version = '1.6'
 
 #: The major version of Djblets we're using for documentation.
-djblets_doc_major_version = '0.10'
+djblets_doc_major_version = '1.0'
 
 #: The version range required for Django.
 django_version = '>=1.6.11,<1.6.999'
 
 #: The version range required for Djblets.
-djblets_version = '>=0.10rc1.dev,<=0.10.999'
+djblets_version = '>=1.0rc1.dev,<=1.0.999'
 
 #: All dependencies required to install Review Board.
 package_dependencies = {
