@@ -1,8 +1,11 @@
+.. default-intersphinx:: rb3.0
+
+
 ===================================
 Review Board 3.0 RC 1 Release Notes
 ===================================
 
-**Release date**: TBD
+**Release date**: November 6, 2017
 
 
 This release contains all bug fixes and features from Review Board version
