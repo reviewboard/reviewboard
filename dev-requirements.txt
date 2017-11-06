@@ -1,5 +1,5 @@
 bzr
-kgb
+kgb>=1.0
 mercurial
 mock
 nose

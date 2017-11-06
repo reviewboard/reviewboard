@@ -235,7 +235,8 @@ django_doc_base_url = ('http://django.readthedocs.io/en/%s.x/'
 intersphinx_mapping = {
     'django': (django_doc_base_url, None),
     'djblets0.9': ('%s/docs/djblets/0.9/' % rbwebsite_url, None),
-    'djblets0.10': ('%s/docs/djblets/0.10/' % rbwebsite_url, None),
+    'djblets0.10': ('%s/docs/djblets/1.0/' % rbwebsite_url, None),
+    'djblets1.0': ('%s/docs/djblets/1.0/' % rbwebsite_url, None),
     'python': ('https://docs.python.org/2.7', None),
     'rbt0.6': ('%s/docs/rbtools/0.6/' % rbwebsite_url, None),
     'rbt0.7': ('%s/docs/rbtools/0.7/' % rbwebsite_url, None),
