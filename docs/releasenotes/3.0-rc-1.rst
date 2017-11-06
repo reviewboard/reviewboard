@@ -1,0 +1,244 @@
+===================================
+Review Board 3.0 RC 1 Release Notes
+===================================
+
+**Release date**: TBD
+
+
+This release contains all bug fixes and features from Review Board version
+:doc:`2.5.16 <2.5.16>`.
+
+
+Installation
+============
+
+To install this release, run the following::
+
+    $ sudo pip install \
+        -f https://downloads.reviewboard.org/releases/Djblets/0.10/ \
+        -f https://downloads.reviewboard.org/releases/ReviewBoard/3.0/ \
+        -f https://downloads.reviewboard.org/releases/rbintegrations/0.5/ \
+        --pre -U ReviewBoard
+
+Or::
+
+    $ sudo easy_install \
+        -f https://downloads.reviewboard.org/releases/Djblets/0.10/ \
+        -f https://downloads.reviewboard.org/releases/ReviewBoard/3.0/ \
+        -f https://downloads.reviewboard.org/releases/rbintegrations/0.5/ \
+        -U ReviewBoard
+
+If you are planning to upgrade to Review Board 3.0.0, we recommend installing
+3.0 RC 1 on a test server, as the final 3.0.0 release is expected to be
+similar to 3.0.
+
+We **do not** recommend upgrading a production server with this version of
+Review Board, however.
+
+
+New Features
+============
+
+* Support for Slack, Travis-CI, and CircleCI integrations are now enabled by
+  default.
+
+  In previous betas, the Integration extension providing this support had to
+  be enabled manually. Now, on any new upgrades to 3.0, the extension will be
+  automatically enabled.
+
+  If you've been using the 3.0 betas, you will still need to manually enable
+  the extension.
+
+* Added server-side enforcement of issue verification.
+
+  The new issue verification feature, introduced in 3.0 beta 2, temporarily
+  was enforced only client-side. We've now added server-side support to ensure
+  that users can't get around verification.
+
+* Added issue verification information to the Review Request Infobox and
+  Dashboard columns.
+
+* Added support for tracking symlinks to files in Git diffs.
+
+  Symlink changes in diffs are now specially flagged, showing up in the diff
+  viewer as a file modification with "symlink" text beside the file.
+
+  Patch by Erik Johansson.
+
+* Switched to the GitHub Emoji set.
+
+  This Emoji set is more familiar to a lot of users, and more consistent with
+  other applications.
+
+
+Usability Improvements
+======================
+
+* Improved high-DPI support throughout the UI.
+
+  Review Board no longer temporarily loads low-resolution icons on modern
+  browsers when using a high-DPI (such as a "Retina") display, opting instead
+  for higher-resolution graphics. When using screens that can make use of
+  "@3x" graphics (such as some newer mobile phone screens and tablets), SVGs
+  will be used to ensure crisp graphics.
+
+* Added smarter collapsing of reviews and other entries on the review request
+  page.
+
+  The default collapsed states for entries on the review request page have
+  been improved, attempting to expand only if the entry is new or has new
+  content that the user might want to see. Anything previously there when the
+  user last visited the page defaults to being collapsed. The goal of this is
+  to better help users focus on new discussions and new updates to review
+  requests.
+
+  We might tweak this further based on feedback. Please report any odd
+  behavior you might encounter.
+
+* Changed :guilabel:`Add Comment` labels to :guilabel:`Add General Comment` in
+  the review request action bar and review dialog.
+
+* Changed "Submitter" labels to "Owner" throughout the UI.
+
+  As review request ownership can now change, these labels have been updated
+  to better standardize on the term "owner" instead of "submitter." This
+  mainly affects the display of Dashboard columns, review request fields, and
+  condition rules.
+
+* Removed dead space causing issues selecting columns in the datagrid column
+  customization menus.
+
+
+Performance Improvements
+========================
+
+* Improved performance when calculating highlighted regions in diffs.
+
+* Improved performance when rendering custom actions, navigating bar entries,
+  and additional comment information from extensions.
+
+* Delayed calculation of OAuth2 scope lists to improve startup times on
+  Review Board threads/instances.
+
+
+Extensions
+==========
+
+* Fixed a regression in the function signatures for
+  :ref:`e-mail hooks <email-hook>`.
+
+* The entry boxes on the review request page now have proper template hook
+  names for extensions.
+
+  Patch by Erik Johansson.
+
+* Changed the interface for
+  :py:class:`~reviewboard.reviews.detail.ReviewRequestPageEntry` to have
+  better access to page data and to improve how collapsed states are computed.
+
+* Renamed the ``to_submitter_only`` flag to ``to_owner_only`` on notification
+  hooks and functions.
+
+
+Web API
+=======
+
+* Added improved ``extra_data`` JSON modification via the API.
+
+  Clients that need to modify ``extra_data`` on a resource can now set or
+  modify structured data by making use of JSON Merge Patches or JSON Patches.
+
+  `JSON Merge Patches`_ are a simple way of setting structured data by passing
+  ``extra_data:json=<json data>``, which will merge the new data into
+  ``extra_data``, adding any new dictionary values, overriding any lists, and
+  deleting anything set to ``null``.
+
+  `JSON Patches`_ are a more complex way of running a set of operations on
+  ``extra_data``, which can add, delete, replace, move, or copy data.
+
+  Both of these support private keys and any API access restrictions set by
+  extensions.
+
+* The :ref:`webapi2.0-search-resource` no longer uses the search index if
+  on-the-fly search indexing is not enabled.
+
+  Beta 2 changed the resource to always use the index. The old behavior of
+  querying the database is now used again when not using on-the-fly search
+  indexing.
+
+
+.. _JSON Merge Patches: https://tools.ietf.org/html/rfc7386
+.. _JSON Patches: http://jsonpatch.com/
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed hangs that could occur when updating counters for file attachments on
+  review requests.
+
+
+Dashboard
+---------
+
+* Fixed placement issues with the Review Request Infobox when hovering over
+  summaries in the Dashboard.
+
+* Fixed interaction problems with infoboxes when moving the mouse onto and
+  off of an infobox.
+
+
+Review Requests
+---------------
+
+* Fixed a regression when reviewing PDFs using `Power Pack`_.
+
+* The Initial Status Updates entry is no longer shown as new with a blue
+  border when first viewing the review request page.
+
+* Status updates are now ordered alphabetically, preventing them from jumping
+  around as they update.
+
+* The :menuselection:`Update -> Add File` action now responds to clicks again.
+  (:bug:`4592`)
+
+  Patch by Nicholas Mercier.
+
+* Fixed a crash that could occur when using
+  :menuselection:`Update -> Add File` and encountering a server connection
+  issue. (:bug:`4467`)
+
+  Patch by Nicholas Mercier.
+
+* Fixed the display of the link icons besides entries.
+
+* Fixed visual issues in the :guilabel:`Publish Review` buttons.
+
+* Fixed incorrect counters being shown in the issue summary table after
+  the table is updated from the server.
+
+
+.. _Power Pack: https://www.reviewboard.org/poewrpack/
+
+
+LDAP
+----
+
+* Fixed a crash when a user's full name doesn't include whitespace.
+  (:bug:`4489`)
+
+  Patch by Riley Creaghan.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Erik Johansson
+* Nicholas Mercier
+* Riley Creaghan
