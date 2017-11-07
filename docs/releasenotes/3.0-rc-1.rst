@@ -18,7 +18,7 @@ Installation
 To install this release, run the following::
 
     $ sudo pip install \
-        -f https://downloads.reviewboard.org/releases/Djblets/0.10/ \
+        -f https://downloads.reviewboard.org/releases/Djblets/1.0/ \
         -f https://downloads.reviewboard.org/releases/ReviewBoard/3.0/ \
         -f https://downloads.reviewboard.org/releases/rbintegrations/0.5/ \
         --pre -U ReviewBoard
@@ -26,7 +26,7 @@ To install this release, run the following::
 Or::
 
     $ sudo easy_install \
-        -f https://downloads.reviewboard.org/releases/Djblets/0.10/ \
+        -f https://downloads.reviewboard.org/releases/Djblets/1.0/ \
         -f https://downloads.reviewboard.org/releases/ReviewBoard/3.0/ \
         -f https://downloads.reviewboard.org/releases/rbintegrations/0.5/ \
         -U ReviewBoard
