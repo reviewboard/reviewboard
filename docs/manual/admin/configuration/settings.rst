@@ -19,6 +19,7 @@ They include:
 
    General <general-settings>
    Authentication <authentication-settings>
+   Avatar Services <avatar-services-settings>
    E-Mail <email-settings>
    Diff Viewer <diffviewer-settings>
    Logging <logging-settings>

@@ -71,6 +71,7 @@ available through the Administration UI:
 
 * :doc:`General settings <configuration/general-settings>`
 * :doc:`Authentication settings <configuration/authentication-settings>`
+* :doc:`Avatar services settings <configuration/avatar-services-settings>`
 * :doc:`E-mail settings <configuration/email-settings>`
 * :doc:`Diff viewer settings <configuration/diffviewer-settings>`
 * :doc:`Logging settings <configuration/logging-settings>`
