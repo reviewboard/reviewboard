@@ -77,6 +77,11 @@ Glossary
        Markdown Syntax Overview
        <http://daringfireball.net/projects/markdown/>`_ for more information.
 
+   OAuth2
+       OAuth2 is a framework that allows third-party applications to gain
+       limited access to user accounts, without the owner of that account
+       divulging their authentication credentials.
+
    Post-commit Hook
        A script that is executed after a commit is made to a repository.
        See :ref:`automating-rbt-post` for ways to use post-commit hooks
