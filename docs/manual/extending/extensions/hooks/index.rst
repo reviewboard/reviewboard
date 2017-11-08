@@ -13,6 +13,7 @@ Extension Hooks
    admin-widget-hook
    api-extra-data-access-hook
    auth-backend-hook
+   avatar-service-hook
    comment-detail-display-hook
    dashboard-columns-hook
    dashboard-sidebar-items-hook
