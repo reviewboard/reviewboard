@@ -70,6 +70,10 @@ extension hooks available to you.
         Defines new URLs in Review Board, which can point to your own custom
         views.
 
+    :ref:`avatar-service-hook`:
+        Adds a new avatar service, which can be used to provide pictures for
+        user accounts.
+
 :ref:`Action Hooks <action-hooks>`:
     A series of hooks used to add new actions for review requests, the diff
     viewer, and the account/support header at the top of the page.

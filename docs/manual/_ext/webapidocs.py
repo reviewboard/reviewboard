@@ -18,13 +18,12 @@ from djblets.util.http import is_mimetype_a
 from djblets.webapi.resources import get_resource_from_class, WebAPIResource
 from djblets.webapi.responses import WebAPIResponseError
 from docutils import nodes
-from docutils.parsers.rst import DirectiveError, directives
+from docutils.parsers.rst import Directive, DirectiveError, directives
 from docutils.statemachine import StringList, ViewList, string2lines
 from reviewboard import initialize
 from reviewboard.webapi.resources import resources
 from sphinx import addnodes
 from sphinx.util import docname_join
-from sphinx.util.compat import Directive
 from sphinx.util.docstrings import prepare_docstring
 
 
