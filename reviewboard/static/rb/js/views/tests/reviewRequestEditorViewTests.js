@@ -1512,7 +1512,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
             it("Don't warn user beforeUnload when not editing", function() {
                 expect(view._onBeforeUnload($.Event('beforeunload'))).toBeUndefined();
             });
-        })
+        });
 
         describe('editable=false', function() {
             beforeEach(function() {
@@ -1534,6 +1534,6 @@ suite('rb/views/ReviewRequestEditorView', function() {
             it("Don't warn user beforeUnload when not editing", function() {
                 expect(view._onBeforeUnload($.Event('beforeunload'))).toBeUndefined();
             });
-        })
+        });
     });
 });

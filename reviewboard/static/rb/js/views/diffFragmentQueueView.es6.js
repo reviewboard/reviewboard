@@ -318,7 +318,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                         },
                     }, options));
                 },
-            }, this._diffFragmentViewOptions)),
+            }, this._diffFragmentViewOptions));
             $container.data('diff-fragment-view', view);
         }
 

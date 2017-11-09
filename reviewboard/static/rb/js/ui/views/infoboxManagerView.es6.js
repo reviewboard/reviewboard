@@ -111,15 +111,15 @@ RB.InfoboxManagerView = Backbone.View.extend({
      * with the manager.
      *
      * Args:
-     *     infoboxViewType (prototype):
+     *     InfoboxViewType (prototype):
      *         The type of infobox to return.
      *
      * Returns:
      *     RB.BaseInfoboxView:
      *     The resulting infobox instance.
      */
-    getOrCreateInfobox(infoboxViewType) {
-        const infoboxID = infoboxViewType.prototype.infoboxID;
+    getOrCreateInfobox(InfoboxViewType) {
+        const infoboxID = InfoboxViewType.prototype.infoboxID;
         console.assert(infoboxID,
                        'RB.BaseInfoboxView subclasses must have an ' +
                        'infoboxID defined.');
@@ -130,7 +130,7 @@ RB.InfoboxManagerView = Backbone.View.extend({
             return view;
         }
 
-        view = new infoboxViewType();
+        view = new InfoboxViewType();
         view.$el
             .hide()
             .on('mouseenter', this._onInfoboxMouseEnter.bind(this))
@@ -262,10 +262,10 @@ RB.InfoboxManagerView = Backbone.View.extend({
      *     $target (jQuery):
      *         The jQuery target element.
      *
-     *     infoboxViewType (prototype):
+     *     InfoboxViewType (prototype):
      *         The type of infobox to show.
      */
-    _onTargetMouseEnter($target, infoboxViewType) {
+    _onTargetMouseEnter($target, InfoboxViewType) {
         clearTimeout(this._hideTimeout);
         this._hideTimeout = null;
 
@@ -274,7 +274,7 @@ RB.InfoboxManagerView = Backbone.View.extend({
                 this._showTimeout = null;
                 this._loadInfobox(
                     $target,
-                    this.getOrCreateInfobox(infoboxViewType));
+                    this.getOrCreateInfobox(InfoboxViewType));
             },
             this.POPUP_DELAY_MS);
     },

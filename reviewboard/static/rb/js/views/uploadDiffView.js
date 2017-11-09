@@ -30,7 +30,8 @@ RB.UploadDiffView = Backbone.View.extend({
      */
     render: function() {
         var self = this,
-            selectDiffText;
+            selectDiffText,
+            selectParentDiffText;
 
         if (this._canDragDrop()) {
             selectDiffText = gettext('<input type="button" id="select-diff-file" value="Select"> or drag and drop a diff file to begin');
