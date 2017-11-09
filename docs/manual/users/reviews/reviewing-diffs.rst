@@ -84,6 +84,27 @@ revisions you want to compare.
           minimize the impact of this on your reviewers.
 
 
+Viewing Deleted Files
+---------------------
+
+.. versionadded:: 3.0
+
+By default, the diff viewer doesn't show the content of any files deleted in a
+diff, as this code often doesn't need to be reviewed. Instead, you'll see a
+simple message stating that the file was deleted.
+
+.. image:: diff-show-deleted.png
+
+For those times that you *do* need to see more, you can click :guilabel:`Show
+content` to load in the content of the deleted file.
+
+.. image:: diff-show-deleted-contents.png
+
+Deleted files can be commented on and will appear in reviews. It's important
+to note though that deleted files that contain comments are not automatically
+expanded in the diff viewer.
+
+
 Diff Viewer Features
 ====================
 
