@@ -4,36 +4,21 @@
 Reviewing Diffs
 ===============
 
-Using the Diff Viewer
-=====================
-
-Diffs can be reviewed in the Review Board diff viewer by clicking
-:guilabel:`View Diff` on the review request action bar.
-
-
-Parts of the Diff Viewer
-------------------------
-
-When you load the Diff Viewer, the page is divided into several parts:
-
-.. image:: diffviewer-parts.png
-
-1. The review request box (for reference).
-2. The current diff revision and revision selector (if more than one revision
-   of the diff has been uploaded).
-3. The file listing.
-4. The side-by-side diff for each file.
-
-Depending on the number of files modified, the diff viewer may be split across
-multiple pages. You can jump to the pages using the paginator above or below
-the diffs.
+Any review request that introduces changes to code will have a
+:guilabel:`Diff` tab at the top-right of the review request page that provides
+access to the diff viewer. This is where developers will spend a lot of their
+time, and to help save you time we've provided a lot of functionality to give
+you a better view of the code, and to help you navigate around.
 
 
-The File Index
---------------
+Navigating Diffs
+================
 
-The file index is a list of all the files which are shown on the current page.
-There are several parts to this display:
+File Listing
+------------
+
+The file index lists all the files which are shown on the current page. There
+are several parts to this display:
 
 * On the left is a graph which shows the ratio of added/changed/deleted lines.
   The thickness of this graph indicates what percentage of the file has been
@@ -46,6 +31,10 @@ There are several parts to this display:
 
 
 .. image:: diff-file-index.png
+
+Depending on the number of files modified, the diff viewer may be split across
+multiple pages. You can jump to the pages using the paginator above or below
+the diffs.
 
 
 Viewing Other Diff Revisions
@@ -84,39 +73,44 @@ revisions you want to compare.
           minimize the impact of this on your reviewers.
 
 
-Viewing Deleted Files
----------------------
-
-.. versionadded:: 3.0
-
-By default, the diff viewer doesn't show the content of any files deleted in a
-diff, as this code often doesn't need to be reviewed. Instead, you'll see a
-simple message stating that the file was deleted.
-
-.. image:: diff-show-deleted.png
-
-For those times that you *do* need to see more, you can click :guilabel:`Show
-content` to load in the content of the deleted file.
-
-.. image:: diff-show-deleted-contents.png
-
-Deleted files can be commented on and will appear in reviews. It's important
-to note though that deleted files that contain comments are not automatically
-expanded in the diff viewer.
-
-
-Diff Viewer Features
-====================
-
-
-Side-by-side Diffs
+Keyboard Shortcuts
 ------------------
+
+There are many keyboard shortcuts for navigating around the diff viewer. We
+provide alternate keys for all navigation options in order to accommodate
+different keyboard layouts.
+
+* Go to the previous file:
+  :kbd:`a` :kbd:`A` :kbd:`K` :kbd:`P` :kbd:`<` :kbd:`m`
+* Go to the next file:
+  :kbd:`f` :kbd:`F` :kbd:`J` :kbd:`N` :kbd:`>`
+* Go to the previous change:
+  :kbd:`s` :kbd:`S` :kbd:`k` :kbd:`p` :kbd:`,`
+* Go to the next change:
+  :kbd:`d` :kbd:`D` :kbd:`j` :kbd:`n` :kbd:`.`
+* Go to the previous comment:
+  :kbd:`[` :kbd:`x`
+* Go to the next comment:
+  :kbd:`]` :kbd:`c`
+* Add a new comment to selected block:
+  :kbd:`r` :kbd:`R`
+
+
+Reading Diffs
+=============
 
 Diffs are displayed using a side-by-side format. This means that the old
 version of the file is displayed on the left, and the new version of the file
 is displayed on the right. The differences between the two versions are
-highlighted using colors: green for added lines, red for removed lines, and
-yellow for changed lines.
+highlighted using colors:
+
+* Green for added lines
+* Red for removed lines
+* Yellow for changed lines
+
+These are pretty standard across most diff viewing products, but Review
+Board's diff viewer expands on this with other special indicators showing how
+code has evolved.
 
 
 Moved Line Indicators
@@ -145,62 +139,137 @@ and indents will be shown on the right.
 .. image:: diff-indentation.png
 
 
-Intra-line Change Highlighting
-------------------------------
+Highlighted Changes in Replaced Lines
+-------------------------------------
 
 Edits which change only one or two characters in a long line can be difficult
 to read, so when the original and new lines are very similar, Review Board will
 highlight which characters changed. This is shown with a slightly darker yellow
 background.
 
+.. image:: diff-replace-highlighting.png
+
+
+Seeing More of a File
+=====================
+
+Expanding Lines of Context
+--------------------------
+
+The diff viewer shows a few unchanged lines around any modified lines in a
+file, helping you to see some context to the changes, but sometimes that's not
+enough. Instead of opening the original file in an editor or a browser to see
+more, you can expand the number of lines of context with a simple click.
+
+.. image:: diff-expand-context.png
+
+These headers appear above any group of modified lines, and at the bottom of
+the diff viewer (if not otherwise showing the last lines in the file).
+
+Clicking |expand-20-lines-icon| above the line numbers on the left will expand
+20 lines at a time.
+
+Clicking |expand-all-lines-icon| at the top of the header will expand all the
+lines hidden by that header.
+
+Clicking |expand-header-icon| beside the function or class shown will expand
+all the lines up to the line shown beside the icon.
+
+Expanded context can be re-collapsed by clicking the floating collapse icon
+shown.
+
+.. image:: diff-collapse-context.png
+
+.. |expand-20-lines-icon| image:: diff-expand-20-icon.png
+.. |expand-all-lines-icon| image:: diff-expand-all-icon.png
+.. |expand-header-icon| image:: diff-expand-header-icon.png
+
+
+Viewing Deleted File Content
+----------------------------
+
+.. versionadded:: 3.0
+
+By default, the diff viewer doesn't show the content of any files deleted in a
+diff, as this code often doesn't need to be reviewed. Instead, you'll see a
+simple message stating that the file was deleted.
+
+.. image:: diff-show-deleted.png
+
+For those times that you *do* need to see more, you can click :guilabel:`Show
+content` to load in the content of the deleted file.
+
+.. image:: diff-show-deleted-contents.png
+
+Deleted files can be commented on and will appear in reviews. It's important
+to note though that deleted files that contain comments are not automatically
+expanded in the diff viewer.
+
+
+Downloading File Content
+------------------------
+
+The entirety of the file on either side of the diff can be downloaded by
+clicking the |download-icon| icon beside the revision in the diff header. This
+can be useful if you just want to pull down the entire file and view it in
+your editor.
+
+
+.. |download-icon| image:: diff-download-icon.png
+
+
+Working with Comments
+=====================
+
+The diff viewer supports leaving comments that pertain to lines of code. Each
+comment can span multiple lines, providing a lot of flexibility in what the
+author of a comment may want to show. Commented lines are shown in the review
+along with the comment text.
+
+Lines of code that have been commented on are indicated by a bar floating to
+the left of the line numbers. Commented lines that are part of published
+reviews are shown with a blue bar, while lines that are part of your draft
+review are shown with a green bar.
+
+.. image:: diff-comments.png
+
+Comments support rich text using :ref:`Markdown <using-markdown>` and provide
+:ref:`issue tracking <issue-tracking>` capabilities.
+
 
 Commenting on Lines
-===================
+-------------------
 
-To comment on a line on a diff, simply click the line number. A
-comment dialog will appear giving you a text entry for writing your
-comment. When you're done, you can click
-:guilabel:`Save` to save the comment.
+Creating a comment is easy. To comment on a single line, simply click the line
+number. A comment dialog will appear giving you a text entry for writing your
+comment. When you're done, you can click :guilabel:`Save` to save the comment.
 
-Furthermore you can assign a comment to multiple code lines. This
-option is especially useful to provide additional code context to
-discussions as all commented code will appear on the review request
-page.
-
-To create a multiple line comment click and drag on the beginning line
-number down the column until you've selected all the lines needed for your
-comment.
+To leave a comment across multiple lines, click-and-drag down multiple line
+numbers. Each will highlight and be made a part of your comment.
 
 .. image:: comment-box.png
 
-Comments support rich text using the :term:`Markdown` language. See
-:ref:`using-markdown` for more information.
-
-The diff comment dialog supports issue tracking. See the section on
-:ref:`issue-tracking` for more information.
-
-After saving a comment, a green comment flag will appear next to the first
-line in your selection, indicating that you have an unpublished comment. Click
-the line number or comment flag to pop open the comment box for your existing
-comment again.
+After saving a comment, you can re-edit it by clicking the green comment bar,
+or by editing it in the :ref:`review dialog <review-dialog>`.
 
 
-Reading Existing Comments
-=========================
+Reading Published Comments
+--------------------------
 
-Any existing comments will show up as blue clickable comment flags along the
-left-hand side of the diff viewer. Each comment flag corresponds to a line
-containing a comment.
+While reviewing code, you may have something to say about a line of code, but
+want to check first that someone else hasn't already said it. Before leaving a
+comment, check if there's a blue comment bar alongside the code. If there is,
+you can mouse over and read snippets of the discussion in a tooltip, or click
+the bar to read more.
 
-If you move the mouse cursor over the comment flag, a tooltip will appear
-showing a summary of the comments made.
-
-If you click on the comment flag or the line number, the comment dialog
-will appear, along with a blue side panel on the left showing those existing
-comments. You can still write new comments in the green area of the comment
-box.
+Clicking the bar will display the comment dialog with a side pane showing any
+other comments for that line, along with links for viewing or replying to the
+full comment on the review request page.
 
 .. image:: full-comment-box.png
+
+If you have something new to say as part of your own review, you can write a
+new comment in the comment dialog.
 
 .. note:: It's important to note that this is **not** the place to reply to
           those comments. When you add a comment from the diff viewer, it's
@@ -212,24 +281,3 @@ box.
 
           The view here is meant to be used only as a reference to see if
           other people have already said what you plan to say.
-
-
-Keyboard Shortcuts
-==================
-
-There are many keyboard shortcuts for navigating around the diff viewer:
-
-* Previous file:
-  :kbd:`a`, :kbd:`A`, :kbd:`K`, :kbd:`P`:, :kbd:`<`, or :kbd:`m`
-* Next file:
-  :kbd:`f`, :kbd:`F`, :kbd:`J`, :kbd:`N`, :kbd:`>`
-* Previous change:
-  :kbd:`s`, :kbd:`S`, :kbd:`k`, :kbd:`p`, :kbd:`,`
-* Next change:
-  :kbd:`d`, :kbd:`D`, :kbd:`j`, :kbd:`n`, :kbd:`.`
-* Previous comment:
-  :kbd:`[`, :kbd:`x`
-* Next comment:
-  :kbd:`]`, :kbd:`c`
-* Add comment to selected block:
-  :kbd:`r`, :kbd:`R`
