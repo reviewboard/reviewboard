@@ -124,7 +124,14 @@ When composing review requests, reviews, or replying to comments, you have the
 option of using Markdown. Spice up your text with text formatting, code
 samples, images, and more.
 
-* :doc:`Using Markdown <markdown>`
+* :doc:`Complete guide to using Markdown <markdown>`
+
+For your convenience, here's some sections you might be interested in.
+
+* :ref:`Basic syntax for Markdown <markdown-basic-syntax>`
+* :ref:`Providing code samples <markdown-code-syntax>`
+* :ref:`Using Emoji <emoji>`
+* :ref:`Uploading Images <markdown-upload-images>`
 
 
 Searching for Review Requests and Users

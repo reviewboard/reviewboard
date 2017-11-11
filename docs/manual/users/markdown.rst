@@ -23,6 +23,8 @@ review requests or reviews.
     be shown to the user as-is, rather than treated as HTML.
 
 
+.. _markdown-basic-syntax:
+
 Basic Markdown Syntax
 =====================
 
@@ -91,6 +93,9 @@ parentheses with the URL to the image::
 
     ![Image description](http://example.com/image.png)
 
+You can also :ref:`upload images via drag-and-drop <markdown-upload-images>`
+into any Markdown-capable text field.
+
 
 Tables
 ------
@@ -103,6 +108,8 @@ vertical bars and hyphens::
     Cell   | Cell   | Cell
     Cell   | Cell   | Cell
 
+
+.. _markdown-code-syntax:
 
 Code Samples
 ============
@@ -249,6 +256,8 @@ accurate).
 .. _Emoji Cheat Sheet: https://gist.github.com/rxaviers/7360908
 
 
+.. _markdown-escaping:
+
 Escaping
 ========
 
@@ -272,3 +281,19 @@ Backslash escapes can be used for the following characters::
     - minus sign
     . period
     ! exclamation mark
+
+
+.. _markdown-upload-images:
+
+Uploading Images
+================
+
+.. versionadded:: 3.0
+
+You can upload images into any Markdown-capable text field (comments, replies,
+review request fields, etc.) by dragging-and-dropping from your file manager
+into the field. This will upload the image and then create a Markdown
+reference to it.
+
+While the image is uploading, the text field should be left open in order for
+the Markdown reference to update.
