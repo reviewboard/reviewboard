@@ -42,6 +42,8 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
 
         this.listenTo(fileAttachments, 'add',
                       this._onFileAttachmentOrScreenshotAdded);
+        fileAttachments.each(
+            this._onFileAttachmentOrScreenshotAdded.bind(this));
 
         // Set up screenshots.
         let screenshots = this.get('screenshots');
@@ -55,6 +57,8 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
 
         this.listenTo(screenshots, 'add',
                       this._onFileAttachmentOrScreenshotAdded);
+        screenshots.each(
+            this._onFileAttachmentOrScreenshotAdded.bind(this));
 
         // Connect to other signals.
         this.listenTo(reviewRequest.draft, 'saving',
