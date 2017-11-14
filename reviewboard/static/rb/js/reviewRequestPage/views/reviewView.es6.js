@@ -17,6 +17,7 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
         this._reviewReply = null;
         this._replyEditors = [];
         this._replyEditorViews = [];
+        this._replyDraftsCount = 0;
         this._diffFragmentViews = [];
 
         this._$reviewComments = null;
@@ -51,6 +52,16 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
             '.review-comment-thread .review-comment');
         this._$bodyTop = $comment.find('.body_top');
         this._$bodyBottom = $comment.find('.body_bottom');
+
+        this._replyDraftsCount = 0;
+
+        this.on('hasDraftChanged', hasDraft => {
+            if (hasDraft) {
+                this._showReplyDraftBanner();
+            } else {
+                this._hideReplyDraftBanner();
+            }
+        });
 
         _.each(this._$reviewComments.find('.issue-indicator'), el => {
             const $issueState = $('.issue-state', el);
@@ -105,15 +116,6 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
                 reviewReply: this._reviewReply,
             });
 
-            this.listenTo(editor, 'change:hasDraft', (model, hasDraft) => {
-                if (hasDraft) {
-                    this._showReplyDraftBanner();
-                    this.trigger('hasDraftChanged', true);
-                } else {
-                    this._hideReplyDraftBanner();
-                }
-            });
-
             const view = new RB.ReviewRequestPage.ReviewReplyEditorView({
                 el: el,
                 model: editor,
@@ -121,9 +123,30 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
             });
             view.render();
 
+            this.listenTo(editor, 'change:hasDraft', (model, hasDraft) => {
+                if (hasDraft) {
+                    this._replyDraftsCount++;
+                    this.trigger('hasDraftChanged', true);
+                } else {
+                    this._replyDraftsCount--;
+
+                    if (this._replyDraftsCount === 0) {
+                        this.trigger('hasDraftChanged', false);
+                    }
+                }
+            });
+
             this._replyEditors.push(editor);
             this._replyEditorViews.push(view);
+
+            if (editor.get('hasDraft')) {
+                this._replyDraftsCount++;
+            }
         });
+
+        if (this._replyDraftsCount > 0) {
+            this.trigger('hasDraftChanged', true);
+        }
 
         /*
          * Load any diff fragments for comments made on this review. Each
