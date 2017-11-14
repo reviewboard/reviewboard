@@ -36,8 +36,10 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
             this.set('fileAttachments', fileAttachments);
         }
 
-        fileAttachments.on('add', this._onFileAttachmentOrScreenshotAdded,
-                           this);
+        this.listenTo(fileAttachments, 'add',
+                      this._onFileAttachmentOrScreenshotAdded);
+        fileAttachments.each(
+            _.bind(this._onFileAttachmentOrScreenshotAdded, this));
 
         if (screenshots === null) {
             screenshots = new Backbone.Collection([], {
@@ -46,7 +48,10 @@ RB.ReviewRequestEditor = Backbone.Model.extend({
             this.set('screenshots', screenshots);
         }
 
-        screenshots.on('add', this._onFileAttachmentOrScreenshotAdded, this);
+        this.listenTo(screenshots, 'add',
+                      this._onFileAttachmentOrScreenshotAdded);
+        screenshots.each(
+            _.bind(this._onFileAttachmentOrScreenshotAdded, this));
 
         reviewRequest.draft.on('saving', function() {
             this.trigger('saving');

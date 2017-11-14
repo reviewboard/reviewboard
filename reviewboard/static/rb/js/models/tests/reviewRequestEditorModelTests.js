@@ -464,7 +464,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
     describe('Events', function() {
         describe('saved', function() {
-            it('When file attachment saved', function() {
+            it('When new file attachment saved', function() {
                 var fileAttachment = editor.createFileAttachment();
 
                 spyOn(editor, 'trigger');
@@ -473,7 +473,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 expect(editor.trigger).toHaveBeenCalledWith('saved');
             });
 
-            it('When file attachment destroyed', function() {
+            it('When new file attachment destroyed', function() {
                 var fileAttachment = editor.createFileAttachment(),
                     draft = editor.get('reviewRequest').draft;
 
@@ -487,14 +487,114 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                 expect(editor.trigger).toHaveBeenCalledWith('saved');
             });
+
+            it('When existing file attachment saved', function() {
+                var fileAttachment =
+                    reviewRequest.draft.createFileAttachment();
+
+                editor = new RB.ReviewRequestEditor({
+                    reviewRequest: reviewRequest,
+                    fileAttachments: new Backbone.Collection(
+                        [fileAttachment])
+                });
+
+                spyOn(editor, 'trigger');
+                fileAttachment.trigger('saved');
+
+                expect(editor.trigger).toHaveBeenCalledWith('saved');
+            });
+
+            it('When existing file attachment destroyed', function() {
+                var fileAttachment =
+                    reviewRequest.draft.createFileAttachment();
+
+                editor = new RB.ReviewRequestEditor({
+                    reviewRequest: reviewRequest,
+                    fileAttachments: new Backbone.Collection(
+                        [fileAttachment])
+                });
+
+                spyOn(reviewRequest.draft, 'ensureCreated')
+                    .andCallFake(function(options, context) {
+                        options.success.call(context);
+                    });
+
+                spyOn(editor, 'trigger');
+                fileAttachment.destroy();
+
+                expect(editor.trigger).toHaveBeenCalledWith('saved');
+            });
+
+            it('When existing screenshot saved', function() {
+                var screenshot = reviewRequest.createScreenshot();
+
+                editor = new RB.ReviewRequestEditor({
+                    reviewRequest: reviewRequest,
+                    screenshots: new Backbone.Collection([screenshot])
+                });
+
+                spyOn(editor, 'trigger');
+                screenshot.trigger('saved');
+
+                expect(editor.trigger).toHaveBeenCalledWith('saved');
+            });
+
+            it('When existing screenshot destroyed', function() {
+                var screenshot = reviewRequest.createScreenshot();
+
+                editor = new RB.ReviewRequestEditor({
+                    reviewRequest: reviewRequest,
+                    screenshots: new Backbone.Collection([screenshot])
+                });
+
+                spyOn(reviewRequest.draft, 'ensureCreated')
+                    .andCallFake(function(options, context) {
+                        options.success.call(context);
+                    });
+
+                spyOn(editor, 'trigger');
+                screenshot.destroy();
+
+                expect(editor.trigger).toHaveBeenCalledWith('saved');
+            });
         });
 
         describe('saving', function() {
-            it('When file attachment saving', function() {
+            it('When new file attachment saving', function() {
                 var fileAttachment = editor.createFileAttachment();
 
                 spyOn(editor, 'trigger');
                 fileAttachment.trigger('saving');
+
+                expect(editor.trigger).toHaveBeenCalledWith('saving');
+            });
+
+            it('When existing file attachment saving', function() {
+                var fileAttachment =
+                    reviewRequest.draft.createFileAttachment();
+
+                editor = new RB.ReviewRequestEditor({
+                    reviewRequest: reviewRequest,
+                    fileAttachments: new Backbone.Collection(
+                        [fileAttachment])
+                });
+
+                spyOn(editor, 'trigger');
+                fileAttachment.trigger('saving');
+
+                expect(editor.trigger).toHaveBeenCalledWith('saving');
+            });
+
+            it('When screenshot saving', function() {
+                var screenshot = reviewRequest.createScreenshot();
+
+                editor = new RB.ReviewRequestEditor({
+                    reviewRequest: reviewRequest,
+                    screenshots: new Backbone.Collection([screenshot])
+                });
+
+                spyOn(editor, 'trigger');
+                screenshot.trigger('saving');
 
                 expect(editor.trigger).toHaveBeenCalledWith('saving');
             });
