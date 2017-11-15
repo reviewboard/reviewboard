@@ -90,6 +90,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
         this.listenTo(this.model.diffReviewables, 'populating', () => {
             this._diffReviewableViews.forEach(view => view.remove());
+            this._diffReviewableViews = [];
             this._$diffs.children('.diff-container').remove();
             this._highlightedChunk = null;
 

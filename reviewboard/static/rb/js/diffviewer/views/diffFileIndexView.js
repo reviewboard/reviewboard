@@ -22,7 +22,7 @@ RB.DiffFileIndexView = Backbone.View.extend({
         this._$itemsTable = null;
 
         this.collection = this.options.collection;
-        this.listenTo(this.collection, 'update', this.update);
+        this.listenTo(this.collection, 'reset update', this.update);
     },
 
     /*
