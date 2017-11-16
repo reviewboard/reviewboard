@@ -181,6 +181,9 @@ extension hooks available to you.
     :ref:`hosting-service-hook`:
         Adds support for new source code or bug tracker hosting services.
 
+    :ref:`integration-hook`:
+        Adds new integration options for services and tools.
+
 
 .. _js-extensions-hooks:
 

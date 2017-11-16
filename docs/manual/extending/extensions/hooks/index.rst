@@ -21,6 +21,7 @@ Extension Hooks
    email-hook
    file-attachment-thumbnail-hook
    hosting-service-hook
+   integration-hook
    navigation-bar-hook
    review-request-approval-hook
    review-request-fields-hook
