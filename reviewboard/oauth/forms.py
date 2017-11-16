@@ -317,7 +317,7 @@ class UserApplicationChangeForm(ApplicationChangeForm):
 
         labels = dict(
             ApplicationChangeForm.Meta.labels,
-            local_site=_('Restrict to'),
+            local_site=_('Restrict To'),
         )
 
         help_texts = dict(

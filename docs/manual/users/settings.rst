@@ -1,3 +1,5 @@
+.. _account-settings:
+
 ================
 Account Settings
 ================
@@ -139,11 +141,10 @@ those tokens will be listed in this section and can be revoked.
 OAuth2 Applications
 ===================
 
-The OAuth2 applications page allows you to create registrations for your own
-applications that want to integrate with Review Board. By using OAuth2, you can
-allow users of your application to connect it securely to Review Board without
-supplying any authentication credentials.
+The :guilabel:`OAuth2 Applications` page allows you to create registrations for
+your own applications that want to integrate with Review Board. By using
+OAuth2, you can allow users of your application to connect it securely to
+Review Board without supplying any authentication credentials.
 
-.. todo: We should expand this to explain how these should be configured (or,
-         more likely, have more extensive documentation about OAuth2 and link
-         to that here).
+See :ref:`oauth2` for more information about creating applications that use
+OAuth2.

@@ -19,6 +19,7 @@ This is the modern API first made available in Review Board 1.5.
    2.0/resources/resource-tree
    2.0/resources/index
    2.0/errors/index
+   2.0/oauth2
    2.0/glossary
 
 
