@@ -4,6 +4,9 @@
 Authenticating
 ==============
 
+
+.. _webapi2.0-logging-in:
+
 Logging In
 ==========
 
@@ -95,6 +98,8 @@ For example, if your access token is ``123456``, you would send::
 
     Authorization: Bearer 123456
 
+
+.. _webapi2.0-logging-out:
 
 Logging Out
 ===========

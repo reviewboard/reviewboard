@@ -14,6 +14,8 @@ may contain additional data in JSON_, XML, or other formats.
 .. _JSON: http://www.json.org/
 
 
+.. _webapi2.0-overview-resources:
+
 Resources
 =========
 
@@ -83,6 +85,8 @@ For example:
     }
 
 
+.. _webapi2.0-overview-requests:
+
 Making Requests
 ===============
 
@@ -144,6 +148,8 @@ For example::
 In this example, JSON is preferred. Plain text is okay, but the client isn't
 very excited about it. Anything else is okay, as long as it's not XML.
 
+
+.. _webapi2.0-overview-responses:
 
 Responses
 =========
