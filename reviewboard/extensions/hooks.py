@@ -1790,14 +1790,21 @@ class APIExtraDataAccessHook(ExtensionHook):
     Example:
         .. code-block:: python
 
-            resource.extra_data = {
+            obj.extra_data = {
                 'foo': {
                     'bar' : 'private_data',
                     'baz' : 'public_data'
                 }
             }
 
-            field_set = [(('foo', 'bar'), 'ACCESS_STATE_PRIVATE')]
+            ...
+
+            APIExtraDataAccessHook(
+                extension,
+                resource,
+                [
+                    (('foo', 'bar'), ExtraDataAccessLevel.ACCESS_STATE_PRIVATE,
+                ])
     """
 
     def initialize(self, resource, field_set):

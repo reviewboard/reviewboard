@@ -258,7 +258,7 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
         Example:
             .. code-block:: python
 
-               resource.extra_data = {
+               obj.extra_data = {
                    'public': 'foo',
                    'private': 'secret',
                    'data': {
@@ -266,6 +266,8 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
                    },
                    'readonly': 'bar',
                }
+
+               ...
 
                key_path = ('data', 'secret_key')
                resource.get_extra_data_field_state(key_path)
