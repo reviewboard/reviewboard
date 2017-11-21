@@ -31,6 +31,8 @@ account:
     this item.
 
 
+.. _account-settings-avatar:
+
 Avatar
 ------
 
@@ -110,6 +112,8 @@ The Authentication page allows you to change your password. This page may not
 be available if Review Board is configured to use an external authentication
 system like LDAP or Active Directory.
 
+
+.. _api-tokens:
 
 API Tokens
 ----------

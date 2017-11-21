@@ -32,6 +32,8 @@ After a successful login, the client will receive a ``rbsessionid`` cookie
 that the client should use for all further requests.
 
 
+.. _webapi2.0-api-tokens:
+
 Token-based Authentication
 --------------------------
 

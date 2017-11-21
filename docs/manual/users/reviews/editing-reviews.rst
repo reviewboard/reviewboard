@@ -104,6 +104,8 @@ You can also change the :ref:`issue tracking options <issue-tracking>` here.
 These changes will be instantly saved.
 
 
+.. _review-dialog-delete-comments:
+
 Deleting Comments
 -----------------
 

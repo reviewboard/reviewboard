@@ -1,3 +1,5 @@
+.. _search-indexing:
+
 ===============
 Search Indexing
 ===============
@@ -33,6 +35,8 @@ Elasticsearch, you can enter the :guilabel:`Elasticsearch URL` and
              Elasticsearch 5+ introduced some non-trivial changes which are not
              yet supported by the framework that Review Board uses for search.
 
+
+.. _search-indexing-methods:
 
 Scheduled Indexing vs. On-The-Fly Indexing
 ==========================================

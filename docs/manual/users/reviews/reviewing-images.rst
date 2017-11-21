@@ -108,6 +108,8 @@ image revisions semi-transparently overlaid on top of each other. Moving in
 a given direction will fade one image in and the other out.
 
 
+.. _reviewing-images-zoom:
+
 Zooming In and Out
 ==================
 

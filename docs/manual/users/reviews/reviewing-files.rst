@@ -57,6 +57,8 @@ The behaviour of the file attachment revision selector is the same as the diff
 revision selector. See :ref:`reviewing-diffs` for more information.
 
 
+.. _switching-file-attachments:
+
 Switching File Attachments
 --------------------------
 
