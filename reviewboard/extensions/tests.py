@@ -11,6 +11,7 @@ from djblets.avatars.tests import DummyAvatarService
 from djblets.extensions.extension import ExtensionInfo
 from djblets.extensions.manager import ExtensionManager
 from djblets.extensions.models import RegisteredExtension
+from djblets.features.testing import override_feature_check
 from djblets.mail.utils import build_email_address_for_user
 from djblets.registries.errors import AlreadyRegisteredError, RegistrationError
 from djblets.siteconfig.models import SiteConfiguration
@@ -50,7 +51,7 @@ from reviewboard.reviews.actions import (BaseReviewRequestAction,
                                          BaseReviewRequestMenuAction,
                                          clear_all_actions)
 from reviewboard.scmtools.errors import FileNotFoundError
-from reviewboard.testing.testcase import TestCase
+from reviewboard.reviews.features import ClassBasedActionsFeature
 from reviewboard.reviews.models.review_request import ReviewRequest
 from reviewboard.reviews.fields import (BaseReviewRequestField,
                                         BaseReviewRequestFieldSet)
@@ -126,39 +127,46 @@ class ActionHookTests(ExtensionManagerMixin, TestCase):
         super(ActionHookTests, self).tearDown()
 
         self.extension.shutdown()
+        clear_all_actions()
 
     def test_review_request_action_hook(self):
         """Testing ReviewRequestActionHook renders on a review request page but
         not on a file attachment or a diff viewer page
         """
-        self._test_base_review_request_action_hook(
-            'review-request-detail', ReviewRequestActionHook, True)
-        self._test_base_review_request_action_hook(
-            'file-attachment', ReviewRequestActionHook, False)
-        self._test_base_review_request_action_hook(
-            'view-diff', ReviewRequestActionHook, False)
+        with override_feature_check(ClassBasedActionsFeature.feature_id,
+                                    enabled=True):
+            self._test_base_review_request_action_hook(
+                'review-request-detail', ReviewRequestActionHook, True)
+            self._test_base_review_request_action_hook(
+                'file-attachment', ReviewRequestActionHook, False)
+            self._test_base_review_request_action_hook(
+                'view-diff', ReviewRequestActionHook, False)
 
     def test_diffviewer_action_hook(self):
         """Testing DiffViewerActionHook renders on a diff viewer page but not
         on a review request page or a file attachment page
         """
-        self._test_base_review_request_action_hook(
-            'review-request-detail', DiffViewerActionHook, False)
-        self._test_base_review_request_action_hook(
-            'file-attachment', DiffViewerActionHook, False)
-        self._test_base_review_request_action_hook(
-            'view-diff', DiffViewerActionHook, True)
+        with override_feature_check(ClassBasedActionsFeature.feature_id,
+                                    enabled=True):
+            self._test_base_review_request_action_hook(
+                'review-request-detail', DiffViewerActionHook, False)
+            self._test_base_review_request_action_hook(
+                'file-attachment', DiffViewerActionHook, False)
+            self._test_base_review_request_action_hook(
+                'view-diff', DiffViewerActionHook, True)
 
     def test_review_request_dropdown_action_hook(self):
         """Testing ReviewRequestDropdownActionHook renders on a review request
         page but not on a file attachment or a diff viewer page
         """
-        self._test_review_request_dropdown_action_hook(
-            'review-request-detail', ReviewRequestDropdownActionHook, True)
-        self._test_review_request_dropdown_action_hook(
-            'file-attachment', ReviewRequestDropdownActionHook, False)
-        self._test_review_request_dropdown_action_hook(
-            'view-diff', ReviewRequestDropdownActionHook, False)
+        with override_feature_check(ClassBasedActionsFeature.feature_id,
+                                    enabled=True):
+            self._test_review_request_dropdown_action_hook(
+                'review-request-detail', ReviewRequestDropdownActionHook, True)
+            self._test_review_request_dropdown_action_hook(
+                'file-attachment', ReviewRequestDropdownActionHook, False)
+            self._test_review_request_dropdown_action_hook(
+                'view-diff', ReviewRequestDropdownActionHook, False)
 
     def test_action_hook_init_raises_key_error(self):
         """Testing that action hook __init__ raises a KeyError"""
@@ -181,8 +189,6 @@ class ActionHookTests(ExtensionManagerMixin, TestCase):
                     missing_url_action,
                 ])
 
-        clear_all_actions()
-
     def test_action_hook_init_raises_value_error(self):
         """Testing that BaseReviewRequestActionHook __init__ raises a
         ValueError"""
@@ -200,13 +206,13 @@ class ActionHookTests(ExtensionManagerMixin, TestCase):
             ReviewRequestDropdownActionHook,
         ]
 
-        for hook_cls in action_hook_classes:
-            with self.assertRaisesMessage(ValueError, error_message):
-                hook_cls(extension=self.extension, actions=[
-                    unsupported_type_action,
-                ])
-
-        clear_all_actions()
+        with override_feature_check(ClassBasedActionsFeature.feature_id,
+                                    enabled=True):
+            for hook_cls in action_hook_classes:
+                with self.assertRaisesMessage(ValueError, error_message):
+                    hook_cls(extension=self.extension, actions=[
+                        unsupported_type_action,
+                    ])
 
     def test_dropdown_action_hook_init_raises_key_error(self):
         """Testing that ReviewRequestDropdownActionHook __init__ raises a
@@ -224,7 +230,6 @@ class ActionHookTests(ExtensionManagerMixin, TestCase):
                 missing_items_menu_action,
             ])
 
-        clear_all_actions()
 
     def _test_base_review_request_action_hook(self, url_name, hook_cls,
                                               should_render):
@@ -252,29 +257,32 @@ class ActionHookTests(ExtensionManagerMixin, TestCase):
                 'url': 'without-id-url',
             },
         ])
-        context = self._get_context(url_name=url_name)
-        entries = hook.get_actions(context)
-        self.assertEqual(len(entries), 3)
-        self.assertEqual(entries[0].action_id, 'with-id-action')
-        self.assertEqual(entries[1].action_id, 'test-action')
-        self.assertEqual(entries[2].action_id, 'no-id-dummy-action')
 
-        template = Template(
-            '{% load reviewtags %}'
-            '{% review_request_actions %}'
-        )
-        content = template.render(context)
-        self.assertNotIn('action', context)
-        self.assertEqual(should_render, 'href="with-id-url"' in content)
-        self.assertIn('>Test Action<', content)
-        self.assertEqual(should_render, 'id="no-id-dummy-action"' in content)
+        try:
+            context = self._get_context(url_name=url_name)
+            entries = hook.get_actions(context)
+            self.assertEqual(len(entries), 3)
+            self.assertEqual(entries[0].action_id, 'with-id-action')
+            self.assertEqual(entries[1].action_id, 'test-action')
+            self.assertEqual(entries[2].action_id, 'no-id-dict-action')
 
-        clear_all_actions()
+            template = Template(
+                '{% load reviewtags %}'
+                '{% review_request_actions %}'
+            )
+            content = template.render(context)
+            self.assertNotIn('action', context)
+            self.assertEqual(should_render, 'href="with-id-url"' in content)
+            self.assertIn('>Test Action<', content)
+            self.assertEqual(should_render,
+                             'id="no-id-dict-action"' in content)
+        finally:
+            hook.disable_hook()
 
         content = template.render(context)
         self.assertNotIn('href="with-id-url"', content)
         self.assertNotIn('>Test Action<', content)
-        self.assertNotIn('id="no-id-dummy-action"', content)
+        self.assertNotIn('id="no-id-dict-action"', content)
 
     def _test_review_request_dropdown_action_hook(self, url_name, hook_cls,
                                                   should_render):
@@ -310,54 +318,56 @@ class ActionHookTests(ExtensionManagerMixin, TestCase):
                 ]
             },
         ])
-        context = self._get_context(url_name=url_name)
-        entries = hook.get_actions(context)
-        self.assertEqual(len(entries), 2)
-        self.assertEqual(entries[0].action_id, 'test-menu-instance-action')
-        self.assertEqual(entries[1].action_id, 'test-menu-dict-action')
 
-        dropdown_icon_html = \
-            '<span class="rb-icon rb-icon-dropdown-arrow"></span>'
+        try:
+            context = self._get_context(url_name=url_name)
+            entries = hook.get_actions(context)
+            self.assertEqual(len(entries), 2)
+            self.assertEqual(entries[0].action_id, 'test-menu-instance-action')
+            self.assertEqual(entries[1].action_id, 'test-menu-dict-action')
 
-        template = Template(
-            '{% load reviewtags %}'
-            '{% review_request_actions %}'
-        )
-        content = template.render(context)
-        self.assertNotIn('action', context)
-        self.assertInHTML('<a href="#" id="test-action">Test Action</a>',
-                          content)
-        self.assertInHTML(
-            ('<a class="menu-title" href="#" id="test-menu-instance-action">'
-             'Menu Instance %s</a>'
-             % dropdown_icon_html),
-            content)
+            dropdown_icon_html = \
+                '<span class="rb-icon rb-icon-dropdown-arrow"></span>'
 
-        for s in (('id="test-menu-dict-action"',
-                   'href="with-id-url"',
-                   'id="no-id-dummy-action"')):
-            if should_render:
-                self.assertIn(s, content)
-            else:
-                self.assertNotIn(s, content)
-
-        if should_render:
+            template = Template(
+                '{% load reviewtags %}'
+                '{% review_request_actions %}'
+            )
+            content = template.render(context)
+            self.assertNotIn('action', context)
+            self.assertInHTML('<a href="#" id="test-action">Test Action</a>',
+                              content)
             self.assertInHTML(
-                ('<a class="menu-title" href="#" id="test-menu-dict-action">'
-                 'Menu Dict %s</a>'
+                ('<a class="menu-title" href="#" id="test-menu-instance-action">'
+                 'Menu Instance %s</a>'
                  % dropdown_icon_html),
                 content)
-        else:
-            self.assertNotIn('Menu Dict', content)
 
-        clear_all_actions()
+            for s in (('id="test-menu-dict-action"',
+                       'href="with-id-url"',
+                       'id="no-id-dict-action"')):
+                if should_render:
+                    self.assertIn(s, content)
+                else:
+                    self.assertNotIn(s, content)
+
+            if should_render:
+                self.assertInHTML(
+                    ('<a class="menu-title" href="#" id="test-menu-dict-action">'
+                     'Menu Dict %s</a>'
+                     % dropdown_icon_html),
+                    content)
+            else:
+                self.assertNotIn('Menu Dict', content)
+        finally:
+            hook.disable_hook()
 
         content = template.render(context)
         self.assertNotIn('Test Action', content)
         self.assertNotIn('Menu Instance', content)
         self.assertNotIn('id="test-menu-dict-action"', content)
         self.assertNotIn('href="with-id-url"', content)
-        self.assertNotIn('id="no-id-dummy-action"', content)
+        self.assertNotIn('id="no-id-dict-action"', content)
 
     def _test_action_hook(self, template_tag_name, hook_cls):
         action = {
