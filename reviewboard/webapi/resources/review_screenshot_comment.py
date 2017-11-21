@@ -65,6 +65,9 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
         This will create a new comment on a screenshot as part of a review.
         The comment contains text and dimensions for the area being commented
         on.
+
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             review_request = \
@@ -122,6 +125,9 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
 
         This can update the text or region of an existing comment. It
         can only be done for comments that are part of a draft review.
+
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)

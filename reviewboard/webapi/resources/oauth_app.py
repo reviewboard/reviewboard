@@ -369,10 +369,8 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
         The ``client_secret`` and ``client_id`` fields will be auto-generated
         and returned in the response (providing the request is successful).
 
-        Extra data can be stored on application for later lookup by passing
-        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can be
-        any valid strings. Passing a blank ``value`` will remove the key. The
-        ``extra_data.`` prefix is required.
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         return self._create_or_update(request, parsed_request_fields,
                                       extra_fields, None, local_site)
@@ -390,10 +388,8 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
                local_site=None, *args, **kwargs):
         """Update an OAuth2 application.
 
-        Extra data can be stored on application for later lookup by passing
-        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can be
-        any valid strings. Passing a blank ``value`` will remove the key. The
-        ``extra_data.`` prefix is required.
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             app = self.get_object(request, local_site=local_site, *args,

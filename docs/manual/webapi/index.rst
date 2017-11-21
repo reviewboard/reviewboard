@@ -60,6 +60,10 @@ Working with Special Data
   Working with textual data (such as from review request fields) and how to
   convert to Markdown and HTML.
 
+* :ref:`Extra data <webapi2.0-extra-data>` -
+  Storing and retrieving custom extra data on resources that support it, for
+  use in your client or :ref:`extension <writing-extensions>`.
+
 
 Available Resources
 ===================

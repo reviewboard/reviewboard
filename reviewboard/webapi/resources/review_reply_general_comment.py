@@ -58,6 +58,9 @@ class ReviewReplyGeneralCommentResource(BaseReviewGeneralCommentResource):
         This will create a reply to a general comment on a review.
         The new comment will contain the same dimensions of the comment
         being replied to, but may contain new text.
+
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)
@@ -100,6 +103,9 @@ class ReviewReplyGeneralCommentResource(BaseReviewGeneralCommentResource):
 
         This can only update the text in the comment. The comment being
         replied to cannot change.
+
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)

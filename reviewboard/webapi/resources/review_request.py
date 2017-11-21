@@ -669,10 +669,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         is useful when writing automation scripts, such as post-commit hooks,
         that need to create review requests for another user.
 
-        Extra data can be stored on the review request for later lookup by
-        passing ``extra_data.key_name=value``. The ``key_name`` and ``value``
-        can be any valid strings. Passing a blank ``value`` will remove the
-        key.  The ``extra_data.`` prefix is required.
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         user = request.user
         local_site = self._get_local_site(local_site_name)
@@ -879,10 +877,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         This can be accessed through the ``draft`` link. Only when that
         draft is published will the changes end up back in this resource.
 
-        Extra data can be stored on the review request for later lookup by
-        passing ``extra_data.key_name=value``. The ``key_name`` and ``value``
-        can be any valid strings. Passing a blank ``value`` will remove the
-        key. The ``extra_data.`` prefix is required.
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             review_request = \

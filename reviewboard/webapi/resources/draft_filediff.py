@@ -98,10 +98,8 @@ class DraftFileDiffResource(FileDiffResource):
         If this represents a binary file, then the contents of the binary
         file can be uploaded before the review request is published.
 
-        Extra data can be stored for later lookup by passing
-        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can be
-        any valid strings. Passing a blank ``value`` will remove the key. The
-        ``extra_data.`` prefix is required.
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             filediff = self.get_object(request, *args, **kwargs)

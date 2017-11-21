@@ -257,10 +257,8 @@ class DiffResource(WebAPIResource):
             <Unified Diff Content Here>
             -- SoMe BoUnDaRy --
 
-        Extra data can be stored on the diff for later lookup by passing
-        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can
-        be any valid strings. Passing a blank ``value`` will remove the key.
-        The ``extra_data.`` prefix is required.
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         # Prevent a circular dependency, as ReviewRequestDraftResource
         # needs DraftDiffResource, which needs DiffResource.
@@ -370,10 +368,8 @@ class DiffResource(WebAPIResource):
         This is used solely for updating extra data on a diff. The contents
         of a diff cannot be modified.
 
-        Extra data can be stored on the diff for later lookup by passing
-        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can
-        be any valid strings. Passing a blank ``value`` will remove the key.
-        The ``extra_data.`` prefix is required.
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             review_request = \
