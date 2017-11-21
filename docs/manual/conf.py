@@ -253,7 +253,7 @@ if rb_version[3] == 'final' or rb_version[5] > 0:
         if rb_version[3]:
             git_branch += '.%s' % rb_version[3]
 
-    if reviewboard.is_release():
+    if reviewboard.is_release() and version[3] != 'final':
         git_branch += rb_version[4]
 
         if rb_version[5]:
