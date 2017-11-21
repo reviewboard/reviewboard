@@ -508,7 +508,6 @@ RB.ReviewRequestEditorView = Backbone.View.extend({
         const reviewRequest = this.model.get('reviewRequest');
         const fileAttachments = this.model.get('fileAttachments');
         const draft = reviewRequest.draft;
-        const extraData = draft.get('extraData');
 
         this._$box = this.$('.review-request');
         this._$warning = $('#review-request-warning');

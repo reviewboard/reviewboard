@@ -4,12 +4,14 @@
 Authenticating
 ==============
 
+
+.. _webapi2.0-logging-in:
+
 Logging In
 ==========
 
-As of Review Board 2.5, there are two methods available for authenticating
-using the API: Token-based authentication, and password-based authentication.
-Prior to 2.5, password-based authentication was required.
+Review Board offers several methods for authentification when using the API:
+API tokens, usernames and passwords, and OAuth2 access tokens.
 
 Token-based authentication is the preferred method, as it offers a safe,
 secure way of providing an application or third-party service with a way to
@@ -27,14 +29,18 @@ password-based authentication request, but custom clients may use either
 method.
 
 After a successful login, the client will receive a ``rbsessionid`` cookie
-that the client should use for all further requests. The cookie will be valid
-for one year.
+that the client should use for all further requests.
 
+
+.. _webapi2.0-api-tokens:
 
 Token-based Authentication
 --------------------------
 
 .. versionadded:: 2.5
+
+API Tokens offer a secure way of granting access. These do not require storing
+credentials, and can be restricted in scope or revoked at will.
 
 Users will first need to create one or more tokens for their account. This is
 done through the My Account -> API Tokens page. Simply click :guilabel:`Create
@@ -71,6 +77,31 @@ will base64-encode the string ``joe:mypass`` to get the resulting string
 
     Authorization: Basic am9lOm15cGFzcw==
 
+
+.. _webapi2.0-oauth2-authentication:
+
+OAuth2 Authentication
+---------------------
+
+.. versionadded:: 3.0
+
+For building services which integrate with Review Board, you can use
+:term:`OAuth2` to allow your users to connect their Review Board accounts
+without having to divulge their username and password. This mechanism is also
+simpler for users than having to create an API token.
+
+To make a request with an :ref:`OAuth2 Access Token
+<oauth2-authorization-flow>`, the client must send an ``Authorization`` header
+as part of the API request. The contents of this will be :samp:`Bearer
+{token_value}` where ``token_value`` is the access token returned by the
+:ref:`authorization flow <oauth2-authorization-flow>`.
+
+For example, if your access token is ``123456``, you would send::
+
+    Authorization: Bearer 123456
+
+
+.. _webapi2.0-logging-out:
 
 Logging Out
 ===========

@@ -6,6 +6,19 @@ from django.utils.translation import ugettext_lazy as _
 from djblets.features import Feature, FeatureLevel
 
 
+class ClassBasedActionsFeature(Feature):
+    """A feature for class-based actions.
+
+    With this enabled, extensions may use the new class-based action classes
+    instead of the old-style dict actions.
+    """
+
+    feature_id = 'reviews.class_based_actions'
+    name = _('Class-Based Actions')
+    level = FeatureLevel.UNAVAILABLE
+    summary = _('Allow using class-based actions with extension hooks.')
+
+
 class GeneralCommentsFeature(Feature):
     """A feature for general comments.
 
@@ -55,6 +68,7 @@ class StatusUpdatesFeature(Feature):
                 'and report the results of those checks.')
 
 
+class_based_actions_feature = ClassBasedActionsFeature()
 general_comments_feature = GeneralCommentsFeature()
 issue_verification_feature = IssueVerificationFeature()
 status_updates_feature = StatusUpdatesFeature()

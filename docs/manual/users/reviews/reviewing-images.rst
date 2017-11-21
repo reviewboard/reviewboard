@@ -106,3 +106,24 @@ Onion Skinning uses a horizontal slider to 'fade' from one revision image to
 another. When the slider is at the half way point, you will see a both
 image revisions semi-transparently overlaid on top of each other. Moving in
 a given direction will fade one image in and the other out.
+
+
+.. _reviewing-images-zoom:
+
+Zooming In and Out
+==================
+
+.. versionadded:: 3.0
+
+For images that are too large or too small to display comfortably, you can
+zoom in or out using the zoom menu to the top-right of the image's display
+area. This offers 33%, 50%, 100%, and 200% zoom levels.
+
+When viewing an image file that contains a ``@2x`` identifier in the filename
+(common for high-DPI images for first-generation "Retina" displays), a 50%
+zoom level will be chosen. Similarly, files with a ``@3x`` in the filename
+will use a 33% zoom level.
+
+If the image is too large to fit when viewing the page (even factoring in the
+default zoom level for high-DPI images), a zoom level that best fits the image
+on the page will be chosen automatically.

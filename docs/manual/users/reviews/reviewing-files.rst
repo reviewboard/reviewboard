@@ -56,3 +56,18 @@ handles to the revisions you want to compare.
 The behaviour of the file attachment revision selector is the same as the diff
 revision selector. See :ref:`reviewing-diffs` for more information.
 
+
+.. _switching-file-attachments:
+
+Switching File Attachments
+--------------------------
+
+.. versionadded:: 3.0
+
+When viewing a file attachment on a review request with multiple attachments,
+you can quickly jump to the previous or next attachment using the navigation
+buttons on the sides of the page. Moving the mouse over one of these buttons
+will slide out a thumbnail giving you a preview of what you'll see when
+clicking the button.
+
+.. image:: file-attachment-navigation.png

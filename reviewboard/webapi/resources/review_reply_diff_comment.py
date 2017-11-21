@@ -56,6 +56,9 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
 
         This will create a new diff comment as part of this reply. The reply
         must be a draft reply.
+
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)
@@ -102,6 +105,9 @@ class ReviewReplyDiffCommentResource(BaseDiffCommentResource):
 
         This can only update the text in the comment. The comment being
         replied to cannot change.
+
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)

@@ -68,6 +68,9 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
 
         This will create a new diff comment on this review. The review
         must be a draft review.
+
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             review_request = \
@@ -137,6 +140,9 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
         """Updates a diff comment.
 
         This can update the text or line range of an existing comment.
+
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)

@@ -339,6 +339,9 @@ class StatusUpdateResource(WebAPIResource):
         status update will be displayed in the review request page within that
         change description's box. If a review is attached, once that review is
         published, it will appear alongside the status update.
+
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             review_request = \
@@ -411,6 +414,9 @@ class StatusUpdateResource(WebAPIResource):
 
         Only the owner of a status update can make changes. One or more fields
         can be updated at once.
+
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             status_update = self.get_object(request, *args, **kwargs)

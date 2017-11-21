@@ -400,10 +400,8 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         (such as an e-mail) if configured on the server. The current draft will
         then be deleted.
 
-        Extra data can be stored on the review request for later lookup by
-        passing ``extra_data.key_name=value``. The ``key_name`` and ``value``
-        can be any valid strings. Passing a blank ``value`` will remove the
-        key. The ``extra_data.`` prefix is required.
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             review_request = resources.review_request.get_object(

@@ -157,14 +157,19 @@ suite('rb/views/ReviewView', function() {
 
             expect(model.get('contextID')).toBe(null);
             expect(model.get('contextType')).toBe('body_top');
+            expect(model.get('hasDraft')).toBe(true);
 
             model = view._replyEditorViews[1].model;
             expect(model.get('contextID')).toBe(123);
             expect(model.get('contextType')).toBe('diff_comments');
+            expect(model.get('hasDraft')).toBe(false);
 
             model = view._replyEditorViews[2].model;
             expect(model.get('contextID')).toBe(null);
             expect(model.get('contextType')).toBe('body_bottom');
+            expect(model.get('hasDraft')).toBe(false);
+
+            expect(view._replyDraftsCount).toBe(1);
         });
 
         it('Draft banner when draft comment exists', function() {
@@ -200,6 +205,37 @@ suite('rb/views/ReviewView', function() {
             });
         });
 
+        describe('When draft deleted', function() {
+            describe('With last one', function() {
+                it('Draft banner hidden', function() {
+                    const editor = view._replyEditors[0];
+                    expect(editor.get('hasDraft')).toBe(true);
+                    expect(view._replyDraftsCount).toBe(1);
+                    expect(view._draftBannerShown).toBe(true);
+
+                    editor.set('hasDraft', false);
+                    expect(view._replyDraftsCount).toBe(0);
+                    expect(view._draftBannerShown).toBe(false);
+                });
+            });
+
+            describe('With more remaining', function() {
+                it('Draft banner stays visible', function() {
+                    view._replyEditors[1].set('hasDraft', true);
+
+                    const editor = view._replyEditors[0];
+                    expect(editor.get('hasDraft')).toBe(true);
+
+                    expect(view._replyDraftsCount).toBe(2);
+                    expect(view._draftBannerShown).toBe(true);
+
+                    editor.set('hasDraft', false);
+                    expect(view._replyDraftsCount).toBe(1);
+                    expect(view._draftBannerShown).toBe(true);
+                });
+            });
+        });
+
         describe('When reviewReply changes', function() {
             it('Signals connected', function() {
                 spyOn(view, 'listenTo').and.callThrough();
@@ -220,7 +256,8 @@ suite('rb/views/ReviewView', function() {
 
             it('Hide draft banner signal emitted', function() {
                 view._setupNewReply();
-                expect(view.trigger).toHaveBeenCalledWith('hasDraftChanged', false);
+                expect(view.trigger).toHaveBeenCalledWith('hasDraftChanged',
+                                                          false);
             });
 
             it('Editors updated', function() {

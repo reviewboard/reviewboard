@@ -152,6 +152,14 @@
     }
   }
 
+  &.has-prev-attachment .review-request {
+    margin-left: 1em;
+  }
+
+  &.has-next-attachment .review-request {
+    margin-right: 1em;
+  }
+
   .actions-container {
     .actions > li:last-child {
       border-radius: 0 @box-inner-border-radius @box-inner-border-radius 0;
@@ -667,6 +675,10 @@
           @margin-left: -@review-comment-border-left-size +
                         @review-request-entry-has-avatar-link-margin-left);
     }
+  }
+
+  .comment-text {
+    white-space: pre-wrap;
   }
 
   .controls {

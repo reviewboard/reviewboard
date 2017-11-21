@@ -421,10 +421,8 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
                extra_fields=None, *args, **kwargs):
         """Creates a new webhook.
 
-        Extra data can be stored on the webhook for later lookup by passing
-        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can
-        be any valid strings. Passing a blank ``value`` will remove the key.
-        The ``extra_data.`` prefix is required.
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
 
         Extra data values supplied will not be used when building the payload
         of the webhook.
@@ -513,10 +511,8 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
                extra_fields=None, *args, **kwargs):
         """Updates a webhook.
 
-        Extra data can be stored on the webhook for later lookup by passing
-        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can
-        be any valid strings. Passing a blank ``value`` will remove the key.
-        The ``extra_data.`` prefix is required.
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
 
         Extra data values supplied will not be used when building the payload
         of the webhook.

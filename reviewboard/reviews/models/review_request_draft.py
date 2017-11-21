@@ -422,7 +422,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         # Screenshots are a bit special.  The list of associated screenshots
         # can change, but so can captions within each screenshot.
-        if review_request.screenshots_count > 0:
+        if (review_request.screenshots_count > 0 or
+            self.screenshots_count > 0):
             screenshots = list(self.screenshots.all())
             caption_changes = {}
 
@@ -449,8 +450,6 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 self.changedesc.fields_changed['screenshot_captions'] = \
                     caption_changes
 
-        if (review_request.screenshots_count > 0 or
-            self.screenshots_count > 0):
             update_list(review_request.screenshots,
                         self.screenshots,
                         name='screenshots',
@@ -464,7 +463,8 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         # Files are treated like screenshots. The list of files can
         # change, but so can captions within each file.
-        if review_request.file_attachments_count > 0:
+        if (review_request.file_attachments_count > 0 or
+            self.file_attachments_count > 0):
             files = list(self.file_attachments.all())
             caption_changes = {}
 
@@ -491,8 +491,6 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 self.changedesc.fields_changed['file_captions'] = \
                     caption_changes
 
-        if (review_request.file_attachments_count > 0 or
-            self.file_attachments_count > 0):
             update_list(review_request.file_attachments,
                         self.file_attachments,
                         name='files',

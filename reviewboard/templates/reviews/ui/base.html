@@ -49,7 +49,7 @@
 </div>
 {%  endif %}
 
-<div id="review-request" class="review-ui-box{% if review_ui_box_content %} has-review-ui-box-content{% endif %}">
+<div id="review-request" class="review-ui-box{% if review_ui_box_content %} has-review-ui-box-content{% endif %}{% if prev_file_attachment %} has-prev-attachment{% endif %}{% if next_file_attachment %} has-next-attachment{% endif %}">
 {%  include "reviews/trophy_box.html" %}
  <div id="review-request-banners"></div>
 

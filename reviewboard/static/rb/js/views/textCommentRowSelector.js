@@ -520,7 +520,7 @@ RB.TextCommentRowSelector = Backbone.View.extend({
             for (i = 0; i < parentEl.children.length; i++) {
                 node = parentEl.children[i];
 
-                if (node.nodeType == Node.ELEMENT_NODE) {
+                if (node.nodeType === Node.ELEMENT_NODE) {
                     if (node.tagName === 'PRE') {
                         result.push(node);
                     } else if ((node.tagName !== 'TD' ||

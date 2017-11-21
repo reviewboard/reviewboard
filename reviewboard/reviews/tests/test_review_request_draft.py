@@ -6,10 +6,12 @@ from django.contrib.auth.models import User
 from kgb import SpyAgency
 
 from reviewboard.accounts.models import Profile
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.fields import (BaseEditableField,
                                         BaseTextAreaField,
                                         get_review_request_fieldset)
-from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
+from reviewboard.reviews.models import (ReviewRequest, ReviewRequestDraft,
+                                        Screenshot)
 from reviewboard.scmtools.core import ChangeSet, Commit
 from reviewboard.testing import TestCase
 
@@ -75,13 +77,20 @@ class ReviewRequestDraftTests(TestCase):
         self.assertEqual(review_request.file_attachments_count, 0)
         self.assertEqual(review_request.inactive_file_attachments_count, 0)
 
-        attachment = self.create_file_attachment(review_request, draft=draft)
+        attachment = self.create_file_attachment(review_request,
+                                                 draft=draft,
+                                                 caption='',
+                                                 draft_caption='Test Caption')
         self.assertEqual(draft.file_attachments_count, 1)
         self.assertEqual(draft.inactive_file_attachments_count, 0)
         self.assertEqual(review_request.file_attachments_count, 0)
         self.assertEqual(review_request.inactive_file_attachments_count, 0)
 
         changes = draft.publish()
+
+        attachment = FileAttachment.objects.get(pk=attachment.pk)
+        self.assertEqual(attachment.caption, 'Test Caption')
+
         fields = changes.fields_changed
 
         self.assertEqual(fields['files'], {
@@ -118,7 +127,7 @@ class ReviewRequestDraftTests(TestCase):
 
         attachment2 = self.create_file_attachment(review_request,
                                                   caption='File 2',
-                                                  draft_caption='File 2',
+                                                  draft_caption='New File 2',
                                                   draft=draft)
         self.assertEqual(draft.file_attachments_count, 2)
         self.assertEqual(draft.inactive_file_attachments_count, 0)
@@ -126,6 +135,13 @@ class ReviewRequestDraftTests(TestCase):
         self.assertEqual(review_request.inactive_file_attachments_count, 0)
 
         changes = draft.publish()
+
+        attachment1 = FileAttachment.objects.get(pk=attachment1.pk)
+        self.assertEqual(attachment1.caption, 'File 1')
+
+        attachment2 = FileAttachment.objects.get(pk=attachment2.pk)
+        self.assertEqual(attachment2.caption, 'New File 2')
+
         fields = changes.fields_changed
 
         self.assertEqual(fields['files'], {
@@ -204,25 +220,32 @@ class ReviewRequestDraftTests(TestCase):
         self.assertEqual(review_request.screenshots_count, 0)
         self.assertEqual(review_request.inactive_screenshots_count, 0)
 
-        attachment = self.create_screenshot(review_request, draft=draft)
+        screenshot = self.create_screenshot(review_request,
+                                            draft=draft,
+                                            caption='',
+                                            draft_caption='New Caption')
         self.assertEqual(draft.screenshots_count, 1)
         self.assertEqual(draft.inactive_screenshots_count, 0)
         self.assertEqual(review_request.screenshots_count, 0)
         self.assertEqual(review_request.inactive_screenshots_count, 0)
 
         changes = draft.publish()
+
+        screenshot = Screenshot.objects.get(pk=screenshot.pk)
+        self.assertEqual(screenshot.caption, 'New Caption')
+
         fields = changes.fields_changed
 
         self.assertEqual(fields['screenshots'], {
             'new': [
-                (attachment.caption,
-                 attachment.get_absolute_url(),
-                 attachment.pk)
+                (screenshot.caption,
+                 screenshot.get_absolute_url(),
+                 screenshot.pk)
             ],
             'added': [
-                (attachment.caption,
-                 attachment.get_absolute_url(),
-                 attachment.pk)
+                (screenshot.caption,
+                 screenshot.get_absolute_url(),
+                 screenshot.pk)
             ],
             'old': [],
             'removed': [],
@@ -233,7 +256,7 @@ class ReviewRequestDraftTests(TestCase):
     def test_publish_with_add_another_screenshot(self):
         """Testing ReviewRequestDraft.publish with adding another screenshot"""
         review_request = self.create_review_request()
-        attachment1 = self.create_screenshot(review_request,
+        screenshot1 = self.create_screenshot(review_request,
                                              caption='File 1')
         review_request.publish(review_request.submitter)
 
@@ -243,9 +266,9 @@ class ReviewRequestDraftTests(TestCase):
         self.assertEqual(review_request.screenshots_count, 1)
         self.assertEqual(review_request.inactive_screenshots_count, 0)
 
-        attachment2 = self.create_screenshot(review_request,
+        screenshot2 = self.create_screenshot(review_request,
                                              caption='File 2',
-                                             draft_caption='File 2',
+                                             draft_caption='New File 2',
                                              draft=draft)
         self.assertEqual(draft.screenshots_count, 2)
         self.assertEqual(draft.inactive_screenshots_count, 0)
@@ -253,26 +276,33 @@ class ReviewRequestDraftTests(TestCase):
         self.assertEqual(review_request.inactive_screenshots_count, 0)
 
         changes = draft.publish()
+
+        screenshot1 = Screenshot.objects.get(pk=screenshot1.pk)
+        self.assertEqual(screenshot1.caption, 'File 1')
+
+        screenshot2 = Screenshot.objects.get(pk=screenshot2.pk)
+        self.assertEqual(screenshot2.caption, 'New File 2')
+
         fields = changes.fields_changed
 
         self.assertEqual(fields['screenshots'], {
             'new': [
-                (attachment1.caption,
-                 attachment1.get_absolute_url(),
-                 attachment1.pk),
-                (attachment2.caption,
-                 attachment2.get_absolute_url(),
-                 attachment2.pk),
+                (screenshot1.caption,
+                 screenshot1.get_absolute_url(),
+                 screenshot1.pk),
+                (screenshot2.caption,
+                 screenshot2.get_absolute_url(),
+                 screenshot2.pk),
             ],
             'added': [
-                (attachment2.caption,
-                 attachment2.get_absolute_url(),
-                 attachment2.pk),
+                (screenshot2.caption,
+                 screenshot2.get_absolute_url(),
+                 screenshot2.pk),
             ],
             'old': [
-                (attachment1.caption,
-                 attachment1.get_absolute_url(),
-                 attachment1.pk),
+                (screenshot1.caption,
+                 screenshot1.get_absolute_url(),
+                 screenshot1.pk),
             ],
             'removed': [],
         })

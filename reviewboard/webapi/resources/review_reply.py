@@ -203,10 +203,8 @@ class ReviewReplyResource(BaseReviewResource):
         a payload and with a ``Location`` header pointing to the location of
         the new draft reply.
 
-        Extra data can be stored on the reply for later lookup by passing
-        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can
-        be any valid strings. Passing a blank ``value`` will remove the key.
-        The ``extra_data.`` prefix is required.
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             review_request = \
@@ -257,10 +255,8 @@ class ReviewReplyResource(BaseReviewResource):
         publish the reply. The reply will then be made publicly visible. Once
         public, the reply cannot be modified or made private again.
 
-        Extra data can be stored on the reply for later lookup by passing
-        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can
-        be any valid strings. Passing a blank ``value`` will remove the key.
-        The ``extra_data.`` prefix is required.
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             resources.review_request.get_object(request, *args, **kwargs)

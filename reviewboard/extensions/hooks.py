@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import inspect
+import logging
 import warnings
 
 from django.template.context import RequestContext
@@ -34,6 +35,7 @@ from reviewboard.notifications.email import (register_email_hook,
                                              unregister_email_hook)
 from reviewboard.reviews.actions import (BaseReviewRequestAction,
                                          BaseReviewRequestMenuAction)
+from reviewboard.reviews.features import class_based_actions_feature
 from reviewboard.reviews.fields import (get_review_request_fieldset,
                                         register_review_request_fieldset,
                                         unregister_review_request_fieldset)
@@ -892,7 +894,7 @@ class _DictAction(BaseReviewRequestAction):
         self.label = action_dict['label']
         self.action_id = action_dict.get(
             'id',
-            '%s-dummy-action' % self.label.lower().replace(' ', '-'))
+            '%s-dict-action' % self.label.lower().replace(' ', '-'))
         self.url = action_dict['url']
         self._applies_to = applies_to
 
@@ -939,7 +941,7 @@ class _DictMenuAction(BaseReviewRequestMenuAction):
         self.label = action_dict['label']
         self.action_id = action_dict.get(
             'id',
-            '%s-dummy-menu-action' % self.label.lower().replace(' ', '-'))
+            '%s-dict-menu-action' % self.label.lower().replace(' ', '-'))
         self._applies_to = applies_to
 
     def should_render(self, context):
@@ -1012,7 +1014,26 @@ class BaseReviewRequestActionHook(AppliesToURLMixin, ActionHook):
             apply_to=apply_to or [],
             *args, **kwargs)
 
-        self.actions = self._register_actions(actions or [])
+        if actions is None:
+            actions = []
+
+        if (not class_based_actions_feature.is_enabled() and
+            any(not isinstance(action, dict) for action in actions)):
+            logging.error(
+                'The class-based actions API is experimental and will '
+                'change in a future release. It must be enabled before '
+                'it can be used. The actions from %r will not be '
+                'registered.'
+                % self
+            )
+            actions = []
+
+        self.actions = self._register_actions(actions)
+
+    def shutdown(self):
+        """Shutdown the hook and unregister all actions."""
+        for action in self.actions:
+            action.unregister()
 
     def _register_actions(self, actions):
         """Register the given list of review request actions.
@@ -1790,14 +1811,21 @@ class APIExtraDataAccessHook(ExtensionHook):
     Example:
         .. code-block:: python
 
-            resource.extra_data = {
+            obj.extra_data = {
                 'foo': {
                     'bar' : 'private_data',
                     'baz' : 'public_data'
                 }
             }
 
-            field_set = [(('foo', 'bar'), 'ACCESS_STATE_PRIVATE')]
+            ...
+
+            APIExtraDataAccessHook(
+                extension,
+                resource,
+                [
+                    (('foo', 'bar'), ExtraDataAccessLevel.ACCESS_STATE_PRIVATE,
+                ])
     """
 
     def initialize(self, resource, field_set):

@@ -226,10 +226,8 @@ class ReviewGroupResource(WebAPIResource):
         and display name. The group will be public by default, unless
         specified otherwise.
 
-        Extra data can be stored on the group for later lookup by passing
-        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can
-        be any valid strings. Passing a blank ``value`` will remove the key.
-        The ``extra_data.`` prefix is required.
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         local_site = self._get_local_site(local_site_name)
 
@@ -304,10 +302,8 @@ class ReviewGroupResource(WebAPIResource):
         All the fields of a review group can be modified, including the
         name, so long as it doesn't conflict with another review group.
 
-        Extra data can be stored on the group for later lookup by passing
-        ``extra_data.key_name=value``. The ``key_name`` and ``value`` can
-        be any valid strings. Passing a blank ``value`` will remove the key.
-        The ``extra_data.`` prefix is required.
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             group = self.get_object(request, *args, **kwargs)

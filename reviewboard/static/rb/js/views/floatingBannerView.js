@@ -28,6 +28,20 @@ RB.FloatingBannerView = Backbone.View.extend({
     },
 
     /*
+     * Remove the view from the DOM.
+     *
+     * This will remove both the banner and the floating spacer (if currently
+     * in the DOM).
+     */
+    remove: function() {
+        if (this._$floatSpacer !== null) {
+            this._$floatSpacer.remove();
+        }
+
+        Backbone.View.prototype.remove.call(this);
+    },
+
+    /*
      * Updates the size of the banner to match the spacer.
      */
     _updateSize: function() {

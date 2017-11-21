@@ -128,6 +128,9 @@ class APITokenResource(WebAPIResource):
 
         Note that this may, in theory, fail due to too many token collisions.
         If that happens, please re-try the request.
+
+        Extra data can be stored later lookup. See
+        :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             user = resources.user.get_object(request, *args, **kwargs)
@@ -191,6 +194,7 @@ class APITokenResource(WebAPIResource):
         """Updates the information on an existing API token.
 
         The note, policy, and extra data on the token may be updated.
+        See :ref:`webapi2.0-extra-data` for more information.
         """
         try:
             token = self.get_object(request, *args, **kwargs)

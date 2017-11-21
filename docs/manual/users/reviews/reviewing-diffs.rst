@@ -185,6 +185,8 @@ shown.
 .. |expand-header-icon| image:: diff-expand-header-icon.png
 
 
+.. _diffviewer-deleted-files:
+
 Viewing Deleted File Content
 ----------------------------
 

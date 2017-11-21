@@ -165,9 +165,12 @@
   }
 
   tbody {
+    td, th, .field {
+      vertical-align: text-top;
+    }
+
     td, th {
       padding: 0 0 (@box-padding * 1.5) @box-padding;
-      vertical-align: baseline;
     }
 
     th {
@@ -181,7 +184,9 @@
     }
 
     .field {
+      display: inline-block;
       margin-right: 4px;
+      word-wrap: break-word;
 
       &:empty {
         margin-right: 0;

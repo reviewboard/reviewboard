@@ -14,6 +14,8 @@ may contain additional data in JSON_, XML, or other formats.
 .. _JSON: http://www.json.org/
 
 
+.. _webapi2.0-overview-resources:
+
 Resources
 =========
 
@@ -83,6 +85,8 @@ For example:
     }
 
 
+.. _webapi2.0-overview-requests:
+
 Making Requests
 ===============
 
@@ -145,6 +149,8 @@ In this example, JSON is preferred. Plain text is okay, but the client isn't
 very excited about it. Anything else is okay, as long as it's not XML.
 
 
+.. _webapi2.0-overview-responses:
+
 Responses
 =========
 
@@ -153,37 +159,50 @@ HTTP Status Codes
 
 Every response has an HTTP status code. The following are used:
 
-+------------------+--------------+-----------------------------------------+
-| HTTP Status Code | Name         | Description                             |
-+==================+==============+=========================================+
-| 200              | OK           | The operation completed successfully.   |
-+------------------+--------------+-----------------------------------------+
-| 400              | Bad Request  | There was an error in the data sent in  |
-|                  |              | the request.                            |
-+------------------+--------------+-----------------------------------------+
-| 401              | Unauthorized | The user wasn't authorized to perform   |
-|                  |              | this request.                           |
-+------------------+--------------+-----------------------------------------+
-| 403              | Forbidden    | The request was to a resource that the  |
-|                  |              | user didn't have permission to access.  |
-+------------------+--------------+-----------------------------------------+
-| 404              | Not Found    | The resource was not found.             |
-+------------------+--------------+-----------------------------------------+
-| 405              | Method Not   | The HTTP method used was not allowed.   |
-|                  | Allowed      |                                         |
-+------------------+--------------+-----------------------------------------+
-| 409              | Conflict     | There was a conflict in the data when   |
-|                  |              | creating a new resource. A previous     |
-|                  |              | resource with that data already exists. |
-+------------------+--------------+-----------------------------------------+
-| 500              | Internal     | There was a server-side error when      |
-|                  | Server Error | processing the request. This is usually |
-|                  |              | a bug in Review Board.                  |
-+------------------+--------------+-----------------------------------------+
-| 501              | Not          | The call is not supported on that       |
-|                  | Implemented  | particular instance of the resource     |
-|                  |              | type.                                   |
-+------------------+--------------+-----------------------------------------+
+.. http-status-codes-format:: %(code)s %(name)s
+.. list-table::
+   :widths: 30 70
+   :header-rows: 1
+
+   * - HTTP Status
+     - Description
+
+   * - :http:`200`
+     - The operation completed successfully.
+
+   * - :http:`400`
+     - There was an error in the data sent in the request.
+
+   * - :http:`401`
+     - The user wasn't authorized to perform this request.
+
+   * - :http:`403`
+     - The request was to a resource that the user didn't have permission
+       to access.
+
+   * - :http:`404`
+     - The resource was not found (or not visible to the current user).
+
+   * - :http:`405`
+     - The HTTP method was not allowed on the resource.
+
+   * - :http:`409`
+     - There was a conflict in the data when creating a new resource.
+       A previous resource with that data already exists.
+
+   * - :http:`429`
+     - There were too many requests made by the client in a certain period
+       of time. This is used for rate limiting.
+
+   * - :http:`500`
+     - There was a server-side error when processing the request. This is
+       usually a bug in Review Board, or in an upstream repository.
+
+   * - :http:`501`
+     - The call is not supported on that particular instance of the resource.
+
+   * - :http:`503`
+     - Review Board is down or not yet able to handle API requests.
 
 
 Payloads
@@ -199,8 +218,8 @@ can return JSON or XML, with JSON being the default.
           preferred. It doesn't particularly care about JSON. That doesn't
           mean that's what your app will get by default, though!
 
-Every payload has, at the least, a ``stat`` key. The value will be either
-``ok`` (for success) or ``fail`` (for a failed request).
+Every payload has a ``stat`` key. The value will be either ``ok`` (for
+success) or ``fail`` (for a failed request).
 
 Payloads for failed requests will also contain a ``err`` key mapping to a
 dictionary containing ``code`` and ``msg`` keys. ``code`` will contain
@@ -211,13 +230,13 @@ error. ``msg`` will contain a human-readable error string from the server.
 JSON
 ~~~~
 
-JSON, or JavaScript Object Notation, is a standard, minimal format for
+JSON_, or JavaScript Object Notation, is a standard, minimal format for
 expressing information in a way that is both human-readable and easy to parse.
 Most languages contain libraries for parsing JSON. We recommend JSON when
 interacting with the Review Board API.
 
 JSON responses are returned when using the :mimetype:`application/json`
-mimetype.
+mimetype in the :mailheader:`Accept` header.
 
 An example of a successful response payload would be:
 
@@ -245,11 +264,16 @@ XML
 ~~~
 
 XML is another popular format, though it's more verbose than JSON. Our
-XML format is for the moment very simplistic, and does not contain a schema
-or any namespaces. This will likely change in a future version.
+XML format is simplistic, and does not contain a schema or any namespaces.
 
 XML responses are returned when using the :mimetype:`application/xml`
-mimetype.
+mimetype in the :mailheader:`Accept` header.
+
+.. admonition:: Recommendation
+
+   We recommend using the JSON format instead of XML whenever possible, as
+   it's less verbose and better supported. We might remove XML support in a
+   future version.
 
 An example of a successful response payload would be:
 

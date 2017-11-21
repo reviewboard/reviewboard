@@ -261,7 +261,7 @@ const ImageAttachmentView = BaseImageView.extend({
         return {
             width: $img.data('initial-width'),
             height: $img.height('initial-height'),
-        }
+        };
     },
 });
 
