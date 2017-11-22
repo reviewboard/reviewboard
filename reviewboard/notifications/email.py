@@ -583,10 +583,10 @@ def send_review_mail(user, review_request, subject, in_reply_to,
         modified_files = set()
 
         for filediff in latest_diffset.files.all():
-            if filediff.deleted or filediff.copied or filediff.moved:
+            if not filediff.is_new:
                 modified_files.add(filediff.source_file)
 
-            if filediff.is_new or filediff.copied or filediff.moved:
+            if not filediff.deleted:
                 modified_files.add(filediff.dest_file)
 
         # The following code segment deals with the case where the client adds
