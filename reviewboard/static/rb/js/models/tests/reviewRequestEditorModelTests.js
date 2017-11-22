@@ -516,7 +516,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 });
 
                 spyOn(reviewRequest.draft, 'ensureCreated')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         options.success.call(context);
                     });
 
@@ -549,7 +549,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 });
 
                 spyOn(reviewRequest.draft, 'ensureCreated')
-                    .andCallFake(function(options, context) {
+                    .and.callFake(function(options, context) {
                         options.success.call(context);
                     });
 
