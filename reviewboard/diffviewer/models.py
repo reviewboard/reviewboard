@@ -217,6 +217,11 @@ class FileDiff(models.Model):
         return self.status == self.MOVED
 
     @property
+    def modified(self):
+        """Whether this file is a modification to an existing file."""
+        return self.status == self.MODIFIED
+
+    @property
     def is_new(self):
         return self.source_revision == PRE_CREATION
 
