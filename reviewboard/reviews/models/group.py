@@ -148,3 +148,6 @@ class Group(models.Model):
         verbose_name = _('Review Group')
         verbose_name_plural = _('Review Groups')
         ordering = ['name']
+        permissions = (
+            ('can_view_invite_only_groups', _('Can view invite-only Groups')),
+        )

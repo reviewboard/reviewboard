@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from django.contrib.auth.models import AnonymousUser, User
+from django.contrib.auth.models import AnonymousUser, Permission, User
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.reviews.models import Group
@@ -88,6 +88,36 @@ class PolicyTests(TestCase):
             group in Group.objects.accessible(self.user, visible_only=False))
         self.assertTrue(
             group in Group.objects.accessible(self.user, visible_only=True))
+
+    def test_group_view_invite_only_groups_permission(self):
+        """Testing view_invite_only_groups permission allows viewing
+        invite-only groups
+        """
+        group1 = Group.objects.create(name='group1', visible=True,
+                                      invite_only=True)
+        self.assertTrue(group1.visible)
+        self.assertTrue(group1.invite_only)
+
+        initial_group_count = Group.objects.accessible(user=self.user).count()
+        # The user's permissions are cached in the above line.
+        # This must be cleared as we will be adding a new permission.
+        del self.user._perm_cache
+
+        self.user.user_permissions.add(
+            Permission.objects.get(codename='can_view_invite_only_groups'))
+        self.assertTrue(
+            self.user.has_perm('reviews.can_view_invite_only_groups'))
+
+        current_group_count = Group.objects.accessible(self.user).count()
+        self.assertEqual(initial_group_count + 1, current_group_count)
+
+        group2 = Group.objects.create(name='group2', visible=False,
+                                      invite_only=True)
+        self.assertFalse(group2.visible)
+        self.assertTrue(group2.invite_only)
+
+        new_group_count = Group.objects.accessible(self.user).count()
+        self.assertEqual(current_group_count, new_group_count)
 
     def test_group_invite_only_review_request_ownership(self):
         """Testing visibility of review requests assigned to invite-only

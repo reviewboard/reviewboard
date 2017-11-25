@@ -1027,6 +1027,34 @@ class ReviewRequestEmailTests(EmailTestHelper, DmarcDnsTestsMixin, SpyAgency,
         self.assertTrue(filediff.dest_file in diff_headers)
 
     @add_fixtures(['test_scmtools'])
+    def test_review_request_email_with_modified_file(self):
+        """Testing sending a review request e-mail with modified files in
+        the diffset
+        """
+        # Bug #4572 reported that the 'X-ReviewBoard-Diff-For' header appeared
+        # only for newly created files and moved files. This test is to check
+        # that the header appears for modified files as well.
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository)
+        diffset = self.create_diffset(review_request=review_request)
+        filediff = self.create_filediff(diffset=diffset,
+                                        source_file='foo',
+                                        dest_file='bar',
+                                        status=FileDiff.MODIFIED)
+
+        review_request.publish(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertIn('X-ReviewBoard-Diff-For', message._headers)
+
+        diff_headers = message._headers.getlist('X-ReviewBoard-Diff-For')
+        self.assertEqual(len(diff_headers), 2)
+        self.assertIn(filediff.source_file, diff_headers)
+        self.assertIn(filediff.dest_file, diff_headers)
+
+    @add_fixtures(['test_scmtools'])
     def test_review_request_email_with_multiple_files(self):
         """Testing sending a review request e-mail with multiple files in the
         diffset
