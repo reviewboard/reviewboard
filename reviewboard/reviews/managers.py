@@ -41,7 +41,10 @@ class ReviewGroupManager(Manager):
         if user.is_superuser:
             qs = self.all()
         else:
-            q = Q(invite_only=False)
+            q = Q()
+
+            if not user.has_perm('reviews.can_view_invite_only_groups'):
+                q = Q(invite_only=False)
 
             if visible_only:
                 q = q & Q(visible=True)

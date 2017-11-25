@@ -178,6 +178,7 @@ class StandardAuthBackend(AuthBackend, ModelBackend):
         'reviews.can_change_status',
         'reviews.can_edit_reviewrequest',
         'reviews.can_submit_as_another_user',
+        'reviews.can_view_invite_only_groups',
         'reviews.change_default_reviewer',
         'reviews.change_group',
         'reviews.delete_file',
