@@ -396,7 +396,7 @@ to configure this. See the :ref:`file-storage-settings` documentation for
 more information.
 
 .. _`OpenStack Swift`: http://swift.openstack.org/
-.. _`Django-Evolution`: http://django-evolution.googlecode.com/
+.. _`Django-Evolution`: https://github.com/beanbaginc/django-evolution
 .. _Django: http://www.djangoproject.com/
 .. _flup: http://trac.saddi.com/flup
 .. _paramiko: http://www.lag.net/paramiko/
