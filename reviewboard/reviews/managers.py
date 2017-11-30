@@ -467,7 +467,16 @@ class ReviewManager(ConcurrencyManager):
         return master_review
 
     def from_user(self, user_or_username, *args, **kwargs):
-        """Returns the query for reviews created by a user."""
+        """Return the query for reviews created by a user.
+
+        Args:
+            user_or_username (django.contrib.auth.models.User or unicode):
+                The user object or username to query for.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            A queryset for all the reviews created by the given user.
+        """
         if isinstance(user_or_username, User):
             extra_query = Q(user=user_or_username)
         else:
@@ -477,14 +486,40 @@ class ReviewManager(ConcurrencyManager):
 
     def _query(self, user=None, public=True, status='P', extra_query=None,
                local_site=None, filter_private=False, base_reply_to=None):
+        """Do a query for reviews.
+
+        Args:
+            user (django.contrib.auth.models.User, optional):
+                A user to query for.
+
+            public (bool, optional):
+                Whether to filter for public (published) reviews.
+
+            status (unicode, optional):
+                The status of the review request that reviews are associated
+                with.
+
+            extra_query (django.db.models.Q, optional):
+                Additional query parameters to add.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                A local site to limit to, if appropriate.
+
+            filter_private (bool, optional):
+                Whether to limit the results based on the accessibility of
+                related review requests.
+
+            base_reply_to (reviewboard.reviews.models.review.Review, optional):
+                If provided, limit results to reviews that are part of the
+                thread of replies to this review.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            A queryset for the given conditions.
+        """
         from reviewboard.reviews.models import Group
 
-        is_authenticated = (user is not None and user.is_authenticated())
-
         query = Q(public=public) & Q(base_reply_to=base_reply_to)
-
-        if is_authenticated:
-            query = query | Q(user=user)
 
         if status:
             query = query & Q(review_request__status=status)
@@ -501,7 +536,7 @@ class ReviewManager(ConcurrencyManager):
                            Q(review_request__target_groups__invite_only=False))
 
             # TODO: should be consolidated with queries in ReviewRequestManager
-            if is_authenticated:
+            if user and user.is_authenticated():
                 accessible_repo_ids = Repository.objects.filter(
                     Q(users=user) |
                     Q(review_groups__users=user)).values_list('pk', flat=True)
