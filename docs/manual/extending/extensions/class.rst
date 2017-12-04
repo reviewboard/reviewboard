@@ -299,3 +299,25 @@ the extension's information. This will be a miniature version of Review
 Board's normal database viewer.
 
 This is covered in more detail in :ref:`extension-admin-site`.
+
+
+.. _extension-read-only-mode:
+
+Supporting Read-Only Mode
+=========================
+
+Review Board can be put into read-only mode by the site administrator, which
+disables API requests to the server and hides associated front-end features.
+If you would like your extension to be compliant or have specific behavior in
+read-only mode, :py:meth:`~reviewboard.admin.read_only.is_site_read_only_for`
+can be called with a :py:class:`User <django.contrib.auth.models.User>` to
+check if the User should be affected by the read-only mode.
+
+.. code-block:: python
+
+   from reviewboard.admin.read_only import is_site_read_only_for
+       ...
+
+
+   if is_site_read_only_for(user):
+       # Put code to run when in read-only mode here.
