@@ -301,6 +301,7 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
             filter_private=True,
             user=request.user,
             local_site=local_site,
+            status=None,
         )
 
         query = Q()
