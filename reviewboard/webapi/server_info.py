@@ -20,7 +20,7 @@ _capabilities_defaults = {
         }
     },
     'extra_data': {
-        'json-patching': True,
+        'json_patching': True,
     },
     'review_requests': {
         'commit_ids': True,
