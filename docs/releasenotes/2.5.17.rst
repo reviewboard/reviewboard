@@ -1,0 +1,104 @@
+.. default-intersphinx:: rb2.5
+
+
+=================================
+Review Board 2.5.17 Release Notes
+=================================
+
+**Release date**: December 5, 2017
+
+
+Upgrade Instructions
+====================
+
+To upgrade to Review Board 2.5.17, run::
+
+    pip install ReviewBoard==2.5.17
+
+or::
+
+    easy_install ReviewBoard==2.5.17
+
+
+Extensions
+==========
+
+* Fixed :py:meth:`Review.objects.from_user()
+  <reviewboard.reviews.manager.ReviewManager.from_user>` to return the correct
+  results when providing a logged-in user.
+
+
+Bug Fixes
+=========
+
+E-Mail
+------
+
+* Fixed the :mailheader:`X-ReviewBoard-Diff-For` header to include modified
+  files. (:bug:`4572`)
+
+  Due to a bug, the header was no longer including modified files in the list,
+  breaking filtering.
+
+  Patch by Henri-Philippe Marceau.
+
+
+File Attachments
+----------------
+
+* Fixed JavaScript errors when encountering a network issue during the upload
+  of a file attachment. (:bug:`4467`)
+
+  Patch by Nicholas Mercier.
+
+* Fixed a bug where saving a file attachment's caption did not create a review
+  request draft, if one didn't already exist.
+
+
+Review Requests
+---------------
+
+* Hiding the reply draft banner when it's docked to the top of the viewport
+  no longer results in a block of empty space at the top of the review.
+
+
+Search
+------
+
+* Fixed a regression with the quick search results where closed review
+  requests weren't being shown.
+
+  This regressed in 2.5.14.
+
+
+User Page
+---------
+
+* Fixed replies unintentionally showing up in the list of reviews on the
+  user page.
+
+
+GitLab
+------
+
+* Fixed a problem posting existing commits with diffs containing non-ASCII
+  characters in the New Review Request page.
+
+
+LDAP
+----
+
+* Fixed loading information on users when the "Full Name" attribute did not
+  contain any whitespace. (:bug:`4489`)
+
+  Patch by Riley Creaghan.
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Henri-Philippe Marceau
+* Nicholas Mercier
+* Riley Creaghan
