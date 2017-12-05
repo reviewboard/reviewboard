@@ -483,6 +483,46 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['search']['review_requests']), 1)
 
+    def test_get_review_request_submitted(self):
+        """Testing the GET search/ API with a review request closed as
+        submitted
+        """
+        review_request = self.create_review_request(public=True)
+        review_request.close(review_request.SUBMITTED)
+
+        self.assertTrue(review_request.is_accessible_by(self.user))
+
+        rsp = self.api_get(get_search_url(),
+                           query={'q': review_request.pk},
+                           expected_mimetype=search_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['search']['review_requests']), 1)
+
+        review_request_rsp = rsp['search']['review_requests'][0]
+        self.assertEqual(review_request_rsp['id'], review_request.pk)
+        self.assertEqual(review_request_rsp['status'], 'submitted')
+
+    def test_get_review_request_discarded(self):
+        """Testing the GET search/ API with a review request closed as
+        discarded
+        """
+        review_request = self.create_review_request(public=True)
+        review_request.close(review_request.DISCARDED)
+
+        self.assertTrue(review_request.is_accessible_by(self.user))
+
+        rsp = self.api_get(get_search_url(),
+                           query={'q': review_request.pk},
+                           expected_mimetype=search_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['search']['review_requests']), 1)
+
+        review_request_rsp = rsp['search']['review_requests'][0]
+        self.assertEqual(review_request_rsp['id'], review_request.pk)
+        self.assertEqual(review_request_rsp['status'], 'discarded')
+
     def test_get_review_request_invite_only_group(self):
         """Testing the GET search/ API with a review request assigned to an
         invite-only group not containing the user

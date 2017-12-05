@@ -226,7 +226,8 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
         """
         review_requests = ReviewRequest.objects.public(filter_private=True,
                                                        user=request.user,
-                                                       local_site=local_site)
+                                                       local_site=local_site,
+                                                       status=None)
 
         query = Q()
 
