@@ -563,16 +563,21 @@ class AvatarServicesForm(SiteSettingsForm):
 
         return self.cleaned_data['enabled_services']
 
-    def clean_default_service(self):
-        """Clean the default_service field.
+    def clean(self):
+        """Clean the form.
+
+        This will clean the form, handling any fields that need cleaned
+        that depend on the cleaned data of other fields.
 
         Raises:
             django.core.exceptions.ValidationError:
                 Raised if an unknown service or disabled service is set to be
                 the default.
         """
-        enabled_services = set(self.cleaned_data['enabled_services'])
-        service_id = self.cleaned_data['default_service']
+        cleaned_data = super(AvatarServicesForm, self).clean()
+
+        enabled_services = set(cleaned_data['enabled_services'])
+        service_id = cleaned_data['default_service']
 
         if service_id == 'none':
             default_service = None
@@ -587,7 +592,9 @@ class AvatarServicesForm(SiteSettingsForm):
             default_service = avatar_services.get('avatar_service_id',
                                                   service_id)
 
-        return default_service
+        cleaned_data['default_service'] = default_service
+
+        return cleaned_data
 
     def save(self):
         """Save the enabled services and default service to the database."""
