@@ -5,7 +5,19 @@
 Review Board 2.5.17 Release Notes
 =================================
 
-**Release date**: TBD
+**Release date**: December 5, 2017
+
+
+Upgrade Instructions
+====================
+
+To upgrade to Review Board 2.5.17, run::
+
+    pip install ReviewBoard==2.5.17
+
+or::
+
+    easy_install ReviewBoard==2.5.17
 
 
 Extensions
