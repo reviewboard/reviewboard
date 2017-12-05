@@ -1,8 +1,12 @@
 from __future__ import unicode_literals
 
+from django.conf import settings
 from django.utils import six
 
+from reviewboard import get_version_string, get_package_version, is_release
+from reviewboard.admin.server import get_server_url
 from reviewboard.webapi.resources import resources
+from reviewboard.webapi.server_info import get_capabilities
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import server_info_mimetype
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
@@ -12,6 +16,7 @@ from reviewboard.webapi.tests.urls import get_server_info_url
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceTests(BaseWebAPITestCase):
     """Testing the ServerInfoResource APIs."""
+
     fixtures = ['test_users']
     sample_api_url = 'info/'
     resource = resources.server_info
@@ -27,21 +32,24 @@ class ResourceTests(BaseWebAPITestCase):
         self.assertIn('site', item_rsp)
         self.assertIn('capabilities', item_rsp)
 
-        caps = item_rsp['capabilities']
-        self.assertIn('diffs', caps)
+        product_rsp = item_rsp['product']
+        self.assertEqual(product_rsp['name'], 'Review Board')
+        self.assertEqual(product_rsp['version'], get_version_string())
+        self.assertEqual(product_rsp['package_version'], get_package_version())
+        self.assertEqual(product_rsp['is_release'], is_release())
 
-        diffs_caps = caps['diffs']
-        self.assertTrue(diffs_caps['moved_files'])
-        self.assertTrue(diffs_caps['base_commit_ids'])
+        site_rsp = item_rsp['site']
+        self.assertTrue(site_rsp['url'].startswith(get_server_url()))
+        self.assertEqual(site_rsp['administrators'], [
+            {
+                'name': name,
+                'email': email,
+            }
+            for name, email in settings.ADMINS
+        ])
+        self.assertEqual(site_rsp['time_zone'], settings.TIME_ZONE)
 
-        diff_validation_caps = diffs_caps['validation']
-        self.assertTrue(diff_validation_caps['base_commit_ids'])
-
-        review_request_caps = caps['review_requests']
-        self.assertTrue(review_request_caps['commit_ids'])
-
-        text_caps = caps['text']
-        self.assertTrue(text_caps['markdown'])
+        self.assertEqual(item_rsp['capabilities'], get_capabilities())
 
     #
     # HTTP GET tests

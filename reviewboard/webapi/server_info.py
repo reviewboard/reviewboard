@@ -19,6 +19,9 @@ _capabilities_defaults = {
             'base_commit_ids': True,
         }
     },
+    'extra_data': {
+        'json_patching': True,
+    },
     'review_requests': {
         'commit_ids': True,
         'trivial_publish': True,
@@ -26,6 +29,7 @@ _capabilities_defaults = {
     'scmtools': {
         'git': {
             'empty_files': True,
+            'symlinks': True,
         },
         'mercurial': {
             'empty_files': True,
@@ -55,10 +59,11 @@ def get_server_info(request=None):
     Args:
         request (django.http.HttpRequest, optional):
             The HTTP request from the client.
-    """
-    capabilities = _capabilities_defaults.copy()
-    capabilities.update(_registered_capabilities)
 
+    Returns:
+        dict:
+        A dictionary of information about the server and its capabilities.
+    """
     return {
         'product': {
             'name': 'Review Board',
@@ -77,8 +82,21 @@ def get_server_info(request=None):
             ],
             'time_zone': settings.TIME_ZONE,
         },
-        'capabilities': capabilities,
+        'capabilities': get_capabilities(),
     }
+
+
+def get_capabilities():
+    """Return the capabilities made available in the API.
+
+    Returns:
+        dict:
+        The dictionary of capabilities.
+    """
+    capabilities = _capabilities_defaults.copy()
+    capabilities.update(_registered_capabilities)
+
+    return capabilities
 
 
 def register_webapi_capabilities(capabilities_id, caps):

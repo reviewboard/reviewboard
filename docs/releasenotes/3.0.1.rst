@@ -1,0 +1,102 @@
+.. default-intersphinx:: rb3.0
+
+
+================================
+Review Board 3.0.1 Release Notes
+================================
+
+**Release date**: December 5, 2017
+
+
+Web API
+=======
+
+* Added capability flags to indicate JSON patching and symlinks for Git diffs
+  are supported.
+
+  The JSON patching flag is in
+  ``extra_data.json_patching``, and indicates that the new
+  :ref:`JSON storage/merging <webapi2.0-extra-data-merging>` and
+  :ref:`JSON patching <webapi2.0-extra-data-patching>` operations are
+  available.
+
+  The symlinks for Git diffs flag is in ``scmtools.git.symlinks``, and
+  indicates that Git diffs containing symlinks can be properly handled and
+  viewed.
+
+  Both capability flags are found in the :ref:`root resource
+  <webapi2.0-root-resource>`.
+
+* Added a new user permission for seeing invite-only groups in the API.
+  (:bug:`4507`)
+
+  Users with the "Can view invite-only groups" permission will see invite-only
+  groups in the :ref:`webapi2.0-review-group-list-resource`. This is useful
+  for in-house scripts and tools that need to manage group lists without being
+  administrator users.
+
+  Patch by Claudia Chen.
+
+
+Extensions
+==========
+
+* Fixed :py:meth:`Review.objects.from_user()
+  <reviewboard.reviews.manager.ReviewManager.from_user>` to return the correct
+  results when providing a logged-in user.
+
+
+Bug Fixes
+=========
+
+Avatars
+-------
+
+* Avatar backends provided by extensions should no longer disappear.
+
+  We had some issues were the settings used to store information on avatar
+  backends would get reset after an extension-provided backend was disabled.
+  If an extension providing a backend is disabled, the next backend in the
+  list will be used instead. Once the extension is re-enabled, its backend
+  should once again take priority.
+
+* Fixed crashes that could occur when saving the configuration form for
+  avatars.
+
+
+E-Mail
+------
+
+* Fixed the :mailheader:`X-ReviewBoard-Diff-For` header to include modified
+  files. (:bug:`4572`)
+
+  Due to a bug, the header was no longer including modified files in the list,
+  breaking filtering.
+
+  Patch by Henri-Philippe Marceau.
+
+
+Search
+------
+
+* Fixed a regression with the quick search results where closed review
+  requests weren't being shown.
+
+  This problem occurred if using Whoosh, or if on-the-fly search indexing was
+  not enabled.
+
+
+User Page
+---------
+
+* Fixed replies unintentionally showing up in the list of reviews on the
+  user page.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Claudia Chen
+* David Trowbridge
+* Henri-Philippe Marceau
