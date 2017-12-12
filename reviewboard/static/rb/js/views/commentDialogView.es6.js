@@ -110,6 +110,7 @@ const CommentsListView = Backbone.View.extend({
 RB.CommentDialogView = Backbone.View.extend({
     DIALOG_TOTAL_HEIGHT: 350,
     DIALOG_NON_EDITABLE_HEIGHT: 120,
+    DIALOG_READ_ONLY_HEIGHT: 104,
     SLIDE_DISTANCE: 10,
     COMMENTS_BOX_WIDTH: 280,
     FORM_BOX_WIDTH: 450,
@@ -506,11 +507,19 @@ RB.CommentDialogView = Backbone.View.extend({
             width += this.COMMENTS_BOX_WIDTH;
         }
 
+        let height;
+
+        if (this.model.get('canEdit')) {
+            height = this.DIALOG_TOTAL_HEIGHT;
+        } else if (RB.UserSession.instance.get('readOnly')) {
+            height = this.DIALOG_READ_ONLY_HEIGHT;
+        } else {
+            height = this.DIALOG_NON_EDITABLE_HEIGHT;
+        }
+
         this.$el
             .width(width)
-            .height(this.model.get('canEdit')
-                    ? this.DIALOG_TOTAL_HEIGHT
-                    : this.DIALOG_NON_EDITABLE_HEIGHT);
+            .height(height);
     },
 
     /**

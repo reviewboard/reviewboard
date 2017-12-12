@@ -47,7 +47,7 @@
 {% template_hook_point "base-scripts" %}
  </head>
 {% block bodytag %}
- <body class="{% block page_class %}default-page{% endblock %}">
+ <body class="{% block page_class %}default-page{% endblock %} {% if is_read_only %}read-only{% endif %}">
 {% endblock %}
   <div id="mobile_navbar_container">
 {%  block mobile-navbar %}
@@ -67,7 +67,7 @@
 {%  endblock %}
 {%  template_hook_point "base-after-navbar" %}
 {%  block read_only_banner %}
-{%   if is_read_only %}
+{%   if siteconfig_settings.site_read_only %}
       <div id="read-only-banner">
        <h2 id="read-only-banner-header">{% trans "Review Board is in read-only mode." %}</h2>
 {%    if read_only_message %}

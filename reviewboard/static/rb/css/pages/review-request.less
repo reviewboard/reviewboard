@@ -329,6 +329,24 @@
   }
 }
 
+/*
+ * Disable some confusing cursors and interaction when the site is in
+ * read-only mode.
+ */
+body.read-only {
+  .review-request-action-archive,
+  .review-request-action-star {
+    &:active,
+    &:hover {
+      background-color: inherit;
+    }
+
+    & > a {
+      cursor: default;
+    }
+  }
+}
+
 .review-request-action-icon {
   display: inline-block;
 
