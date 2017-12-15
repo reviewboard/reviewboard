@@ -152,6 +152,8 @@ RB.InlineEditorView = Backbone.View.extend({
      *     This object, for chaining.
      */
     render() {
+        this.$el.data('inline-editor', this);
+
         this._$form = $('<form>')
             .addClass(`inline-editor-form ${this.options.formClass}`)
             .css('display', 'inline')

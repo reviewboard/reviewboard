@@ -1,4 +1,4 @@
-/*
+/**
  * Displays a thumbnail depicting a file attachment.
  *
  * There are two ways that Review Board currently renders file attachments.
@@ -32,26 +32,20 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
     events: {
         'click .file-delete': '_onDeleteClicked',
         'click .file-add-comment a': '_onAddCommentClicked',
-        'click .file-update a': '_onUpdateClicked'
+        'click .file-update a': '_onUpdateClicked',
     },
 
-    template: _.template([
-        '<div class="file">',
-        ' <div class="file-actions-container">',
-        '  <ul class="file-actions"></ul>',
-        ' </div>',
-        ' <div class="file-thumbnail-container"></div>',
-        ' <div class="file-caption-container">',
-        // spaceless
-        '<div class="file-caption can-edit">',
-        '<a href="<%- downloadURL %>" class="<%- captionClass %>">',
-        '<%- caption %>',
-        '</a>',
-        '</div>',
-        // end spaceless
-        ' </div>',
-        '</div>'
-    ].join('')),
+    template: _.template(dedent`
+        <div class="file">
+         <div class="file-actions-container">
+          <ul class="file-actions"></ul>
+         </div>
+         <div class="file-thumbnail-container"></div>
+         <div class="file-caption-container">
+          <div class="file-caption can-edit"><a href="<%- downloadURL %>" class="<%- captionClass %>"><%- caption %></a></div>
+         </div>
+        </div>
+        `),
 
     actionsTemplate: _.template([
         '<% if (loaded) { %>',
@@ -78,7 +72,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         '<span class="fa fa-trash-o"></span> <%- deleteText %>',
         '</a></li>',
         '<%  } %>',
-        '<% } %>'
+        '<% } %>',
     ].join('')),
 
     thumbnailContainerTemplate: _.template([
@@ -89,10 +83,32 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         '<a href="<%- reviewURL %>" class="file-thumbnail-overlay"></a>',
         '<%     } %>',
         '<%=  thumbnailHTML %>',
-        '<% } %>'
+        '<% } %>',
     ].join('')),
 
-    initialize: function(options) {
+    /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view.
+     *
+     * Option Args:
+     *     canEdit (boolean):
+     *         Whether the user has permission to edit the file attachment.
+     *
+     *     comments (Array):
+     *         The comments on the file attachment.
+     *
+     *     renderThumbnail (boolean):
+     *         Whether the thumbnail should be rendered. This exists because we
+     *         sometimes attach to existing DOM elements rather than rendering
+     *         from scratch.
+     *
+     *     reviewRequest (RB.ReviewRequest):
+     *         The review request model.
+     */
+    initialize(options) {
         this.options = options;
 
         this._draftComment = null;
@@ -101,8 +117,8 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         this._scrollingThumbnail = false;
     },
 
-    /*
-     * Renders the file attachment, and hooks up all events.
+    /**
+     * Render the file attachment, and hooks up all events.
      *
      * If the renderThumbnail option was provided when constructing the view,
      * this will render the thumbnail from scratch, and then dynamically
@@ -111,10 +127,12 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
      *
      * In either case, this will set up the caption editor and other signals
      * to control the lifetime of the thumbnail.
+     *
+     * Returns:
+     *     RB.FileAttachmentThumbnail:
+     *     This object, for chaining.
      */
-    render: function() {
-        var self = this;
-
+    render() {
         /*
          * Until FileAttachmentThumbnail is the only thing rendering thumbnails,
          * we'll be in a situation where we may either be working with an
@@ -129,17 +147,15 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         this._$captionContainer = this.$('.file-caption');
         this._$caption = this._$captionContainer.find('a.edit');
 
-        this.listenTo(this.model, 'destroy', function() {
-            this.$el.fadeOut(function() {
-                self.remove();
-            });
+        this.listenTo(this.model, 'destroy', () => {
+            this.$el.fadeOut(() => this.remove());
         });
 
         this.listenTo(this.model, 'change:caption', this._onCaptionChanged);
         this._onCaptionChanged();
 
-        this.$el.hover(_.bind(this._onHoverIn, this),
-                       _.bind(this._onHoverOut, this));
+        this.$el.hover(this._onHoverIn.bind(this),
+                       this._onHoverOut.bind(this));
 
         if (this.options.renderThumbnail) {
             this._$actionsContainer = this.$('.file-actions-container');
@@ -150,11 +166,11 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
 
             this._$actions.find('.file-download')
                 .bindProperty('href', this.model, 'downloadURL', {
-                    elementToModel: false
+                    elementToModel: false,
                 });
 
             this._$caption.bindProperty('href', this.model, 'downloadURL', {
-                elementToModel: false
+                elementToModel: false,
             });
 
             this.listenTo(this.model, 'change:loaded', this._onLoadedChanged);
@@ -166,66 +182,70 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         }
 
         if (this.options.canEdit !== false) {
-            this._$caption
-                .inlineEditor({
-                    editIconClass: 'rb-icon rb-icon-edit',
-                    showButtons: true
-                })
-                .on({
-                    beginEditPreShow: function() {
-                        self.$el.addClass('editing');
-                        self._stopAnimating();
-                    },
-                    beginEdit: function() {
-                        var $this = $(this);
+            this._captionEditorView = new RB.InlineEditorView({
+                el: this._$caption,
+                editIconClass: 'rb-icon rb-icon-edit',
+                showButtons: true,
+            });
+            this._captionEditorView.render();
 
-                        if ($this.hasClass('empty-caption')) {
-                            $this.inlineEditor('field').val('');
-                        }
+            this.listenTo(this._captionEditorView, 'beginEditPreShow', () => {
+                this.$el.addClass('editing');
+                this._stopAnimating();
+            });
 
-                        self.trigger('beginEdit');
-                    },
-                    cancel: function() {
-                        self.$el.removeClass('editing');
-                        self.trigger('endEdit');
-                    },
-                    complete: function(e, value) {
-                        self.$el.removeClass('editing');
+            this.listenTo(this._captionEditorView, 'beginEdit', () => {
+                if (this._$caption.hasClass('empty-caption')) {
+                    this._captionEditorView.$field.val('');
+                }
 
-                        /*
-                         * We want to set the caption after ready() finishes,
-                         * it case it loads state and overwrites.
-                         */
-                        self.model.ready({
-                            ready: function() {
-                                self.model.set('caption', value);
-                                self.trigger('endEdit');
-                                self.model.save({
-                                    attrs: ['caption']
-                                });
-                            }
+                this.trigger('beginEdit');
+            });
+
+            this.listenTo(this._captionEditorView, 'cancel', () => {
+                this.$el.removeClass('editing');
+                this.trigger('endEdit');
+            });
+
+            this.listenTo(this._captionEditorView, 'complete', (value) => {
+                this.$el.removeClass('editing');
+
+                /*
+                 * We want to set the caption after ready() finishes, in case
+                 * it loads state and overwrites.
+                 */
+                this.model.ready({
+                    ready: () => {
+                        this.model.set('caption', value);
+                        this.trigger('endEdit');
+                        this.model.save({
+                            attrs: ['caption'],
                         });
-                    }
+                    },
                 });
+            });
         }
 
         return this;
     },
 
-    fadeIn: function() {
+    /**
+     * Fade the view in.
+     */
+    fadeIn() {
         this.$el
             .css('opacity', 0)
             .fadeTo(1000, 1);
     },
 
-    /*
-     * Shows the comment dialog for the file attachment.
+    /**
+     * Show the comment dialog for the file attachment.
      *
      * This is only ever used if the file attachment does not have a
      * Review UI for it. A single comment dialog will appear, allowing
      * comments on the file as a whole.
      */
-    showCommentDlg: function() {
+    showCommentDlg() {
         console.assert(!this.model.get('reviewURL'),
                        'showCommentDlg can only be called if the file ' +
                        'attachment does not have a review UI');
@@ -240,57 +260,57 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
                 beside: {
                     el: this.$el,
                     side: 'br',
-                    fitOnScreen: true
-                }
-            }
+                    fitOnScreen: true,
+                },
+            },
         });
     },
 
-    /*
-     * Processes all comments provided when constructing the view.
+    /**
+     * Process all comments provided when constructing the view.
      *
      * The comments will be made usable by the comment dialog.
      *
      * This is only used if the file attachment does not have a Review UI.
      */
-    _processComments: function() {
-        var comments = this.options.comments || [],
-            len = comments.length,
-            comment,
-            i;
-
+    _processComments() {
         if (this._commentsProcessed) {
             return;
         }
 
-        for (i = 0; i < len; i++) {
-            comment = comments[i];
+        const comments = this.options.comments || [];
 
+        comments.forEach(comment => {
             if (comment.localdraft) {
                 this._createDraftComment(comment.comment_id, comment.text);
             } else {
                 this._comments.push(comment);
             }
-        }
+        });
 
         this._commentsProcessed = true;
     },
 
-    /*
-     * Creates a new draft comment with the given ID and text.
+    /**
+     * Create a new draft comment with the given ID and text.
      *
      * Only one draft comment can be created at a time.
      *
      * This is only used if the file attachment does not have a Review UI.
+     *
+     * Args:
+     *     commentID (number):
+     *         The ID of the draft comment.
+     *
+     *     text (string):
+     *         The comment text.
      */
-    _createDraftComment: function(commentID, text) {
-        var review;
-
+    _createDraftComment(commentID, text) {
         if (this._draftComment !== null) {
             return;
         }
 
-        review = this.options.reviewRequest.createReview();
+        const review = this.options.reviewRequest.createReview();
         this._draftComment = review.createFileAttachmentComment(commentID,
                                                                 this.model.id);
 
@@ -298,69 +318,68 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
             this._draftComment.set('text', text);
         }
 
-        this._draftComment.on('saved', function() {
-            this.trigger('commentSaved', this._draftComment);
-        }, this);
+        this.listenTo(this._draftComment, 'saved',
+                      () => this.trigger('commentSaved', this._draftComment));
     },
 
-    /*
-     * Renders the contents of this view's element.
+    /**
+     * Render the contents of this view's element.
      *
      * This is only done when requested by the caller.
      */
-    _renderContents: function() {
-        var caption = this.model.get('caption'),
-            captionText = caption ? caption : gettext('No caption'),
-            captionClass = caption ? 'edit' : 'edit empty-caption';
+    _renderContents() {
+        const caption = this.model.get('caption');
+        const captionText = caption ? caption : gettext('No caption');
+        const captionClass = caption ? 'edit' : 'edit empty-caption';
 
         this.$el
             .html(this.template(_.defaults({
                 caption: captionText,
-                captionClass: captionClass
+                captionClass: captionClass,
             }, this.model.attributes)))
             .addClass(this.className);
     },
 
-    /*
-     * Renders the thumbnail for the file attachment.
+    /**
+     * Render the thumbnail for the file attachment.
      */
-    _renderThumbnail: function() {
+    _renderThumbnail() {
         this._$thumbnailContainer.html(
             this.thumbnailContainerTemplate(this.model.attributes));
 
         Djblets.enableRetinaImages(this._$thumbnailContainer);
 
         // Disable tabbing to any <a> elements inside the thumbnail.
-        this._$thumbnailContainer.find('a').each(function() {
-            this.tabIndex = -1;
+        this._$thumbnailContainer.find('a').each((i, el) => {
+            el.tabIndex = -1;
         });
     },
 
-    /*
+    /**
      * Handler for when the model's 'loaded' property changes.
      *
      * Depending on if the file attachment is now loaded, either a
      * blank spinner thumbnail will be shown, or a full thumbnail.
      */
-    _onLoadedChanged: function() {
+    _onLoadedChanged() {
         this._$actions.html(this.actionsTemplate(_.defaults({
             canEdit: this.options.canEdit,
             deleteText: gettext('Delete'),
             downloadText: gettext('Download'),
             reviewText: gettext('Review'),
             commentText: gettext('Comment'),
-            updateText: gettext('Update')
+            updateText: gettext('Update'),
         }, this.model.attributes)));
     },
 
-    /*
+    /**
      * Handler for when the model's caption changes.
      *
      * If a caption is set, the thumbnail will display it. Otherwise,
      * it will display "No caption".
      */
-    _onCaptionChanged: function() {
-        var caption = this.model.get('caption');
+    _onCaptionChanged() {
+        const caption = this.model.get('caption');
 
         if (caption) {
             this._$caption
@@ -373,64 +392,70 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         }
     },
 
-    /*
+    /**
      * Handler for the New Comment button.
      *
      * Shows the comment dialog.
+     *
+     * Args:
+     *     e (Event):
+     *         The event that triggered the action.
      */
-    _onAddCommentClicked: function(e) {
+    _onAddCommentClicked(e) {
         e.preventDefault();
         e.stopPropagation();
 
         this.showCommentDlg();
     },
 
-    /*
+    /**
      * Handler for the Update button.
      *
      * Shows the upload form.
+     *
+     * Args:
+     *     e (Event):
+     *         The event that triggered the action.
      */
-    _onUpdateClicked: function(e) {
-        var updateDlg;
-
+    _onUpdateClicked(e) {
         e.preventDefault();
         e.stopPropagation();
 
-        updateDlg = new RB.UploadAttachmentView({
+        const updateDlg = new RB.UploadAttachmentView({
             attachmentHistoryID: $(e.target).data('attachment-history-id'),
             presetCaption: this.model.get('caption'),
-            reviewRequest: this.options.reviewRequest
+            reviewRequest: this.options.reviewRequest,
         });
         updateDlg.render();
     },
 
-    /*
+    /**
      * Handler for the Delete button.
      *
      * Deletes the file attachment from the review request draft.
+     *
+     * Args:
+     *     e (Event):
+     *         The event that triggered the action.
      */
-    _onDeleteClicked: function(e) {
+    _onDeleteClicked(e) {
         e.preventDefault();
         e.stopPropagation();
 
         this.model.destroy();
     },
 
-    /*
+    /**
      * Handler for when the mouse hovers over the thumbnail.
      *
      * Determines if we should scroll the thumbnail or not.
      */
-    _onHoverIn: function() {
-        var $thumbnail = this.$('.file-thumbnail').children(),
-            actionsWidth = this._$actionsContainer.outerWidth(),
-            actionsRight = this._$file.offset().left +
-                           this._$file.outerWidth() +
-                           actionsWidth,
-            elHeight,
-            thumbnailHeight,
-            distance,
-            duration;
+    _onHoverIn() {
+        const $thumbnail = this.$('.file-thumbnail').children();
+        const actionsWidth = this._$actionsContainer.outerWidth();
+        const actionsRight = (this._$file.offset().left +
+                              this._$file.outerWidth() +
+                              actionsWidth);
 
         this.trigger('hoverIn', this.$el);
 
@@ -449,12 +474,13 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         }
 
         if (!this.$el.hasClass('editing') && $thumbnail.length === 1) {
-            elHeight = this.$el.height();
-            thumbnailHeight = $thumbnail.height() || 0;
+            const elHeight = this.$el.height();
+            const thumbnailHeight = $thumbnail.height() || 0;
 
             if (thumbnailHeight > elHeight) {
-                distance = elHeight - thumbnailHeight;
-                duration = (Math.abs(distance) / 200) * 1000; // 200 pixels/s
+                const distance = elHeight - thumbnailHeight;
+                const duration =
+                    (Math.abs(distance) / 200) * 1000; // 200 pixels/s
 
                 this._scrollingThumbnail = true;
                 $thumbnail
@@ -463,7 +489,7 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
                         { 'margin-top': distance + 'px' },
                         {
                             duration: duration,
-                            easing: 'linear'
+                            easing: 'linear',
                         })
                     .delay(500)
                     .animate(
@@ -471,21 +497,21 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
                         {
                             duration: duration,
                             easing: 'linear',
-                            complete: _.bind(function() {
+                            complete: () => {
                                 this._scrollingThumbnail = false;
-                            }, this)
+                            },
                         });
             }
         }
     },
 
-    /*
+    /**
      * Handler for when the mouse stops hovering over the thumbnail.
      *
      * Removes the classes for the actions container, and stops animating
      * the thumbnail contents.
      */
-    _onHoverOut: function() {
+    _onHoverOut() {
         this.trigger('hoverOut');
 
         this._$actionsContainer
@@ -495,13 +521,13 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
         this._stopAnimating();
     },
 
-    /*
+    /**
      * Stop animating this thumbnail.
      *
      * This is when moving the mouse outside of the thumbnail, or when the
      * caption editor is opened.
      */
-    _stopAnimating: function() {
+    _stopAnimating() {
         if (this._scrollingThumbnail) {
             this._scrollingThumbnail = false;
             this.$('.file-thumbnail').children()
@@ -510,5 +536,5 @@ RB.FileAttachmentThumbnail = Backbone.View.extend({
                     { 'margin-top': 0 },
                     { duration: 100 });
         }
-    }
+    },
 });
