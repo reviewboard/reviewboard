@@ -6,22 +6,22 @@
  {{field.as_html}}
 {% end_review_request_field %}
  <p>
-{% with review_request_details.time_added|date as dateadded and review_request_details.last_updated as lastupdated and review_request_details.last_updated|date:"c" as lastupdatedraw and latest_diffset.timestamp|date:"c" as lastdiffdateraw and latest_diffset.timestamp as lastdiffdate %}
+{% with review_request_details.time_added|date as dateadded and latest_diffset.timestamp|date:"c" as lastdiffdateraw and latest_diffset.timestamp as lastdiffdate %}
 {%  blocktrans with review_request.display_id as review_request_id and review_request.get_absolute_url as review_request_url %}
    Review Request <a href="{{review_request_url}}">#{{review_request_id}}</a> -
 {%  endblocktrans %}
 {%  if review_request.status == 'S' %}
-{%   blocktrans %}
+{%   blocktrans with close_timestamp|date:"c" as closedateraw and close_timestamp as closedate %}
   Created {{dateadded}} and submitted
-  <time class="timesince" datetime="{{lastupdatedraw}}">{{lastupdated}}</time>
+  <time class="timesince" datetime="{{closedateraw}}">{{closedate}}</time>
 {%   endblocktrans %}
 {%  elif review_request.status == 'D' %}
-{%   blocktrans %}
+{%   blocktrans with close_timestamp|date:"c" as closedateraw and close_timestamp as closedate %}
   Created {{dateadded}} and discarded
-  <time class="timesince" datetime="{{lastupdatedraw}}">{{lastupdated}}</time>
+  <time class="timesince" datetime="{{closedateraw}}">{{closedate}}</time>
 {%   endblocktrans %}
 {%  elif review_request.status == 'P' %}
-{%   blocktrans %}
+{%   blocktrans with review_request_details.last_updated as lastupdated and review_request_details.last_updated|date:"c" as lastupdatedraw %}
   Created {{dateadded}} and updated
   <time class="timesince" datetime="{{lastupdatedraw}}">{{lastupdated}}</time>
 {%   endblocktrans %}

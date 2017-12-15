@@ -523,7 +523,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 # use that instead of looking up from the database again.
                 return obj._close_description_rich_text
             else:
-                return obj.get_close_description()[1]
+                return obj.get_close_info()['is_rich_text']
         else:
             return False
 
@@ -537,7 +537,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 # use that instead of looking up from the database again.
                 return obj._close_description
             else:
-                return obj.get_close_description()[0]
+                return obj.get_close_info()['close_description']
         else:
             return None
 
