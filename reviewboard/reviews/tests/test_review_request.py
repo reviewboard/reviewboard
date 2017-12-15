@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
 
+from warnings import catch_warnings
+
 from django.contrib.auth.models import User
-from django.utils import six
+from django.utils import six, timezone
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
@@ -19,6 +21,49 @@ class ReviewRequestTests(SpyAgency, TestCase):
     """Tests for reviewboard.reviews.models.ReviewRequest."""
 
     fixtures = ['test_users']
+
+    def test_get_close_description_deprecated(self):
+        """Testing ReviewRequest.get_close_description causes deprecation
+        warning
+        """
+        review_request = self.create_review_request(publish=True)
+
+        with catch_warnings(record=True) as w:
+            review_request.get_close_description()
+            self.assertEqual(len(w), 1)
+            self.assertTrue(issubclass(w[0].category, DeprecationWarning))
+            self.assertIn("deprecated", six.text_type(w[0].message))
+
+    def test_get_close_info_returns_correct_information(self):
+        """Testing ReviewRequest.get_close_info returns all necessary
+        information
+        """
+        review_request = self.create_review_request(publish=True)
+        review_request.close(close_type=ReviewRequest.SUBMITTED,
+                             description='test123', rich_text=True)
+        close_info = review_request.get_close_info()
+        self.assertIn('timestamp', close_info)
+        self.assertLess(close_info['timestamp'], timezone.now())
+        self.assertIn('close_description', close_info)
+        self.assertEqual(close_info['close_description'], 'test123')
+        self.assertIn('is_rich_text', close_info)
+        self.assertTrue(close_info['is_rich_text'])
+
+    def test_get_close_info_timestamp_not_updated_by_reviews(self):
+        """Testing ReviewRequest.get_close_info timestamp unnaffected by
+        subsequent reviews on review requests.
+        """
+        review_request = self.create_review_request(publish=True)
+        review_request.close(close_type=ReviewRequest.SUBMITTED,
+                             description='test123', rich_text=True)
+        past_close_info = review_request.get_close_info()
+        future = past_close_info['timestamp'] + timezone.timedelta(days=10)
+        review = self.create_review(review_request, publish=True,
+                                    timestamp=future)
+        close_info = review_request.get_close_info()
+        difference = review.timestamp.date() - close_info['timestamp'].date()
+        self.assertEqual(difference.days, 10)
+        self.assertEqual(past_close_info['timestamp'], close_info['timestamp'])
 
     def test_public_with_discard_reopen_submitted(self):
         """Testing ReviewRequest.public when discarded, reopened, submitted"""
