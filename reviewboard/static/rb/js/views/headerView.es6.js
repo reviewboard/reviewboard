@@ -1,4 +1,4 @@
-/*
+/**
  * Site Header
  */
 RB.HeaderView = Backbone.View.extend({
@@ -8,37 +8,52 @@ RB.HeaderView = Backbone.View.extend({
     events: {
         'click #nav_toggle': '_handleNavClick',
         'touchstart #nav_toggle': '_handleNavClick',
-        'focus #search_field': '_closeMobileMenu'
+        'focus #search_field': '_closeMobileMenu',
     },
 
-    /*
-     * Initializes the header.
+    /**
+     * Initialize the header.
      */
-    initialize: function() {
+    initialize() {
         this._mobileMenuOpened = false;
         this._$window = $(window);
         this._$body = $(document.body);
         this._$navToggle = $('#nav_toggle');
 
         this._$mobileMenuMask = $('<div id="mobile_menu_mask"/>')
-            .on('click touchstart', _.bind(this._closeMobileMenu, this))
+            .on('click touchstart', this._closeMobileMenu.bind(this))
             .insertAfter($('#mobile_navbar_container'));
 
         this._setupSearch();
 
-        this._$window.on('resize', _.throttle(_.bind(function() {
-            this._setMobileMode(this._$navToggle.is(':visible'));
-        }, this), 100));
+        this._$window.on('resize', _.throttle(
+            () => this._setMobileMode(this._$navToggle.is(':visible')),
+            100));
     },
 
-    _handleNavClick: function(e) {
+    /**
+     * Handle a click on the mobile navigation menu.
+     *
+     * Args:
+     *     e (Event):
+     *         The click event.
+     */
+    _handleNavClick(e) {
         e.stopPropagation();
         e.preventDefault();
 
         this._setMobileMenuOpened(!this._mobileMenuOpened);
     },
 
-    _setMobileMode: function(inMobileMode) {
+    /**
+     * Set whether the header is in mobile mode.
+     *
+     * Args:
+     *     inMobileMode (boolean):
+     *         Whether the header should display in a mode suitable for mobile
+     *         devices.
+     */
+    _setMobileMode(inMobileMode) {
         if (inMobileMode === this._inMobileMode) {
             return;
         }
@@ -50,41 +65,41 @@ RB.HeaderView = Backbone.View.extend({
         this._inMobileMode = inMobileMode;
     },
 
-    /*
-     * Closes the mobile menu.
+    /**
+     * Close the mobile menu.
      *
      * This is used as an event handler, to make it easy to close the
      * mobile menu and prevent any bubbling or default actions from the
      * event.
      */
-    _closeMobileMenu: function() {
+    _closeMobileMenu() {
         this._setMobileMenuOpened(false);
 
         return false;
     },
 
-    /*
-     * Sets up the search auto-complete field.
+    /**
+     * Set up the search auto-complete field.
      */
-    _setupSearch: function() {
+    _setupSearch() {
         this._$search = $('#search_field').rbautocomplete({
-            formatItem: _.bind(function(data) {
-                var s;
+            formatItem: data => {
+                let s;
 
                 if (data.username) {
-                    // For the format of users
+                    // For the format of users:
                     s = data.username;
 
                     if (data.fullname) {
-                        s += " <span>(" + _.escape(data.fullname) + ")</span>";
+                        s += ` <span>(${_.escape(data.fullname)})</span>`;
                     }
 
                 } else if (data.name) {
-                    // For the format of groups
-                    s = data.name;
-                    s += " <span>(" + _.escape(data.display_name) + ")</span>";
+                    // For the format of groups:
+                    const displayName = _.escape(data.display_name);
+                    s = `${data.name} <span>(${displayName})</span>`;
                 } else if (data.summary) {
-                    // For the format of review requests
+                    // For the format of review requests:
                     if (data.summary.length < this.SEARCH_SUMMARY_TRIM_LEN) {
                         s = data.summary;
                     } else {
@@ -92,11 +107,11 @@ RB.HeaderView = Backbone.View.extend({
                             0, this.SEARCH_SUMMARY_TRIM_LEN);
                     }
 
-                    s += " <span>(" + _.escape(data.id) + ")</span>";
+                    s += ` <span>(${_.escape(data.id)})</span>`;
                 }
 
                 return s;
-            }, this),
+            },
             matchCase: false,
             multiple: false,
             clickToURL: true,
@@ -105,36 +120,37 @@ RB.HeaderView = Backbone.View.extend({
             enterToURL: true,
             resultsParentEl: $('#page-container'),
             resultsClass: 'ui-autocomplete-results search-results',
-            parse: function(data) {
-                var jsonData = data,
-                    jsonDataSearch = jsonData.search,
-                    parsed = [],
-                    objects = ["users", "groups", "review_requests"],
-                    values = ["username", "name", "summary"],
-                    value,
-                    items,
-                    i,
-                    j;
+            parse: data => {
+                const objects = ['users', 'groups', 'review_requests'];
+                const keys = ['username', 'name', 'summary'];
 
-                for (j = 0; j < objects.length; j++) {
-                    items = jsonDataSearch[objects[j]];
+                const parsed = [];
 
-                    for (i = 0; i < items.length; i++) {
-                        value = items[i];
+                for (let j = 0; j < objects.length; j++) {
+                    const object = objects[j];
+                    const items = data.search[object];
+
+                    for (let i = 0; i < items.length; i++) {
+                        const value = items[i];
+                        const key = keys[j];
+
 
                         if (j !== 2) {
+                            // For users and groups, always show.
                             parsed.push({
                                 data: value,
-                                value: value[values[j]],
-                                result: value[values[j]]
+                                value: value[key],
+                                result: value[key],
                             });
                         } else if (value.public) {
-                            // Only show review requests that are public
-                            value.url = SITE_ROOT + "r/" + value.id;
+                            /*
+                             * For review requests, only show ones that are
+                             * public.
+                             */
                             parsed.push({
                                 data: value,
-                                value: value[values[j]],
-                                result: value[values[j]]
+                                value: value[key],
+                                result: value[key],
                             });
                         }
                     }
@@ -142,33 +158,30 @@ RB.HeaderView = Backbone.View.extend({
 
                 return parsed;
             },
-            url: SITE_ROOT + "api/" + "search/"
+            url: `${SITE_ROOT}api/search/`,
         });
     },
 
-
-    /*
+    /**
      * Set whether the mobile menu is opened.
+     *
+     * Args:
+     *     opened (boolean):
+     *         Whether the menu is open.
      */
-    _setMobileMenuOpened: function(opened) {
+    _setMobileMenuOpened(opened) {
         if (opened === this._mobileMenuOpened) {
             return;
         }
 
         if (opened) {
             this._$mobileMenuMask.show();
-
-            _.defer(_.bind(function() {
-                this._$body.addClass('mobile-menu-open');
-            }, this));
+            _.defer(() => this._$body.addClass('mobile-menu-open'));
         } else {
             this._$body.removeClass('mobile-menu-open');
-
-            _.delay(_.bind(function() {
-                this._$mobileMenuMask.hide();
-            }, this), 300);
+            _.delay(() => this._$mobileMenuMask.hide(), 300);
         }
 
         this._mobileMenuOpened = opened;
-    }
+    },
 });

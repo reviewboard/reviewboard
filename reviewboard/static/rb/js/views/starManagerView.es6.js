@@ -7,43 +7,37 @@
  */
 RB.StarManagerView = Backbone.View.extend({
     events: {
-        'click .star': '_toggleStar'
+        'click .star': '_toggleStar',
     },
 
     /**
      * Initialize the view.
      *
      * Args:
-     *     options (object):
+     *     options (object, optional):
      *         View initialization options.
      *
      * Option Args:
      *     datagridMode (boolean):
      *         Whether or not the manager is managing a datagrid.
      */
-    initialize: function(options) {
-        var objects = this.model.get('objects'),
-            starred = this.model.get('starred');
-
-        options = options || {};
+    initialize(options={}) {
+        const objects = this.model.get('objects');
+        const starred = this.model.get('starred');
 
         this._datagridMode = options.datagridMode;
 
-        this.$('div.star').each(function(idx, el) {
-            var $el = $(el),
-                objType = $el.attr('data-object-type'),
-                objID = $el.attr('data-object-id'),
-                objStarred = (parseInt($el.attr('data-starred'), 10) === 1),
-                obj;
+        this.$('div.star').each((idx, el) => {
+            const $el = $(el);
+            const objType = $el.attr('data-object-type');
+            const objID = $el.attr('data-object-id');
+            const objStarred = (parseInt($el.attr('data-starred'), 10) === 1);
+            let obj;
 
             if (objType === 'reviewrequests') {
-                obj = new RB.ReviewRequest({
-                    id: objID
-                });
+                obj = new RB.ReviewRequest({ id: objID });
             } else if (objType === 'groups') {
-                obj = new RB.ReviewGroup({
-                    id: objID
-                });
+                obj = new RB.ReviewGroup({ id: objID });
             } else if (objType !== undefined) {
                 console.assert('Unknown star object type: %s', objType);
             } else {
@@ -64,24 +58,20 @@ RB.StarManagerView = Backbone.View.extend({
         this._toUpdate = {};
 
         if (this._datagridMode) {
-            this.$el.on(
-                'datagridDisplayModeChanged',
-                _.bind(function($grid, options) {
-                    var objID;
-
-                    if (options.mode === 'desktop') {
-                        for (objID in this._toUpdate) {
-                            if (this._toUpdate.hasOwnProperty(objID)) {
-                                this._updateStarColumn(objID);
-                            }
+            this.$el.on('datagridDisplayModeChanged', ($grid, options) => {
+                if (options.mode === 'desktop') {
+                    for (let objID in this._toUpdate) {
+                        if (this._toUpdate.hasOwnProperty(objID)) {
+                            this._updateStarColumn(objID);
                         }
-
-                        this._watchUpdates = false;
-                        this._toUpdate = {};
-                    } else if (options.mode === 'mobile') {
-                        this._watchUpdates = true;
                     }
-                }, this));
+
+                    this._watchUpdates = false;
+                    this._toUpdate = {};
+                } else if (options.mode === 'mobile') {
+                    this._watchUpdates = true;
+                }
+            });
 
             if (this.$el.attr('data-datagrid-display-mode') === 'mobile') {
                 this._watchUpdates = true;
@@ -101,9 +91,9 @@ RB.StarManagerView = Backbone.View.extend({
      *     objID (string):
      *         The object's unique ID, as a string.
      */
-    _updateStarColumn: function(objID) {
-        var $el = this.$('.star[data-object-id="' + objID + '"]'),
-            starred = this.model.get('starred')[objID];
+    _updateStarColumn(objID) {
+        const $el = this.$(`.star[data-object-id="${objID}"]`);
+        const starred = this.model.get('starred')[objID];
 
         $el
             .toggleClass('rb-icon-star-on', starred)
@@ -122,12 +112,12 @@ RB.StarManagerView = Backbone.View.extend({
      *     e (Event):
      *         The click event.
      */
-    _toggleStar: function(e) {
-        var $target = $(e.target),
-            objID = $target.attr('data-object-id'),
-            obj = this.model.get('objects')[objID],
-            starred = this.model.get('starred'),
-            objStarred = !starred[objID];
+    _toggleStar(e) {
+        const $target = $(e.target);
+        const objID = $target.attr('data-object-id');
+        const obj = this.model.get('objects')[objID];
+        const starred = this.model.get('starred');
+        const objStarred = !starred[objID];
 
         e.preventDefault();
         e.stopPropagation();
@@ -153,5 +143,5 @@ RB.StarManagerView = Backbone.View.extend({
             .attr('title',
                   objStarred ? gettext('Starred')
                              : gettext('Click to star'));
-    }
+    },
 });

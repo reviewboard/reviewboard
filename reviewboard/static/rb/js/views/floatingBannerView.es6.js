@@ -1,4 +1,4 @@
-/*
+/**
  * Floats a banner on screen within a container.
  *
  * The banner will appear at the top of the container, or the screen,
@@ -9,17 +9,35 @@
  * This ensures that the page doesn't jump too horribly.
  */
 RB.FloatingBannerView = Backbone.View.extend({
-    initialize: function(options) {
+    /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view.
+     *
+     * Option Args:
+     *     $floatContainer (jQuery):
+     *         The container to use when the banner is floating.
+     *
+     *     noFloatContainerClass (string):
+     *         The class name used when the banner should not be floating.
+     */
+    initialize(options) {
         this.options = options;
         this._$floatSpacer = null;
 
         _.bindAll(this, '_updateFloatPosition', '_updateSize');
     },
 
-    /*
-     * Renders the banner and listens for scroll and resize updates.
+    /**
+     * Render the banner and listens for scroll and resize updates.
+     *
+     * Returns:
+     *     RB.FloatingBannerView:
+     *     This object, for chaining.
      */
-    render: function() {
+    render() {
         $(window)
             .scroll(this._updateFloatPosition)
             .resize(this._updateSize);
@@ -28,13 +46,13 @@ RB.FloatingBannerView = Backbone.View.extend({
         return this;
     },
 
-    /*
+    /**
      * Remove the view from the DOM.
      *
      * This will remove both the banner and the floating spacer (if currently
      * in the DOM).
      */
-    remove: function() {
+    remove() {
         if (this._$floatSpacer !== null) {
             this._$floatSpacer.remove();
         }
@@ -42,15 +60,14 @@ RB.FloatingBannerView = Backbone.View.extend({
         Backbone.View.prototype.remove.call(this);
     },
 
-    /*
-     * Updates the size of the banner to match the spacer.
+    /**
+     * Update the size of the banner to match the spacer.
      */
-    _updateSize: function() {
-        var rect;
-
+    _updateSize() {
         if (this._$floatSpacer !== null) {
             if (this.$el.hasClass('floating')) {
-                rect = this._$floatSpacer.parent()[0].getBoundingClientRect();
+                const rect =
+                    this._$floatSpacer.parent()[0].getBoundingClientRect();
 
                 this.$el.width(
                     Math.ceil(rect.width) -
@@ -61,24 +78,15 @@ RB.FloatingBannerView = Backbone.View.extend({
         }
     },
 
-    /*
-     * Updates the position of the banner.
+    /**
+     * Update the position of the banner.
      *
      * This will factor in how much of the container is visible, based on
      * its size, position, and the scroll offset. It will then attempt
      * to position the banner to the top of the visible portion of the
      * container.
      */
-    _updateFloatPosition: function() {
-        var $container,
-            containerTop,
-            containerBottom,
-            containerHeight,
-            wasFloating,
-            windowTop,
-            topOffset,
-            outerHeight;
-
+    _updateFloatPosition() {
         if (this.$el.parent().length === 0) {
             return;
         }
@@ -88,16 +96,15 @@ RB.FloatingBannerView = Backbone.View.extend({
             this._updateSize();
         }
 
-        $container = this.options.$floatContainer;
+        const $container = this.options.$floatContainer;
+        const containerTop = $container.offset().top;
+        const containerHeight = $container.outerHeight();
+        const containerBottom = containerTop + containerHeight;
+        const windowTop = $(window).scrollTop();
+        const topOffset = this._$floatSpacer.offset().top - windowTop;
+        const outerHeight = this.$el.outerHeight(true);
 
-        containerTop = $container.offset().top;
-        containerHeight = $container.outerHeight();
-        containerBottom = containerTop + containerHeight;
-        windowTop = $(window).scrollTop();
-        topOffset = this._$floatSpacer.offset().top - windowTop;
-        outerHeight = this.$el.outerHeight(true);
-
-        wasFloating = this.$el.hasClass('floating');
+        const wasFloating = this.$el.hasClass('floating');
 
         if (!$container.hasClass(this.options.noFloatContainerClass) &&
             topOffset < 0 &&
@@ -121,7 +128,7 @@ RB.FloatingBannerView = Backbone.View.extend({
                     .height(this.$el.outerHeight())
                     .css({
                         'margin-top': this.$el.css('margin-top'),
-                        'margin-bottom': this.$el.css('margin-bottom')
+                        'margin-bottom': this.$el.css('margin-bottom'),
                     });
 
                 this.$el
@@ -145,11 +152,11 @@ RB.FloatingBannerView = Backbone.View.extend({
                 .removeClass('floating')
                 .css({
                     top: '',
-                    position: ''
+                    position: '',
                 });
             this._$floatSpacer
                 .height('auto')
                 .css('margin', 0);
         }
-    }
+    },
 });
