@@ -263,7 +263,7 @@ class BaseComment(models.Model):
         local_site = review.review_request.local_site
 
         return (user.is_superuser or
-                user.pk == review.user or
+                user.pk == review.user_id or
                 (local_site and local_site.is_mutable_by(user)))
 
     def save(self, **kwargs):

@@ -43,6 +43,10 @@ suite('rb/views/CommentIssueBarView', function() {
                         options.ready.call(comment);
                     }
                 });
+            spyOn(comment, 'getAuthorUsername')
+                .and.callFake(function() {
+                    return 'doc';
+                });
         });
 
         it('Resolving as fixed', function() {

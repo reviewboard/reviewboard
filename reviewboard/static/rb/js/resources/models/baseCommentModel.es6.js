@@ -204,6 +204,18 @@ RB.BaseComment = RB.BaseResource.extend({
         const extraData = this.get('extraData');
         return extraData && extraData.require_verification === true;
     },
+
+    /**
+     * Return the username of the author of the comment.
+     *
+     * Returns:
+     *     boolean:
+     *     True if the current user is the author.
+     */
+    getAuthorUsername() {
+        const review = this.get('parentObject');
+        return review.get('links').user.title;
+    },
 }, {
     STATE_DROPPED: 'dropped',
     STATE_OPEN: 'open',
