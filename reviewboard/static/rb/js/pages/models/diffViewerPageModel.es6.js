@@ -100,8 +100,6 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
             queryArgs.push(`page=${options.page}`);
         }
 
-        this.set('canDownloadDiff', !options.interdiffRevision);
-
         $.ajax(`${reviewRequestURL}diff-context/?${queryArgs.join('&')}`)
             .done(rsp => this.set(this._parseDiffContext(rsp.diff_context)));
     },
@@ -135,6 +133,8 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
         }
 
         return {
+            canDownloadDiff: (rsp.revision &&
+                              rsp.revision.interdiff_revision === null),
             numDiffs: rsp.num_diffs || 0,
         };
     },

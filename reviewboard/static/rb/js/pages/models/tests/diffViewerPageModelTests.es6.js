@@ -247,9 +247,26 @@ suite('rb/pages/models/DiffViewerPage', function() {
                 parse: true,
             });
 
-            spyOn($, 'ajax').and.callFake(() => {
+            spyOn($, 'ajax').and.callFake(url => {
+                const query = {};
+                const queryParams = url.split('?')[1].split('&');
+
+                for (let i = 0; i < queryParams.length; i++) {
+                    const pair = queryParams[i].split('=');
+                    query[decodeURIComponent(pair[0])] =
+                        decodeURIComponent(pair[1]);
+                }
+
                 return {
-                    done: function() {},
+                    done: cb => cb({
+                        diff_context: {
+                            revision: {
+                                revision: query.revision,
+                                interdiff_revision:
+                                    query['interdiff-revision'] || null,
+                            },
+                        },
+                    }),
                 };
             });
         });
