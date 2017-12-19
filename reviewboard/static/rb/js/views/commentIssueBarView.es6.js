@@ -8,7 +8,7 @@
 RB.CommentIssueBarView = Backbone.View.extend({
     events: {
         'click .reopen': '_onReopenClicked',
-        'click .resolve': '_onResolveClicked',
+        'click .resolve': '_onFixedClicked',
         'click .drop': '_onDropClicked',
         'click .verify-dropped': '_onVerifyDroppedClicked',
         'click .verify-resolved': '_onVerifyFixedClicked',
@@ -191,14 +191,16 @@ RB.CommentIssueBarView = Backbone.View.extend({
      *
      * Marks the issue as fixed.
      */
-    _onResolveClicked() {
+    _onFixedClicked() {
         const comment = this._manager.getComment(this.options.reviewID,
                                                  this.options.commentID,
                                                  this.options.commentType);
 
         comment.ready({
             ready: () => {
-                if (comment.requiresVerification()) {
+                if (comment.requiresVerification() &&
+                    comment.getAuthorUsername() !==
+                        RB.UserSession.instance.get('username')) {
                     this._setStatus(RB.BaseComment.STATE_VERIFYING_RESOLVED);
                 } else {
                     this._setStatus(RB.BaseComment.STATE_RESOLVED);
@@ -219,7 +221,9 @@ RB.CommentIssueBarView = Backbone.View.extend({
 
         comment.ready({
             ready: () => {
-                if (comment.requiresVerification()) {
+                if (comment.requiresVerification() &&
+                    comment.getAuthorUsername() !==
+                        RB.UserSession.instance.get('username')) {
                     this._setStatus(RB.BaseComment.STATE_VERIFYING_DROPPED);
                 } else {
                     this._setStatus(RB.BaseComment.STATE_DROPPED);
