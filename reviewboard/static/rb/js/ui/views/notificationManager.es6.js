@@ -16,25 +16,28 @@ RB.NotificationManager = Backbone.View.extend({
      *
      */
     initialize() {
+        this._canNotify = false;
         this._notification = null;
     },
 
-   /**
-    * Set up the notification manager.
-    *
-    * This function will request permission to send desktop notifications
-    * if notifications are allowed in the users preferences, and the
-    * browser supports notifications.
-    *
-    * It must be called before attempting to send notifications.
-    */
-   setup() {
-       this._canNotify = (this.NotificationType !== undefined &&
-                          RB.UserSession.instance.get(
-                              'enableDesktopNotifications'));
+    /**
+     * Set up the notification manager.
+     *
+     * This function will request permission to send desktop notifications
+     * if notifications are allowed in the users preferences, and the
+     * browser supports notifications.
+     *
+     * It must be called before attempting to send notifications.
+     */
+    setup() {
+       const Notification = RB.NotificationManager.Notification;
+
+       this._canNotify = (
+           Notification !== undefined &&
+           RB.UserSession.instance.get('enableDesktopNotifications'));
 
        if (this._canNotify && !this._haveNotificationPermissions()) {
-           this.NotificationType.requestPermission();
+           Notification.requestPermission();
        }
     },
 
@@ -46,9 +49,10 @@ RB.NotificationManager = Backbone.View.extend({
      *     ``true`` if the user has enabled notifications in their browser
      *     Otherwise, ``false`` will be returned.
      */
-   _haveNotificationPermissions() {
-       return this.NotificationType.permission === 'granted';
-   },
+    _haveNotificationPermissions() {
+        return this._canNotify &&
+               RB.NotificationManager.Notification.permission === 'granted';
+    },
 
     /**
      * Return whether or not we should send notifications to the user.
@@ -60,7 +64,7 @@ RB.NotificationManager = Backbone.View.extend({
      *     the user has granted permission for notifications to the
      *     browser. Otherwise, ``false`` will be returned.
      */
-    shouldNotify: function() {
+    shouldNotify() {
         return this._canNotify && this._haveNotificationPermissions();
     },
 
@@ -87,6 +91,10 @@ RB.NotificationManager = Backbone.View.extend({
      *         needn't close the notification with this
      */
     notify(options) {
+        if (!this._canNotify) {
+            return;
+        }
+
         if (this._notification) {
             this._notification.close();
         }
@@ -95,24 +103,25 @@ RB.NotificationManager = Backbone.View.extend({
             options.hasOwnProperty('title'),
             'RB.NotificationManager.notify requires "title" property');
 
-        this._notification = new RB.NotificationManager.Notification(
-            options.title, {
-                text: options.body,
-                icon: options.iconURL
+        const notification = new RB.NotificationManager.Notification(
+            options.title,
+            {
+                body: options.body,
+                icon: options.iconURL,
             });
 
-        const notification = this._notification;
+        this._notification = notification;
 
-        this._notification.onclick = function() {
+        notification.onclick = function() {
             if (_.isFunction(options.onClick)) {
-                options.onclick();
+                options.onClick();
             }
 
             notification.close();
         };
 
-        _.delay(notification.close.bind(notification),
-                this.NOTIFICATION_LIFETIME_MSECS);
+        _.delay(() => notification.close(),
+                RB.NotificationManager.NOTIFICATION_LIFETIME_MSECS);
      }
 }, {
     instance: null,
