@@ -7,9 +7,14 @@ suite('rb/utils/linkifyUtils', function() {
 
             RB.LinkifyUtils.linkifyChildren($el[0]);
 
-            expect($el.html()).toBe(
-                '<span><a target="_blank" href="http://example.com">' +
-                'http://example.com</a></span>');
+            const $span = $el.children('span');
+            expect($span.length).toBe(1);
+
+            const $a = $span.children('a');
+            expect($a.length).toBe(1);
+            expect($a.attr('target')).toBe('_blank');
+            expect($a.attr('href')).toBe('http://example.com');
+            expect($a.text()).toBe('http://example.com');
         });
 
         it('Bugs', function() {
@@ -17,9 +22,14 @@ suite('rb/utils/linkifyUtils', function() {
 
             RB.LinkifyUtils.linkifyChildren($el[0], bugTrackerURL);
 
-            expect($el.html()).toBe(
-                '<span><a target="_blank" href="http://issues/?id=123">' +
-                'Bug #123</a></span>');
+            const $span = $el.children('span');
+            expect($span.length).toBe(1);
+
+            const $a = $span.children('a');
+            expect($a.length).toBe(1);
+            expect($a.attr('target')).toBe('_blank');
+            expect($a.attr('href')).toBe('http://issues/?id=123');
+            expect($a.text()).toBe('Bug #123');
         });
 
         it('/r/ paths', function() {
@@ -27,9 +37,15 @@ suite('rb/utils/linkifyUtils', function() {
 
             RB.LinkifyUtils.linkifyChildren($el[0]);
 
-            expect($el.html()).toBe(
-                '<span><a target="_blank" href="/r/123/" ' +
-                'class="review-request-link">/r/123/</a></span>');
+            const $span = $el.children('span');
+            expect($span.length).toBe(1);
+
+            const $a = $span.children('a');
+            expect($a.length).toBe(1);
+            expect($a.attr('target')).toBe('_blank');
+            expect($a.attr('href')).toBe('/r/123/');
+            expect($a.attr('class')).toBe('review-request-link');
+            expect($a.text()).toBe('/r/123/');
         });
 
         it('Skips <a> elements', function() {
@@ -38,8 +54,14 @@ suite('rb/utils/linkifyUtils', function() {
 
             RB.LinkifyUtils.linkifyChildren($el[0]);
 
-            expect($el.html()).toBe(
-                '<span><a href="http://example.com">/r/123</a></span>');
+            const $span = $el.children('span');
+            expect($span.length).toBe(1);
+
+            const $a = $span.children('a');
+            expect($a.length).toBe(1);
+            expect($a.attr('target')).toBe(undefined);
+            expect($a.attr('href')).toBe('http://example.com');
+            expect($a.text()).toBe('/r/123');
         });
 
         it('Skips <pre> elements', function() {
