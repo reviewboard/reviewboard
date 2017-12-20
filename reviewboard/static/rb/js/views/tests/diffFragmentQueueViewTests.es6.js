@@ -92,6 +92,44 @@ suite('rb/views/DiffFragmentQueueView', function() {
             expect($container3.html()).toBe('<span>Comment 3</span>');
         });
 
+        it('With Unicode content', function() {
+            const urls = [
+                `${URL_PREFIX}123,124/`,
+                `${URL_PREFIX}125/`,
+            ];
+
+            spyOn($, 'ajax').and.callFake(
+                function(options) {
+                    const url = options.url;
+
+                    if (url === urls[0]) {
+                        const html1 = '<span>áéíóú</span>';
+                        const html2 = '<span>ÄËÏÖÜŸ</span>';
+
+                        options.success(`123\n18\n${html1}` +
+                                        `124\n19\n${html2}`);
+                    } else if (url === urls[1]) {
+                        const html = '<span>ĀĒĪŌ</span>';
+                        options.success(`125\n${html.length}\n${html}`);
+                    } else {
+                        fail(`Unexpected URL ${url}`);
+                    }
+                });
+
+            fragmentQueue.loadFragments();
+
+            expect($.ajax.calls.count()).toBe(2);
+
+            expect($container1.data('diff-fragment-view')).toBeTruthy();
+            expect($container1.html()).toBe('<span>áéíóú</span>');
+
+            expect($container2.data('diff-fragment-view')).toBeTruthy();
+            expect($container2.html()).toBe('<span>ÄËÏÖÜŸ</span>');
+
+            expect($container3.data('diff-fragment-view')).toBeTruthy();
+            expect($container3.html()).toBe('<span>ĀĒĪŌ</span>');
+        });
+
         it('With saved fragments', function() {
             const urls = [
                 `${URL_PREFIX}124/`,

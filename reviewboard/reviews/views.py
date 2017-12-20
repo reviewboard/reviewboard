@@ -968,13 +968,13 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
             html (unicode):
                 The HTML to write.
         """
-        metadata = json.dumps(metadata).encode('utf-8')
-        html = html.strip().encode('utf-8')
+        metadata = json.dumps(metadata)
+        html = html.strip()
 
         payload.write(b'%d\n' % len(metadata))
-        payload.write(metadata)
+        payload.write(metadata.encode('utf-8'))
         payload.write(b'%d\n' % len(html))
-        payload.write(html)
+        payload.write(html.encode('utf-8'))
 
 
 class ReviewsDiffViewerView(ReviewRequestViewMixin, DiffViewerView):
@@ -1424,11 +1424,11 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
             show_controls=allow_expansion)[1]
 
         for entry in comment_entries:
-            html = entry['html'].strip().encode('utf-8')
+            html = entry['html'].strip()
 
             payload.write(b'%s\n' % entry['comment'].pk)
             payload.write(b'%d\n' % len(html))
-            payload.write(html)
+            payload.write(html.encode('utf-8'))
 
         result = payload.getvalue()
         payload.close()

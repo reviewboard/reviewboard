@@ -52,11 +52,14 @@ class TestTool(GitTool):
                 b"1.7.1",
             ]))
 
-    def get_file(self, path, revision):
-        return 'Hello, world!\n'
+    def get_file(self, path, revision, **kwargs):
+        if path.startswith('/data:'):
+            return b'%s\n' % path.split(':', 1)[1].encode('utf-8')
+
+        return b'Hello, world!\n'
 
     def file_exists(self, path, revision, **kwargs):
-        if path == '/FILE_FOUND':
+        if path == '/FILE_FOUND' or path.startswith('/data:'):
             return True
 
         return super(TestTool, self).file_exists(path, revision, **kwargs)

@@ -1,3 +1,4 @@
+# coding: utf-8
 from __future__ import unicode_literals
 
 from datetime import timedelta
@@ -1305,6 +1306,49 @@ class CommentDiffFragmentsViewTests(TestCase):
                             local_site_name='local-site-1',
                             expected_status=403)
 
+    def test_get_with_unicode(self):
+        """Testing comment_diff_fragments with Unicode content"""
+        user = User.objects.create(username='reviewer')
+
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(
+            diffset,
+            source_file='/data:áéíóú',
+            dest_file='/data:ÄËÏÖÜŸ',
+            diff=(
+                'diff --git a/data b/data\n'
+                'index abcd123..abcd124 100644\n'
+                '--- a/data\n'
+                '+++ b/data\n'
+                '@@ -1,1 +1,1 @@\n'
+                '-áéíóú\n'
+                '+ÄËÏÖÜŸ\n'
+            ).encode('utf-8'))
+
+        review = self.create_review(review_request, user=user)
+        comment1 = self.create_diff_comment(review, filediff)
+        comment2 = self.create_diff_comment(review, filediff)
+        review.publish()
+
+        fragments = self._get_fragments(review_request,
+                                        [comment1.pk, comment2.pk])
+        self.assertEqual(len(fragments), 2)
+
+        comment_id, html = fragments[0]
+        self.assertEqual(comment_id, comment1.pk)
+        self.assertTrue(html.startswith('<table class="sidebyside'))
+        self.assertTrue(html.endswith('</table>'))
+        self.assertIn('áéíóú', html)
+
+        comment_id, html = fragments[1]
+        self.assertEqual(comment_id, comment2.pk)
+        self.assertTrue(html.startswith('<table class="sidebyside'))
+        self.assertTrue(html.endswith('</table>'))
+        self.assertIn('ÄËÏÖÜŸ', html)
+
     def test_get_with_valid_comment_ids(self):
         """Testing comment_diff_fragments with valid comment ID"""
         user = User.objects.create(username='reviewer')
@@ -1465,17 +1509,17 @@ class CommentDiffFragmentsViewTests(TestCase):
             return None
 
         i = 0
-        content = response.content
+        content = response.content.decode('utf-8')
         results = []
 
         while i < len(content):
             # Read the comment ID.
-            j = content.index(b'\n', i)
+            j = content.index('\n', i)
             comment_id = int(content[i:j])
             i = j + 1
 
             # Read the length of the HTML.
-            j = content.index(b'\n', i)
+            j = content.index('\n', i)
             html_len = int(content[i:j])
             i = j + 1
 

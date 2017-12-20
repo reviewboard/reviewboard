@@ -371,6 +371,90 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
 
                 expect(page.trigger).toHaveBeenCalledWith('updatesProcessed');
             });
+
+            it('Updates containing Unicode in HTML', function() {
+                spyOn(entry1, 'beforeApplyUpdate');
+                spyOn(entry1, 'afterApplyUpdate');
+                spyOn(entry2, 'beforeApplyUpdate');
+                spyOn(entry2, 'afterApplyUpdate');
+
+                page._processUpdates([
+                    '177\n',
+                    '{"type": "entry", "entryType": "my-entry", ',
+                    '"entryID": "1", "addedTimestamp": "2017-07-01T00:00:00", ',
+                    '"updatedTimestamp": "2017-09-04T14:30:20", ',
+                    '"modelData": {"myAttr": "value1"}}',
+                    '12\n',
+                    '<p>áéíóú</p>',
+                    '177\n',
+                    '{"type": "entry", "entryType": "my-entry", ',
+                    '"entryID": "2", "addedTimestamp": "2017-07-01T00:00:00", ',
+                    '"updatedTimestamp": "2017-09-03T14:30:20", ',
+                    '"modelData": {"myAttr": "value2"}}',
+                    '13\n',
+                    '<p>ÄËÏÖÜŸ</p>',
+                ].join(''));
+
+                /* Check the first entry's updates and events. */
+                const metadata1 = {
+                    type: 'entry',
+                    entryType: 'my-entry',
+                    entryID: '1',
+                    addedTimestamp: '2017-07-01T00:00:00',
+                    updatedTimestamp: '2017-09-04T14:30:20',
+                    modelData: {
+                        myAttr: 'value1',
+                    },
+                };
+                const html1 = '<p>áéíóú</p>';
+
+                expect(entry1.get('myAttr')).toBe('value1');
+                expect(entry1.beforeApplyUpdate)
+                    .toHaveBeenCalledWith(metadata1);
+                expect(entry1.afterApplyUpdate)
+                    .toHaveBeenCalledWith(metadata1);
+                expect(page.trigger).toHaveBeenCalledWith(
+                    'applyingUpdate:entry', metadata1, html1);
+                expect(page.trigger).toHaveBeenCalledWith(
+                    'applyingUpdate:entry:1', metadata1, html1);
+                expect(page.trigger).toHaveBeenCalledWith(
+                    'appliedModelUpdate:entry:1', metadata1, html1);
+                expect(page.trigger).toHaveBeenCalledWith(
+                    'appliedUpdate:entry:1', metadata1, html1);
+                expect(page.trigger).toHaveBeenCalledWith(
+                    'appliedUpdate:entry', metadata1, html1);
+
+                /* Check the second entry's updates and events. */
+                const metadata2 = {
+                    type: 'entry',
+                    entryType: 'my-entry',
+                    entryID: '2',
+                    addedTimestamp: '2017-07-01T00:00:00',
+                    updatedTimestamp: '2017-09-03T14:30:20',
+                    modelData: {
+                        myAttr: 'value2',
+                    },
+                };
+                const html2 = '<p>ÄËÏÖÜŸ</p>';
+
+                expect(entry2.get('myAttr')).toBe('value2');
+                expect(entry2.beforeApplyUpdate)
+                    .toHaveBeenCalledWith(metadata2);
+                expect(entry2.afterApplyUpdate)
+                    .toHaveBeenCalledWith(metadata2);
+                expect(page.trigger).toHaveBeenCalledWith(
+                    'applyingUpdate:entry', metadata2, html2);
+                expect(page.trigger).toHaveBeenCalledWith(
+                    'applyingUpdate:entry:2', metadata2, html2);
+                expect(page.trigger).toHaveBeenCalledWith(
+                    'appliedModelUpdate:entry:2', metadata2, html2);
+                expect(page.trigger).toHaveBeenCalledWith(
+                    'appliedUpdate:entry:2', metadata2, html2);
+                expect(page.trigger).toHaveBeenCalledWith(
+                    'appliedUpdate:entry', metadata2, html2);
+
+                expect(page.trigger).toHaveBeenCalledWith('updatesProcessed');
+            });
         });
     });
 });
