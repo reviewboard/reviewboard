@@ -127,7 +127,7 @@ RB.ReviewRequestPage.ChangeEntryView = ParentView.extend({
                         .text(interpolate(gettext('%s failed'),
                                           [openIssueCount]))
                 )
-                .append(gettext('Fix it!'))
+                .append(document.createTextNode(gettext('Fix it!')))
                 .show()
                 .css({
                     opacity: 1,
