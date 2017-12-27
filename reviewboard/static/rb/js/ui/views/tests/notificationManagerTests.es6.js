@@ -2,7 +2,7 @@ suite('rb/ui/managers/NotificationManagerModel', function() {
     const instance = RB.NotificationManager.instance;
     let origNotification;
 
-    Notification = function(title, options) {
+    const Notification = function(title, options) {
         this.title = title;
         this.options = options;
         this.close = function() {};
