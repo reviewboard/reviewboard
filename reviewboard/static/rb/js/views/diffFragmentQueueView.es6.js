@@ -98,9 +98,17 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
      *
      * Any existing fragments that were saved will be loaded from the cache
      * without requesting them from the server.
+     *
+     * Args:
+     *     onDone (function, optional):
+     *         Callback for when all fragments have been loaded.
      */
-    loadFragments() {
+    loadFragments(onDone) {
         if (_.isEmpty(this._queue) && _.isEmpty(this._saved)) {
+            if (_.isFunction(onDone)) {
+                onDone();
+            }
+
             return;
         }
 
@@ -158,7 +166,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                                 onFragmentRenderedFuncs[commentID](view);
                             }
                         },
-                        onDone: $.funcQueue(queueName).next(),
+                        onDone: () => $.funcQueue(queueName).next(),
                     });
                 } else {
                     /*
@@ -169,6 +177,13 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                 }
             });
         });
+
+        if (_.isFunction(onDone)) {
+            $.funcQueue(queueName).add(() => {
+                onDone();
+                $.funcQueue(queueName).next();
+            });
+        }
 
         // Clear the list.
         this._queue = {};
@@ -235,28 +250,20 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
 
         queryArgs.push(TEMPLATE_SERIAL);
 
-        $.ajax({
+        RB.apiCall({
             url: `${this._fragmentsBasePath}${commentIDs}/`,
             data: queryArgs.join('&'),
-            dataType: 'text',
-            success: data => {
-                let i = 0;
+            dataType: 'arraybuffer',
+            type: 'GET',
+            success: arrayBuffer => {
+                const dataView = new DataView(arrayBuffer);
+                const len = dataView.byteLength;
+                let pos = 0;
+                let totalFragments = 0;
+                let totalRenders = 0;
+                let done = false;
 
-                while (i < data.length) {
-                    /* Read the comment ID. */
-                    let j = data.indexOf('\n', i);
-                    const commentID = data.substr(i, j - i);
-                    i = j + 1;
-
-                    /* Read the length of the HTML. */
-                    j = data.indexOf('\n', i);
-                    const htmlLen = parseInt(data.substr(i, j - i), 10);
-                    i = j + 1;
-
-                    /* Read the HTML. */
-                    const html = data.substr(i, htmlLen);
-                    i += htmlLen;
-
+                const onFragmentLoaded = (commentID, html) => {
                     /* Set the HTML in the container. */
                     const view = this._renderFragment(
                         $(`#${containerPrefix}_${commentID}`),
@@ -266,13 +273,85 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                     if (onFragmentRendered) {
                         onFragmentRendered(commentID, view);
                     }
+
+                    totalRenders++;
+
+                    if (done && totalRenders === totalFragments &&
+                        _.isFunction(options.onDone)) {
+                        /*
+                         * We've parsed and rendered all fragments, so we're
+                         * officially done.
+                         */
+                        options.onDone();
+                    }
                 }
 
-                if (_.isFunction(options.onDone)) {
-                    options.onDone();
+                while (!done) {
+                    const parsed = this._parseDiffFragmentFromPayload(
+                        arrayBuffer, dataView, pos);
+
+                    totalFragments++;
+                    pos += parsed.pos;
+                    done = (pos >= len);
+
+                    parsed.load(onFragmentLoaded);
                 }
             }
         });
+    },
+
+    /**
+     * Parse a single diff fragment from the payload.
+     *
+     * This will parse out information about the fragment (the comment ID and
+     * HTML) and return a response containing the new position and a function
+     * to call in order to load the parsed fragment.
+     *
+     * Args:
+     *     arrayBuffer (ArrayBuffer):
+     *         The array buffer being parsed.
+     *
+     *     dataView (DataView):
+     *         The data view on top of the array buffer, used to extract
+     *         information.
+     *
+     *     pos (number):
+     *         The current position within the array buffer.
+     *
+     * Returns:
+     *     object:
+     *     An object with two keys:
+     *
+     *     ``pos``:
+     *         The next position to parse.
+     *
+     *     ``load``:
+     *         A function for loading the fragment content. This takes a
+     *         callback function as an argument containing ``commentID`` and
+     *         ``html`` arguments.
+     */
+    _parseDiffFragmentFromPayload(arrayBuffer, dataView, pos) {
+        /* Read the comment ID. */
+        const commentID = dataView.getUint32(pos, true);
+        pos += 4;
+
+        /* Read the length of the HTML. */
+        const htmlLen = dataView.getUint32(pos, true);
+        pos += 4;
+
+        /* Read the HTML position for later. */
+        const htmlStart = pos;
+        pos += htmlLen;
+
+        return {
+            pos: pos,
+            load(cb) {
+                RB.DataUtils.readBlobAsString(
+                    new Blob([arrayBuffer.slice(htmlStart,
+                                                htmlStart + htmlLen)]),
+                    html => cb(commentID, html));
+            },
+        };
     },
 
     /**

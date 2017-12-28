@@ -4,6 +4,7 @@
 from __future__ import unicode_literals
 
 import json
+import struct
 from datetime import datetime, timedelta
 
 from django.core.urlresolvers import reverse
@@ -355,27 +356,27 @@ class ReviewRequestUpdatesViewTests(TestCase):
         response = self.client.get(self._build_url(), query)
         self.assertEqual(response.status_code, 200)
 
-        content = response.content.decode('utf-8')
-        updates = []
+        content = response.content
+        self.assertIs(type(content), bytes)
+
         i = 0
+        updates = []
 
         while i < len(content):
             # Read the length of the metadata.
-            j = content.index('\n', i)
-            metadata_len = int(content[i:j])
-            i = j + 1
+            metadata_len = struct.unpack_from('<L', content, i)[0]
+            i += 4
 
             # Read the metadata.
-            metadata = json.loads(content[i:i + metadata_len])
+            metadata = json.loads(content[i:i + metadata_len].decode('utf-8'))
             i += metadata_len
 
             # Read the length of the HTML.
-            j = content.index('\n', i)
-            html_len = int(content[i:j])
-            i = j + 1
+            html_len = struct.unpack_from('<L', content, i)[0]
+            i += 4
 
             # Read the HTML.
-            html = content[i:i + html_len]
+            html = content[i:i + html_len].decode('utf-8')
             i += html_len
 
             updates.append((metadata, html))

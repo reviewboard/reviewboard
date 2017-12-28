@@ -185,7 +185,7 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                 .toBe('/r/123/_updates/?entries=my-entry:100,200' +
                       ';another-entry:foo');
             expect(callOptions.noActivityIndicator).toBe(true);
-            expect(callOptions.dataType).toBe('text');
+            expect(callOptions.dataType).toBe('arraybuffer');
         });
 
         describe('Response parsing', function() {
@@ -222,238 +222,397 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                 page.addEntry(entry2);
             });
 
-            it('Updates to outdated entries', function() {
+            it('Updates to outdated entries', function(done) {
                 spyOn(entry1, 'beforeApplyUpdate');
                 spyOn(entry1, 'afterApplyUpdate');
                 spyOn(entry2, 'beforeApplyUpdate');
                 spyOn(entry2, 'afterApplyUpdate');
 
-                page._processUpdates([
-                    '177\n',
-                    '{"type": "entry", "entryType": "my-entry", ',
-                    '"entryID": "1", "addedTimestamp": "2017-07-01T00:00:00", ',
-                    '"updatedTimestamp": "2017-09-04T14:30:20", ',
-                    '"modelData": {"myAttr": "value1"}}',
-                    '15\n',
-                    '<p>My HTML!</p>',
-                    '177\n',
-                    '{"type": "entry", "entryType": "my-entry", ',
-                    '"entryID": "2", "addedTimestamp": "2017-07-01T00:00:00", ',
-                    '"updatedTimestamp": "2017-09-03T14:30:20", ',
-                    '"modelData": {"myAttr": "value2"}}',
-                    '13\n',
-                    '<p>Oh hi!</p>',
-                ].join(''));
+                spyOn($, 'ajax').and.callFake(function(options) {
+                    expect(options.dataType).toBe('arraybuffer');
+                    expect(options.url).toBe('/r/123/_updates/');
 
-                /* Check the first entry's updates and events. */
-                const metadata1 = {
-                    type: 'entry',
-                    entryType: 'my-entry',
-                    entryID: '1',
-                    addedTimestamp: '2017-07-01T00:00:00',
-                    updatedTimestamp: '2017-09-04T14:30:20',
-                    modelData: {
-                        myAttr: 'value1',
+                    const metadata1 = new Blob([
+                        '{"type": "entry", ',
+                        '"entryType": "my-entry", ',
+                        '"entryID": "1", ',
+                        '"addedTimestamp": "2017-07-01T00:00:00", ',
+                        '"updatedTimestamp": "2017-09-04T14:30:20", ',
+                        '"modelData": {"myAttr": "value1"}}',
+                    ]);
+                    const metadata2 = new Blob([
+                        '{"type": "entry", ',
+                        '"entryType": "my-entry", ',
+                        '"entryID": "2", ',
+                        '"addedTimestamp": "2017-07-01T00:00:00", ',
+                        '"updatedTimestamp": "2017-09-03T14:30:20", ',
+                        '"modelData": {"myAttr": "value2"}}',
+                    ]);
+
+                    const html1 = new Blob(['<p>My HTML!</p>']);
+                    const html2 = new Blob(['<p>Oh hi!</p>']);
+
+                    const blob = RB.DataUtils.buildBlob([
+                        [{
+                            type: 'uint32',
+                            values: [177],
+                        }],
+                        metadata1,
+                        [{
+                            type: 'uint32',
+                            values: [15],
+                        }],
+                        html1,
+                        [{
+                            type: 'uint32',
+                            values: [177],
+                        }],
+                        metadata2,
+                        [{
+                            type: 'uint32',
+                            values: [13],
+                        }],
+                        html2,
+                    ]);
+
+                    RB.DataUtils.readBlobAsArrayBuffer(blob, options.success);
+                });
+
+                page._loadUpdates({
+                    onDone: () => {
+                        /* Check the first entry's updates and events. */
+                        const metadata1 = {
+                            type: 'entry',
+                            entryType: 'my-entry',
+                            entryID: '1',
+                            addedTimestamp: '2017-07-01T00:00:00',
+                            updatedTimestamp: '2017-09-04T14:30:20',
+                            modelData: {
+                                myAttr: 'value1',
+                            },
+                        };
+                        const html1 = '<p>My HTML!</p>';
+
+                        expect(entry1.get('myAttr')).toBe('value1');
+                        expect(entry1.beforeApplyUpdate)
+                            .toHaveBeenCalledWith(metadata1);
+                        expect(entry1.afterApplyUpdate)
+                            .toHaveBeenCalledWith(metadata1);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'applyingUpdate:entry', metadata1, html1);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'applyingUpdate:entry:1', metadata1, html1);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedModelUpdate:entry:1', metadata1, html1);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedUpdate:entry:1', metadata1, html1);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedUpdate:entry', metadata1, html1);
+
+                        /* Check the second entry's updates and events. */
+                        const metadata2 = {
+                            type: 'entry',
+                            entryType: 'my-entry',
+                            entryID: '2',
+                            addedTimestamp: '2017-07-01T00:00:00',
+                            updatedTimestamp: '2017-09-03T14:30:20',
+                            modelData: {
+                                myAttr: 'value2',
+                            },
+                        };
+                        const html2 = '<p>Oh hi!</p>';
+
+                        expect(entry2.get('myAttr')).toBe('value2');
+                        expect(entry2.beforeApplyUpdate)
+                            .toHaveBeenCalledWith(metadata2);
+                        expect(entry2.afterApplyUpdate)
+                            .toHaveBeenCalledWith(metadata2);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'applyingUpdate:entry', metadata2, html2);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'applyingUpdate:entry:2', metadata2, html2);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedModelUpdate:entry:2', metadata2, html2);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedUpdate:entry:2', metadata2, html2);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedUpdate:entry', metadata2, html2);
+
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'updatesProcessed');
+
+                        done();
                     },
-                };
-                const html1 = '<p>My HTML!</p>';
-
-                expect(entry1.get('myAttr')).toBe('value1');
-                expect(entry1.beforeApplyUpdate)
-                    .toHaveBeenCalledWith(metadata1);
-                expect(entry1.afterApplyUpdate)
-                    .toHaveBeenCalledWith(metadata1);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'applyingUpdate:entry', metadata1, html1);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'applyingUpdate:entry:1', metadata1, html1);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'appliedModelUpdate:entry:1', metadata1, html1);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'appliedUpdate:entry:1', metadata1, html1);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'appliedUpdate:entry', metadata1, html1);
-
-                /* Check the second entry's updates and events. */
-                const metadata2 = {
-                    type: 'entry',
-                    entryType: 'my-entry',
-                    entryID: '2',
-                    addedTimestamp: '2017-07-01T00:00:00',
-                    updatedTimestamp: '2017-09-03T14:30:20',
-                    modelData: {
-                        myAttr: 'value2',
-                    },
-                };
-                const html2 = '<p>Oh hi!</p>';
-
-                expect(entry2.get('myAttr')).toBe('value2');
-                expect(entry2.beforeApplyUpdate)
-                    .toHaveBeenCalledWith(metadata2);
-                expect(entry2.afterApplyUpdate)
-                    .toHaveBeenCalledWith(metadata2);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'applyingUpdate:entry', metadata2, html2);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'applyingUpdate:entry:2', metadata2, html2);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'appliedModelUpdate:entry:2', metadata2, html2);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'appliedUpdate:entry:2', metadata2, html2);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'appliedUpdate:entry', metadata2, html2);
-
-                expect(page.trigger).toHaveBeenCalledWith('updatesProcessed');
+                });
             });
 
-            it('Updates to up-to-date entries', function() {
+            it('Updates to up-to-date entries', function(done) {
                 entry1.set('myAttr', 'existing-value');
 
                 spyOn(entry1, 'beforeApplyUpdate');
                 spyOn(entry1, 'afterApplyUpdate');
 
-                page._processUpdates([
-                    '177\n',
-                    '{"type": "entry", "entryType": "my-entry", ',
-                    '"entryID": "1", "addedTimestamp": "2016-09-04T14:30:20", ',
-                    '"updatedTimestamp": "2016-12-10T12:24:14", ',
-                    '"modelData": {"myAttr": "value1"}}',
-                    '15\n',
-                    '<p>My HTML!</p>',
-                ].join(''));
+                spyOn($, 'ajax').and.callFake(function(options) {
+                    expect(options.dataType).toBe('arraybuffer');
+                    expect(options.url).toBe('/r/123/_updates/');
 
-                /* Check the first entry's updates and events. */
-                const metadata1 = {
-                    type: 'entry',
-                    entryType: 'my-entry',
-                    entryID: '1',
-                    addedTimestamp: '2016-09-04T14:30:20',
-                    updatedTimestamp: '2016-09-04T14:30:20',
-                    modelData: {
-                        myAttr: 'value1',
+                    const metadata = new Blob([
+                        '{"type": "entry", ',
+                        '"entryType": "my-entry", ',
+                        '"entryID": "1", ',
+                        '"addedTimestamp": "2016-09-04T14:30:20", ',
+                        '"updatedTimestamp": "2016-12-10T12:24:14", ',
+                        '"modelData": {"myAttr": "value1"}}',
+                    ]);
+                    const html = new Blob(['<p>My HTML!</p>']);
+
+                    let blob = RB.DataUtils.buildBlob([
+                        [{
+                            type: 'uint32',
+                            values: [metadata.size],
+                        }],
+                        metadata,
+                        [{
+                            type: 'uint32',
+                            values: [html.size],
+                        }],
+                        html,
+                    ]);
+
+                    RB.DataUtils.readBlobAsArrayBuffer(blob, options.success);
+                });
+
+                page._loadUpdates({
+                    onDone: () => {
+                        /* Check the first entry's updates and events. */
+                        const metadata1 = {
+                            type: 'entry',
+                            entryType: 'my-entry',
+                            entryID: '1',
+                            addedTimestamp: '2016-09-04T14:30:20',
+                            updatedTimestamp: '2016-09-04T14:30:20',
+                            modelData: {
+                                myAttr: 'value1',
+                            },
+                        };
+                        const html1 = '<p>My HTML!</p>';
+
+                        expect(entry1.get('myAttr')).toBe('existing-value');
+                        expect(entry1.beforeApplyUpdate)
+                            .not.toHaveBeenCalled();
+                        expect(entry1.afterApplyUpdate).not.toHaveBeenCalled();
+                        expect(page.trigger).not.toHaveBeenCalledWith(
+                            'applyingUpdate:entry', metadata1, html1);
+                        expect(page.trigger).not.toHaveBeenCalledWith(
+                            'applyingUpdate:entry:1', metadata1, html1);
+                        expect(page.trigger).not.toHaveBeenCalledWith(
+                            'appliedModelUpdate:entry:1', metadata1, html1);
+                        expect(page.trigger).not.toHaveBeenCalledWith(
+                            'appliedUpdate:entry:1', metadata1, html1);
+                        expect(page.trigger).not.toHaveBeenCalledWith(
+                            'appliedUpdate:entry', metadata1, html1);
+
+                        expect(page.trigger)
+                            .toHaveBeenCalledWith('updatesProcessed');
+
+                        done();
                     },
-                };
-                const html1 = '<p>My HTML!</p>';
-
-                expect(entry1.get('myAttr')).toBe('existing-value');
-                expect(entry1.beforeApplyUpdate).not.toHaveBeenCalled();
-                expect(entry1.afterApplyUpdate).not.toHaveBeenCalled();
-                expect(page.trigger).not.toHaveBeenCalledWith(
-                    'applyingUpdate:entry', metadata1, html1);
-                expect(page.trigger).not.toHaveBeenCalledWith(
-                    'applyingUpdate:entry:1', metadata1, html1);
-                expect(page.trigger).not.toHaveBeenCalledWith(
-                    'appliedModelUpdate:entry:1', metadata1, html1);
-                expect(page.trigger).not.toHaveBeenCalledWith(
-                    'appliedUpdate:entry:1', metadata1, html1);
-                expect(page.trigger).not.toHaveBeenCalledWith(
-                    'appliedUpdate:entry', metadata1, html1);
-
-                expect(page.trigger).toHaveBeenCalledWith('updatesProcessed');
+                });
             });
 
-            it('Updates to non-entries', function() {
-                page._processUpdates([
-                    '35\n{"type": "something", "foo": "bar"}',
-                    '20\n<div>Something</div>',
-                ].join(''));
+            it('Updates to non-entries', function(done) {
+                spyOn($, 'ajax').and.callFake(function(options) {
+                    expect(options.dataType).toBe('arraybuffer');
+                    expect(options.url).toBe('/r/123/_updates/');
 
-                const metadata = {
-                    type: 'something',
-                    foo: 'bar',
-                };
-                const html = '<div>Something</div>';
+                    const metadata = new Blob([
+                        '{"type": "something", "foo": "bar"}',
+                    ]);
+                    const html = new Blob(['<div>Something</div>']);
 
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'applyingUpdate:something', metadata, html);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'appliedUpdate:something', metadata, html);
+                    let blob = RB.DataUtils.buildBlob([
+                        [{
+                            type: 'uint32',
+                            values: [metadata.size],
+                        }],
+                        metadata,
+                        [{
+                            type: 'uint32',
+                            values: [html.size],
+                        }],
+                        html,
+                    ]);
 
-                expect(page.trigger).toHaveBeenCalledWith('updatesProcessed');
+                    RB.DataUtils.readBlobAsArrayBuffer(blob, options.success);
+                });
+
+                page._loadUpdates({
+                    onDone: () => {
+                        const metadata = {
+                            type: 'something',
+                            foo: 'bar',
+                        };
+                        const html = '<div>Something</div>';
+
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'applyingUpdate:something', metadata, html);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedUpdate:something', metadata, html);
+
+                        expect(page.trigger)
+                            .toHaveBeenCalledWith('updatesProcessed');
+
+                        done();
+                    },
+                });
             });
 
-            it('Updates containing Unicode in HTML', function() {
+            it('Updates containing Unicode in HTML', function(done) {
                 spyOn(entry1, 'beforeApplyUpdate');
                 spyOn(entry1, 'afterApplyUpdate');
                 spyOn(entry2, 'beforeApplyUpdate');
                 spyOn(entry2, 'afterApplyUpdate');
 
-                page._processUpdates([
-                    '177\n',
-                    '{"type": "entry", "entryType": "my-entry", ',
-                    '"entryID": "1", "addedTimestamp": "2017-07-01T00:00:00", ',
-                    '"updatedTimestamp": "2017-09-04T14:30:20", ',
-                    '"modelData": {"myAttr": "value1"}}',
-                    '12\n',
-                    '<p>áéíóú</p>',
-                    '177\n',
-                    '{"type": "entry", "entryType": "my-entry", ',
-                    '"entryID": "2", "addedTimestamp": "2017-07-01T00:00:00", ',
-                    '"updatedTimestamp": "2017-09-03T14:30:20", ',
-                    '"modelData": {"myAttr": "value2"}}',
-                    '13\n',
-                    '<p>ÄËÏÖÜŸ</p>',
-                ].join(''));
+                spyOn($, 'ajax').and.callFake(function(options) {
+                    expect(options.dataType).toBe('arraybuffer');
+                    expect(options.url).toBe('/r/123/_updates/');
 
-                /* Check the first entry's updates and events. */
-                const metadata1 = {
-                    type: 'entry',
-                    entryType: 'my-entry',
-                    entryID: '1',
-                    addedTimestamp: '2017-07-01T00:00:00',
-                    updatedTimestamp: '2017-09-04T14:30:20',
-                    modelData: {
-                        myAttr: 'value1',
+                    const metadata1 = new Blob([
+                        '{"type": "entry", ',
+                        '"entryType": "my-entry", ',
+                        '"entryID": "1", ',
+                        '"addedTimestamp": "2017-07-01T00:00:00", ',
+                        '"updatedTimestamp": "2017-09-04T14:30:20", ',
+                        '"modelData": {"myAttr": "value1"}}',
+                    ]);
+                    const metadata2 = new Blob([
+                        '{"type": "entry", ',
+                        '"entryType": "my-entry", ',
+                        '"entryID": "2", ',
+                        '"addedTimestamp": "2017-07-01T00:00:00", ',
+                        '"updatedTimestamp": "2017-09-03T14:30:20", ',
+                        '"modelData": {"myAttr": "value2"}}',
+                    ]);
+
+                    /* UTF-8 bytes for "<span>áéíóú 🔥</span>" */
+                    const html1 = [
+                        60, 115, 112, 97, 110, 62, 195, 161, 195, 169,
+                        195, 173, 195, 179, 195, 186, 32, 240, 159, 148,
+                        165, 60, 47, 115, 112, 97, 110, 62,
+                    ];
+
+                    /* UTF-8 bytes for "<span>ÄËÏÖÜŸ 😱</span>" */
+                    const html2 = [
+                        60, 115, 112, 97, 110, 62, 195, 132, 195, 139,
+                        195, 143, 195, 150, 195, 156, 197, 184, 32, 240,
+                        159, 152, 177, 60, 47, 115, 112, 97, 110, 62,
+                    ];
+
+                    expect(html1.length).toBe(28);
+                    expect(html2.length).toBe(30);
+
+                    let blob = RB.DataUtils.buildBlob([
+                        [{
+                            type: 'uint32',
+                            values: [metadata1.size],
+                        }],
+                        metadata1,
+                        [
+                            {
+                                type: 'uint32',
+                                values: [html1.length],
+                            },
+                            {
+                                type: 'uint8',
+                                values: html1,
+                            },
+                            {
+                                type: 'uint32',
+                                values: [metadata2.size],
+                            },
+                        ],
+                        metadata2,
+                        [
+                            {
+                                type: 'uint32',
+                                values: [html2.length],
+                            },
+                            {
+                                type: 'uint8',
+                                values: html2,
+                            },
+                        ],
+                    ]);
+
+                    RB.DataUtils.readBlobAsArrayBuffer(blob, options.success);
+                });
+
+                page._loadUpdates({
+                    onDone: () => {
+                        /* Check the first entry's updates and events. */
+                        const metadata1 = {
+                            type: 'entry',
+                            entryType: 'my-entry',
+                            entryID: '1',
+                            addedTimestamp: '2017-07-01T00:00:00',
+                            updatedTimestamp: '2017-09-04T14:30:20',
+                            modelData: {
+                                myAttr: 'value1',
+                            },
+                        };
+                        const html1 = '<span>áéíóú 🔥</span>';
+
+                        expect(entry1.get('myAttr')).toBe('value1');
+                        expect(entry1.beforeApplyUpdate)
+                            .toHaveBeenCalledWith(metadata1);
+                        expect(entry1.afterApplyUpdate)
+                            .toHaveBeenCalledWith(metadata1);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'applyingUpdate:entry', metadata1, html1);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'applyingUpdate:entry:1', metadata1, html1);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedModelUpdate:entry:1', metadata1, html1);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedUpdate:entry:1', metadata1, html1);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedUpdate:entry', metadata1, html1);
+
+                        /* Check the second entry's updates and events. */
+                        const metadata2 = {
+                            type: 'entry',
+                            entryType: 'my-entry',
+                            entryID: '2',
+                            addedTimestamp: '2017-07-01T00:00:00',
+                            updatedTimestamp: '2017-09-03T14:30:20',
+                            modelData: {
+                                myAttr: 'value2',
+                            },
+                        };
+                        const html2 = '<span>ÄËÏÖÜŸ 😱</span>';
+
+                        expect(entry2.get('myAttr')).toBe('value2');
+                        expect(entry2.beforeApplyUpdate)
+                            .toHaveBeenCalledWith(metadata2);
+                        expect(entry2.afterApplyUpdate)
+                            .toHaveBeenCalledWith(metadata2);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'applyingUpdate:entry', metadata2, html2);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'applyingUpdate:entry:2', metadata2, html2);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedModelUpdate:entry:2', metadata2, html2);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedUpdate:entry:2', metadata2, html2);
+                        expect(page.trigger).toHaveBeenCalledWith(
+                            'appliedUpdate:entry', metadata2, html2);
+
+                        expect(page.trigger)
+                            .toHaveBeenCalledWith('updatesProcessed');
+
+                        done();
                     },
-                };
-                const html1 = '<p>áéíóú</p>';
-
-                expect(entry1.get('myAttr')).toBe('value1');
-                expect(entry1.beforeApplyUpdate)
-                    .toHaveBeenCalledWith(metadata1);
-                expect(entry1.afterApplyUpdate)
-                    .toHaveBeenCalledWith(metadata1);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'applyingUpdate:entry', metadata1, html1);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'applyingUpdate:entry:1', metadata1, html1);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'appliedModelUpdate:entry:1', metadata1, html1);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'appliedUpdate:entry:1', metadata1, html1);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'appliedUpdate:entry', metadata1, html1);
-
-                /* Check the second entry's updates and events. */
-                const metadata2 = {
-                    type: 'entry',
-                    entryType: 'my-entry',
-                    entryID: '2',
-                    addedTimestamp: '2017-07-01T00:00:00',
-                    updatedTimestamp: '2017-09-03T14:30:20',
-                    modelData: {
-                        myAttr: 'value2',
-                    },
-                };
-                const html2 = '<p>ÄËÏÖÜŸ</p>';
-
-                expect(entry2.get('myAttr')).toBe('value2');
-                expect(entry2.beforeApplyUpdate)
-                    .toHaveBeenCalledWith(metadata2);
-                expect(entry2.afterApplyUpdate)
-                    .toHaveBeenCalledWith(metadata2);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'applyingUpdate:entry', metadata2, html2);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'applyingUpdate:entry:2', metadata2, html2);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'appliedModelUpdate:entry:2', metadata2, html2);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'appliedUpdate:entry:2', metadata2, html2);
-                expect(page.trigger).toHaveBeenCalledWith(
-                    'appliedUpdate:entry', metadata2, html2);
-
-                expect(page.trigger).toHaveBeenCalledWith('updatesProcessed');
+                });
             });
         });
     });

@@ -1,6 +1,7 @@
 # coding: utf-8
 from __future__ import unicode_literals
 
+import struct
 from datetime import timedelta
 
 from django.contrib.auth.models import User
@@ -1316,7 +1317,7 @@ class CommentDiffFragmentsViewTests(TestCase):
         diffset = self.create_diffset(review_request)
         filediff = self.create_filediff(
             diffset,
-            source_file='/data:áéíóú',
+            source_file='/data:áéíóú🔥',
             dest_file='/data:ÄËÏÖÜŸ',
             diff=(
                 'diff --git a/data b/data\n'
@@ -1324,7 +1325,7 @@ class CommentDiffFragmentsViewTests(TestCase):
                 '--- a/data\n'
                 '+++ b/data\n'
                 '@@ -1,1 +1,1 @@\n'
-                '-áéíóú\n'
+                '-áéíóú🔥\n'
                 '+ÄËÏÖÜŸ\n'
             ).encode('utf-8'))
 
@@ -1341,7 +1342,7 @@ class CommentDiffFragmentsViewTests(TestCase):
         self.assertEqual(comment_id, comment1.pk)
         self.assertTrue(html.startswith('<table class="sidebyside'))
         self.assertTrue(html.endswith('</table>'))
-        self.assertIn('áéíóú', html)
+        self.assertIn('áéíóú🔥', html)
 
         comment_id, html = fragments[1]
         self.assertEqual(comment_id, comment2.pk)
@@ -1508,23 +1509,23 @@ class CommentDiffFragmentsViewTests(TestCase):
         if expected_status != 200:
             return None
 
+        content = response.content
+        self.assertIs(type(content), bytes)
+
         i = 0
-        content = response.content.decode('utf-8')
         results = []
 
         while i < len(content):
             # Read the comment ID.
-            j = content.index('\n', i)
-            comment_id = int(content[i:j])
-            i = j + 1
+            comment_id = struct.unpack_from('<L', content, i)[0]
+            i += 4
 
             # Read the length of the HTML.
-            j = content.index('\n', i)
-            html_len = int(content[i:j])
-            i = j + 1
+            html_len = struct.unpack_from('<L', content, i)[0]
+            i += 4
 
             # Read the HTML.
-            html = content[i:i + html_len]
+            html = content[i:i + html_len].decode('utf-8')
             i += html_len
 
             results.append((comment_id, html))

@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import json
 import logging
 import re
+import struct
 from itertools import chain
 
 import dateutil.parser
@@ -968,13 +969,13 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
             html (unicode):
                 The HTML to write.
         """
-        metadata = json.dumps(metadata)
-        html = html.strip()
+        metadata = json.dumps(metadata).encode('utf-8')
+        html = html.strip().encode('utf-8')
 
-        payload.write(b'%d\n' % len(metadata))
-        payload.write(metadata.encode('utf-8'))
-        payload.write(b'%d\n' % len(html))
-        payload.write(html.encode('utf-8'))
+        payload.write(struct.pack('<L', len(metadata)))
+        payload.write(metadata)
+        payload.write(struct.pack('<L', len(html)))
+        payload.write(html)
 
 
 class ReviewsDiffViewerView(ReviewRequestViewMixin, DiffViewerView):
@@ -1424,11 +1425,10 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
             show_controls=allow_expansion)[1]
 
         for entry in comment_entries:
-            html = entry['html'].strip()
+            html = entry['html'].strip().encode('utf-8')
 
-            payload.write(b'%s\n' % entry['comment'].pk)
-            payload.write(b'%d\n' % len(html))
-            payload.write(html.encode('utf-8'))
+            payload.write(struct.pack('<LL', entry['comment'].pk, len(html)))
+            payload.write(html)
 
         result = payload.getvalue()
         payload.close()

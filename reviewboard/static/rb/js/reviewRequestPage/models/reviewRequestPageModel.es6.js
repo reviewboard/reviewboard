@@ -241,20 +241,19 @@ RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
          */
         urlQuery.sort();
 
+        const urlQueryStr = (urlQuery.length > 0
+                             ? `?${urlQuery.join('&')}`
+                             : '');
+
         Backbone.sync(
             'read',
             this,
             {
-                url: `${updatesURL}?${urlQuery.join('&')}`,
-                dataType: 'text',
+                url: `${updatesURL}${urlQueryStr}`,
+                dataType: 'arraybuffer',
                 noActivityIndicator: true,
-                success: rsp => {
-                    this._processUpdates(rsp);
-
-                    if (_.isFunction(options.onDone)) {
-                        options.onDone();
-                    }
-                },
+                success: arrayBuffer => this._processUpdatesFromPayload(
+                    arrayBuffer, options.onDone),
             });
     },
 
@@ -265,32 +264,22 @@ RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
      * or other parts of the UI referenced.
      *
      * Args:
-     *     rsp (string):
-     *         The updates payload.
+     *     arrayBuffer (ArrayBuffer):
+     *         The array buffer being parsed.
+     *
+     *     onDone (function, optional):
+     *         The function to call when all updates have been parsed and
+     *         applied.
      */
-    _processUpdates(rsp) {
-        const len = rsp.length;
-        let i = 0;
+    _processUpdatesFromPayload(arrayBuffer, onDone) {
+        const dataView = new DataView(arrayBuffer);
+        const len = dataView.byteLength;
+        let pos = 0;
+        let totalUpdates = 0;
+        let totalApplied = 0;
+        let done = false;
 
-        while (i < len) {
-            /* Read the length of the metadata. */
-            let j = rsp.indexOf('\n', i);
-            const metadataLen = parseInt(rsp.substr(i, j - i), 10);
-            i = j + 1;
-
-            /* Read the metadata content and parse it. */
-            const metadata = JSON.parse(rsp.substr(i, metadataLen));
-            i += metadataLen;
-
-            /* Read the length of the HTML content. */
-            j = rsp.indexOf('\n', i);
-            const htmlLen = parseInt(rsp.substr(i, j - i), 10);
-            i = j + 1;
-
-            /* Read the HTML content. */
-            const html = rsp.substr(i, htmlLen);
-            i += htmlLen;
-
+        const onUpdateLoaded = (metadata, html) => {
             /*
              * Based on the update, we can now start updating the UI, if
              * we can find the matching entry or UI component.
@@ -300,9 +289,93 @@ RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
             } else {
                 this._reloadFromUpdate(null, metadata, html);
             }
-        }
 
-        this.trigger('updatesProcessed');
+            totalApplied++;
+
+            if (done && totalApplied === totalUpdates) {
+                this.trigger('updatesProcessed');
+
+                if (_.isFunction(onDone)) {
+                    onDone();
+                }
+            }
+        };
+
+        while (!done) {
+            const parsed = this._processUpdateFromPayload(arrayBuffer,
+                                                          dataView,
+                                                          pos);
+
+            totalUpdates++;
+            pos += parsed.pos;
+            done = (pos >= len);
+
+            parsed.load(onUpdateLoaded);
+        }
+    },
+
+    /**
+     * Process a single update from the updates payload.
+     *
+     * This will parse out the details for one update, loading in the metadata
+     * and HTML, and then apply that update.
+     *
+     * Args:
+     *     arrayBuffer (ArrayBuffer):
+     *         The array buffer being parsed.
+     *
+     *     dataView (DataView):
+     *         The data view on top of the array buffer, used to extract
+     *         information.
+     *
+     *     pos (number):
+     *         The current position within the array buffer.
+     *
+     * Returns:
+     *     object:
+     *     An object with two keys:
+     *
+     *     ``pos``:
+     *         The next position to parse.
+     *
+     *     ``load``:
+     *         A function for loading the update content. This takes a
+     *         callback function as an argument containing ``metadata`` and
+     *         ``html`` arguments.
+     */
+    _processUpdateFromPayload(arrayBuffer, dataView, pos) {
+        /* Read the length of the metadata. */
+        const metadataLen = dataView.getUint32(pos, true);
+        pos += 4;
+
+        /* Read the start position of the metadata content for later. */
+        const metadataStart = pos;
+        pos += metadataLen;
+
+        /* Read the length of the HTML content. */
+        const htmlLen = dataView.getUint32(pos, true);
+        pos += 4;
+
+        /* Read the start position of the HTML content for later. */
+        const htmlStart = pos;
+        pos += htmlLen;
+
+        return {
+            pos: pos,
+            load(cb) {
+                const metadataBlob = new Blob([
+                    arrayBuffer.slice(metadataStart,
+                                      metadataStart + metadataLen),
+                ]);
+                const htmlBlob = new Blob([
+                    arrayBuffer.slice(htmlStart, htmlStart + htmlLen),
+                ]);
+
+                RB.DataUtils.readManyBlobsAsStrings(
+                    [metadataBlob, htmlBlob],
+                    (metadata, html) => cb(JSON.parse(metadata), html));
+            },
+        };
     },
 
     /**
