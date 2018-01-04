@@ -291,7 +291,7 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                         arrayBuffer, dataView, pos);
 
                     totalFragments++;
-                    pos += parsed.pos;
+                    pos = parsed.pos;
                     done = (pos >= len);
 
                     parsed.load(onFragmentLoaded);

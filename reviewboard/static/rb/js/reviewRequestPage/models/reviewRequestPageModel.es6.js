@@ -307,7 +307,7 @@ RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
                                                           pos);
 
             totalUpdates++;
-            pos += parsed.pos;
+            pos = parsed.pos;
             done = (pos >= len);
 
             parsed.load(onUpdateLoaded);

@@ -952,7 +952,7 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
         result = payload.getvalue()
         payload.close()
 
-        return HttpResponse(result, content_type='text/plain')
+        return HttpResponse(result, content_type='text/plain; charset=utf-8')
 
     def _write_update(self, payload, metadata, html):
         """Write an update to the payload.

@@ -15,6 +15,7 @@ suite('rb/views/DiffFragmentQueueView', function() {
         let $container1;
         let $container2;
         let $container3;
+        let $container4;
 
         beforeEach(function() {
             $container1 = $('<div id="container1_123"/>')
@@ -23,10 +24,13 @@ suite('rb/views/DiffFragmentQueueView', function() {
                 .appendTo(window.$testsScratch);
             $container3 = $('<div id="container1_125"/>')
                 .appendTo(window.$testsScratch);
+            $container4 = $('<div id="container1_126"/>')
+                .appendTo(window.$testsScratch);
 
             fragmentQueue.queueLoad('123', 'key1');
             fragmentQueue.queueLoad('124', 'key1');
-            fragmentQueue.queueLoad('125', 'key2');
+            fragmentQueue.queueLoad('125', 'key1');
+            fragmentQueue.queueLoad('126', 'key2');
         });
 
         it('Fragment queueing', function() {
@@ -34,7 +38,7 @@ suite('rb/views/DiffFragmentQueueView', function() {
 
             expect(queue.length).not.toBe(0);
 
-            expect(queue.key1.length).toBe(2);
+            expect(queue.key1.length).toBe(3);
             expect(queue.key1).toContain({
                 commentID: '123',
                 onFragmentRendered: null,
@@ -43,9 +47,13 @@ suite('rb/views/DiffFragmentQueueView', function() {
                 commentID: '124',
                 onFragmentRendered: null,
             });
+            expect(queue.key1).toContain({
+                commentID: '125',
+                onFragmentRendered: null,
+            });
             expect(queue.key2.length).toBe(1);
             expect(queue.key2).toContain({
-                commentID: '125',
+                commentID: '126',
                 onFragmentRendered: null,
             });
         });
@@ -57,9 +65,10 @@ suite('rb/views/DiffFragmentQueueView', function() {
                 const url = options.url;
                 let blob;
 
-                if (url === `${URL_PREFIX}123,124/`) {
-                    const html1 = new Blob(['<span>Comment 1</span>']);
-                    const html2 = new Blob(['<span>Comment 2</span>']);
+                if (url === `${URL_PREFIX}123,124,125/`) {
+                    const html1 = new Blob(['<span>Comment one</span>']);
+                    const html2 = new Blob(['<span>Comment two</span>']);
+                    const html3 = new Blob(['<span>Comment three</span>']);
 
                     blob = RB.DataUtils.buildBlob([
                         [{
@@ -72,14 +81,19 @@ suite('rb/views/DiffFragmentQueueView', function() {
                             values: [124, html2.size],
                         }],
                         html2,
+                        [{
+                            type: 'uint32',
+                            values: [125, html3.size],
+                        }],
+                        html3,
                     ]);
-                } else if (url === `${URL_PREFIX}125/`) {
-                    const html = new Blob(['<span>Comment 3</span>']);
+                } else if (url === `${URL_PREFIX}126/`) {
+                    const html = new Blob(['<span>Comment 4</span>']);
 
                     blob = RB.DataUtils.buildBlob([
                         [{
                             type: 'uint32',
-                            values: [125, html.size],
+                            values: [126, html.size],
                         }],
                         html,
                     ]);
@@ -95,13 +109,16 @@ suite('rb/views/DiffFragmentQueueView', function() {
                 expect($.ajax.calls.count()).toBe(2);
 
                 expect($container1.data('diff-fragment-view')).toBeTruthy();
-                expect($container1.html()).toBe('<span>Comment 1</span>');
+                expect($container1.html()).toBe('<span>Comment one</span>');
 
                 expect($container2.data('diff-fragment-view')).toBeTruthy();
-                expect($container2.html()).toBe('<span>Comment 2</span>');
+                expect($container2.html()).toBe('<span>Comment two</span>');
 
                 expect($container3.data('diff-fragment-view')).toBeTruthy();
-                expect($container3.html()).toBe('<span>Comment 3</span>');
+                expect($container3.html()).toBe('<span>Comment three</span>');
+
+                expect($container4.data('diff-fragment-view')).toBeTruthy();
+                expect($container4.html()).toBe('<span>Comment 4</span>');
 
                 done();
             });
@@ -114,7 +131,7 @@ suite('rb/views/DiffFragmentQueueView', function() {
                 const url = options.url;
                 let arrayBuffer;
 
-                if (url === `${URL_PREFIX}123,124/`) {
+                if (url === `${URL_PREFIX}123,124,125/`) {
                     /* UTF-8 bytes for "<span>áéíóú 🔥</span>" */
                     const html1 = [
                         60, 115, 112, 97, 110, 62, 195, 161, 195, 169,
@@ -129,8 +146,15 @@ suite('rb/views/DiffFragmentQueueView', function() {
                         159, 152, 177, 60, 47, 115, 112, 97, 110, 62,
                     ];
 
+                    /* UTF-8 bytes for "<span>🔥😱</span>" */
+                    const html3 = [
+                        60, 115, 112, 97, 110, 62, 240, 159, 148, 165, 240,
+                        159, 152, 177, 60, 47, 115, 112, 97, 110, 62,
+                    ];
+
                     expect(html1.length).toBe(28);
                     expect(html2.length).toBe(30);
+                    expect(html3.length).toBe(21);
 
                     arrayBuffer = RB.DataUtils.buildArrayBuffer([
                         {
@@ -149,8 +173,16 @@ suite('rb/views/DiffFragmentQueueView', function() {
                             type: 'uint8',
                             values: html2,
                         },
+                        {
+                            type: 'uint32',
+                            values: [125, html3.length],
+                        },
+                        {
+                            type: 'uint8',
+                            values: html3,
+                        },
                     ]);
-                } else if (url === `${URL_PREFIX}125/`) {
+                } else if (url === `${URL_PREFIX}126/`) {
                     /* UTF-8 bytes for "<span>ĀĒĪŌ 👿</span>" */
                     const html = [
                         60, 115, 112, 97, 110, 62, 196, 128, 196, 146,
@@ -163,7 +195,7 @@ suite('rb/views/DiffFragmentQueueView', function() {
                     arrayBuffer = RB.DataUtils.buildArrayBuffer([
                         {
                             type: 'uint32',
-                            values: [125, html.length],
+                            values: [126, html.length],
                         },
                         {
                             type: 'uint8',
@@ -188,7 +220,10 @@ suite('rb/views/DiffFragmentQueueView', function() {
                 expect($container2.html()).toBe('<span>ÄËÏÖÜŸ 😱</span>');
 
                 expect($container3.data('diff-fragment-view')).toBeTruthy();
-                expect($container3.html()).toBe('<span>ĀĒĪŌ 👿</span>');
+                expect($container3.html()).toBe('<span>🔥😱</span>');
+
+                expect($container4.data('diff-fragment-view')).toBeTruthy();
+                expect($container4.html()).toBe('<span>ĀĒĪŌ 👿</span>');
 
                 done();
             });
@@ -211,13 +246,13 @@ suite('rb/views/DiffFragmentQueueView', function() {
                         }],
                         html,
                     ]);
-                } else if (url === `${URL_PREFIX}125/`) {
-                    const html = new Blob(['<span>New comment 3</span>']);
+                } else if (url === `${URL_PREFIX}126/`) {
+                    const html = new Blob(['<span>New comment 4</span>']);
 
                     blob = RB.DataUtils.buildBlob([
                         [{
                             type: 'uint32',
-                            values: [125, html.size],
+                            values: [126, html.size],
                         }],
                         html,
                     ]);
@@ -230,9 +265,9 @@ suite('rb/views/DiffFragmentQueueView', function() {
             });
 
             /*
-             * We'll set up the first two containers, but leave the third as
-             * completely new. Both the unsaved pre-loaded container (2) and
-             * the new container (3) will be loaded.
+             * We'll set up three containers, but leave the fourth as
+             * completely new. The unsaved pre-loaded containers (2) and
+             * the new container (4) will be loaded.
              */
             $container1
                 .html('<span>Comment 1</span>')
@@ -242,12 +277,17 @@ suite('rb/views/DiffFragmentQueueView', function() {
                 .html('<span>Comment 2</span>')
                 .data('diff-fragment-view', new RB.DiffFragmentView());
 
+            $container3
+                .html('<span>Comment 3</span>')
+                .data('diff-fragment-view', new RB.DiffFragmentView());
+
             /*
-             * We're going to save 123 and 125 (which is not loaded). Only
-             * 123 will actually be saved.
+             * We're going to save 123, 125, and 126 (which is not loaded).
+             * Only 123 and 125 will actually be saved.
              */
             fragmentQueue.saveFragment('123');
             fragmentQueue.saveFragment('125');
+            fragmentQueue.saveFragment('126');
 
             fragmentQueue.loadFragments(() => {
                 expect($.ajax.calls.count()).toBe(2);
@@ -259,7 +299,10 @@ suite('rb/views/DiffFragmentQueueView', function() {
                 expect($container2.html()).toBe('<span>New comment 2</span>');
 
                 expect($container3.data('diff-fragment-view')).toBeTruthy();
-                expect($container3.html()).toBe('<span>New comment 3</span>');
+                expect($container3.html()).toBe('<span>Comment 3</span>');
+
+                expect($container4.data('diff-fragment-view')).toBeTruthy();
+                expect($container4.html()).toBe('<span>New comment 4</span>');
 
                 expect(fragmentQueue._saved).toEqual({});
 
