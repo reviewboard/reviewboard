@@ -132,7 +132,8 @@ RB.UserSession = Backbone.Model.extend({
         watchedReviewGroupsURL: null,
         watchedReviewRequestsURL: null,
         archivedReviewRequestsURL: null,
-        mutedReviewRequestsURL: null
+        mutedReviewRequestsURL: null,
+        userFileAttachmentsURL: null
     },
 
     initialize: function() {
