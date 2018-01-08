@@ -564,7 +564,7 @@ Fields.CommaSeparatedValuesTextFieldView = Fields.TextFieldView.extend({
                 $links = $links.add(this._convertToLink(list[i], options));
 
                 if (i < list.length - 1) {
-                    $links = $links.add(new Text(', '));
+                    $links = $links.add(document.createTextNode(', '));
                 }
             }
         }

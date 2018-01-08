@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import json
 import logging
 import re
+import struct
 from itertools import chain
 
 import dateutil.parser
@@ -951,7 +952,7 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
         result = payload.getvalue()
         payload.close()
 
-        return HttpResponse(result, content_type='text/plain')
+        return HttpResponse(result, content_type='text/plain; charset=utf-8')
 
     def _write_update(self, payload, metadata, html):
         """Write an update to the payload.
@@ -971,9 +972,9 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
         metadata = json.dumps(metadata).encode('utf-8')
         html = html.strip().encode('utf-8')
 
-        payload.write(b'%d\n' % len(metadata))
+        payload.write(struct.pack('<L', len(metadata)))
         payload.write(metadata)
-        payload.write(b'%d\n' % len(html))
+        payload.write(struct.pack('<L', len(html)))
         payload.write(html)
 
 
@@ -1426,8 +1427,7 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
         for entry in comment_entries:
             html = entry['html'].strip().encode('utf-8')
 
-            payload.write(b'%s\n' % entry['comment'].pk)
-            payload.write(b'%d\n' % len(html))
+            payload.write(struct.pack('<LL', entry['comment'].pk, len(html)))
             payload.write(html)
 
         result = payload.getvalue()

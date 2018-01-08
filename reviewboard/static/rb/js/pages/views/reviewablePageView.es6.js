@@ -152,11 +152,23 @@ RB.ReviewablePageView = RB.PageView.extend({
         this._logoNotificationsURL = null;
 
         /*
-         * Power Pack (and possibly other extensions) expect a "reviewRequest"
-         * attribute on the view, so associate that here.
+         * Some extensions, like Power Pack and rbstopwatch, expect a few legacy
+         * attributes on the view. Set these here so these extensions can access
+         * them. Note that extensions should ideally use the new form, if
+         * they're able to support Review Board 3.0+.
          */
-        this.reviewRequest = this.model.get('reviewRequest');
+        ['reviewRequest', 'pendingReview'].forEach(attrName => {
+            this[attrName] = this.model.get(attrName);
 
+            this.listenTo(this.model, `change:${attrName}`, () => {
+                this[attrName] = this.model.get(attrName);
+            });
+        });
+
+        /*
+         * Allow the browser to report notifications, if the user has this
+         * enabled.
+         */
         RB.NotificationManager.instance.setup();
 
         if (RB.UserSession.instance.get('authenticated')) {
@@ -219,6 +231,8 @@ RB.ReviewablePageView = RB.PageView.extend({
      *         The last update information for the request.
      */
     _onReviewRequestUpdated(info) {
+        this._updateFavIcon(this._favIconNotifyURL);
+
         if (RB.NotificationManager.instance.shouldNotify()) {
             this._showDesktopNotification(info);
         }
@@ -234,8 +248,6 @@ RB.ReviewablePageView = RB.PageView.extend({
      *         The last update information for the request.
      */
     _showUpdatesBubble(info) {
-        this._updateFavIcon(this._favIconNotifyURL);
-
         if (this._updatesBubble) {
             this._updatesBubble.remove();
         }
@@ -269,19 +281,21 @@ RB.ReviewablePageView = RB.PageView.extend({
      *     info (object):
      *         The last update information for the request.
      */
-     _showDesktopNotification(info) {
-        this._updateFavIcon(this._favIconNotifyURL);
+    _showDesktopNotification(info) {
+        const reviewRequest = this.model.get('reviewRequest');
 
         RB.NotificationManager.instance.notify({
-            'title': interpolate(gettext('Review request submitted by %s'),
-                                 [info.user.fullname || info.user.username]),
-            'body': null,
-            'iconURL': this._logoNotificationsURL,
-            'onclick': () => {
-                window.location = this.reviewRequest.get('reviewURL');
+            title: info.summary,
+            body: interpolate(gettext('Review request #%s, by %s'), [
+                reviewRequest.id,
+                info.user.fullname || info.user.username,
+            ]),
+            iconURL: this._logoNotificationsURL,
+            onClick: () => {
+                window.location = reviewRequest.get('reviewURL');
             },
         });
-     },
+    },
 
     /**
      * Update the favicon for the page.

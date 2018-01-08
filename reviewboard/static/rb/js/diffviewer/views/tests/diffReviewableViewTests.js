@@ -1116,6 +1116,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                         $whitespaceChunk = $('<tbody/>')
                             .addClass('whitespace-file')
                             .hide()
+                            .html('<tr><td></td></tr>')
                             .appendTo(view.$el);
 
                     expect($whitespaceChunk.is(':visible')).toBe(false);
@@ -1162,6 +1163,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                     var $tbodies = view.$el.children('tbody'),
                         $whitespaceChunk = $('<tbody/>')
                             .addClass('whitespace-file')
+                            .html('<tr><td></td></tr>')
                             .hide()
                             .appendTo(view.$el);
 

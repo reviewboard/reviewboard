@@ -431,7 +431,7 @@ RB.ReviewRequest = RB.BaseResource.extend({
             success: rsp => {
                 const lastUpdate = rsp.last_update;
 
-                if ((this._checkUpdatesType === undefined ||
+                if ((!this._checkUpdatesType ||
                      this._checkUpdatesType === lastUpdate.type) &&
                     this._lastUpdateTimestamp !== lastUpdate.timestamp) {
                     this.trigger('updated', lastUpdate);

@@ -1,4 +1,76 @@
 /**
+ * jQuery AJAX transport for receiving Blob and ArrayBuffer data.
+ *
+ * XMLHttpRequest2 supports receiving binary data represented by
+ * :js:class:`Blob` and :js:class:`ArrayBuffer`. This transport enabled binary
+ * data support through standard :js:func:`jQuery.ajax` calls.
+ */
+$.ajaxTransport('arraybuffer blob', function(options, origOptions, jqXHR) {
+    if (!window.FormData) {
+        return null;
+    }
+
+    let xhr;
+
+    return {
+        send(headers, completeCB) {
+            xhr = options.xhr();
+            xhr.addEventListener('load', () => {
+                const result = {};
+                result[options.dataType] = xhr.response;
+
+                completeCB(xhr.status, xhr.statusText, result,
+                           xhr.getAllResponseHeaders());
+            });
+
+            if (options.username) {
+                xhr.open(options.type, options.url, options.async,
+                         options.username, options.password);
+            } else {
+                xhr.open(options.type, options.url, options.async);
+            }
+
+            xhr.responseType = options.dataType;
+
+            /* Apply any custom fields that may be provided. */
+            const xhrFields = options.xhrFields;
+
+            if (xhrFields) {
+                for (let field in xhrFields) {
+                    if (xhrFields.hasOwnProperty(field)) {
+                        xhr[field] = xhrFields[field];
+                    }
+                }
+            }
+
+            if (!options.crossDomain && !headers['X-Requested-With']) {
+                headers['X-Requested-With'] = 'XMLHttpRequest';
+            }
+
+            /*
+             * Catch errors with cross-domain requests, like jQuery does.
+             */
+            try {
+                for (let key in headers) {
+                    if (headers.hasOwnProperty(key)) {
+                        xhr.setRequestHeader(key, headers[key]);
+                    }
+                }
+            } catch (e) {}
+
+            xhr.send(options.hasContent ? options.data : null);
+        },
+
+        abort() {
+            if (xhr && xhr.readyState !== 4) {
+                xhr.abort();
+            }
+        },
+    };
+});
+
+
+/**
  * Enable or disable the activity indicator.
  *
  * Args:
