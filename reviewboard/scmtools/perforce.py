@@ -9,6 +9,7 @@ import re
 import shutil
 import signal
 import socket
+import stat
 import subprocess
 import tempfile
 import time
@@ -553,10 +554,23 @@ class PerforceClient(object):
             depot_path = '%s#%s' % (path, revision)
 
         with self.run_worker():
-            res = self.p4.run_print('-q', depot_path)
+            fd, filename = tempfile.mkstemp(prefix='reviewboard.')
 
-        if res:
-            return res[-1]
+            try:
+                os.close(fd)
+                self.p4.run_print('-q', '-o', filename, depot_path)
+
+                if os.path.islink(filename):
+                    return b''
+                else:
+                    # p4 print will change the permissions on the file to be
+                    # read-only, which will break the unlink unless we fix it.
+                    os.chmod(filename, stat.S_IREAD | stat.S_IWRITE)
+
+                    with open(filename, 'rb') as f:
+                        return f.read()
+            finally:
+                os.unlink(filename)
 
         return b''
 
