@@ -132,12 +132,20 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
                         : null;
 
                     if (this._saved.hasOwnProperty(commentID)) {
-                        const view = this._getCommentContainer(commentID)
-                            .data('diff-fragment-view');
-                        console.assert(view);
+                        const html = this._saved[commentID];
 
-                        view.$el.html(this._saved[commentID]);
-                        view.render();
+                        const container = this._getCommentContainer(commentID);
+                        console.assert(container);
+
+                        let view = container.data('diff-fragment-view');
+
+                        if (view) {
+                            view.$el.html(html);
+                            view.render();
+                        } else {
+                            view = this._renderFragment(container, commentID,
+                                                        html);
+                        }
 
                         if (onFragmentRendered) {
                             onFragmentRendered(view);
