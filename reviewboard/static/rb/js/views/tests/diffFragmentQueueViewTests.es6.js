@@ -265,21 +265,26 @@ suite('rb/views/DiffFragmentQueueView', function() {
             });
 
             /*
-             * We'll set up three containers, but leave the fourth as
-             * completely new. The unsaved pre-loaded containers (2) and
-             * the new container (4) will be loaded.
+             * We'll set up three containers, with the third being having its
+             * view disassociated and the fourth as a completely new container.
+             * The unsaved pre-loaded containers (2) and the new container (4)
+             * will be loaded. The disassociated container (3) will have a
+             * new view set up.
              */
+            const view1 = new RB.DiffFragmentView();
             $container1
                 .html('<span>Comment 1</span>')
-                .data('diff-fragment-view', new RB.DiffFragmentView());
+                .data('diff-fragment-view', view1);
 
+            const view2 = new RB.DiffFragmentView();
             $container2
                 .html('<span>Comment 2</span>')
-                .data('diff-fragment-view', new RB.DiffFragmentView());
+                .data('diff-fragment-view', view2);
 
+            const view3 = new RB.DiffFragmentView();
             $container3
                 .html('<span>Comment 3</span>')
-                .data('diff-fragment-view', new RB.DiffFragmentView());
+                .data('diff-fragment-view', view3);
 
             /*
              * We're going to save 123, 125, and 126 (which is not loaded).
@@ -289,16 +294,20 @@ suite('rb/views/DiffFragmentQueueView', function() {
             fragmentQueue.saveFragment('125');
             fragmentQueue.saveFragment('126');
 
+            /* Disassociate container 3's view. */
+            $container3.removeData('diff-fragment-view');
+
             fragmentQueue.loadFragments(() => {
                 expect($.ajax.calls.count()).toBe(2);
 
-                expect($container1.data('diff-fragment-view')).toBeTruthy();
+                expect($container1.data('diff-fragment-view')).toBe(view1);
                 expect($container1.html()).toBe('<span>Comment 1</span>');
 
-                expect($container2.data('diff-fragment-view')).toBeTruthy();
+                expect($container2.data('diff-fragment-view')).toBe(view2);
                 expect($container2.html()).toBe('<span>New comment 2</span>');
 
                 expect($container3.data('diff-fragment-view')).toBeTruthy();
+                expect($container3.data('diff-fragment-view')).not.toBe(view3);
                 expect($container3.html()).toBe('<span>Comment 3</span>');
 
                 expect($container4.data('diff-fragment-view')).toBeTruthy();
