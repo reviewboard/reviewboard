@@ -114,7 +114,7 @@ Perforce
 --------
 
 * Fixed another issue with patching errors involving BOM files from Perforce.
- (:bug:`4596`)
+  (:bug:`4596`)
 
 
 Contributors
