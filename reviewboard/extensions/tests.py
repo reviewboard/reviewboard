@@ -1343,7 +1343,8 @@ class SandboxTests(ExtensionManagerMixin, TestCase):
         self.extension = SandboxExtension(extension_manager=self.manager)
 
         self.factory = RequestFactory()
-        self.user = User.objects.create_user(username='reviewboard', email='',
+        self.user = User.objects.create_user(username='reviewboard',
+                                             email='reviewboard@example.com',
                                              password='password')
 
     def tearDown(self):

@@ -14,7 +14,8 @@ class PolicyTests(TestCase):
     def setUp(self):
         super(PolicyTests, self).setUp()
 
-        self.user = User.objects.create(username='testuser', password='')
+        self.user = User.objects.create_user(username='testuser', password='',
+                                             email='test@example.com')
         self.anonymous = AnonymousUser()
 
     def test_group_public(self):

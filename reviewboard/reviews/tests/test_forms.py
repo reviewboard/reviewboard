@@ -21,7 +21,8 @@ class DefaultReviewerFormTests(TestCase):
         tool = Tool.objects.get(name='CVS')
         repo = Repository.objects.create(name='Test', path='path', tool=tool,
                                          local_site=test_site)
-        user = User.objects.create(username='testuser', password='')
+        user = User.objects.create_user(username='testuser', password='',
+                                        email='user@example.com')
         test_site.users.add(user)
 
         group = Group.objects.create(name='test', display_name='Test',
@@ -47,7 +48,8 @@ class DefaultReviewerFormTests(TestCase):
         """Testing DefaultReviewerForm with a User not on the same LocalSite
         """
         test_site = LocalSite.objects.create(name='test')
-        user = User.objects.create(username='testuser', password='')
+        user = User.objects.create_user(username='testuser', password='',
+                                        email='user@example.com')
 
         form = DefaultReviewerForm(data={
             'name': 'Test',
@@ -126,7 +128,8 @@ class GroupFormTests(TestCase):
         """Testing GroupForm with a LocalSite"""
         test_site = LocalSite.objects.create(name='test')
 
-        user = User.objects.create(username='testuser', password='')
+        user = User.objects.create_user(username='testuser', password='',
+                                        email='user@example.com')
         test_site.users.add(user)
 
         form = GroupForm(data={
@@ -145,7 +148,8 @@ class GroupFormTests(TestCase):
         """Testing GroupForm with a User not on the same LocalSite"""
         test_site = LocalSite.objects.create(name='test')
 
-        user = User.objects.create(username='testuser', password='')
+        user = User.objects.create_user(username='testuser', password='',
+                                        email='user@example.com')
 
         form = GroupForm(data={
             'name': 'test',

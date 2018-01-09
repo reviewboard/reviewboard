@@ -16,7 +16,7 @@ This is an automatically generated e-mail. To reply, visit:
 {% endif %}{% for comment in review.file_attachment_comments.all %}
 
 File Attachment: {% if comment.file_attachment.caption %}{{comment.file_attachment.caption}} - {% endif %}{{comment.get_link_text}}
-<{{site_url}}/{{comment.get_review_url}}>
+<{{site_url}}{{comment.get_review_url}}>
 
 {% filter indent %}{% condense 2 %}
 {%  comment_detail_display_hook comment "text-email" %}
@@ -35,7 +35,7 @@ File Attachment: {% if comment.file_attachment.caption %}{{comment.file_attachme
 {% endfor %}{% for comment in review.screenshot_comments.all %}
 
 Screenshot: {{ comment.screenshot.caption }}
-<{{site_url}}/{{comment.get_review_url}}>
+<{{site_url}}{{comment.get_review_url}}>
 
 {% filter indent %}{% condense 2 %}
 {%  comment_detail_display_hook comment "text-email" %}

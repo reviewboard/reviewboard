@@ -17,7 +17,8 @@ class PolicyTests(TestCase):
     fixtures = ['test_scmtools']
 
     def setUp(self):
-        self.user = User.objects.create(username='testuser', password='')
+        self.user = User.objects.create_user(username='testuser', password='',
+                                             email='user@example.com')
         self.anonymous = AnonymousUser()
         self.repo = Repository.objects.create(
             name='test',

@@ -846,7 +846,8 @@ class CheckLoginRequiredViewMixinTests(TestCase):
                 return HttpResponse('success')
 
         request = RequestFactory().request()
-        request.user = User.objects.create(username='doc')
+        request.user = User.objects.create_user(username='doc',
+                                                email='doc@example.com')
 
         view = MyView.as_view()
         response = view(request)
@@ -912,7 +913,8 @@ class LoginRequiredViewMixinTests(TestCase):
                 return HttpResponse('success')
 
         request = RequestFactory().request()
-        request.user = User.objects.create(username='doc')
+        request.user = User.objects.create_user(username='doc',
+                                                email='doc@example.com')
 
         view = MyView.as_view()
         response = view(request)
@@ -949,7 +951,8 @@ class UserProfileRequiredViewMixinTests(TestCase):
                 return HttpResponse('success')
 
         request = RequestFactory().request()
-        request.user = User.objects.create(username='doc')
+        request.user = User.objects.create_user(username='doc',
+                                                email='doc@example.com')
 
         view = MyView.as_view()
         response = view(request)
@@ -968,7 +971,8 @@ class UserProfileRequiredViewMixinTests(TestCase):
                 return HttpResponse('success')
 
         request = RequestFactory().request()
-        request.user = User.objects.create(username='doc')
+        request.user = User.objects.create_user(username='doc',
+                                                email='doc@example.com')
         Profile.objects.create(user=request.user)
 
         view = MyView.as_view()

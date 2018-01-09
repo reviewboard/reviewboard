@@ -5,9 +5,6 @@
  *     caption (string):
  *         The file attachment's caption.
  *
- *     userName (string):
- *         The username of the owner of the file attachment.
- *
  *     downloadURL (string):
  *         The URL to download the file, for existing file attachments.
  *
@@ -22,7 +19,6 @@ RB.UserFileAttachment = RB.BaseResource.extend({
     defaults() {
         return _.defaults({
             caption: null,
-            userName: '',
             downloadURL: null,
             file: null,
             filename: null
@@ -60,8 +56,7 @@ RB.UserFileAttachment = RB.BaseResource.extend({
      *     The URL for the resource.
      */
     url() {
-        const username = this.get('userName');
-        const url = `${SITE_ROOT}api/users/${username}/user-file-attachments/`;
+        const url = RB.UserSession.instance.get('userFileAttachmentsURL');
 
         return this.isNew() ? url : `${url}${this.id}/`;
     }

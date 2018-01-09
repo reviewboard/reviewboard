@@ -717,8 +717,9 @@ class SandboxTests(SpyAgency, BaseFileAttachmentTestCase):
 
         register_mimetype_handler(SandboxMimetypeHandler)
 
-        user = User.objects.create(username='reviewboard',
-                                   password='password', email='')
+        user = User.objects.create_user(username='reviewboard',
+                                        password='password',
+                                        email='reviewboard@example.com')
 
         review_request = self.create_review_request(submitter=user)
         self.file_attachment = self.create_file_attachment(

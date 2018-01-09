@@ -422,7 +422,8 @@ class PostCommitTests(SpyAgency, TestCase):
     def setUp(self):
         super(PostCommitTests, self).setUp()
 
-        self.user = User.objects.create(username='testuser', password='')
+        self.user = User.objects.create_user(username='testuser', password='',
+                                             email='email@example.com')
         self.profile, is_new = Profile.objects.get_or_create(user=self.user)
         self.profile.save()
 

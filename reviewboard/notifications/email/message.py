@@ -74,6 +74,19 @@ def _ensure_unicode(text):
     return text
 
 
+def _get_server_base_url():
+    """Return the base URL of the server (without a trailing /).
+
+    Returns:
+        unicode:
+        The server base URL without a trailing slash.
+
+        For a site at :samp:`{scheme}://example.com/site-root`, this function
+        will return :samp:`{scheme}://example.com`.
+    """
+    return build_server_url('/')[:-1]
+
+
 def prepare_base_review_request_mail(user, review_request, subject,
                                      in_reply_to, to_field, cc_field,
                                      template_name_base, context=None,
@@ -142,7 +155,7 @@ def prepare_base_review_request_mail(user, review_request, subject,
 
     context.update({
         'user': user,
-        'site_url': get_server_url(),
+        'site_url': _get_server_base_url(),
         'review_request': review_request,
     })
     local_site = review_request.local_site
@@ -497,7 +510,7 @@ def prepare_user_registered_mail(user):
     subject = "New Review Board user registration for %s" % user.username
 
     context = {
-        'site_url': get_server_url(),
+        'site_url': _get_server_base_url(),
         'user': user,
         'user_url': build_server_url(reverse('admin:auth_user_change',
                                              args=(user.id,))),
@@ -559,7 +572,7 @@ def prepare_webapi_token_mail(webapi_token, op):
         'api_tokens_url': AuthenticationPage.get_absolute_url(),
         'partial_token': '%s...' % webapi_token.token[:10],
         'user': user,
-        'site_url': get_server_url(),
+        'site_root_url': get_server_url(),
     }
 
     text_message = render_to_string('%s.txt' % template_name, context)

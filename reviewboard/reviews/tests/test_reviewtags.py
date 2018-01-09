@@ -524,7 +524,8 @@ class CommentRepliesTests(TestCase):
         if user_is_owner:
             request.user = review.user
         else:
-            request.user = User.objects.create(username='test-user')
+            request.user = User.objects.create_user(username='test-user',
+                                                    email='user@example.com')
 
         html = t.render(RequestContext(request, {
             'comment': comment,
@@ -590,7 +591,8 @@ class ReviewBodyRepliesTests(TestCase):
         if user_is_owner:
             request.user = review.user
         else:
-            request.user = User.objects.create(username='test-user')
+            request.user = User.objects.create_user(username='test-user',
+                                                    email='user@example.com')
 
         html = t.render(RequestContext(request, {
             'review': review,

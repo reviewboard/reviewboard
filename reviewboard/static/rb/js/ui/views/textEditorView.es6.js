@@ -752,7 +752,6 @@ RB.TextEditorView = Backbone.View.extend({
 
         const userFileAttachment = new RB.UserFileAttachment({
             caption: file.name,
-            userName: RB.UserSession.instance.get('username')
         });
 
         userFileAttachment.save({

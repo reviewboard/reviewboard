@@ -24,7 +24,8 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
         repository = Repository.objects.create(name='Test1', path='path1',
                                                tool=tool)
 
-        self.user = User.objects.create(username='testuser', password='')
+        self.user = User.objects.create_user(username='testuser', password='',
+                                             email='user@example.com')
         self.profile, is_new = Profile.objects.get_or_create(user=self.user)
         self.profile.save()
 
@@ -535,7 +536,8 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
         """Testing counters when changing review request ownership"""
         self._check_counters(total_outgoing=1, pending_outgoing=1)
 
-        new_user = User.objects.create(username='test2', password='')
+        new_user = User.objects.create_user(username='test2', password='',
+                                            email='user@example.com')
         draft = ReviewRequestDraft.create(self.review_request)
         draft.owner = new_user
         draft.save()

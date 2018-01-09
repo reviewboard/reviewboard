@@ -3,8 +3,10 @@ from __future__ import unicode_literals
 import logging
 
 from django.conf import settings
+from django.conf.urls import include, url
 from django.contrib.auth.models import User
 from django.core import mail
+from django.core.urlresolvers import clear_url_caches, reverse
 from django.http import Http404
 from django.template import TemplateSyntaxError
 from django.test.client import RequestFactory
@@ -21,6 +23,7 @@ from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
 from reviewboard.accounts.models import Profile, ReviewRequestVisit
+from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.notifications.email.message import \
@@ -46,6 +49,42 @@ from reviewboard.webapi.models import WebAPIToken
 
 
 _CONSOLE_EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+
+urlpatterns = [
+    url(r'^site-root/', include('reviewboard.urls')),
+]
+
+
+class SiteRootURLTestsMixin(object):
+    """A mixin for TestCases that helps test URLs generated with site roots.
+
+    This mixin provides some settings for unit tests to help ensure that URLs
+    generated in e-mails are done so correctly and to test that the site root
+    is only present in those e-mails once.
+
+    .. seealso:: `Bug 4612`_
+
+    .. _Bug 4612: https://reviews.reviewboard.org/r/9448/bugs/4612/
+    """
+
+    CUSTOM_SITE_ROOT = '/site-root/'
+    BAD_SITE_ROOT = '/site-root//site-root/'
+    CUSTOM_SITE_ROOT_SETTINGS = {
+        'SITE_ROOT': '/site-root/',
+        'ROOT_URLCONF': 'reviewboard.notifications.tests',
+    }
+
+    @classmethod
+    def setUpClass(cls):
+        super(SiteRootURLTestsMixin, cls).setUpClass()
+
+        clear_url_caches()
+
+    def tearDown(self):
+        super(SiteRootURLTestsMixin, self).tearDown()
+
+        clear_url_caches()
 
 
 class EmailTestHelper(object):
@@ -80,32 +119,45 @@ class EmailTestHelper(object):
                     "group %s was not found in the recipient list" % address)
 
 
-class UserEmailTests(EmailTestHelper, TestCase):
+class UserEmailTestsMixin(EmailTestHelper):
+    """A mixin for user-related e-mail tests."""
+
     def setUp(self):
-        super(UserEmailTests, self).setUp()
+        super(UserEmailTestsMixin, self).setUp()
 
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set("mail_send_new_user_mail", True)
         siteconfig.save()
         load_site_config()
 
-    def test_new_user_email(self):
-        """
-        Testing sending an e-mail after a new user has successfully registered.
-        """
-        new_user_info = {
-            'username': 'NewUser',
-            'password1': 'password',
-            'password2': 'password',
-            'email': 'newuser@example.com',
-            'first_name': 'New',
-            'last_name': 'User'
+    def _register(self, username='NewUser', password1='password',
+                  password2='password', email='newuser@example.com',
+                  first_name='New', last_name='User'):
+        fields = {
+            'username': username,
+            'password1': password1,
+            'password2': password2,
+            'email': email,
+            'first_name': first_name,
+            'last_name': last_name,
         }
 
-        # Registration request have to be sent twice since djblets need to
-        # validate cookies on the second request.
-        self.client.get('/account/register/')
-        self.client.post('/account/register/', new_user_info)
+        register_url = reverse('register')
+
+        # We have to first get the register page so that the CSRF cookie is
+        # set.
+        self.client.get(register_url)
+        self.client.post(register_url, fields)
+
+
+class UserEmailTests(UserEmailTestsMixin, TestCase):
+    """User e-mail tests."""
+
+    def test_new_user_email(self):
+        """Testing sending an e-mail after a new user has successfully
+        registered
+        """
+        self._register()
 
         siteconfig = SiteConfiguration.objects.get_current()
         admin_name = siteconfig.get('site_admin_name')
@@ -124,20 +176,60 @@ class UserEmailTests(EmailTestHelper, TestCase):
                                              email=admin_email_addr))
 
 
-class ReviewRequestEmailTests(EmailTestHelper, DmarcDnsTestsMixin, SpyAgency,
-                              TestCase):
-    """Tests the e-mail support."""
+class UserEmailSiteRootURLTests(SiteRootURLTestsMixin, UserEmailTestsMixin,
+                                TestCase):
+    """Tests for Bug 4612 related to user e-mails.
+
+    User account e-mails do not include anything with a Local Site, so there
+    is no reason to tests the Local Site case.
+    """
+
+    @override_settings(**SiteRootURLTestsMixin.CUSTOM_SITE_ROOT_SETTINGS)
+    def test_new_user_email_site_root_custom(self):
+        """Testing new user e-mail includes site root in e-mails only once with
+        custom site root
+        """
+        self._register()
+
+        self.assertEqual(len(mail.outbox), 1)
+        email = mail.outbox[0]
+        self.assertNotIn(self.BAD_SITE_ROOT, email.body)
+
+        for alternative in email.alternatives:
+            self.assertNotIn(self.BAD_SITE_ROOT, alternative[0])
+
+    def test_new_user_email_site_root_default(self):
+        """Testing new user e-mail includes site root in e-mails only once with
+        default site root
+        """
+        self._register()
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+        self.assertNotIn('example.com//', message.body)
+
+        for alternative in message.alternatives:
+            self.assertNotIn('example.com//', alternative[0])
+
+
+class ReviewRequestEmailTestsMixin(EmailTestHelper):
+    """A mixin for review request-related and review-related e-mail tests."""
 
     fixtures = ['test_users']
 
     def setUp(self):
-        super(ReviewRequestEmailTests, self).setUp()
+        super(ReviewRequestEmailTestsMixin, self).setUp()
 
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set("mail_send_review_mail", True)
         siteconfig.set("mail_default_from", self.sender)
         siteconfig.save()
         load_site_config()
+
+
+class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
+                              SpyAgency, TestCase):
+    """Tests for review and review request e-mails."""
 
     def test_new_review_request_email(self):
         """Testing sending an e-mail when creating a new review request"""
@@ -771,28 +863,23 @@ class ReviewRequestEmailTests(EmailTestHelper, DmarcDnsTestsMixin, SpyAgency,
         """
         test_site = LocalSite.objects.create(name=self.local_site_name)
 
-        site_user1 = User.objects.create(
-            username='site_user1',
-            email='site_user1@example.com')
-        site_user2 = User.objects.create(
-            username='site_user2',
-            email='site_user2@example.com')
-        site_user3 = User.objects.create(
-            username='site_user3',
-            email='site_user3@example.com')
-        site_user4 = User.objects.create(
-            username='site_user4',
-            email='site_user4@example.com')
-        site_user5 = User.objects.create(
-            username='site_user5',
-            email='site_user5@example.com')
-        non_site_user1 = User.objects.create(
+        site_user1 = User.objects.create_user(username='site_user1',
+                                              email='site_user1@example.com')
+        site_user2 = User.objects.create_user(username='site_user2',
+                                              email='site_user2@example.com')
+        site_user3 = User.objects.create_user(username='site_user3',
+                                              email='site_user3@example.com')
+        site_user4 = User.objects.create_user(username='site_user4',
+                                              email='site_user4@example.com')
+        site_user5 = User.objects.create_user(username='site_user5',
+                                              email='site_user5@example.com')
+        non_site_user1 = User.objects.create_user(
             username='non_site_user1',
             email='non_site_user1@example.com')
-        non_site_user2 = User.objects.create(
+        non_site_user2 = User.objects.create_user(
             username='non_site_user2',
             email='non_site_user2@example.com')
-        non_site_user3 = User.objects.create(
+        non_site_user3 = User.objects.create_user(
             username='non_site_user3',
             email='non_site_user3@example.com')
 
@@ -1485,22 +1572,195 @@ class ReviewRequestEmailTests(EmailTestHelper, DmarcDnsTestsMixin, SpyAgency,
                                    email=self.sender)
 
 
-class WebAPITokenEmailTests(EmailTestHelper, TestCase):
-    """Unit tests for WebAPIToken creation e-mails."""
+class ReviewRequestSiteRootURLTests(SiteRootURLTestsMixin,
+                                    ReviewRequestEmailTestsMixin, TestCase):
+    """Tests for Bug 4612 related to review request and review e-mails."""
+
+    @override_settings(**SiteRootURLTestsMixin.CUSTOM_SITE_ROOT_SETTINGS)
+    def test_review_request_email_site_root_custom(self):
+        """Testing review request e-mail includes site root only once with
+        custom site root
+        """
+        review_request = self.create_review_request()
+        review_request.publish(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        absolute_url = review_request.get_absolute_url()
+        review_request_url = build_server_url(absolute_url)
+        bad_review_request_url = '%s%s' % (get_server_url(), absolute_url)
+
+        self.assertNotIn(self.BAD_SITE_ROOT, review_request_url)
+        self.assertIn(self.BAD_SITE_ROOT, bad_review_request_url)
+
+        self.assertIn(review_request_url, message.body)
+        self.assertNotIn(bad_review_request_url, message.body)
+
+        for alternative in message.alternatives:
+            self.assertNotIn(bad_review_request_url, alternative)
+
+    def test_review_request_email_site_root_default(self):
+        """Testing review request e-mail includes site root only once with
+        default site root
+        """
+        review_request = self.create_review_request()
+        review_request.publish(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertNotIn('example.com//', message.body)
+
+        for alternative in message.alternatives:
+            self.assertNotIn('example.com//', alternative[0])
+
+    @add_fixtures(['test_site'])
+    @override_settings(**SiteRootURLTestsMixin.CUSTOM_SITE_ROOT_SETTINGS)
+    def test_review_request_email_site_root_custom_with_localsite(self):
+        """Testing review request e-mail includes site root only once with
+        custom site root and a LocalSite
+        """
+        review_request = self.create_review_request(with_local_site=True)
+
+        with self.settings(SITE_ROOT='/foo/'):
+            review_request.publish(review_request.submitter)
+            absolute_url = review_request.get_absolute_url()
+            bad_review_request_url = '%s%s' % (get_server_url(), absolute_url)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        review_request_url = build_server_url(absolute_url)
+
+        self.assertNotIn(self.BAD_SITE_ROOT, review_request_url)
+        self.assertIn(self.BAD_SITE_ROOT, bad_review_request_url)
+
+        self.assertIn(review_request_url, message.body)
+        self.assertNotIn(bad_review_request_url, message.body)
+
+        for alternative in message.alternatives:
+            self.assertNotIn(bad_review_request_url, alternative[0])
+
+    @add_fixtures(['test_site'])
+    def test_review_request_email_site_root_default_with_localsite(self):
+        """Testing review request e-mail includes site root only once with
+        default site root and a LocalSite
+        """
+        review_request = self.create_review_request()
+        review_request.publish(review_request.submitter)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertNotIn('example.com//', message.body)
+
+        for alternative in message.alternatives:
+            self.assertNotIn('example.com//', alternative[0])
+
+    @override_settings(**SiteRootURLTestsMixin.CUSTOM_SITE_ROOT_SETTINGS)
+    def test_review_email_site_root_custom(self):
+        """Testing review  e-mail includes site root only once with custom site
+        root
+        """
+        review_request = self.create_review_request(public=True)
+        review = self.create_review(review_request=review_request)
+        review.publish(review.user)
+
+        review_url = build_server_url(review.get_absolute_url())
+        bad_review_url = '%s%s' % (get_server_url(), review.get_absolute_url())
+
+        self.assertNotIn(self.BAD_SITE_ROOT, review_url)
+        self.assertIn(self.BAD_SITE_ROOT, bad_review_url)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertNotIn(bad_review_url, message.body)
+
+        for alternative in message.alternatives:
+            self.assertNotIn(bad_review_url, alternative[0])
+
+    def test_review_email_site_root_default(self):
+        """Testing review e-mail includes site root only once with default site
+        root
+        """
+        review_request = self.create_review_request(public=True)
+        review = self.create_review(review_request=review_request)
+        review.publish(review.user)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertNotIn('example.com//', message.body)
+
+        for alternative in message.alternatives:
+            self.assertNotIn('example.com//', alternative[0])
+
+    @add_fixtures(['test_site'])
+    @override_settings(**SiteRootURLTestsMixin.CUSTOM_SITE_ROOT_SETTINGS)
+    def test_review_email_site_root_custom_with_localsite(self):
+        """Testing review  e-mail includes site root only once with custom site
+        root and a LocalSite
+        """
+        review_request = self.create_review_request(public=True,
+                                                    with_local_site=True)
+        review = self.create_review(review_request=review_request)
+        review.publish(review.user)
+
+        review_url = build_server_url(review.get_absolute_url())
+        bad_review_url = '%s%s' % (get_server_url(), review.get_absolute_url())
+
+        self.assertNotIn(self.BAD_SITE_ROOT, review_url)
+        self.assertIn(self.BAD_SITE_ROOT, bad_review_url)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertNotIn(bad_review_url, message.body)
+
+        for alternative in message.alternatives:
+            self.assertNotIn(bad_review_url, alternative[0])
+
+    @add_fixtures(['test_site'])
+    def test_review_email_site_root_default_with_localsite(self):
+        """Testing review e-mail includes site root only once with default site
+        root and a LocalSite
+        """
+        review_request = self.create_review_request(public=True,
+                                                    with_local_site=True)
+        review = self.create_review(review_request=review_request)
+        review.publish(review.user)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertNotIn('example.com//', message.body)
+
+        for alternative in message.alternatives:
+            self.assertNotIn('example.com//', alternative[0])
+
+
+class WebAPITokenEmailTestsMixin(EmailTestHelper):
+    """A mixin for web hook-related e-mail tests."""
 
     def setUp(self):
-        super(WebAPITokenEmailTests, self).setUp()
+        super(WebAPITokenEmailTestsMixin, self).setUp()
 
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set('mail_send_new_user_mail', False)
         siteconfig.save()
         load_site_config()
 
-        self.user = User.objects.create(username='test-user',
-                                        first_name='Sample',
-                                        last_name='User',
-                                        email='test-user@example.com')
+        self.user = User.objects.create_user(username='test-user',
+                                             first_name='Sample',
+                                             last_name='User',
+                                             email='test-user@example.com')
         self.assertEqual(len(mail.outbox), 0)
+
+
+class WebAPITokenEmailTests(WebAPITokenEmailTestsMixin, TestCase):
+    """Unit tests for WebAPIToken creation e-mails."""
 
     def test_create_token(self):
         """Testing sending e-mail when a new API Token is created"""
@@ -1581,6 +1841,77 @@ class WebAPITokenEmailTests(EmailTestHelper, TestCase):
         self.assertIn(webapi_token.token, html_body)
         self.assertIn('One of your API tokens has been deleted', email.body)
         self.assertIn('One of your API tokens has been deleted', html_body)
+
+
+class WebAPITokenSiteRootURLTests(SiteRootURLTestsMixin,
+                                  WebAPITokenEmailTestsMixin, TestCase):
+    """Tests for Bug 4612 related to web API token e-mails."""
+
+    @override_settings(**SiteRootURLTestsMixin.CUSTOM_SITE_ROOT_SETTINGS)
+    def test_create_token_site_root_custom(self):
+        """Testing WebAPI Token e-mails include site root only once with custom
+        site root
+        """
+        WebAPIToken.objects.generate_token(user=self.user, note='Test',
+                                           policy={})
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertNotIn(self.BAD_SITE_ROOT, message.body)
+
+        for alternative in message.alternatives:
+            self.assertNotIn(self.BAD_SITE_ROOT, alternative[0])
+
+    def test_create_token_site_root_default(self):
+        """Testing WebAPI Token e-mails include site root only once with
+        default site root
+        """
+        WebAPIToken.objects.generate_token(user=self.user, note='Test',
+                                           policy={})
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertNotIn('example.com//', message.body)
+
+        for alternative in message.alternatives:
+            self.assertNotIn('example.com//', alternative[0])
+
+    @add_fixtures(['test_site'])
+    @override_settings(**SiteRootURLTestsMixin.CUSTOM_SITE_ROOT_SETTINGS)
+    def test_create_token_site_root_custom_with_localsite(self):
+        """Testing WebAPI Token e-mails include site root only once with custom
+        site root and a LocalSite
+        """
+        local_site = LocalSite.objects.get(pk=1)
+        WebAPIToken.objects.generate_token(user=self.user, note='Test',
+                                           policy={}, local_site=local_site)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertNotIn(self.BAD_SITE_ROOT, message.body)
+
+        for alternative in message.alternatives:
+            self.assertNotIn(self.BAD_SITE_ROOT, alternative[0])
+
+    @add_fixtures(['test_site'])
+    def test_create_token_site_root_default_with_localsite(self):
+        """Testing WebAPI Token e-mails include site root only once with
+        default site root and a LocalSite
+        """
+        local_site = LocalSite.objects.get(pk=1)
+        WebAPIToken.objects.generate_token(user=self.user, note='Test',
+                                           policy={}, local_site=local_site)
+
+        self.assertEqual(len(mail.outbox), 1)
+        message = mail.outbox[0]
+
+        self.assertNotIn('example.com//', message.body)
+
+        for alternative in message.alternatives:
+            self.assertNotIn('example.com//', alternative[0])
 
 
 class WebHookPayloadTests(SpyAgency, TestCase):
@@ -1891,7 +2222,6 @@ class WebHookDispatchTests(SpyAgency, TestCase):
         self.assertTrue(len(logging.exception.spy.calls), 2)
         self.assertIsInstance(logging.exception.spy.calls[0].args[2], IOError)
         self.assertIsInstance(logging.exception.spy.calls[1].args[2], IOError)
-
 
     def _test_dispatch(self, handler, event, payload, expected_content_type,
                        expected_data, expected_sig_header=None):
@@ -2570,10 +2900,12 @@ class EmailUtilsTests(TestCase):
         group1 = Group.objects.create(name='group1')
         group2 = Group.objects.create(name='group2')
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@example.com')
 
         group1.users = [user1]
         group2.users = [user2]
@@ -2597,10 +2929,12 @@ class EmailUtilsTests(TestCase):
         group1 = Group.objects.create(name='group1', local_site=local_site1)
         group2 = Group.objects.create(name='group2', local_site=local_site2)
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@example.com')
 
         local_site1.users = [user1]
 
@@ -2618,10 +2952,12 @@ class EmailUtilsTests(TestCase):
         group1 = self.create_review_group('group1')
         group2 = self.create_review_group('group2')
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', is_active=False)
+                                    last_name='Two', is_active=False,
+                                    email='user1@example.com')
 
         group1.users = [user1]
         group2.users = [user2]
@@ -2640,10 +2976,12 @@ class EmailUtilsTests(TestCase):
         group1 = self.create_review_group('group1', local_site=local_site1)
         group2 = self.create_review_group('group2', local_site=local_site2)
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', is_active=False)
+                                    last_name='Two', is_active=False,
+                                    email='user2@example.com')
 
         local_site1.users = [user1]
         local_site2.users = [user2]
@@ -2766,7 +3104,8 @@ class EmailUtilsTests(TestCase):
         """
         group = self.create_review_group()
         user = User.objects.create(username='user', first_name='User',
-                                   last_name='Foo', is_active=False)
+                                   last_name='Foo', is_active=False,
+                                   email='user@example.com')
 
         review_request = self.create_review_request()
         review_request.target_people = [user]
@@ -2820,10 +3159,12 @@ class EmailUtilsTests(TestCase):
         review_request = self.create_review_request()
         submitter = review_request.submitter
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', is_active=False)
+                                    last_name='Two', email='user2@example.com',
+                                    is_active=False)
 
         review_request.target_people = [user1, user2]
 
@@ -2840,10 +3181,12 @@ class EmailUtilsTests(TestCase):
         review_request = self.create_review_request()
         submitter = review_request.submitter
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@example.com')
 
         Profile.objects.create(user=user2, should_send_email=False)
 
@@ -2861,10 +3204,12 @@ class EmailUtilsTests(TestCase):
         """
         local_site = LocalSite.objects.create(name=self.local_site_name)
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@example.com')
 
         local_site.users = [user1]
 
@@ -2885,10 +3230,12 @@ class EmailUtilsTests(TestCase):
         """
         local_site = LocalSite.objects.create(name=self.local_site_name)
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', is_active=False)
+                                    last_name='Two', is_active=False,
+                                    email='user2@example.com')
 
         local_site.users = [user1, user2]
 
@@ -2909,10 +3256,12 @@ class EmailUtilsTests(TestCase):
         """
         local_site = LocalSite.objects.create(name=self.local_site_name)
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@exmaple.com')
 
         Profile.objects.create(user=user2,
                                should_send_email=False)
@@ -2953,10 +3302,12 @@ class EmailUtilsTests(TestCase):
         """Testing building recipients with a limited recipients list that
         contains inactive users
         """
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', is_active=False)
+                                    last_name='Two', email='user2@exmaple.com',
+                                    is_active=False)
 
         review_request = self.create_review_request()
         submitter = review_request.submitter
@@ -2975,10 +3326,12 @@ class EmailUtilsTests(TestCase):
         local_site1 = LocalSite.objects.create(name='local-site1')
         local_site2 = LocalSite.objects.create(name='local-site2')
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@exmaple.com')
 
         local_site1.users = [user1]
         local_site2.users = [user2]
@@ -3011,10 +3364,12 @@ class EmailUtilsTests(TestCase):
         """Testing building recipients with an extra recipients list that
         contains inactive users
         """
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', is_active=False)
+                                    last_name='Two', email='user2@exmaple.com',
+                                    is_active=False)
 
         review_request = self.create_review_request()
         submitter = review_request.submitter
@@ -3033,10 +3388,12 @@ class EmailUtilsTests(TestCase):
         local_site1 = LocalSite.objects.create(name='local-site1')
         local_site2 = LocalSite.objects.create(name='local-site2')
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@exmaple.com')
 
         local_site1.users = [user1]
         local_site2.users = [user2]
@@ -3055,12 +3412,15 @@ class EmailUtilsTests(TestCase):
         """Testing building recipients with an extra recipients list and
         a limited recipients list
         """
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
-        user3 = User.objects.create(username='user3', first_name='User',
-                                    last_name='Three')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@exmaple.com')
+        user3 = User.objects.create_user(username='user3', first_name='User',
+                                         last_name='Three',
+                                         email='user3@exmaple.com')
 
         group = self.create_review_group()
 
@@ -3081,12 +3441,15 @@ class EmailUtilsTests(TestCase):
         """Testing building recipients with an extra recipients list and a
         limited recipients list that contains inactive users
         """
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', is_active=False)
-        user3 = User.objects.create(username='user3', first_name='User',
-                                    last_name='Three')
+                                    last_name='Two', email='user2@exmaple.com',
+                                    is_active=False)
+        user3 = User.objects.create_user(username='user3', first_name='User',
+                                         last_name='Three',
+                                         email='user3@exmaple.com')
 
         group = self.create_review_group()
 
@@ -3110,12 +3473,15 @@ class EmailUtilsTests(TestCase):
         local_site1 = LocalSite.objects.create(name='local-site1')
         local_site2 = LocalSite.objects.create(name='local-site2')
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
-        user3 = User.objects.create(username='user3', first_name='User',
-                                    last_name='Three')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@exmaple.com')
+        user3 = User.objects.create_user(username='user3', first_name='User',
+                                         last_name='Three',
+                                         email='user3@exmaple.com')
 
         local_site1.users = [user1, user3]
         local_site2.users = [user2]
@@ -3160,11 +3526,12 @@ class EmailUtilsTests(TestCase):
         review_request = self.create_review_request()
         submitter = review_request.submitter
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', is_active=False)
-
+                                    last_name='Two', email='user@exmaple.com',
+                                    is_active=False)
         profile1 = Profile.objects.create(user=user1)
         profile1.starred_review_requests = [review_request]
 
@@ -3187,10 +3554,12 @@ class EmailUtilsTests(TestCase):
         review_request = self.create_review_request(local_site=local_site1)
         submitter = review_request.submitter
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user@exmaple.com')
 
         local_site1.users = [user1]
         local_site2.users = [user2]
@@ -3228,7 +3597,8 @@ class BasePreviewEmailViewTests(TestCase):
                 }
 
         request = RequestFactory().request()
-        request.user = User.objects.create(username='test-user')
+        request.user = User.objects.create_user(username='test-user',
+                                                email='user@example.com')
 
         view = MyPreviewEmailView.as_view()
         response = view(request, test_var='test', message_format='text')
@@ -3253,7 +3623,8 @@ class BasePreviewEmailViewTests(TestCase):
                 }
 
         request = RequestFactory().request()
-        request.user = User.objects.create(username='test-user')
+        request.user = User.objects.create_user(username='test-user',
+                                                email='user@example.com')
 
         view = MyPreviewEmailView.as_view()
         response = view(request, test_var='test', message_format='text')
@@ -3274,7 +3645,8 @@ class BasePreviewEmailViewTests(TestCase):
                 self.fail('get_email_data should not be reached')
 
         request = RequestFactory().request()
-        request.user = User.objects.create(username='test-user')
+        request.user = User.objects.create_user(username='test-user',
+                                                email='user@example.com')
 
         view = MyPreviewEmailView.as_view()
 

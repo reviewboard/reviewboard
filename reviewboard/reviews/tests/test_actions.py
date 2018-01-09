@@ -378,7 +378,8 @@ class CloseMenuActionTests(ActionsTestCase):
         review_request = self.create_review_request(publish=True)
 
         request = RequestFactory().request()
-        request.user = User.objects.create(username='test-user')
+        request.user = User.objects.create_user(username='test-user',
+                                                email='user@example.com')
 
         self.assertFalse(self.action.should_render({
             'review_request': review_request,
@@ -397,7 +398,8 @@ class CloseMenuActionTests(ActionsTestCase):
         review_request = self.create_review_request(publish=True)
 
         request = RequestFactory().request()
-        request.user = User.objects.create(username='test-user')
+        request.user = User.objects.create_user(username='test-user',
+                                                email='user@example.com')
 
         self.assertTrue(self.action.should_render({
             'review_request': review_request,
@@ -416,7 +418,8 @@ class CloseMenuActionTests(ActionsTestCase):
         review_request = self.create_review_request(public=False)
 
         request = RequestFactory().request()
-        request.user = User.objects.create(username='test-user')
+        request.user = User.objects.create_user(username='test-user',
+                                                email='user@example.com')
 
         self.assertFalse(self.action.should_render({
             'review_request': review_request,
@@ -794,7 +797,8 @@ class UpdateMenuActionTests(ActionsTestCase):
         review_request = self.create_review_request(publish=True)
 
         request = RequestFactory().request()
-        request.user = User.objects.create(username='test-user')
+        request.user = User.objects.create_user(username='test-user',
+                                                email='user@example.com')
 
         self.assertFalse(self.action.should_render({
             'review_request': review_request,
@@ -813,7 +817,8 @@ class UpdateMenuActionTests(ActionsTestCase):
         review_request = self.create_review_request(publish=True)
 
         request = RequestFactory().request()
-        request.user = User.objects.create(username='test-user')
+        request.user = User.objects.create_user(username='test-user',
+                                                email='user@example.com')
 
         self.assertTrue(self.action.should_render({
             'review_request': review_request,

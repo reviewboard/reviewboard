@@ -130,7 +130,8 @@
         watchedReviewGroupsURL: "{% url 'watched-review-groups-resource' request.user %}",
         watchedReviewRequestsURL: "{% url 'watched-review-requests-resource' request.user %}",
         archivedReviewRequestsURL: "{% url 'archived-review-requests-resource' request.user %}",
-        mutedReviewRequestsURL: "{% url 'muted-review-requests-resource' request.user %}"
+        mutedReviewRequestsURL: "{% url 'muted-review-requests-resource' request.user %}",
+        userFileAttachmentsURL: "{% url 'user-file-attachments-resource' request.user %}"
 {% else %}
         authenticated: false,
         loginURL: "{% url 'login' %}"

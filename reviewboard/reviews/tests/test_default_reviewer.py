@@ -74,10 +74,12 @@ class DefaultReviewerTests(TestCase):
                                           tool=tool)
         default_reviewer1.repository.add(repo1)
 
-        user1 = User.objects.create(username='User1')
+        user1 = User.objects.create_user(username='User1',
+                                         email='user1@example.com')
         default_reviewer1.people.add(user1)
 
-        user2 = User.objects.create(username='User2', is_active=False)
+        user2 = User.objects.create(username='User2',
+                                    email='user2@example.com', is_active=False)
         default_reviewer1.people.add(user2)
 
         review_request = self.create_review_request(repository=repo1,

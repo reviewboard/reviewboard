@@ -18,7 +18,8 @@ class DefaultGroupTest(SpyAgency, TestCase):
         """Testing default group computation on user_registered signal"""
         self.spy_on(_add_default_groups)
 
-        user = User.objects.create_user(username='reviewboard', email='',
+        user = User.objects.create_user(username='reviewboard',
+                                        email='user@example.com',
                                         password='password')
 
         user_registered.send(sender=None, user=user)

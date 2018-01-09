@@ -99,8 +99,10 @@ class ChangeDescTests(TestCase):
 
     def test_is_new_for_user_with_non_owner(self):
         """Testing ChangeDescription.is_new_for_user with non-owner"""
-        user1 = User.objects.create(username='test-user-1')
-        user2 = User.objects.create(username='test-user-2')
+        user1 = User.objects.create_user(username='test-user-1',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='test-user-2',
+                                         email='user2@example.com')
 
         changedesc = ChangeDescription(
             user=user1,
@@ -117,7 +119,8 @@ class ChangeDescTests(TestCase):
 
     def test_is_new_for_user_with_owner(self):
         """Testing ChangeDescription.is_new_for_user with owner"""
-        user = User.objects.create(username='test-user')
+        user = User.objects.create_user(username='test-user',
+                                        email='test@example.com')
 
         changedesc = ChangeDescription(
             user=user,

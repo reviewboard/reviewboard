@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import Permission, User
 from django.utils import six
+from djblets.avatars.services.base import AvatarService
 from djblets.avatars.services.gravatar import GravatarService
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -20,6 +21,17 @@ from reviewboard.webapi.tests.mimetypes import (user_item_mimetype,
 from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
 from reviewboard.webapi.tests.urls import (get_user_item_url,
                                            get_user_list_url)
+
+
+class NoURLAvatarService(AvatarService):
+    """An avatar services that returns no URLs."""
+
+    avatar_service_id = 'no-urls'
+    name = 'No URLs For You'
+
+    def get_avatar_urls_uncached(self, user, size):
+        """Return no URLs."""
+        return {}
 
 
 @six.add_metaclass(BasicTestsMetaclass)
@@ -399,3 +411,25 @@ class ResourceItemTests(AvatarServicesTestMixin, BaseWebAPITestCase):
 
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['user']['is_active'], False)
+
+    @webapi_test_template
+    def test_get_avatar_service_no_urls(self):
+        """Testing the GET <URL> API when the avatar service returns no URLs
+        """
+        avatar_services.register(NoURLAvatarService)
+        avatar_services.enable_service(NoURLAvatarService, save=False)
+
+        dopey = User.objects.get(username='dopey')
+        settings_mgr = avatar_services.settings_manager_class(dopey)
+        settings_mgr.avatar_service_id = NoURLAvatarService.avatar_service_id
+        settings_mgr.save()
+
+        rsp = self.api_get(get_user_item_url('dopey'),
+                           expected_mimetype=user_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        user_rsp = rsp['user']
+        self.assertIn('avatar_url', user_rsp)
+        self.assertIsNone(user_rsp['avatar_url'])
+        self.assertIn('avatar_urls', user_rsp)
+        self.assertEqual(user_rsp['avatar_urls'], {})
