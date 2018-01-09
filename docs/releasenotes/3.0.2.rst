@@ -1,0 +1,118 @@
+.. default-intersphinx:: rb3.0
+
+
+================================
+Review Board 3.0.2 Release Notes
+================================
+
+**Release date**: TBD
+
+
+Usability Improvements
+======================
+
+* JSON fields in the administration UI are now more easily editable.
+
+
+Web API
+=======
+
+* The :ref:`User resource <webapi2.0-user-resource>` no longer breaks if
+  failing to load avatars for a user. (:bug:`4616`)
+
+
+Extensions
+==========
+
+* Fixed compatibility with some existing extensions containing JavaScript
+  code.
+
+  Review Board 3.0 removed some attributes on
+  :js:class:`RB.ReviewablePageView` that broke some extensions (specifically,
+  ``reviewRequest`` and ``pendingReview``. These attributes have been
+  restored.
+
+
+Bug Fixes
+=========
+
+Avatars
+-------
+
+* Fixed a regression where e-mail addresses weren't being normalized to
+  lowercase, causing Gravatar lookups to fail.
+
+
+Desktop Notifications
+---------------------
+
+* Fixed support for displaying desktop notifications.
+
+  Review Board 3.0 introduced support for showing desktop notifications when a
+  review request currently opened in a tab has updated, helping to let users
+  know about the update when they're not paying attention to the browser. This
+  shipped in a broken state in 3.0, but is now fixed.
+
+  Users may see a prompt for enabling notifications when next viewing a review
+  request. This can also be controlled in the My Account page.
+
+
+E-Mail
+------
+
+* Review Board sites hosted in a subdirectory of a domain no longer contain
+  broken links in e-mails. (:bug:`4612`)
+
+
+File Attachments
+----------------
+
+* Fixed drag-and-dropping file attachments on a text field when using a
+  :term:`local site`.
+
+
+Review Requests
+---------------
+
+* Users can now close their own issues that require verification.
+  (:bug:`4610`)
+
+* Closed review requests now longer show the last comment or review time
+  as the closed time. (:bug:`4492`)
+
+  Patch by Theodore Brockman.
+
+* Fixed loading updates to review request entries and diff comment fragments
+  that contain Unicode/Emoji characters. (:bug:`4617`)
+
+* The in-page notification bubble indicating new updates or discussions on a
+  review request is no longer hidden on the review request page.
+
+* Fixed displaying Emojis in the diffed text fields for review request field
+  changes.
+
+* Fixed reloading entries on a review request when the HTML contains Unicode
+  characters.
+
+* Fixed loading diffs for comments when the diff contained Unicode characters.
+
+* Fixed dynamically loading and displaying diffs for comments left by
+  automated code review tools after the first automated review for a change.
+
+* Fixed a problem where a translation of certain text could potentially impact
+  the rendering of the Review Request Changed entries.
+
+
+Diff Viewer
+-----------
+
+* The "Download Diff" button no longer vanishes after loading the diff.
+  (:bug:`4615`)
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Theodore Brockman
