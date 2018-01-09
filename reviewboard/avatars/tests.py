@@ -282,10 +282,11 @@ class TemplateTagTests(AvatarServicesTestMixin, TestCase):
         t = Template('{% load avatars %}'
                      '{% avatar target_user 32 avatar_service_id %}')
 
-        user = User.objects.create(
+        user = User.objects.create_user(
             first_name='<b>Bad',
             last_name='User</b>',
-            username='bad_user')
+            username='bad_user',
+            email='bad_user@example.com')
 
         Profile.objects.create(user=user)
 

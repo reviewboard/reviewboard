@@ -266,7 +266,8 @@ class CheckLocalSiteAccessViewMixinTests(TestCase):
         request = RequestFactory().request()
         request.resolver_match = ResolverMatch(view, [], {})
         request.local_site = LocalSite.objects.get(name='local-site-1')
-        request.user = User.objects.create(username='test123')
+        request.user = User.objects.create_user(username='test123',
+                                                email='test123@example.com')
 
         response = view(request, local_site_name='local-site-1')
         self.assertEqual(response.status_code, 403)

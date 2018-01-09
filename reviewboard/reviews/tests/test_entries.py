@@ -112,7 +112,8 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
             added_timestamp=datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
         entry.template_name = 'reviews/entries/base.html'
 
-        self.request.user = User.objects.create(username='test-user')
+        self.request.user = User.objects.create_user(username='test-user',
+                                                     email='user@example.com')
 
         html = entry.render_to_string(
             self.request,
@@ -134,7 +135,8 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
             added_timestamp=datetime(2017, 9, 7, 17, 0, 0, tzinfo=utc))
         entry.template_name = 'reviews/entries/base.html'
 
-        self.request.user = User.objects.create(username='test-user')
+        self.request.user = User.objects.create_user(username='test-user',
+                                                     email='user@example.com')
 
         html = entry.render_to_string(
             self.request,
@@ -208,7 +210,8 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
             entry_id='test',
             added_timestamp=datetime(2017, 9, 7, 15, 36, 0, tzinfo=utc))
 
-        user = User.objects.create(username='test-user')
+        user = User.objects.create_user(username='test-user',
+                                        email='user@example.com')
 
         self.assertTrue(entry.is_entry_new(
             last_visited=datetime(2017, 9, 7, 10, 0, 0, tzinfo=utc),
@@ -229,7 +232,8 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
 
         self.assertFalse(entry.is_entry_new(
             last_visited=datetime(2017, 9, 7, 10, 0, 0, tzinfo=utc),
-            user=User.objects.create(username='test-user')))
+            user=User.objects.create_user(username='test-user',
+                                          email='user@example.com')))
 
     def test_collapsed_with_older_than_last_visited(self):
         """Testing BaseReviewRequestPageEntry.collapsed with entry older than
@@ -784,7 +788,8 @@ class InitialStatusUpdatesEntryTests(TestCase):
         self.data.query_data_pre_etag()
         self.data.query_data_post_etag()
 
-        user = User.objects.create(username='test-user')
+        user = User.objects.create_user(username='test-user',
+                                        email='user@example.com')
         entry = InitialStatusUpdatesEntry(data=self.data)
 
         self.assertFalse(entry.is_entry_new(
@@ -1739,7 +1744,8 @@ class ChangeEntryTests(TestCase):
         entry = ChangeEntry(data=self.data,
                             changedesc=self.changedesc)
 
-        user = User.objects.create(username='test-user')
+        user = User.objects.create_user(username='test-user',
+                                        email='user@example.com')
 
         self.assertTrue(entry.is_entry_new(
             last_visited=self.changedesc.timestamp - timedelta(days=1),

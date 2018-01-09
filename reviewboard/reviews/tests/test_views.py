@@ -1205,7 +1205,8 @@ class CommentDiffFragmentsViewTests(TestCase):
         user is not the owner
         """
         user = User.objects.create_user(username='reviewer',
-                                        password='reviewer')
+                                        password='reviewer',
+                                        email='reviewer@example.com')
 
         review_request = self.create_review_request(create_repository=True)
         diffset = self.create_diffset(review_request)
@@ -1228,7 +1229,8 @@ class CommentDiffFragmentsViewTests(TestCase):
         user is the owner
         """
         user = User.objects.create_user(username='test-user',
-                                        password='test-user')
+                                        password='test-user',
+                                        email='user@example.com')
 
         review_request = self.create_review_request(create_repository=True,
                                                     submitter=user)
@@ -1255,7 +1257,8 @@ class CommentDiffFragmentsViewTests(TestCase):
         a Local Site the user has access to
         """
         user = User.objects.create_user(username='test-user',
-                                        password='test-user')
+                                        password='test-user',
+                                        email='user@example.com')
 
         review_request = self.create_review_request(create_repository=True,
                                                     with_local_site=True,
@@ -1286,7 +1289,8 @@ class CommentDiffFragmentsViewTests(TestCase):
         a Local Site the user does not have access to
         """
         User.objects.create_user(username='test-user',
-                                 password='test-user')
+                                 password='test-user',
+                                 email='user@example.com')
 
         review_request = self.create_review_request(create_repository=True,
                                                     with_local_site=True,
@@ -1352,7 +1356,8 @@ class CommentDiffFragmentsViewTests(TestCase):
 
     def test_get_with_valid_comment_ids(self):
         """Testing comment_diff_fragments with valid comment ID"""
-        user = User.objects.create(username='reviewer')
+        user = User.objects.create_user(username='reviewer',
+                                        email='reviewer@example.com')
 
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
@@ -1374,7 +1379,8 @@ class CommentDiffFragmentsViewTests(TestCase):
         """Testing comment_diff_fragments with mix of valid comment IDs and
         comment IDs not found in database
         """
-        user = User.objects.create(username='reviewer')
+        user = User.objects.create_user(username='reviewer',
+                                        email='reviewer@example.com')
 
         review_request = self.create_review_request(create_repository=True,
                                                     publish=True)
@@ -1402,7 +1408,8 @@ class CommentDiffFragmentsViewTests(TestCase):
         """Testing comment_diff_fragments with comment ID from another review
         request
         """
-        user = User.objects.create(username='reviewer')
+        user = User.objects.create_user(username='reviewer',
+                                        email='reviewer@example.com')
 
         # Create the first review request and review.
         review_request1 = self.create_review_request(create_repository=True,
@@ -1434,7 +1441,8 @@ class CommentDiffFragmentsViewTests(TestCase):
         accessed by the review's owner
         """
         user = User.objects.create_user(username='reviewer',
-                                        password='reviewer')
+                                        password='reviewer',
+                                        email='reviewer@example.com')
 
         review_request1 = self.create_review_request(create_repository=True,
                                                      publish=True)
@@ -1455,7 +1463,8 @@ class CommentDiffFragmentsViewTests(TestCase):
         """Testing comment_diff_fragments with comment ID from draft review,
         accessed by someone other than the review's owner
         """
-        user = User.objects.create(username='reviewer')
+        user = User.objects.create_user(username='reviewer',
+                                        email='reviewer@example.com')
 
         review_request1 = self.create_review_request(create_repository=True,
                                                      publish=True)

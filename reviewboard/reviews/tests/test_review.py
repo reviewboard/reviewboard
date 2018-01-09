@@ -73,8 +73,10 @@ class ReviewTests(SpyAgency, TestCase):
 
     def test_is_new_for_user_with_non_owner(self):
         """Testing Review.is_new_for_user with non-owner"""
-        user1 = User.objects.create(username='test-user-1')
-        user2 = User.objects.create(username='test-user-2')
+        user1 = User.objects.create_user(username='test-user-1',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='test-user-2',
+                                         email='user2@example.com')
 
         review = Review(
             user=user1,
@@ -91,7 +93,8 @@ class ReviewTests(SpyAgency, TestCase):
 
     def test_is_new_for_user_with_owner(self):
         """Testing Review.is_new_for_user with owner"""
-        user = User.objects.create(username='test-user')
+        user = User.objects.create_user(username='test-user',
+                                        email='user@example.com')
 
         review = Review(
             user=user,
@@ -150,7 +153,8 @@ class ReviewTests(SpyAgency, TestCase):
                                     ship_it=True,
                                     publish=True)
 
-        user = User.objects.create(username='new-site-admin')
+        user = User.objects.create_user(username='new-site-admin',
+                                        email='new_site_admin@example.com')
         review_request.local_site.admins.add(user)
         review_request.local_site.users.add(user)
 

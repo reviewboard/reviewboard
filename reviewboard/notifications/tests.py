@@ -863,28 +863,23 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         """
         test_site = LocalSite.objects.create(name=self.local_site_name)
 
-        site_user1 = User.objects.create(
-            username='site_user1',
-            email='site_user1@example.com')
-        site_user2 = User.objects.create(
-            username='site_user2',
-            email='site_user2@example.com')
-        site_user3 = User.objects.create(
-            username='site_user3',
-            email='site_user3@example.com')
-        site_user4 = User.objects.create(
-            username='site_user4',
-            email='site_user4@example.com')
-        site_user5 = User.objects.create(
-            username='site_user5',
-            email='site_user5@example.com')
-        non_site_user1 = User.objects.create(
+        site_user1 = User.objects.create_user(username='site_user1',
+                                              email='site_user1@example.com')
+        site_user2 = User.objects.create_user(username='site_user2',
+                                              email='site_user2@example.com')
+        site_user3 = User.objects.create_user(username='site_user3',
+                                              email='site_user3@example.com')
+        site_user4 = User.objects.create_user(username='site_user4',
+                                              email='site_user4@example.com')
+        site_user5 = User.objects.create_user(username='site_user5',
+                                              email='site_user5@example.com')
+        non_site_user1 = User.objects.create_user(
             username='non_site_user1',
             email='non_site_user1@example.com')
-        non_site_user2 = User.objects.create(
+        non_site_user2 = User.objects.create_user(
             username='non_site_user2',
             email='non_site_user2@example.com')
-        non_site_user3 = User.objects.create(
+        non_site_user3 = User.objects.create_user(
             username='non_site_user3',
             email='non_site_user3@example.com')
 
@@ -1757,10 +1752,10 @@ class WebAPITokenEmailTestsMixin(EmailTestHelper):
         siteconfig.save()
         load_site_config()
 
-        self.user = User.objects.create(username='test-user',
-                                        first_name='Sample',
-                                        last_name='User',
-                                        email='test-user@example.com')
+        self.user = User.objects.create_user(username='test-user',
+                                             first_name='Sample',
+                                             last_name='User',
+                                             email='test-user@example.com')
         self.assertEqual(len(mail.outbox), 0)
 
 
@@ -2905,10 +2900,12 @@ class EmailUtilsTests(TestCase):
         group1 = Group.objects.create(name='group1')
         group2 = Group.objects.create(name='group2')
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@example.com')
 
         group1.users = [user1]
         group2.users = [user2]
@@ -2932,10 +2929,12 @@ class EmailUtilsTests(TestCase):
         group1 = Group.objects.create(name='group1', local_site=local_site1)
         group2 = Group.objects.create(name='group2', local_site=local_site2)
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@example.com')
 
         local_site1.users = [user1]
 
@@ -2953,10 +2952,12 @@ class EmailUtilsTests(TestCase):
         group1 = self.create_review_group('group1')
         group2 = self.create_review_group('group2')
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', is_active=False)
+                                    last_name='Two', is_active=False,
+                                    email='user1@example.com')
 
         group1.users = [user1]
         group2.users = [user2]
@@ -2975,10 +2976,12 @@ class EmailUtilsTests(TestCase):
         group1 = self.create_review_group('group1', local_site=local_site1)
         group2 = self.create_review_group('group2', local_site=local_site2)
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', is_active=False)
+                                    last_name='Two', is_active=False,
+                                    email='user2@example.com')
 
         local_site1.users = [user1]
         local_site2.users = [user2]
@@ -3101,7 +3104,8 @@ class EmailUtilsTests(TestCase):
         """
         group = self.create_review_group()
         user = User.objects.create(username='user', first_name='User',
-                                   last_name='Foo', is_active=False)
+                                   last_name='Foo', is_active=False,
+                                   email='user@example.com')
 
         review_request = self.create_review_request()
         review_request.target_people = [user]
@@ -3155,10 +3159,12 @@ class EmailUtilsTests(TestCase):
         review_request = self.create_review_request()
         submitter = review_request.submitter
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', is_active=False)
+                                    last_name='Two', email='user2@example.com',
+                                    is_active=False)
 
         review_request.target_people = [user1, user2]
 
@@ -3175,10 +3181,12 @@ class EmailUtilsTests(TestCase):
         review_request = self.create_review_request()
         submitter = review_request.submitter
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@example.com')
 
         Profile.objects.create(user=user2, should_send_email=False)
 
@@ -3196,10 +3204,12 @@ class EmailUtilsTests(TestCase):
         """
         local_site = LocalSite.objects.create(name=self.local_site_name)
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@example.com')
 
         local_site.users = [user1]
 
@@ -3220,10 +3230,12 @@ class EmailUtilsTests(TestCase):
         """
         local_site = LocalSite.objects.create(name=self.local_site_name)
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', is_active=False)
+                                    last_name='Two', is_active=False,
+                                    email='user2@example.com')
 
         local_site.users = [user1, user2]
 
@@ -3244,10 +3256,12 @@ class EmailUtilsTests(TestCase):
         """
         local_site = LocalSite.objects.create(name=self.local_site_name)
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@exmaple.com')
 
         Profile.objects.create(user=user2,
                                should_send_email=False)
@@ -3288,10 +3302,12 @@ class EmailUtilsTests(TestCase):
         """Testing building recipients with a limited recipients list that
         contains inactive users
         """
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', is_active=False)
+                                    last_name='Two', email='user2@exmaple.com',
+                                    is_active=False)
 
         review_request = self.create_review_request()
         submitter = review_request.submitter
@@ -3310,10 +3326,12 @@ class EmailUtilsTests(TestCase):
         local_site1 = LocalSite.objects.create(name='local-site1')
         local_site2 = LocalSite.objects.create(name='local-site2')
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@exmaple.com')
 
         local_site1.users = [user1]
         local_site2.users = [user2]
@@ -3346,10 +3364,12 @@ class EmailUtilsTests(TestCase):
         """Testing building recipients with an extra recipients list that
         contains inactive users
         """
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', is_active=False)
+                                    last_name='Two', email='user2@exmaple.com',
+                                    is_active=False)
 
         review_request = self.create_review_request()
         submitter = review_request.submitter
@@ -3368,10 +3388,12 @@ class EmailUtilsTests(TestCase):
         local_site1 = LocalSite.objects.create(name='local-site1')
         local_site2 = LocalSite.objects.create(name='local-site2')
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@exmaple.com')
 
         local_site1.users = [user1]
         local_site2.users = [user2]
@@ -3390,12 +3412,15 @@ class EmailUtilsTests(TestCase):
         """Testing building recipients with an extra recipients list and
         a limited recipients list
         """
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
-        user3 = User.objects.create(username='user3', first_name='User',
-                                    last_name='Three')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@exmaple.com')
+        user3 = User.objects.create_user(username='user3', first_name='User',
+                                         last_name='Three',
+                                         email='user3@exmaple.com')
 
         group = self.create_review_group()
 
@@ -3416,12 +3441,15 @@ class EmailUtilsTests(TestCase):
         """Testing building recipients with an extra recipients list and a
         limited recipients list that contains inactive users
         """
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', is_active=False)
-        user3 = User.objects.create(username='user3', first_name='User',
-                                    last_name='Three')
+                                    last_name='Two', email='user2@exmaple.com',
+                                    is_active=False)
+        user3 = User.objects.create_user(username='user3', first_name='User',
+                                         last_name='Three',
+                                         email='user3@exmaple.com')
 
         group = self.create_review_group()
 
@@ -3445,12 +3473,15 @@ class EmailUtilsTests(TestCase):
         local_site1 = LocalSite.objects.create(name='local-site1')
         local_site2 = LocalSite.objects.create(name='local-site2')
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
-        user3 = User.objects.create(username='user3', first_name='User',
-                                    last_name='Three')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user2@exmaple.com')
+        user3 = User.objects.create_user(username='user3', first_name='User',
+                                         last_name='Three',
+                                         email='user3@exmaple.com')
 
         local_site1.users = [user1, user3]
         local_site2.users = [user2]
@@ -3495,11 +3526,12 @@ class EmailUtilsTests(TestCase):
         review_request = self.create_review_request()
         submitter = review_request.submitter
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
         user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two', is_active=False)
-
+                                    last_name='Two', email='user@exmaple.com',
+                                    is_active=False)
         profile1 = Profile.objects.create(user=user1)
         profile1.starred_review_requests = [review_request]
 
@@ -3522,10 +3554,12 @@ class EmailUtilsTests(TestCase):
         review_request = self.create_review_request(local_site=local_site1)
         submitter = review_request.submitter
 
-        user1 = User.objects.create(username='user1', first_name='User',
-                                    last_name='One')
-        user2 = User.objects.create(username='user2', first_name='User',
-                                    last_name='Two')
+        user1 = User.objects.create_user(username='user1', first_name='User',
+                                         last_name='One',
+                                         email='user1@example.com')
+        user2 = User.objects.create_user(username='user2', first_name='User',
+                                         last_name='Two',
+                                         email='user@exmaple.com')
 
         local_site1.users = [user1]
         local_site2.users = [user2]
@@ -3563,7 +3597,8 @@ class BasePreviewEmailViewTests(TestCase):
                 }
 
         request = RequestFactory().request()
-        request.user = User.objects.create(username='test-user')
+        request.user = User.objects.create_user(username='test-user',
+                                                email='user@example.com')
 
         view = MyPreviewEmailView.as_view()
         response = view(request, test_var='test', message_format='text')
@@ -3588,7 +3623,8 @@ class BasePreviewEmailViewTests(TestCase):
                 }
 
         request = RequestFactory().request()
-        request.user = User.objects.create(username='test-user')
+        request.user = User.objects.create_user(username='test-user',
+                                                email='user@example.com')
 
         view = MyPreviewEmailView.as_view()
         response = view(request, test_var='test', message_format='text')
@@ -3609,7 +3645,8 @@ class BasePreviewEmailViewTests(TestCase):
                 self.fail('get_email_data should not be reached')
 
         request = RequestFactory().request()
-        request.user = User.objects.create(username='test-user')
+        request.user = User.objects.create_user(username='test-user',
+                                                email='user@example.com')
 
         view = MyPreviewEmailView.as_view()
 
