@@ -147,11 +147,10 @@ class UserResource(WebAPIResource, DjbletsUserResource):
                                   kwargs={'username': user.username})
 
     def serialize_avatar_url_field(self, user, request=None, **kwargs):
-        if avatar_services.avatars_enabled:
-            service = avatar_services.for_user(user)
+        urls = self.serialize_avatar_urls_field(user, request, **kwargs)
 
-            if service:
-                return service.get_avatar_urls(request, user, 48)['1x']
+        if urls:
+            return urls.get('1x')
 
         return None
 
@@ -162,7 +161,7 @@ class UserResource(WebAPIResource, DjbletsUserResource):
             if service:
                 return service.get_avatar_urls(request, user, 48)
 
-        return None
+        return {}
 
     def has_access_permissions(self, *args, **kwargs):
         return True
