@@ -5,7 +5,7 @@
 Review Board 3.0.2 Release Notes
 ================================
 
-**Release date**: TBD
+**Release date**: January 9, 2018
 
 
 Usability Improvements
@@ -108,6 +108,13 @@ Diff Viewer
 
 * The "Download Diff" button no longer vanishes after loading the diff.
   (:bug:`4615`)
+
+
+Perforce
+--------
+
+* Fixed another issue with patching errors involving BOM files from Perforce.
+ (:bug:`4596`)
 
 
 Contributors
