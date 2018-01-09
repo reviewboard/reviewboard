@@ -120,6 +120,7 @@ Perforce
 Contributors
 ============
 
+* Barret Rennie
 * Christian Hammond
 * David Trowbridge
 * Theodore Brockman
