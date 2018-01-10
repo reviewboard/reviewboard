@@ -130,13 +130,15 @@ class Client(object):
 
     def normalize_path(self, path):
         if path.startswith(self.repopath):
-            return path
+            norm_path = path
         elif path.startswith('//'):
-            return self.repopath + path[1:]
+            norm_path = self.repopath + path[1:]
         elif path[0] == '/':
-            return self.repopath + path
+            norm_path = self.repopath + path
         else:
-            return self.repopath + "/" + path
+            norm_path = '%s/%s' % (self.repopath, path)
+
+        return norm_path.rstrip('/')
 
     def accept_ssl_certificate(self, path, on_failure=None):
         """If the repository uses SSL, this method is used to determine whether

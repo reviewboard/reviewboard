@@ -17,7 +17,7 @@ from reviewboard.scmtools.svn import recompute_svn_backend
 from reviewboard.scmtools.tests.testcases import SCMTestCase
 
 
-class CommonSVNTestCase(SpyAgency, SCMTestCase):
+class _CommonSVNTestCase(SpyAgency, SCMTestCase):
     """Common unit tests for Subversion.
 
     This is meant to be subclassed for each backend that wants to run
@@ -29,7 +29,7 @@ class CommonSVNTestCase(SpyAgency, SCMTestCase):
     fixtures = ['test_scmtools']
 
     def setUp(self):
-        super(CommonSVNTestCase, self).setUp()
+        super(_CommonSVNTestCase, self).setUp()
 
         self._old_backend_setting = settings.SVNTOOL_BACKENDS
         settings.SVNTOOL_BACKENDS = [self.backend]
@@ -54,13 +54,13 @@ class CommonSVNTestCase(SpyAgency, SCMTestCase):
         assert self.tool.client.__class__.__module__ == self.backend
 
     def tearDown(self):
-        super(CommonSVNTestCase, self).tearDown()
+        super(_CommonSVNTestCase, self).tearDown()
 
         settings.SVNTOOL_BACKENDS = self._old_backend_setting
         recompute_svn_backend()
 
     def shortDescription(self):
-        desc = super(CommonSVNTestCase, self).shortDescription()
+        desc = super(_CommonSVNTestCase, self).shortDescription()
         desc = desc.replace('<backend>', self.backend_name)
 
         return desc
@@ -561,12 +561,12 @@ class CommonSVNTestCase(SpyAgency, SCMTestCase):
         self.repository.get_file('trunk/utf8-file.txt', '9')
 
 
-class PySVNTests(CommonSVNTestCase):
+class PySVNTests(_CommonSVNTestCase):
     backend = 'reviewboard.scmtools.svn.pysvn'
     backend_name = 'pysvn'
 
 
-class SubvertpyTests(CommonSVNTestCase):
+class SubvertpyTests(_CommonSVNTestCase):
     backend = 'reviewboard.scmtools.svn.subvertpy'
     backend_name = 'subvertpy'
 
