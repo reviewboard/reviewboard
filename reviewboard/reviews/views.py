@@ -977,9 +977,9 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
         metadata = json.dumps(metadata).encode('utf-8')
         html = html.strip().encode('utf-8')
 
-        payload.write(struct.pack('<L', len(metadata)))
+        payload.write(struct.pack(b'<L', len(metadata)))
         payload.write(metadata)
-        payload.write(struct.pack('<L', len(html)))
+        payload.write(struct.pack(b'<L', len(html)))
         payload.write(html)
 
 
@@ -1432,7 +1432,7 @@ class CommentDiffFragmentsView(ReviewRequestViewMixin, ETagViewMixin,
         for entry in comment_entries:
             html = entry['html'].strip().encode('utf-8')
 
-            payload.write(struct.pack('<LL', entry['comment'].pk, len(html)))
+            payload.write(struct.pack(b'<LL', entry['comment'].pk, len(html)))
             payload.write(html)
 
         result = payload.getvalue()
