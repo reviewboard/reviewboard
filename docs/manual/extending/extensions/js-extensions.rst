@@ -277,5 +277,25 @@ Backbone.js attribute accessors:
     });
 
 
+.. _js-extensions-read-only-mode:
+
+Supporting Read-Only Mode
+=========================
+
+Reviewboard can be put into read-only mode by the site administrator, which
+disables API requests to the server and associated front-end features. When the
+site is in read-only mode, only changes made to models by superusers will be
+propagated to the server; changes made by all other users will be discarded.
+
+Whether a user is in read-only mode can be checked by looking up the
+``readOnly`` property in the :js:class:`RB.UserSession` instance.
+
+.. code-block:: javascript
+
+   if (RB.UserSession.instance.get('readOnly')) {
+       /* Put code to run when in read-only mode here. */
+   }
+
+
 .. _Backbone.js: http://backbonejs.org/
 .. _reviewboard-dev: https://groups.google.com/group/reviewboard-dev

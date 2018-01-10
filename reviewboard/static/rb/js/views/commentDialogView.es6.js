@@ -110,6 +110,7 @@ const CommentsListView = Backbone.View.extend({
 RB.CommentDialogView = Backbone.View.extend({
     DIALOG_TOTAL_HEIGHT: 350,
     DIALOG_NON_EDITABLE_HEIGHT: 120,
+    DIALOG_READ_ONLY_HEIGHT: 104,
     SLIDE_DISTANCE: 10,
     COMMENTS_BOX_WIDTH: 280,
     FORM_BOX_WIDTH: 450,
@@ -130,6 +131,8 @@ RB.CommentDialogView = Backbone.View.extend({
          </h1>
          <% if (!authenticated) { %>
           <p class="login-text"><%= loginText %></p>
+         <% } else if (readOnly) { %>
+          <p class="read-only-text"><%= readOnlyText %></p>
          <% } else if (hasDraft) { %>
           <p class="draft-warning"><%= draftWarning %></p>
          <% } %>
@@ -205,6 +208,8 @@ RB.CommentDialogView = Backbone.View.extend({
                 cancelButton: RB.CommentDialogView._cancelText,
                 deleteButton: RB.CommentDialogView._deleteText,
                 closeButton: RB.CommentDialogView._closeText,
+                readOnly: userSession.get('readOnly'),
+                readOnlyText: gettext('Review Board is currently in read-only mode.'),
                 showVerify: RB.EnabledFeatures.issueVerification,
                 verifyIssueText: RB.CommentDialogView._verifyIssueText,
             }));
@@ -502,11 +507,19 @@ RB.CommentDialogView = Backbone.View.extend({
             width += this.COMMENTS_BOX_WIDTH;
         }
 
+        let height;
+
+        if (this.model.get('canEdit')) {
+            height = this.DIALOG_TOTAL_HEIGHT;
+        } else if (RB.UserSession.instance.get('readOnly')) {
+            height = this.DIALOG_READ_ONLY_HEIGHT;
+        } else {
+            height = this.DIALOG_NON_EDITABLE_HEIGHT;
+        }
+
         this.$el
             .width(width)
-            .height(this.model.get('canEdit')
-                    ? this.DIALOG_TOTAL_HEIGHT
-                    : this.DIALOG_NON_EDITABLE_HEIGHT);
+            .height(height);
     },
 
     /**

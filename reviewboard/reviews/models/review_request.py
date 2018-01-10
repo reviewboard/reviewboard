@@ -15,6 +15,7 @@ from djblets.db.fields import (CounterField, ModificationTimestampField,
                                RelationCounterField)
 from djblets.db.query import get_object_or_none
 
+from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
 from reviewboard.changedescs.models import ChangeDescription
@@ -545,19 +546,50 @@ class ReviewRequest(BaseReviewRequestDetails):
         return False
 
     def is_mutable_by(self, user):
-        """Returns whether the user can modify this review request."""
-        return (self.submitter == user or
-                user.has_perm('reviews.can_edit_reviewrequest',
-                              self.local_site))
+        """Return whether the user can modify this review request.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to check.
+
+        Returns:
+            bool:
+            Whether the user can modify this review request.
+        """
+        return ((self.submitter == user or
+                 user.has_perm('reviews.can_edit_reviewrequest',
+                               self.local_site)) and
+                not is_site_read_only_for(user))
 
     def is_status_mutable_by(self, user):
-        """Returns whether the user can modify this review request's status."""
-        return (self.submitter == user or
-                user.has_perm('reviews.can_change_status', self.local_site))
+        """Return whether the user can modify this review request's status.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to check.
+
+        Returns:
+            bool:
+            Whether the user can modify this review request's status.
+        """
+        return ((self.submitter == user or
+                 user.has_perm('reviews.can_change_status',
+                               self.local_site)) and
+                not is_site_read_only_for(user))
 
     def is_deletable_by(self, user):
-        """Returns whether the user can delete this review request."""
-        return user.has_perm('reviews.delete_reviewrequest')
+        """Return whether the user can delete this review request.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user to check.
+
+        Returns:
+            bool:
+            Whether the user can delete this review request.
+        """
+        return (user.has_perm('reviews.delete_reviewrequest') and
+                not is_site_read_only_for(user))
 
     def get_draft(self, user=None):
         """Returns the draft of the review request.

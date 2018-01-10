@@ -158,6 +158,7 @@ defaults.update({
     'search_enable': False,
     'send_support_usage_stats': True,
     'site_domain_method': 'http',
+    'site_read_only': False,
 
     'search_results_per_page': 20,
     'search_backend_id': WhooshBackend.search_backend_id,

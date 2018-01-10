@@ -171,3 +171,8 @@ REVOKE_SHIP_IT_ERROR = WebAPIError(
     232,
     'An error occurred while revoking the Ship It for a review.',
     http_status=500)  # 500 Internal Server Error
+
+READ_ONLY_ERROR = WebAPIError(
+    233,
+    'The site is currently in read-only mode.',
+    http_status=503)  # 503 Service Unavailable Error

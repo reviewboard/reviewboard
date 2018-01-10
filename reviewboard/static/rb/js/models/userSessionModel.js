@@ -125,6 +125,7 @@ RB.UserSession = Backbone.Model.extend({
         diffsShowExtraWhitespace: false,
         fullName: null,
         loginURL: null,
+        readOnly: false,
         username: null,
         userPageURL: null,
         sessionURL: null,

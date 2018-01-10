@@ -318,6 +318,7 @@ TEMPLATE_CONTEXT_PROCESSORS = [
     'djblets.urls.context_processors.site_root',
     'reviewboard.accounts.context_processors.auth_backends',
     'reviewboard.accounts.context_processors.profile',
+    'reviewboard.admin.context_processors.read_only',
     'reviewboard.admin.context_processors.version',
     'reviewboard.site.context_processors.localsite',
 ]

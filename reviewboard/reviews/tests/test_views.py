@@ -367,6 +367,32 @@ class ViewTests(TestCase):
         response = self.client.get('/r/new/')
         self.assertEqual(response.status_code, 200)
 
+    def test_new_review_request_in_read_only_mode_for_users(self):
+        """Testing new_review_request view when in read-only mode for regular
+        users
+        """
+        with self.override_siteconfig(site_read_only=True):
+            # Ensure user is redirected when trying to create new review request
+            self.client.logout()
+            self.client.login(username='doc', password='doc')
+
+            resp = self.client.get('/r/new/')
+
+            self.assertEqual(resp.status_code, 302)
+
+    def test_new_review_request_in_read_only_mode_for_superusers(self):
+        """Testing new_review_request view when in read-only mode for
+        superusers
+        """
+        with self.override_siteconfig(site_read_only=True):
+            # Ensure admin can still access new while in read-only mode.
+            self.client.logout()
+            self.client.login(username='admin', password='admin')
+
+            resp = self.client.get('/r/new/')
+
+            self.assertEqual(resp.status_code, 200)
+
     # Bug 892
     def test_interdiff(self):
         """Testing the diff viewer with interdiffs"""

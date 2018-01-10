@@ -12,10 +12,10 @@
  <div class="review-request-actions-container">
   <ul class="review-request-actions review-request-actions-left">
 {%   if request.user.is_authenticated and review_request.status == 'P' %}
-   <li class="review-request-action review-request-action-icon">
+   <li class="review-request-action review-request-action-icon review-request-action-star">
     <a href="#">{% star review_request %}</a>
    </li>
-   <li class="review-request-action review-request-action-icon has-menu">
+   <li class="review-request-action review-request-action-icon review-request-action-archive has-menu">
     <a class="menu-title" id="hide-review-request-link" href="#"><span class="rb-icon rb-icon-archive-off"></span></a>
     <ul class="menu" id="hide-review-request-menu"></ul>
    </li>

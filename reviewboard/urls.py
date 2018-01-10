@@ -63,6 +63,9 @@ urlpatterns = [
             'packages': ('reviewboard', 'djblets'),
         },
         name='js-catalog'),
+    url(r'^read-only/$',
+        TemplateView.as_view(template_name='read_only.html'),
+        name='read-only'),
 ]
 
 

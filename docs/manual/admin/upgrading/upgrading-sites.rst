@@ -14,7 +14,8 @@ Upgrading serves several key tasks:
 If you don't perform an upgrade, your site may appear broken.
 
 Before upgrading, we highly recommend backing up your database, in case
-something goes wrong.
+something goes wrong. You can also enable read-only mode from the
+:ref:`general-settings` page to alert your users.
 
 To begin a site upgrade, run::
 

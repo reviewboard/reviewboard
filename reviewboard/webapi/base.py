@@ -23,11 +23,13 @@ from djblets.webapi.resources.mixins.oauth2_tokens import (
     ResourceOAuth2TokenMixin)
 from djblets.webapi.resources.mixins.queries import APIQueryUtilsMixin
 
+from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.registries.registry import Registry
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.webapi.decorators import (webapi_check_local_site,
                                            webapi_check_login_required)
+from reviewboard.webapi.errors import READ_ONLY_ERROR
 from reviewboard.webapi.models import WebAPIToken
 
 
@@ -300,7 +302,11 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
         checked before calling the view. If the operation is disallowed, a 403
         Forbidden response will be returned.
 
-        Only if those two conditions are met will the view actually be called.
+        If read-only mode is enabled, all PUT, POST, and DELETE requests will
+        be rejected with a 503 Service Unavailable response, unless the user
+        is a superuser.
+
+        Only if all these conditions are met will the view actually be called.
 
         Args:
             request (django.http.HttpRequest):
@@ -333,6 +339,10 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
                                 method, self, feature.feature_id,
                                 request=request)
                 return PERMISSION_DENIED
+
+        if (is_site_read_only_for(request.user) and
+            request.method not in ('GET', 'HEAD', 'OPTIONS')):
+            return READ_ONLY_ERROR
 
         return super(WebAPIResource, self).call_method_view(
             request, method, view, *args, **kwargs)
