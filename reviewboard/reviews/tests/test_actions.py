@@ -480,7 +480,7 @@ class CloseMenuActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
 
     def test_should_render_for_user(self):
         """Testing CloseMenuAction.should_render for normal user"""
-        self.assertFalse(self.action.should_render({
+        self.assertFalse(self.action.should_render(
             self._create_request_context(
                 can_change_status=False,
                 user=User.objects.create_user(username='test-user',
