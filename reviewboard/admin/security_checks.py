@@ -3,7 +3,11 @@ from __future__ import unicode_literals
 import logging
 import os
 import zlib
-from collections import OrderedDict
+
+try:
+    from collections import OrderedDict
+except ImportError:
+    from django.utils.datastructures import SortedDict
 
 from django.conf import settings
 from django.core.files.base import ContentFile
