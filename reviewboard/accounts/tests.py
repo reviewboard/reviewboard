@@ -422,6 +422,50 @@ class ReviewRequestVisitTests(TestCase):
 
         self.assertEqual(visit.visibility, ReviewRequestVisit.VISIBLE)
 
+    def test_update_visibility_create(self):
+        """Testing ReviewRequestVisitManager.update_visibility
+        creates a new visit
+        """
+        review_request = self.create_review_request(publish=True)
+        user = User.objects.get(username='admin')
+
+        visit = ReviewRequestVisit.objects.update_visibility(
+            review_request, user, ReviewRequestVisit.ARCHIVED)
+
+        self.assertEqual(visit.visibility, ReviewRequestVisit.ARCHIVED)
+
+    def test_update_visibility_update_visible(self):
+        """Testing ReviewRequestVisitManager.update_visibility
+        updates existing visit with visible
+        """
+        review_request = self.create_review_request(publish=True)
+        user = User.objects.get(username='admin')
+
+        ReviewRequestVisit.objects.create(
+            review_request=review_request, user=user,
+            visibility=ReviewRequestVisit.VISIBLE)
+
+        with self.assertNumQueries(1):
+            visit = ReviewRequestVisit.objects.update_visibility(
+                review_request, user, ReviewRequestVisit.VISIBLE)
+
+        self.assertEqual(visit.visibility, ReviewRequestVisit.VISIBLE)
+
+    def test_update_visibility_update_archive(self):
+        """Testing ReviewRequestVisitManager.update_visibility
+        updates existing visit with archive
+        """
+        review_request = self.create_review_request(publish=True)
+        user = User.objects.get(username='admin')
+
+        ReviewRequestVisit.objects.create(
+            review_request=review_request, user=user,
+            visibility=ReviewRequestVisit.VISIBLE)
+        visit = ReviewRequestVisit.objects.update_visibility(
+            review_request, user, ReviewRequestVisit.ARCHIVED)
+
+        self.assertEqual(visit.visibility, ReviewRequestVisit.ARCHIVED)
+
 
 class ProfileTests(TestCase):
     """Test the Profile model."""

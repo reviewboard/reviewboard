@@ -43,6 +43,13 @@ RB.DraftReviewBannerView = Backbone.View.extend({
                     }),
                     id: 'review-banner-publish-submitter-only',
                 },
+                {
+                    text: gettext('... and archive the review request'),
+                    click: () => this._onPublishClicked({
+                        publishAndArchive: true,
+                    }),
+                    id: 'review-banner-publish-and-archive',
+                },
             ],
 
         });
@@ -181,6 +188,9 @@ RB.DraftReviewBannerView = Backbone.View.extend({
      *     publishToOwnerOnly (boolean):
      *         Whether or not we should only notify the submitter of the review.
      *
+     *     publishAndArchive (boolean):
+     *         Whether or not we should archive the review after it is published.
+     *
      * Returns:
      *     boolean:
      *     false, always.
@@ -190,8 +200,12 @@ RB.DraftReviewBannerView = Backbone.View.extend({
             this.model.set('publishToOwnerOnly', true);
         }
 
+        if (options.publishAndArchive) {
+            this.model.set('publishAndArchive', true);
+        }
+
         this.model.publish({
-            attrs: ['public', 'publishToOwnerOnly'],
+            attrs: ['public', 'publishToOwnerOnly', 'publishAndArchive'],
         });
 
         return false;

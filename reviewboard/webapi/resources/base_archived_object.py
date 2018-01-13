@@ -46,16 +46,8 @@ class BaseArchivedObjectResource(WebAPIResource):
         except (ReviewRequest.DoesNotExist, User.DoesNotExist):
             return DOES_NOT_EXIST
 
-        visit, is_new = ReviewRequestVisit.objects.get_or_create(
-            user=user,
-            review_request=review_request,
-            defaults={
-                'visibility': self.visibility,
-            })
-
-        if not is_new and visit.visibility != self.visibility:
-            visit.visibility = self.visibility
-            visit.save(update_fields=['visibility'])
+        ReviewRequestVisit.objects.update_visibility(review_request, user,
+                                                     self.visibility)
 
         return 201, {
             self.item_result_key: review_request,
