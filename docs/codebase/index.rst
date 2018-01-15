@@ -8,4 +8,5 @@ Review Board Codebase Contributions
    Review Board on our `Notion Wiki`_.
 
 
-.. _Notion Wiki: https://www.notion.so/reviewboard/Review-Board-8nXunbyOuorZ2
+.. _Notion Wiki:
+   https://www.notion.so/reviewboard/Review-Board-45d228fb07a0459b84fee509ac054cec
