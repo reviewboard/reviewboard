@@ -7,7 +7,7 @@ import zlib
 try:
     from collections import OrderedDict
 except ImportError:
-    from django.utils.datastructures import SortedDict
+    from django.utils.datastructures import SortedDict as OrderedDict
 
 from django.conf import settings
 from django.core.files.base import ContentFile
