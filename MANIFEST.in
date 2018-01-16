@@ -1,15 +1,29 @@
-recursive-include contrib *
-recursive-include docs *.db *.txt *.png *.py Makefile
-recursive-include locale *
-recursive-include reviewboard *
-recursive-include webtests *
+graft contrib
+graft docs
+graft reviewboard
+
 prune docs/*/_build
-prune reviewboard/htdocs/media/uploaded/files
-prune reviewboard/htdocs/media/uploaded/images
-prune reviewboard/htdocs/static/djblets
+prune docs/manual/data/htdocs/media/uploaded/
+prune docs/manual/extending/coderef/python
+
+# Specifically clear out content from static/ and add what we know we want.
+prune reviewboard/htdocs/static
+graft reviewboard/htdocs/static/admin
+graft reviewboard/htdocs/static/lib
+graft reviewboard/htdocs/static/rb
+
+# Specifically clear out content from media/ and add what we know we want.
+prune reviewboard/htdocs/media
+include reviewboard/htdocs/media/ext/.gitignore
+
 include AUTHORS
 include COPYING
 include INSTALL
 include NEWS
 include README.md
+include *-requirements.txt
+
+exclude docs/manual/docs.db
 exclude settings_local.py
+
+global-exclude .*.sw[op] *.py[co] __pycache__ .DS_Store .noseids
