@@ -10,6 +10,7 @@ from djblets.webapi.decorators import (webapi_login_required,
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
 
+from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.reviews.errors import PublishError
 from reviewboard.reviews.models import Review
 from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
@@ -155,6 +156,12 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
                            'to the owner of the review request.',
             'added_in': '3.0',
         },
+        'publish_and_archive': {
+            'type': bool,
+            'description': 'If true, the review will be archived after '
+                           'it is published.',
+            'added_in': '4.0',
+        },
     }
 
     def get_queryset(self, request, is_list=False, *args, **kwargs):
@@ -296,9 +303,16 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
         """
         pass
 
-    def update_review(self, request, review, public=None,
-                      publish_to_owner_only=False, extra_fields={},
-                      ship_it=None, **kwargs):
+    def update_review(self,
+                      request,
+                      review,
+                      public=None,
+                      publish_to_owner_only=False,
+                      publish_and_archive=False,
+                      extra_fields={},
+                      ship_it=None,
+                      *args,
+                      **kwargs):
         """Update an existing review based on the requested data.
 
         This will modify a review, setting new fields requested by the
@@ -319,6 +333,10 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
                 Whether an e-mail for the published review should only be
                 sent to the owner of the review request. This is ignored if
                 ``public`` is not ``True``.
+
+            publish_and_archive (bool, optional):
+                Whether to immediately archive the review request after
+                publishing the review.
 
             extra_fields (dict, optional):
                 Extra fields from the request not otherwise handled by the
@@ -362,6 +380,11 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
                                request=request)
             except PublishError as e:
                 return PUBLISH_ERROR.with_message(six.text_type(e))
+
+            if publish_and_archive:
+                ReviewRequestVisit.objects.update_visibility(
+                    review.review_request, request.user,
+                    ReviewRequestVisit.ARCHIVED)
 
         return 200, {
             self.item_result_key: review,

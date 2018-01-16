@@ -8,19 +8,23 @@
  */
 RB.DraftReview = RB.Review.extend(_.extend({
     defaults: _.defaults({
-        publishToOwnerOnly: false
+        publishAndArchive: false,
+        publishToOwnerOnly: false,
     }, RB.Review.prototype.defaults()),
 
     attrToJsonMap: _.defaults({
-        publishToOwnerOnly: 'publish_to_owner_only'
+        publishAndArchive: 'publish_and_archive',
+        publishToOwnerOnly: 'publish_to_owner_only',
     }, RB.Review.prototype.attrToJsonMap),
 
     serializedAttrs: [
-        'publishToOwnerOnly'
+        'publishAndArchive',
+        'publishToOwnerOnly',
     ].concat(RB.Review.prototype.serializedAttrs),
 
     serializers: _.defaults({
-        publishToOwnerOnly: RB.JSONSerializers.onlyIfValue
+        publishAndArchive: RB.JSONSerializers.onlyIfValue,
+        publishToOwnerOnly: RB.JSONSerializers.onlyIfValue,
     }, RB.Review.prototype.serializers),
 
 

@@ -1189,6 +1189,16 @@ RB.ReviewDialogView = Backbone.View.extend({
                         this.close();
                         return false;
                     },
+                },
+                {
+                    text: gettext('... and archive the review request'),
+                    click: () => {
+                        this._saveReview(true, {
+                            publishAndArchive: true,
+                        });
+                        this.close();
+                        return false;
+                    },
                 }
             ],
         });
@@ -1275,6 +1285,10 @@ RB.ReviewDialogView = Backbone.View.extend({
             this.model.set('publishToOwnerOnly', true);
         }
 
+        if (publish && options.publishAndArchive) {
+            this.model.set('publishAndArchive', true);
+        }
+
         this._$buttons.prop('disabled');
 
         let madeChanges = false;
@@ -1309,8 +1323,14 @@ RB.ReviewDialogView = Backbone.View.extend({
                 });
 
                 saveFunc.call(this.model, {
-                    attrs: ['public', 'shipIt', 'forceTextType',
-                            'includeTextTypes', 'publishToOwnerOnly'],
+                    attrs: [
+                        'forceTextType',
+                        'includeTextTypes',
+                        'public',
+                        'publishAndArchive',
+                        'publishToOwnerOnly',
+                        'shipIt',
+                    ],
                     success: () => $.funcQueue('reviewForm').next(),
                     error: function() {
                         console.error('Failed to save review', arguments);

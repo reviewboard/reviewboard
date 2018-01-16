@@ -1340,7 +1340,8 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     expect(editor.get('editCount')).toBe(0);
 
                     $thumbnail.find('.file-caption .edit')
-                        .inlineEditor('startEdit');
+                        .data('inline-editor')
+                        .startEdit();
 
                     expect(editor.get('editCount')).toBe(1);
                 });
@@ -1348,17 +1349,19 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
             describe('endEdit', function() {
                 describe('Decrement edit count', function() {
-                    var $caption;
+                    var $caption,
+                        inlineEditorView;
 
                     beforeEach(function() {
                         expect(editor.get('editCount')).toBe(0);
 
-                        $caption = $thumbnail.find('.file-caption .edit')
-                            .inlineEditor('startEdit');
+                        $caption = $thumbnail.find('.file-caption .edit');
+                        inlineEditorView = $caption.data('inline-editor');
+                        inlineEditorView.startEdit();
                     });
 
                     it('On cancel', function() {
-                        $caption.inlineEditor('cancel');
+                        inlineEditorView.cancel();
                         expect(editor.get('editCount')).toBe(0);
                     });
 
@@ -1373,7 +1376,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                             .val('Foo')
                             .triggerHandler('keyup');
 
-                        $caption.inlineEditor('submit');
+                        inlineEditorView.submit();
 
                         expect(editor.get('editCount')).toBe(0);
                     });

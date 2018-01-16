@@ -28,21 +28,62 @@ class ProfileManager(Manager):
 
 
 class ReviewRequestVisitManager(ConcurrencyManager):
-    """Manager for review request visits.
-
-    Unarchives a specified review request for all users that have archived it.
-    """
+    """Manager for review request visits."""
 
     def unarchive_all(self, review_request):
-        """ Unarchives review request for all users.
+        """Unarchive a review request for all users.
 
         Unarchives the given review request for all users by changing all
         review request visit database entries for this review request from
         archived to visible.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request to unarchive.
         """
         queryset = self.filter(review_request=review_request,
                                visibility=self.model.ARCHIVED)
         queryset.update(visibility=self.model.VISIBLE)
+
+    def update_visibility(self, review_request, user, new_visibility):
+        """Update the visibility of a review request.
+
+        This will set the review request as visible, archived, or muted for the
+        given user.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request to update the visibility of.
+
+            user (django.contrib.auth.models.User):
+                The current user.
+
+            new_visibility (unicode):
+                The new visibility to update the review request to. This will
+                be one of
+                :py:attr:`~reviewboard.reviews.models.review_request.ReviewRequest.VISIBLE`,
+                :py:attr:`~reviewboard.reviews.models.review_request.ReviewRequest.ARCHIVED`,
+                or
+                :py:attr:`~reviewboard.reviews.models.review_request.ReviewRequest.MUTED`.
+
+        Returns:
+            reviewboard.accounts.models.ReviewRequestVisit:
+            The review request visit.
+        """
+        visit, is_new = self.get_or_create(
+            user=user,
+            review_request=review_request,
+            defaults={
+                'visibility': new_visibility,
+            })
+
+        if not is_new and visit.visibility != new_visibility:
+            visit.visibility = new_visibility
+            visit.save(update_fields=['visibility'])
+
+        return visit
 
 
 class TrophyManager(Manager):

@@ -139,28 +139,28 @@ suite('rb/views/FileAttachmentThumbnail', function() {
         });
 
         it('Begin caption editing', function() {
-            view._$caption.inlineEditor('startEdit');
+            view._captionEditorView.startEdit();
             expect(view.trigger).toHaveBeenCalledWith('beginEdit');
         });
 
         it('Cancel caption editing', function() {
-            view._$caption.inlineEditor('startEdit');
+            view._captionEditorView.startEdit();
             expect(view.trigger).toHaveBeenCalledWith('beginEdit');
 
-            view._$caption.inlineEditor('cancel');
+            view._captionEditorView.cancel();
             expect(view.trigger).toHaveBeenCalledWith('endEdit');
         });
 
         it('Save caption', function() {
             spyOn(model, 'save');
 
-            view._$caption.inlineEditor('startEdit');
+            view._captionEditorView.startEdit();
             expect(view.trigger).toHaveBeenCalledWith('beginEdit');
 
             view.$('input')
                 .val('Foo')
                 .triggerHandler('keyup');
-            view._$caption.inlineEditor('submit');
+            view._captionEditorView.submit();
 
             expect(view.trigger).toHaveBeenCalledWith('endEdit');
             expect(model.get('caption')).toBe('Foo');

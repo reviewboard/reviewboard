@@ -100,6 +100,22 @@ suite('rb/views/DraftReviewBannerView', function() {
             expect(model.publish).toHaveBeenCalled();
         });
 
+        it('Publish and Archive', function() {
+            spyOn(model, 'publish');
+            spyOn(view, '_onPublishClicked').and.callThrough();
+
+            /*
+             * The alternative buttons from the split button are added to the
+             * <body>.
+             */
+            $('#review-banner-publish-and-archive').click();
+
+            expect(model.publish).toHaveBeenCalled();
+            expect(view._onPublishClicked).toHaveBeenCalledWith({
+                publishAndArchive: true
+            });
+        });
+
         it('Discard', function() {
             var $buttons = $();
 
