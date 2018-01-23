@@ -9,8 +9,14 @@ you're going to make use of data from this file, code defensively.
 
 from __future__ import unicode_literals
 
-# NOTE: This file may not import other files! It's used for packaging and
-#       may be needed before any dependencies have been installed.
+import sys
+import textwrap
+
+
+# NOTE: This file may not import other (non-Python) modules! (Except for
+#       the parent reviewboard module, which must be importable anyway) This
+#       module is used for packaging and be needed before any dependencies
+#       have been installed.
 
 
 #: The major version of Django we're using for documentation.
@@ -57,6 +63,9 @@ package_only_dependencies = {
 }
 
 
+_dependency_message_count = 0
+
+
 def build_dependency_list(deps, version_prefix=''):
     """Build a list of dependency specifiers from a dependency map.
 
@@ -79,3 +88,71 @@ def build_dependency_list(deps, version_prefix=''):
             for dep_name, dep_version in deps.items()
         ],
         key=lambda s: s.lower())
+
+
+def _dependency_message(message, prefix=''):
+    """Utility function to print and track a dependency-related message.
+
+    This will track that a message was printed, allowing us to determine if
+    any messages were shown to the user.
+
+    Args:
+        message (unicode):
+            The dependency-related message to display. This will be wrapped,
+            but long strings (like paths) will not contain line breaks.
+
+        prefix (unicode, optional):
+            The prefix for the message. All text will be aligned after this.
+    """
+    global _dependency_message_count
+
+    _dependency_message_count += 1
+    sys.stderr.write('\n%s\n'
+                     % textwrap.fill(message,
+                                     initial_indent=prefix,
+                                     subsequent_indent=' ' * len(prefix),
+                                     break_long_words=False,
+                                     break_on_hyphens=False))
+
+
+def dependency_error(message):
+    """Print a dependency error.
+
+    This will track that a message was printed, allowing us to determine if
+    any messages were shown to the user.
+
+    Args:
+        message (unicode):
+            The dependency error to display. This will be wrapped, but long
+            strings (like paths) will not contain line breaks.
+    """
+    _dependency_message(message, prefix='ERROR: ')
+
+
+def dependency_warning(message):
+    """Print a dependency warning.
+
+    This will track that a message was printed, allowing us to determine if
+    any messages were shown to the user.
+
+    Args:
+        message (unicode):
+            The dependency warning to display. This will be wrapped, but long
+            strings (like paths) will not contain line breaks.
+    """
+    _dependency_message(message, prefix='WARNING: ')
+
+
+def fail_if_missing_dependencies():
+    """Exit the process with an error if dependency messages were shown.
+
+    If :py:func:`dependency_error` or :py:func:`dependency_warning` were
+    called, this will print some help information with a link to the manual
+    and then exit the process.
+    """
+    if _dependency_message_count > 0:
+        from reviewboard import get_manual_url
+
+        _dependency_message('Please see %s for help setting up Review Board.'
+                            % get_manual_url())
+        sys.exit(1)
