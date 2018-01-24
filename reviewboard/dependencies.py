@@ -9,8 +9,14 @@ you're going to make use of data from this file, code defensively.
 
 from __future__ import unicode_literals
 
+import sys
+
+
 # NOTE: This file may not import other files! It's used for packaging and
 #       may be needed before any dependencies have been installed.
+
+
+_pyver = sys.version_info[:2]
 
 
 #: The major version of Django we're using for documentation.
@@ -44,6 +50,12 @@ package_dependencies = {
     'recaptcha-client': '',
     'Whoosh': '>=2.6',
 }
+
+if _pyver <= (2, 6):
+    package_dependencies.update({
+        'argparse': '',
+        'paramiko': '>=2.3,<=2.3.999',
+    })
 
 
 def build_dependency_list(deps, version_prefix=''):
