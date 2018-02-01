@@ -124,7 +124,12 @@ class DevelopCommand(develop):
         # Install the latest pip and setuptools. Note that the order here
         # matters, as otherwise a stale setuptools can be left behind,
         # causing installation errors.
-        self._run_pip(['install', '-U', 'setuptools'])
+        if sys.version_info[:2] >= (2, 7):
+            setuptools_dep = 'setuptools'
+        else:
+            setuptools_dep = 'setuptools==36.8.0'
+
+        self._run_pip(['install', '-U', setuptools_dep])
         self._run_pip(['install', '-U', 'pip'])
 
         # Install the dependencies using pip instead of easy_install. This
