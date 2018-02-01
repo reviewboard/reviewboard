@@ -113,8 +113,9 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase,
     def test_post_with_generation_error(self):
         """Testing the POST users/<username>/api-tokens/ API
         with Token Generation Failed error"""
-        def _generate_token(self, user, **kwargs):
-            orig_generate_token(user, max_attempts=0, **kwargs)
+        def _generate_token(self, *args, **kwargs):
+            kwargs['max_attempts'] = 0
+            orig_generate_token(*args, **kwargs)
 
         orig_generate_token = WebAPIToken.objects.generate_token
 
