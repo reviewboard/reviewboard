@@ -114,12 +114,7 @@ class GitLabTests(ServiceTests):
 
     def test_authorization(self):
         """Testing that GitLab account authorization sends expected data"""
-        http_post_data = {}
-
         def _http_post(self, *args, **kwargs):
-            http_post_data['args'] = args
-            http_post_data['kwargs'] = kwargs
-
             return json.dumps({
                 'id': 1,
                 'private_token': 'abc123',
@@ -137,13 +132,12 @@ class GitLabTests(ServiceTests):
                           hosting_url='https://example.com')
         self.assertTrue(account.is_authorized)
 
-        self.assertEqual(http_post_data['kwargs']['url'],
-                         'https://example.com/api/v3/session')
-        self.assertIn('fields', http_post_data['kwargs'])
-
-        fields = http_post_data['kwargs']['fields']
-        self.assertEqual(fields['login'], 'myuser')
-        self.assertEqual(fields['password'], 'mypass')
+        self.assertTrue(service.client.http_post.last_called_with(
+            url='https://example.com/api/v3/session',
+            fields={
+                'login': 'myuser',
+                'password': 'mypass',
+            }))
 
     def test_get_branches(self):
         """Testing GitLab get_branches implementation"""

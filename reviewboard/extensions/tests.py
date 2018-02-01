@@ -1609,10 +1609,10 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to,
                          [build_email_address_for_user(admin)])
-        self.assertTrue(hook.get_to_field.spy.called)
-        self.assertEqual(hook.get_to_field.spy.calls[0].kwargs, call_kwargs)
-        self.assertTrue(hook.get_cc_field.spy.called)
-        self.assertEqual(hook.get_cc_field.spy.calls[0].kwargs, call_kwargs)
+        self.assertTrue(hook.get_to_field.called)
+        self.assertTrue(hook.get_to_field.called_with(**call_kwargs))
+        self.assertTrue(hook.get_cc_field.called)
+        self.assertTrue(hook.get_cc_field.called_with(**call_kwargs))
 
     def test_review_published_email_hook(self):
         """Testing the ReviewPublishedEmailHook"""
@@ -1647,10 +1647,10 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to,
                          [build_email_address_for_user(admin)])
-        self.assertTrue(hook.get_to_field.spy.called)
-        self.assertEqual(hook.get_to_field.spy.calls[0].kwargs, call_kwargs)
-        self.assertTrue(hook.get_cc_field.spy.called)
-        self.assertEqual(hook.get_cc_field.spy.calls[0].kwargs, call_kwargs)
+        self.assertTrue(hook.get_to_field.called)
+        self.assertTrue(hook.get_to_field.called_with(**call_kwargs))
+        self.assertTrue(hook.get_cc_field.called)
+        self.assertTrue(hook.get_cc_field.called_with(**call_kwargs))
 
     def test_review_reply_published_email_hook(self):
         """Testing the ReviewReplyPublishedEmailHook"""
@@ -1684,10 +1684,10 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
             reply.publish(admin)
 
         self.assertEqual(len(mail.outbox), 1)
-        self.assertTrue(hook.get_to_field.spy.called)
-        self.assertEqual(hook.get_to_field.spy.calls[0].kwargs, call_kwargs)
-        self.assertTrue(hook.get_cc_field.spy.called)
-        self.assertEqual(hook.get_cc_field.spy.calls[0].kwargs, call_kwargs)
+        self.assertTrue(hook.get_to_field.called)
+        self.assertTrue(hook.get_to_field.called_with(**call_kwargs))
+        self.assertTrue(hook.get_cc_field.called)
+        self.assertTrue(hook.get_cc_field.called_with(**call_kwargs))
 
     def test_review_request_closed_email_hook_submitted(self):
         """Testing the ReviewRequestClosedEmailHook for a review request being
@@ -1718,10 +1718,10 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
             review_request.close(ReviewRequest.SUBMITTED, admin)
 
         self.assertEqual(len(mail.outbox), 1)
-        self.assertTrue(hook.get_to_field.spy.called)
-        self.assertEqual(hook.get_to_field.spy.calls[0].kwargs, call_kwargs)
-        self.assertTrue(hook.get_cc_field.spy.called)
-        self.assertEqual(hook.get_cc_field.spy.calls[0].kwargs, call_kwargs)
+        self.assertTrue(hook.get_to_field.called)
+        self.assertTrue(hook.get_to_field.called_with(**call_kwargs))
+        self.assertTrue(hook.get_cc_field.called)
+        self.assertTrue(hook.get_cc_field.called_with(**call_kwargs))
 
     def test_review_request_closed_email_hook_discarded(self):
         """Testing the ReviewRequestClosedEmailHook for a review request being
@@ -1752,10 +1752,10 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
             review_request.close(ReviewRequest.DISCARDED, admin)
 
         self.assertEqual(len(mail.outbox), 1)
-        self.assertTrue(hook.get_to_field.spy.called)
-        self.assertEqual(hook.get_to_field.spy.calls[0].kwargs, call_kwargs)
-        self.assertTrue(hook.get_cc_field.spy.called)
-        self.assertEqual(hook.get_cc_field.spy.calls[0].kwargs, call_kwargs)
+        self.assertTrue(hook.get_to_field.called)
+        self.assertTrue(hook.get_to_field.called_with(**call_kwargs))
+        self.assertTrue(hook.get_cc_field.called)
+        self.assertTrue(hook.get_cc_field.called_with(**call_kwargs))
 
     def test_generic_hook(self):
         """Testing that a generic e-mail hook works for all e-mail signals"""

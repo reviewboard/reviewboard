@@ -2225,7 +2225,7 @@ class WebHookDispatchTests(SpyAgency, TestCase):
 
     def _test_dispatch(self, handler, event, payload, expected_content_type,
                        expected_data, expected_sig_header=None):
-        def _urlopen(opener, request):
+        def _urlopen(opener, request, *args, **kwargs):
             self.assertEqual(request.get_full_url(), self.ENDPOINT_URL)
             self.assertEqual(request.headers['X-reviewboard-event'], event)
             self.assertEqual(request.headers['Content-type'],
