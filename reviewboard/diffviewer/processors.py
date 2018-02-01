@@ -1,14 +1,6 @@
 from __future__ import unicode_literals
 
-import re
-
-from reviewboard.diffviewer.diffutils import split_line_endings
-
-
-CHUNK_RANGE_RE = re.compile(
-    r'^@@ -(?P<orig_start>\d+)(,(?P<orig_len>\d+))? '
-    r'\+(?P<new_start>\d+)(,(?P<new_len>\d+))? @@',
-    re.M)
+from reviewboard.diffviewer.diffutils import get_diff_data_chunks_info
 
 
 def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
@@ -23,82 +15,42 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data):
     ranges of lines dictated in the uploaded diff files.
     """
     def _find_range_info(diff):
-        lines = split_line_endings(diff)
-        process_changes = False
-        process_trailing_context = False
         ranges = []
 
-        chunk_start = None
-        chunk_len = 0
-        lines_of_context = 0
+        for range_info in get_diff_data_chunks_info(diff):
+            orig_info = range_info['orig']
+            modified_info = range_info['modified']
 
-        # Look through the chunks of the diff, trying to find the amount
-        # of context shown at the beginning of each chunk. Though this
-        # will usually be 3 lines, it may be fewer or more, depending
-        # on file length and diff generation settings.
-        for line in lines:
-            if process_changes:
-                if line.startswith((b'-', b'+')):
-                    # We've found the first change in the chunk. We now
-                    # know how many lines of context we have.
-                    #
-                    # We reduce the indexes by 1 because the chunk ranges
-                    # in diffs start at 1, and we want a 0-based index.
-                    start = chunk_start - 1 + lines_of_context
-                    chunk_len -= lines_of_context
+            orig_pre_lines_of_context = orig_info['pre_lines_of_context']
+            orig_post_lines_of_context = orig_info['post_lines_of_context']
+            modified_pre_lines_of_context = \
+                modified_info['pre_lines_of_context']
+            modified_post_lines_of_context = \
+                modified_info['post_lines_of_context']
 
-                    # We then reduce by 1 again, compensating for the
-                    # additional line of context, if any. We must do this
-                    # because the first line after a "@@" section is being
-                    # counted in lines_of_context, but is also the line
-                    # referred to in chunk_start.
-                    if lines_of_context > 0:
-                        start -= 1
+            if modified_pre_lines_of_context and orig_pre_lines_of_context:
+                pre_lines_of_context = min(orig_pre_lines_of_context,
+                                           modified_pre_lines_of_context)
+            else:
+                pre_lines_of_context = (modified_pre_lines_of_context or
+                                        orig_pre_lines_of_context)
 
-                    ranges.append((start, start + chunk_len))
-                    process_changes = False
-                    process_trailing_context = True
-                    lines_of_context = 0
-                    continue
-                else:
-                    lines_of_context += 1
-            elif process_trailing_context:
-                if line.startswith(b' '):
-                    # This may be a line of context after the modifications
-                    # in this chunk. Bump up the counter.
-                    lines_of_context += 1
-                    continue
-                else:
-                    # Reset the lines of trailing context, since we hit
-                    # something other than an equal line.
-                    lines_of_context = 0
+            if modified_post_lines_of_context and orig_post_lines_of_context:
+                post_lines_of_context = min(orig_post_lines_of_context,
+                                            modified_post_lines_of_context)
+            else:
+                post_lines_of_context = (modified_post_lines_of_context or
+                                         orig_post_lines_of_context)
 
-            # This was not a change within a chunk, or we weren't processing,
-            # so check to see if this is a chunk header instead.
-            m = CHUNK_RANGE_RE.match(line)
+            start = modified_info['chunk_start'] + pre_lines_of_context
 
-            if m:
-                # It is a chunk header. Start by updating the previous range
-                # to factor in the lines of trailing context.
-                if process_trailing_context and lines_of_context > 0:
-                    last_range = ranges[-1]
-                    ranges[-1] = (last_range[0],
-                                  last_range[1] - lines_of_context)
+            if pre_lines_of_context > 0:
+                start -= 1
 
-                # Next, reset the state for the next range, and pull the line
-                # number and length from the header.
-                chunk_start = int(m.group('new_start'))
-                chunk_len = int(m.group('new_len') or '1')
-                process_changes = True
-                process_trailing_context = False
-                lines_of_context = 0
+            length = (modified_info['chunk_len'] - pre_lines_of_context -
+                      post_lines_of_context)
 
-        # We need to adjust the last range, if we're still processing
-        # trailing context.
-        if process_trailing_context and lines_of_context > 0:
-            last_range = ranges[-1]
-            ranges[-1] = (last_range[0],
-                          last_range[1] - lines_of_context)
+            ranges.append((start, start + length))
 
         return ranges
 
