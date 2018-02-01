@@ -23,13 +23,9 @@ class DefaultGroupTest(SpyAgency, TestCase):
 
         user_registered.send(sender=None, user=user)
 
-        self.assertTrue(_add_default_groups.spy.called)
-        self.assertEqual(
-            _add_default_groups.spy.last_call.kwargs['user'],
-            user)
-        self.assertEqual(
-            _add_default_groups.spy.last_call.kwargs.get('local_site'),
-            None)
+        self.assertTrue(_add_default_groups.called)
+        self.assertTrue(_add_default_groups.last_called_with(user=user,
+                                                             local_site=None))
 
     def test_local_site_add_user(self):
         """Testing default group computation when adding user to LocalSite
@@ -42,13 +38,10 @@ class DefaultGroupTest(SpyAgency, TestCase):
 
         local_site.users.add(user)
 
-        self.assertTrue(_add_default_groups.spy.called)
-        self.assertEqual(
-            _add_default_groups.spy.last_call.kwargs['user'],
-            user)
-        self.assertEqual(
-            _add_default_groups.spy.last_call.kwargs['local_site'],
-            local_site)
+        self.assertTrue(_add_default_groups.called)
+        self.assertTrue(_add_default_groups.last_called_with(
+            user=user,
+            local_site=local_site))
 
     def test_user_add_local_site(self):
         """Testing default group computation when adding LocalSite to user's
@@ -62,12 +55,9 @@ class DefaultGroupTest(SpyAgency, TestCase):
         user.local_site.add(local_site)
 
         self.assertTrue(_add_default_groups.spy.called)
-        self.assertEqual(
-            _add_default_groups.spy.last_call.kwargs['user'],
-            user)
-        self.assertEqual(
-            _add_default_groups.spy.last_call.kwargs['local_site'],
-            local_site)
+        self.assertTrue(_add_default_groups.spy.last_called_with(
+            user=user,
+            local_site=local_site))
 
     def test_add_default_groups(self):
         """Testing default group computation without LocalSite"""

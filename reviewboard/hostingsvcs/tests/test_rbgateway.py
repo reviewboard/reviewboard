@@ -57,10 +57,10 @@ class ReviewBoardGatewayTests(ServiceTests):
                           hosting_url='https://example.com')
         self.assertTrue(account.is_authorized)
 
-        self.assertEqual(http_post_data['kwargs']['url'],
-                         'https://example.com/session')
-        self.assertIn('username', http_post_data['kwargs'])
-        self.assertIn('password', http_post_data['kwargs'])
+        self.assertTrue(service.client.http_post.last_called_with(
+            url='https://example.com/session',
+            username='myuser',
+            password='mypass'))
 
     def test_check_repository(self):
         """Testing that ReviewBoardGateway can find the repository"""

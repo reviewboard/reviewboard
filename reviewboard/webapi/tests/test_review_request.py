@@ -1138,7 +1138,7 @@ class ResourceListTests(SpyAgency, ExtraDataListMixin, BaseWebAPITestCase):
         self.spy_on(auth.get_backends, call_fake=lambda: [backend])
 
         # First spy messes with User.has_perm, this lets it through
-        self.spy_on(User.has_perm, call_fake=lambda x, y, z: True)
+        self.spy_on(User.has_perm, call_fake=lambda *args, **kwargs: True)
         self.spy_on(backend.get_or_create_user)
 
         rsp = self.api_post(
