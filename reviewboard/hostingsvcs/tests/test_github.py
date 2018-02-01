@@ -264,12 +264,7 @@ class GitHubTests(ServiceTests):
 
     def test_authorization(self):
         """Testing that GitHub account authorization sends expected data"""
-        http_post_data = {}
-
         def _http_post(self, *args, **kwargs):
-            http_post_data['args'] = args
-            http_post_data['kwargs'] = kwargs
-
             return json.dumps({
                 'id': 1,
                 'url': 'https://api.github.com/authorizations/1',
@@ -292,10 +287,10 @@ class GitHubTests(ServiceTests):
         service.authorize('myuser', 'mypass', None)
         self.assertTrue(account.is_authorized)
 
-        self.assertEqual(http_post_data['kwargs']['url'],
-                         'https://api.github.com/authorizations')
-        self.assertEqual(http_post_data['kwargs']['username'], 'myuser')
-        self.assertEqual(http_post_data['kwargs']['password'], 'mypass')
+        self.assertTrue(service.client.http_post.last_called_with(
+            url='https://api.github.com/authorizations',
+            username='myuser',
+            password='mypass'))
 
     def test_authorization_with_client_info(self):
         """Testing that GitHub account authorization with registered client

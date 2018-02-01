@@ -153,25 +153,25 @@ class FilterInterdiffOpcodesTests(TestCase):
         self._sanity_check_opcodes(opcodes)
 
         orig_diff = b''.join([
-            self._build_dummy_diff_data(post_lines_of_context=0, *values)
+            self._build_dummy_diff_data(*values)
             for values in (
-                (413, 6, 413, 8),
-                (422, 9, 424, 13),
-                (433, 6, 439, 8),
-                (442, 6, 450, 9),
-                (595, 6, 605, 205),
-                (636, 6, 845, 36),
+                (413, 9, 413, 11),
+                (422, 12, 424, 16),
+                (433, 9, 439, 11),
+                (442, 9, 450, 12),
+                (595, 9, 605, 208),
+                (636, 9, 845, 39),
             )
         ])
         new_diff = b''.join([
-            self._build_dummy_diff_data(post_lines_of_context=0, *values)
+            self._build_dummy_diff_data(*values)
             for values in (
-                (413, 6, 413, 8),
-                (422, 9, 424, 13),
-                (433, 6, 439, 8),
-                (442, 6, 450, 8),
-                (595, 6, 605, 206),
-                (636, 6, 846, 36),
+                (413, 9, 413, 11),
+                (422, 12, 424, 16),
+                (433, 9, 439, 11),
+                (442, 9, 450, 11),
+                (595, 6, 605, 209),
+                (636, 9, 846, 39),
             )
         ])
 

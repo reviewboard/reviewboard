@@ -11,84 +11,97 @@ from wsgiref import simple_server
 from django.core.management import execute_from_command_line
 
 
-warnings_found = 0
-
-
 def check_dependencies(settings):
-    # Some of our checks require access to django.conf.settings, so
-    # tell Django about our settings.
-    #
+    # We're now safe to import anything that might touch Django settings,
+    # such as code utilizing the database. Start importing what we need for
+    # dependency checks.
     from djblets.util.filesystem import is_exe_in_path
 
     from reviewboard.admin.import_utils import has_module
+    from reviewboard.dependencies import (dependency_error,
+                                          dependency_warning,
+                                          fail_if_missing_dependencies)
 
-    dependency_error = settings.dependency_error
+    # Make sure the correct version of Python is being used. This should be
+    # covered by setup.py, but it's best to make sure here.
+    if sys.version_info[0] != 2 or sys.version_info[1] != 7:
+        dependency_error('Python 2.7 is required.')
 
-    # Python 2.6
-    if sys.version_info[0] < 2 or \
-       (sys.version_info[0] == 2 and sys.version_info[1] < 6):
-        dependency_error('Python 2.6 or newer is required.')
+    # Check for NodeJS and installed modules, to make sure these weren't
+    # missed during installation.
+    if not is_exe_in_path('node'):
+        dependency_error('node (from NodeJS) was not found. It must be '
+                         'installed from your package manager or from '
+                         'https://nodejs.org/')
 
-    # django-evolution
-    if not has_module('django_evolution'):
-        dependency_error("django_evolution is required.\n"
-                         "http://code.google.com/p/django-evolution/")
+    if not os.path.exists('node_modules'):
+        dependency_error('The node_modules directory is missing. Please '
+                         're-run `./setup.py develop` to install all NodeJS '
+                         'dependencies.')
 
-    # PIL
-    if not has_module('PIL') and not has_module('Image'):
-        dependency_error('The Python Imaging Library (Pillow or PIL) '
-                         'is required.')
+    for key in ('UGLIFYJS_BINARY', 'LESS_BINARY', 'BABEL_BINARY'):
+        path = settings.PIPELINE[key]
 
-    # The following checks are non-fatal warnings, since these dependencies are
-    # merely recommended, not required.
-    def dependency_warning(string):
-        sys.stderr.write('Warning: %s\n' % string)
-        global warnings_found
-        warnings_found += 1
+        if not os.path.exists(path):
+            dependency_error('%s is missing. Please re-run `./setup.py '
+                             'develop` to install all NodeJS dependencies.'
+                             % os.path.abspath(path))
 
+    # The following checks are non-fatal warnings, since these dependencies
+    # are merely recommended, not required. These are primarily for SCM
+    # support.
     if not has_module('pysvn') and not has_module('subvertpy'):
-        dependency_warning('Neither subvertpy nor pysvn found. '
-                           'SVN integration will not work.')
+        dependency_warning('Neither the subvertpy nor pysvn Python modules '
+                           'were found. Subversion integration will not work. '
+                           'For pysvn, see your package manager for the '
+                           'module or download from '
+                           'http://pysvn.tigris.org/project_downloads.html. '
+                           'For subvertpy, run `pip install subvertpy`. We '
+                           'recommend pysvn for better compatibility.')
 
     if has_module('P4'):
         try:
             subprocess.call(['p4', '-h'],
                             stdin=subprocess.PIPE, stdout=subprocess.PIPE)
         except OSError:
-            dependency_warning('p4 command not found. Perforce integration '
-                               'will not work. You should download p4 from '
+            dependency_warning('The p4 command not found. Perforce '
+                               'integration will not work. To enable support, '
+                               'download p4 from '
                                'http://cdist2.perforce.com/perforce/ and '
                                'place it in your PATH.')
     else:
-        dependency_warning('p4python (>=07.3) not found. Perforce integration '
-                           'will not work.')
+        dependency_warning('The p4python module was not found. Perforce '
+                           'integration will not work. To enable support, '
+                           'run `pip install p4python`')
 
     if not is_exe_in_path('hg'):
-        dependency_warning('hg not found. Mercurial integration will not '
-                           'work.')
+        dependency_warning('The hg command was not found. Mercurial '
+                           'integration will not work. To enable support, '
+                           'run `pip install mercurial`')
 
-    if not has_module('bzrlib'):
-        dependency_warning('bzrlib not found. Bazaar integration will not '
-                           'work.')
+    if not is_exe_in_path('bzr'):
+        dependency_warning('The bzr command was not found. Bazaar integration '
+                           'will not work. To enable support, run '
+                           '`pip install bzr`')
 
     if not is_exe_in_path('cvs'):
-        dependency_warning('cvs binary not found. CVS integration '
-                           'will not work.')
+        dependency_warning('The cvs command was not found. CVS integration '
+                           'will not work. To enable support, install cvs '
+                           'from your package manager or from '
+                           'http://www.nongnu.org/cvs/')
 
     if not is_exe_in_path('git'):
-        dependency_warning('git binary not found. Git integration '
-                           'will not work.')
+        dependency_warning('The git command not found. Git integration '
+                           'will not work. To enable support, install git '
+                           'from your package manager or from '
+                           'https://git-scm.com/downloads')
 
-    if not is_exe_in_path('mtn'):
-        dependency_warning('mtn binary not found. Monotone integration '
-                           'will not work.')
-
-    # Django will print warnings/errors for database backend modules and flup
-    # if the configuration requires it.
-
-    if warnings_found:
-        sys.stderr.write(settings.install_help)
-        sys.stderr.write('\n\n')
+    # Along with all those, Django will print warnings/errors for database
+    # backend modules if the configuration requires it.
+    #
+    # Now that that's all done, check if anything was missing and, if so,
+    # fail with some helpful text.
+    fail_if_missing_dependencies()
 
 
 def include_enabled_extensions(settings):

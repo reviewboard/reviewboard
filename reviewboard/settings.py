@@ -4,11 +4,12 @@ from __future__ import unicode_literals
 
 import os
 import re
-import sys
 
 import djblets
 from django.core.urlresolvers import reverse
 
+from reviewboard.dependencies import (dependency_error,
+                                      fail_if_missing_dependencies)
 from reviewboard.staticbundles import PIPELINE_STYLESHEETS, PIPELINE_JAVASCRIPT
 
 
@@ -230,23 +231,6 @@ TEST_RUNNER = 'reviewboard.test.RBTestRunner'
 
 RUNNING_TEST = (os.environ.get('RB_RUNNING_TESTS') == '1')
 
-# Dependency checker functionality.  Gives our users nice errors when they
-# start out, instead of encountering them later on.  Most of the magic for this
-# happens in manage.py, not here.
-install_help = '''
-Please see https://www.reviewboard.org/docs/manual/dev/admin/
-for help setting up Review Board.
-'''
-
-
-def dependency_error(string):
-    sys.stderr.write('%s\n' % string)
-    sys.stderr.write(install_help)
-    sys.exit(1)
-
-if os.path.split(os.path.dirname(__file__))[1] != 'reviewboard':
-    dependency_error('The directory containing manage.py must be named '
-                     '"reviewboard"')
 
 LOCAL_ROOT = None
 PRODUCTION = True
@@ -499,3 +483,6 @@ OAUTH2_PROVIDER = {
     'DEFAULT_SCOPES': 'root:read',
     'SCOPES': {},
 }
+
+
+fail_if_missing_dependencies()
