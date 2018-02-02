@@ -156,6 +156,12 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                            'review request',
             'added_in': '2.0',
         },
+        'issue_verifying_count': {
+            'type': int,
+            'description': 'The number of issues waiting for verification to '
+                           'resolve or drop on this review request',
+            'added_in': '3.0.3',
+        },
         'submitter': {
             'type': UserResource,
             'description': 'The user who submitted the review request.',
@@ -433,8 +439,10 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             q = q & self.build_queries_for_int_field(
                 request, 'shipit_count', 'ship-it-count')
 
-            for issue_field in ('issue_open_count', 'issue_dropped_count',
-                                'issue_resolved_count'):
+            for issue_field in ('issue_open_count',
+                                'issue_dropped_count',
+                                'issue_resolved_count',
+                                'issue_verifying_count'):
                 q = q & self.build_queries_for_int_field(
                     request, issue_field)
 
