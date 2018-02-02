@@ -1448,6 +1448,23 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
 
         self.assertNotIn('latest_diff', links)
 
+    def test_get_contains_all_issue_counts(self):
+        """Testing the GET review-requests/<id>/ API contains counts for all
+        issues which are dropped, open, resolved and verifying.
+        """
+
+        review_request = self.create_review_request(publish=True)
+        rsp = self.api_get(get_review_request_item_url(review_request.pk),
+                           expected_mimetype=review_request_item_mimetype)
+
+        self.assertIn('review_request', rsp)
+        rr = rsp['review_request']
+
+        self.assertIn('issue_dropped_count', rr)
+        self.assertIn('issue_open_count', rr)
+        self.assertIn('issue_resolved_count', rr)
+        self.assertIn('issue_verifying_count', rr)
+
     #
     # HTTP PUT tests
     #
