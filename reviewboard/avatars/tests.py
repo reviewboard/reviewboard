@@ -34,13 +34,15 @@ class AvatarServiceRegistryTests(AvatarServicesTestMixin, TestCase):
             siteconfig.get(AvatarServiceRegistry.AVATARS_MIGRATED_KEY))
         self.assertTrue(
             siteconfig.get(AvatarServiceRegistry.AVATARS_ENABLED_KEY))
-        self.assertListEqual(
+        self.assertEqual(
             siteconfig.get(AvatarServiceRegistry.ENABLED_SERVICES_KEY),
             [])
+        self.assertIsNone(
+            siteconfig.get(AvatarServiceRegistry.DEFAULT_SERVICE_KEY))
 
         registry = AvatarServiceRegistry()
 
-        self.assertSetEqual(
+        self.assertEqual(
             set(registry),
             {
                 FileUploadService,
@@ -49,7 +51,7 @@ class AvatarServiceRegistryTests(AvatarServicesTestMixin, TestCase):
             })
 
         self.assertIsInstance(registry.default_service, GravatarService)
-        self.assertSetEqual(
+        self.assertEqual(
             set(registry.enabled_services),
             {
                 FileUploadService,
@@ -62,7 +64,7 @@ class AvatarServiceRegistryTests(AvatarServicesTestMixin, TestCase):
             siteconfig.get(AvatarServiceRegistry.AVATARS_MIGRATED_KEY))
         self.assertTrue(
             siteconfig.get(AvatarServiceRegistry.AVATARS_ENABLED_KEY))
-        self.assertListEqual(
+        self.assertEqual(
             siteconfig.get(AvatarServiceRegistry.ENABLED_SERVICES_KEY),
             [
                 GravatarService.avatar_service_id,
@@ -83,6 +85,11 @@ class AvatarServiceRegistryTests(AvatarServicesTestMixin, TestCase):
             siteconfig.get(AvatarServiceRegistry.AVATARS_MIGRATED_KEY))
         self.assertTrue(
             siteconfig.get(AvatarServiceRegistry.AVATARS_ENABLED_KEY))
+        self.assertEqual(
+            siteconfig.get(AvatarServiceRegistry.ENABLED_SERVICES_KEY),
+            [])
+        self.assertIsNone(
+            siteconfig.get(AvatarServiceRegistry.DEFAULT_SERVICE_KEY))
 
         siteconfig.set('integration_gravatars', False)
         siteconfig.save()
@@ -90,15 +97,21 @@ class AvatarServiceRegistryTests(AvatarServicesTestMixin, TestCase):
         registry = AvatarServiceRegistry()
 
         # Verify all services are disabled.
-        self.assertSetEqual(
+        self.assertEqual(
             set(registry),
             {
                 FileUploadService,
                 GravatarService,
                 URLAvatarService,
             })
-        self.assertIsNone(registry.default_service)
-        self.assertSetEqual(set(registry.enabled_services), set())
+        self.assertIsInstance(registry.default_service, GravatarService)
+        self.assertEqual(
+            set(registry.enabled_services),
+            {
+                FileUploadService,
+                GravatarService,
+                URLAvatarService,
+            })
 
         # Verify the settings were correctly saved to the database.
         siteconfig = SiteConfiguration.objects.get_current()
@@ -106,11 +119,16 @@ class AvatarServiceRegistryTests(AvatarServicesTestMixin, TestCase):
             siteconfig.get(AvatarServiceRegistry.AVATARS_MIGRATED_KEY))
         self.assertFalse(
             siteconfig.get(AvatarServiceRegistry.AVATARS_ENABLED_KEY))
-        self.assertListEqual(
+        self.assertEqual(
             siteconfig.get(AvatarServiceRegistry.ENABLED_SERVICES_KEY),
-            [])
-        self.assertIsNone(
-            siteconfig.get(AvatarServiceRegistry.DEFAULT_SERVICE_KEY))
+            [
+                GravatarService.avatar_service_id,
+                FileUploadService.avatar_service_id,
+                URLAvatarService.avatar_service_id,
+            ])
+        self.assertEqual(
+            siteconfig.get(AvatarServiceRegistry.DEFAULT_SERVICE_KEY),
+            GravatarService.avatar_service_id)
 
 
 class TemplateTagTests(AvatarServicesTestMixin, TestCase):
