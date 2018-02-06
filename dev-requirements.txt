@@ -1,5 +1,5 @@
 bzr
-kgb
+kgb>=2.0
 mercurial>=4.4.2; python_version >= '2.7'
 mercurial==4.2.2,<4.2.999; python_version == '2.6'
 mock
