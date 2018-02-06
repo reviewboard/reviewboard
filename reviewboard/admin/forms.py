@@ -612,10 +612,12 @@ class AvatarServicesForm(SiteSettingsForm):
 
     def save(self):
         """Save the enabled services and default service to the database."""
-        avatar_services.enabled_services = [
-            avatar_services.get('avatar_service_id', service_id)
-            for service_id in self.cleaned_data['enabled_services']
-        ]
+        avatar_services.set_enabled_services(
+            [
+                avatar_services.get('avatar_service_id', service_id)
+                for service_id in self.cleaned_data['enabled_services']
+            ],
+            save=False)
 
         avatar_services.set_default_service(
             self.cleaned_data['default_service'],

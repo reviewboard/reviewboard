@@ -1,0 +1,111 @@
+.. default-intersphinx:: rb3.0
+
+
+================================
+Review Board 3.0.3 Release Notes
+================================
+
+**Release date**: February 6, 2018
+
+
+Packaging
+=========
+
+* `Djblets 1.0.3`_ is now required.
+
+* The source distribution packages now contain all relevant files needed for
+  building Review Board and its documentation, and don't contain unnecessary
+  files.
+
+* The standard Egg and Wheel packages now contain missing source map files.
+
+
+.. _Djblets 1.0.3:
+   https://www.reviewboard.org/docs/releasenotes/djblets/1.0.3/
+
+
+New Features
+============
+
+* Added drag-and-drop upload for custom avatars.
+
+  When choosing a custom avatar based on an upload image, you now have the
+  option to drag-and-drop the avatar into the form to upload it, instead of
+  having to browse for it. We've completely redesigned the UI here, making it
+  easier and more friendly to use, and fixing bugs where your current avatar
+  was not shown.
+
+
+Extensions
+==========
+
+* Fixed issues packaging extensions that include LessCSS files from
+  Review Board or Djblets.
+
+
+Web API
+=======
+
+* Added an ``issue_verifying_field`` to
+  :ref:`webapi2.0-review-request-resource` for showing the number of issues
+  pending verification. (:bug:`4636`)
+
+  Patch by Janice Trang.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Hopefully fixed a rare crash that could occur randomly.
+
+  If you've seen a crash saying ``RuntimeError: dictionary changed size during
+  iteration`` in the ``weakref`` module, we believe we've tracked this down.
+  Please let us know if you continue to see this.
+
+
+Avatars
+-------
+
+* Fixed a handful of issues preventing avatar state from being synchronized
+  properly between web server processes and threads.
+
+  These were causing a lot of problems for custom avatar backends. If you're
+  still hitting problems getting your custom avatar backend to work, please
+  reach out to us.
+
+* Fixed a crash when attempting to show Gravatars for users without an e-mail
+  address set.
+
+  This was particularly problematic for bot users and some users from LDAP or
+  Active Directory. The default Gravatar image is now shown instead of
+  crashing.
+
+
+Review Requests
+---------------
+
+* Fixed an issue preventing diffs from being shown along with their comments
+  on Python 2.7.6 and older. (:bug:`4627`)
+
+* Fixed the icon shown for issues pending verification in the issue summary
+  table.
+
+
+Subversion
+----------
+
+* Fixed a compatibility issue with newer versions of subvertpy_.
+
+
+.. _subvertpy: https://pypi.python.org/pypi/subvertpy
+
+
+Contributors
+============
+
+* Christian Hammond
+* David Trowbridge
+* Janice Trang

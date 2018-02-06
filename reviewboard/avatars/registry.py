@@ -44,8 +44,6 @@ class AvatarServiceRegistry(ExceptionFreeGetterMixin,
         Returns:
             bool: Whether or not avatars are enabled.
         """
-        self.populate()
-
         siteconfig = SiteConfiguration.objects.get_current()
         return siteconfig.get(self.AVATARS_ENABLED_KEY)
 
@@ -53,12 +51,13 @@ class AvatarServiceRegistry(ExceptionFreeGetterMixin,
     def avatars_enabled(self, value):
         """Set whether or not avatars are enabled.
 
+        This will not automatically save the avatar settings. Callers must
+        call :py:meth:`save` manually.
+
         Args:
             value (bool):
                 Whether or not avatars are to be enabled.
         """
-        self.populate()
-
         siteconfig = SiteConfiguration.objects.get_current()
         siteconfig.set(self.AVATARS_ENABLED_KEY, value)
         siteconfig.save()
@@ -68,28 +67,34 @@ class AvatarServiceRegistry(ExceptionFreeGetterMixin,
 
         On first run, the site configuration will be migrated to use the new
         avatar services instead of the ``integration_gravatars`` setting.
+        Those changes are kept locally until the site configuration is
+        explicitly saved later, to avoid issues with threads stomping on each
+        other during load.
         """
         if self.populated:
             return
 
         siteconfig = SiteConfiguration.objects.get_current()
 
-        # Upon first run, migrate to the new avatar services settings.
         if not siteconfig.get(self.AVATARS_MIGRATED_KEY):
+            # There's no modern avatar configuration stored, so we'll need
+            # to migrate the old Gravatar state to the new siteconfig settings.
+            #
+            # We won't save siteconfig to the database, though. The goal is
+            # to avoid threads starting up and stomping on each others'
+            # state. Eventually, when a siteconfig is explicitly being saved,
+            # the new state will be written.
             avatars_enabled = siteconfig.get('integration_gravatars')
             siteconfig.set(self.AVATARS_MIGRATED_KEY, True)
             siteconfig.set(self.AVATARS_ENABLED_KEY, avatars_enabled)
-
-            if avatars_enabled:
-                siteconfig.set(
-                    self.ENABLED_SERVICES_KEY, [
-                        service.avatar_service_id
-                        for service in self.default_avatar_service_classes
-                    ]
-                )
-                siteconfig.set(self.DEFAULT_SERVICE_KEY,
-                               GravatarService.avatar_service_id)
-
-            siteconfig.save()
+            siteconfig.set(
+                self.ENABLED_SERVICES_KEY,
+                [
+                    service.avatar_service_id
+                    for service in self.default_avatar_service_classes
+                ]
+            )
+            siteconfig.set(self.DEFAULT_SERVICE_KEY,
+                           GravatarService.avatar_service_id)
 
         super(AvatarServiceRegistry, self).populate()

@@ -29,7 +29,7 @@ djblets_doc_major_version = '1.0'
 django_version = '>=1.6.11,<1.6.999'
 
 #: The version range required for Djblets.
-djblets_version = '>=1.0.2,<=1.0.999'
+djblets_version = '>=1.0.3,<=1.0.999'
 
 #: All dependencies required to install Review Board.
 package_dependencies = {
@@ -63,7 +63,8 @@ package_only_dependencies = {
 }
 
 
-_dependency_message_count = 0
+_dependency_error_count = 0
+_dependency_warning_count = 0
 
 
 def build_dependency_list(deps, version_prefix=''):
@@ -104,9 +105,6 @@ def _dependency_message(message, prefix=''):
         prefix (unicode, optional):
             The prefix for the message. All text will be aligned after this.
     """
-    global _dependency_message_count
-
-    _dependency_message_count += 1
     sys.stderr.write('\n%s\n'
                      % textwrap.fill(message,
                                      initial_indent=prefix,
@@ -126,7 +124,10 @@ def dependency_error(message):
             The dependency error to display. This will be wrapped, but long
             strings (like paths) will not contain line breaks.
     """
+    global _dependency_error_count
+
     _dependency_message(message, prefix='ERROR: ')
+    _dependency_error_count += 1
 
 
 def dependency_warning(message):
@@ -140,7 +141,10 @@ def dependency_warning(message):
             The dependency warning to display. This will be wrapped, but long
             strings (like paths) will not contain line breaks.
     """
+    global _dependency_warning_count
+
     _dependency_message(message, prefix='WARNING: ')
+    _dependency_warning_count += 1
 
 
 def fail_if_missing_dependencies():
@@ -150,9 +154,11 @@ def fail_if_missing_dependencies():
     called, this will print some help information with a link to the manual
     and then exit the process.
     """
-    if _dependency_message_count > 0:
+    if _dependency_warning_count > 0 or _dependency_error_count > 0:
         from reviewboard import get_manual_url
 
         _dependency_message('Please see %s for help setting up Review Board.'
                             % get_manual_url())
-        sys.exit(1)
+
+        if _dependency_error_count > 0:
+            sys.exit(1)
