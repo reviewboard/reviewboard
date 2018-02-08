@@ -1,136 +1,30 @@
+"""FileDiff model definition."""
+
 from __future__ import unicode_literals
 
-import bz2
 import logging
 
 from django.db import models
 from django.db.models import Q
-from django.utils import six, timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.translation import ugettext_lazy as _
 from djblets.db.fields import Base64Field, JSONField
 
-from reviewboard.diffviewer.errors import DiffParserError
-from reviewboard.diffviewer.managers import (RawFileDiffDataManager,
-                                             FileDiffManager,
-                                             DiffSetManager)
+from reviewboard.diffviewer.managers import FileDiffManager
+from reviewboard.diffviewer.models.legacy_file_diff_data import \
+    LegacyFileDiffData
+from reviewboard.diffviewer.models.raw_file_diff_data import RawFileDiffData
 from reviewboard.scmtools.core import PRE_CREATION
-from reviewboard.scmtools.models import Repository
-
-
-class LegacyFileDiffData(models.Model):
-    """Deprecated, legacy class for base64-encoded diff data.
-
-    This is no longer populated, and exists solely to store legacy data
-    that has not been migrated to :py:class:`RawFileDiffData`.
-    """
-    binary_hash = models.CharField(_("hash"), max_length=40, primary_key=True)
-    binary = Base64Field(_("base64"))
-
-    extra_data = JSONField(null=True)
-
-    class Meta:
-        db_table = 'diffviewer_filediffdata'
-        verbose_name = _('Legacy File Diff Data')
-        verbose_name_plural = _('Legacy File Diff Data Blobs')
-
-
-class RawFileDiffData(models.Model):
-    """Stores raw diff data as binary content in the database.
-
-    This is the class used in Review Board 2.5+ to store diff content.
-    Unlike in previous versions, the content is not base64-encoded. Instead,
-    it is stored either as bzip2-compressed data (if the resulting
-    compressed data is smaller than the raw data), or as the raw data itself.
-    """
-    COMPRESSION_BZIP2 = 'B'
-
-    COMPRESSION_CHOICES = (
-        (COMPRESSION_BZIP2, _('BZip2-compressed')),
-    )
-
-    binary_hash = models.CharField(_("hash"), max_length=40, unique=True)
-    binary = models.BinaryField()
-    compression = models.CharField(max_length=1, choices=COMPRESSION_CHOICES,
-                                   null=True, blank=True)
-    extra_data = JSONField(null=True)
-
-    objects = RawFileDiffDataManager()
-
-    @property
-    def content(self):
-        """Returns the content of the diff.
-
-        The content will be uncompressed (if necessary) and returned as the
-        raw set of bytes originally uploaded.
-        """
-        if self.compression == self.COMPRESSION_BZIP2:
-            return bz2.decompress(self.binary)
-        elif self.compression is None:
-            return bytes(self.binary)
-        else:
-            raise NotImplementedError(
-                'Unsupported compression method %s for RawFileDiffData %s'
-                % (self.compression, self.pk))
-
-    @property
-    def insert_count(self):
-        return self.extra_data.get('insert_count')
-
-    @insert_count.setter
-    def insert_count(self, value):
-        self.extra_data['insert_count'] = value
-
-    @property
-    def delete_count(self):
-        return self.extra_data.get('delete_count')
-
-    @delete_count.setter
-    def delete_count(self, value):
-        self.extra_data['delete_count'] = value
-
-    def recalculate_line_counts(self, tool):
-        """Recalculates the insert_count and delete_count values.
-
-        This will attempt to re-parse the stored diff and fetch the
-        line counts through the parser.
-        """
-        logging.debug('Recalculating insert/delete line counts on '
-                      'RawFileDiffData %s' % self.pk)
-
-        try:
-            files = tool.get_parser(self.content).parse()
-
-            if len(files) != 1:
-                raise DiffParserError(
-                    'Got wrong number of files (%d)' % len(files))
-        except DiffParserError as e:
-            logging.error('Failed to correctly parse stored diff data in '
-                          'RawFileDiffData ID %s when trying to get '
-                          'insert/delete line counts: %s',
-                          self.pk, e)
-        else:
-            file_info = files[0]
-            self.insert_count = file_info.insert_count
-            self.delete_count = file_info.delete_count
-
-            if self.pk:
-                self.save(update_fields=['extra_data'])
-
-    class Meta:
-        db_table = 'diffviewer_rawfilediffdata'
-        verbose_name = _('Raw File Diff Data')
-        verbose_name_plural = _('Raw File Diff Data Blobs')
 
 
 @python_2_unicode_compatible
 class FileDiff(models.Model):
-    """
-    A diff of a single file.
+    """A diff of a single file.
 
     This contains the patch and information needed to produce original and
     patched versions of a single file in a repository.
     """
+
     COPIED = 'C'
     DELETED = 'D'
     MODIFIED = 'M'
@@ -145,20 +39,20 @@ class FileDiff(models.Model):
 
     diffset = models.ForeignKey('DiffSet',
                                 related_name='files',
-                                verbose_name=_("diff set"))
+                                verbose_name=_('diff set'))
 
-    source_file = models.CharField(_("source file"), max_length=1024)
-    dest_file = models.CharField(_("destination file"), max_length=1024)
-    source_revision = models.CharField(_("source file revision"),
+    source_file = models.CharField(_('source file'), max_length=1024)
+    dest_file = models.CharField(_('destination file'), max_length=1024)
+    source_revision = models.CharField(_('source file revision'),
                                        max_length=512)
-    dest_detail = models.CharField(_("destination file details"),
+    dest_detail = models.CharField(_('destination file details'),
                                    max_length=512)
-    binary = models.BooleanField(_("binary file"), default=False)
-    status = models.CharField(_("status"), max_length=1, choices=STATUSES)
+    binary = models.BooleanField(_('binary file'), default=False)
+    status = models.CharField(_('status'), max_length=1, choices=STATUSES)
 
     diff64 = Base64Field(
-        _("diff"),
-        db_column="diff_base64",
+        _('diff'),
+        db_column='diff_base64',
         blank=True)
     legacy_diff_hash = models.ForeignKey(
         LegacyFileDiffData,
@@ -174,8 +68,8 @@ class FileDiff(models.Model):
         blank=True)
 
     parent_diff64 = Base64Field(
-        _("parent diff"),
-        db_column="parent_diff_base64",
+        _('parent diff'),
+        db_column='parent_diff_base64',
         blank=True)
     legacy_parent_diff_hash = models.ForeignKey(
         LegacyFileDiffData,
@@ -251,7 +145,7 @@ class FileDiff(models.Model):
         # Add hash to table if it doesn't exist, and set diff_hash to this.
         self.diff_hash, is_new = \
             RawFileDiffData.objects.get_or_create_from_data(diff)
-        self.diff64 = ""
+        self.diff64 = ''
 
         return is_new
 
@@ -288,26 +182,30 @@ class FileDiff(models.Model):
         return self.extra_data.get('patched_sha1')
 
     def get_line_counts(self):
-        """Returns the stored line counts for the diff.
+        """Return the stored line counts for the diff.
 
-        This will return all the types of line counts that can be set:
+        This will return all the types of line counts that can be set.
 
-        * ``raw_insert_count``
-        * ``raw_delete_count``
-        * ``insert_count``
-        * ``delete_count``
-        * ``replace_count``
-        * ``equal_count``
-        * ``total_line_count``
+        Returns:
+            dict:
+            A dictionary with the following keys:
 
-        These are not all guaranteed to have values set, and may instead be
-        None. Only ``raw_insert_count``, ``raw_delete_count``
-        ``insert_count``, and ``delete_count`` are guaranteed to have values
-        set.
+            * ``raw_insert_count``
+            * ``raw_delete_count``
+            * ``insert_count``
+            * ``delete_count``
+            * ``replace_count``
+            * ``equal_count``
+            * ``total_line_count``
 
-        If there isn't a processed number of inserts or deletes stored,
-        then ``insert_count`` and ``delete_count`` will be equal to the
-        raw versions.
+            These are not all guaranteed to have values set, and may instead be
+            ``None``. Only ``raw_insert_count``, ``raw_delete_count``
+            ``insert_count``, and ``delete_count`` are guaranteed to have
+            values set.
+
+            If there isn't a processed number of inserts or deletes stored,
+            then ``insert_count`` and ``delete_count`` will be equal to the raw
+            versions.
         """
         if ('raw_insert_count' not in self.extra_data or
             'raw_delete_count' not in self.extra_data):
@@ -344,16 +242,39 @@ class FileDiff(models.Model):
                         insert_count=None, delete_count=None,
                         replace_count=None, equal_count=None,
                         total_line_count=None):
-        """Sets the line counts on the FileDiff.
+        """Set the line counts on the FileDiff.
 
         There are many types of useful line counts that can be set.
 
-        ``raw_insert_count`` and ``raw_delete_count`` correspond to the
-        raw inserts and deletes in the actual patch, which will be set both
-        in this FileDiff and in the associated RawFileDiffData.
+        Args:
+            raw_insert_count (int, optional):
+                The insert count on the original patch.
 
-        The other counts are stored exclusively in FileDiff, as they are
-        more render-specific.
+                This will be set on the
+                :py:class:`reviewboard.diffviewer.models.raw_file_diff_data.RawFileDiffData`
+                as well.
+
+            raw_delete_count (int, optional):
+                The delete count in the original patch.
+
+                This will be set on the
+                :py:class:`reviewboard.diffviewer.models.raw_file_diff_data.RawFileDiffData`
+                as well.
+
+            insert_count (int, optional):
+                The number of lines that were inserted in the diff.
+
+            delete_count (int, optional):
+                The number of lines that were deleted in the diff.
+
+            replace_count (int, optional):
+                The number of lines that were replaced in the diff.
+
+            equal_count (int, optional):
+                The number of lines that were identical in the diff.
+
+            total_line_count (int, optional):
+                The total line count.
         """
         updated = False
 
@@ -432,6 +353,11 @@ class FileDiff(models.Model):
         If the diff data is stored on an associated LegacyFileDiffData,
         that will be converted into a RawFileDiffData. The LegacyFileDiffData
         will then be removed, if nothing else is using it.
+
+        Args:
+            recalculate_line_counts (bool, optional):
+                Whether or not line counts should be recalculated during the
+                migration.
         """
         needs_save = False
         diff_hash_is_new = False
@@ -557,151 +483,28 @@ class FileDiff(models.Model):
         return diff_hash_is_new, parent_diff_hash_is_new
 
     def _recalculate_line_counts(self, diff_hash):
-        """Recalculates the line counts on the specified RawFileDiffData.
+        """Recalculate line counts for the raw data.
 
-        This requires that diff_hash is set. Otherwise, it will assert.
+        Args:
+            diff_hash (reviewboard.diffviewer.models.raw_file_diff_data.
+                       RawFileDiffData):
+                The raw data to recalculate line counts for.
         """
         diff_hash.recalculate_line_counts(
             self.diffset.repository.get_scmtool())
 
     def __str__(self):
+        """Return a human-readable representation of the model.
+
+        Returns:
+            unicode:
+            A human-readable representation of the model.
+        """
         return "%s (%s) -> %s (%s)" % (self.source_file, self.source_revision,
                                        self.dest_file, self.dest_detail)
 
     class Meta:
+        app_label = 'diffviewer'
         db_table = 'diffviewer_filediff'
         verbose_name = _('File Diff')
         verbose_name_plural = _('File Diffs')
-
-
-@python_2_unicode_compatible
-class DiffSet(models.Model):
-    """
-    A revisioned collection of FileDiffs.
-    """
-    name = models.CharField(_('name'), max_length=256)
-    revision = models.IntegerField(_("revision"))
-    timestamp = models.DateTimeField(_("timestamp"), default=timezone.now)
-    basedir = models.CharField(_('base directory'), max_length=256,
-                               blank=True, default='')
-    history = models.ForeignKey('DiffSetHistory', null=True,
-                                related_name="diffsets",
-                                verbose_name=_("diff set history"))
-    repository = models.ForeignKey(Repository, related_name="diffsets",
-                                   verbose_name=_("repository"))
-    diffcompat = models.IntegerField(
-        _('differ compatibility version'),
-        default=0,
-        help_text=_("The diff generator compatibility version to use. "
-                    "This can and should be ignored."))
-
-    base_commit_id = models.CharField(
-        _('commit ID'), max_length=64, blank=True, null=True, db_index=True,
-        help_text=_('The ID/revision this change is built upon.'))
-
-    extra_data = JSONField(null=True)
-
-    objects = DiffSetManager()
-
-    def get_total_line_counts(self):
-        """Returns the total line counts from all files in this diffset."""
-        counts = {}
-
-        for filediff in self.files.all():
-            for key, value in six.iteritems(filediff.get_line_counts()):
-                if counts.get(key) is None:
-                    counts[key] = value
-                elif value is not None:
-                    counts[key] += value
-
-        return counts
-
-    def update_revision_from_history(self, diffset_history):
-        """Update the revision of this diffset based on a diffset history.
-
-        This will determine the appropriate revision to use for the diffset,
-        based on how many other diffsets there are in the history. If there
-        aren't any, the revision will be set to 1.
-
-        Args:
-            diffset_history (reviewboard.diffviewer.models.DiffSetHistory):
-                The diffset history used to compute the new revision.
-
-        Raises:
-            ValueError:
-                The revision already has a valid value set, and cannot be
-                updated.
-        """
-        if self.revision not in (0, None):
-            raise ValueError('The diffset already has a valid revision set.')
-
-        # Default this to revision 1. We'll use this if the DiffSetHistory
-        # isn't saved yet (which may happen when creating a new review request)
-        # or if there aren't yet any diffsets.
-        self.revision = 1
-
-        if diffset_history.pk:
-            try:
-                latest_diffset = \
-                    diffset_history.diffsets.only('revision').latest()
-                self.revision = latest_diffset.revision + 1
-            except DiffSet.DoesNotExist:
-                # Stay at revision 1.
-                pass
-
-    def save(self, **kwargs):
-        """Save this diffset.
-
-        This will set an initial revision of 1 if this is the first diffset
-        in the history, and will set it to on more than the most recent
-        diffset otherwise.
-
-        Args:
-            **kwargs (dict):
-                Extra arguments for the save call.
-        """
-        if self.history is not None:
-            if self.revision == 0:
-                self.update_revision_from_history(self.history)
-
-            self.history.last_diff_updated = self.timestamp
-            self.history.save()
-
-        super(DiffSet, self).save(**kwargs)
-
-    def __str__(self):
-        return "[%s] %s r%s" % (self.id, self.name, self.revision)
-
-    class Meta:
-        db_table = 'diffviewer_diffset'
-        get_latest_by = 'revision'
-        ordering = ['revision', 'timestamp']
-        verbose_name = _('Diff Set')
-        verbose_name_plural = _('Diff Sets')
-
-
-@python_2_unicode_compatible
-class DiffSetHistory(models.Model):
-    """
-    A collection of diffsets.
-
-    This gives us a way to store and keep track of multiple revisions of
-    diffsets belonging to an object.
-    """
-    name = models.CharField(_('name'), max_length=256)
-    timestamp = models.DateTimeField(_("timestamp"), default=timezone.now)
-    last_diff_updated = models.DateTimeField(
-        _("last updated"),
-        blank=True,
-        null=True,
-        default=None)
-
-    extra_data = JSONField(null=True)
-
-    def __str__(self):
-        return 'Diff Set History (%s revisions)' % self.diffsets.count()
-
-    class Meta:
-        db_table = 'diffviewer_diffsethistory'
-        verbose_name = _('Diff Set History')
-        verbose_name_plural = _('Diff Set Histories')
