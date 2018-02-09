@@ -30,7 +30,21 @@ class IntegrationConfigForm(DjbletsIntegrationConfigForm):
             to a LocalSite must make use of this.
     """
 
+    #: A list of fields on the model that should not be saved in settings
     model_fields = DjbletsIntegrationConfigForm.model_fields + ('local_site',)
+
+    #: The fieldset containing basic information on the configuration.
+    #:
+    #: This is the same as the djblets version, but with the local site field
+    #: added in.
+    basic_info_fieldset = (None, {
+        'fields': ('name', 'enabled', 'local_site'),
+        'description': _(
+            'Start by giving this configuration a name so you can easily '
+            'identify it later. You can also mark this configuration as '
+            'enabled or disabled.'
+        ),
+    })
 
     local_site = forms.ModelChoiceField(
         label=_('Local Site'),
