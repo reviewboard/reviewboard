@@ -131,25 +131,6 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
         }, this);
     },
 
-    validate(attrs, options) {
-        if (options.publishing) {
-            if (attrs.targetGroups.length === 0 &&
-                attrs.targetPeople.length === 0) {
-                return RB.DraftReviewRequest.strings.REVIEWERS_REQUIRED;
-            }
-
-            if ($.trim(attrs.summary) === '') {
-                return RB.DraftReviewRequest.strings.SUMMARY_REQUIRED;
-            }
-
-            if ($.trim(attrs.description) === '') {
-                return RB.DraftReviewRequest.strings.DESCRIPTION_REQUIRED;
-            }
-        }
-
-        return _super(this).validate.call(this, attrs, options);
-    },
-
     parseResourceData(rsp) {
         const rawTextFields = rsp.raw_text_fields || rsp;
         const data = RB.BaseResource.prototype.parseResourceData.call(
@@ -165,11 +146,4 @@ RB.DraftReviewRequest = RB.BaseResource.extend(_.defaults({
 
         return data;
     }
-}, RB.DraftResourceModelMixin),
-{
-    strings: {
-        DESCRIPTION_REQUIRED: gettext('The draft must have a description.'),
-        REVIEWERS_REQUIRED: gettext('There must be at least one reviewer before this review request can be published.'),
-        SUMMARY_REQUIRED: gettext('The draft must have a summary.')
-    }
-});
+}, RB.DraftResourceModelMixin));

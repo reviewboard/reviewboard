@@ -7,6 +7,7 @@ from kgb import SpyAgency
 
 from reviewboard.accounts.models import Profile
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.reviews.errors import PublishError
 from reviewboard.reviews.fields import (BaseEditableField,
                                         BaseTextAreaField,
                                         get_review_request_fieldset)
@@ -37,6 +38,7 @@ class ReviewRequestDraftTests(TestCase):
         draft.testing_done = 'New testing done'
         draft.branch = 'New branch'
         draft.bugs_closed = '12, 34, 56'
+        draft.target_people.add(review_request.submitter)
 
         new_bugs = draft.get_bug_list()
 
@@ -70,8 +72,8 @@ class ReviewRequestDraftTests(TestCase):
         attachment
         """
         draft = self._get_draft()
+        draft.target_people = [User.objects.create_user(username='testuser')]
         review_request = draft.review_request
-
         self.assertEqual(draft.file_attachments_count, 0)
         self.assertEqual(draft.inactive_file_attachments_count, 0)
         self.assertEqual(review_request.file_attachments_count, 0)
@@ -114,7 +116,8 @@ class ReviewRequestDraftTests(TestCase):
         """Testing ReviewRequestDraft.publish with adding another file
         attachment
         """
-        review_request = self.create_review_request()
+        user = User.objects.create_user(username='testuser')
+        review_request = self.create_review_request(target_people=[user])
         attachment1 = self.create_file_attachment(review_request,
                                                   caption='File 1')
         review_request.publish(review_request.submitter)
@@ -171,7 +174,8 @@ class ReviewRequestDraftTests(TestCase):
     def test_publish_with_delete_file_attachment(self):
         """Testing ReviewRequestDraft.publish with deleting a file attachment
         """
-        review_request = self.create_review_request()
+        user = User.objects.create_user(username='testuser')
+        review_request = self.create_review_request(target_people=[user])
         attachment = self.create_file_attachment(review_request,
                                                  caption='File 1')
         review_request.publish(review_request.submitter)
@@ -213,6 +217,7 @@ class ReviewRequestDraftTests(TestCase):
     def test_publish_with_add_first_screenshot(self):
         """Testing ReviewRequestDraft.publish with adding first screenshot"""
         draft = self._get_draft()
+        draft.target_people = [User.objects.create_user(username='testuser')]
         review_request = draft.review_request
 
         self.assertEqual(draft.screenshots_count, 0)
@@ -255,7 +260,8 @@ class ReviewRequestDraftTests(TestCase):
 
     def test_publish_with_add_another_screenshot(self):
         """Testing ReviewRequestDraft.publish with adding another screenshot"""
-        review_request = self.create_review_request()
+        user = User.objects.create_user(username='testuser')
+        review_request = self.create_review_request(target_people=[user])
         screenshot1 = self.create_screenshot(review_request,
                                              caption='File 1')
         review_request.publish(review_request.submitter)
@@ -311,7 +317,8 @@ class ReviewRequestDraftTests(TestCase):
 
     def test_publish_with_delete_screenshot(self):
         """Testing ReviewRequestDraft.publish with deleting a screenshot"""
-        review_request = self.create_review_request()
+        user = User.objects.create_user(username='testuser')
+        review_request = self.create_review_request(target_people=[user])
         attachment = self.create_screenshot(review_request,
                                             caption='File 1')
         review_request.publish(review_request.submitter)
@@ -379,6 +386,7 @@ class ReviewRequestDraftTests(TestCase):
             draft.extra_data['text'] = 'Nothing special'
             draft.extra_data['text_type'] = 'plain'
             draft.extra_data['basic_field'] = 'Basic text'
+            draft.target_people.add(review_request.submitter)
 
             draft.publish()
 
@@ -541,3 +549,55 @@ class PostCommitTests(SpyAgency, TestCase):
 
         with self.assertRaises(NotImplementedError):
             draft.update_from_commit_id('4')
+
+    def test_publish_without_reviewer_or_group(self):
+        """Testing ReviewRequestDraft.publish when there isn't a reviewer or
+        group name"""
+        review_request = self.create_review_request()
+        draft = ReviewRequestDraft.create(review_request)
+        draft.summary = 'New summary'
+        draft.description = 'New description'
+        draft.testing_done = 'New testing done'
+        draft.branch = 'New branch'
+        draft.bugs_closed = '12, 34, 56'
+        error_message = ('There must be at least one reviewer before this '
+                         'review request can be published.')
+
+        with self.assertRaisesMessage(PublishError, error_message):
+            draft.publish()
+
+    def test_publish_without_summary(self):
+        """Testing publish when there isn't a summary"""
+
+        review_request = self.create_review_request()
+        draft = ReviewRequestDraft.create(review_request)
+
+        draft.description = 'New description'
+        draft.testing_done = 'New testing done'
+        draft.branch = 'New branch'
+        draft.bugs_closed = '12, 34, 56'
+        draft.target_people = [self.user]
+        # Summary is set by default in create_review_request
+        draft.summary = ''
+
+        error_message = 'The draft must have a summary.'
+
+        with self.assertRaisesMessage(PublishError, error_message):
+            draft.publish()
+
+    def test_publish_without_description(self):
+        """Testing publish when there isn't a description"""
+
+        review_request = self.create_review_request()
+        draft = ReviewRequestDraft.create(review_request)
+
+        draft.testing_done = 'New testing done'
+        draft.branch = 'New branch'
+        draft.bugs_closed = '12, 34, 56'
+        draft.target_people = [self.user]
+        # Description is set by default in create_review_request
+        draft.description = ''
+        error_message = 'The draft must have a description.'
+
+        with self.assertRaisesMessage(PublishError, error_message):
+            draft.publish()

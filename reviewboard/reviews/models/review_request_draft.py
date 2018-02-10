@@ -6,14 +6,14 @@ from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import F
 from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext, ugettext_lazy as _
 from djblets.db.fields import ModificationTimestampField, RelationCounterField
 from djblets.db.managers import ConcurrencyManager
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.errors import NotModifiedError
+from reviewboard.reviews.errors import NotModifiedError, PublishError
 from reviewboard.reviews.models.group import Group
 from reviewboard.reviews.models.base_review_request_details import \
     BaseReviewRequestDetails
@@ -162,7 +162,6 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         if draft.changedesc is None and review_request.public:
             draft.changedesc = ChangeDescription.objects.create()
-
         if draft_is_new:
             draft.target_groups = review_request.target_groups.all()
             draft.target_people = review_request.target_people.all()
@@ -260,6 +259,17 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         # If no changes were made, raise exception and do not save
         if self.changedesc and not self.changedesc.has_modified_fields():
             raise NotModifiedError()
+
+        if not (self.target_groups.exists() or self.target_people.exists()):
+            raise PublishError(
+                ugettext('There must be at least one reviewer before this '
+                         'review request can be published.'))
+
+        if not review_request.summary.strip():
+            raise PublishError(ugettext('The draft must have a summary.'))
+
+        if not review_request.description.strip():
+            raise PublishError(ugettext('The draft must have a description.'))
 
         if self.changedesc:
             self.changedesc.user = user

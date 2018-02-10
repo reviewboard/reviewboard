@@ -772,28 +772,6 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         self.assertEqual(message['Sender'],
                          self._get_sender(review_request.submitter))
 
-    def test_limited_recipients_no_email(self):
-        """Testing limited e-mail recipients when operation results in zero
-        recipients
-        """
-        review_request = self.create_review_request(
-            summary='My test review request',
-            public=True)
-        review_request.email_message_id = "junk"
-        review_request.target_people.add(User.objects.get(username='dopey'))
-        review_request.save()
-
-        profile, is_new = Profile.objects.get_or_create(
-            user=review_request.submitter)
-        profile.should_send_own_updates = False
-        profile.save()
-
-        draft = ReviewRequestDraft.create(review_request)
-        draft.target_people.remove(User.objects.get(username='dopey'))
-        draft.publish(user=review_request.submitter)
-
-        self.assertEqual(len(mail.outbox), 0)
-
     def test_recipients_with_muted_review_requests(self):
         """Testing e-mail recipients when users mute a review request"""
         dopey = User.objects.get(username='dopey')
@@ -1532,8 +1510,8 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         review_request = self.create_review_request(public=True)
         submitter = review_request.submitter
         submitter_email = build_email_address_for_user(submitter)
-
         draft = ReviewRequestDraft.create(review_request)
+        draft.target_people = [submitter, admin_user]
         draft.owner = admin_user
         draft.save()
         review_request.publish(submitter)
@@ -1554,8 +1532,9 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         review_request = self.create_review_request(public=True)
         submitter = review_request.submitter
         submitter_email = build_email_address_for_user(submitter)
-
         draft = ReviewRequestDraft.create(review_request)
+        # Before publishing, target_people must be added.
+        draft.target_people = [admin_user, submitter]
         draft.owner = admin_user
         draft.save()
         review_request.publish(admin_user)
@@ -1926,7 +1905,9 @@ class WebHookPayloadTests(SpyAgency, TestCase):
         WebHookTarget.objects.create(url=self.ENDPOINT_URL,
                                      events='review_request_published')
 
-        review_request = self.create_review_request(create_repository=True)
+        user = User.objects.create_user(username='testuser')
+        review_request = self.create_review_request(create_repository=True,
+                                                    target_people=[user])
         self.create_diffset(review_request)
         review_request.publish(review_request.submitter)
 

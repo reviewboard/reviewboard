@@ -684,8 +684,10 @@ class ViewTests(TestCase):
 
     def test_preview_review_request_email_with_valid_change_id(self):
         """Testing preview_review_request_email access with valid change ID"""
+        user = User.objects.create_user('test user')
         review_request = self.create_review_request(create_repository=True,
-                                                    publish=True)
+                                                    publish=True,
+                                                    target_people=[user])
 
         self.create_diffset(review_request, draft=True)
         review_request.publish(review_request.submitter)
@@ -705,8 +707,10 @@ class ViewTests(TestCase):
     def test_preview_review_request_email_with_invalid_change_id(self):
         """Testing preview_review_request_email access with invalid change ID
         """
+        user = User.objects.create_user('test user')
         review_request = self.create_review_request(create_repository=True,
-                                                    publish=True)
+                                                    publish=True,
+                                                    target_people=[user])
 
         self.create_diffset(review_request, draft=True)
         review_request.publish(review_request.submitter)
