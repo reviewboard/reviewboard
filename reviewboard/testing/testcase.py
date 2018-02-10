@@ -577,7 +577,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                               publish=False, commit_id=None, changenum=None,
                               time_added=None, last_updated=None,
                               repository=None, id=None,
-                              create_repository=False):
+                              create_repository=False,
+                              target_people=None,
+                              target_groups=None):
         """Create a ReviewRequest for testing.
 
         The ReviewRequest may optionally be attached to a LocalSite. It's also
@@ -628,6 +630,12 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         review_request.id = id
 
         review_request.save()
+
+        if target_people:
+            review_request.target_people = target_people
+
+        if target_groups:
+            review_request.target_groups = target_groups
 
         if publish:
             review_request.publish(review_request.submitter)

@@ -129,8 +129,8 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         """Testing the POST review-requests/<id>/file-attachments/ API with a
         file attachment history
         """
-        review_request = self.create_review_request(submitter=self.user,
-                                                    publish=True)
+        review_request = self.create_review_request(
+            submitter=self.user, publish=True, target_people=[self.user])
         history = FileAttachmentHistory.objects.create(display_position=0)
         review_request.file_attachment_histories.add(history)
 

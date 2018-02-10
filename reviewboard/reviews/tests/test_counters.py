@@ -35,8 +35,9 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
                                             profile=self.profile,
                                             local_site=self.test_site)
 
-        self.review_request = ReviewRequest.objects.create(self.user,
-                                                           repository)
+        self.review_request = self.create_review_request(submitter=self.user,
+                                                         repository=repository)
+
         self.profile.star_review_request(self.review_request)
 
         self.site_profile = self.profile.site_profiles.get(local_site=None)
@@ -75,10 +76,14 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
         self._check_counters(total_outgoing=1,
                              pending_outgoing=1)
 
-        ReviewRequestDraft.create(self.review_request)
+        draft = ReviewRequestDraft.create(self.review_request)
+        draft.target_people = [self.user]
+        draft.save()
         self.review_request.publish(self.user)
 
-        self._check_counters(total_outgoing=1,
+        self._check_counters(direct_incoming=1,
+                             total_incoming=1,
+                             total_outgoing=1,
                              pending_outgoing=1,
                              starred_public=1)
 
@@ -121,7 +126,6 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
 
     def test_closing_closed_requests(self):
         """Testing counters with closing closed review requests"""
-        # The review request was already created
         self._check_counters(total_outgoing=1,
                              pending_outgoing=1)
 
@@ -327,8 +331,8 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
     def test_add_group(self):
         """Testing counters when adding a group reviewer"""
         draft = ReviewRequestDraft.create(self.review_request)
+        draft.summary = 'Test Summary'
         draft.target_groups.add(self.group)
-
         self._check_counters(total_outgoing=1,
                              pending_outgoing=1)
 
@@ -342,21 +346,27 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
 
     def test_remove_group(self):
         """Testing counters when removing a group reviewer"""
+
         self.test_add_group()
 
         draft = ReviewRequestDraft.create(self.review_request)
         draft.target_groups.remove(self.group)
 
+        # There must be at least one target_group or target_people
+        draft.target_people = [self.user]
+
         self._check_counters(total_outgoing=1,
                              pending_outgoing=1,
                              total_incoming=1,
+                             direct_incoming=0,
                              group_incoming=1,
                              starred_public=1)
 
         self.review_request.publish(self.user)
-
         self._check_counters(total_outgoing=1,
                              pending_outgoing=1,
+                             direct_incoming=1,
+                             total_incoming=1,
                              starred_public=1)
 
     def test_remove_group_and_fail_publish(self):
@@ -389,6 +399,7 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
     def test_add_person(self):
         """Testing counters when adding a person reviewer"""
         draft = ReviewRequestDraft.create(self.review_request)
+        draft.summary = 'Test Summary'
         draft.target_people.add(self.user)
 
         self._check_counters(total_outgoing=1,
@@ -409,6 +420,9 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
         draft = ReviewRequestDraft.create(self.review_request)
         draft.target_people.remove(self.user)
 
+        # There must be at least one target_group or target_people
+        draft.target_groups = [self.group]
+
         self._check_counters(total_outgoing=1,
                              pending_outgoing=1,
                              direct_incoming=1,
@@ -416,9 +430,10 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
                              starred_public=1)
 
         self.review_request.publish(self.user)
-
         self._check_counters(total_outgoing=1,
                              pending_outgoing=1,
+                             group_incoming=1,
+                             total_incoming=1,
                              starred_public=1)
 
     def test_remove_person_and_fail_publish(self):
@@ -540,6 +555,7 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
                                             email='user@example.com')
         draft = ReviewRequestDraft.create(self.review_request)
         draft.owner = new_user
+        draft.target_people = [draft.owner]
         draft.save()
         self.review_request.publish(self.user)
 
@@ -550,7 +566,8 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
             user=new_user, local_site=self.review_request.local_site)
 
         self._check_counters_on_profile(site_profile, total_outgoing=1,
-                                        pending_outgoing=1)
+                                        pending_outgoing=1, direct_incoming=1,
+                                        total_incoming=1)
 
     def _check_counters(self, total_outgoing=0, pending_outgoing=0,
                         direct_incoming=0, total_incoming=0,
