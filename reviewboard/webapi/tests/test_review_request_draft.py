@@ -294,8 +294,8 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         fieldset.add_field(CustomField)
 
         try:
-            review_request = self.create_review_request(submitter=self.user,
-                                                        publish=True)
+            review_request = self.create_review_request(
+                submitter=self.user, publish=True, target_people=[self.user])
 
             rsp = self.api_post(
                 get_review_request_draft_url(review_request),
@@ -326,8 +326,8 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         fieldset.add_field(CustomField)
 
         try:
-            review_request = self.create_review_request(submitter=self.user,
-                                                        publish=True)
+            review_request = self.create_review_request(
+                submitter=self.user, publish=True, target_people=[self.user])
 
             rsp = self.api_post(
                 get_review_request_draft_url(review_request),
@@ -805,6 +805,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
                                                     publish=True)
         draft = ReviewRequestDraft.create(review_request)
         draft.owner = User.objects.get(username='doc')
+        draft.target_people = [draft.owner]
         draft.save()
 
         rsp = self.api_put(

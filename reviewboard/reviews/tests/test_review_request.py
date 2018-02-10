@@ -67,7 +67,9 @@ class ReviewRequestTests(SpyAgency, TestCase):
 
     def test_public_with_discard_reopen_submitted(self):
         """Testing ReviewRequest.public when discarded, reopened, submitted"""
-        review_request = self.create_review_request(publish=True)
+        user = User.objects.get(username='grumpy')
+        review_request = self.create_review_request(publish=True,
+                                                    target_people=[user])
         self.assertTrue(review_request.public)
 
         review_request.close(ReviewRequest.DISCARDED)

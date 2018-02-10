@@ -124,7 +124,9 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_upload_file_revisions(self):
         """Testing uploading multiple revisions of a file"""
-        review_request = self.create_review_request(publish=True)
+        user = User.objects.create_user(username='testuser')
+        review_request = self.create_review_request(publish=True,
+                                                    target_people=[user])
         history = FileAttachmentHistory.objects.create(display_position=0)
         review_request.file_attachment_histories.add(history)
         file = self.make_uploaded_file()
@@ -141,7 +143,6 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
         self.assertEqual(history.display_position, 0)
 
         review_request.get_draft().publish()
-
         # Post an update
         form = UploadFileForm(review_request,
                               data={'attachment_history': history.pk},
@@ -622,7 +623,8 @@ class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
         """Testing inline diff file attachments with newly added files"""
         # Set up the initial state.
         user = User.objects.get(username='doc')
-        review_request = ReviewRequest.objects.create(user, None)
+        review_request = self.create_review_request(submitter=user,
+                                                    target_people=[user])
         filediff = self.make_filediff(
             is_new=True,
             diffset_history=review_request.diffset_history)
@@ -634,6 +636,7 @@ class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
             file=self.make_uploaded_file(),
             mimetype='image/png')
         review_request.file_attachments.add(diff_file_attachment)
+        review_request.save()
         review_request.publish(user)
 
         # Load the diff viewer.
@@ -652,7 +655,7 @@ class DiffViewerFileAttachmentTests(BaseFileAttachmentTestCase):
         """Testing inline diff file attachments with modified files"""
         # Set up the initial state.
         user = User.objects.get(username='doc')
-        review_request = ReviewRequest.objects.create(user, None)
+        review_request = self.create_review_request(submitter=user)
         filediff = self.make_filediff(
             is_new=False,
             diffset_history=review_request.diffset_history)

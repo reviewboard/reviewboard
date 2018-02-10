@@ -364,7 +364,8 @@ class ResourceItemTests(CommentItemMixin, ReviewRequestChildItemMixin,
         x, y, w, h = (2, 2, 10, 10)
 
         review_request = self.create_review_request(publish=True,
-                                                    submitter=self.user)
+                                                    submitter=self.user,
+                                                    target_people=[self.user])
         screenshot = self.create_screenshot(review_request)
         review = self.create_review(review_request, user=self.user)
         comment = self.create_screenshot_comment(review, screenshot,

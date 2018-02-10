@@ -1770,7 +1770,9 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
         self.spy_on(hook.get_to_field)
         self.spy_on(hook.get_cc_field)
 
-        review_request = self.create_review_request(public=True)
+        user = User.objects.create_user(username='testuser')
+        review_request = self.create_review_request(public=True,
+                                                    target_people=[user])
         review = self.create_review(review_request)
         reply = self.create_reply(review)
 

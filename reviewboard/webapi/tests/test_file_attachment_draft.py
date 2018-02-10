@@ -226,7 +226,8 @@ class ResourceItemTests(BaseWebAPITestCase):
         """Testing the DELETE review-requests/<id>/draft/file-attachments/<id>/
         API with published file attachment
         """
-        review_request = self.create_review_request(submitter=self.user)
+        review_request = self.create_review_request(submitter=self.user,
+                                                    target_people=[self.user])
         file_attachment = self.create_file_attachment(review_request,
                                                       draft=True)
         review_request.get_draft().publish()
