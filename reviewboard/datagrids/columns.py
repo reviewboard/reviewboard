@@ -141,9 +141,6 @@ class UsernameColumn(Column):
 
         # Render the link to the user page, using the avatar and username.
         username = user.username
-        user_url = local_site_reverse('user', request=request, kwargs={
-            'username': username,
-        })
 
         return format_html('{0}{1}', avatar_html, username)
 
