@@ -2,7 +2,7 @@
 
 {% if review.body_top or always_show_body_top %}
 <li>
- <div class="review-comment-details">
+ <div class="review-comment-details {{review.body_top|yesno:',comment-details-empty'}}">
   <div class="review-comment">
    <pre class="reviewtext body_top {% rich_text_classname review.body_top_rich_text %}">{{review.body_top|render_markdown:review.body_top_rich_text}}</pre>
   </div>

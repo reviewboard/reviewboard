@@ -995,6 +995,17 @@ def reviewable_page_model_data(context):
             'url': draft.submitter.get_absolute_url(),
         }
 
+    # Build the data for the RB.ReviewRequestEditor.
+    editor_data = {
+        'closeDescriptionRenderedText': _render_markdown(
+            close_description,
+            close_description_rich_text),
+        'hasDraft': draft is not None,
+        'mutableByUser': context['mutable_by_user'],
+        'showSendEmail': context['send_email'],
+        'statusMutableByUser': context['status_mutable_by_user'],
+    }
+
     # Build extra data for the RB.ReviewRequest.
     extra_review_request_draft_data = {}
 
@@ -1008,6 +1019,9 @@ def reviewable_page_model_data(context):
             'changeDescriptionRichText': draft.changedesc.rich_text,
         })
 
+        editor_data['changeDescriptionRenderedText'] = _render_markdown(
+            draft.changedesc.text, draft.changedesc.rich_text)
+
         if draft.diffset:
             extra_review_request_draft_data['interdiffLink'] = \
                 local_site_reverse(
@@ -1018,17 +1032,6 @@ def reviewable_page_model_data(context):
                         draft.diffset.revision
                     ],
                     request=request)
-
-    # Build the data for the RB.ReviewRequestEditor.
-    editor_data = {
-        'closeDescriptionRenderedText': _render_markdown(
-            close_description,
-            close_description_rich_text),
-        'hasDraft': draft is not None,
-        'mutableByUser': context['mutable_by_user'],
-        'showSendEmail': context['send_email'],
-        'statusMutableByUser': context['status_mutable_by_user'],
-    }
 
     # Build the file attachments data for the editor data.
     file_attachments_data = []
