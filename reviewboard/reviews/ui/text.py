@@ -25,7 +25,10 @@ class TextBasedReviewUI(FileAttachmentReviewUI):
     """
     name = 'Text'
     object_key = 'text'
-    supported_mimetypes = ['text/*']
+    supported_mimetypes = [
+        'text/*',
+        'application/x-javascript',
+    ]
     template_name = 'reviews/ui/text.html'
     comment_thumbnail_template_name = 'reviews/ui/text_comment_thumbnail.html'
     can_render_text = False

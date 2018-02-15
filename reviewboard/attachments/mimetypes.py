@@ -408,7 +408,10 @@ class TextMimetype(MimetypeHandler):
     file, syntax-highlighted.
     """
 
-    supported_mimetypes = ['text/*']
+    supported_mimetypes = [
+        'text/*',
+        'application/x-javascript',
+    ]
 
     # Read up to 'FILE_CROP_CHAR_LIMIT' number of characters from
     # the file attachment to prevent long reads caused by malicious
