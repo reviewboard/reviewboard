@@ -1,6 +1,6 @@
 bzr
 kgb>=2.0
-mercurial
+mercurial>=4.4.2
 mock
 nose
 p4python
