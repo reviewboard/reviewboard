@@ -40,6 +40,7 @@ from reviewboard.accounts.models import (LocalSiteProfile,
 from reviewboard.accounts.pages import (AccountPage, get_page_classes,
                                         register_account_page_class,
                                         unregister_account_page_class)
+from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
 
 
@@ -997,3 +998,16 @@ class UserProfileRequiredViewMixinTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.content, 'success')
+
+
+class UserInfoboxViewTests(TestCase):
+    """Unit tests for reviewboard.accounts.views.UserInfoboxView."""
+
+    def test_unicode(self):
+        """Testing UserInfoboxView with a user with non-ascii characters"""
+        user = User.objects.create_user('test', 'test@example.com')
+        user.first_name = 'Test\u21b9'
+        user.last_name = 'User\u2729'
+        user.save()
+
+        self.client.get(local_site_reverse('user-infobox', args=['test']))
