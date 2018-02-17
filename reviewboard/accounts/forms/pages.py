@@ -87,15 +87,17 @@ class AccountSettingsForm(AccountPageForm):
 
     def load(self):
         """Load data for the form."""
+        profile = self.user.get_profile()
+
         self.set_initial({
-            'open_an_issue': self.profile.open_an_issue,
-            'syntax_highlighting': self.profile.syntax_highlighting,
-            'timezone': self.profile.timezone,
-            'default_use_rich_text': self.profile.should_use_rich_text,
-            'should_send_email': self.profile.should_send_email,
-            'should_send_own_updates': self.profile.should_send_own_updates,
+            'open_an_issue': profile.open_an_issue,
+            'syntax_highlighting': profile.syntax_highlighting,
+            'timezone': profile.timezone,
+            'default_use_rich_text': profile.should_use_rich_text,
+            'should_send_email': profile.should_send_email,
+            'should_send_own_updates': profile.should_send_own_updates,
             'enable_desktop_notifications':
-                self.profile.should_enable_desktop_notifications,
+                profile.should_enable_desktop_notifications,
         })
 
         siteconfig = SiteConfiguration.objects.get_current()
@@ -105,20 +107,22 @@ class AccountSettingsForm(AccountPageForm):
 
     def save(self):
         """Save the form."""
+        profile = self.user.get_profile()
+
         if 'syntax_highlighting' in self.cleaned_data:
-            self.profile.syntax_highlighting = \
+            profile.syntax_highlighting = \
                 self.cleaned_data['syntax_highlighting']
 
-        self.profile.open_an_issue = self.cleaned_data['open_an_issue']
-        self.profile.default_use_rich_text = \
+        profile.open_an_issue = self.cleaned_data['open_an_issue']
+        profile.default_use_rich_text = \
             self.cleaned_data['default_use_rich_text']
-        self.profile.timezone = self.cleaned_data['timezone']
-        self.profile.should_send_email = self.cleaned_data['should_send_email']
-        self.profile.should_send_own_updates = \
+        profile.timezone = self.cleaned_data['timezone']
+        profile.should_send_email = self.cleaned_data['should_send_email']
+        profile.should_send_own_updates = \
             self.cleaned_data['should_send_own_updates']
-        self.profile.settings['enable_desktop_notifications'] = \
+        profile.settings['enable_desktop_notifications'] = \
             self.cleaned_data['enable_desktop_notifications']
-        self.profile.save()
+        profile.save()
 
         messages.add_message(self.request, messages.INFO,
                              _('Your settings have been saved.'))
@@ -327,11 +331,13 @@ class ProfileForm(AccountPageForm):
 
     def load(self):
         """Load data for the form."""
+        profile = self.user.get_profile()
+
         self.set_initial({
             'first_name': self.user.first_name,
             'last_name': self.user.last_name,
             'email': self.user.email,
-            'profile_private': self.profile.is_private,
+            'profile_private': profile.is_private,
         })
 
         backend = get_enabled_auth_backends()[0]
@@ -373,8 +379,9 @@ class ProfileForm(AccountPageForm):
 
         self.user.save()
 
-        self.profile.is_private = self.cleaned_data['profile_private']
-        self.profile.save()
+        profile = self.user.get_profile()
+        profile.is_private = self.cleaned_data['profile_private']
+        profile.save()
 
         messages.add_message(self.request, messages.INFO,
                              _('Your profile has been saved.'))
