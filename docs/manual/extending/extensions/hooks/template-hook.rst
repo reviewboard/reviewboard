@@ -119,6 +119,54 @@ Registration Page
 Review Request Pages
 --------------------
 
+``before-review-request-summary``
+    The very top of the review request box, right before the summary
+    information (containing the Summary field, review request ID, and
+    created/updated/closed information). Content here will not be aligned with
+    the summary information.
+
+``after-review-request-summary``
+    The area right below the review request box's summary information. Content
+    here will not be aligned with the summary information.
+
+``review-request-summary-pre``
+    The area at the top of the element for the review request box's summary
+    information. Content here will be properly padding and aligned with the
+    summary information.
+
+``review-request-summary-post``
+    The area at the bottom of the element for the review request box's summary
+    information. Content here will be properly padding and aligned with the
+    summary information.
+
+``before-review-request-fields``
+    Right after the summary (and the field validation warning, if shown),
+    and right before the fields in the review request box.
+
+``after-review-request-fields``
+    Right after the fields in the review request box, and before the extra
+    panes shown (file attachments, issue summary table, etc.).
+
+``before-review-request-extra-panes``
+    Right after the fields in the review request box, and before the extra
+    panes shown (file attachments, issue summary table, etc.).
+
+    This is basically equivalent to ``after-review-request-fields``, but is
+    preferable if you're explicitly trying to target the area right before
+    the panes. This may impact placement or rendering in the future.
+
+``after-review-request-extra-panes``
+   Right after any extra panes shown in the review request box, as the last
+   content at the bottom of the box.
+
+``review-request-extra-panes-pre``
+   The very top of the element containing extra panes in the review request
+   box.
+
+``review-request-extra-panes-post``
+   The very bottom of the element containing extra panes in the review request
+   box.
+
 ``change-summary-header-pre``
     Right before the box's header text for "Review Request Changed" entries.
 

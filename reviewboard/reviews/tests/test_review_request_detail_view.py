@@ -5,14 +5,22 @@ from __future__ import unicode_literals
 from datetime import timedelta
 
 from django.contrib.auth.models import User
+from django.test.html import parse_html
+from django.utils import six
+from djblets.extensions.hooks import TemplateHook
+from djblets.extensions.models import RegisteredExtension
 from djblets.siteconfig.models import SiteConfiguration
+from kgb import SpyAgency
 
+from reviewboard.extensions.base import Extension, get_extension_manager
 from reviewboard.reviews.detail import InitialStatusUpdatesEntry, ReviewEntry
+from reviewboard.reviews.fields import get_review_request_fieldsets
 from reviewboard.reviews.models import Comment, GeneralComment, Review
+from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
 
 
-class ReviewRequestDetailViewTests(TestCase):
+class ReviewRequestDetailViewTests(SpyAgency, TestCase):
     """Unit tests for reviewboard.reviews.views.ReviewRequestDetailView."""
 
     fixtures = ['test_users', 'test_scmtools', 'test_site']
@@ -134,8 +142,9 @@ class ReviewRequestDetailViewTests(TestCase):
         self.assertEqual(replies[0].text, comment_text_3)
         self.assertEqual(replies[1].text, comment_text_2)
 
-    def test_review_detail_general_comment_ordering(self):
-        """Testing review_detail and ordering of general comments on a review
+    def test_general_comment_ordering(self):
+        """Testing ReviewRequestDetailView and ordering of general comments on
+        a review
         """
         comment_text_1 = 'Comment text 1'
         comment_text_2 = 'Comment text 2'
@@ -375,3 +384,79 @@ class ReviewRequestDetailViewTests(TestCase):
 
         # Make sure they're not equal
         self.assertNotEqual(etag1, etag2)
+
+    def test_review_request_box_template_hooks(self):
+        """Testing ReviewRequestDetailView template hooks for the review
+        request box
+        """
+        class ContentTemplateHook(TemplateHook):
+            def initialize(self, name, content):
+                super(ContentTemplateHook, self).initialize(name)
+                self.content = content
+
+            def render_to_string(self, request,  context):
+                return self.content
+
+        class TestExtension(Extension):
+            registration = RegisteredExtension.objects.create(
+                class_name='test-extension',
+                name='test-extension',
+                enabled=True,
+                installed=True)
+
+        extension = TestExtension(get_extension_manager())
+        review_request = self.create_review_request(publish=True)
+        hooks = []
+
+        for name in ('before-review-request-summary',
+                     'review-request-summary-pre',
+                     'review-request-summary-post',
+                     'after-review-request-summary-post',
+                     'before-review-request-fields',
+                     'after-review-request-fields',
+                     'before-review-request-extra-panes',
+                     'review-request-extra-panes-pre',
+                     'review-request-extra-panes-post',
+                     'after-review-request-extra-panes'):
+            hooks.append(ContentTemplateHook(extension, name,
+                                             '[%s here]' % name))
+
+        # Turn off some parts of the page, to simplify the resulting HTML
+        # and shorten render/parse times.
+        self.spy_on(get_review_request_fieldsets,
+                    call_fake=lambda *args, **kwargs: [])
+
+        response = self.client.get(
+            local_site_reverse('review-request-detail',
+                               args=[review_request.display_id]))
+        self.assertEqual(response.status_code, 200)
+
+        parsed_html = six.text_type(parse_html(response.content))
+        self.assertIn(
+            '<div class="review-request-body">\n'
+            '[before-review-request-summary here]',
+            parsed_html)
+        self.assertIn(
+            '<div class="review-request-section review-request-summary">\n'
+            '[review-request-summary-pre here]',
+            parsed_html)
+        self.assertIn(
+            '</time>\n</p>[review-request-summary-post here]\n</div>',
+            parsed_html)
+        self.assertIn(
+            '[before-review-request-fields here]'
+            '<table class="review-request-section"'
+            ' id="review-request-details">',
+            parsed_html)
+        self.assertIn(
+            '</div>'
+            '[after-review-request-fields here] '
+            '[before-review-request-extra-panes here]'
+            '<div id="review-request-extra">\n'
+            '[review-request-extra-panes-pre here]',
+            parsed_html)
+        self.assertIn(
+            '</div>[review-request-extra-panes-post here]\n'
+            '</div>[after-review-request-extra-panes here]\n'
+            '</div>',
+            parsed_html)
