@@ -31,8 +31,10 @@ more information.
    hosted on one of these services, as configuration will differ.
 
    * :ref:`Assembla <repository-hosting-assembla>`
+   * :ref:`AWS CodeCommit <repository-hosting-aws-codecommit>`
    * :ref:`Beanstalk <repository-hosting-beanstalk>`
    * :ref:`Bitbucket <repository-hosting-bitbucket>`
+   * :ref:`Bitbucket Server <repository-hosting-bitbucket-server>`
    * :ref:`Codebase <repository-hosting-codebasehq>`
    * :ref:`Fedora Hosted <repository-hosting-fedorahosted>`
    * :ref:`GitHub <repository-hosting-github>`
