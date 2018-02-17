@@ -370,8 +370,10 @@ Configuring Hosted Repositories
    :maxdepth: 1
 
    assembla
+   aws-codecommit
    beanstalk
    bitbucket
+   bitbucket-server
    codebasehq
    fedorahosted
    github

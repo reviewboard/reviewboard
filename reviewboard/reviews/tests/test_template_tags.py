@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import User
 from django.template import Context, Template
 from django.test.client import RequestFactory
-from django.utils import six
 
 from reviewboard.accounts.models import Profile
 from reviewboard.testing import TestCase
