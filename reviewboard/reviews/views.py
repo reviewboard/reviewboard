@@ -17,13 +17,15 @@ from django.http import (Http404,
                          HttpResponseNotFound)
 from django.shortcuts import get_object_or_404, get_list_or_404, render
 from django.template.context import RequestContext
+from django.template.defaultfilters import date
 from django.template.loader import render_to_string
 from django.utils import six, timezone
+from django.utils.formats import localize
 from django.utils.html import escape, format_html, strip_tags
 from django.utils.safestring import mark_safe
 from django.utils.six.moves import cStringIO as StringIO
-from django.utils.timezone import is_aware, make_aware, utc
-from django.utils.translation import ugettext_lazy as _
+from django.utils.timezone import is_aware, localtime, make_aware, utc
+from django.utils.translation import ugettext_lazy as _, ugettext
 from django.views.generic.base import (ContextMixin, RedirectView,
                                        TemplateView, View)
 from djblets.siteconfig.models import SiteConfiguration
@@ -247,6 +249,80 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
                 return file_attachment.get_absolute_url()
 
         return None
+
+    def get_review_request_status_html(self, review_request_details,
+                                       close_info, extra_info=[]):
+        """Return HTML describing the current status of a review request.
+
+        This will return a description of the submitted, discarded, or open
+        state for the review request, for use in the rendering of the page.
+
+        Args:
+            review_request_details (reviewboard.reviews.models
+                                    .base_review_request_details
+                                    .BaseReviewRequestDetails):
+                The review request or draft being viewed.
+
+            close_info (dict):
+                A dictionary of information on the closed state of the
+                review request.
+
+            extra_info (list of dict):
+                A list of dictionaries showing additional status information.
+                Each must have a ``text`` field containing a format string
+                using ``{keyword}``-formatted variables, a ``timestamp`` field
+                (which will be normalized to the local timestamp), and an
+                optional ``extra_vars`` for the format string.
+
+        Returns:
+            unicode:
+            The status text as HTML for the page.
+        """
+        review_request = self.review_request
+        status = review_request.status
+        review_request_details = review_request_details
+
+        if status == ReviewRequest.SUBMITTED:
+            text = ugettext('Created {created_time} and submitted {timestamp}')
+            timestamp = close_info['timestamp']
+        elif status == ReviewRequest.DISCARDED:
+            text = ugettext('Created {created_time} and discarded {timestamp}')
+            timestamp = close_info['timestamp']
+        elif status == ReviewRequest.PENDING_REVIEW:
+            text = ugettext('Created {created_time} and updated {timestamp}')
+            timestamp = review_request_details.last_updated
+        else:
+            logging.error('Unexpected review request status %r for '
+                          'review request %s',
+                          status, review_request.display_id,
+                          request=self.request)
+
+            return ''
+
+        parts = [
+            {
+                'text': text,
+                'timestamp': timestamp,
+                'extra_vars': {
+                    'created_time': date(localtime(review_request.time_added)),
+                },
+            },
+        ] + extra_info
+
+        html_parts = []
+
+        for part in parts:
+            timestamp = localtime(part['timestamp'])
+
+            html_parts.append(format_html(
+                part['text'],
+                timestamp=format_html(
+                    '<time class="timesince" datetime="{0}">{1}</time>',
+                    timestamp.isoformat(),
+                    localize(timestamp)),
+                **part.get('extra_vars', {})))
+
+        return mark_safe(' &mdash; '.join(html_parts))
 
     def get_context_data(self, **kwargs):
         """Return context data for the template.
@@ -658,6 +734,9 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
 
         review = review_request.get_pending_review(request.user)
         close_info = review_request.get_close_info()
+        review_request_status_html = self.get_review_request_status_html(
+            review_request_details=data.review_request_details,
+            close_info=close_info)
 
         file_attachments = \
             get_latest_file_attachments(data.active_file_attachments)
@@ -672,6 +751,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
             'draft': data.draft,
             'review_request_details': data.review_request_details,
             'review_request_visit': self.visited,
+            'review_request_status_html': review_request_status_html,
             'entries': entries,
             'last_activity_time': self.last_activity_time,
             'last_visited': self.last_visited,
@@ -1135,6 +1215,15 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin, DiffViewerView):
             comments.setdefault(key, []).append(comment)
 
         close_info = self.review_request.get_close_info()
+        review_request_status_html = self.get_review_request_status_html(
+            review_request_details=review_request_details,
+            close_info=close_info,
+            extra_info=[
+                {
+                    'text': ugettext('Latest diff uploaded {timestamp}'),
+                    'timestamp': latest_diffset.timestamp,
+                },
+            ])
 
         siteconfig = SiteConfiguration.objects.get_current()
 
@@ -1144,9 +1233,9 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin, DiffViewerView):
             'close_description_rich_text': close_info['is_rich_text'],
             'close_timestamp': close_info['timestamp'],
             'diffsets': diffsets,
-            'latest_diffset': latest_diffset,
             'review': pending_review,
             'review_request_details': review_request_details,
+            'review_request_status_html': review_request_status_html,
             'draft': self.draft,
             'last_activity_time': last_activity_time,
             'file_attachments': latest_file_attachments,
