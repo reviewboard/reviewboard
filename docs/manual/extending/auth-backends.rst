@@ -55,6 +55,7 @@ We'll go into each function and attribute in detail.
 
 
 .. py:class:: reviewboard.accounts.backends.AuthBackend
+   :noindex:
 
 .. py:attribute:: backend_id
 

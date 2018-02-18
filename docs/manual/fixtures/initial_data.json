@@ -1657,7 +1657,7 @@
     "pk": 1, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 1, 
@@ -1677,7 +1677,7 @@
     "pk": 2, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 1, 
@@ -1697,7 +1697,7 @@
     "pk": 3, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 1, 
@@ -1717,7 +1717,7 @@
     "pk": 4, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 1, 
@@ -1737,7 +1737,7 @@
     "pk": 5, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 1, 
@@ -1757,7 +1757,7 @@
     "pk": 6, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 1, 
@@ -1777,7 +1777,7 @@
     "pk": 7, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 1, 
@@ -1797,7 +1797,7 @@
     "pk": 8, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 2, 
@@ -1817,7 +1817,7 @@
     "pk": 9, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 2, 
@@ -1837,7 +1837,7 @@
     "pk": 10, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 2, 
@@ -1857,7 +1857,7 @@
     "pk": 11, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 3, 
@@ -1877,7 +1877,7 @@
     "pk": 12, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 3, 
@@ -1897,7 +1897,7 @@
     "pk": 13, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 3, 
@@ -1917,7 +1917,7 @@
     "pk": 14, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 3, 
@@ -1937,7 +1937,7 @@
     "pk": 15, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 3, 
@@ -1957,7 +1957,7 @@
     "pk": 16, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 3, 
@@ -1977,7 +1977,7 @@
     "pk": 17, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 3, 
@@ -1997,7 +1997,7 @@
     "pk": 18, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 4, 
@@ -2017,7 +2017,7 @@
     "pk": 19, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 4, 
@@ -2037,7 +2037,7 @@
     "pk": 20, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 5, 
@@ -2057,7 +2057,7 @@
     "pk": 21, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 5, 
@@ -2077,7 +2077,7 @@
     "pk": 22, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 5, 
@@ -2097,7 +2097,7 @@
     "pk": 23, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 5, 
@@ -2117,7 +2117,7 @@
     "pk": 24, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 5, 
@@ -2137,7 +2137,7 @@
     "pk": 25, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 6, 
@@ -2157,7 +2157,7 @@
     "pk": 26, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 6, 
@@ -2177,7 +2177,7 @@
     "pk": 27, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 7, 
@@ -2197,7 +2197,7 @@
     "pk": 28, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 7, 
@@ -2217,7 +2217,7 @@
     "pk": 29, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 7, 
@@ -2237,7 +2237,7 @@
     "pk": 31, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": 1, 
         "diffset": 8, 
@@ -2257,7 +2257,7 @@
     "pk": 35, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": 3, 
         "diffset": 10, 
@@ -2277,7 +2277,7 @@
     "pk": 36, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": 2, 
         "diffset": 8, 
@@ -2297,7 +2297,7 @@
     "pk": 37, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": 4, 
         "diffset": 10, 
@@ -2317,7 +2317,7 @@
     "pk": 38, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 11, 
@@ -2337,7 +2337,7 @@
     "pk": 40, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 11, 
@@ -2357,7 +2357,7 @@
     "pk": 41, 
     "model": "diffviewer.filediff", 
     "fields": {
-        "status": "", 
+        "status": "M", 
         "binary": false, 
         "diff_hash": null, 
         "diffset": 11, 

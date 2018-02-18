@@ -221,5 +221,5 @@ iterate on your package while you test.
 .. note::
 
    Due to some differences in how the package is prepared, this will require
-   testing against a :ref:`Review Board development server
-   <rbcontributing:getting-started>`, instead of a production install.
+   testing against a Review Board development server, instead of a production
+   install.

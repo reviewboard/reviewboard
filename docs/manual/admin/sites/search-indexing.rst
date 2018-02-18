@@ -27,7 +27,8 @@ this, type the following as the user who owns the cronjob::
     $ rb-site manage /path/to/site rebuild_index
 
 For more information on generating search indexes, see the section on the
-:ref:`search-indexing` management command.
+:ref:`rebuild_index and update_index <search-indexing-management-command>`
+management commands.
 
 Users should now be able to use the search box located on any page. See the
 documentation on :ref:`full-text-search` to see what types of things you can
