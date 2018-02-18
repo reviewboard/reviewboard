@@ -15,6 +15,7 @@
 #
 # All configuration values have a default; values that are commented out
 # serve to show the default.
+import logging
 import os
 import sys
 from datetime import datetime
@@ -38,6 +39,11 @@ from reviewboard.dependencies import (django_doc_major_version,
                                       djblets_doc_major_version)
 
 from beanbag_docutils.sphinx.ext.github import github_linkcode_resolve
+
+
+# Set up logging. Sphinx won't set up a root logger for us, and we want to
+# avoid errors about not having handlers there.
+logging.basicConfig()
 
 
 # If your extensions are in another directory, add it here. If the directory
@@ -160,7 +166,7 @@ html_title = "Review Board Manual"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "classic.css" will overwrite the builtin "classic.css".
-html_static_path = ['_static']
+#html_static_path = ['_static']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -237,7 +243,7 @@ latex_documents = [
 # If false, no module index is generated.
 #latex_use_modindex = True
 
-latex_show_urls = True
+latex_show_urls = 'inline'
 latex_show_pagerefs = True
 
 

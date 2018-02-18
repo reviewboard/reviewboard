@@ -22,7 +22,7 @@ And to retrieve information on a specific management command::
     $ rb-site manage /path/to/site help command-name
 
 
-.. _search-indexing:
+.. _search-indexing-management-command:
 
 Search Indexing
 ---------------

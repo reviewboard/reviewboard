@@ -1460,3 +1460,7 @@ def setup(app):
     app.add_directive('webapi-error', ErrorDirective)
     app.add_crossref_type('webapi2.0', 'webapi2.0', 'single: %s',
                           nodes.emphasis)
+
+    # Filter out some additional log messages.
+    for name in ('djblets.util.templatetags.djblets_images',):
+        logging.getLogger(name).disabled = True
