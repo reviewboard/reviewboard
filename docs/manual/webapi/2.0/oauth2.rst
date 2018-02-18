@@ -35,7 +35,7 @@ There are several fields to fill out in the application creation form:
 
 :guilabel:`Client Type`
     The client type, as defined in :rfc:`RFC 6749 Section 2.1
-    <6749#section-2.1>`_.
+    <6749#section-2.1>`.
 
 :guilabel:`Authorization Grant Type`
     The type of authorization flow desired by the client. We recommend using

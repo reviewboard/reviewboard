@@ -9,7 +9,7 @@ Extension Hooks
 
    account-page-forms-hook
    account-pages-hook
-   action-hook
+   action-hooks
    admin-widget-hook
    api-extra-data-access-hook
    auth-backend-hook
