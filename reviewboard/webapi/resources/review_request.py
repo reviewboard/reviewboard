@@ -41,7 +41,8 @@ from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.ssh.errors import SSHError
 from reviewboard.scmtools.models import Repository
 from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
-from reviewboard.webapi.decorators import webapi_check_local_site
+from reviewboard.webapi.decorators import (webapi_check_local_site,
+                                           webapi_check_login_required)
 from reviewboard.webapi.errors import (CHANGE_NUMBER_IN_USE,
                                        CLOSE_ERROR,
                                        COMMIT_ID_ALREADY_EXISTS,
@@ -1010,6 +1011,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         """
         pass
 
+    @webapi_check_login_required
     @webapi_check_local_site
     @webapi_request_fields(
         optional={

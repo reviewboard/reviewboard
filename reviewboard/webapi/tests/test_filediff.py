@@ -6,7 +6,9 @@ from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (filediff_item_mimetype,
                                                 filediff_list_mimetype)
-from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
+from reviewboard.webapi.tests.mixins import (BasicTestsMetaclass,
+                                             ReviewRequestChildItemMixin,
+                                             ReviewRequestChildListMixin)
 from reviewboard.webapi.tests.mixins_extra_data import ExtraDataItemMixin
 from reviewboard.webapi.tests.urls import (get_filediff_item_url,
                                            get_filediff_list_url)
@@ -23,7 +25,9 @@ def _compare_item(self, item_rsp, filediff):
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceListTests(BaseWebAPITestCase):
+class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
+    """Testing the FileDiffResource list APIs."""
+
     resource = resources.filediff
     sample_api_url = \
         '/api/review-requests/<review-request-id>/diffs/<revision>/files/'
@@ -55,9 +59,29 @@ class ResourceListTests(BaseWebAPITestCase):
                 filediff_list_mimetype,
                 items)
 
+    def setup_review_request_child_test(self, review_request):
+        """Set up the review request child tests.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The test review request.
+
+        Returns:
+            tuple:
+            A tuple of the API list URL and list mimetype to run tests on.
+        """
+        review_request.repository = self.create_repository()
+        diffset = self.create_diffset(review_request)
+        return (get_filediff_list_url(diffset, review_request),
+                filediff_list_mimetype)
+
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourcesItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
+class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
+                        BaseWebAPITestCase):
+    """Testing the FileDiffResource item APIs."""
+
     resource = resources.filediff
     sample_api_url = (
         '/api/review-requests/<review-request-id>/diffs/<revision>/files/'
@@ -114,3 +138,20 @@ class ResourcesItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
             },
             filediff,
             [])
+
+    def setup_review_request_child_test(self, review_request):
+        """Set up the review request child tests.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The test review request.
+
+        Returns:
+            tuple:
+            A tuple of the API list URL and list mimetype to run tests on.
+        """
+        review_request.repository = self.create_repository()
+        diffset = self.create_diffset(review_request)
+        return (get_filediff_list_url(diffset, review_request),
+                filediff_list_mimetype)
