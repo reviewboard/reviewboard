@@ -102,10 +102,10 @@ Type 'yes' to continue, or 'no' to cancel: """)
             transaction.commit()
             transaction.leave_transaction_management()
         except Exception as e:
-            raise CommandError("Problem installing '%s': %s\n" % (filename, e))
-
             if transaction_setup:
                 transaction.rollback()
                 transaction.leave_transaction_management()
+
+            raise CommandError("Problem installing '%s': %s\n" % (filename, e))
 
         self.stdout.write('\nDone.')
