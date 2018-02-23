@@ -9,7 +9,8 @@
  * This ensures that the page doesn't jump too horribly.
  */
 RB.FloatingBannerView = Backbone.View.extend({
-    initialize: function() {
+    initialize: function(options) {
+        this.options = options;
         this._$floatSpacer = null;
 
         _.bindAll(this, '_updateFloatPosition', '_updateSize');

@@ -14,6 +14,7 @@ suite('rb/views/ScreenshotThumbnail', function() {
         model = new RB.Screenshot();
         model.url = '/screenshots/123/';
         model.id = 123;
+        model.attributes.id = 123;
         model.set('loaded', true);
 
         view = new RB.ScreenshotThumbnail({

@@ -35,6 +35,7 @@ suite('rb/resources/models/FileAttachment', function() {
                 var data;
 
                 model.id = 123;
+                model.attributes.id = 123;
                 expect(model.isNew()).toBe(false);
 
                 model.set('file', 'abc');

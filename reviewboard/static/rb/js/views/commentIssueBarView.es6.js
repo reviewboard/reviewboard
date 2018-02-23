@@ -64,8 +64,37 @@ RB.CommentIssueBarView = Backbone.View.extend({
 
     /**
      * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view.
+     *
+     * Option Args:
+     *     canVerify (boolean):
+     *         Whether the user has permission to verify issues that require
+     *         it.
+     *
+     *     commentID (number):
+     *         The ID of the comment object.
+     *
+     *     commentIssueManager (RB.CommentIssueManager):
+     *         The issue manager.
+     *
+     *     commentType (string):
+     *         The type of comment being modified.
+     *
+     *     interactive (boolean):
+     *         Whether the comment issue bar is interactive or not.
+     *
+     *     issueStatus (string):
+     *         The current issue status.
+     *
+     *     reviewID (number):
+     *         The ID of the review that the comment is on.
      */
-    initialize() {
+    initialize(options) {
+        this.options = options;
+
         const page = RB.PageManager.getPage();
 
         this._manager = (this.options.commentIssueManager ||

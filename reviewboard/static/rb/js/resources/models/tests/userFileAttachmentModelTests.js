@@ -19,6 +19,7 @@ suite('rb/resources/models/UserFileAttachment', function() {
                 var data;
 
                 model.id = 123;
+                model.attributes.id = 123;
                 expect(model.isNew()).toBe(false);
 
                 data = model.toJSON();
@@ -29,6 +30,7 @@ suite('rb/resources/models/UserFileAttachment', function() {
                 var data;
 
                 model.id = 123;
+                model.attributes.id = 123;
                 expect(model.isNew()).toBe(false);
 
                 model.set('file', 'abc');

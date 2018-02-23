@@ -37,14 +37,17 @@ RB.UploadAttachmentView = Backbone.View.extend({
     },
 
     /*
-     * Initializes the view. New attachments don't have attachmentHistoryID
-     * specified, so we set it to default value of -1.
+     * Initialize the view.
      */
     initialize: function(options) {
-        this.options = $.extend({
+        /*
+         * New attachments don't have attachmentHistoryID specified, so we set
+         * it to default value of -1.
+         */
+        this.options = _.defaults(options, {
             attachmentHistoryID: -1,
             presetCaption: ''
-        }, options);
+        });
     },
 
     /*

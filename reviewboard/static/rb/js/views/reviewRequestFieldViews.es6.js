@@ -28,8 +28,6 @@ Fields.BaseFieldView = Backbone.View.extend({
      *         The ID of the field.
      */
     initialize(options) {
-        Backbone.View.prototype.initialize.call(this, options);
-        this.options = options;
         this.fieldID = options.fieldID;
         this._fieldName = undefined;
         this.$el.data('field-id', this.fieldID);

@@ -75,6 +75,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
         describe('Rendered thumbnail with loaded model', function() {
             beforeEach(function() {
                 model.id = 123;
+                model.attributes.id = 123;
                 model.set('caption', 'My Caption');
                 model.set('loaded', true);
                 model.url = '/api/file-attachments/123/';
@@ -123,6 +124,7 @@ suite('rb/views/FileAttachmentThumbnail', function() {
     describe('Actions', function() {
         beforeEach(function() {
             model.id = 123;
+            model.attributes.id = 123;
             model.set('loaded', true);
             model.url = '/api/file-attachments/123/';
 

@@ -27,6 +27,8 @@ const CodeMirrorWrapper = Backbone.View.extend({
      *        The minimum vertical size of the editor.
      */
     initialize(options) {
+        this.options = options;
+
         const codeMirrorOptions = {
             mode: {
                 name: 'gfm',
