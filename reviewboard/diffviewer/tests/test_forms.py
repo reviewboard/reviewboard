@@ -39,7 +39,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
             })
         self.assertTrue(form.is_valid())
 
-        diffset = form.create(diff_file)
+        diffset = form.create()
         self.assertEqual(diffset.files.count(), 1)
         self.assertEqual(diffset.basedir, '/')
         self.assertEqual(diffset.base_commit_id, '1234')
@@ -91,7 +91,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
             })
         self.assertTrue(form.is_valid())
 
-        diffset = form.create(diff_file, parent_diff_file)
+        diffset = form.create()
         self.assertEqual(diffset.files.count(), 1)
 
         filediff = diffset.files.get()
@@ -151,7 +151,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
             })
         self.assertTrue(form.is_valid())
 
-        diffset = form.create(diff_file, parent_diff_file)
+        diffset = form.create()
         self.assertEqual(diffset.files.count(), 1)
 
         filediff = diffset.files.get()
@@ -207,7 +207,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
             })
         self.assertTrue(form.is_valid())
 
-        diffset = form.create(diff, parent_diff)
+        diffset = form.create()
         self.assertEqual(diffset.files.count(), 1)
 
         f = diffset.files.get()
@@ -280,7 +280,7 @@ class UploadDiffFormTests(SpyAgency, TestCase):
             })
         self.assertTrue(form.is_valid())
 
-        diffset = form.create(diff, parent_diff)
+        diffset = form.create()
         self.assertEqual(diffset.files.count(), 1)
 
         f = diffset.files.get()
@@ -294,3 +294,47 @@ class UploadDiffFormTests(SpyAgency, TestCase):
         patched_file = get_patched_file(original_file, f, None)
         self.assertEqual(patched_file, b'Foo\nBar\nBaz\n')
         self.assertEqual(len(patch.spy.calls), 2)
+
+    def test_crate_missing_basedir(self):
+        """Testing UploadDiffForm with a missing basedir field that is
+        required
+        """
+        repository = self.create_repository(tool_name='Test')
+        scmtool = repository.get_scmtool()
+
+        self.spy_on(repository.get_file_exists,
+                    call_fake=lambda *args, **kwargs: True)
+
+        revisions = [
+            b'93e6b3e8944c48737cb11a1e52b046fa30aea7a9',
+            b'4839fc480f47ca59cf05a9c39410ea744d1e17a2',
+        ]
+
+        diff = SimpleUploadedFile(
+            'diff',
+            (b'diff --git a/bar b/bar\n'
+             b'index %s..%s 100644\n'
+             b'--- a/bar\n'
+             b'+++ b/bar\n'
+             b'@@ -1,2 +1,3 @@\n'
+             b' Foo\n'
+             b'+Bar\n') % (revisions[0], revisions[1]),
+            content_type='text/x-patch')
+
+        try:
+            orig_use_abs_paths = scmtool.diffs_use_absolute_paths
+            scmtool.diffs_use_absolute_paths = True
+
+            form = UploadDiffForm(
+                repository=repository,
+                files={
+                    'path': diff,
+                }
+            )
+
+            self.assertFalse(form.is_valid())
+        finally:
+            scmtool.diffs_use_absolute_paths = orig_use_abs_paths
+
+        self.assertIn('basedir', form.errors)
+        self.assertIn('This field is required.', form.errors['basedir'])

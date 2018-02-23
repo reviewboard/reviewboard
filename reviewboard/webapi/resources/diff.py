@@ -281,7 +281,9 @@ class DiffResource(WebAPIResource):
             }
 
         form_data = request.POST.copy()
-        form = UploadDiffForm(review_request, form_data, request.FILES,
+        form = UploadDiffForm(review_request,
+                              data=form_data,
+                              files=request.FILES,
                               request=request)
 
         if not form.is_valid():
@@ -290,8 +292,7 @@ class DiffResource(WebAPIResource):
             }
 
         try:
-            diffset = form.create(request.FILES['path'],
-                                  request.FILES.get('parent_diff_path'))
+            diffset = form.create()
         except FileNotFoundError as e:
             return REPO_FILE_NOT_FOUND, {
                 'file': e.path,
