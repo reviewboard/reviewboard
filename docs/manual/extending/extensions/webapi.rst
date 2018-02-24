@@ -17,7 +17,7 @@ Resources are complex, but are explained in detail in the Djblets
 `WebAPIResource code`_.
 
 .. _`WebAPIResource code`:
-   https://github.com/djblets/djblets/blob/master/djblets/webapi/resources.py
+   https://github.com/djblets/djblets/blob/master/djblets/webapi/resources/base.py
 
 
 For example, a resource for creating and publishing a simplified review may

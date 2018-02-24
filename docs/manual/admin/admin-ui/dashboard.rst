@@ -95,4 +95,4 @@ reloading the news box, and subscribing to an RSS feed for the news.
           We will be adding HTTP Proxy support for this in a future update.
           In the meantime, you can visit the `Review Board News`_ page.
 
-.. _`Review Board News`: http://www.reviewboard.org/news/
+.. _`Review Board News`: https://www.reviewboard.org/news/

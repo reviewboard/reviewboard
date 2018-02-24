@@ -245,4 +245,4 @@ You should either add the contents of this file to your
 :file:`lighttpd.conf` using the ``include`` directive. See the
 `lighttpd documentation`_ for more information.
 
-.. _`lighttpd documentation`: http://redmine.lighttpd.net/wiki/lighttpd
+.. _`lighttpd documentation`: https://redmine.lighttpd.net/projects/lighttpd/wiki

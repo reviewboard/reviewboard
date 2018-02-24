@@ -18,4 +18,4 @@ Alternatively, we can host your Review Board server at RBCommons_.
 .. _Power Pack: https://www.reviewboard.org/powerpack/
 .. _Review Board + Power Pack:
    https://bitnami.com/stack/reviewboard-plus-powerpack
-.. _RBCommons: http://www.rbcommons.com/
+.. _RBCommons: https://www.rbcommons.com/

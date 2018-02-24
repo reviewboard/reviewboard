@@ -5,7 +5,7 @@ Unfuddle STACK Repositories
 ===========================
 
 Review Board supports posting and reviewing code on :rbintegration:`Unfuddle
-STACK <unfuddle>` repositories.
+STACK <unfuddle-stack>` repositories.
 
 The following types of Unfuddle STACK repositories are supported:
 
