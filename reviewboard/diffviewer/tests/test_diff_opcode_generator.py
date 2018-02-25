@@ -568,6 +568,61 @@ class MoveDetectionTests(TestCase):
             }]
         )
 
+    def test_move_detection_with_multiple_replace_candidates(self):
+        """Testing DiffOpcodeGenerator move detection with multiple candidates
+        for a replace line
+        """
+        self._test_move_detection(
+            [
+                'if 1:',
+                '    print "hi"',
+                'else:',
+                '    print "bye"',
+                '#',
+                '#',
+                'else:',
+                '    print "?"',
+                '#',
+                '#',
+            ],
+            [
+                'if 0:',
+                '    print False',
+                '#',
+                '#',
+                '#',
+                '#',
+                'if 1:',
+                '    print "hi"',
+                'else:',
+                '    print "bye"',
+            ],
+            [
+                {
+                    7: 1,
+                    8: 2,
+                    9: 3,
+                    10: 4,
+                },
+            ],
+            [
+                # The entire move range is stored for every chunk, hence
+                # the repeats.
+                {
+                    1: 7,
+                    2: 8,
+                    3: 9,
+                    4: 10,
+                },
+                {
+                    1: 7,
+                    2: 8,
+                    3: 9,
+                    4: 10,
+                },
+            ]
+        )
+
     def _test_move_detection(self, a, b, expected_i_moves, expected_r_moves):
         differ = MyersDiffer(a, b)
         opcode_generator = get_diff_opcode_generator(differ)
@@ -576,13 +631,20 @@ class MoveDetectionTests(TestCase):
         i_moves = []
 
         for opcodes in opcode_generator:
+            # Log the opcode so we can more easily debug unit test failures.
+            print opcodes
+
             meta = opcodes[-1]
 
-            if 'moved-to' in meta:
+            try:
                 r_moves.append(meta['moved-to'])
+            except KeyError:
+                pass
 
-            if 'moved-from' in meta:
+            try:
                 i_moves.append(meta['moved-from'])
+            except KeyError:
+                pass
 
         self.assertEqual(i_moves, expected_i_moves)
         self.assertEqual(r_moves, expected_r_moves)

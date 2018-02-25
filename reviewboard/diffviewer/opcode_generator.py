@@ -386,6 +386,11 @@ class DiffOpcodeGenerator(object):
                                 MoveRange(ri, ri, [(rgroup, rgroup_index)])
                             updated_range = True
 
+                    if updated_range:
+                        # We found a range we were able to update. Don't
+                        # attempt any more matches for removed lines.
+                        break
+
                 if not updated_range and r_move_ranges:
                     # We didn't find a move range that this line is a part
                     # of, but we do have some existing move ranges stored.
