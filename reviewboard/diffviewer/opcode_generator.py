@@ -294,32 +294,57 @@ class DiffOpcodeGenerator(object):
         # The algorithm will be documented as we go in the code.
         #
         # We start by looping through all the inserted groups.
-        for insert in self.inserts:
-            self._compute_move_for_insert(*insert)
+        r_move_indexes_used = set()
 
-    def _compute_move_for_insert(self, itag, ii1, ii2, ij1, ij2, imeta):
+        for insert in self.inserts:
+            self._compute_move_for_insert(r_move_indexes_used, *insert)
+
+    def _compute_move_for_insert(self, r_move_indexes_used, itag, ii1, ii2,
+                                 ij1, ij2, imeta):
+        """Compute move information for a given insert-like chunk.
+
+        Args:
+            r_move_indexes_used (set):
+                All remove indexes that have already been included in a move
+                range.
+
+            itag (unicode):
+                The chunk tag for the insert (``insert`` or ``replace``).
+
+            ii1 (int):
+                The 0-based start of the chunk on the original side.
+
+            ii2 (int):
+                The 0-based start of the next chunk on the original side.
+
+            ij1 (int):
+                The 0-based start of the chunk on the modification side.
+
+            ij2 (int):
+                The 0-based start of the next chunk on the modification side.
+
+            imeta (dict):
+                The metadata for the chunk for the modification, where the move
+                ranges may be stored.
+        """
         # Store some state on the range we'll be working with inside this
         # insert group.
-        #
-        # i_move_cur is the current location inside the insert group
-        # (from ij1 through ij2).
-        #
-        # i_move_range is the current range of consecutive lines that
-        # we'll use for a move. Each line in this range has a
-        # corresponding consecutive delete line.
-        #
-        # r_move_ranges represents deleted move ranges. The key is a
-        # string in the form of "{i1}-{i2}-{j1}-{j2}", with those
-        # positions taken from the remove group for the line. The value
-        # is an instance of MoveRange. The values in MoveRange are used to
-        # quickly locate deleted lines we've found that match the inserted
-        # lines, so we can assemble ranges later.
-        i_move_cur = ij1
-        i_move_range = MoveRange(i_move_cur, i_move_cur)
-        r_move_ranges = {}  # key -> (start, end, group)
-        r_move_indexes_used = set()
-        move_key = None
 
+        # The current location inside the insert group (from ij1 through ij2).
+        i_move_cur = ij1
+
+        # The current range of consecutive lines that we'll use for a move.
+        # Each line in this range has a corresponding consecutive delete line.
+        i_move_range = MoveRange(i_move_cur, i_move_cur)
+
+        # The deleted move ranges. The key is a string in the form of
+        # "{i1}-{i2}-{j1}-{j2}", with those positions taken from the remove
+        # group for the line. The value is an instance of MoveRange. The values
+        # in MoveRange are used to quickly locate deleted lines we've found
+        # that match the inserted lines, so we can assemble ranges later.
+        r_move_ranges = {}  # key -> (start, end, group)
+
+        move_key = None
         is_replace = (itag == 'replace')
 
         # Loop through every location from ij1 through ij2 - 1 until we've

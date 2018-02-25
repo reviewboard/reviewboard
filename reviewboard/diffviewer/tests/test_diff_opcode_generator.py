@@ -623,6 +623,81 @@ class MoveDetectionTests(TestCase):
             ]
         )
 
+    def test_move_detection_with_multiple_replace_candidates_2(self):
+        """Testing DiffOpcodeGenerator move detection with multiple candidates
+        for a replace line
+        """
+        self._test_move_detection(
+            [
+                'if 1:',
+                '    print "hi"',
+                'else:',
+                '    print "bye"',
+                '= equal',
+                'for a in b:',
+                '    continue',
+                'else:',
+                '    assert False',
+                '=',
+                '= abc',
+                '= defg',
+                '= hijkl',
+                '= mnop',
+                '= qrs',
+                '= tuvw',
+                '= xyz',
+                '====',
+            ],
+            [
+                '= equal',
+                '=',
+                '= abc',
+                '= defg',
+                '= hijkl',
+                '= mnop',
+                '= qrs',
+                '= tuvw',
+                '= xyz',
+                'if 1:',
+                '    print "hi"',
+                'else:',
+                '    print "bye"',
+                '====',
+                'for a in b:',
+                '    continue',
+                'else:',
+                '    assert False',
+            ],
+            [
+                {
+                    10: 1,
+                    11: 2,
+                    12: 3,
+                    13: 4,
+                },
+                {
+                    15: 6,
+                    16: 7,
+                    17: 8,
+                    18: 9,
+                }
+            ],
+            [
+                {
+                    1: 10,
+                    2: 11,
+                    3: 12,
+                    4: 13,
+                },
+                {
+                    6: 15,
+                    7: 16,
+                    8: 17,
+                    9: 18,
+                },
+            ]
+        )
+
     def _test_move_detection(self, a, b, expected_i_moves, expected_r_moves):
         differ = MyersDiffer(a, b)
         opcode_generator = get_diff_opcode_generator(differ)
