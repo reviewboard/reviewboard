@@ -57,7 +57,7 @@ DNS records.
 
 There are many guides out there for DKIM. See the following:
 
-* `DKIM on Wikipedia <http://en.wikipedia.org/wiki/DomainKeys_Identified_Mail>`_
-* `DKIM DNS wizard <http://www.dnswatch.info/dkim/create-dns-record>`_
+* `DKIM on Wikipedia <https://en.wikipedia.org/wiki/DomainKeys_Identified_Mail>`_
+* `DKIM DNS wizard <https://www.dnswatch.info/dkim/create-dns-record>`_
 * `Postfix DKIM on Ubuntu <https://help.ubuntu.com/community/Postfix/DKIM>`_
-* `Configuring DKIM and Sendmail on Fedora 13 <http://www.rickwargo.com/2010/11/19/configuring-dkim-and-sendmail-on-fedora-13/>`_
+* `Setting up DKIM with Sendmail on Ubuntu 14.04 <https://philio.me/setting-up-dkim-with-sendmail-on-ubuntu-14-04/>`_

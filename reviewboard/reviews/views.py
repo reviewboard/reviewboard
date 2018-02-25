@@ -1214,17 +1214,23 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin, DiffViewerView):
             key = (comment.filediff_id, comment.interfilediff_id)
             comments.setdefault(key, []).append(comment)
 
+        # Build the status information shown below the summary.
         close_info = self.review_request.get_close_info()
+
+        if latest_diffset:
+            status_extra_info = [{
+                'text': ugettext('Latest diff uploaded {timestamp}'),
+                'timestamp': latest_diffset.timestamp,
+            }]
+        else:
+            status_extra_info = []
+
         review_request_status_html = self.get_review_request_status_html(
             review_request_details=review_request_details,
             close_info=close_info,
-            extra_info=[
-                {
-                    'text': ugettext('Latest diff uploaded {timestamp}'),
-                    'timestamp': latest_diffset.timestamp,
-                },
-            ])
+            extra_info=status_extra_info)
 
+        # Build the final context for the page.
         siteconfig = SiteConfiguration.objects.get_current()
 
         context = super(ReviewsDiffViewerView, self).get_context_data(**kwargs)

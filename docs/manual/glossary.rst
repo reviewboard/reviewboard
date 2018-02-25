@@ -38,7 +38,7 @@ Glossary
        DomainKeys Identified Mail, a method for validating that an e-mail
        claiming to have come from a domain actually came from that domain.
        See the `Wikipedia article
-       <http://en.wikipedia.org/wiki/DomainKeys_Identified_Mail>`_ for more
+       <https://en.wikipedia.org/wiki/DomainKeys_Identified_Mail>`_ for more
        information.
 
    Draft
@@ -75,7 +75,7 @@ Glossary
        lists, links, code blocks, and images. Many of the multi-line fields in
        Review Board use Markdown to format their contents. See `John Gruber's
        Markdown Syntax Overview
-       <http://daringfireball.net/projects/markdown/>`_ for more information.
+       <https://daringfireball.net/projects/markdown/>`_ for more information.
 
    OAuth2
        OAuth2 is a framework that allows third-party applications to gain

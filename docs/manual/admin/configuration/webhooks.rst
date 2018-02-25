@@ -171,5 +171,5 @@ event which posts a message to a `Slack`_ channel:
    }
 
 
-.. _`Django template language`: https://docs.djangoproject.com/en/1.6/topics/templates/
+.. _`Django template language`: https://django.readthedocs.io/en/1.6.x/topics/templates.html
 .. _`Slack`: https://slack.com/

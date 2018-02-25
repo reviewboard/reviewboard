@@ -88,7 +88,7 @@ This is available if `Authentication Method`_ is set to
 * **reCAPTCHA Private Key:**
     The private key provided by the reCAPTCHA site registration for your site.
 
-.. _reCAPTCHA: http://www.google.com/recaptcha
+.. _reCAPTCHA: https://www.google.com/recaptcha/intro/
 
 
 .. _active-directory-authentication-settings:

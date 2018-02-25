@@ -136,9 +136,9 @@ described below:
 
         /trunk/project1/src/*\.c
 
-More operators can be found on `About.com's Python Regular Expressions
-guide`_. The above is all that's generally needed for file paths, though.
+More operators can be found in the `Python Regular Expression HOWTO`_.
+The above is all that's generally needed for file paths, though.
 
 
-.. _`About.com's Python Regular Expressions guide`:
-   http://python.about.com/od/regularexpressions/a/regexprimer.htm
+.. _`Python Regular Expression HOWTO`:
+   https://docs.python.org/2/howto/regex.html

@@ -267,7 +267,7 @@ fresh coverage reports for your next test run.
 See the `nose coverage`_ documentation for more information.
 
 
-.. _nose coverage: https://nose.readthedocs.org/en/latest/plugins/cover.html
+.. _nose coverage: https://nose.readthedocs.io/en/latest/plugins/cover.html
 
 
 Additional Testing Options
@@ -287,8 +287,8 @@ For example, to run only the tests that failed last time:
 See the `nose usage guide <nose-usage_>`_ for more information.
 
 
-.. _nose: https://nose.readthedocs.org/en/latest/
-.. _nose-usage: https://nose.readthedocs.org/en/latest/usage.html
+.. _nose: https://nose.readthedocs.io/en/latest/
+.. _nose-usage: https://nose.readthedocs.io/en/latest/usage.html
 
 
 Custom Test Settings Files

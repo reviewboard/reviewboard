@@ -54,9 +54,9 @@ You will then need to restart your web server for the new module to be
 noticed by Review Board.
 
 
-.. _downloads archive: http://www.perforce.com/downloads/perforce/
+.. _downloads archive: https://cdist2.perforce.com/perforce/
 .. _p4:
-   https://www.perforce.com/product/components/perforce-commandline-client
+   https://www.perforce.com/products/helix-core-apps/command-line-client
 .. _p4python: https://pypi.python.org/pypi/P4Python
 
 

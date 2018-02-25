@@ -21,11 +21,12 @@ Installing on Linux
    Alternatively, we can host your Review Board server at RBCommons_.
 
 .. _VMware ESXi:
-   http://www.vmware.com/products/vsphere-hypervisor/overview.html
-.. _VMware Workstation Server: http://www.vmware.com/products/workstation/overview.html
+   https://www.vmware.com/products/vsphere-hypervisor.html
+.. _VMware Workstation Server:
+   https://www.vmware.com/products/workstation-pro.html
 .. _Review Board from Bitnami:
    https://bitnami.com/stack/reviewboard-plus-powerpack
-.. _RBCommons: http://www.rbcommons.com/
+.. _RBCommons: https://www.rbcommons.com/
 
 
 Before You Begin
@@ -58,8 +59,8 @@ The instructions below are assuming you're logged in as ``root`` or
 are using :command:`sudo`.
 
 
-.. _MySQL: http://www.mysql.com/
-.. _PostgreSQL: http://www.postgresql.org/
+.. _MySQL: https://www.mysql.com/
+.. _PostgreSQL: https://www.postgresql.org/
 .. _Apache: http://www.apache.org/
 .. _nginx: https://www.nginx.com/
 .. _lighttpd: http://www.lighttpd.net/
@@ -116,7 +117,7 @@ setuptools available::
     $ pip install -U pip setuptools
 
 
-.. _pip: https://pip.pypa.io/
+.. _pip: https://pip.pypa.io/en/stable/
 .. _Python setuptools: http://peak.telecommunity.com/DevCenter/setuptools
 .. _pip installation instructions:
    https://pip.pypa.io/en/stable/installing/
@@ -160,7 +161,7 @@ To install on `RedHat Enterprise`_, Fedora_ or CentOS_, type::
 
     $ yum install memcached
 
-.. _memcached: http://www.danga.com/memcached/
+.. _memcached: https://memcached.org/
 
 
 python-memcached
@@ -255,10 +256,10 @@ To install on Fedora_, type::
     $ yum install git-core
 
 If your distribution doesn't provide Git_, you'll need to install it
-manually from http://www.git-scm.com/.
+manually from https://www.git-scm.com/.
 
 
-.. _Git: http://www.git-scm.com/
+.. _Git: https://www.git-scm.com/
 
 
 Mercurial
@@ -269,11 +270,10 @@ To install support for Mercurial_, type::
     $ pip install -U mercurial
 
 You can also check your distribution for a native package, or use one of the
-`binary packages
-<http://mercurial.selenic.com/wiki/Download>`_ provided.
+`binary packages <https://www.mercurial-scm.org/downloads>`_ provided.
 
 
-.. _Mercurial: http://mercurial.selenic.com/
+.. _Mercurial: https://www.mercurial-scm.org/
 
 
 Perforce
@@ -288,8 +288,8 @@ You'll then need to install the Python bindings by typing the following::
     $ pip install p4python
 
 
-.. _`Perforce downloads`: http://perforce.com/perforce/downloads/
-.. _Perforce: http://www.perforce.com/
+.. _`Perforce downloads`: https://www.perforce.com/downloads
+.. _Perforce: https://www.perforce.com/
 
 
 .. _installing-svn:
@@ -305,7 +305,7 @@ compatibility.
 
 .. _Subversion: http://subversion.tigris.org/
 .. _PySVN: http://pysvn.tigris.org/
-.. _subvertpy: http://samba.org/~jelmer/subvertpy/
+.. _subvertpy: https://www.samba.org/~jelmer/subvertpy/
 
 
 PySVN
@@ -378,7 +378,7 @@ After you've installed Review Board and created your site, you will need
 to configure this. See the :ref:`file-storage-settings` documentation for
 more information.
 
-.. _`Amazon S3`: http://aws.amazon.com/s3/
+.. _`Amazon S3`: https://aws.amazon.com/s3/
 
 
 Installing OpenStack Swift Support (optional)
@@ -395,19 +395,19 @@ After you've installed Review Board and created your site, you will need
 to configure this. See the :ref:`file-storage-settings` documentation for
 more information.
 
-.. _`OpenStack Swift`: http://swift.openstack.org/
+.. _`OpenStack Swift`: https://docs.openstack.org/swift/latest/
 .. _`Django-Evolution`: https://github.com/beanbaginc/django-evolution
-.. _Django: http://www.djangoproject.com/
+.. _Django: https://www.djangoproject.com/
 .. _flup: http://trac.saddi.com/flup
 .. _paramiko: http://www.lag.net/paramiko/
 .. _`Python Imaging Library`: http://www.pythonware.com/products/pil/
 
 
-.. _Debian: http://www.debian.org/
-.. _Ubuntu: http://www.ubuntu.com/
-.. _`RedHat Enterprise`: http://www.redhat.com/
-.. _Fedora: http://fedoraproject.org/
-.. _CentOS: http://www.centos.org/
+.. _Debian: https://www.debian.org/
+.. _Ubuntu: https://www.ubuntu.com/
+.. _`RedHat Enterprise`: https://www.redhat.com/en
+.. _Fedora: https://getfedora.org/
+.. _CentOS: https://www.centos.org/
 
 
 After Installation
