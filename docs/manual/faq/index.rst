@@ -155,7 +155,7 @@ I'm having trouble installing post-review on Windows Vista
 You may need to modify a copy of simplejson (a Python module needed by
 post-review).
 
-1. `Download <http://pypi.python.org/pypi/simplejson>`_ the latest
+1. `Download <https://pypi.python.org/pypi/simplejson>`_ the latest
    release of simplejson.
 2. Extract the file to a local directory (using 7Zip_, WinRAR_ or another
    program).
@@ -171,8 +171,8 @@ Then repeat step 4 above.
 Thanks to Daniel Wexler for this information.
 
 .. _7Zip: http://www.7-zip.org/
-.. _WinRAR: http://www.rarlab.com/
-.. _`Python Setuptools Installer`: http://pypi.python.org/pypi/setuptools#windows
+.. _WinRAR: https://www.rarlab.com/
+.. _`Python Setuptools Installer`: https://pypi.python.org/pypi/setuptools
 
 
 I get the error "Unable to parse the server response" when uploading screenshots
@@ -228,13 +228,13 @@ What is Review Board written in?
 
 Review Board is written in Python_, using the Django_ web framework.
 
-.. _Python: http://www.python.org/
-.. _Django: http://www.djangoproject.com/
+.. _Python: https://www.python.org/
+.. _Django: https://www.djangoproject.com/
 
 
 Where do I submit patches for Review Board?
 -------------------------------------------
 
 Patches to Review Board or Djblets should be submitted to our own Review Board
-instance, http://reviews.reviewboard.org. If you submit patches to the
+instance, https://reviews.reviewboard.org. If you submit patches to the
 mailing list or bug tracker, we'll ask you to move them here for review.

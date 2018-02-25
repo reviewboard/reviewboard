@@ -1330,6 +1330,11 @@ class RepositoryForm(forms.ModelForm):
 
                 raise ValidationError(e)
             except Exception as e:
+                logging.exception(
+                    'Unexpected exception while verifying repository path for '
+                    'hosting service %r using plan %r and tool %r: %s',
+                    hosting_service, plan, tool, e)
+
                 try:
                     text = six.text_type(e)
                 except UnicodeDecodeError:

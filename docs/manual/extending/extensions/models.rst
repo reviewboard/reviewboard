@@ -12,10 +12,9 @@ which are database tables under the control of the extension. Review Board
 handles registering these models, creating the database tables, and performing
 any database schema migrations the extension defines.
 
-Extensions use the same convention as :djangodoc:`Django apps
-<ref/applications>` when defining models. In order to define new models, a
-:file:`models.py` file, or a :file:`models/` directory constituting a Python
-module needs to be created.
+Extensions use the same convention as `Django apps`_ when defining models. In
+order to define new models, a :file:`models.py` file, or a :file:`models/`
+directory constituting a Python module needs to be created.
 
 Here is an example :file:`models.py` file:
 
@@ -35,6 +34,9 @@ information on how to write a model.
    When an extension is disabled, tables for its models remain in the
    database. These should generally not interfere with anything, but is
    important to know.
+
+
+.. _Django apps: http://django-best-practices.readthedocs.io/en/latest/applications.html
 
 
 .. _extension-models-evolution:
@@ -190,7 +192,7 @@ provided automatically, and is used primarily for the registration of models.
 
 Only models that are registered will appear in the database browser. You can
 see the documentation on the :djangodoc:`Django admin site
-<ref/contrib/admin>` for details on how this works. For example:
+<ref/contrib/admin/index>` for details on how this works. For example:
 
 .. code-block:: python
 

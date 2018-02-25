@@ -9,8 +9,8 @@ attachments will be stored. By default, uploaded files are stored on
 the Review Board server, but it can be changed to store on `Amazon S3`_, a
 scalable file storage service provided by Amazon.
 
-.. _`Amazon S3`: http://aws.amazon.com/s3/
-.. _`OpenStack Swift`: http://swift.openstack.org/
+.. _`Amazon S3`: https://aws.amazon.com/s3/
+.. _`OpenStack Swift`: https://docs.openstack.org/swift/latest/
 
 
 General Settings
@@ -74,7 +74,7 @@ OpenStack Swift Settings
 ========================
 
 * **Swift auth URL:**
-    The URL for the auth server, e.g. http://127.0.0.1:5000/v2.0
+    The URL for the auth server, e.g. ``http://127.0.0.1:5000/v2.0``
 
 * **Swift username:**
     The username to use to authenticate, e.g. system:root

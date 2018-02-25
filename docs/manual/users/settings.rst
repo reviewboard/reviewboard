@@ -48,7 +48,7 @@ Extensions may provide additional avatar mechanisms. See
 :ref:`avatar-service-hook` for more information on writing avatar service
 backends.
 
-.. _Gravatar: https://gravatar.com/
+.. _Gravatar: https://en.gravatar.com/
 
 
 Settings

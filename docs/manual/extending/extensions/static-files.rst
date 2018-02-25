@@ -76,7 +76,7 @@ then run:
     $ sudo npm install -g less uglifyjs
 
 
-.. _node.js: https://nodejs.org/
+.. _node.js: https://nodejs.org/en/
 
 
 Writing Static Media

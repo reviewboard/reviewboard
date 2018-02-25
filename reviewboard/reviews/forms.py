@@ -120,17 +120,32 @@ class GroupForm(forms.ModelForm):
 
 
 class UploadDiffForm(diffviewer_forms.UploadDiffForm):
-    """
-    A specialized UploadDiffForm that knows how to interact with review
-    requests.
-    """
-    def __init__(self, review_request, data=None, *args, **kwargs):
+    """A specialized UploadDiffForm for interacting with review requests."""
+
+    def __init__(self, review_request, request=None, *args, **kwargs):
+        """Initialize the form.
+
+        Args:
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request that the uploaded diff will be attached to.
+
+            request (django.http.HttpRequest):
+                The current HTTP request.
+
+            *args (tuple):
+                Additional positional arguments.
+
+            **kwargs (dict):
+                Additional keyword arguments.
+        """
         super(UploadDiffForm, self).__init__(review_request.repository,
-                                             data, *args, **kwargs)
+                                             request,
+                                             *args,
+                                             **kwargs)
         self.review_request = review_request
 
         if ('basedir' in self.fields and
-            (not data or 'basedir' not in data)):
+            (not self.data or 'basedir' not in self.data)):
             try:
                 diffset = DiffSet.objects.filter(
                     history=review_request.diffset_history_id).latest()
@@ -138,16 +153,29 @@ class UploadDiffForm(diffviewer_forms.UploadDiffForm):
             except DiffSet.DoesNotExist:
                 pass
 
-    def create(self, diff_file, parent_diff_file=None,
-               attach_to_history=False):
+    def create(self, attach_to_history=False):
+        """Create the DiffSet and optionally attach it to the history.
+
+        Args:
+            attach_to_history (bool):
+                Whether or not the created
+                :py:class:`~reviewboard.diffviewer.models.DiffSet` will be
+                attached to the diffset history of the
+                :py:class:`reviewboard.reviews.model.ReviewRequest`.
+
+                Defaults to ``False``.
+
+        Returns:
+            reviewboard.diffviewer.models.DiffSet:
+            The created DiffSet.
+        """
+        assert self.is_valid()
         history = None
 
         if attach_to_history:
             history = self.review_request.diffset_history
 
-        diffset = super(UploadDiffForm, self).create(diff_file,
-                                                     parent_diff_file,
-                                                     history)
+        diffset = super(UploadDiffForm, self).create(history)
 
         if not attach_to_history:
             # Set the initial revision to be one newer than the most recent

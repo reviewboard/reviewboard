@@ -96,10 +96,13 @@ class RelatedUserWidget(HiddenInput):
             }
 
             if use_avatars:
-                data['avatarURL'] = (
-                    avatar_services.for_user(user)
-                    .get_avatar_urls_uncached(user, 40)
-                )['1x']
+                try:
+                    data['avatarURL'] = (
+                        avatar_services.for_user(user)
+                        .get_avatar_urls_uncached(user, 40)
+                    )['1x']
+                except KeyError:
+                    pass
 
             user_data.append(data)
 

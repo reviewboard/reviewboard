@@ -63,7 +63,7 @@ This takes a directory as the first parameter. For example::
 See :ref:`creating-sites` for more information.
 
 
-.. _`GTK+`: http://www.gtk.org/
+.. _`GTK+`: https://www.gtk.org/
 
 
 Options
@@ -214,4 +214,4 @@ For more information, and some useful subcommands, see
 :ref:`management-commands`.
 
 
-.. _Django: http://www.djangoproject.com/
+.. _Django: https://www.djangoproject.com/
