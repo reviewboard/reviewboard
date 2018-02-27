@@ -45,6 +45,26 @@ class ReviewRequestViewMixinTests(TestCase):
             '<time class="timesince" datetime="2018-02-12T06:56:00-08:00">'
             'Feb. 12, 2018, 6:56 a.m.</time>')
 
+    def test_get_review_request_status_html_with_submitted_no_timestamp(self):
+        """Testing ReviewRequestViewMixin.get_review_request_status_html
+        with status=SUBMITTED and no timestamp
+        """
+        review_request = self.create_review_request(
+            status=ReviewRequest.SUBMITTED,
+            time_added=datetime(2018, 2, 10, 9, 23, 12, tzinfo=timezone.utc))
+
+        mixin = ReviewRequestViewMixin()
+        mixin.review_request = review_request
+
+        with timezone.override(_local_timezone):
+            html = mixin.get_review_request_status_html(
+                review_request_details=review_request,
+                close_info={
+                    'timestamp': None,
+                })
+
+        self.assertEqual(html, 'Created Feb. 10, 2018 and submitted')
+
     def test_get_review_request_status_html_with_discarded(self):
         """Testing ReviewRequestViewMixin.get_review_request_status_html
         with status=DISCARDED
@@ -69,6 +89,26 @@ class ReviewRequestViewMixinTests(TestCase):
             'Created Feb. 10, 2018 and discarded '
             '<time class="timesince" datetime="2018-02-12T06:56:00-08:00">'
             'Feb. 12, 2018, 6:56 a.m.</time>')
+
+    def test_get_review_request_status_html_with_discarded_no_timestamp(self):
+        """Testing ReviewRequestViewMixin.get_review_request_status_html
+        with status=DISCARDED and no timestamp
+        """
+        review_request = self.create_review_request(
+            status=ReviewRequest.DISCARDED,
+            time_added=datetime(2018, 2, 10, 9, 23, 12, tzinfo=timezone.utc))
+
+        mixin = ReviewRequestViewMixin()
+        mixin.review_request = review_request
+
+        with timezone.override(_local_timezone):
+            html = mixin.get_review_request_status_html(
+                review_request_details=review_request,
+                close_info={
+                    'timestamp': None,
+                })
+
+        self.assertEqual(html, 'Created Feb. 10, 2018 and discarded')
 
     def test_get_review_request_status_html_with_pending_review(self):
         """Testing ReviewRequestViewMixin.get_review_request_status_html
