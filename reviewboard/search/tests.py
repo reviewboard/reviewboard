@@ -512,6 +512,6 @@ class ViewTests(TestCase):
 
         self.assertEqual(rsp.status_code, 200)
         self.assertIn(
-            '<title>Indexed searched not enabled | Review Board</title>',
+            '<title>Indexed search not enabled',
             rsp.content)
         self.assertNotIn('<form', rsp.content)
