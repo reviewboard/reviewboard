@@ -280,11 +280,21 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
         review_request_details = review_request_details
 
         if status == ReviewRequest.SUBMITTED:
-            text = ugettext('Created {created_time} and submitted {timestamp}')
             timestamp = close_info['timestamp']
+
+            if timestamp:
+                text = ugettext('Created {created_time} and submitted '
+                                '{timestamp}')
+            else:
+                text = ugettext('Created {created_time} and submitted')
         elif status == ReviewRequest.DISCARDED:
-            text = ugettext('Created {created_time} and discarded {timestamp}')
             timestamp = close_info['timestamp']
+
+            if timestamp:
+                text = ugettext('Created {created_time} and discarded '
+                                '{timestamp}')
+            else:
+                text = ugettext('Created {created_time} and discarded')
         elif status == ReviewRequest.PENDING_REVIEW:
             text = ugettext('Created {created_time} and updated {timestamp}')
             timestamp = review_request_details.last_updated
@@ -309,14 +319,18 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
         html_parts = []
 
         for part in parts:
-            timestamp = localtime(part['timestamp'])
+            if part['timestamp']:
+                timestamp = localtime(part['timestamp'])
+                timestamp_html = format_html(
+                    '<time class="timesince" datetime="{0}">{1}</time>',
+                    timestamp.isoformat(),
+                    localize(timestamp))
+            else:
+                timestamp_html = ''
 
             html_parts.append(format_html(
                 part['text'],
-                timestamp=format_html(
-                    '<time class="timesince" datetime="{0}">{1}</time>',
-                    timestamp.isoformat(),
-                    localize(timestamp)),
+                timestamp=timestamp_html,
                 **part.get('extra_vars', {})))
 
         return mark_safe(' &mdash; '.join(html_parts))
