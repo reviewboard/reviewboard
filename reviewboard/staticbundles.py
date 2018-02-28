@@ -7,9 +7,16 @@ from djblets.staticbundles import (
 
 # Media compression
 PIPELINE_JAVASCRIPT = dict({
-    '3rdparty': {
+    '3rdparty-base': {
         'source_filenames': (
             'lib/js/babel-polyfill-6.5.0.js',
+            'lib/js/jquery-3.3.1.min.js',
+        ),
+        'output_filename': 'lib/js/3rdparty-base.min.js',
+    },
+    '3rdparty': {
+        'source_filenames': (
+            'lib/js/jquery-ui-1.12.1.min.js',
             'lib/js/flot/jquery.flot.min.js',
             'lib/js/flot/jquery.flot.pie.min.js',
             'lib/js/flot/jquery.flot.selection.min.js',
@@ -17,7 +24,7 @@ PIPELINE_JAVASCRIPT = dict({
             'lib/js/underscore-1.8.3.min.js',
             'lib/js/backbone-1.3.3.min.js',
             'lib/js/jquery.cookie-1.4.1.js',
-            'lib/js/jquery.form.js',
+            'lib/js/jquery.form-4.2.2.min.js',
             'lib/js/jquery.timesince.js',
             'lib/js/moment-2.12.0.js',
             'lib/js/moment-timezone-0.5.2.js',

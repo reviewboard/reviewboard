@@ -1,2 +1,4 @@
-{% load staticfiles %}
-<script type="text/javascript" src="{% static "lib/js/jquery-ui-1.8.24.custom.min.js" %}"></script>
+{% comment %}
+The Review Board interface loads jQuery UI through static bundles, not the
+template.
+{% endcomment %}

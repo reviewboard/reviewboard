@@ -1,3 +1,4 @@
-{% load staticfiles %}
-<script type="text/javascript" src="{% static "lib/js/jquery-1.11.1.min.js" %}"></script>
-<script type="text/javascript" src="{% static "lib/js/jquery-migrate-1.2.1.min.js" %}"></script>
+{% comment %}
+The Review Board interface loads jQuery through static bundles, not the
+template.
+{% endcomment %}

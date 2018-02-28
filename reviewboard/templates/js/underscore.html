@@ -1,2 +1,4 @@
-{% load staticfiles %}
-<script type="text/javascript" src="{% static "lib/js/underscore-1.8.3.min.js" %}"></script>
+{% comment %}
+The Review Board interface loads underscore through static bundles, not the
+template.
+{% endcomment %}

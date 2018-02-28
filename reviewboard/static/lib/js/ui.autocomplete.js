@@ -73,16 +73,7 @@ $.widget("ui.rbautocomplete", {
             $input.bind('result.rbautocomplete', options.result);
         }
 
-        // prevent form submit in opera when selecting with return key
-        $.browser.opera && $(input.form).bind("submit.rbautocomplete", function() {
-            if (blockSubmit) {
-                blockSubmit = false;
-                return false;
-            }
-        });
-
-        // only opera doesn't trigger keydown multiple times while pressed, others don't work with keypress at all
-        $input.bind(($.browser.opera ? "keypress" : "keydown") + ".rbautocomplete", function(event) {
+        $input.bind('keydown.rbautocomplete', function(event) {
             // track last key pressed
             lastKeyPressCode = event.keyCode;
             switch(event.keyCode) {
@@ -788,20 +779,6 @@ $.ui.rbautocomplete.select = function (options, input, select, config) {
                     maxHeight: options.scrollHeight,
                     overflow: 'auto'
                 });
-
-                if($.browser.msie && typeof document.body.style.maxHeight === "undefined") {
-                    var listHeight = 0;
-                    listItems.each(function() {
-                        listHeight += this.offsetHeight;
-                    });
-                    var scrollbarsVisible = listHeight > options.scrollHeight;
-                    list.css('height', scrollbarsVisible ? options.scrollHeight : listHeight );
-                    if (!scrollbarsVisible) {
-                        // IE doesn't recalculate width when scrollbar disappears
-                        listItems.width( list.width() - parseInt(listItems.css("padding-left")) - parseInt(listItems.css("padding-right")) );
-                    }
-                }
-
             }
 
             $(input).triggerHandler("autocompleteshow", [{}, { options: options }], options["show"]);
