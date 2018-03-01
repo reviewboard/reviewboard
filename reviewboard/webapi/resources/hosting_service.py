@@ -2,9 +2,11 @@ from __future__ import unicode_literals
 
 import inspect
 
-from django.utils import six
 from djblets.db.query import LocalDataQuerySet
 from djblets.util.decorators import augment_method_from
+from djblets.webapi.fields import (BooleanFieldType,
+                                   ListFieldType,
+                                   StringFieldType)
 
 from reviewboard.hostingsvcs.service import (get_hosting_services,
                                              HostingService)
@@ -33,42 +35,45 @@ class HostingServiceResource(WebAPIResource):
 
     fields = {
         'id': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The hosting service's unique ID.",
         },
         'name': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The name of the hosting service.',
         },
         'needs_authorization': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether an account must be authorized and linked '
                            'in order to use this service.',
         },
         'self_hosted': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether the service is meant to be self-hosted '
                            'in the network.',
         },
         'supported_scmtools': {
-            'type': [six.text_type],
+            'type': ListFieldType,
+            'items': {
+                'type': StringFieldType,
+            },
             'description': 'The list of supported types of repositories.',
         },
         'supports_bug_trackers': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether bug trackers are available.',
         },
         'supports_list_remote_repositories': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether remote repositories on the hosting '
                            'service can be listed through the API.',
         },
         'supports_repositories': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether repository linking is supported.',
         },
         'supports_two_factor_auth': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether two-factor authentication is supported '
                            'when linking an account.',
         },

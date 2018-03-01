@@ -10,6 +10,7 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.fields import FileFieldType, IntFieldType, StringFieldType
 
 from reviewboard.reviews.forms import UploadScreenshotForm
 from reviewboard.reviews.models import Screenshot
@@ -24,31 +25,31 @@ class BaseScreenshotResource(WebAPIResource):
     name = 'screenshot'
     fields = {
         'id': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The numeric ID of the screenshot.',
         },
         'caption': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The screenshot's descriptive caption.",
         },
         'path': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The path of the screenshot's image file, "
                            "relative to the media directory configured "
                            "on the Review Board server.",
         },
         'filename': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The base file name of the screenshot's image.",
             'added_in': '1.7.10',
         },
         'review_url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The URL to the review UI for this screenshot.',
             'added_in': '1.7.10',
         },
         'url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The URL of the screenshot file. If this is not "
                            "an absolute URL (for example, if it is just a "
                            "path), then it's relative to the Review Board "
@@ -57,12 +58,12 @@ class BaseScreenshotResource(WebAPIResource):
             'deprecated_in': '2.0',
         },
         'absolute_url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The absolute URL of the screenshot file.",
             'added_in': '2.0',
         },
         'thumbnail_url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The URL of the screenshot's thumbnail file. "
                            "If this is not an absolute URL (for example, "
                            "if it is just a path), then it's relative to "
@@ -136,13 +137,13 @@ class BaseScreenshotResource(WebAPIResource):
     @webapi_request_fields(
         required={
             'path': {
-                'type': file,
+                'type': FileFieldType,
                 'description': 'The screenshot to upload.',
             },
         },
         optional={
             'caption': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The optional caption describing the '
                                'screenshot.',
             },
@@ -200,7 +201,7 @@ class BaseScreenshotResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'caption': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The new caption for the screenshot.',
             },
         }

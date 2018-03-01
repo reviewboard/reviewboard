@@ -2,10 +2,13 @@ from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseNotModified
-from django.utils import six
 from django.utils.translation import ugettext as _
 from djblets.util.http import encode_etag, etag_if_none_match
 from djblets.webapi.errors import DOES_NOT_EXIST
+from djblets.webapi.fields import (ChoiceFieldType,
+                                   DateTimeFieldType,
+                                   StringFieldType)
+
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import Review, ReviewRequest
 from reviewboard.webapi.base import WebAPIResource
@@ -27,18 +30,18 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
 
     fields = {
         'summary': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'A short summary of the update. This should be one '
                            'of "Review request updated", "Diff updated", '
                            '"New reply" or "New review".',
         },
         'timestamp': {
-            'type': six.text_type,
-            'description': 'The timestamp of this most recent update '
-                           '(``YYYY-MM-DD HH:MM:SS`` format).',
+            'type': DateTimeFieldType,
+            'description': 'The timestamp of this most recent update.',
         },
         'type': {
-            'type': ('review-request', 'diff', 'reply', 'review'),
+            'type': ChoiceFieldType,
+            'choices': ('review-request', 'diff', 'reply', 'review'),
             'description': "The type of the last update. ``review-request`` "
                            "means the last update was an update of the "
                            "review request's information. ``diff`` means a "
@@ -47,7 +50,7 @@ class ReviewRequestLastUpdateResource(WebAPIResource):
                            "a new review was posted.",
         },
         'user': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The username for the user who made the last '
                            'update.',
         },

@@ -4,6 +4,13 @@ from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
 from django.utils import six
 from djblets.webapi.errors import DOES_NOT_EXIST, WebAPIError
+from djblets.webapi.fields import (BooleanFieldType,
+                                   ChoiceFieldType,
+                                   DateTimeFieldType,
+                                   DictFieldType,
+                                   IntFieldType,
+                                   ResourceFieldType,
+                                   StringFieldType)
 
 from reviewboard.reviews.models import BaseComment
 from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
@@ -20,49 +27,51 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
 
     fields = {
         'id': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The numeric ID of the comment.',
         },
         'extra_data': {
-            'type': dict,
+            'type': DictFieldType,
             'description': 'Extra data as part of the comment. This depends '
                            'on what is being commented on, and may be '
                            'used in conjunction with an extension.',
             'added_in': '2.0',
         },
         'issue_opened': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not a comment opens an issue.',
         },
         'issue_status': {
-            'type': tuple(BaseComment.ISSUE_STRING_TO_STATUS.keys()),
+            'type': ChoiceFieldType,
+            'choices': tuple(six.iterkeys(BaseComment.ISSUE_STRING_TO_STATUS)),
             'description': 'The status of an issue.',
         },
         'public': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not the comment is part of a public '
                            'review.',
             'added_in': '2.0',
         },
         'text': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The comment text.',
             'supports_text_types': True,
             'added_in': '2.0',
         },
         'text_type': {
-            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The mode for the comment text field.',
             'added_in': '2.0',
         },
         'timestamp': {
-            'type': six.text_type,
-            'description': 'The date and time that the comment was made '
-                           '(in YYYY-MM-DD HH:MM:SS format).',
+            'type': DateTimeFieldType,
+            'description': 'The date and time that the comment was made.',
             'added_in': '2.0',
         },
         'user': {
-            'type': 'reviewboard.webapi.resources.user.UserResource',
+            'type': ResourceFieldType,
+            'resource': 'reviewboard.webapi.resources.user.UserResource',
             'description': 'The user who made the comment.',
             'added_in': '2.0',
         },
@@ -71,7 +80,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
     # Common field definitions for create/update requests
     _COMMON_REQUIRED_CREATE_FIELDS = {
         'text': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The comment text.',
             'supports_text_types': True,
             'added_in': '2.0',
@@ -80,7 +89,8 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
 
     _COMMON_OPTIONAL_CREATE_FIELDS = {
         'force_text_type': {
-            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The text type, if any, to force for returned '
                            'text fields. The contents will be converted '
                            'to the requested type in the payload, but '
@@ -88,7 +98,8 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             'added_in': '2.0.9',
         },
         'text_type': {
-            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The content type for the comment text field. '
                            'The default is ``plain``.',
             'added_in': '2.0',
@@ -97,7 +108,8 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
 
     _COMMON_OPTIONAL_UPDATE_FIELDS = {
         'force_text_type': {
-            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The text type, if any, to force for returned '
                            'text fields. The contents will be converted '
                            'to the requested type in the payload, but '
@@ -105,13 +117,14 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             'added_in': '2.0.9',
         },
         'text': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The comment text.',
             'supports_text_types': True,
             'added_in': '2.0',
         },
         'text_type': {
-            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The new content type for the comment text field. '
                            'The default is to leave the type unchanged.',
             'added_in': '2.0',
@@ -123,7 +136,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
 
     OPTIONAL_CREATE_FIELDS = dict({
         'issue_opened': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether the comment opens an issue.',
             'added_in': '2.0',
         },
@@ -131,12 +144,13 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
 
     OPTIONAL_UPDATE_FIELDS = dict({
         'issue_opened': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not the comment opens an issue.',
             'added_in': '2.0',
         },
         'issue_status': {
-            'type': tuple(BaseComment.ISSUE_STRING_TO_STATUS.keys()),
+            'type': ChoiceFieldType,
+            'choices': tuple(six.iterkeys(BaseComment.ISSUE_STRING_TO_STATUS)),
             'description': 'The status of an open issue.',
             'added_in': '2.0',
         },
@@ -145,7 +159,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
     # Field definitions for comment reply create/update requests
     REPLY_REQUIRED_CREATE_FIELDS = dict({
         'reply_to_id': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The ID of the comment being replied to.',
         },
     }, **_COMMON_REQUIRED_CREATE_FIELDS)

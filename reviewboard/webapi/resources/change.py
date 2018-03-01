@@ -2,6 +2,11 @@ from __future__ import unicode_literals
 
 from django.utils import six
 from djblets.util.decorators import augment_method_from
+from djblets.webapi.fields import (ChoiceFieldType,
+                                   DateTimeFieldType,
+                                   DictFieldType,
+                                   IntFieldType,
+                                   StringFieldType)
 
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.fields import get_review_request_field
@@ -29,11 +34,11 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
     name = 'change'
     fields = {
         'id': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The numeric ID of the change description.',
         },
         'fields_changed': {
-            'type': dict,
+            'type': DictFieldType,
             'description': """
                 The fields that were changed. Each key is the name of a
                 changed field, and each value is a dictionary of details on
@@ -73,20 +78,20 @@ class ChangeResource(MarkdownFieldsMixin, WebAPIResource):
             """,
         },
         'text': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The description of the change written by the '
                            'submitter.',
             'supports_text_types': True,
         },
         'text_type': {
-            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The mode for the text field.',
             'added_in': '2.0',
         },
         'timestamp': {
-            'type': six.text_type,
-            'description': 'The date and time that the change was made '
-                           '(in ``YYYY-MM-DD HH:MM:SS`` format).',
+            'type': DateTimeFieldType,
+            'description': 'The date and time that the change was made.',
         },
     }
     uri_object_key = 'change_id'

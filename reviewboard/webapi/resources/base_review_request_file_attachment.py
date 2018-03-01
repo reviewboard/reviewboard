@@ -10,6 +10,7 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.fields import FileFieldType, IntFieldType, StringFieldType
 
 from reviewboard.attachments.forms import UploadFileForm
 from reviewboard.attachments.models import FileAttachment
@@ -25,12 +26,12 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
 
     fields = dict({
         'review_url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The URL to a review UI for this file.',
             'added_in': '1.7',
         },
         'url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The URL of the file, for downloading purposes. "
                            "If this is not an absolute URL, then it's "
                            "relative to the Review Board server's URL. "
@@ -39,12 +40,12 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
             'deprecated_in': '2.0',
         },
         'revision': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The revision of the file attachment.',
             'added_in': '2.5',
         },
         'attachment_history_id': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'ID of the corresponding FileAttachmentHistory.',
             'added_in': '2.5',
         },
@@ -115,18 +116,18 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
     @webapi_request_fields(
         required={
             'path': {
-                'type': file,
+                'type': FileFieldType,
                 'description': 'The file to upload.',
             },
         },
         optional={
             'caption': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The optional caption describing the '
                                'file.',
             },
             'attachment_history': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'ID of the corresponding '
                                'FileAttachmentHistory.',
                 'added_in': '2.5',
@@ -187,11 +188,11 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
     @webapi_request_fields(
         optional={
             'caption': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The new caption for the file.',
             },
             'thumbnail': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The thumbnail data for the file.',
                 'added_in': '1.7.7',
             },

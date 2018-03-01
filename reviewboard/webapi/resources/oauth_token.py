@@ -3,7 +3,6 @@
 from __future__ import unicode_literals
 
 from django.db.models.query import Q
-from django.utils import six
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
@@ -11,6 +10,7 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors)
 from djblets.webapi.oauth2_scopes import get_scope_dictionary
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA
+from djblets.webapi.fields import ListFieldType, StringFieldType
 from oauth2_provider.models import AccessToken
 
 from reviewboard.oauth.features import oauth2_service_feature
@@ -40,19 +40,22 @@ class OAuthTokenResource(WebAPIResource):
 
     fields = {
         'application': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The name of the application this token is for.',
         },
         'expires': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'When this token is set to expire.',
         },
         'scope': {
-            'type': [six.text_type],
+            'type': ListFieldType,
+            'items': {
+                'type': StringFieldType,
+            },
             'description': 'The scopes this token has access to.',
         },
         'token': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The access token.',
         },
     }
@@ -237,15 +240,15 @@ class OAuthTokenResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'add_scopes': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'A comma-separated list of scopes to add.',
             },
             'remove_scopes': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'A comma-separated list of scopes to remove.',
             },
             'scopes': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'A comma-separated list of scopes to override '
                                'the current set with.\n\n'
                                'This field cannot be provided if either '

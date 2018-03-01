@@ -12,6 +12,9 @@ from djblets.webapi.decorators import (webapi_login_required,
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED,
                                    WebAPITokenGenerationError)
+from djblets.webapi.fields import (DateTimeFieldType,
+                                   DictFieldType,
+                                   StringFieldType)
 
 from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_local_site
@@ -37,33 +40,32 @@ class APITokenResource(WebAPIResource):
 
     fields = {
         'id': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The numeric ID of the token entry.',
         },
         'token': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The token value.',
         },
         'time_added': {
-            'type': six.text_type,
-            'description': 'The date and time that the token was added '
-                           '(in ``YYYY-MM-DD HH:MM:SS`` format).',
+            'type': DateTimeFieldType,
+            'description': 'The date and time that the token was added.',
         },
         'last_updated': {
-            'type': six.text_type,
+            'type': DateTimeFieldType,
             'description': 'The date and time that the token was last '
-                           'updated (in ``YYYY-MM-DD HH:MM:SS`` format).',
+                           'updated.',
         },
         'note': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The note explaining the purpose of this token.',
         },
         'policy': {
-            'type': dict,
+            'type': DictFieldType,
             'description': 'The access policies defined for this token.',
         },
         'extra_data': {
-            'type': dict,
+            'type': DictFieldType,
             'description': 'Extra data as part of the token. '
                            'This can be set by the API or extensions.',
         },
@@ -106,12 +108,12 @@ class APITokenResource(WebAPIResource):
     @webapi_request_fields(
         required={
             'note': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The note explaining the purpose of '
                                'this token.',
             },
             'policy': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The token access policy, encoded as a '
                                'JSON string.',
             },
@@ -178,12 +180,12 @@ class APITokenResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'note': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The note explaining the purpose of '
                                'this token.',
             },
             'policy': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The token access policy, encoded as a '
                                'JSON string.',
             },

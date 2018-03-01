@@ -12,6 +12,12 @@ from djblets.webapi.decorators import (webapi_login_required,
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_ATTRIBUTE,
                                    INVALID_FORM_DATA, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
+from djblets.webapi.fields import (DateTimeFieldType,
+                                   DictFieldType,
+                                   FileFieldType,
+                                   IntFieldType,
+                                   ResourceFieldType,
+                                   StringFieldType)
 
 from reviewboard.diffviewer.errors import DiffTooBigError, EmptyDiffError
 from reviewboard.diffviewer.models import DiffSet
@@ -38,36 +44,36 @@ class DiffResource(WebAPIResource):
     name = 'diff'
     fields = {
         'id': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The numeric ID of the diff.',
         },
         'extra_data': {
-            'type': dict,
+            'type': DictFieldType,
             'description': 'Extra data as part of the diff. '
                            'This can be set by the API or extensions.',
             'added_in': '2.0',
         },
         'name': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The name of the diff, usually the filename.',
         },
         'revision': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The revision of the diff. Starts at 1 for public '
                            'diffs. Draft diffs may be at 0.',
         },
         'timestamp': {
-            'type': six.text_type,
-            'description': 'The date and time that the diff was uploaded '
-                           '(in ``YYYY-MM-DD HH:MM:SS`` format).',
+            'type': DateTimeFieldType,
+            'description': 'The date and time that the diff was uploaded.',
         },
         'repository': {
-            'type': 'reviewboard.webapi.resources.repository.'
-                    'RepositoryResource',
+            'type': ResourceFieldType,
+            'resource': 'reviewboard.webapi.resources.repository.'
+                        'RepositoryResource',
             'description': 'The repository that the diff is applied against.',
         },
         'basedir': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The base directory that will prepended to all '
                            'paths in the diff. This is needed for some types '
                            'of repositories. The directory must be between '
@@ -76,7 +82,7 @@ class DiffResource(WebAPIResource):
             'added_in': '1.7',
         },
         'base_commit_id': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The ID/revision this change is built upon. '
                            'If using a parent diff, then this is the base '
                            'for that diff. This may not be provided for all '
@@ -195,13 +201,13 @@ class DiffResource(WebAPIResource):
     @webapi_request_fields(
         required={
             'path': {
-                'type': file,
+                'type': FileFieldType,
                 'description': 'The main diff to upload.',
             },
         },
         optional={
             'basedir': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The base directory that will prepended to '
                                'all paths in the diff. This is needed for '
                                'some types of repositories. The directory '
@@ -210,11 +216,11 @@ class DiffResource(WebAPIResource):
                                'diff paths.',
             },
             'parent_diff_path': {
-                'type': file,
+                'type': FileFieldType,
                 'description': 'The optional parent diff to upload.',
             },
             'base_commit_id': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The ID/revision this change is built upon. '
                                'If using a parent diff, then this is the base '
                                'for that diff. This may not be provided for '

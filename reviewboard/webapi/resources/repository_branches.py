@@ -4,6 +4,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils import six
 from djblets.webapi.decorators import webapi_response_errors
 from djblets.webapi.errors import DOES_NOT_EXIST
+from djblets.webapi.fields import BooleanFieldType, StringFieldType
 
 from reviewboard.hostingsvcs.errors import HostingServiceError
 from reviewboard.scmtools.errors import SCMError
@@ -32,16 +33,16 @@ class RepositoryBranchesResource(WebAPIResource):
     # serialization. It's used solely for documentation.
     fields = {
         'id': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The ID of the branch. This is specific to the '
                            'type of repository.',
         },
         'name': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The name of the branch.',
         },
         'commit': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The revision identifier of the commit.\n\n'
                            'The format depends on the repository type (it may '
                            'be a number, SHA-1 hash, or some other type). '
@@ -51,7 +52,7 @@ class RepositoryBranchesResource(WebAPIResource):
                            ':ref:`webapi2.0-repository-commits-resource`.',
         },
         'default': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'If set, this branch is considered the "tip" of '
                            'the repository. It would represent "master" '
                            'for Git repositories, "trunk" for Subversion, '

@@ -5,6 +5,7 @@ from django.utils import six
 from djblets.webapi.decorators import (webapi_response_errors,
                                        webapi_request_fields)
 from djblets.webapi.errors import DOES_NOT_EXIST
+from djblets.webapi.fields import DateTimeFieldType, StringFieldType
 
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.errors import SCMError
@@ -38,28 +39,27 @@ class RepositoryCommitsResource(WebAPIResource):
     # serialization. It's used solely for documentation.
     fields = {
         'id': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The revision identifier of the commit.\n\n'
                            'The format depends on the repository type (it may '
                            'be a number, SHA-1 hash, or some other type). '
                            'This should be treated as a relatively opaque.',
         },
         'author_name': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The real name or username of the author who made '
                            'the commit.',
         },
         'date': {
-            'type': six.text_type,
-            'description': 'The timestamp of the commit. This will be in '
-                           'ISO8601 format.',
+            'type': DateTimeFieldType,
+            'description': 'The timestamp of the commit.',
         },
         'message': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The commit message, if any.',
         },
         'parent': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The revision of the parent commit. This may be '
                            'an empty string if this is the first revision in '
                            'the commit history for a repository or branch.',
@@ -73,14 +73,14 @@ class RepositoryCommitsResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'branch': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 "description": "The ID of the branch to limit the commits "
                                "to, as provided by the 'id' field of the "
                                "repository branches API.",
                 'added_in': '2.5',
             },
             'start': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'A commit ID to start listing from.',
             },
         }

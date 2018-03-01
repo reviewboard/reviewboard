@@ -1,12 +1,12 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
-from django.utils import six
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
                                        webapi_request_fields)
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
+from djblets.webapi.fields import StringFieldType
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.reviews.models import ReviewRequest
@@ -31,7 +31,7 @@ class BaseArchivedObjectResource(WebAPIResource):
     @webapi_response_errors(DOES_NOT_EXIST, NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(required={
         'object_id': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The ID of the object to hide.',
         },
     })

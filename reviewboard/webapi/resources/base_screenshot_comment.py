@@ -2,8 +2,10 @@ from __future__ import unicode_literals
 
 from django.db.models import Q
 from django.template.defaultfilters import timesince
-from django.utils import six
 from djblets.util.decorators import augment_method_from
+from djblets.webapi.fields import (IntFieldType,
+                                   ResourceFieldType,
+                                   StringFieldType)
 
 from reviewboard.reviews.models import ScreenshotComment
 from reviewboard.webapi.base import WebAPIResource
@@ -19,32 +21,33 @@ class BaseScreenshotCommentResource(BaseCommentResource):
 
     fields = dict({
         'screenshot': {
-            'type': 'reviewboard.webapi.resources.screenshot.'
-                    'ScreenshotResource',
+            'type': ResourceFieldType,
+            'resource': 'reviewboard.webapi.resources.screenshot.'
+                        'ScreenshotResource',
             'description': 'The screenshot the comment was made on.',
         },
         'x': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The X location of the comment region on the '
                            'screenshot.',
         },
         'y': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The Y location of the comment region on the '
                            'screenshot.',
         },
         'w': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The width of the comment region on the '
                            'screenshot.',
         },
         'h': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The height of the comment region on the '
                            'screenshot.',
         },
         'thumbnail_url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The URL to an image showing what was commented '
                            'on.',
             'added_in': '1.7.10',

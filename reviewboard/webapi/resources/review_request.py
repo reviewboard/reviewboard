@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 import logging
 
-import dateutil.parser
 from django.contrib import auth
 from django.contrib.auth.models import User
 from django.core.exceptions import (PermissionDenied,
@@ -10,16 +9,22 @@ from django.core.exceptions import (PermissionDenied,
                                     ValidationError)
 from django.db.models import Q
 from django.utils import six
-from django.utils.timezone import get_current_timezone, is_aware, make_aware
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
                                        webapi_request_fields)
 from djblets.webapi.errors import (DOES_NOT_EXIST,
-                                   INVALID_FORM_DATA,
                                    NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
-from pytz.exceptions import AmbiguousTimeError
+from djblets.webapi.fields import (BooleanFieldType,
+                                   ChoiceFieldType,
+                                   DateTimeFieldType,
+                                   DictFieldType,
+                                   IntFieldType,
+                                   ListFieldType,
+                                   ResourceFieldType,
+                                   ResourceListFieldType,
+                                   StringFieldType)
 
 from reviewboard.admin.server import build_server_url
 from reviewboard.diffviewer.errors import (DiffTooBigError,
@@ -86,11 +91,11 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
 
     fields = {
         'id': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The numeric ID of the review request.',
         },
         'approved': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether the review request has been approved '
                            'by reviewers.\n'
                            '\n'
@@ -101,83 +106,88 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'added_in': '2.0',
         },
         'approval_failure': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The reason why the review request was not '
                            'approved. This will be ``null`` if approved.',
             'added_in': '2.0',
         },
         'blocks': {
-            'type': ['reviewboard.webapi.resources.review_request.'
-                     'ReviewRequestResource'],
+            'type': ResourceListFieldType,
+            'resource': 'reviewboard.webapi.resources.review_request.'
+                        'ReviewRequestResource',
             'description': 'The list of review requests that this '
                            'review request is blocking.',
             'added_in': '1.7.9',
         },
         'close_description': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The text describing the closing of the review '
                            'request.',
             'added_in': '2.0.12',
             'supports_text_types': True,
         },
         'close_description_text_type': {
-            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
                            '``close_description`` field.',
             'added_in': '2.0.12',
         },
         'depends_on': {
-            'type': ['reviewboard.webapi.resources.review_request.'
-                     'ReviewRequestResource'],
+            'type': ResourceListFieldType,
+            'resource': 'reviewboard.webapi.resources.review_request.'
+                        'ReviewRequestResource',
             'description': 'The list of review requests that this '
                            'review request depends on.',
             'added_in': '1.7.9',
         },
         'extra_data': {
-            'type': dict,
+            'type': DictFieldType,
             'description': 'Extra data as part of the review request. '
                            'This can be set by the API or extensions.',
             'added_in': '2.0',
         },
         'issue_dropped_count': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The number of dropped issues on this '
                            'review request',
             'added_in': '2.0',
         },
         'issue_open_count': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The number of open issues on this review request',
             'added_in': '2.0',
         },
         'issue_resolved_count': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The number of resolved issues on this '
                            'review request',
             'added_in': '2.0',
         },
         'issue_verifying_count': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The number of issues waiting for verification to '
                            'resolve or drop on this review request',
             'added_in': '3.0.3',
         },
         'submitter': {
-            'type': UserResource,
+            'type': ResourceFieldType,
+            'resource': UserResource,
             'description': 'The user who submitted the review request.',
         },
         'time_added': {
-            'type': six.text_type,
+            'type': DateTimeFieldType,
             'description': 'The date and time that the review request was '
-                           'added (in ``YYYY-MM-DD HH:MM:SS`` format).',
+                           'added.',
         },
         'last_updated': {
-            'type': six.text_type,
+            'type': DateTimeFieldType,
             'description': 'The date and time that the review request was '
-                           'last updated (in ``YYYY-MM-DD HH:MM:SS`` format).',
+                           'last updated.',
         },
         'text_type': {
-            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'Formerly responsible for indicating the text '
                            'type for text fields. Replaced by '
                            '``close_description_text_type``, '
@@ -187,16 +197,17 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'deprecated_in': '2.0.12',
         },
         'status': {
-            'type': ('discarded', 'pending', 'submitted'),
+            'type': ChoiceFieldType,
+            'choices': ('discarded', 'pending', 'submitted'),
             'description': 'The current status of the review request.',
         },
         'public': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not the review request is currently '
                            'visible to other users.',
         },
         'changenum': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The change number that the review request '
                            'represents. These are server-side repository-'
                            'specific change numbers, and are not supported '
@@ -208,72 +219,80 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'deprecated_in': '2.0',
         },
         'commit_id': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The commit that the review request represents. '
                            'This obsoletes the ``changenum`` field.',
             'added_in': '2.0',
         },
         'repository': {
-            'type': RepositoryResource,
+            'type': ResourceFieldType,
+            'resource': RepositoryResource,
             'description': "The repository that the review request's code "
                            "is stored on.",
         },
         'ship_it_count': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The number of Ship Its given to this '
                            'review request.',
             'added_in': '2.0',
         },
         'summary': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The review request's brief summary.",
         },
         'description': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The review request's description.",
             'supports_text_types': True,
         },
         'description_text_type': {
-            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
                            '``description`` field.',
             'added_in': '2.0.12',
         },
         'testing_done': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The information on the testing that was done '
                            'for the change.',
             'supports_text_types': True,
         },
         'testing_done_text_type': {
-            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
                            '``testing_done`` field.',
             'added_in': '2.0.12',
         },
         'bugs_closed': {
-            'type': [six.text_type],
+            'type': ListFieldType,
+            'items': {
+                'type': StringFieldType,
+            },
             'description': 'The list of bugs closed or referenced by this '
                            'change.',
         },
         'branch': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The branch that the code was changed on or that '
                            'the code will be committed to. This is a '
                            'free-form field that can store any text.',
         },
         'target_groups': {
-            'type': [ReviewGroupResource],
+            'type': ResourceListFieldType,
+            'resource': ReviewGroupResource,
             'description': 'The list of review groups who were requested '
                            'to review this change.',
         },
         'target_people': {
-            'type': [UserResource],
+            'type': ResourceListFieldType,
+            'resource': UserResource,
             'description': 'The list of users who were requested to review '
                            'this change.',
         },
         'url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The URL to the review request's page on the site. "
                            "This is deprecated and will be removed in a "
                            "future version.",
@@ -281,7 +300,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             'deprecated_in': '2.0',
         },
         'absolute_url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The absolute URL to the review request's page on "
                            "the site.",
             'added_in': '2.0',
@@ -590,7 +609,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     @webapi_request_fields(
         optional={
             'changenum': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The optional change number to look up for the '
                                'review request details. This only works with '
                                'repositories that support server-side '
@@ -601,7 +620,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'deprecated_in': '2.0',
             },
             'commit_id': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The optional commit to create the review '
                                'request for. This should be used in place of '
                                'the ``changenum`` field.\n'
@@ -612,7 +631,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'added_in': '2.0',
             },
             'create_from_commit_id': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'If true, and if ``commit_id`` is provided, '
                                'the review request information and (when '
                                'supported) the idff will be based on the '
@@ -620,7 +639,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'added_in': '2.0',
             },
             'force_text_type': {
-                'type': MarkdownFieldsMixin.TEXT_TYPES,
+                'type': ChoiceFieldType,
+                'choices': MarkdownFieldsMixin.TEXT_TYPES,
                 'description': 'The text type, if any, to force for returned '
                                'text fields. The contents will be converted '
                                'to the requested type in the payload, but '
@@ -628,12 +648,12 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'added_in': '2.0.9',
             },
             'repository': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The path or ID of the repository that the '
                                'review request is for.',
             },
             'submit_as': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The optional user to submit the review '
                                'request as. This requires that the actual '
                                'logged in user is either a superuser or has '
@@ -788,13 +808,14 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     @webapi_request_fields(
         optional={
             'status': {
-                'type': ('discarded', 'pending', 'submitted'),
+                'type': ChoiceFieldType,
+                'choices': ('discarded', 'pending', 'submitted'),
                 'description': 'The status of the review request. This can '
                                'be changed to close or reopen the review '
                                'request',
             },
             'changenum': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The optional change number to set or update.\n'
                                '\n'
                                'This can be used to re-associate with a new '
@@ -812,7 +833,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'deprecated_in': '2.0',
             },
             'close_description': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The description of the update. Should only be '
                                'used if the review request have been '
                                'submitted or discarded.\n'
@@ -822,14 +843,15 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'supports_text_types': True,
             },
             'close_description_text_type': {
-                'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+                'type': ChoiceFieldType,
+                'choices': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
                 'description': 'The text type for the close description '
                                'of the update field.',
                 'added_in': '2.0',
                 'deprecated_in': '2.0.12',
             },
             'description': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The description of the update. Should only be '
                                'used if the review request have been '
                                'submitted or discarded.\n'
@@ -841,7 +863,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'supports_text_types': True,
             },
             'force_text_type': {
-                'type': MarkdownFieldsMixin.TEXT_TYPES,
+                'type': ChoiceFieldType,
+                'choices': MarkdownFieldsMixin.TEXT_TYPES,
                 'description': 'The text type, if any, to force for returned '
                                'text fields. The contents will be converted '
                                'to the requested type in the payload, but '
@@ -849,7 +872,8 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'added_in': '2.0.9',
             },
             'text_type': {
-                'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+                'type': ChoiceFieldType,
+                'choices': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
                 'description': 'The text type for the close description '
                                'of the update field.\n'
                                '\n'
@@ -1014,7 +1038,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
     @webapi_request_fields(
         optional={
             'changenum': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The change number the review requests must '
                                'have set. This will only return one review '
                                'request per repository, and only works for '
@@ -1023,7 +1047,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                'the ``commit_id`` field.',
             },
             'commit-id': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The commit that review requests must have '
                                'set. This will only return one review request '
                                'per repository.\n'
@@ -1032,21 +1056,21 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'added_in': '2.0',
             },
             'time-added-to': {
-                'type': six.text_type,
+                'type': DateTimeFieldType,
                 'description': 'The date/time that all review requests must '
                                'be added before. This is compared against the '
                                'review request\'s ``time_added`` field. This '
                                'must be a valid :term:`date/time format`.',
             },
             'time-added-from': {
-                'type': six.text_type,
+                'type': DateTimeFieldType,
                 'description': 'The earliest date/time the review request '
                                'could be added. This is compared against the '
                                'review request\'s ``time_added`` field. This '
                                'must be a valid :term:`date/time format`.',
             },
             'last-updated-to': {
-                'type': six.text_type,
+                'type': DateTimeFieldType,
                 'description': 'The date/time that all review requests must '
                                'be last updated before. This is compared '
                                'against the review request\'s '
@@ -1054,7 +1078,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                ':term:`date/time format`.',
             },
             'last-updated-from': {
-                'type': six.text_type,
+                'type': DateTimeFieldType,
                 'description': 'The earliest date/time the review request '
                                'could be last updated. This is compared '
                                'against the review request\'s '
@@ -1062,17 +1086,17 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                ':term:`date/time format`.',
             },
             'from-user': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The username that the review requests must '
                                'be owned by.',
             },
             'repository': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The ID of the repository that the review '
                                'requests must be on.',
             },
             'show-all-unpublished': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'If set, and if the user is an admin or has '
                                'the "reviews.can_submit_as_another_user" '
                                'permission, unpublished review requests '
@@ -1080,97 +1104,97 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'added_in': '2.0.8',
             },
             'issue-dropped-count': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have exactly the '
                                'provided number of dropped issues.',
                 'added_in': '2.0',
             },
             'issue-dropped-count-lt': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have less than the '
                                'provided number of dropped issues.',
                 'added_in': '2.0',
             },
             'issue-dropped-count-lte': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have at most the '
                                'provided number of dropped issues.',
                 'added_in': '2.0',
             },
             'issue-dropped-count-gt': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have more than the '
                                'provided number of dropped issues.',
                 'added_in': '2.0',
             },
             'issue-dropped-count-gte': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have at least the '
                                'provided number of dropped issues.',
                 'added_in': '2.0',
             },
             'issue-open-count': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have exactly the '
                                'provided number of open issues.',
                 'added_in': '2.0',
             },
             'issue-open-count-lt': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have less than the '
                                'provided number of open issues.',
                 'added_in': '2.0',
             },
             'issue-open-count-lte': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have at most the '
                                'provided number of open issues.',
                 'added_in': '2.0',
             },
             'issue-open-count-gt': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have more than the '
                                'provided number of open issues.',
                 'added_in': '2.0',
             },
             'issue-open-count-gte': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have at least the '
                                'provided number of open issues.',
                 'added_in': '2.0',
             },
             'issue-resolved-count': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have exactly the '
                                'provided number of resolved issues.',
                 'added_in': '2.0',
             },
             'issue-resolved-count-lt': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have less than the '
                                'provided number of resolved issues.',
                 'added_in': '2.0',
             },
             'issue-resolved-count-lte': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have at most the '
                                'provided number of resolved issues.',
                 'added_in': '2.0',
             },
             'issue-resolved-count-gt': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have more than the '
                                'provided number of resolved issues.',
                 'added_in': '2.0',
             },
             'issue-resolved-count-gte': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have at least the '
                                'provided number of resolved issues.',
                 'added_in': '2.0',
             },
             'ship-it': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'The review request must have at least one '
                                'review with Ship It set, if this is 1. '
                                'Otherwise, if 0, it must not have any marked '
@@ -1179,60 +1203,61 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'deprecated_in': '2.0',
             },
             'ship-it-count': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have exactly the '
                                'provided number of Ship Its.',
                 'added_in': '2.0',
             },
             'ship-it-count-lt': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have less than the '
                                'provided number of Ship Its.',
                 'added_in': '2.0',
             },
             'ship-it-count-lte': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have at most the '
                                'provided number of Ship Its.',
                 'added_in': '2.0',
             },
             'ship-it-count-gt': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have more than the '
                                'provided number of Ship Its.',
                 'added_in': '2.0',
             },
             'ship-it-count-gte': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The review request must have at least the '
                                'provided number of Ship Its.',
                 'added_in': '2.0',
             },
             'status': {
-                'type': ('all', 'discarded', 'pending', 'submitted'),
+                'type': ChoiceFieldType,
+                'choices': ('all', 'discarded', 'pending', 'submitted'),
                 'description': 'The status of the review requests.',
             },
             'to-groups': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'A comma-separated list of review group names '
                                'that the review requests must have in the '
                                'reviewer list.',
             },
             'to-user-groups': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'A comma-separated list of usernames who are '
                                'in groups that the review requests must have '
                                'in the reviewer list.',
             },
             'to-users': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'A comma-separated list of usernames that the '
                                'review requests must either have in the '
                                'reviewer list specifically or by way of '
                                'a group.',
             },
             'to-users-directly': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'A comma-separated list of usernames that the '
                                'review requests must have in the reviewer '
                                'list specifically.',
@@ -1240,6 +1265,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         },
         allow_unknown=True
     )
+    @augment_method_from(WebAPIResource)
     def get_list(self, request, *args, **kwargs):
         """Returns all review requests that the user has read access to.
 
@@ -1249,37 +1275,7 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
         The resulting list can be filtered down through the many
         request parameters.
         """
-        invalid_fields = {}
-        current_tz = get_current_timezone()
-
-        for field in ('time-added-from', 'time-added-to', 'last-updated-from',
-                      'last-updated-to'):
-            if field in request.GET:
-                try:
-                    date = dateutil.parser.parse(request.GET[field])
-
-                    if not is_aware(date):
-                        date = make_aware(date, current_tz)
-
-                    kwargs[field] = date
-                except AmbiguousTimeError:
-                    invalid_fields[field] = [
-                        'The given timestamp string was ambiguous because of '
-                        'daylight savings time changes. You may specify a UTC '
-                        'offset instead.'
-                    ]
-                except ValueError:
-                    invalid_fields[field] = [
-                        'The given timestamp could not be parsed.'
-                    ]
-
-        if invalid_fields:
-            return INVALID_FORM_DATA, {
-                'fields': invalid_fields,
-            }
-        else:
-            return super(ReviewRequestResource, self).get_list(
-                request, *args, **kwargs)
+        pass
 
     @augment_method_from(WebAPIResource)
     def get(self, *args, **kwargs):

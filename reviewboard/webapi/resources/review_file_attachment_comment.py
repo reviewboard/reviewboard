@@ -7,6 +7,7 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.fields import IntFieldType
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.webapi.decorators import webapi_check_local_site
@@ -40,14 +41,14 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
     @webapi_request_fields(
         required=dict({
             'file_attachment_id': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The ID of the file attachment being '
                                'commented on.',
             },
         }, **BaseFileAttachmentCommentResource.REQUIRED_CREATE_FIELDS),
         optional=dict({
             'diff_against_file_attachment_id': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The ID of the file attachment that '
                                '``file_attachment_id`` is diffed against. The '
                                'comment applies to the diff between these two '

@@ -15,6 +15,11 @@ from django.template.defaultfilters import title
 from django.utils import six
 from djblets.features.testing import override_feature_checks
 from djblets.util.http import is_mimetype_a
+from djblets.webapi.fields import (BaseAPIFieldType,
+                                   ChoiceFieldType,
+                                   DateTimeFieldType,
+                                   ResourceFieldType,
+                                   ResourceListFieldType)
 from djblets.webapi.resources import get_resource_from_class, WebAPIResource
 from djblets.webapi.responses import WebAPIResponseError
 from docutils import nodes
@@ -703,6 +708,7 @@ class ResourceFieldListDirective(Directive):
                 options = {
                     'name': field,
                     'type': info['type'],
+                    'field-info': info,
                 }
 
                 if info.get('supports_text_types'):
@@ -754,6 +760,7 @@ class ResourceFieldDirective(Directive):
     option_spec = {
         'name': directives.unchanged_required,
         'type': directives.unchanged_required,
+        'field-info': directives.unchanged,
         'show-required': directives.flag,
         'supports-text-types': directives.flag,
         'added-in': directives.unchanged,
@@ -802,7 +809,9 @@ class ResourceFieldDirective(Directive):
         if 'supports-text-types' in self.options:
             type_node += get_ref_to_doc('webapi2.0-text-fields', 'Rich Text')
         else:
-            type_node += self._get_type_name(self.options['type'])
+            type_node += self._get_type_name(
+                self.options['type'],
+                self.options.get('field-info', {}))
 
         # Description/required/versioning information
         description_node = nodes.inline()
@@ -855,7 +864,7 @@ class ResourceFieldDirective(Directive):
 
         return [row]
 
-    def _get_type_name(self, field_type, nested=False):
+    def _get_type_name(self, field_type, field_info, nested=False):
         """Return the displayed name for a given type.
 
         This will attempt to take a type (either a string representation or
@@ -869,6 +878,9 @@ class ResourceFieldDirective(Directive):
                 The type of field (as a Python structure), a string
                 representing a Python structure, or the class path to a
                 resource.
+
+            field_info (dict):
+                The metadata on the field.
 
             nested (bool, optional):
                 Whether this call is nested within another call to this
@@ -886,6 +898,40 @@ class ResourceFieldDirective(Directive):
             ValueError:
                 The type is unsupported.
         """
+        if (inspect.isclass(field_type) and
+            issubclass(field_type, BaseAPIFieldType)):
+            field_type = field_type(field_info)
+
+            if isinstance(field_type, ResourceFieldType):
+                result = []
+
+                if isinstance(field_type, ResourceListFieldType):
+                    result.append(nodes.inline(text='List of '))
+
+                result.append(get_ref_to_resource(
+                    self.state.document.settings.env.app,
+                    field_type.resource,
+                    False))
+
+                return result
+            elif isinstance(field_type, ChoiceFieldType):
+                value_nodes = []
+
+                for value in field_type.choices:
+                    if value_nodes:
+                        value_nodes.append(nodes.inline(text=', '))
+
+                    value_nodes.append(nodes.literal(text=value))
+
+                return [nodes.inline(text='One of ')] + value_nodes
+            elif isinstance(field_type, DateTimeFieldType):
+                return parse_text(self,
+                                  ':term:`%s <ISO8601 format>`' % field_type)
+            else:
+                return [
+                    nodes.inline(text=six.text_type(field_type)),
+                ]
+
         if isinstance(field_type, basestring) and field_type is not str:
             # First see if this is a string name for a type. This would be
             # coming from a docstring.
@@ -917,7 +963,7 @@ class ResourceFieldDirective(Directive):
                 if not first:
                     result.append(nodes.inline(text=', '))
 
-                result += self._get_type_name(item, nested=True)
+                result += self._get_type_name(item, field_info, nested=True)
 
                 first = False
 
@@ -935,10 +981,6 @@ class ResourceFieldDirective(Directive):
                 value_nodes.append(nodes.literal(text=value))
 
             return [nodes.inline(text='One of ')] + value_nodes
-        elif (inspect.isclass(field_type) and
-              issubclass(field_type, WebAPIResource)):
-            return [get_ref_to_resource(self.state.document.settings.env.app,
-                                        field_type, False)]
         elif field_type in self.type_mapping:
             return [nodes.inline(text=self.type_mapping[field_type])]
         else:

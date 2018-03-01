@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
-from django.utils import six
 from django.utils.six.moves.urllib.parse import quote as urllib_quote
 from djblets.util.decorators import augment_method_from
 from djblets.util.http import get_http_requested_mimetype, set_last_modified
@@ -11,6 +10,10 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors)
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
+from djblets.webapi.fields import (DictFieldType,
+                                   IntFieldType,
+                                   ResourceFieldType,
+                                   StringFieldType)
 from djblets.webapi.responses import WebAPIResponse
 
 from reviewboard.attachments.models import FileAttachment
@@ -39,52 +42,54 @@ class FileDiffResource(WebAPIResource):
     allowed_methods = ('GET', 'PUT')
     fields = {
         'id': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The numeric ID of the file diff.',
         },
         'extra_data': {
-            'type': dict,
+            'type': DictFieldType,
             'description': 'Extra data as part of the diff. '
                            'This can be set by the API or extensions.',
             'added_in': '2.0',
         },
         'source_file': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The original name of the modified file in the '
                            'diff.',
         },
         'dest_file': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The new name of the patched file. This may be '
                            'the same as the existing file.',
         },
         'source_revision': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The revision of the file being modified. This '
                            'is a valid revision in the repository.',
         },
         'dest_detail': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'Additional information of the destination file. '
                            'This is parsed from the diff, but is usually '
                            'not used for anything.',
         },
         'source_attachment': {
-            'type': DiffFileAttachmentResource,
+            'type': ResourceFieldType,
+            'resource': DiffFileAttachmentResource,
             'description': "The file attachment for the contents of the "
                            "original file for this file diff, if representing "
                            "a binary file.",
             'added_in': '2.0',
         },
         'dest_attachment': {
-            'type': DiffFileAttachmentResource,
+            'type': ResourceFieldType,
+            'resource': DiffFileAttachmentResource,
             'description': "The file attachment for the contents of the "
                            "patched file for this file diff, if representing "
                            "a binary file.",
             'added_in': '2.0',
         },
         'status': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The status of the file. This is one of copied, '
                            'deleted, modified, moved, or unknown.',
             'added_in': '2.5.11',

@@ -16,6 +16,7 @@ from djblets.webapi.decorators import (SPECIAL_PARAMS,
                                        webapi_login_required,
                                        webapi_request_fields)
 from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED
+from djblets.webapi.fields import BooleanFieldType
 from djblets.webapi.resources.base import \
     WebAPIResource as DjbletsWebAPIResource
 from djblets.webapi.resources.mixins.api_tokens import ResourceAPITokenMixin
@@ -178,7 +179,7 @@ class WebAPIResource(RBResourceMixin, DjbletsWebAPIResource):
     @webapi_request_fields(
         optional=dict({
             'counts-only': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'If specified, a single ``count`` field is '
                                'returned with the number of results, instead '
                                'of the results themselves.',

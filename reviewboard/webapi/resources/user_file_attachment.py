@@ -1,7 +1,6 @@
 from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields,
@@ -9,6 +8,7 @@ from djblets.webapi.decorators import (webapi_login_required,
 from djblets.webapi.errors import (DOES_NOT_EXIST, DUPLICATE_ITEM,
                                    INVALID_FORM_DATA, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
+from djblets.webapi.fields import FileFieldType, StringFieldType
 
 from reviewboard.admin.server import build_server_url
 from reviewboard.attachments.forms import UploadUserFileForm
@@ -105,12 +105,12 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
     @webapi_request_fields(
         optional={
             'caption': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The optional caption describing the '
                                'file.',
             },
             'path': {
-                'type': file,
+                'type': FileFieldType,
                 'description': 'The file to upload.',
             },
         },
@@ -167,12 +167,12 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
     @webapi_request_fields(
         optional={
             'caption': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The optional caption describing the '
                                'file.',
             },
             'path': {
-                'type': file,
+                'type': FileFieldType,
                 'description': 'The file to upload.',
             },
         },

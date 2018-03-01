@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
-from django.utils import six
 from djblets.db.query import LocalDataQuerySet
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import webapi_request_fields
+from djblets.webapi.fields import IntFieldType, StringFieldType
 from djblets.webapi.responses import WebAPIResponsePaginated
 
 from reviewboard.hostingsvcs.repository import RemoteRepository
@@ -72,32 +72,32 @@ class RemoteRepositoryResource(WebAPIResource):
 
     fields = {
         'id': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The unique ID for this repository on the '
                            'hosting service.',
         },
         'name': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The name of the repository.',
         },
         'owner': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The owner of the repository, which may be a user '
                            'account or an organization, depending on the '
                            'service.',
         },
         'scm_type': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The type of repository, mapping to registered '
                            'SCMTools on Review Board.',
         },
         'path': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The repository path as recommended by the hosting '
                            'service.',
         },
         'mirror_path': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'A secondary path that can be used to reach the '
                            'repository.',
         },
@@ -160,26 +160,26 @@ class RemoteRepositoryResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'owner': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The owner (user account or organization) '
                                'to look up repositories for. Defaults to '
                                'the owner of the hosting service account.',
             },
             'owner-type': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'Indicates what sort of account the owner '
                                'represents. This may be required by some '
                                'services, and the values are dependent on '
                                'that service.',
             },
             'filter-type': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'Filters the list of results. Allowed values '
                                'are dependent on the hosting service. '
                                'Unexpected values will be ignored.',
             },
             'start': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The 0-based index of the first page of '
                                'results to fetch.',
             },

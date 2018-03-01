@@ -4,6 +4,7 @@ from django.http import Http404
 from djblets.webapi.decorators import (webapi_response_errors,
                                        webapi_request_fields)
 from djblets.webapi.errors import DOES_NOT_EXIST
+from djblets.webapi.fields import IntFieldType
 
 from reviewboard.reviews.views import ReviewsDiffViewerView
 from reviewboard.webapi.base import WebAPIResource
@@ -39,18 +40,18 @@ class DiffContextResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'revision': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'Which revision of the diff to show.',
             },
             'interdiff-revision': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'A tip revision for showing interdiffs. If '
                                'this is provided, the ``revision`` field will '
                                'be the base diff.',
                 'added_in': '2.0.7',
             },
             'page': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The page number for paginated diffs.',
             },
         },

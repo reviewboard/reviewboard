@@ -1,8 +1,10 @@
 from __future__ import unicode_literals
 
 from django.db.models.query import Q
-from django.utils import six
 from djblets.webapi.decorators import webapi_request_fields
+from djblets.webapi.fields import (BooleanFieldType,
+                                   IntFieldType,
+                                   StringFieldType)
 from djblets.webapi.resources.user import UserResource as DjbletsUserResource
 
 from reviewboard.reviews.models import Group, ReviewRequest
@@ -48,26 +50,26 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
     @webapi_request_fields(
         optional={
             'q': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The text to search for.',
             },
             'displayname': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'This field is deprecated and ignored. It '
                                'will be removed in a future release of '
                                'Review Board.',
             },
             'fullname': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'Whether or not to include users whose full '
                                'name includes the search text.',
             },
             'id': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'A specific review request ID to search for.',
             },
             'max_results': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The maximum number of results to return '
                                'for each type of matching object. By '
                                'default, this is 25. There is a hard limit '

@@ -2,6 +2,7 @@
 
 from __future__ import print_function, unicode_literals
 
+import inspect
 import os
 import re
 import sys
@@ -17,6 +18,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
 from django.utils import six
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
+from djblets.webapi.fields import BaseAPIFieldType
 from reviewboard.webapi.resources import resources
 
 # We have to fetch this first in order to build the tree, before accessing
@@ -65,6 +67,9 @@ class ResourceLinter(Linter):
 
         if not self.has_docs(self.resource):
             self.error('Missing a class docstring')
+
+        self.lint_fields(self.resource.fields, '%s.fields' %
+                         self.resource.__name__)
 
         # Check that the HTTP method handlers contain everything we need.
         if not self.resource.singleton:
@@ -171,6 +176,46 @@ class ResourceLinter(Linter):
                 self.warning("'%s' method missing NOT_LOGGED_IN in "
                              "@webapi_response_errors"
                              % func_name)
+
+        where = "'%s' method" % func_name
+
+        if hasattr(func, 'required_fields'):
+            self.lint_fields(func.required_fields, where)
+
+        if hasattr(func, 'optional_fields'):
+            self.lint_fields(func.optional_fields, where)
+
+    def lint_fields(self, fields, where):
+        """Check that a list of fields can be introspected properly.
+
+        Args:
+            fields (list of dict):
+                The list of field information dictionaries.
+
+            where (unicode):
+                A string indicating where this list of fields lives,
+                for use in error messages.
+        """
+        for field_name, field_info in six.iteritems(fields):
+            try:
+                field_type = field_info['type']
+            except KeyError:
+                self.error("Missing 'type' field for field '%s' on %s"
+                           % (field_name, where))
+
+            if (inspect.isclass(field_type) and
+                issubclass(field_type, BaseAPIFieldType)):
+                # Make sure the class can be instantiated.
+                try:
+                    field_type(field_info)
+                except Exception as e:
+                    self.critical("Error instantiating field type %r for "
+                                  "field '%s' on %s: %s"
+                                  % (field_type, field_name, where, e))
+            else:
+                self.warning("Field type %r for field '%s' on %s needs to "
+                             "be updated to a modern field type"
+                             % (field_type, field_name, where))
 
     def build_log_text(self, text):
         return '%s: %s' % (self.resource.__name__, text)
