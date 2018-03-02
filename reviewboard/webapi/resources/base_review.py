@@ -9,6 +9,13 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields)
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
+from djblets.webapi.fields import (BooleanFieldType,
+                                   ChoiceFieldType,
+                                   DateTimeFieldType,
+                                   DictFieldType,
+                                   IntFieldType,
+                                   ResourceFieldType,
+                                   StringFieldType)
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.reviews.errors import PublishError
@@ -29,55 +36,58 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
     model = Review
     fields = {
         'absolute_url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The absolute URL to the review request's page on "
                            "the site.",
             'added_in': '3.0',
         },
         'body_bottom': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The review content below the comments.',
             'supports_text_types': True,
         },
         'body_bottom_text_type': {
-            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
                            '``body_bottom`` field.',
             'added_in': '2.0.12',
         },
         'body_top': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The review content above the comments.',
             'supports_text_types': True,
         },
         'body_top_text_type': {
-            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
                            '``body_top`` field.',
             'added_in': '2.0.12',
         },
         'extra_data': {
-            'type': dict,
+            'type': DictFieldType,
             'description': 'Extra data as part of the review. '
                            'This can be set by the API or extensions.',
             'added_in': '2.0',
         },
         'id': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The numeric ID of the review.',
         },
         'public': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not the review is currently '
                            'visible to other users.',
         },
         'ship_it': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not the review has been marked '
                            '"Ship It!"',
         },
         'text_type': {
-            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'Formerly responsible for indicating the text '
                            'type for text fields. Replaced by '
                            '``body_top_text_type`` and '
@@ -86,12 +96,12 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'deprecated_in': '2.0.12',
         },
         'timestamp': {
-            'type': six.text_type,
-            'description': 'The date and time that the review was posted '
-                           '(in ``YYYY-MM-DD HH:MM:SS`` format).',
+            'type': DateTimeFieldType,
+            'description': 'The date and time that the review was posted.',
         },
         'user': {
-            'type': UserResource,
+            'type': ResourceFieldType,
+            'resource': UserResource,
             'description': 'The user who wrote the review.',
         },
     }
@@ -100,33 +110,36 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
 
     CREATE_UPDATE_OPTIONAL_FIELDS = {
         'ship_it': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not to mark the review "Ship It!"',
         },
         'body_top': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The review content above the comments.',
             'supports_text_types': True,
         },
         'body_top_text_type': {
-            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The text type used for the ``body_top`` '
                            'field.',
             'added_in': '2.0.12',
         },
         'body_bottom': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The review content below the comments.',
             'supports_text_types': True,
         },
         'body_bottom_text_type': {
-            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The text type used for the ``body_bottom`` '
                            'field.',
             'added_in': '2.0.12',
         },
         'force_text_type': {
-            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The text type, if any, to force for returned '
                            'text fields. The contents will be converted '
                            'to the requested type in the payload, but '
@@ -134,13 +147,14 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'added_in': '2.0.9',
         },
         'public': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not to make the review public. '
                            'If a review is public, it cannot be made '
                            'private again.',
         },
         'text_type': {
-            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The mode for the ``body_top`` and ``body_bottom`` '
                            'text fields.\n'
                            '\n'
@@ -151,7 +165,7 @@ class BaseReviewResource(MarkdownFieldsMixin, WebAPIResource):
             'deprecated_in': '2.0.12',
         },
         'publish_to_owner_only': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'If true, the review will only send an e-mail '
                            'to the owner of the review request.',
             'added_in': '3.0',

@@ -7,6 +7,7 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields)
 from djblets.webapi.errors import (INVALID_FORM_DATA, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
+from djblets.webapi.fields import IntFieldType, StringFieldType
 
 from reviewboard.hostingsvcs.errors import AuthorizationError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -37,15 +38,15 @@ class HostingServiceAccountResource(WebAPIResource):
     model = HostingServiceAccount
     fields = {
         'id': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The numeric ID of the hosting service account.',
         },
         'username': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The username of the account.',
         },
         'service': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The ID of the service this account is on.',
         },
     }
@@ -98,12 +99,12 @@ class HostingServiceAccountResource(WebAPIResource):
     @webapi_check_local_site
     @webapi_request_fields(optional={
         'username': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'Filter accounts by username.',
             'added_in': '2.5',
         },
         'service': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'Filter accounts by the hosting service ID.',
             'added_in': '2.5',
         },
@@ -139,24 +140,24 @@ class HostingServiceAccountResource(WebAPIResource):
     @webapi_request_fields(
         required={
             'username': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The username on the account.',
             },
             'service_id': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The registered ID of the service for the '
                                'account.',
             },
         },
         optional={
             'hosting_url': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The hosting URL on the account, if the '
                                'hosting service is self-hosted.',
                 'added_in': '1.7.8',
             },
             'password': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The password on the account, if the hosting '
                                'service needs it.',
             },

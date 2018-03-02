@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
-from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields,
@@ -11,6 +10,11 @@ from djblets.webapi.errors import (DOES_NOT_EXIST,
                                    INVALID_FORM_DATA,
                                    NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
+from djblets.webapi.fields import (ChoiceFieldType,
+                                   DictFieldType,
+                                   IntFieldType,
+                                   ResourceFieldType,
+                                   StringFieldType)
 
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.features import status_updates_feature
@@ -42,7 +46,8 @@ class StatusUpdateResource(WebAPIResource):
     name = 'status_update'
     fields = {
         'change': {
-            'type': 'reviewboard.webapi.resources.change.ChangeResource',
+            'type': ResourceFieldType,
+            'resource': 'reviewboard.webapi.resources.change.ChangeResource',
             'description': 'The change to a review request which this status '
                            'update applies to (for example, the change '
                            'adding a diff that was built by CI). If this is '
@@ -50,49 +55,51 @@ class StatusUpdateResource(WebAPIResource):
                            'request as initially published.',
         },
         'description': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'A user-visible description of the status update.',
         },
         'extra_data': {
-            'type': dict,
+            'type': DictFieldType,
             'description': 'Extra data as part of the status update. '
                            'This can be set by the API or extensions.',
         },
         'id': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The ID of the status update.',
         },
         'review': {
-            'type': 'reviewboard.webapi.resources.review.ReviewResource',
+            'type': ResourceFieldType,
+            'resource': 'reviewboard.webapi.resources.review.ReviewResource',
             'description': 'A review which corresponds to this status update.',
         },
         'service_id': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'A unique identifier for the service providing '
                            'the status update.',
         },
         'state': {
-            'type': ('pending', 'done_success', 'done_failure', 'error',
-                     'timed-out'),
+            'type': ChoiceFieldType,
+            'choices': ('pending', 'done_success', 'done_failure', 'error',
+                        'timed-out'),
             'description': 'The current state of the status update.',
         },
         'summary': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'A user-visible short summary of the status '
                            'update.',
         },
         'timeout': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'An optional timeout for pending status updates, '
                            'measured in seconds.',
         },
         'url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'An optional URL to link to for more details about '
                            'the status update.',
         },
         'url_text': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The text to use for the link.',
         },
     }
@@ -207,16 +214,18 @@ class StatusUpdateResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'change': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The change description to get status updates '
                                'for.'
             },
             'service-id': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The service ID to query for.',
             },
             'state': {
-                'type': ('pending', 'done-success', 'done-failure', 'error'),
+                'type': ChoiceFieldType,
+                'choices': ('pending', 'done-success', 'done-failure',
+                            'error'),
                 'description': 'The state to query for.',
             },
         },
@@ -278,19 +287,19 @@ class StatusUpdateResource(WebAPIResource):
     @webapi_request_fields(
         required={
             'service_id': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'A unique identifier for the service providing '
                                'the status update.',
             },
             'summary': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'A user-visible short summary of the status '
                                'update.',
             },
         },
         optional={
             'change_id': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The change to a review request which this '
                                'status update applies to (for example, the '
                                'change adding a diff that was built by CI). '
@@ -298,31 +307,33 @@ class StatusUpdateResource(WebAPIResource):
                                'the review request as initially published.',
             },
             'description': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'A user-visible description of the status '
                                'update.',
             },
             'review_id': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'A review which corresponds to this status '
                                'update.',
             },
             'state': {
-                'type': ('pending', 'done-success', 'done-failure', 'error'),
+                'type': ChoiceFieldType,
+                'choices': ('pending', 'done-success', 'done-failure',
+                            'error'),
                 'description': 'The current state of the status update.',
             },
             'timeout': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'An optional timeout for pending status '
                                'updates, measured in seconds.',
             },
             'url': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'A URL to link to for more details about '
                                'the status update.',
             },
             'url_text': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The text to use for the link.',
             },
         },
@@ -361,7 +372,7 @@ class StatusUpdateResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'change_id': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The change to a review request which this '
                                'status update applies to (for example, the '
                                'change adding a diff that was built by CI). '
@@ -369,41 +380,43 @@ class StatusUpdateResource(WebAPIResource):
                                'the review request as initially published.',
             },
             'description': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'A user-visible description of the status '
                                'update.',
             },
             'review_id': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'A review which corresponds to this status '
                                'update.',
             },
             'service_id': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'A unique identifier for the service providing '
                                'the status update.',
             },
             'state': {
-                'type': ('pending', 'done-success', 'done-failure', 'error'),
+                'type': ChoiceFieldType,
+                'choices': ('pending', 'done-success', 'done-failure',
+                            'error'),
                 'description': 'The current state of the status update.',
             },
             'summary': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'A user-visible short summary of the status '
                                'update.',
             },
             'timeout': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'An optional timeout for pending status '
                                'updates, measured in seconds.',
             },
             'url': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'A URL to link to for more details about '
                                'the status update.',
             },
             'url_text': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The text to use for the link.',
             },
         },

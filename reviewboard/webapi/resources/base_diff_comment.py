@@ -2,9 +2,11 @@ from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.template.defaultfilters import timesince
-from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import webapi_request_fields
+from djblets.webapi.fields import (IntFieldType,
+                                   ResourceFieldType,
+                                   StringFieldType)
 
 from reviewboard.reviews.models import Comment
 from reviewboard.webapi.base import WebAPIResource
@@ -22,19 +24,23 @@ class BaseDiffCommentResource(BaseCommentResource):
     name = 'diff_comment'
     fields = dict({
         'first_line': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The line number that the comment starts at.',
         },
         'num_lines': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The number of lines the comment spans.',
         },
         'filediff': {
-            'type': 'reviewboard.webapi.resources.filediff.FileDiffResource',
+            'type': ResourceFieldType,
+            'resource': 'reviewboard.webapi.resources.filediff.'
+                        'FileDiffResource',
             'description': 'The per-file diff that the comment was made on.',
         },
         'interfilediff': {
-            'type': 'reviewboard.webapi.resources.filediff.FileDiffResource',
+            'type': ResourceFieldType,
+            'resource': 'reviewboard.webapi.resources.filediff.'
+                        'FileDiffResource',
             'description': "The second per-file diff in an interdiff that "
                            "the comment was made on. This will be ``null`` if "
                            "the comment wasn't made on an interdiff.",
@@ -102,18 +108,18 @@ class BaseDiffCommentResource(BaseCommentResource):
     @webapi_request_fields(
         optional={
             'interdiff-revision': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The second revision in an interdiff revision '
                                'range. The comments will be limited to this '
                                'range.',
             },
             'line': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The line number that each comment must '
                                'start on.',
             },
             'order-by': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'Comma-separated list of fields to order by.',
                 'added_in': '1.7.10',
             },

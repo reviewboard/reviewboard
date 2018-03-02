@@ -7,6 +7,7 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.fields import FileFieldType
 
 from reviewboard.attachments.forms import UploadFileForm
 from reviewboard.attachments.models import FileAttachment
@@ -82,7 +83,7 @@ class DraftFileDiffResource(FileDiffResource):
     @webapi_request_fields(
         optional={
             'dest_attachment_file': {
-                'type': file,
+                'type': FileFieldType,
                 'description': (
                     'The file attachment to upload, representing the '
                     'modified file. This can only be used for binary '

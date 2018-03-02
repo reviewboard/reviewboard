@@ -7,9 +7,9 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.fields import ResourceFieldType
 
 from reviewboard.webapi.decorators import webapi_check_local_site
-
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_review_general_comment import \
     BaseReviewGeneralCommentResource
@@ -29,7 +29,8 @@ class ReviewReplyGeneralCommentResource(BaseReviewGeneralCommentResource):
     model_parent_key = 'review'
     fields = dict({
         'reply_to': {
-            'type': ReviewGeneralCommentResource,
+            'type': ResourceFieldType,
+            'resource': ReviewGeneralCommentResource,
             'description': 'The comment being replied to.',
         },
     }, **BaseReviewGeneralCommentResource.fields)

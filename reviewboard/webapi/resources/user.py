@@ -14,6 +14,7 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.fields import BooleanFieldType, StringFieldType
 from djblets.webapi.resources.user import UserResource as DjbletsUserResource
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
@@ -42,18 +43,18 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
     fields = dict({
         'avatar_url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The URL for an avatar representing the user.',
             'added_in': '1.6.14',
             'deprecated_in': '3.0',
         },
         'avatar_urls': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The URLs for an avatar representing the user.',
             'added_in': '3.0',
         },
         'is_active': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not the user is active. Inactive users'
                            'are not able to log in or make changes to Review '
                            'Board.',
@@ -172,19 +173,19 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     @webapi_request_fields(
         optional={
             'fullname': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'Specifies whether ``q`` should also match '
                                'the beginning of the first name or last name. '
                                'Ignored if ``q`` is not set.',
             },
             'include-inactive': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'If set, users who are marked as inactive '
                                '(their accounts have been disabled) will be '
                                'included in the list.',
             },
             'q': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The string that the username (or the first '
                                'name or last name when using ``fullname``) '
                                'must start with in order to be included in '
@@ -242,25 +243,25 @@ class UserResource(WebAPIResource, DjbletsUserResource):
     @webapi_request_fields(
         required={
             'username': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The username of the user to create.',
             },
             'email': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The e-mail address of the user to create.',
             },
             'password': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The password of the user to create.',
             }
         },
         optional={
             'first_name': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The first name of the user to create.',
             },
             'last_name': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The last name of the user to create.',
             }
         })

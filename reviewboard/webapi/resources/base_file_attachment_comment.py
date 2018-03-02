@@ -2,8 +2,8 @@ from __future__ import unicode_literals
 
 from django.db.models import Q
 from django.template.defaultfilters import timesince
-from django.utils import six
 from djblets.util.decorators import augment_method_from
+from djblets.webapi.fields import ResourceFieldType, StringFieldType
 
 from reviewboard.reviews.models import FileAttachmentComment
 from reviewboard.webapi.base import WebAPIResource
@@ -20,30 +20,32 @@ class BaseFileAttachmentCommentResource(BaseCommentResource):
     name = 'file_attachment_comment'
     fields = dict({
         'diff_against_file_attachment': {
-            'type': 'reviewboard.webapi.resources.file_attachment.'
-                    'FileAttachmentResource',
+            'type': ResourceFieldType,
+            'resource': 'reviewboard.webapi.resources.file_attachment.'
+                        'FileAttachmentResource',
             'description': 'The file changes were made against in a diff.',
             'added_in': '2.0',
         },
         'file_attachment': {
-            'type': 'reviewboard.webapi.resources.file_attachment.'
-                    'FileAttachmentResource',
+            'type': ResourceFieldType,
+            'resource': 'reviewboard.webapi.resources.file_attachment.'
+                        'FileAttachmentResource',
             'description': 'The file the comment was made on.',
         },
         'link_text': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The text used to describe a link to the file. '
                            'This may differ depending on the comment.',
             'added_in': '1.7.10',
         },
         'review_url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The URL to the review UI for the comment on this '
                            'file attachment.',
             'added_in': '1.7.10',
         },
         'thumbnail_html': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The HTML representing a thumbnail, if any, for '
                            'this comment.',
             'added_in': '1.7.10',

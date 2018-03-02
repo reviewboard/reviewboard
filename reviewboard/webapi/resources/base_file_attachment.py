@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from django.utils import six
+from djblets.webapi.fields import IntFieldType, StringFieldType
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.webapi.base import WebAPIResource
@@ -14,37 +14,37 @@ class BaseFileAttachmentResource(WebAPIResource):
     name = 'file_attachment'
     fields = {
         'id': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The numeric ID of the file.',
         },
         'caption': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The file's descriptive caption.",
         },
         'filename': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The name of the file.",
         },
         'absolute_url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The absolute URL of the file, for downloading "
                            "purposes.",
             'added_in': '2.0',
         },
         'icon_url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The URL to a 24x24 icon representing this file. '
                            'The use of these icons is deprecated and this '
                            'property will be removed in a future version.',
             'deprecated_in': '2.5',
         },
         'mimetype': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The mimetype for the file.',
             'added_in': '2.0',
         },
         'thumbnail': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'A thumbnail representing this file.',
             'added_in': '1.7',
         },

@@ -15,6 +15,14 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.fields import (BooleanFieldType,
+                                   ChoiceFieldType,
+                                   DateTimeFieldType,
+                                   DictFieldType,
+                                   IntFieldType,
+                                   ResourceFieldType,
+                                   ResourceListFieldType,
+                                   StringFieldType)
 
 from reviewboard.reviews.builtin_fields import BuiltinFieldMixin
 from reviewboard.reviews.errors import NotModifiedError, PublishError
@@ -55,112 +63,118 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     mimetype_item_resource_name = 'review-request-draft'
     fields = {
         'id': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The numeric ID of the draft.',
             'mutable': False,
         },
         'review_request': {
-            'type': 'reviewboard.webapi.resources.review_request.'
-                    'ReviewRequestResource',
+            'type': ResourceFieldType,
+            'resource': 'reviewboard.webapi.resources.review_request.'
+                        'ReviewRequestResource',
             'description': 'The review request that owns this draft.',
             'mutable': False,
         },
         'last_updated': {
-            'type': six.text_type,
-            'description': 'The date and time that the draft was last updated '
-                           '(in ``YYYY-MM-DD HH:MM:SS`` format).',
+            'type': DateTimeFieldType,
+            'description': 'The date and time that the draft was last '
+                           'updated.',
             'mutable': False,
         },
         'branch': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The branch name.',
         },
         'bugs_closed': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The new list of bugs closed or referenced by this '
                            'change.',
         },
         'depends_on': {
-            'type': ['reviewboard.webapi.resources.review_request.'
-                     'ReviewRequestResource'],
+            'type': ResourceListFieldType,
+            'resource': 'reviewboard.webapi.resources.review_request.'
+                        'ReviewRequestResource',
             'description': 'The list of review requests that this '
                            'review request depends on.',
             'added_in': '1.7.8',
         },
         'changedescription': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'A custom description of what changes are being '
                            'made in this update. It often will be used to '
                            'describe the changes in the diff.',
             'supports_text_types': True,
         },
         'changedescription_text_type': {
-            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
                            '``changedescription`` field.',
             'added_in': '2.0.12',
         },
         'commit_id': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The updated ID of the commit this review request '
                            'is based upon.',
             'added_in': '2.0',
         },
         'description': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The new review request description.',
             'supports_text_types': True,
         },
         'description_text_type': {
-            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
                            '``description`` field.',
             'added_in': '2.0.12',
         },
         'extra_data': {
-            'type': dict,
+            'type': DictFieldType,
             'description': 'Extra data as part of the draft. '
                            'This can be set by the API or extensions.',
             'added_in': '2.0',
         },
         'public': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not the draft is public. '
                            'This will always be false up until the time '
                            'it is first made public. At that point, the '
                            'draft is deleted.',
         },
         'submitter': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The user who submitted the review request.',
         },
         'summary': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The new review request summary.',
         },
         'target_groups': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'A comma-separated list of review groups '
                            'that will be on the reviewer list.',
         },
         'target_people': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'A comma-separated list of users that will '
                            'be on a reviewer list.',
         },
         'testing_done': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The new testing done text.',
             'supports_text_types': True,
         },
         'testing_done_text_type': {
-            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The current or forced text type for the '
                            '``testing_done`` field.',
             'added_in': '2.0.12',
         },
         'text_type': {
-            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'Formerly responsible for indicating the text '
                            'type for text fields. Replaced by '
                            '``changedescription_text_type``, '
@@ -181,49 +195,52 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
     CREATE_UPDATE_OPTIONAL_FIELDS = {
         'branch': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The new branch name.',
         },
         'bugs_closed': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'A comma-separated list of bug IDs.',
         },
         'commit_id': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The updated ID of the commit this review request '
                            'is based upon.',
             'added_in': '2.0',
         },
         'depends_on': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The new list of dependencies of this review '
                            'request.',
             'added_in': '1.7.8',
         },
         'changedescription': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The change description for this update.',
             'supports_text_types': True,
         },
         'changedescription_text_type': {
-            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The text type used for the ``changedescription`` '
                            'field.',
             'added_in': '2.0.12',
         },
         'description': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The new review request description.',
             'supports_text_types': True,
         },
         'description_text_type': {
-            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The text type used for the ``description`` '
                            'field.',
             'added_in': '2.0.12',
         },
         'force_text_type': {
-            'type': MarkdownFieldsMixin.TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.TEXT_TYPES,
             'description': 'The text type, if any, to force for returned '
                            'text fields. The contents will be converted '
                            'to the requested type in the payload, but '
@@ -231,43 +248,45 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'added_in': '2.0.9',
         },
         'public': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not to make the review public. '
                            'If a review is public, it cannot be made '
                            'private again.',
         },
         'submitter': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The user who submitted the review request.',
             'added_in': '3.0',
         },
         'summary': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The new review request summary.',
         },
         'target_groups': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'A comma-separated list of review groups '
                            'that will be on the reviewer list.',
         },
         'target_people': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'A comma-separated list of users that will '
                            'be on a reviewer list.',
         },
         'testing_done': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The new testing done text.',
             'supports_text_types': True,
         },
         'testing_done_text_type': {
-            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The text type used for the ``testing_done`` '
                            'field.',
             'added_in': '2.0.12',
         },
         'text_type': {
-            'type': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
+            'type': ChoiceFieldType,
+            'choices': MarkdownFieldsMixin.SAVEABLE_TEXT_TYPES,
             'description': 'The mode for the ``changedescription``, '
                            '``description``, and ``testing_done`` fields.\n'
                            '\n'
@@ -279,13 +298,13 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             'deprecated_in': '2.0.12',
         },
         'trivial': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Determines if the review request publish '
                            'will not send an email.',
             'added_in': '2.5',
         },
         'update_from_commit_id': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'If true, and if ``commit_id`` is provided, '
                            'the review request information and (when '
                            'supported) the diff will be updated based '

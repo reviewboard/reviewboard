@@ -7,6 +7,7 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.fields import IntFieldType
 
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.webapi.decorators import webapi_check_local_site
@@ -41,21 +42,21 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
     @webapi_request_fields(
         required=dict({
             'filediff_id': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The ID of the file diff the comment is on.',
             },
             'first_line': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The line number the comment starts at.',
             },
             'num_lines': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The number of lines the comment spans.',
             },
         }, **BaseDiffCommentResource.REQUIRED_CREATE_FIELDS),
         optional=dict({
             'interfilediff_id': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The ID of the second file diff in the '
                                'interdiff the comment is on.',
             },
@@ -126,11 +127,11 @@ class ReviewDiffCommentResource(BaseDiffCommentResource):
     @webapi_request_fields(
         optional=dict({
             'first_line': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The line number the comment starts at.',
             },
             'num_lines': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The number of lines the comment spans.',
             },
         }, **BaseDiffCommentResource.OPTIONAL_UPDATE_FIELDS),

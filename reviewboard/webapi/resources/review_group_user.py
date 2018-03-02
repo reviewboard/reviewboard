@@ -2,13 +2,13 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
                                        webapi_request_fields)
 from djblets.webapi.errors import (DOES_NOT_EXIST, NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
+from djblets.webapi.fields import BooleanFieldType, StringFieldType
 
 from reviewboard.reviews.models import Group
 from reviewboard.webapi.decorators import webapi_check_local_site
@@ -145,7 +145,7 @@ class ReviewGroupUserResource(UserResource):
                             NOT_LOGGED_IN, PERMISSION_DENIED)
     @webapi_request_fields(required={
         'username': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The user to add to the group.',
             'added_in': '1.6.14',
         },
@@ -208,11 +208,11 @@ class ReviewGroupUserResource(UserResource):
     @webapi_check_local_site
     @webapi_request_fields(optional={
         'fullname': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': ''
         },
         'q': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'Limit the results to usernames starting with the '
                            'provided value. This is case-insensitive.',
         },

@@ -9,6 +9,7 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.fields import FileFieldType, StringFieldType
 
 from reviewboard.diffviewer.errors import (DiffParserError,
                                            DiffTooBigError,
@@ -64,17 +65,17 @@ class ValidateDiffResource(DiffResource):
     @webapi_request_fields(
         required={
             'repository': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The path or ID of the repository.',
             },
             'path': {
-                'type': file,
+                'type': FileFieldType,
                 'description': 'The main diff file.',
             },
         },
         optional={
             'basedir': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The base directory that will prepended to '
                                'all paths in the diff. This is needed for '
                                'some types of repositories. The directory '
@@ -83,11 +84,11 @@ class ValidateDiffResource(DiffResource):
                                'diff paths.',
             },
             'parent_diff_path': {
-                'type': file,
+                'type': FileFieldType,
                 'description': 'The optional parent diff to upload.',
             },
             'base_commit_id': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The ID/revision this change is built upon. '
                                'If using a parent diff, then this is the base '
                                'for that diff. This may not be provided for '

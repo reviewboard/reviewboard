@@ -15,6 +15,13 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields,
                                        webapi_response_errors)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA)
+from djblets.webapi.fields import (BooleanFieldType,
+                                   ChoiceFieldType,
+                                   DictFieldType,
+                                   IntFieldType,
+                                   ListFieldType,
+                                   ResourceFieldType,
+                                   StringFieldType)
 from oauth2_provider.generators import generate_client_secret
 
 from reviewboard.oauth.forms import (ApplicationChangeForm,
@@ -41,10 +48,11 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
     added_in = '3.0'
     fields = {
         'authorization_grant_type': {
-            'type': (Application.GRANT_AUTHORIZATION_CODE,
-                     Application.GRANT_CLIENT_CREDENTIALS,
-                     Application.GRANT_IMPLICIT,
-                     Application.GRANT_PASSWORD),
+            'type': ChoiceFieldType,
+            'choices': (Application.GRANT_AUTHORIZATION_CODE,
+                        Application.GRANT_CLIENT_CREDENTIALS,
+                        Application.GRANT_IMPLICIT,
+                        Application.GRANT_PASSWORD),
             'description':
                 'How the authorization is granted to the application. This '
                 'will be one of %s, %s, %s, or %s.'
@@ -54,18 +62,19 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
                    Application.GRANT_PASSWORD)
         },
         'client_id': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The client ID. This will be used by your '
                            'application to identify itself to Review Board.',
         },
         'client_secret': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The client secret. This should only be known to '
                            'Review Board and the application.',
         },
         'client_type': {
-            'type': (Application.CLIENT_CONFIDENTIAL,
-                     Application.CLIENT_PUBLIC),
+            'type': ChoiceFieldType,
+            'choices': (Application.CLIENT_CONFIDENTIAL,
+                        Application.CLIENT_PUBLIC),
             'description': 'The type of client. Confidential clients must be '
                            'able to keep user password secure.\n\n'
                            'This will be one of %s or %s.'
@@ -73,66 +82,72 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
                               Application.CLIENT_PUBLIC),
         },
         'enabled': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not this application is enabled.\n\n'
                            'If disabled, authentication and API access will '
                            'not be available for clients using this '
                            'application.',
         },
         'extra_data': {
-            'type': dict,
+            'type': DictFieldType,
             'description': 'Extra information associated with the '
                            'application.',
         },
         'id': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The application ID. This uniquely identifies the '
                            'application when communicating with the Web API.',
         },
         'name': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The application name.',
         },
         'redirect_uris': {
-            'type': [six.text_type],
+            'type': ListFieldType,
+            'items': {
+                'type': StringFieldType,
+            },
             'description': 'The list of allowed URIs to redirect to.',
         },
         'skip_authorization': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not users will be prompted for '
                            'authentication.\n\n'
                            'This field is only editable by administrators.',
         },
         'user': {
-            'type': 'reviewboard.webapi.resources.user.UserResource',
+            'type': ResourceFieldType,
+            'resource': 'reviewboard.webapi.resources.user.UserResource',
             'description': 'The user who created the application.',
         },
     }
 
     CREATE_REQUIRED_FIELDS = {
         'authorization_grant_type': {
-            'type': (Application.GRANT_AUTHORIZATION_CODE,
-                     Application.GRANT_CLIENT_CREDENTIALS,
-                     Application.GRANT_IMPLICIT,
-                     Application.GRANT_PASSWORD),
+            'type': ChoiceFieldType,
+            'choices': (Application.GRANT_AUTHORIZATION_CODE,
+                        Application.GRANT_CLIENT_CREDENTIALS,
+                        Application.GRANT_IMPLICIT,
+                        Application.GRANT_PASSWORD),
             'description': 'How authorization is granted to the '
                            'application.',
         },
         'client_type': {
-            'type': (Application.CLIENT_CONFIDENTIAL,
-                     Application.CLIENT_PUBLIC),
+            'type': ChoiceFieldType,
+            'choices': (Application.CLIENT_CONFIDENTIAL,
+                        Application.CLIENT_PUBLIC),
             'description': 'The client type. Confidential clients must be '
                            'able to keep user passwords secure.',
         },
         'name': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The application name.',
         },
     }
 
     CREATE_OPTIONAL_FIELDS = {
         'enabled': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not the application will be enabled.'
                            '\n\n'
                            'If disabled, authentication and API access will '
@@ -141,17 +156,17 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
                            'Defaults to true when creating a new Application.'
         },
         'redirect_uris': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'A comma-separated list of allowed URIs to '
                            'redirect to.',
         },
         'skip_authorization': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not users will be prompted for '
                            'authentication.',
         },
         'user': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The user who owns the application.\n\nThis field '
                            'is only available to super users.',
         },
@@ -159,7 +174,7 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
 
     UPDATE_OPTIONAL_FIELDS = {
         'regenerate_client_secret': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'The identifier of the LocalSite to re-assign this '
                            'Application to.\n\n'
                            'The Application will be limited to users '
@@ -339,7 +354,7 @@ class OAuthApplicationResource(UpdateFormMixin, WebAPIResource):
     @webapi_request_fields(
         optional={
             'username': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'If present, the results will be filtered to '
                                'Applications owned by the specified user.\n\n'
                                'Only administrators have access to '

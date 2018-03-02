@@ -2,11 +2,17 @@ from __future__ import unicode_literals
 
 import re
 
-from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import webapi_request_fields
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.fields import (BooleanFieldType,
+                                   ChoiceFieldType,
+                                   DictFieldType,
+                                   IntFieldType,
+                                   ListFieldType,
+                                   ResourceListFieldType,
+                                   StringFieldType)
 
 from reviewboard.notifications.forms import WebHookTargetForm
 from reviewboard.notifications.models import WebHookTarget
@@ -83,7 +89,8 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
 
     fields = {
         'apply_to': {
-            'type': ALL_APPLY_TO_OPTIONS,
+            'type': ChoiceFieldType,
+            'choices': ALL_APPLY_TO_OPTIONS,
             'description': 'What review requests the webhook applies to. This '
                            'is one of the strings ``all``, ``none``, or '
                            '``custom``. In the case of ``custom``, the '
@@ -91,45 +98,50 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
                            '``repositories`` field.',
         },
         'custom_content': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'An optional custom payload.',
         },
         'enabled': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not the webhook is enabled.',
         },
         'encoding': {
-            'type': WebHookTarget.ALL_ENCODINGS,
+            'type': ChoiceFieldType,
+            'choices': WebHookTarget.ALL_ENCODINGS,
             'description': 'The encoding for the payload. This is one of '
                            '``application/json``, ``application/xml`` or '
                            '``application/x-www-form-data``.',
         },
         'events': {
-            'type': [six.text_type],
+            'type': ListFieldType,
+            'items': {
+                'type': StringFieldType,
+            },
             'description': 'A list of events that will cause the webhook to '
                            'trigger.',
         },
         'extra_data': {
-            'type': dict,
+            'type': DictFieldType,
             'description': 'Extra data as part of the webhook. '
                            'This can be set by the API or extensions.',
         },
         'id': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The numeric ID of the webhook.',
         },
         'secret': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'An optional HMAC digest for the webhook payload. '
                            'If this is specified, the payload will be signed '
                            'with it.',
         },
         'repositories': {
-            'type': [RepositoryResource],
+            'type': ResourceListFieldType,
+            'resource': RepositoryResource,
             'description': 'The list of repositories this applies to.',
         },
         'url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The URL to make HTTP requests against.',
         },
     }
@@ -369,7 +381,8 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
     @webapi_request_fields(
         required={
             'apply_to': {
-                'type': ALL_APPLY_TO_OPTIONS,
+                'type': ChoiceFieldType,
+                'choices': ALL_APPLY_TO_OPTIONS,
                 'description': 'What review requests the webhook applies to. '
                                'This is one of the strings ``all``, ``none``, '
                                'or ``custom``. In the case of ``custom``, the '
@@ -377,39 +390,40 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
                                '``repositories`` field.',
             },
             'enabled': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'Whether or not the webhook is enabled.',
             },
             'encoding': {
-                'type': WebHookTarget.ALL_ENCODINGS,
+                'type': ChoiceFieldType,
+                'choices': WebHookTarget.ALL_ENCODINGS,
                 'description': 'The encoding for the payload. This is one of '
                                '``application/json``, ``application/xml`` or '
                                '``application/x-www-form-encoded``.',
             },
             'events': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The type of events that trigger the webhook. '
                                'This should be a list of values separated by '
                                'commas.',
             },
             'url': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The URL to make HTTP requests against.',
             },
         },
         optional={
             'custom_content': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'An optional custom payload.',
             },
             'secret': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'An optional HMAC digest for the webhook '
                                'payload. If this is specified, the payload '
                                'will be signed with it.',
             },
             'repositories': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'If ``apply_to`` is ``selected repositories``, '
                                'this is a comma-separated list of repository '
                                'IDs that the webhook applies to.',
@@ -461,7 +475,8 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
     @webapi_request_fields(
         optional={
             'apply_to': {
-                'type': ALL_APPLY_TO_OPTIONS,
+                'type': ChoiceFieldType,
+                'choices': ALL_APPLY_TO_OPTIONS,
                 'description': 'What review requests the webhook applies to. '
                                'This is one of the strings ``all``, ``none``, '
                                'or ``custom``. In the case of ``custom``, the '
@@ -469,37 +484,38 @@ class WebHookResource(UpdateFormMixin, WebAPIResource):
                                '``repositories`` field.',
             },
             'custom_content': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'An optional custom payload.',
             },
             'enabled': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'Whether or not the webhook is enabled.',
             },
             'encoding': {
-                'type': WebHookTarget.ALL_ENCODINGS,
+                'type': ChoiceFieldType,
+                'choices': WebHookTarget.ALL_ENCODINGS,
                 'description': 'The encoding for the payload. This is one of '
                                '``application/json``, ``application/xml`` or '
                                '``application/x-www-form-encoded``.',
             },
             'events': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The type of events that trigger the webhook. '
                                'This should be a list of values separated by '
                                'commas.',
             },
             'url': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The URL to make HTTP requests against.',
             },
             'secret': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'An optional HMAC digest for the webhook '
                                'payload. If this is specified, the payload '
                                'will be signed with it.',
             },
             'repositories': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'If ``apply_to`` is ``selected repositories``, '
                                'this is a comma-separated list of repository '
                                'IDs that the webhook applies to.',

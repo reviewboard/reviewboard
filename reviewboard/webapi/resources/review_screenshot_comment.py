@@ -7,6 +7,7 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.fields import IntFieldType
 
 from reviewboard.reviews.models import Screenshot
 from reviewboard.webapi.decorators import webapi_check_local_site
@@ -36,23 +37,23 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
     @webapi_request_fields(
         required=dict({
             'screenshot_id': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The ID of the screenshot being commented on.',
             },
             'x': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The X location for the comment.',
             },
             'y': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The Y location for the comment.',
             },
             'w': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The width of the comment region.',
             },
             'h': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The height of the comment region.',
             },
         }, **BaseScreenshotCommentResource.REQUIRED_CREATE_FIELDS),
@@ -102,19 +103,19 @@ class ReviewScreenshotCommentResource(BaseScreenshotCommentResource):
     @webapi_request_fields(
         optional=dict({
             'x': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The X location for the comment.',
             },
             'y': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The Y location for the comment.',
             },
             'w': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The width of the comment region.',
             },
             'h': {
-                'type': int,
+                'type': IntFieldType,
                 'description': 'The height of the comment region.',
             },
         }, **BaseScreenshotCommentResource.OPTIONAL_UPDATE_FIELDS),

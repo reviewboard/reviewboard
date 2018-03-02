@@ -11,6 +11,9 @@ from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_request_fields)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.fields import (BooleanFieldType,
+                                   IntFieldType,
+                                   StringFieldType)
 
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          SCMError,
@@ -48,40 +51,40 @@ class RepositoryResource(WebAPIResource):
     name_plural = 'repositories'
     fields = {
         'id': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The numeric ID of the repository.',
         },
         'name': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The name of the repository.',
         },
         'path': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The main path to the repository, which is used '
                            'for communicating with the repository and '
                            'accessing files.',
         },
         'mirror_path': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'An alternate path to the repository, for '
                            'lookup purposes.',
             'added_in': '1.7.19',
         },
         'visible': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not this repository is visible (admin '
                            'only).',
             'added_in': '2.0',
         },
         'tool': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The name of the internal repository '
                            'communication class used to talk to the '
                            'repository. This is generally the type of the '
                            'repository.',
         },
         'bug_tracker': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The URL to a bug in the bug tracker for '
                            'this repository, with ``%s`` in place of the '
                            'bug ID.',
@@ -159,44 +162,44 @@ class RepositoryResource(WebAPIResource):
     @webapi_request_fields(
         optional=dict({
             'name': {
-                'type': str,
+                'type': StringFieldType,
                 'description': 'Filter repositories by one or more '
                                'comma-separated names.',
                 'added_in': '1.7.21',
             },
             'path': {
-                'type': str,
+                'type': StringFieldType,
                 'description': 'Filter repositories by one or more '
                                'comma-separated paths or mirror paths.',
                 'added_in': '1.7.21',
             },
             'name-or-path': {
-                'type': str,
+                'type': StringFieldType,
                 'description': 'Filter repositories by one or more '
                                'comma-separated names, paths, or '
                                'mirror paths.',
                 'added_in': '1.7.21',
             },
             'tool': {
-                'type': str,
+                'type': StringFieldType,
                 'description': 'Filter repositories by one or more '
                                'comma-separated tool names.',
                 'added_in': '1.7.21',
             },
             'hosting-service': {
-                'type': str,
+                'type': StringFieldType,
                 'description': 'Filter repositories by one or more '
                                'comma-separated hosting service IDs.',
                 'added_in': '1.7.21',
             },
             'username': {
-                'type': str,
+                'type': StringFieldType,
                 'description': 'Filter repositories by one or more '
                                'comma-separated usernames.',
                 'added_in': '1.7.21',
             },
             'show-invisible': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'Whether to list only visible repositories or '
                                'all repositories.',
                 'added_in': '2.0',
@@ -236,31 +239,31 @@ class RepositoryResource(WebAPIResource):
     @webapi_request_fields(
         required={
             'name': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The human-readable name of the repository.',
                 'added_in': '1.6',
             },
             'path': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The path to the repository.',
                 'added_in': '1.6',
             },
             'tool': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The ID of the SCMTool to use.',
                 'added_in': '1.6',
             },
         },
         optional={
             'bug_tracker': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The URL to a bug in the bug tracker for '
                                'this repository, with ``%s`` in place of the '
                                'bug ID.',
                 'added_in': '1.6',
             },
             'encoding': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The encoding used for files in the '
                                'repository. This is an advanced setting '
                                'and should only be used if you absolutely '
@@ -268,24 +271,24 @@ class RepositoryResource(WebAPIResource):
                 'added_in': '1.6',
             },
             'mirror_path': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'An alternate path to the repository.',
                 'added_in': '1.6',
             },
             'password': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The password used to access the repository.',
                 'added_in': '1.6',
             },
             'public': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'Whether or not review requests on the '
                                'repository will be publicly accessible '
                                'by users on the site. The default is true.',
                 'added_in': '1.6',
             },
             'raw_file_url': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': "A URL mask used to check out a particular "
                                "file using HTTP. This is needed for "
                                "repository types that can't access files "
@@ -295,7 +298,7 @@ class RepositoryResource(WebAPIResource):
                 'added_in': '1.6',
             },
             'trust_host': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'Whether or not any unknown host key or '
                                'certificate should be accepted. The default '
                                'is false, in which case this will error out '
@@ -304,12 +307,12 @@ class RepositoryResource(WebAPIResource):
                 'added_in': '1.6',
             },
             'username': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The username used to access the repository.',
                 'added_in': '1.6',
             },
             'visible': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'Whether the repository is visible.',
                 'added_in': '2.0',
             },
@@ -407,14 +410,14 @@ class RepositoryResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'bug_tracker': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The URL to a bug in the bug tracker for '
                                'this repository, with ``%s`` in place of the '
                                'bug ID.',
                 'added_in': '1.6',
             },
             'encoding': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The encoding used for files in the '
                                'repository. This is an advanced setting '
                                'and should only be used if you absolutely '
@@ -422,34 +425,34 @@ class RepositoryResource(WebAPIResource):
                 'added_in': '1.6',
             },
             'mirror_path': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'An alternate path to the repository.',
                 'added_in': '1.6',
             },
             'name': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The human-readable name of the repository.',
                 'added_in': '1.6',
             },
             'password': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The password used to access the repository.',
                 'added_in': '1.6',
             },
             'path': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The path to the repository.',
                 'added_in': '1.6',
             },
             'public': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'Whether or not review requests on the '
                                'repository will be publicly accessible '
                                'by users on the site. The default is true.',
                 'added_in': '1.6',
             },
             'raw_file_url': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': "A URL mask used to check out a particular "
                                "file using HTTP. This is needed for "
                                "repository types that can't access files "
@@ -459,7 +462,7 @@ class RepositoryResource(WebAPIResource):
                 'added_in': '1.6',
             },
             'trust_host': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'Whether or not any unknown host key or '
                                'certificate should be accepted. The default '
                                'is false, in which case this will error out '
@@ -468,12 +471,12 @@ class RepositoryResource(WebAPIResource):
                 'added_in': '1.6',
             },
             'username': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The username used to access the repository.',
                 'added_in': '1.6',
             },
             'archive_name': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': "Whether or not the (non-user-visible) name of "
                                "the repository should be changed so that it "
                                "(probably) won't conflict with any future "
@@ -481,7 +484,7 @@ class RepositoryResource(WebAPIResource):
                 'added_in': '1.6.2',
             },
             'visible': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'Whether the repository is visible.',
                 'added_in': '2.0',
             },

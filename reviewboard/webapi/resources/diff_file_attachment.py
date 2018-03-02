@@ -1,9 +1,9 @@
 from __future__ import unicode_literals
 
 from django.db.models import Q
-from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import webapi_request_fields
+from djblets.webapi.fields import ResourceFieldType, StringFieldType
 
 from reviewboard.webapi.decorators import webapi_check_local_site
 from reviewboard.webapi.resources import resources
@@ -32,17 +32,19 @@ class DiffFileAttachmentResource(BaseReviewRequestFileAttachmentResource):
 
     fields = dict({
         'repository_file_path': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The file path inside the repository that this '
                            'file attachment represents.',
         },
         'repository_revision': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The revision that introduced this version of the '
                            'file, if committed in the repository.',
         },
         'added_in_filediff': {
-            'type': 'reviewboard.webapi.resources.filediff.FileDiffResource',
+            'type': ResourceFieldType,
+            'resource': 'reviewboard.webapi.resources.filediff.'
+                        'FileDiffResource',
             'description': 'The file diff that introduced this file. If set, '
                            'this file is just part of a proposed change, and '
                            'not necessarily committed in the repository.',
@@ -97,21 +99,21 @@ class DiffFileAttachmentResource(BaseReviewRequestFileAttachmentResource):
     @webapi_request_fields(
         optional=dict({
             'repository-file-path': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': (
                     'Filter file attachments with the given path in the '
                     'repository.'
                 ),
             },
             'repository-revision': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': (
                     'Filter file attachments for files with the given '
                     'revision.'
                 ),
             },
             'mimetype': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': (
                     'Filter file attachments with the given mimetype.'
                 ),

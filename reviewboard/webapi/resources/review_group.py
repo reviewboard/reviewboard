@@ -2,13 +2,16 @@ from __future__ import unicode_literals
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
-from django.utils import six
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
                                        webapi_response_errors,
                                        webapi_request_fields)
 from djblets.webapi.errors import (DOES_NOT_EXIST, INVALID_FORM_DATA,
                                    NOT_LOGGED_IN, PERMISSION_DENIED)
+from djblets.webapi.fields import (BooleanFieldType,
+                                   DictFieldType,
+                                   IntFieldType,
+                                   StringFieldType)
 
 from reviewboard.reviews.models import Group
 from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
@@ -27,52 +30,52 @@ class ReviewGroupResource(WebAPIResource):
     model = Group
     fields = {
         'id': {
-            'type': int,
+            'type': IntFieldType,
             'description': 'The numeric ID of the review group.',
         },
         'name': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The short name of the group, used in the '
                            'reviewer list and the Dashboard.',
         },
         'display_name': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The human-readable name of the group, sometimes '
                            'used as a short description.',
         },
         'invite_only': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not the group is invite-only. An '
                            'invite-only group is only accessible by members '
                            'of the group.',
             'added_in': '1.6',
         },
         'mailing_list': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': 'The e-mail address that all posts on a review '
                            'group are sent to.',
         },
         'url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The URL to the user's page on the site. "
                            "This is deprecated and will be removed in a "
                            "future version.",
             'deprecated_in': '2.0',
         },
         'absolute_url': {
-            'type': six.text_type,
+            'type': StringFieldType,
             'description': "The absolute URL to the user's page on the site.",
             'added_in': '2.0',
         },
         'visible': {
-            'type': bool,
+            'type': BooleanFieldType,
             'description': 'Whether or not the group is visible to users '
                            'who are not members. This does not prevent users '
                            'from accessing the group if they know it, though.',
             'added_in': '1.6',
         },
         'extra_data': {
-            'type': dict,
+            'type': DictFieldType,
             'description': 'Extra data as part of the review group. '
                            'This can be set by the API or extensions.',
             'added_in': '2.0',
@@ -144,14 +147,14 @@ class ReviewGroupResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'q': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The string that the group name (or the  '
                                'display name when using ``displayname``) '
                                'must start with in order to be included in '
                                'the list. This is case-insensitive.',
             },
             'displayname': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'Specifies whether ``q`` should also match '
                                'the beginning of the display name.',
             },
@@ -185,31 +188,31 @@ class ReviewGroupResource(WebAPIResource):
     @webapi_request_fields(
         required={
             'name': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The name of the group.',
                 'added_in': '1.6.14',
             },
             'display_name': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The human-readable name of the group.',
                 'added_in': '1.6.14',
             },
         },
         optional={
             'mailing_list': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The e-mail address that all posts on a review '
                                'group are sent to.',
                 'added_in': '1.6.14',
             },
             'visible': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'Whether or not the group is visible to users '
                                'who are not members. The default is true.',
                 'added_in': '1.6.14',
             },
             'invite_only': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'Whether or not the group is invite-only. '
                                'The default is false.',
                 'added_in': '1.6.14',
@@ -267,29 +270,29 @@ class ReviewGroupResource(WebAPIResource):
     @webapi_request_fields(
         optional={
             'name': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The new name for the group.',
                 'added_in': '1.6.14',
             },
             'display_name': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The human-readable name of the group.',
                 'added_in': '1.6.14',
             },
             'mailing_list': {
-                'type': six.text_type,
+                'type': StringFieldType,
                 'description': 'The e-mail address that all posts on a review '
                                'group are sent to.',
                 'added_in': '1.6.14',
             },
             'visible': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'Whether or not the group is visible to users '
                                'who are not members.',
                 'added_in': '1.6.14',
             },
             'invite_only': {
-                'type': bool,
+                'type': BooleanFieldType,
                 'description': 'Whether or not the group is invite-only.',
                 'added_in': '1.6.14',
             },

@@ -21,114 +21,294 @@ from reviewboard.avatars.testcase import AvatarServicesTestMixin
 from reviewboard.testing.testcase import TestCase
 
 
+# This just helps keep things less wordy, and to define some settings
+# we no longer have constants for elsewhere.
+AVATARS_ENABLED_KEY = AvatarServiceRegistry.AVATARS_ENABLED_KEY
+DEFAULT_SERVICE_KEY = AvatarServiceRegistry.DEFAULT_SERVICE_KEY
+ENABLED_SERVICES_KEY = AvatarServiceRegistry.ENABLED_SERVICES_KEY
+LEGACY_AVATARS_MIGRATED_KEY = AvatarServiceRegistry.LEGACY_AVATARS_MIGRATED_KEY
+LEGACY_INTEGRATION_GRAVATARS_KEY = \
+    AvatarServiceRegistry.LEGACY_INTEGRATION_GRAVATARS_KEY
+
+
 class AvatarServiceRegistryTests(AvatarServicesTestMixin, TestCase):
     """Tests for reviewboard.avatars."""
 
-    def test_migrate_enabled(self):
-        """Testing AvatarServiceRegistry migrates avatar settings for enabled
-        gravatars
+    _enabled_service_ids = [
+        GravatarService.avatar_service_id,
+        FileUploadService.avatar_service_id,
+        URLAvatarService.avatar_service_id,
+    ]
+
+    _default_service_id = GravatarService.avatar_service_id
+
+    def setUp(self):
+        super(AvatarServiceRegistryTests, self).setUp()
+
+        self.registry = AvatarServiceRegistry()
+        self.siteconfig = SiteConfiguration.objects.get_current()
+
+    def test_defaults(self):
+        """Testing AvatarServiceRegistry default services state"""
+        self.assertEqual(
+            set(self.registry),
+            {
+                FileUploadService,
+                GravatarService,
+                URLAvatarService,
+            })
+
+        self.assertIsInstance(self.registry.default_service, GravatarService)
+        self.assertEqual(
+            set(self.registry.enabled_services),
+            {
+                FileUploadService,
+                GravatarService,
+                URLAvatarService,
+            })
+
+    def test_get_siteconfig_defaults(self):
+        """Testing AvatarServiceRegistry.get_siteconfig_defaults"""
+        self.assertEqual(
+            self.registry.get_siteconfig_defaults(),
+            {
+                AVATARS_ENABLED_KEY: True,
+                ENABLED_SERVICES_KEY: self._enabled_service_ids,
+                DEFAULT_SERVICE_KEY: self._default_service_id,
+            })
+
+    def test_migrate_settings_pre_2_0_with_enabled(self):
+        """Testing AvatarServiceRegistry.migrate_settings migrates pre-2.0
+        settings
         """
-        # Verify the pre-conditions.
-        siteconfig = SiteConfiguration.objects.get_current()
-        self.assertFalse(
-            siteconfig.get(AvatarServiceRegistry.AVATARS_MIGRATED_KEY))
-        self.assertTrue(
-            siteconfig.get(AvatarServiceRegistry.AVATARS_ENABLED_KEY))
-        self.assertEqual(
-            siteconfig.get(AvatarServiceRegistry.ENABLED_SERVICES_KEY),
-            [])
-        self.assertIsNone(
-            siteconfig.get(AvatarServiceRegistry.DEFAULT_SERVICE_KEY))
+        siteconfig_settings = self.siteconfig.settings
 
-        registry = AvatarServiceRegistry()
+        self.assertNotIn(AVATARS_ENABLED_KEY, siteconfig_settings)
+        self.assertNotIn(DEFAULT_SERVICE_KEY, siteconfig_settings)
+        self.assertNotIn(ENABLED_SERVICES_KEY, siteconfig_settings)
+        self.assertNotIn(LEGACY_AVATARS_MIGRATED_KEY, siteconfig_settings)
+        self.assertNotIn(LEGACY_INTEGRATION_GRAVATARS_KEY, siteconfig_settings)
 
-        self.assertEqual(
-            set(registry),
-            {
-                FileUploadService,
-                GravatarService,
-                URLAvatarService,
-            })
+        # Perform the migration.
+        self._perform_migration(expect_has_enabled_saved=False,
+                                expect_migrated=False)
 
-        self.assertIsInstance(registry.default_service, GravatarService)
-        self.assertEqual(
-            set(registry.enabled_services),
-            {
-                FileUploadService,
-                GravatarService,
-                URLAvatarService,
-            })
-
-        # Verify that the settings were saved correctly to the database.
-        self.assertTrue(
-            siteconfig.get(AvatarServiceRegistry.AVATARS_MIGRATED_KEY))
-        self.assertTrue(
-            siteconfig.get(AvatarServiceRegistry.AVATARS_ENABLED_KEY))
-        self.assertEqual(
-            siteconfig.get(AvatarServiceRegistry.ENABLED_SERVICES_KEY),
-            [
-                GravatarService.avatar_service_id,
-                FileUploadService.avatar_service_id,
-                URLAvatarService.avatar_service_id,
-            ])
-        self.assertEqual(
-            siteconfig.get(AvatarServiceRegistry.DEFAULT_SERVICE_KEY),
-            GravatarService.avatar_service_id)
-
-    def test_migrate_disabled(self):
-        """Testing AvatarServiceRegistry migrates avatar settings for disabled
-        gravatars
+    def test_migrate_settings_pre_3_0_with_enabled(self):
+        """Testing AvatarServiceRegistry.migrate_settings migrates pre-3.0
+        avatar settings for enabled Gravatars
         """
-        # Verify the pre-conditions.
-        siteconfig = SiteConfiguration.objects.get_current()
-        self.assertFalse(
-            siteconfig.get(AvatarServiceRegistry.AVATARS_MIGRATED_KEY))
-        self.assertTrue(
-            siteconfig.get(AvatarServiceRegistry.AVATARS_ENABLED_KEY))
+        siteconfig_settings = self.siteconfig.settings
+
+        self.assertNotIn(AVATARS_ENABLED_KEY, siteconfig_settings)
+        self.assertNotIn(DEFAULT_SERVICE_KEY, siteconfig_settings)
+        self.assertNotIn(ENABLED_SERVICES_KEY, siteconfig_settings)
+        self.assertNotIn(LEGACY_AVATARS_MIGRATED_KEY, siteconfig_settings)
+
+        self.siteconfig.set(LEGACY_INTEGRATION_GRAVATARS_KEY, True)
+
+        # Perform the migration.
+        self._perform_migration(expect_has_enabled_saved=False)
+
+    def test_migrate_pre_3_0_disabled(self):
+        """Testing AvatarServiceRegistry migrates pre-3.0 avatar settings for
+        disabled Gravatars
+        """
+        siteconfig_settings = self.siteconfig.settings
+
+        self.assertNotIn(AVATARS_ENABLED_KEY, siteconfig_settings)
+        self.assertNotIn(DEFAULT_SERVICE_KEY, siteconfig_settings)
+        self.assertNotIn(ENABLED_SERVICES_KEY, siteconfig_settings)
+        self.assertNotIn(LEGACY_AVATARS_MIGRATED_KEY, siteconfig_settings)
+
+        self.siteconfig.set(LEGACY_INTEGRATION_GRAVATARS_KEY, False)
+
+        # Perform the migration.
+        self._perform_migration(expect_enabled=False)
+
+    def test_migrate_3_0_pre_4_disabled(self):
+        """Testing AvatarServiceRegistry migrates 3.0.[0-3] avatar settings for
+        migrated disabled avatars
+        """
+        enabled_service_ids = [
+            GravatarService.avatar_service_id,
+            URLAvatarService.avatar_service_id,
+        ]
+        default_service_id = URLAvatarService.avatar_service_id
+
+        self.siteconfig.set(AVATARS_ENABLED_KEY, False)
+        self.siteconfig.set(DEFAULT_SERVICE_KEY, default_service_id)
+        self.siteconfig.set(ENABLED_SERVICES_KEY, enabled_service_ids)
+        self.siteconfig.set(LEGACY_AVATARS_MIGRATED_KEY, True)
+        self.siteconfig.set(LEGACY_INTEGRATION_GRAVATARS_KEY, True)
+
+        # Perform the migration.
+        self._perform_migration(expect_enabled=False,
+                                expected_enabled_services=enabled_service_ids,
+                                expected_default_service=default_service_id,
+                                expect_has_services_saved=True)
+
+    def test_migrate_3_0_pre_4_enabled(self):
+        """Testing AvatarServiceRegistry migrates 3.0.[0-3] avatar settings for
+        migrated enabled avatars
+        """
+        enabled_service_ids = [
+            GravatarService.avatar_service_id,
+            URLAvatarService.avatar_service_id,
+        ]
+        default_service_id = URLAvatarService.avatar_service_id
+
+        self.siteconfig.set(AVATARS_ENABLED_KEY, True)
+        self.siteconfig.set(DEFAULT_SERVICE_KEY, default_service_id)
+        self.siteconfig.set(ENABLED_SERVICES_KEY, enabled_service_ids)
+        self.siteconfig.set(LEGACY_AVATARS_MIGRATED_KEY, True)
+        self.siteconfig.set(LEGACY_INTEGRATION_GRAVATARS_KEY, True)
+
+        # Perform the migration.
+        self._perform_migration(expected_enabled_services=enabled_service_ids,
+                                expected_default_service=default_service_id,
+                                expect_has_services_saved=True)
+
+    def test_migrate_already_migrated_enabled(self):
+        """Testing AvatarServiceRegistry does not migrate already-migrated
+        settings with enabled avatars
+        """
+        siteconfig_settings = self.siteconfig.settings
+
+        self.assertNotIn(DEFAULT_SERVICE_KEY, siteconfig_settings)
+        self.assertNotIn(ENABLED_SERVICES_KEY, siteconfig_settings)
+
+        self.siteconfig.set(AVATARS_ENABLED_KEY, True)
+        self.siteconfig.set(LEGACY_AVATARS_MIGRATED_KEY, True)
+        self.siteconfig.set(LEGACY_INTEGRATION_GRAVATARS_KEY, True)
+
+        # Perform the migration.
+        self._perform_migration()
+
+    def test_migrate_already_migrated_disabled(self):
+        """Testing AvatarServiceRegistry does not migrate already-migrated
+        settings with disabled avatars
+        """
+        siteconfig_settings = self.siteconfig.settings
+
+        self.assertNotIn(DEFAULT_SERVICE_KEY, siteconfig_settings)
+        self.assertNotIn(ENABLED_SERVICES_KEY, siteconfig_settings)
+
+        self.siteconfig.set(AVATARS_ENABLED_KEY, True)
+        self.siteconfig.set(LEGACY_AVATARS_MIGRATED_KEY, True)
+        self.siteconfig.set(LEGACY_INTEGRATION_GRAVATARS_KEY, True)
+
+        # Perform the migration.
+        self._perform_migration()
+
+    def test_migrate_with_fresh_install(self):
+        """Testing AvatarServiceRegistry does not migrate fresh settings
+        settings with disabled avatars
+        """
+        siteconfig_settings = self.siteconfig.settings
+
+        self.assertNotIn(AVATARS_ENABLED_KEY, siteconfig_settings)
+        self.assertNotIn(DEFAULT_SERVICE_KEY, siteconfig_settings)
+        self.assertNotIn(ENABLED_SERVICES_KEY, siteconfig_settings)
+        self.assertNotIn(LEGACY_AVATARS_MIGRATED_KEY, siteconfig_settings)
+        self.assertNotIn(LEGACY_INTEGRATION_GRAVATARS_KEY, siteconfig_settings)
+
+        # Perform the migration.
+        self._perform_migration(expect_migrated=False,
+                                expect_has_enabled_saved=False)
+
+    def _perform_migration(self,
+                           expect_migrated=True,
+                           expect_enabled=True,
+                           expected_enabled_services=_enabled_service_ids,
+                           expected_default_service=_default_service_id,
+                           expect_has_services_saved=False,
+                           expect_has_enabled_saved=True):
+        """Perform an avatar settings migration test.
+
+        This will trigger a migration of the existing settings, checking the
+        final results in the database based on the expectations of the caller.
+        This helps to unify all of our various migration tests.
+
+        Args:
+            expect_migrated (bool, optional):
+                Whether the migration attempt is expected to have made changes
+                to the stored site configuration.
+
+            expect_enabled (bool, optional):
+                Whether avatars are expected to be enabled after the migration.
+
+            expected_enabled_services (list, optional):
+                The list of avatar service IDs that are expected to be enabled
+                after the migration.
+
+            expected_default_service (unicode, optional):
+                The avatar service ID that is expected to be set as the
+                default.
+
+            expect_has_services_saved (bool, optional):
+                Whether the site configuration is expected to have a list of
+                service IDs explicitly saved.
+
+            expect_has_enabled_saved (bool, optional):
+                Whether the site configuration is expected to have the enabled
+                state explicitly saved.
+        """
+        migrated = self.registry.migrate_settings(self.siteconfig)
+        self.assertEqual(migrated, expect_migrated)
+
+        if migrated:
+            self.siteconfig.save()
+
+        # Make sure the default avatar and available/enabled avatars are
+        # still there.
+        self.assertEqual(self.registry.default_service.avatar_service_id,
+                         expected_default_service)
         self.assertEqual(
-            siteconfig.get(AvatarServiceRegistry.ENABLED_SERVICES_KEY),
-            [])
-        self.assertIsNone(
-            siteconfig.get(AvatarServiceRegistry.DEFAULT_SERVICE_KEY))
-
-        siteconfig.set('integration_gravatars', False)
-        siteconfig.save()
-
-        registry = AvatarServiceRegistry()
-
-        # Verify all services are disabled.
-        self.assertEqual(
-            set(registry),
+            set(self.registry),
             {
                 FileUploadService,
                 GravatarService,
                 URLAvatarService,
             })
-        self.assertIsInstance(registry.default_service, GravatarService)
         self.assertEqual(
-            set(registry.enabled_services),
             {
-                FileUploadService,
-                GravatarService,
-                URLAvatarService,
-            })
+                avatar_service.avatar_service_id
+                for avatar_service in self.registry.enabled_services
+            },
+            set(expected_enabled_services))
 
-        # Verify the settings were correctly saved to the database.
-        siteconfig = SiteConfiguration.objects.get_current()
-        self.assertTrue(
-            siteconfig.get(AvatarServiceRegistry.AVATARS_MIGRATED_KEY))
-        self.assertFalse(
-            siteconfig.get(AvatarServiceRegistry.AVATARS_ENABLED_KEY))
-        self.assertEqual(
-            siteconfig.get(AvatarServiceRegistry.ENABLED_SERVICES_KEY),
-            [
-                GravatarService.avatar_service_id,
-                FileUploadService.avatar_service_id,
-                URLAvatarService.avatar_service_id,
-            ])
-        self.assertEqual(
-            siteconfig.get(AvatarServiceRegistry.DEFAULT_SERVICE_KEY),
-            GravatarService.avatar_service_id)
+        # Verify that the saved settings reflect the correct state. These
+        # checks include the defaults:
+        siteconfig = SiteConfiguration.objects.get(pk=self.siteconfig.pk)
+        self.assertIs(siteconfig.get(AVATARS_ENABLED_KEY), expect_enabled)
+        self.assertEqual(siteconfig.get(ENABLED_SERVICES_KEY),
+                         expected_enabled_services)
+        self.assertEqual(siteconfig.get(DEFAULT_SERVICE_KEY),
+                         expected_default_service)
+        self.assertIsNone(siteconfig.get(LEGACY_AVATARS_MIGRATED_KEY))
+        self.assertIsNone(siteconfig.get(LEGACY_INTEGRATION_GRAVATARS_KEY))
+
+        # These checks are for what's actually written to siteconfig.
+        siteconfig_settings = siteconfig.settings
+        self.assertNotIn(LEGACY_AVATARS_MIGRATED_KEY, siteconfig_settings)
+        self.assertNotIn(LEGACY_INTEGRATION_GRAVATARS_KEY, siteconfig_settings)
+
+        if expect_has_enabled_saved:
+            self.assertIs(siteconfig_settings.get(AVATARS_ENABLED_KEY),
+                          expect_enabled)
+        else:
+            self.assertNotIn(AVATARS_ENABLED_KEY, siteconfig_settings)
+
+        if expect_has_services_saved:
+            self.assertIn(ENABLED_SERVICES_KEY, siteconfig_settings)
+            self.assertIn(DEFAULT_SERVICE_KEY, siteconfig_settings)
+            self.assertEqual(siteconfig_settings[ENABLED_SERVICES_KEY],
+                             expected_enabled_services)
+            self.assertEqual(siteconfig_settings[DEFAULT_SERVICE_KEY],
+                             expected_default_service)
+        else:
+            self.assertNotIn(ENABLED_SERVICES_KEY, siteconfig_settings)
+            self.assertNotIn(DEFAULT_SERVICE_KEY, siteconfig_settings)
 
 
 class TemplateTagTests(AvatarServicesTestMixin, TestCase):
