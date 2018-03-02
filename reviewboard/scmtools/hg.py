@@ -26,11 +26,6 @@ class HgTool(SCMTool):
     def __init__(self, repository):
         super(HgTool, self).__init__(repository)
 
-        if not is_exe_in_path('hg'):
-            # This is technically not the right kind of error, but it's the
-            # pattern we use with all the other tools.
-            raise ImportError
-
         if repository.path.startswith('http'):
             credentials = repository.get_credentials()
 
@@ -38,6 +33,11 @@ class HgTool(SCMTool):
                                       credentials['username'],
                                       credentials['password'])
         else:
+            if not is_exe_in_path('hg'):
+                # This is technically not the right kind of error, but it's the
+                # pattern we use with all the other tools.
+                raise ImportError
+
             self.client = HgClient(repository.path, repository.local_site)
 
     def get_file(self, path, revision=HEAD, base_commit_id=None, **kwargs):
