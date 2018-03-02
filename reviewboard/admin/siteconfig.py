@@ -49,6 +49,7 @@ from djblets.webapi.auth.backends import reset_auth_backends
 from haystack import connections
 
 from reviewboard.accounts.backends import auth_backends
+from reviewboard.avatars import avatar_services
 from reviewboard.oauth.features import oauth2_service_feature
 from reviewboard.search import search_backend_registry
 from reviewboard.search.search_backends.whoosh import WhooshBackend
@@ -124,6 +125,7 @@ settings_map.update({
 defaults = get_django_defaults()
 defaults.update(log_siteconfig.defaults)
 defaults.update(recaptcha_siteconfig.defaults)
+defaults.update(avatar_services.get_siteconfig_defaults())
 defaults.update({
     'auth_ldap_anon_bind_uid': '',
     'auth_ldap_anon_bind_passwd': '',
@@ -150,7 +152,6 @@ defaults.update({
     'diffviewer_syntax_highlighting': True,
     'diffviewer_syntax_highlighting_threshold': 0,
     'diffviewer_show_trailing_whitespace': True,
-    'integration_gravatars': True,
     'mail_send_review_mail': False,
     'mail_send_new_user_mail': False,
     'mail_send_password_changed_mail': False,
@@ -170,10 +171,6 @@ defaults.update({
 })
 
 defaults.update({
-    'avatars_enabled': True,
-    'avatars_enabled_services': [],
-    'avatars_default_service': None,
-    'avatars_migrated': False,
     'aws_access_key_id': '',
     'aws_calling_format': 2,
     'aws_default_acl': 'public-read',
@@ -428,6 +425,10 @@ def load_site_config(full_reload=False):
         os.environ[b'HTTPS'] = b'on'
     else:
         os.environ[b'HTTPS'] = b'off'
+
+    # Migrate over any legacy avatar backend settings.
+    if avatar_services.migrate_settings(siteconfig):
+        dirty = True
 
     # Save back changes if they have been made
     if dirty:
