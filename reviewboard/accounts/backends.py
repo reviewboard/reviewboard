@@ -910,6 +910,10 @@ class ActiveDirectoryBackend(AuthBackend):
 
         This returns an iterable of connections to the LDAP servers specified
         in AD_DOMAIN_CONTROLLER.
+
+        Yields:
+            tuple of (unicode, ldap.LDAP_OBJECT):
+            The connections to the configured LDAP servers.
         """
         if settings.AD_FIND_DC_FROM_DNS:
             dcs = self.find_domain_controllers_from_dns(userdomain)
@@ -928,11 +932,11 @@ class ActiveDirectoryBackend(AuthBackend):
         for dc in dcs:
             port, host = dc
             ldap_uri = 'ldap://%s:%s' % (host, port)
-            con = ldap.initialize(ldap_uri)
+            connection = ldap.initialize(ldap_uri)
 
             if settings.AD_USE_TLS:
                 try:
-                    con.start_tls_s()
+                    connection.start_tls_s()
                 except ldap.UNAVAILABLE:
                     logging.warning('Active Directory: Domain controller '
                                     '%s:%d for domain %s unavailable',
@@ -946,16 +950,33 @@ class ActiveDirectoryBackend(AuthBackend):
                                     host, int(port), userdomain)
                     continue
 
-            con.set_option(ldap.OPT_REFERRALS, 0)
-            yield con
+            connection.set_option(ldap.OPT_REFERRALS, 0)
+            yield ldap_uri, connection
 
     def authenticate(self, username, password, **kwargs):
         """Authenticate the user.
 
-        This will authenticate the username and return the appropriate User
-        object, or None.
+        Args:
+            username (unicode):
+                The entered username.
+
+            password (unicode):
+                The entered password.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments passed by the caller.
+
+        Returns:
+            django.contrib.auth.models.User:
+            The authenticated user. If authentication fails, returns None.
         """
         username = username.strip()
+
+        if ldap is None:
+            logging.error('Attempted to authenticate user "%s" in LDAP, but '
+                          'the python-ldap package is not installed!',
+                          username)
+            return None
 
         user_subdomain = ''
 
@@ -968,8 +989,6 @@ class ActiveDirectoryBackend(AuthBackend):
 
         if user_subdomain:
             userdomain = "%s.%s" % (user_subdomain, userdomain)
-
-        connections = self.get_ldap_connections(userdomain)
 
         required_group = settings.AD_GROUP_NAME
         if isinstance(required_group, six.text_type):
@@ -986,14 +1005,14 @@ class ActiveDirectoryBackend(AuthBackend):
         if isinstance(password, six.text_type):
             password = password.encode('utf-8')
 
-        for con in connections:
+        for uri, connection in self.get_ldap_connections(userdomain):
             try:
                 bind_username = b'%s@%s' % (username_bytes, userdomain)
                 logging.debug("User %s is trying to log in via AD",
                               bind_username.decode('utf-8'))
-                con.simple_bind_s(bind_username, password)
+                connection.simple_bind_s(bind_username, password)
                 user_data = self.search_ad(
-                    con,
+                    connection,
                     filter_format('(&(objectClass=user)(sAMAccountName=%s))',
                                   (username_bytes,)),
                     userdomain)
@@ -1003,26 +1022,30 @@ class ActiveDirectoryBackend(AuthBackend):
 
                 if required_group:
                     try:
-                        group_names = self.get_member_of(con, user_data)
+                        group_names = self.get_member_of(connection, user_data)
                     except Exception as e:
-                        logging.error("Active Directory error: failed getting"
-                                      "groups for user '%s': %s",
-                                      username, e, exc_info=1)
+                        logging.error('Active Directory error: failed getting '
+                                      'groups for user "%s" from controller '
+                                      '%s: %s',
+                                      username, uri, e, exc_info=1)
                         return None
 
                     if required_group not in group_names:
-                        logging.warning("Active Directory: User %s is not in "
-                                        "required group %s",
-                                        username, required_group)
+                        logging.warning('Active Directory: User %s is not in '
+                                        'required group %s on controller %s',
+                                        username, required_group, uri)
                         return None
 
                 return self.get_or_create_user(username, None, user_data)
             except ldap.SERVER_DOWN:
-                logging.warning('Active Directory: Domain controller is down')
+                logging.warning('Active Directory: Domain controller %s is '
+                                'down',
+                                uri)
                 continue
             except ldap.INVALID_CREDENTIALS:
-                logging.warning('Active Directory: Failed login for user %s',
-                                username)
+                logging.warning('Active Directory: Failed login for user %s '
+                                'on controller %s',
+                                username, uri)
                 return None
 
         logging.error('Active Directory error: Could not contact any domain '

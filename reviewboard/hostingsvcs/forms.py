@@ -243,7 +243,7 @@ class HostingServiceAuthForm(forms.Form):
         return credentials
 
     def save(self, allow_authorize=True, force_authorize=False,
-             extra_authorize_kwargs={}):
+             extra_authorize_kwargs=None, save=True):
         """Save the hosting account and authorize against the service.
 
         This will create or update a hosting account, based on the information
@@ -266,19 +266,31 @@ class HostingServiceAuthForm(forms.Form):
                 <reviewboard.hostingsvcs.models.HostingService.authorize>`
                 call.
 
+            save (bool, optional):
+                Whether or not the created account should be saved.
+
+                This is intended to be used by subclasses who want to add
+                additional data to the resulting hosting account before saving.
+
+                If this is ``False``, the caller must ensure the resulting
+                hosting account is saved.
+
         Returns:
             reviewboard.hostingsvcs.models.HostingServiceAccount:
             The updated or created hosting service account.
 
         Raises:
             reviewboard.hostingsvcs.errors.AuthorizationError:
-                Information needed to authorize was missing, or authorziation
+                Information needed to authorize was missing, or authorization
                 failed.
 
             reviewboard.hostingsvcs.errors.TwoFactorAuthCodeRequiredError:
                 A two-factor authentication code is required to authorize the
                 account. A code will need to be provided to the form.
         """
+        if extra_authorize_kwargs is None:
+            extra_authorize_kwargs = {}
+
         credentials = self.get_credentials()
 
         # Grab the username from the credentials, sanity-checking that it's
@@ -372,7 +384,8 @@ class HostingServiceAuthForm(forms.Form):
                 # Re-raise the error.
                 raise
 
-        hosting_account.save()
+        if save:
+            hosting_account.save()
 
         return hosting_account
 

@@ -342,7 +342,11 @@ class HgWebClient(SCMClient):
 
         if contents:
             data = json.loads(contents)
-            parent = data['parents'][0]
+            try:
+                parent = data['parents'][0]
+            except IndexError:
+                parent = None
+
             return Commit(id=data['node'],
                           message=data['desc'],
                           author_name=data['user'],
@@ -388,7 +392,11 @@ class HgWebClient(SCMClient):
 
         if contents and contents != '"not yet implemented"':
             for data in json.loads(contents)['entries']:
-                parent = data['parents'][0]
+                try:
+                    parent = data['parents'][0]
+                except IndexError:
+                    parent = None
+
                 iso8601 = HgTool.date_tuple_to_iso8601(data['date'])
                 changeset = Commit(id=data['node'],
                                    message=data['desc'],
@@ -511,14 +519,18 @@ class HgClient(SCMClient):
         results = []
 
         for data in json.load(p.stdout):
-            p = data['parents'][0]
+            try:
+                parent = data['parents'][0]
+            except IndexError:
+                parent = None
+
             results.append(Commit(
                 id=data['node'],
                 message=data['desc'],
                 author_name=data['user'],
                 date=HgTool.date_tuple_to_iso8601(data['date']),
-                parent=p,
-                base_commit_id=p))
+                parent=parent,
+                base_commit_id=parent))
 
         return results
 
