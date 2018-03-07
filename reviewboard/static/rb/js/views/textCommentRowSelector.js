@@ -31,7 +31,8 @@ RB.TextCommentRowSelector = Backbone.View.extend({
     /*
      * Initializes the commenting selector.
      */
-    initialize: function() {
+    initialize: function(options) {
+        this.options = options;
         this._$begin = null;
         this._$end = null;
         this._beginLineNum = 0;

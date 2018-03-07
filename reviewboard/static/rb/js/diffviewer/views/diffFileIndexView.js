@@ -17,7 +17,8 @@ RB.DiffFileIndexView = Backbone.View.extend({
     /*
      * Initializes the view.
      */
-    initialize: function() {
+    initialize: function(options) {
+        this.options = options;
         this._$items = null;
         this._$itemsTable = null;
 

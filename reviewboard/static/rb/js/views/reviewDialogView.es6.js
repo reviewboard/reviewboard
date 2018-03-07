@@ -337,6 +337,22 @@ const DiffCommentView = BaseCommentView.extend({
     `),
 
     /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view.
+     *
+     * Option Args:
+     *     diffQueue (RB.DiffFragmentQueueView):
+     *         The view that handles loading diff fragments.
+     */
+    initialize(options) {
+        this.options = options;
+        BaseCommentView.prototype.initialize.call(this, options);
+    },
+
+    /**
      * Render the comment view.
      *
      * After rendering, this will queue up a load of the diff fragment
@@ -777,8 +793,19 @@ RB.ReviewDialogView = Backbone.View.extend({
 
     /**
      * Initialize the review dialog.
+     *
+     * Args:
+     *     container (string, optional):
+     *         The selector for a container element for the review dialog.
+     *
+     *     options (object):
+     *         Options for the view.
+     *
+     *     reviewRequestEditor (RB.ReviewRequestEditor):
+     *         The review request editor.
      */
-    initialize() {
+    initialize(options) {
+        this.options = options;
         this._$diffComments = $();
         this._$fileAttachmentComments = $();
         this._$generalComments = $();

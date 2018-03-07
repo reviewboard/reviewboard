@@ -25,6 +25,21 @@ const UpdatesBubbleView = Backbone.View.extend({
     },
 
     /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view.
+     *
+     * Option Args:
+     *     updateInfo (object):
+     *         Information about the update, fetched from the server.
+     */
+    initialize(options) {
+        this.options = options;
+    },
+
+    /**
      * Render the bubble with the information provided during construction.
      *
      * The bubble starts hidden. The caller must call open() to display it.

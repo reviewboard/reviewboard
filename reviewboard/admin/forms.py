@@ -116,18 +116,22 @@ class GeneralSettingsForm(SiteSettingsForm):
 
     site_media_url = forms.CharField(
         label=_("Media URL"),
-        help_text=_("The URL to the media files. Leave blank to use the "
-                    "default media path on this server."),
-        required=False,
+        help_text=(_('The URL to the media files. Set to '
+                     '<code>%smedia/</code> to use the default media path on '
+                     'this server.')
+                   % settings.SITE_ROOT),
+        required=True,
         widget=forms.TextInput(attrs={'size': '30'}))
 
     site_static_url = forms.CharField(
         label=_('Static URL'),
-        help_text=_('The URL to the static files, such as JavaScript files, '
-                    'CSS files, and images that are bundled with Review Board '
-                    'or third-party extensions. Leave blank to use the '
-                    'default static path on this server.'),
-        required=False,
+        help_text=(_('The URL to the static files, such as JavaScript files, '
+                     'CSS files, and images that are bundled with Review '
+                     'Board or third-party extensions. Set to '
+                     '<code>%sstatic/</code> to use the default static path '
+                     'on this server.')
+                   % settings.SITE_ROOT),
+        required=True,
         widget=forms.TextInput(attrs={'size': '30'}))
 
     site_admin_name = forms.CharField(

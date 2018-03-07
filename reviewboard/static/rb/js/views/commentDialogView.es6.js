@@ -28,6 +28,28 @@ const CommentsListView = Backbone.View.extend({
     `),
 
     /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view.
+     *
+     * Option Args:
+     *     commentIssueManager (RB.CommentIssueManager):
+     *         The manager for issues.
+     *
+     *     issuesInteractive (boolean):
+     *         Whether the user can interact with issues (they have permission
+     *         to change the state).
+     *
+     *     reviewRequestURL (string):
+     *         The URL of the review request.
+     */
+    initialize(options) {
+        this.options = options;
+    },
+
+    /**
      * Set the list of displayed comments.
      *
      * Args:
@@ -172,6 +194,24 @@ RB.CommentDialogView = Backbone.View.extend({
         'click .buttons .delete': '_onDeleteClicked',
         'click .buttons .save': 'save',
         'keydown .comment-text-field': '_onTextKeyDown',
+    },
+
+    /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view.
+     *
+     * Option Args:
+     *     animate (boolean):
+     *         Whether to use animation.
+     *
+     *     commentIssueManager (RB.CommentIssueManager):
+     *         The manager for issues.
+     */
+    initialize(options) {
+        this.options = options;
     },
 
     /**

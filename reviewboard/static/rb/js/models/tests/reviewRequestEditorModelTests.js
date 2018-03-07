@@ -430,7 +430,7 @@ suite('rb/models/ReviewRequestEditor', function() {
 
     describe('Reviewed objects', function() {
         describe('File attachments', function() {
-            it('Removed when destroyed', function() {
+            it('Removed when destroyed', function(done) {
                 var fileAttachments = editor.get('fileAttachments'),
                     fileAttachment = editor.createFileAttachment(),
                     draft = editor.get('reviewRequest').draft;
@@ -442,23 +442,29 @@ suite('rb/models/ReviewRequestEditor', function() {
 
                 expect(fileAttachments.at(0)).toBe(fileAttachment);
 
-                fileAttachment.destroy();
-
-                expect(fileAttachments.length).toBe(0);
+                fileAttachment.destroy({
+                    success: function() {
+                        expect(fileAttachments.length).toBe(0);
+                        done();
+                    }
+                });
             });
         });
 
         describe('Screenshots', function() {
-            it('Removed when destroyed', function() {
+            it('Removed when destroyed', function(done) {
                 var screenshots = editor.get('screenshots'),
                     screenshot = reviewRequest.createScreenshot();
 
                 screenshots.add(screenshot);
                 expect(screenshots.at(0)).toBe(screenshot);
 
-                screenshot.destroy();
-
-                expect(screenshots.length).toBe(0);
+                screenshot.destroy({
+                    success: function() {
+                        expect(screenshots.length).toBe(0);
+                        done();
+                    }
+                });
             });
         });
     });
@@ -474,7 +480,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 expect(editor.trigger).toHaveBeenCalledWith('saved');
             });
 
-            it('When new file attachment destroyed', function() {
+            it('When new file attachment destroyed', function(done) {
                 var fileAttachment = editor.createFileAttachment(),
                     draft = editor.get('reviewRequest').draft;
 
@@ -484,9 +490,12 @@ suite('rb/models/ReviewRequestEditor', function() {
                     });
 
                 spyOn(editor, 'trigger');
-                fileAttachment.destroy();
-
-                expect(editor.trigger).toHaveBeenCalledWith('saved');
+                fileAttachment.destroy({
+                    success: function() {
+                        expect(editor.trigger).toHaveBeenCalledWith('saved');
+                        done();
+                    }
+                });
             });
 
             it('When existing file attachment saved', function() {
@@ -505,7 +514,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 expect(editor.trigger).toHaveBeenCalledWith('saved');
             });
 
-            it('When existing file attachment destroyed', function() {
+            it('When existing file attachment destroyed', function(done) {
                 var fileAttachment =
                     reviewRequest.draft.createFileAttachment();
 
@@ -521,9 +530,12 @@ suite('rb/models/ReviewRequestEditor', function() {
                     });
 
                 spyOn(editor, 'trigger');
-                fileAttachment.destroy();
-
-                expect(editor.trigger).toHaveBeenCalledWith('saved');
+                fileAttachment.destroy({
+                    success: function() {
+                        expect(editor.trigger).toHaveBeenCalledWith('saved');
+                        done();
+                    }
+                });
             });
 
             it('When existing screenshot saved', function() {
@@ -540,7 +552,7 @@ suite('rb/models/ReviewRequestEditor', function() {
                 expect(editor.trigger).toHaveBeenCalledWith('saved');
             });
 
-            it('When existing screenshot destroyed', function() {
+            it('When existing screenshot destroyed', function(done) {
                 var screenshot = reviewRequest.createScreenshot();
 
                 editor = new RB.ReviewRequestEditor({
@@ -554,9 +566,12 @@ suite('rb/models/ReviewRequestEditor', function() {
                     });
 
                 spyOn(editor, 'trigger');
-                screenshot.destroy();
-
-                expect(editor.trigger).toHaveBeenCalledWith('saved');
+                screenshot.destroy({
+                    success: function() {
+                        expect(editor.trigger).toHaveBeenCalledWith('saved');
+                        done();
+                    }
+                });
             });
         });
 

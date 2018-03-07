@@ -5,7 +5,9 @@ RB.DiffRevisionSelectorView = RB.RevisionSelectorView.extend({
     /*
      * Initialize the view.
      */
-    initialize: function() {
+    initialize: function(options) {
+        this.options = options;
+
         RB.RevisionSelectorView.prototype.initialize.call(this, {
             firstLabelActive: true,
             numHandles: 2

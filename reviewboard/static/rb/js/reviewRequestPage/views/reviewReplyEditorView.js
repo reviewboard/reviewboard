@@ -38,7 +38,8 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
         'click .add_comment_link': '_onAddCommentClicked'
     },
 
-    initialize: function() {
+    initialize: function(options) {
+        this.options = options;
         this._$addCommentLink = null;
         this._$draftComment = null;
         this._$editor = null;

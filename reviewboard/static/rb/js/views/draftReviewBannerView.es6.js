@@ -13,6 +13,21 @@ RB.DraftReviewBannerView = Backbone.View.extend({
     },
 
     /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (object):
+     *         Options for the view.
+     *
+     * Option Args:
+     *     reviewRequestEditor (RB.ReviewRequestEditor):
+     *         The review request editor.
+     */
+    initialize(options) {
+        this.options = options;
+    },
+
+    /**
      * Render the view.
      *
      * Returns:

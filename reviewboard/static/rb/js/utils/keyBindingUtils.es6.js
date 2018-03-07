@@ -49,7 +49,9 @@ RB.KeyBindingsMixin = {
      * By default, this is called automatically when calling undelegateEvents.
      */
     undelegateKeyBindings() {
-        this.$el.off(`keypress.keybindings.${this.cid}`);
+        if (this.$el) {
+            this.$el.off(`keypress.keybindings.${this.cid}`);
+        }
     },
 
     /**

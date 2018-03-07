@@ -41,22 +41,21 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
             });
 
             it('Sets up events on new reviewReply', function() {
+                spyOn(editor, 'listenTo').and.callThrough();
+
                 var reviewReply = new RB.ReviewReply();
-
-                spyOn(reviewReply, 'on');
-
                 editor.set('reviewReply', reviewReply);
-                expect(reviewReply.on.calls.count()).toBe(2);
-                expect(reviewReply.on.calls.argsFor(0)[0]).toBe('destroyed');
-                expect(reviewReply.on.calls.argsFor(1)[0]).toBe('published');
+
+                expect(editor.listenTo.calls.count()).toEqual(2);
+                expect(editor.listenTo.calls.argsFor(0)[1]).toEqual('destroyed')
+                expect(editor.listenTo.calls.argsFor(1)[1]).toEqual('published')
             });
 
             it('Removes events from old reviewReply', function() {
-                spyOn(reviewReply, 'off');
-
                 editor.set('reviewReply', new RB.ReviewReply());
-                expect(reviewReply.off).toHaveBeenCalledWith(null, null,
-                                                             editor);
+
+                expect(editor._listeningTo.hasOwnProperty(reviewReply._listenId))
+                    .toBe(false);
             });
         });
     });
@@ -361,6 +360,7 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
 
                 it('With existing reply object', function() {
                     replyObject.id = 123;
+                    replyObject.attributes.id = 123;
                     editor.resetStateIfEmpty();
 
                     expect(replyObject.destroy).toHaveBeenCalled();
