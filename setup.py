@@ -428,6 +428,7 @@ setup(
                 ('codebasehq', 'codebasehq:CodebaseHQ'),
                 ('fedorahosted', 'fedorahosted:FedoraHosted'),
                 ('fogbugz', 'fogbugz:FogBugz'),
+                ('gerrit', 'gerrit:Gerrit'),
                 ('github', 'github:GitHub'),
                 ('gitlab', 'gitlab:GitLab'),
                 ('gitorious', 'gitorious:Gitorious'),

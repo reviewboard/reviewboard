@@ -1,9 +1,20 @@
+(function() {
+
+
 var prevTypes = {},
     origRepoTypes = [],
     powerPackTemplate = [
         '<h3>', gettext('Power Pack Required'), '</h3>',
         '<p>',
         gettext('<span class="power-pack-advert-hosting-type"></span> support is available with <a href="https://www.reviewboard.org/powerpack/">Power Pack</a>, an extension which also offers powerful reports, document review, and more.'),
+        '</p>'
+    ].join(''),
+    gerritPluginRequiredTemplate = [
+        '<h3>',
+        gettext('Plugin Required'),
+        '</h3>',
+        '<p>',
+        gettext('The <code>gerrit-reviewboard</code> plugin is required for Gerrit integration. <a href="https://github.com/reviewboard/gerrit-reviewboard-plugin/">Download</a> and install it on your Gerrit server.'),
         '</p>'
     ].join('');
 
@@ -98,7 +109,7 @@ function updateRepositoryType() {
 
     $repoTypes.empty();
 
-    $(origRepoTypes).each(function (i) {
+    $(origRepoTypes).each(function(i) {
         var repoType = origRepoTypes[i];
 
         if (newRepoTypes.length === 0 ||
@@ -205,7 +216,11 @@ $(document).ready(function() {
         $powerPackAdvert = $('<div class="powerpack-advert" />')
             .html(powerPackTemplate)
             .hide()
-            .appendTo($hostingType.closest('fieldset'));
+            .appendTo($hostingType.closest('fieldset')),
+        $gerritPluginInfo = $('<div class="gerrit-plugin-advert" />')
+            .html(gerritPluginRequiredTemplate)
+            .hide()
+            .appendTo($('#row-hosting_type'));
 
     prevTypes.bug_tracker_type = 'none';
     prevTypes.hosting_type = 'custom';
@@ -259,6 +274,8 @@ $(document).ready(function() {
                           HOSTING_SERVICES[hostingType].fake === true);
 
             updateRepositoryType();
+
+            $gerritPluginInfo.toggle(hostingType === 'gerrit');
 
             if (isCustom) {
                 $repoPlanRow.hide();
@@ -352,10 +369,10 @@ $(document).ready(function() {
                      * Hide any fields required for 2FA unless explicitly
                      * needed.
                      */
-                    $twoFactorAuthRows =
-                        $authForm.find('[data-required-for-2fa]')
+                    $twoFactorAuthRows = $authForm
+                        .find('[data-required-for-2fa]')
                         .closest('.form-row')
-                            .setVisible(hostingInfo.needs_two_factor_auth_code);
+                        .setVisible(hostingInfo.needs_two_factor_auth_code);
 
                     if ($hostingAccount.val() === '') {
                         /* Present fields for linking a new account. */
@@ -460,3 +477,6 @@ $(document).ready(function() {
         return false;
     });
 });
+
+
+})();
