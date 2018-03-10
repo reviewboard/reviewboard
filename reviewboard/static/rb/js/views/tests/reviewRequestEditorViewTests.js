@@ -675,7 +675,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
         function hasAutoCompleteTest() {
             it('Has auto-complete', function() {
-                expect($input.data('rbautocomplete')).not.toBe(undefined);
+                expect($input.data('uiRbautocomplete')).not.toBe(undefined);
             });
         }
 

@@ -134,11 +134,13 @@ RB.ScrollManagerView = Backbone.View.extend({
         const el = $el[0];
         const elInfo = this._pendingElements.get(el);
 
-        elInfo.newHeight = $el.outerHeight();
-        elInfo.newOffset = $el.offset();
+        if (elInfo) {
+            elInfo.newHeight = $el.outerHeight();
+            elInfo.newOffset = $el.offset();
 
-        this._elements.set(el, elInfo);
-        this._pendingElements.delete(el);
+            this._elements.set(el, elInfo);
+            this._pendingElements.delete(el);
+        }
 
         this._scheduleUpdateScrollPos();
     },

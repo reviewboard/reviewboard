@@ -1,2 +1,4 @@
-{% load staticfiles %}
-<script type="text/javascript" src="{% static "lib/js/backbone-1.0.0.min.js" %}"></script>
+{% comment %}
+The Review Board interface loads Backbone through static bundles, not the
+template.
+{% endcomment %}

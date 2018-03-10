@@ -1,7 +1,7 @@
 {% extends "admin/change_form.html" %}
 {% load admin_urls i18n pipeline %}
 
-{% block scripts %}
+{% block scripts-post %}
 {{block.super}}
 {% javascript 'repositoryform' %}
 
@@ -10,7 +10,7 @@
 {%  include "admin/repository_fields.js" %}
 {% endwith %}
 </script>
-{% endblock %}
+{% endblock scripts-post %}
 
 {% block object-tools %}
 <ul class="object-tools">

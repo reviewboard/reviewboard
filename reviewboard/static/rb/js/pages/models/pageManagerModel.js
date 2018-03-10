@@ -24,7 +24,16 @@ RB.PageManager = Backbone.Model.extend({
         this.once('change:page', function() {
             this.trigger('beforeRender');
 
-            $(document).ready(_.bind(this._renderPage, this));
+            if (document.readyState === 'complete') {
+                /*
+                 * $(cb) will also call immediately if the DOM is already
+                 * loaded, but it does so asynchronously, which interferes with
+                 * some unit tests.
+                 */
+                this._renderPage();
+            } else {
+                $(this._renderPage.bind(this));
+            }
         }, this);
     },
 

@@ -42,7 +42,7 @@
   <!--[if lt IE 8.]>
   <link rel="stylesheet" type="text/css" href="{% static "rb/css/ie_hacks.css" %}"></script>
   <![endif]-->
-{% include "js/jquery.html" %}
+{% javascript '3rdparty-base' %}
 {% block scripts %}{% endblock %}
 {% template_hook_point "base-scripts" %}
  </head>
@@ -111,7 +111,6 @@
    <span class="indicator-text">{% trans "Loading..." %}</span>
   </div>
   <script src="{% url 'js-catalog' %}"></script>
-  {% include "js/jquery-ui.html" %}
   {% javascript '3rdparty' %}
   {% javascript 'djblets-gravy' %}
   {% javascript 'djblets-extensions' %}

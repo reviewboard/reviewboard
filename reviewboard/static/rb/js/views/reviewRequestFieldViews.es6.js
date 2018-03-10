@@ -489,7 +489,7 @@ Fields.MultilineTextFieldView = Fields.TextFieldView.extend({
 
         RB.formatText(this.$el, options);
 
-        this.$('img').load(() => this.trigger('resize'));
+        this.$('img').on('load', () => this.trigger('resize'));
     },
 
     /**

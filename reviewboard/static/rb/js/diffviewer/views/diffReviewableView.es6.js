@@ -367,7 +367,7 @@ RB.DiffReviewableView = RB.AbstractReviewableView.extend({
             /* Calculate the widths and state of the diff columns. */
             $cells = $(this._$revisionRow[0].cells);
             cellPadding = $(this.el.querySelector('pre'))
-                .parent().andSelf()
+                .parent().addBack()
                 .getExtents('p', 'lr');
 
             this._colReservedWidths = $cells.eq(0).outerWidth() + cellPadding +
