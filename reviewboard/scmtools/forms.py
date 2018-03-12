@@ -669,7 +669,8 @@ class RepositoryForm(forms.ModelForm):
             try:
                 hosting_account = auth_form.save(
                     extra_authorize_kwargs=repository_extra_data,
-                    force_authorize=force_authorize)
+                    force_authorize=force_authorize,
+                    trust_host=self.cleaned_data['trust_host'])
             except ValueError as e:
                 # There was an error with a value provided to the form from
                 # The user. Bubble this up.
@@ -687,16 +688,24 @@ class RepositoryForm(forms.ModelForm):
                     _('Unable to link the account: %s') % e,
                 ])
                 return
+            except UnverifiedCertificateError as e:
+                self.certerror = e
+                return
             except Exception as e:
+                error = six.text_type(e)
+
+                if error.endswith('.'):
+                    error = error[:-1]
+
                 logging.exception('Unexpected error when linking hosting '
                                   'service account on %s: %s',
-                                  hosting_type, e)
+                                  hosting_type, error)
 
                 self.errors['hosting_account'] = self.error_class([
                     _('Unknown error when linking the account: %s. The '
                       'details of the failure are in the Review Board log '
                       'file.')
-                    % e,
+                    % error,
                 ])
                 return
 
@@ -970,6 +979,18 @@ class RepositoryForm(forms.ModelForm):
                 self._verify_repository_path()
 
             self._clean_ssh_key_association()
+
+        if self.certerror:
+            # In the case where there's a certificate error on a hosting
+            # service, we'll bail out of the validation process before
+            # computing any of the derived fields (like path). This results in
+            # the "I trust this host" prompt being shown at the top, but a
+            # spurious "Please correct the error below" error shown when no
+            # errors are visible. We therefore want to clear out the errors and
+            # let the certificate error show on its own. If the user then
+            # chooses to trust the cert, the regular verification will run its
+            # course.
+            self.errors.clear()
 
         return super(RepositoryForm, self).clean()
 
