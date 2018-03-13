@@ -183,11 +183,13 @@ can trigger your extension's behavior by manually emitting the signal:
    the signals.
 
 
+.. _extensions-running-unit-tests:
+
 Running Unit Tests
 ==================
 
 Review Board comes with a helpful program to run your extension's unit tests:
-:command:`rbext test`. This is given one or more top-level Python modules
+:ref:`rbext-test`. This is given one or more top-level Python modules
 containing extensions and unit tests that you want to run, like so:
 
 .. code-block:: text
@@ -224,6 +226,8 @@ To run only a specific test case:
 
    $ rbext test -m myextension myextension.submodule.tests:MyTests.test_foo
 
+
+.. _extensions-test-coverage:
 
 Showing Test Coverage
 ---------------------
