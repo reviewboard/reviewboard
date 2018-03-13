@@ -80,6 +80,7 @@ def initialize():
     will be called automatically in a standard install. If you are writing
     an extension or management command, you do not need to call this yourself.
     """
+    import importlib
     import logging
     import os
 
@@ -101,7 +102,7 @@ def initialize():
 
     # This overrides a default django templatetag (url), and we want to make
     # sure it will always get loaded in every python instance.
-    import reviewboard.site.templatetags
+    importlib.import_module('reviewboard.site.templatetags')
 
     is_running_test = getattr(settings, 'RUNNING_TEST', False)
 

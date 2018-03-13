@@ -1,5 +1,7 @@
 from __future__ import unicode_literals
 
+import importlib
+
 from django.contrib.auth.models import AnonymousUser, Permission, User
 from django.core.urlresolvers import ResolverMatch
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
@@ -211,7 +213,7 @@ class TemplateTagTests(TestCase):
         """Testing localsite's {% url %} with local site"""
 
         # Make sure that {% url %} is registered as a built-in tag.
-        from reviewboard.site import templatetags
+        importlib.import_module('reviewboard.site.templatetags')
 
         context = Context({
             'local_site_name': 'test',

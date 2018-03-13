@@ -11,7 +11,6 @@ from django.utils.safestring import SafeText
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
-from reviewboard import initialize
 from reviewboard.attachments.forms import UploadFileForm, UploadUserFileForm
 from reviewboard.attachments.mimetypes import (MimetypeHandler,
                                                register_mimetype_handler,
@@ -19,7 +18,6 @@ from reviewboard.attachments.mimetypes import (MimetypeHandler,
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
-from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
@@ -112,13 +110,14 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
         """
         review_request_1 = self.create_review_request(publish=True)
         review_request_2 = self.create_review_request(publish=True)
+        uploaded_file = self.make_uploaded_file()
 
         history = FileAttachmentHistory.objects.create(display_position=0)
         review_request_1.file_attachment_histories.add(history)
 
         form = UploadFileForm(review_request_2,
                               data={'attachment_history': history.pk},
-                              files={'path': file})
+                              files={'path': uploaded_file})
         self.assertFalse(form.is_valid())
 
     @add_fixtures(['test_users', 'test_scmtools'])
@@ -129,12 +128,12 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
                                                     target_people=[user])
         history = FileAttachmentHistory.objects.create(display_position=0)
         review_request.file_attachment_histories.add(history)
-        file = self.make_uploaded_file()
+        uploaded_file = self.make_uploaded_file()
 
         # Add a file with the given history
         form = UploadFileForm(review_request,
                               data={'attachment_history': history.pk},
-                              files={'path': file})
+                              files={'path': uploaded_file})
         self.assertTrue(form.is_valid())
         file_attachment = form.create()
         history = FileAttachmentHistory.objects.get(pk=history.pk)
@@ -146,7 +145,7 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
         # Post an update
         form = UploadFileForm(review_request,
                               data={'attachment_history': history.pk},
-                              files={'path': file})
+                              files={'path': uploaded_file})
         self.assertTrue(form.is_valid())
         file_attachment = form.create()
         history = FileAttachmentHistory.objects.get(pk=history.pk)
@@ -159,7 +158,7 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
         # Post two updates without publishing the draft in between
         form = UploadFileForm(review_request,
                               data={'attachment_history': history.pk},
-                              files={'path': file})
+                              files={'path': uploaded_file})
         self.assertTrue(form.is_valid())
         file_attachment = form.create()
         history = FileAttachmentHistory.objects.get(pk=history.pk)
@@ -169,7 +168,7 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
 
         form = UploadFileForm(review_request,
                               data={'attachment_history': history.pk},
-                              files={'path': file})
+                              files={'path': uploaded_file})
         self.assertTrue(form.is_valid())
         file_attachment = form.create()
         history = FileAttachmentHistory.objects.get(pk=history.pk)
@@ -179,7 +178,7 @@ class FileAttachmentTests(BaseFileAttachmentTestCase):
 
         # Add another (unrelated) file to check display position
         form = UploadFileForm(review_request,
-                              files={'path': file})
+                              files={'path': uploaded_file})
         self.assertTrue(form.is_valid())
         file_attachment = form.create()
         self.assertEqual(file_attachment.attachment_revision, 1)

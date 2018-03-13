@@ -176,10 +176,17 @@ class ReviewBoardGatewayTests(ServiceTests):
 
     def test_get_change(self):
         """Testing ReviewBoardGateway get_change implementation"""
-        diff = (b'diff --git a/test b/test\n'
-                'index 9daeafb9864cf43055ae93beb0afd6c7d144bfa4..'
-                'dced80a85fe1e8f13dd5ea19923e5d2e8680020d 100644\n'
-                '--- a/test\n+++ b/test\n@@ -1 +1,3 @@\n test\n+\n+test\n')
+        diff = (
+            b'diff --git a/test b/test\n'
+            b'index 9daeafb9864cf43055ae93beb0afd6c7d144bfa4..'
+            b'dced80a85fe1e8f13dd5ea19923e5d2e8680020d 100644\n'
+            b'--- a/test\n'
+            b'+++ b/test\n'
+            b'@@ -1 +1,3 @@\n'
+            b' test\n'
+            b'+\n'
+            b'+test\n'
+        )
 
         diff_encoding = md5(diff).hexdigest()
 
@@ -190,7 +197,7 @@ class ReviewBoardGatewayTests(ServiceTests):
                 'date': '2015-02-13 22:34:01 -0700 -0700',
                 'message': 'mymessage',
                 'parent_id': '304c53c163aedfd0c0e0933776f09c24b87f5944',
-                'diff': diff
+                'diff': diff,
             }
         )
 

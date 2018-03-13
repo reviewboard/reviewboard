@@ -733,7 +733,6 @@ class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
             django.template.RequestContext:
             Context data for the template.
         """
-        siteconfig = SiteConfiguration.objects.get_current()
         review_request = self.review_request
         request = self.request
         data = self.data
@@ -1240,8 +1239,6 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin, DiffViewerView):
             extra_info=status_extra_info)
 
         # Build the final context for the page.
-        siteconfig = SiteConfiguration.objects.get_current()
-
         context = super(ReviewsDiffViewerView, self).get_context_data(**kwargs)
         context.update({
             'close_description': close_info['close_description'],

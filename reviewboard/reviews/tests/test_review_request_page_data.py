@@ -141,7 +141,6 @@ class ReviewRequestPageDataTests(TestCase):
         data.query_data_post_etag()
 
         entries = data.get_entries()
-        print entries
 
         self.assertEqual(len(entries['initial']), 1)
         self.assertEqual(len(entries['main']), 4)

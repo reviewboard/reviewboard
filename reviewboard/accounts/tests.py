@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 from django.http import HttpResponse, HttpResponseRedirect
 from django.test.client import RequestFactory
 from django.views.generic.base import View
-from djblets.registries.errors import ItemLookupError, RegistrationError
+from djblets.registries.errors import RegistrationError
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency

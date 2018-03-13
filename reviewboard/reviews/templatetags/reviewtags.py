@@ -1,11 +1,9 @@
 from __future__ import unicode_literals
 
-import json
 import logging
 import warnings
 
 from django import template
-from django.db.models import Q
 from django.template import TemplateSyntaxError
 from django.template.defaultfilters import escapejs, stringfilter
 from django.template.loader import render_to_string
