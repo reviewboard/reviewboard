@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+from __future__ import print_function, unicode_literals
 
 import os
 
@@ -707,7 +707,7 @@ class MoveDetectionTests(TestCase):
 
         for opcodes in opcode_generator:
             # Log the opcode so we can more easily debug unit test failures.
-            print opcodes
+            print(opcodes)
 
             meta = opcodes[-1]
 

@@ -49,14 +49,19 @@ suite('rb/pages/views/DiffViewerPageView', function() {
         spyOn(Backbone.history, 'start');
 
         page = new RB.DiffViewerPage({
-            revision: 1,
-            is_interdiff: false,
-            interdiff_revision: null,
             checkForUpdates: false,
+            pagination: {
+                current_page: 1,
+            },
             reviewRequestData: {
                 id: 123,
                 loaded: true,
                 state: RB.ReviewRequest.PENDING,
+            },
+            revision: {
+                revision: 1,
+                interdiff_revision: null,
+                is_interdiff: false,
             },
             editorData: {
                 mutableByUser: true,
@@ -475,6 +480,309 @@ suite('rb/pages/views/DiffViewerPageView', function() {
             expect($containers.find('.sidebyside')[0].id)
                 .toBe('file_container_101');
             expect(pageView.queueLoadDiff.calls.count()).toBe(2);
+        });
+    });
+
+    describe('Page view/URL state', function() {
+        let router;
+
+        beforeEach(function() {
+            router = pageView.router;
+
+            spyOn(page, 'loadDiffRevision');
+
+            /*
+             * Bypass all the actual history logic and get to the actual
+             * router handler.
+             */
+            spyOn(router, 'navigate').and.callFake((url, options) => {
+                if (!options || options.trigger !== false) {
+                    Backbone.history.loadUrl(url);
+                }
+            });
+        });
+
+        describe('Initial URL', function() {
+            it('Initial default load', function() {
+                pageView._setInitialURL('', 'index_header');
+
+                expect(router.navigate).toHaveBeenCalledWith(
+                    '1/#index_header',
+                    {
+                        replace: true,
+                        trigger: false,
+                    });
+                expect(page.loadDiffRevision).not.toHaveBeenCalled();
+            });
+
+            it('Initial load of first page explicit', function() {
+                pageView._setInitialURL('?page=1', 'index_header');
+
+                expect(router.navigate).toHaveBeenCalledWith(
+                    '1/?page=1#index_header',
+                    {
+                        replace: true,
+                        trigger: false,
+                    });
+                expect(page.loadDiffRevision).not.toHaveBeenCalled();
+            });
+
+            it('Initial load of page > 1', function() {
+                pageView._setInitialURL('?page=2', 'index_header');
+
+                expect(router.navigate).toHaveBeenCalledWith(
+                    '1/?page=2#index_header',
+                    {
+                        replace: true,
+                        trigger: false,
+                    });
+                expect(page.loadDiffRevision).not.toHaveBeenCalled();
+            });
+
+            it('Initial load of interdiff', function() {
+                page.revision.set('revision', 2);
+                page.revision.set('interdiffRevision', 3);
+                pageView._setInitialURL('?page=2', 'index_header');
+
+                expect(router.navigate).toHaveBeenCalledWith(
+                    '2-3/?page=2#index_header',
+                    {
+                        replace: true,
+                        trigger: false,
+                    });
+                expect(page.loadDiffRevision).not.toHaveBeenCalled();
+            });
+
+            it('Initial load with filename patterns', function() {
+                pageView._setInitialURL('?filenames=*.js,src/*',
+                                        'index_header');
+
+                expect(router.navigate).toHaveBeenCalledWith(
+                    '1/?filenames=*.js,src/*#index_header',
+                    {
+                        replace: true,
+                        trigger: false,
+                    });
+                expect(page.loadDiffRevision).not.toHaveBeenCalled();
+            });
+        });
+
+        describe('_navigate', function() {
+            beforeEach(function() {
+                page.set('filenamePatterns', '*.js,src/*');
+            });
+
+            it('With page == 1', function() {
+                pageView._navigate({
+                    page: 1,
+                });
+
+                expect(router.navigate).toHaveBeenCalledWith(
+                    '1/?filenames=*.js%2Csrc%2F*',
+                    {
+                        trigger: true,
+                    });
+                expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                    page: 1,
+                    revision: 1,
+                    interdiffRevision: null,
+                    filenamePatterns: '*.js,src/*',
+                });
+            });
+
+            it('With page > 1', function() {
+                pageView._navigate({
+                    page: 2,
+                });
+
+                expect(router.navigate).toHaveBeenCalledWith(
+                    '1/?page=2&filenames=*.js%2Csrc%2F*',
+                    {
+                        trigger: true,
+                    });
+                expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                    page: 2,
+                    revision: 1,
+                    interdiffRevision: null,
+                    filenamePatterns: '*.js,src/*',
+                });
+            });
+
+            it('New revision on page > 1', function() {
+                page.pagination.set('currentPage', 2);
+                pageView._onRevisionSelected([0, 2]);
+
+                expect(router.navigate).toHaveBeenCalledWith(
+                    '2/?filenames=*.js%2Csrc%2F*',
+                    {
+                        trigger: true,
+                    });
+                expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                    page: 1,
+                    revision: 2,
+                    interdiffRevision: null,
+                    filenamePatterns: '*.js,src/*',
+                });
+            });
+
+            it('Same revision on page > 1', function() {
+                page.pagination.set('currentPage', 2);
+
+                pageView._navigate({
+                    revision: 1,
+                });
+
+                expect(router.navigate).toHaveBeenCalledWith(
+                    '1/?page=2&filenames=*.js%2Csrc%2F*',
+                    {
+                        trigger: true,
+                    });
+                expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                    page: 2,
+                    revision: 1,
+                    interdiffRevision: null,
+                    filenamePatterns: '*.js,src/*',
+                });
+            });
+
+            it('With updateURLOnly', function() {
+                page.pagination.set('currentPage', 2);
+
+                pageView._navigate({
+                    revision: 2,
+                    interdiffRevision: 3,
+                    updateURLOnly: true,
+                });
+
+                expect(router.navigate).toHaveBeenCalledWith(
+                    '2-3/?filenames=*.js%2Csrc%2F*',
+                    {
+                        replace: true,
+                        trigger: false,
+                    });
+                expect(page.loadDiffRevision).not.toHaveBeenCalled();
+            });
+
+            it('With anchor', function() {
+                pageView._navigate({
+                    anchor: 'test',
+                });
+
+                expect(router.navigate).toHaveBeenCalledWith(
+                    '1/?filenames=*.js%2Csrc%2F*#test',
+                    {
+                        trigger: true,
+                    });
+                expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                    page: 1,
+                    revision: 1,
+                    interdiffRevision: null,
+                    filenamePatterns: '*.js,src/*',
+                });
+            });
+        });
+
+        describe('Revision selector', function() {
+            describe('New diff revision selected', function() {
+                it('From single revision', function() {
+                    pageView._onRevisionSelected([0, 2]);
+
+                    expect(router.navigate).toHaveBeenCalledWith(
+                        '2/',
+                        {
+                            trigger: true,
+                        });
+                    expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                        page: 1,
+                        revision: 2,
+                        interdiffRevision: null,
+                        filenamePatterns: null,
+                    });
+                });
+
+                it('From interdiff revision', function() {
+                    page.revision.set('interdiffRevision', 2);
+
+                    pageView._onRevisionSelected([0, 2]);
+
+                    expect(router.navigate).toHaveBeenCalledWith(
+                        '2/',
+                        {
+                            trigger: true,
+                        });
+                    expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                        page: 1,
+                        revision: 2,
+                        interdiffRevision: null,
+                        filenamePatterns: null,
+                    });
+                });
+            });
+
+            it('New interdiff revision selected', function() {
+                pageView._onRevisionSelected([2, 5]);
+
+                expect(router.navigate).toHaveBeenCalledWith(
+                    '2-5/',
+                    {
+                        trigger: true,
+                    });
+                expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                    page: 1,
+                    revision: 2,
+                    interdiffRevision: 5,
+                    filenamePatterns: null,
+                });
+            });
+        });
+
+        describe('Page selector', function() {
+            it('With page == 1', function() {
+                pageView._onPageSelected(true, 1);
+
+                expect(router.navigate).toHaveBeenCalledWith(
+                    '1/',
+                    {
+                        trigger: true,
+                    });
+                expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                    page: 1,
+                    revision: 1,
+                    interdiffRevision: null,
+                    filenamePatterns: null,
+                });
+            });
+
+            it('With page > 1', function() {
+                pageView._onPageSelected(true, 2);
+
+                expect(router.navigate).toHaveBeenCalledWith(
+                    '1/?page=2',
+                    {
+                        trigger: true,
+                    });
+                expect(page.loadDiffRevision).toHaveBeenCalledWith({
+                    page: 2,
+                    revision: 1,
+                    interdiffRevision: null,
+                    filenamePatterns: null,
+                });
+            });
+        });
+
+        it('Anchor selection', function() {
+            const $anchor = $('<a name="test"/>');
+
+            pageView.render();
+            pageView.selectAnchor($anchor);
+
+            expect(router.navigate).toHaveBeenCalledWith(
+                '1/#test',
+                {
+                    replace: true,
+                    trigger: false,
+                });
+            expect(page.loadDiffRevision).not.toHaveBeenCalled();
         });
     });
 });

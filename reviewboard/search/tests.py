@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
-from django.core.management import call_command
 from django.core.urlresolvers import reverse
 from django.utils import six
 from django.utils.six.moves.urllib.parse import urlencode

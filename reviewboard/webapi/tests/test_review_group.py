@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.db import IntegrityError
 from django.utils import six
 from djblets.db.query import get_object_or_none
 from djblets.testing.decorators import add_fixtures

@@ -201,8 +201,10 @@ class MilestoneTrophy(TrophyType):
             bool:
             ``True`` if the trophy should be given, or ``False`` if not.
         """
-        return (review_request.display_id >= 1000 and
-                re.match(r'^[1-9]0+$', unicode(review_request.display_id)))
+        return (
+            review_request.display_id >= 1000 and
+            re.match(r'^[1-9]0+$', six.text_type(review_request.display_id))
+        )
 
 
 class FishTrophy(TrophyType):
@@ -233,7 +235,7 @@ class FishTrophy(TrophyType):
             bool:
             ``True`` if the trophy should be given, or ``False`` if not.
         """
-        id_str = unicode(review_request.display_id)
+        id_str = six.text_type(review_request.display_id)
 
         return (review_request.display_id >= 1000 and
                 id_str == ''.join(reversed(id_str)))

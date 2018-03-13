@@ -316,6 +316,18 @@ suite('rb/pages/models/DiffViewerPage', function() {
                     '/api/review-requests/123/diff-context/' +
                     '?revision=1&interdiff-revision=2&page=2');
             });
+
+            it('Filename patterns', function() {
+                page.loadDiffRevision({
+                    page: 2,
+                    revision: 1,
+                    filenamePatterns: '*.txt,src/*',
+                });
+
+                expect($.ajax).toHaveBeenCalledWith(
+                    '/api/review-requests/123/diff-context/' +
+                    '?revision=1&page=2&filenames=*.txt%2Csrc%2F*');
+            });
         });
 
         describe('Sets canDownloadDiff to', function() {

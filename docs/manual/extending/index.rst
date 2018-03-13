@@ -41,6 +41,16 @@ writing.
    Packaging and distributing extensions <extensions/distribution>
 
 
+.. tip::
+
+   To get started quickly, you can use :ref:`rbext-create` to create your
+   initial page and extension source code. This won't write your whole
+   extension for you, of course, but it's a good way of getting the basics in
+   place.
+
+   .. versionadded:: 3.0.4
+
+
 .. _extension-hooks:
 
 Python Extension Hooks
@@ -247,6 +257,7 @@ Djblets
    :hidden:
 
    extensions/index
+   extensions/rbext
    extensions/hooks/index
    extensions/js-hooks/index
    extensions/review-request-fields

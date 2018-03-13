@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 import json
 from textwrap import dedent
 
-from django.utils import six
 from django.utils.six.moves import cStringIO as StringIO
 from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.parse import urlparse

@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 import logging
 import os
+import re
 import traceback
 from zipfile import ZipFile
 
@@ -55,30 +56,35 @@ class DiffViewerView(TemplateView):
 
     The view expects the following parameters to be provided:
 
-        * diffset
-          - The DiffSet to render.
+    ``diffset``
+        The DiffSet to render.
 
     The following may also be provided:
 
-        * interdiffset
-          - A DiffSet object representing the other end of an interdiff range.
+    ``interdiffset``
+        A DiffSet object representing the other end of an interdiff range.
 
     The following query parameters can be passed in on the URL:
 
-        * ?expand=1
-          - Expands all files within the diff viewer.
+    ``?expand=1``
+        Expands all files within the diff viewer.
 
-        * ?collapse=1
-          - Collapses all files within the diff viewer, showing only
-            modifications and a few lines of context.
+    ``?collapse=1``
+        Collapses all files within the diff viewer, showing only
+        modifications and a few lines of context.
 
-        * ?file=<id>
-          - Renders only the FileDiff represented by the provided ID.
+    ``?file=<id>``
+        Renders only the FileDiff represented by the provided ID.
 
-        * ?page=<pagenum>
-          - Renders diffs found on the given page number, if the diff viewer
-            is paginated.
+    ``?filenames=<pattern>[,<pattern>,...]``
+        Renders files matching the given filenames or
+        :py:mod:`patterns <fnmatch>`. Patterns are case-sensitive.
+
+    ``?page=<pagenum>``
+        Renders diffs found on the given page number, if the diff viewer
+        is paginated.
     """
+
     template_name = 'diffviewer/view_diff.html'
     fragment_error_template_name = 'diffviewer/diff_fragment_error.html'
 
@@ -155,9 +161,16 @@ class DiffViewerView(TemplateView):
         side-by-side diff, handling pagination, and more. The data is
         collected into a context dictionary and returned for rendering.
         """
+        try:
+            filename_patterns = \
+                re.split(',+\s*', self.request.GET['filenames'].strip())
+        except KeyError:
+            filename_patterns = []
+
         files = get_diff_files(diffset=diffset,
                                interdiffset=interdiffset,
-                               request=self.request)
+                               request=self.request,
+                               filename_patterns=filename_patterns)
 
         # Break the list of files into pages
         siteconfig = SiteConfiguration.objects.get_current()
@@ -186,6 +199,7 @@ class DiffViewerView(TemplateView):
             page = paginator.page(paginator.num_pages)
 
         diff_context = {
+            'filename_patterns': list(filename_patterns),
             'revision': {
                 'revision': diffset.revision,
                 'is_interdiff': interdiffset is not None,

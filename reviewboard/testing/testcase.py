@@ -666,7 +666,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         The provided user may either be a username or a User object.
         """
-        if not isinstance(user, basestring):
+        if not isinstance(user, six.string_types):
             user = User.objects.get(username=user)
 
         return ReviewRequestVisit.objects.create(

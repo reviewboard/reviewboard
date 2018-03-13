@@ -7,6 +7,7 @@ import warnings
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from django.conf import settings
+from django.utils import six
 
 
 AES_BLOCK_SIZE = algorithms.AES.block_size / 8
@@ -80,7 +81,7 @@ def aes_encrypt(data, key=None):
         ValueError:
             The encryption key was not in the right format.
     """
-    if isinstance(data, unicode):
+    if isinstance(data, six.text_type):
         data = data.encode('utf8')
 
     iv = os.urandom(AES_BLOCK_SIZE)
