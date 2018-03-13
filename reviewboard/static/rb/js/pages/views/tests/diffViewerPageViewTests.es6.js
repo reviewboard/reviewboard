@@ -552,16 +552,33 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     });
                 expect(page.loadDiffRevision).not.toHaveBeenCalled();
             });
+
+            it('Initial load with filename patterns', function() {
+                pageView._setInitialURL('?filenames=*.js,src/*',
+                                        'index_header');
+
+                expect(router.navigate).toHaveBeenCalledWith(
+                    '1/?filenames=*.js,src/*#index_header',
+                    {
+                        replace: true,
+                        trigger: false,
+                    });
+                expect(page.loadDiffRevision).not.toHaveBeenCalled();
+            });
         });
 
         describe('_navigate', function() {
+            beforeEach(function() {
+                page.set('filenamePatterns', '*.js,src/*');
+            });
+
             it('With page == 1', function() {
                 pageView._navigate({
                     page: 1,
                 });
 
                 expect(router.navigate).toHaveBeenCalledWith(
-                    '1/',
+                    '1/?filenames=*.js%2Csrc%2F*',
                     {
                         trigger: true,
                     });
@@ -569,6 +586,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     page: 1,
                     revision: 1,
                     interdiffRevision: null,
+                    filenamePatterns: '*.js,src/*',
                 });
             });
 
@@ -578,7 +596,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                 });
 
                 expect(router.navigate).toHaveBeenCalledWith(
-                    '1/?page=2',
+                    '1/?page=2&filenames=*.js%2Csrc%2F*',
                     {
                         trigger: true,
                     });
@@ -586,6 +604,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     page: 2,
                     revision: 1,
                     interdiffRevision: null,
+                    filenamePatterns: '*.js,src/*',
                 });
             });
 
@@ -594,7 +613,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                 pageView._onRevisionSelected([0, 2]);
 
                 expect(router.navigate).toHaveBeenCalledWith(
-                    '2/',
+                    '2/?filenames=*.js%2Csrc%2F*',
                     {
                         trigger: true,
                     });
@@ -602,6 +621,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     page: 1,
                     revision: 2,
                     interdiffRevision: null,
+                    filenamePatterns: '*.js,src/*',
                 });
             });
 
@@ -613,7 +633,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                 });
 
                 expect(router.navigate).toHaveBeenCalledWith(
-                    '1/?page=2',
+                    '1/?page=2&filenames=*.js%2Csrc%2F*',
                     {
                         trigger: true,
                     });
@@ -621,6 +641,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     page: 2,
                     revision: 1,
                     interdiffRevision: null,
+                    filenamePatterns: '*.js,src/*',
                 });
             });
 
@@ -634,7 +655,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                 });
 
                 expect(router.navigate).toHaveBeenCalledWith(
-                    '2-3/',
+                    '2-3/?filenames=*.js%2Csrc%2F*',
                     {
                         replace: true,
                         trigger: false,
@@ -648,7 +669,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                 });
 
                 expect(router.navigate).toHaveBeenCalledWith(
-                    '1/#test',
+                    '1/?filenames=*.js%2Csrc%2F*#test',
                     {
                         trigger: true,
                     });
@@ -656,6 +677,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     page: 1,
                     revision: 1,
                     interdiffRevision: null,
+                    filenamePatterns: '*.js,src/*',
                 });
             });
         });
@@ -674,6 +696,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                         page: 1,
                         revision: 2,
                         interdiffRevision: null,
+                        filenamePatterns: null,
                     });
                 });
 
@@ -691,6 +714,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                         page: 1,
                         revision: 2,
                         interdiffRevision: null,
+                        filenamePatterns: null,
                     });
                 });
             });
@@ -707,6 +731,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     page: 1,
                     revision: 2,
                     interdiffRevision: 5,
+                    filenamePatterns: null,
                 });
             });
         });
@@ -724,6 +749,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     page: 1,
                     revision: 1,
                     interdiffRevision: null,
+                    filenamePatterns: null,
                 });
             });
 
@@ -739,6 +765,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     page: 2,
                     revision: 1,
                     interdiffRevision: null,
+                    filenamePatterns: null,
                 });
             });
         });

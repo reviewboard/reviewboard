@@ -9,12 +9,17 @@
  *         Whether a diff file can be downloaded, given the current revision
  *         state.
  *
+ *     filenamePatterns (Array):
+ *         A list of filenames or patterns used to filter the diff viewer.
+ *         This is optional.
+ *
  *     numDiffs (number):
  *         The total number of diffs.
  */
 RB.DiffViewerPage = RB.ReviewablePage.extend({
     defaults: _.defaults({
         canDownloadDiff: false,
+        filenamePatterns: null,
         numDiffs: 1,
     }, RB.ReviewablePage.prototype.defaults),
 
@@ -73,6 +78,10 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
      *         The options for the diff to load.
      *
      * Option Args:
+     *     filenames (string):
+     *         A comma-separated string of filenames or filename patterns to
+     *         load.
+     *
      *     page (number):
      *         The page number to load. Defaults to the first page.
      *
@@ -106,6 +115,13 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
             queryData.push({
                 name: 'page',
                 value: options.page,
+            });
+        }
+
+        if (options.filenamePatterns) {
+            queryData.push({
+                name: 'filenames',
+                value: options.filenamePatterns,
             });
         }
 
@@ -149,6 +165,7 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
         return {
             canDownloadDiff: (rsp.revision &&
                               rsp.revision.interdiff_revision === null),
+            filenamePatterns: rsp.filename_patterns || null,
             numDiffs: rsp.num_diffs || 0,
         };
     },

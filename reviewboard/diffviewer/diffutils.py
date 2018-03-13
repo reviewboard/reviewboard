@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import fnmatch
 import logging
 import os
 import re
@@ -270,6 +271,31 @@ def get_revision_str(revision):
         return _("Revision %s") % revision
 
 
+def get_filenames_match_patterns(patterns, filenames):
+    """Return whether any of the filenames match any of the patterns.
+
+    This is used to compare a list of filenames to a list of
+    :py:mod:`patterns <fnmatch>`. The patterns are case-sensitive.
+
+    Args:
+        patterns (list of unicode):
+            The list of patterns to match against.
+
+        filename (list of unicode):
+            The list of filenames.
+
+    Returns:
+        bool:
+        ``True`` if any filenames match any patterns. ``False`` if none match.
+    """
+    for pattern in patterns:
+        for filename in filenames:
+            if fnmatch.fnmatchcase(filename, pattern):
+                return True
+
+    return False
+
+
 def get_matched_interdiff_files(tool, filediffs, interfilediffs):
     """Generate pairs of matched files for display in interdiffs.
 
@@ -491,7 +517,7 @@ def get_matched_interdiff_files(tool, filediffs, interfilediffs):
 
 
 def get_diff_files(diffset, filediff=None, interdiffset=None,
-                   interfilediff=None, request=None):
+                   interfilediff=None, request=None, filename_patterns=None):
     """Return a list of files that will be displayed in a diff.
 
     This will go through the given diffset/interdiffset, or a given filediff
@@ -518,6 +544,11 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
             information for. This should be provided if ``filediff`` and
             ``interdiffset`` are both provided. If it's ``None`` in this
             case, then the diff will be shown as reverted for this file.
+
+        filename_patterns (list of unicode, optional):
+            A list of filenames or :py:mod:`patterns <fnmatch>` used to
+            limit the results. Each of these will be matched against the
+            original and modified file of diffs and interdiffs.
 
     Returns:
         list of dict:
@@ -642,6 +673,16 @@ def get_diff_files(diffset, filediff=None, interdiffset=None,
 
         depot_filename = tool.normalize_path_for_display(raw_depot_filename)
         dest_filename = tool.normalize_path_for_display(raw_dest_filename)
+
+        if filename_patterns:
+            if dest_filename == depot_filename:
+                filenames = [dest_filename]
+            else:
+                filenames = [dest_filename, depot_filename]
+
+            if not get_filenames_match_patterns(patterns=filename_patterns,
+                                                filenames=filenames):
+                continue
 
         f = {
             'depot_filename': depot_filename,

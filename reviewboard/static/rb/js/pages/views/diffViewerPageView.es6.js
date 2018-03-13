@@ -105,6 +105,7 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
 
             this.model.loadDiffRevision({
                 page: page ? parseInt(page, 10) : 1,
+                filenamePatterns: queryArgs.filenames || null,
                 revision: parseInt(revisionRange[0], 10),
                 interdiffRevision: (revisionRange.length === 2
                                     ? parseInt(revisionRange[1], 10)
@@ -726,9 +727,9 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * Navigate to a new page state by calculating and setting a URL.
      *
      * This builds a URL consisting of the revision range and any other
-     * state that impacts the view of the page (the page number), updating
-     * the current location in the browser and (by default) triggering a
-     * route change.
+     * state that impacts the view of the page (page number and filtered list
+     * of filename patterns), updating the current location in the browser and
+     * (by default) triggering a route change.
      *
      * Args:
      *     options (object):
@@ -818,6 +819,15 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
                 queryData.push({
                     name: 'page',
                     value: page,
+                });
+            }
+
+            const filenamePatterns = this.model.get('filenamePatterns');
+
+            if (filenamePatterns && filenamePatterns.length > 0) {
+                queryData.push({
+                    name: 'filenames',
+                    value: filenamePatterns,
                 });
             }
         }
