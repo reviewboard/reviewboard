@@ -93,14 +93,16 @@ patterns. For example:
 
 .. code-block:: python
 
-   from django.conf.urls.defaults import patterns, url
+   from django.conf.urls.defaults import url
+
+   from sample_extension.views import my_configure
 
 
-   urlpatterns = patterns('sample_extension.views',
-       url(r'^$', 'configure'),
-   )
+   urlpatterns = [
+       url(r'^$', my_configure),
+   ]
 
-This will call the ``configure`` function in ``sample_extension.views``
+This will call the ``my_configure`` function in ``sample_extension.views``
 when clicking the :guilabel:`Configure` link.
 
 
@@ -141,16 +143,17 @@ And here is an example URL pattern for the form:
 .. code-block:: python
 
    from django.conf.urls.defaults import patterns, url
+   from reviewboard.extensions.views import configure_extension
 
    from sample_extension.extension import SampleExtension
    from sample_extension.forms import SampleExtensionSettingsForm
 
 
-   urlpatterns = patterns('',
+   urlpatterns = [
        url(r'^$',
-           'reviewboard.extensions.views.configure_extension',
+           configure_extension,
            {
                'ext_class': SampleExtension,
                'form_class': SampleExtensionSettingsForm,
            }),
-   )
+   ]

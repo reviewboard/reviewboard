@@ -204,7 +204,7 @@ Example
             TemplateHook(self,
                          name='base-after-nav',
                          template_name='myextension/after-nav.html',
-                         apply_to=['view_diff', 'view_diff_revision'])
+                         apply_to=['view-diff', 'view-diff-revision'])
 
             TemplateHook(self,
                          name='before-register-form',
