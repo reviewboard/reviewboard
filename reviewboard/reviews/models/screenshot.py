@@ -7,7 +7,6 @@ from django.db import models
 from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.html import format_html
-from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 from djblets.util.templatetags.djblets_images import thumbnail
 

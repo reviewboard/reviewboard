@@ -1059,7 +1059,7 @@ class DiffCommentsSerializerMixin(object):
             if comment.interfilediff_id:
                 key = '%s-%s' % (key, comment.interfilediff_id)
 
-            diff_comments_data.append((unicode(comment.pk), key))
+            diff_comments_data.append((six.text_type(comment.pk), key))
 
         return diff_comments_data
 

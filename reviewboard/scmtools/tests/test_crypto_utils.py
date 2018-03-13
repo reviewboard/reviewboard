@@ -3,6 +3,7 @@ from __future__ import unicode_literals
 import warnings
 
 from django.test.utils import override_settings
+from django.utils import six
 
 from reviewboard.scmtools.crypto_utils import (aes_decrypt,
                                                aes_encrypt,
@@ -74,7 +75,7 @@ class CryptoUtilsTests(TestCase):
         with warnings.catch_warnings(record=True) as w:
             self.assertEqual(decrypt(encrypted), self.PLAIN_TEXT)
             self.assertEqual(
-                unicode(w[0].message),
+                six.text_type(w[0].message),
                 'decrypt() is deprecated. Use aes_decrypt() instead.')
 
     def test_encrypt(self):
@@ -86,7 +87,7 @@ class CryptoUtilsTests(TestCase):
             self.assertEqual(aes_decrypt(encrypt(self.PLAIN_TEXT)),
                              self.PLAIN_TEXT)
             self.assertEqual(
-                unicode(w[0].message),
+                six.text_type(w[0].message),
                 'encrypt() is deprecated. Use aes_encrypt() instead.')
 
     def test_decrypt_password(self):

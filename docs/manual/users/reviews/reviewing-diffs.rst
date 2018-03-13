@@ -283,3 +283,55 @@ new comment in the comment dialog.
 
           The view here is meant to be used only as a reference to see if
           other people have already said what you plan to say.
+
+
+Filtering the File List
+=======================
+
+.. versionadded:: 3.0.4
+
+The diff viewer defaults to showing all the files modified in a diff, which is
+typically fine for most reviewers. However, you can limit the files shown
+through a special ``?filenames=`` argument in the URL. This takes a
+comma-separated list of filenames or :ref:`patterns
+<diffviewer-filename-patterns>` that specify what you want to see. For
+example::
+
+    https://reviews.example.com/r/123/diff/1/?filenames=*.txt,src/*
+
+This is considered an advanced feature targetting extension authors and those
+comfortable modifying and sharing URLs. There's no UI today to enable the
+filtering within the diff viewer.
+
+
+.. _diffviewer-filename-patterns:
+
+Filename Patterns
+-----------------
+
+Filename filtering allows for specifying patterns that match files and paths
+in the diff. This works like Unix shell-style wildcards.
+
+The following patterns can be included:
+
+=========== ============================================================
+Pattern     Description
+=========== ============================================================
+``*``       Matches any number of characters
+``?``       Matches a single character
+``[abc]``   Matches one of any of the characters in-between the brackets
+``[!abc]``  Matches one of any character not in-between the brackets
+=========== ============================================================
+
+If you need to match an actual ``?`` or ``*``, list it like ``[?]`` or
+``[*]``.
+
+Patterns are case-insensitive, so a pattern for ``*.txt`` will match ` file
+named ``README.TXT``.
+
+Here's a few examples for constructing patterns:
+
+* ``*.txt`` -- Matches any files with a ``.txt`` extension in any path
+* ``src/*`` -- Matches anything inside the ``src/`` directory, including within
+  subdirectories
+* ``*/README`` -- Matches a ``README`` file in any subdirectory in the tree

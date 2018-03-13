@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import importlib
 import os
 import re
 
@@ -29,7 +30,7 @@ class Command(BaseCommand):
             raise CommandError("%s does not exist." % filename)
 
         try:
-            import django_reset
+            importlib.import_module('django_reset')
         except ImportError:
             raise CommandError("Before using this command, you need to "
                                "install the 'django-reset' package")

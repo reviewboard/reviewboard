@@ -43,6 +43,13 @@ class DiffContextResource(WebAPIResource):
                 'type': IntFieldType,
                 'description': 'Which revision of the diff to show.',
             },
+            'filenames': {
+                'type': list,
+                'description': 'A list of case-sensitive filenames or Unix '
+                               'shell patterns used to filter the resulting '
+                               'list of files.',
+                'added_in': '3.0.4',
+            },
             'interdiff-revision': {
                 'type': IntFieldType,
                 'description': 'A tip revision for showing interdiffs. If '

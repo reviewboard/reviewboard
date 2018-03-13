@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import NoReverseMatch
 from django.template.defaultfilters import date
 from django.utils import six
