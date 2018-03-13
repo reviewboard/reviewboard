@@ -56,10 +56,6 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * Initialize the diff viewer page.
      */
     initialize() {
-        const curRevision = this.model.revision.get('revision');
-        const hash = RB.getLocationHash();
-        const search = document.location.search || '';
-
         RB.ReviewablePageView.prototype.initialize.apply(this, arguments);
 
         this._selectedAnchorIndex = -1;
@@ -99,36 +95,21 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         this.listenTo(this.model.diffReviewables, 'populated',
                       () => diffQueue.start());
 
-        /* Check to see if there's an anchor we need to scroll to. */
-        this._startAtAnchorName = hash || null;
+        this.router = new Backbone.Router();
+        this.router.route(/^(\d+(?:-\d+)?)\/?(\?[^#]*)?/,
+                          'revision',
+                          (revision, queryStr) => {
+            const queryArgs = Djblets.parseQueryString(queryStr || '');
+            const page = queryArgs.page;
+            const revisionRange = revision.split('-', 2);
 
-        this.router = new Backbone.Router({
-            routes: {
-                ':revision/': 'revision',
-                ':revision/?page=:page': 'revision',
-            }
-        });
-        this.listenTo(this.router, 'route:revision', (revision, page) => {
-            if (page === undefined) {
-                page = 1;
-            } else {
-                page = parseInt(page, 10);
-            }
-
-            if (revision.indexOf('-') === -1) {
-                this.model.loadDiffRevision({
-                    page: page,
-                    revision: parseInt(revision, 10),
-                });
-            } else {
-                const parts = revision.split('-', 2);
-
-                this.model.loadDiffRevision({
-                    page: page,
-                    revision: parseInt(parts[0], 10),
-                    interdiffRevision: parseInt(parts[1], 10),
-                });
-            }
+            this.model.loadDiffRevision({
+                page: page ? parseInt(page, 10) : 1,
+                revision: parseInt(revisionRange[0], 10),
+                interdiffRevision: (revisionRange.length === 2
+                                    ? parseInt(revisionRange[1], 10)
+                                    : null),
+            });
         });
 
         /*
@@ -152,32 +133,8 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
             silent: true,
         });
 
-        /*
-         * Navigating here accomplishes two things:
-         *
-         * 1. The user may have viewed diff/, and not diff/<revision>/, but
-         *    we want to always show the revision in the URL. This ensures
-         *    we have a URL equivalent to the one we get when clicking
-         *    a revision in the slider.
-         *
-         * 2. We want to add back any hash and query string that was
-         *    stripped away.
-         *
-         * We won't be invoking any routes or storing new history. The back
-         * button will correctly bring the user to the previous page.
-         */
-        let revisionRange = curRevision;
-        const curInterdiffRevision =
-            this.model.revision.get('interdiffRevision');
-
-        if (curInterdiffRevision) {
-            revisionRange += `-${curInterdiffRevision}`;
-        }
-
-        this.router.navigate(`${revisionRange}/${search}#${hash}`, {
-            replace: true,
-            trigger: false,
-        });
+        this._setInitialURL(document.location.search || '',
+                            RB.getLocationHash());
     },
 
     /**
@@ -488,16 +445,9 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
         }
 
         if (scroll !== false) {
-            const url = [
-                this._getCurrentURL(),
-                location.search,
-                '#',
-                $anchor.attr('name'),
-            ].join('');
-
-            this.router.navigate(url, {
-                replace: true,
-                trigger: false,
+            this._navigate({
+                anchor: $anchor.attr('name'),
+                updateURLOnly: true,
             });
 
             let scrollAmount = this.DIFF_SCROLLDOWN_AMOUNT;
@@ -739,6 +689,166 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
     },
 
     /**
+     * Set the initial URL for the page.
+     *
+     * This accomplishes two things:
+     *
+     * 1. The user may have viewed ``diff/``, and not ``diff/<revision>/``,
+     *    but we want to always show the revision in the URL. This ensures
+     *    we have a URL equivalent to the one we get when clicking a revision
+     *    in the slider.
+     *
+     * 2. We want to add back any hash and query string that may have been
+     *    stripped away, so the URL doesn't appear to suddenly change from
+     *    what the user expected.
+     *
+     * This won't invoke any routes or store any new history. The back button
+     * will correctly bring the user to the previous page.
+     *
+     * Args:
+     *     queryString (string):
+     *         The query string provided in the URL.
+     *
+     *     anchor (string):
+     *         The anchor provided in the URL.
+     */
+    _setInitialURL(queryString, anchor) {
+        this._startAtAnchorName = anchor || null;
+
+        this._navigate({
+            queryString: queryString,
+            anchor: anchor,
+            updateURLOnly: true,
+        });
+    },
+
+    /**
+     * Navigate to a new page state by calculating and setting a URL.
+     *
+     * This builds a URL consisting of the revision range and any other
+     * state that impacts the view of the page (the page number), updating
+     * the current location in the browser and (by default) triggering a
+     * route change.
+     *
+     * Args:
+     *     options (object):
+     *         The options for the navigation.
+     *
+     * Option Args:
+     *     revision (number, optional):
+     *         The revision (or first part of an interdiff range) to view.
+     *         Defaults to the current revision.
+     *
+     *     interdiffRevision (number, optional):
+     *         The second revision of an interdiff range to view.
+     *         Defaults to the current revision for the interdiff, if any.
+     *
+     *     page (number, optional):
+     *         A page number to specify. If not provided, and if the revision
+     *         range has not changed, the existing value (or lack of one)
+     *         in the URL will be used. If the revision range has changed and
+     *         a value was not explicitly provided, a ``page=`` will not be
+     *         added to the URL.
+     *
+     *     anchor (string, optional):
+     *         An anchor name to navigate to. This cannot begin with ``#``.
+     *
+     *     queryString (string, optional):
+     *         An explicit query string to use for the URL. If specified,
+     *         a query string will not be computed. This must begin with ``?``.
+     *
+     *     updateURLOnly (boolean, optional):
+     *         If ``true``, the location in the browser will be updated, but
+     *         a route will not be triggered.
+     */
+    _navigate(options) {
+        const curRevision = this.model.revision.get('revision');
+        const curInterdiffRevision =
+            this.model.revision.get('interdiffRevision');
+
+        /* Start the URL off with the revision range. */
+        const revision = (options.revision !== undefined
+                          ? options.revision
+                          : curRevision);
+        const interdiffRevision = (options.interdiffRevision !== undefined
+                                   ? options.interdiffRevision
+                                   : curInterdiffRevision);
+
+        let baseURL = revision;
+
+        if (interdiffRevision) {
+            baseURL += `-${interdiffRevision}`;
+        }
+
+        baseURL += '/';
+
+        /*
+         * If an explicit query string is provided, we'll just use that.
+         * Otherwise, we'll generate one.
+         */
+        let queryData = options.queryString;
+
+        if (queryData === undefined) {
+            /*
+            * We'll build as an array to maintain a specific order, which
+            * helps with caching and testing.
+            */
+            queryData = [];
+
+            /*
+             * We want to be smart about when we include ?page=. We always
+             * include it if it's explicitly specified in options. If it's
+             * not, then we'll fall back to what's currently in the URL, but
+             * only if the revision range is staying the same, otherwise we're
+             * taking it out. This simulates the behavior we've always had.
+             */
+            let page = options.page;
+
+            if (page === undefined &&
+                revision === curRevision &&
+                interdiffRevision === curInterdiffRevision) {
+                /*
+                 * It's the same, so we can plug in the page from the
+                 * current URL.
+                 */
+                page = this.model.pagination.get('currentPage');
+            }
+
+            if (page && page !== 1) {
+                queryData.push({
+                    name: 'page',
+                    value: page,
+                });
+            }
+        }
+
+        const url = Djblets.buildURL({
+            baseURL: baseURL,
+            queryData: queryData,
+            anchor: options.anchor,
+        });
+
+        /*
+         * Determine if we're performing the navigation or just updating the
+         * displayed URL.
+         */
+        let navOptions;
+
+        if (options.updateURLOnly) {
+            navOptions = {
+                replace: true,
+                trigger: false,
+            };
+        } else {
+            navOptions = {
+                trigger: true,
+            };
+        }
+
+        this.router.navigate(url, navOptions);
+    },
+
+    /**
      * Handler for when a RB.DiffReviewable is added.
      *
      * This will add a placeholder entry for the file and queue the diff
@@ -783,37 +893,19 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      * This will always implicitly navigate to page 1 of any paginated diffs.
      */
     _onRevisionSelected(revisions) {
-        const base = revisions[0];
-        const tip = revisions[1];
+        let base = revisions[0];
+        let tip = revisions[1];
 
         if (base === 0) {
-            this.router.navigate(`${tip}/`, {trigger: true});
-        } else {
-            this.router.navigate(`${base}-${tip}/`, {trigger: true});
-        }
-    },
-
-    /**
-     * Return the current URL.
-     *
-     * This will compute and return the current page's URL (relative to the
-     * router root), not including query parameters or hash locations.
-     *
-     * Returns:
-     *     string:
-     *     The current page URL, given the revision information.
-     */
-    _getCurrentURL() {
-        const revision = this.model.revision;
-        const interdiffRevision = revision.get('interdiffRevision');
-
-        let url = revision.get('revision');
-
-        if (interdiffRevision !== null) {
-            url += `-${interdiffRevision}`;
+            /* This is a single revision, not an interdiff. */
+            base = tip;
+            tip = null;
         }
 
-        return url;
+        this._navigate({
+            revision: base,
+            interdiffRevision: tip,
+        });
     },
 
     /**
@@ -829,13 +921,13 @@ RB.DiffViewerPageView = RB.ReviewablePageView.extend({
      *         The page number to navigate to.
      */
     _onPageSelected(scroll, page) {
-        const url = this._getCurrentURL();
-
         if (scroll) {
             this.selectAnchorByName('index_header', true);
         }
 
-        this.router.navigate(`${url}/?page=${page}`, {trigger: true});
+        this._navigate({
+            page: page,
+        });
     },
 });
 _.extend(RB.DiffViewerPageView.prototype, RB.KeyBindingsMixin);

@@ -72,7 +72,7 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
      *     options (object):
      *         The options for the diff to load.
      *
- *     Option Args:
+     * Option Args:
      *     page (number):
      *         The page number to load. Defaults to the first page.
      *
@@ -86,21 +86,35 @@ RB.DiffViewerPage = RB.ReviewablePage.extend({
      */
     loadDiffRevision(options={}) {
         const reviewRequestURL = this.get('reviewRequest').url();
-        const queryArgs = [];
+        const queryData = [];
 
         if (options.revision) {
-            queryArgs.push(`revision=${options.revision}`);
+            queryData.push({
+                name: 'revision',
+                value: options.revision,
+            });
         }
 
         if (options.interdiffRevision) {
-            queryArgs.push(`interdiff-revision=${options.interdiffRevision}`);
+            queryData.push({
+                name: 'interdiff-revision',
+                value: options.interdiffRevision,
+            });
         }
 
         if (options.page && options.page !== 1) {
-            queryArgs.push(`page=${options.page}`);
+            queryData.push({
+                name: 'page',
+                value: options.page,
+            });
         }
 
-        $.ajax(`${reviewRequestURL}diff-context/?${queryArgs.join('&')}`)
+        const url = Djblets.buildURL({
+            baseURL: `${reviewRequestURL}diff-context/`,
+            queryData: queryData,
+        });
+
+        $.ajax(url)
             .done(rsp => this.set(this._parseDiffContext(rsp.diff_context)));
     },
 
