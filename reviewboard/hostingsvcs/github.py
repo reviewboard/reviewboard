@@ -20,7 +20,7 @@ from django.template.loader import render_to_string
 from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import urljoin
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext, ugettext_lazy as _
 from django.views.decorators.http import require_POST
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -386,8 +386,8 @@ class GitHubClient(HostingServiceClient):
 
             if x_github_otp.startswith('required;'):
                 raise TwoFactorAuthCodeRequiredError(
-                    _('Enter your two-factor authentication code. '
-                      'This code will be sent to you by GitHub.'),
+                    ugettext('Enter your two-factor authentication code. '
+                             'This code will be sent to you by GitHub.'),
                     http_code=e.code)
 
             if e.code == 401:
@@ -644,19 +644,20 @@ class GitHub(HostingService, BugTracker):
             if e.http_code == 404:
                 if plan in ('public', 'private'):
                     raise RepositoryError(
-                        _('A repository with this name was not found, or your '
-                          'user may not own it.'))
+                        ugettext('A repository with this name was not found, '
+                                 'or your user may not own it.'))
                 elif plan == 'public-org':
                     raise RepositoryError(
-                        _('A repository with this organization or name was '
-                          'not found.'))
+                        ugettext('A repository with this organization or '
+                                 'name was not found.'))
                 elif plan == 'private-org':
                     raise RepositoryError(
-                        _('A repository with this organization or name was '
-                          'not found, or your user may not have access to '
-                          'it.'),
+                        ugettext('A repository with this organization or name '
+                                 'was not found, or your user may not have '
+                                 'access to it.'),
                         help_link=self._ORG_ACCESS_SUPPORT_URL,
-                        help_link_text=_('Get help on granting access.'))
+                        help_link_text=ugettext(
+                            'Get help on granting access.'))
 
             raise
 
@@ -665,12 +666,12 @@ class GitHub(HostingService, BugTracker):
 
             if is_private and plan in ('public', 'public-org'):
                 raise RepositoryError(
-                    _('This is a private repository, but you have selected '
-                      'a public plan.'))
+                    ugettext('This is a private repository, but you have '
+                             'selected a public plan.'))
             elif not is_private and plan in ('private', 'private-org'):
                 raise RepositoryError(
-                    _('This is a public repository, but you have selected '
-                      'a private plan.'))
+                    ugettext('This is a public repository, but you have '
+                             'selected a private plan.'))
 
     def authorize(self, username, password, hosting_url,
                   two_factor_auth_code=None, local_site_name=None,
@@ -702,8 +703,8 @@ class GitHub(HostingService, BugTracker):
             # If the site is using a registered GitHub application,
             # send it in the requests. This will gain the benefits of
             # a GitHub application, such as higher rate limits.
-            if (hasattr(settings, 'GITHUB_CLIENT_ID') and
-                hasattr(settings, 'GITHUB_CLIENT_SECRET')):
+            if (getattr(settings, 'GITHUB_CLIENT_ID', None) and
+                getattr(settings, 'GITHUB_CLIENT_SECRET', None)):
                 body.update({
                     'client_id': settings.GITHUB_CLIENT_ID,
                     'client_secret': settings.GITHUB_CLIENT_SECRET,
@@ -719,7 +720,7 @@ class GitHub(HostingService, BugTracker):
                 username=username,
                 password=password,
                 headers=headers,
-                body=json.dumps(body))
+                body=json.dumps(body, sort_keys=True))
         except (HTTPError, URLError) as e:
             data = e.read()
 
@@ -734,9 +735,10 @@ class GitHub(HostingService, BugTracker):
 
                 if x_github_otp.startswith('required;'):
                     raise TwoFactorAuthCodeRequiredError(
-                        _('Enter your two-factor authentication code '
-                          'and re-enter your password to link your account. '
-                          'This code will be sent to you by GitHub.'))
+                        ugettext('Enter your two-factor authentication code '
+                                 'and re-enter your password to link your '
+                                 'account. This code will be sent to you by '
+                                 'GitHub.'))
 
                 raise AuthorizationError(rsp['message'])
             else:
