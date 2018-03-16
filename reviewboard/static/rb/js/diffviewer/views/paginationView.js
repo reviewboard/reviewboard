@@ -66,7 +66,7 @@ RB.PaginationView = Backbone.View.extend({
      *     The new query string to tack onto an existing URL. This will come
      *     with a leading ``&`` if there's content in the string.
      */
-    _buildExtraQueryString() {
+    _buildExtraQueryString: function() {
         /*
          * Ideally we'd use Djblets.parseQueryString() for most of this, but
          * that doesn't maintain order (and it's perhaps not worth doing so).
