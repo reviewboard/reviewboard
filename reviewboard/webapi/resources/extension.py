@@ -23,5 +23,41 @@ class ExtensionResource(RBResourceMixin, DjbletsExtensionResource):
     def get(self, *args, **kwargs):
         pass
 
+    @webapi_check_login_required
+    @webapi_check_local_site
+    @augment_method_from(DjbletsExtensionResource)
+    def get_list(self, *args, **kwargs):
+        pass
+
+    @webapi_check_local_site
+    @augment_method_from(DjbletsExtensionResource)
+    def update(self, *args, **kwargs):
+        pass
+
+    def has_modify_permissions(self, request, extension, *args, **kwargs):
+        """Return whether the user has access to modify this extension.
+
+        Args:
+            request (django.http.HttpRequest):
+                The request.
+
+            extension (reviewboard.extensions.base.Extension):
+                The extension being modified.
+
+            *args (tuple, unused):
+                Additional positional arguments.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
+
+        Returns:
+            bool:
+            True, always. Individual permissions checks will be done via the
+            :py:func:`djblets.webapi.decorators.webapi_permission_required`
+            decorator.
+        """
+        return True
+
+
 
 extension_resource = ExtensionResource(get_extension_manager())

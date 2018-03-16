@@ -8,13 +8,14 @@ from djblets.webapi.testing.decorators import webapi_test_template
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import diff_context_mimetype
-from reviewboard.webapi.tests.mixins import BasicTestsMetaclass
+from reviewboard.webapi.tests.mixins import (BaseReviewRequestChildMixin,
+                                             BasicTestsMetaclass)
 from reviewboard.webapi.tests.urls import get_diff_context_url
 
 
 @six.add_metaclass(BasicTestsMetaclass)
-class ResourceTests(BaseWebAPITestCase):
-    """Tests for the singleton resource."""
+class ResourceTests(BaseWebAPITestCase, BaseReviewRequestChildMixin):
+    """Testing the DiffContextResource APIs."""
 
     resource = resources.diff_context
     test_http_methods = ('GET',)
@@ -88,6 +89,26 @@ class ResourceTests(BaseWebAPITestCase):
             diff_context_mimetype,
             (review_request, diffset, interdiffset)
         )
+
+    def setup_review_request_child_test(self, review_request):
+        """Set up the review request child tests.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The test review request.
+
+        Returns:
+            tuple:
+            A tuple of the API list URL and list mimetype to run tests on.
+        """
+        review_request.repository = self.create_repository()
+        diffset = self.create_diffset(review_request)
+        self.create_filediff(diffset)
+
+        return (
+            get_diff_context_url(review_request_id=review_request.display_id),
+            diff_context_mimetype)
 
     @webapi_test_template
     def test_get_interdiff(self):

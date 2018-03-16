@@ -4,12 +4,13 @@ from django.http import Http404
 from djblets.webapi.decorators import (webapi_response_errors,
                                        webapi_request_fields)
 from djblets.webapi.errors import DOES_NOT_EXIST
-from djblets.webapi.fields import IntFieldType
+from djblets.webapi.fields import IntFieldType, StringFieldType
 
 from reviewboard.reviews.views import ReviewsDiffViewerView
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import (webapi_check_local_site,
                                            webapi_check_login_required)
+from reviewboard.webapi.resources import resources
 
 
 class DiffViewerContextView(ReviewsDiffViewerView):
@@ -44,7 +45,7 @@ class DiffContextResource(WebAPIResource):
                 'description': 'Which revision of the diff to show.',
             },
             'filenames': {
-                'type': list,
+                'type': StringFieldType,
                 'description': 'A list of case-sensitive filenames or Unix '
                                'shell patterns used to filter the resulting '
                                'list of files.',
@@ -80,6 +81,14 @@ class DiffContextResource(WebAPIResource):
         """
         revision = request.GET.get('revision')
         interdiff_revision = request.GET.get('interdiff-revision')
+
+        review_request = resources.review_request.get_object(
+            request, review_request_id=review_request_id,
+            local_site_name=local_site_name, *args, **kwargs)
+
+        if not review_request.is_accessible_by(request.user):
+            return self.get_no_access_error(request, obj=review_request, *args,
+                                            **kwargs)
 
         try:
             view = DiffViewerContextView.as_view()

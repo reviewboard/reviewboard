@@ -44,7 +44,7 @@ def _compare_item(self, item_rsp, app):
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
-    """Tests for the OAuth2 application list resource."""
+    """Testing the OAuthApplicationResource list APIs."""
 
     resource = resources.oauth_app
     sample_api_url = 'oauth-apps/'
@@ -575,7 +575,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase):
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase):
-    """Tests for the OAuth2 applications item resource."""
+    """Testing the OAuthApplicationResource item APIs."""
 
     resource = resources.oauth_app
     sample_api_url = 'oauth-apps/<app-id>/'

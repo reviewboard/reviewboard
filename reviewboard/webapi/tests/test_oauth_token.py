@@ -29,7 +29,7 @@ def _compare_item(self, item_rsp, access_token):
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(BaseWebAPITestCase):
-    """Unit tests for OAuth token list resource."""
+    """Testing the OAuthTokenResource list APIs."""
 
     fixtures = ['test_users']
     resource = resources.oauth_token
@@ -97,7 +97,8 @@ class ResourceListTests(BaseWebAPITestCase):
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(BaseWebAPITestCase):
-    """Unit tests for the OAuth token item resource."""
+    """Testing the OAuthTokenResource item APIs."""
+
     fixtures = ['test_users']
     resource = resources.oauth_token
     sample_api_url = 'oauth-tokens/<token-id>/'
