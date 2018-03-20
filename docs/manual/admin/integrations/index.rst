@@ -36,6 +36,7 @@ There are several integrations which are bundled with Review Board:
 * :ref:`Mattermost <integrations-mattermost>`
 * :ref:`Slack <integrations-slack>`
 * :ref:`Travis CI <integrations-travis-ci>`
+* :ref:`Trello <integrations-trello>`
 
 Additional integrations may be provided by extensions.
 
@@ -49,3 +50,4 @@ Additional integrations may be provided by extensions.
    mattermost
    slack
    travis-ci
+   trello

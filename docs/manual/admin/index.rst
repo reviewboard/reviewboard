@@ -135,6 +135,7 @@ That's not all you can set up.
   * :doc:`Mattermost <integrations/mattermost>`
   * :doc:`Slack <integrations/slack>`
   * :doc:`Travis CI <integrations/travis-ci>`
+  * :doc:`Trello <integrations/trello>`
 
 
 Site Maintenance
