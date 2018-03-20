@@ -9,6 +9,7 @@ from django.utils.translation import ugettext_lazy as _, ugettext
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             TwoFactorAuthCodeRequiredError)
 from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.scmtools.errors import UnverifiedCertificateError
 
 
 class HostingServiceAuthForm(forms.Form):
@@ -243,7 +244,7 @@ class HostingServiceAuthForm(forms.Form):
         return credentials
 
     def save(self, allow_authorize=True, force_authorize=False,
-             extra_authorize_kwargs=None, save=True):
+             extra_authorize_kwargs=None, trust_host=False, save=True):
         """Save the hosting account and authorize against the service.
 
         This will create or update a hosting account, based on the information
@@ -265,6 +266,10 @@ class HostingServiceAuthForm(forms.Form):
                 :py:meth:`HostingService.authorize()
                 <reviewboard.hostingsvcs.models.HostingService.authorize>`
                 call.
+
+            trust_host (bool, optional):
+                Whether to trust the given host, even if the linked certificate
+                is invalid or self-signed.
 
             save (bool, optional):
                 Whether or not the created account should be saved.
@@ -349,45 +354,86 @@ class HostingServiceAuthForm(forms.Form):
             password = credentials.get('password')
             two_factor_auth_code = credentials.get('two_factor_auth_code')
 
+            authorize_kwargs = dict({
+                'username': username,
+                'password': password,
+                'hosting_url': hosting_url,
+                'two_factor_auth_code': two_factor_auth_code,
+                'local_site_name': local_site_name,
+                'credentials': credentials,
+            }, **extra_authorize_kwargs)
+
             try:
-                hosting_account.service.authorize(
-                    username=username,
-                    password=password,
-                    hosting_url=hosting_url,
-                    two_factor_auth_code=two_factor_auth_code,
-                    local_site_name=local_site_name,
-                    credentials=credentials,
-                    **extra_authorize_kwargs)
-            except TwoFactorAuthCodeRequiredError:
-                # Mark this asrequired for the next form render.
-                self.fields['hosting_account_two_factor_auth_code']\
-                    .required = True
-
-                # Re-raise the error.
-                raise
-            except AuthorizationError:
-                logging.exception('Authorization error linking hosting '
-                                  'account ID=%r for hosting service=%r, '
-                                  'username=%r, LocalSite=%r',
-                                  hosting_account.pk, hosting_service_id,
-                                  username, local_site_name)
-
-                # Re-raise the error.
-                raise
-            except Exception:
-                logging.exception('Unknown error linking hosting account '
-                                  'ID=%r for hosting service=%r, '
-                                  'username=%r, LocalSite=%r',
-                                  hosting_account.pk, hosting_service_id,
-                                  username, local_site_name)
-
-                # Re-raise the error.
-                raise
+                self.authorize(hosting_account, hosting_service_id,
+                               **authorize_kwargs)
+            except UnverifiedCertificateError as e:
+                if trust_host:
+                    hosting_account.accept_certificate(e.certificate)
+                    self.authorize(hosting_account, hosting_service_id,
+                                   **authorize_kwargs)
+                else:
+                    raise
 
         if save:
             hosting_account.save()
 
         return hosting_account
+
+    def authorize(self, hosting_account, hosting_service_id,
+                  username=None, local_site_name=None, **kwargs):
+        """Authorize the service.
+
+        Args:
+            hosting_account (reviewboard.hostingsvcs.models.
+                             HostingServiceAccount):
+                The hosting service account.
+
+            hosting_service_id (unicode):
+                The ID of the hosting service.
+
+            username (unicode):
+                The username for the account.
+
+            local_site_name (unicode, optional):
+                The Local Site name, if any, that the account should be
+                bound to.
+
+            **kwargs (dict):
+                Keyword arguments to pass into the service authorize function.
+        """
+        try:
+            hosting_account.service.authorize(username=username,
+                                              local_site_name=local_site_name,
+                                              **kwargs)
+        except TwoFactorAuthCodeRequiredError:
+            # Mark this as required for the next form render.
+            self.fields['hosting_account_two_factor_auth_code']\
+                .required = True
+
+            # Re-raise the error.
+            raise
+        except AuthorizationError:
+            logging.exception('Authorization error linking hosting '
+                              'account ID=%r for hosting service=%r, '
+                              'username=%r, LocalSite=%r',
+                              hosting_account.pk, hosting_service_id,
+                              username, local_site_name)
+
+            # Re-raise the error.
+            raise
+        except UnverifiedCertificateError:
+            # Re-raise the error so the user will see the "I trust this
+            # host" prompt.
+            raise
+        except Exception:
+            logging.exception('Unknown error linking hosting account '
+                              'ID=%r for hosting service=%r, '
+                              'username=%r, LocalSite=%r',
+                              hosting_account.pk, hosting_service_id,
+                              username, local_site_name)
+
+            # Re-raise the error.
+            raise
 
     def clean_hosting_url(self):
         """Clean the hosting URL field.

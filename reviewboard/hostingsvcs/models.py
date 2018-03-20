@@ -73,6 +73,23 @@ class HostingServiceAccount(models.Model):
         return user.has_perm('hostingsvcs.change_hostingserviceaccount',
                              self.local_site)
 
+    def accept_certificate(self, certificate):
+        """Accept the SSL certificate for the linked hosting URL.
+
+        Args:
+            certificate (reviewboard.scmtools.certs.Certificate):
+                The certificate to accept.
+
+        Raises:
+            ValueError:
+                The certificate data did not include required fields.
+        """
+        if not certificate.pem_data:
+            raise ValueError('The certificate does not include a PEM-encoded '
+                             'representation.')
+
+        self.data['ssl_cert'] = certificate.pem_data
+
     class Meta:
         db_table = 'hostingsvcs_hostingserviceaccount'
         verbose_name = _('Hosting Service Account')

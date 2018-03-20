@@ -12,10 +12,13 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError)
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.service import HostingService
+from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
-from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
+
+
+logger = logging.getLogger(__name__)
 
 
 class ReviewBoardGatewayForm(HostingServiceForm):
@@ -74,17 +77,17 @@ class ReviewBoardGateway(HostingService):
                 username=username,
                 password=password)
         except HTTPError as e:
-            if e.code == 404:
+            if e.code == 401:
+                raise AuthorizationError(
+                    ugettext('The username or password is incorrect.'))
+            elif e.code == 404:
                 raise HostingServiceError(
                     ugettext('A Review Board Gateway server was not found at '
                              'the provided URL.'))
-            elif e.code == 401:
-                raise AuthorizationError(
-                    ugettext('The username or password is incorrect.'))
             else:
-                logging.warning('Failed authorization at %s: %s',
-                                hosting_url + '/session', e, exc_info=1)
-                raise
+                logger.exception('Failed authorization at %s/session: %s',
+                                 hosting_url, e)
+            raise
 
         self.account.data['private_token'] = \
             encrypt_password(data['private_token'])
@@ -113,8 +116,7 @@ class ReviewBoardGateway(HostingService):
             if e.code == 404:
                 raise FileNotFoundError(path, revision)
             else:
-                logging.warning('Failed to get file from %s: %s',
-                                url, e, exc_info=1)
+                logger.exception('Failed to get file from %s: %s', url, e)
                 raise SCMError(six.text_type(e))
 
     def get_file_exists(self, repository, path, revision, base_commit_id,
@@ -132,8 +134,8 @@ class ReviewBoardGateway(HostingService):
             if e.code == 404:
                 return False
             else:
-                logging.warning('Failed to get file exists from %s: %s',
-                                url, e, exc_info=1)
+                logger.exception('Failed to get file exists from %s: %s',
+                                 url, e)
                 raise SCMError(six.text_type(e))
 
     def get_branches(self, repository):
@@ -154,8 +156,7 @@ class ReviewBoardGateway(HostingService):
 
             return results
         except Exception as e:
-            logging.warning('Failed to get branches from %s: %s',
-                            url, e, exc_info=1)
+            logger.exception('Failed to get branches from %s: %s', url, e)
             raise SCMError(six.text_type(e))
 
     def get_commits(self, repository, branch=None, start=None):
@@ -186,8 +187,7 @@ class ReviewBoardGateway(HostingService):
 
             return results
         except Exception as e:
-            logging.warning('Failed to fetch commits from %s: %s',
-                            url, e, exc_info=1)
+            logger.exception('Failed to fetch commits from %s: %s', url, e)
             raise SCMError(six.text_type(e))
 
     def get_change(self, repository, revision):
@@ -208,8 +208,8 @@ class ReviewBoardGateway(HostingService):
                           diff=commit['diff'])
 
         except Exception as e:
-            logging.warning('Failed to fetch commit change from %s: %s',
-                            url, e, exc_info=1)
+            logger.exception('Failed to fetch commit change from %s: %s',
+                             url, e)
             raise SCMError(six.text_type(e))
 
     def _get_file_url(self, repository, revision, base_commit_id=None,
@@ -249,12 +249,12 @@ class ReviewBoardGateway(HostingService):
         except HTTPError as e:
             if e.code == 401:
                 raise AuthorizationError(
-                    ugettext('The login or password is incorrect.'))
+                    ugettext('The username or password is incorrect.'))
             elif e.code == 404:
                 raise
             else:
-                logging.warning('Failed to execute a GET request at %s: %s',
-                                url, e, exc_info=1)
+                logger.exception('Failed to execute a GET request at %s: %s',
+                                 url, e)
                 raise
 
     def _api_head(self, url):
@@ -275,12 +275,12 @@ class ReviewBoardGateway(HostingService):
         except HTTPError as e:
             if e.code == 401:
                 raise AuthorizationError(
-                    ugettext('The login or password is incorrect.'))
+                    ugettext('The username or password is incorrect.'))
             elif e.code == 404:
                 raise
             else:
-                logging.warning('Failed to execute a HEAD request at %s: %s',
-                                url, e, exc_info=1)
+                logger.exception('Failed to execute a HEAD request at %s: %s',
+                                 url, e)
                 raise
 
     def _get_private_token(self):

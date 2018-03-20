@@ -3,14 +3,19 @@
 from __future__ import unicode_literals
 
 import base64
+import hashlib
 import json
 import logging
 import mimetools
 import re
+import ssl
 
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
 from django.conf.urls import include, url
 from django.dispatch import receiver
 from django.utils import six
+from django.utils.six.moves.urllib.error import URLError
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.six.moves.urllib.request import (Request as BaseURLRequest,
                                                    HTTPBasicAuthHandler,
@@ -22,6 +27,8 @@ from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
 
 import reviewboard.hostingsvcs.urls as hostingsvcs_urls
 from reviewboard.registries.registry import EntryPointRegistry
+from reviewboard.scmtools.certs import Certificate
+from reviewboard.scmtools.errors import UnverifiedCertificateError
 from reviewboard.signals import initializing
 
 
@@ -105,7 +112,7 @@ class HostingServiceClient(object):
             hosting_service (HostingService):
                 The hosting service that is using this client.
         """
-        pass
+        self.hosting_service = hosting_service
 
     #
     # HTTP utility methods
@@ -294,9 +301,49 @@ class HostingServiceClient(object):
         if username is not None and password is not None:
             request.add_basic_auth(username, password)
 
-        response = urlopen(request)
+        try:
+            if (self.hosting_service and
+                'ssl_cert' in self.hosting_service.account.data):
+                # create_default_context only exists in Python 2.7.9+. Using it
+                # here should be fine, however, because accepting invalid or
+                # self-signed certificates is only possible when running
+                # against versions that have this (see the check for
+                # create_default_context below).
+                context = ssl.create_default_context()
+                context.load_verify_locations(
+                    cadata=self.hosting_service.account.data['ssl_cert'])
+                context.check_hostname = False
+            else:
+                context = None
 
-        return response.read(), response.headers
+            response = urlopen(request, context=context)
+            return response.read(), response.headers
+        except URLError as e:
+            if ('CERTIFICATE_VERIFY_FAILED' not in six.text_type(e) or
+                not hasattr(ssl, 'create_default_context')):
+                raise
+
+            parts = urlparse(url)
+            port = parts.port or 443
+
+            cert_pem = ssl.get_server_certificate((parts.hostname, port))
+            cert_der = ssl.PEM_cert_to_DER_cert(cert_pem)
+
+            cert = x509.load_pem_x509_certificate(cert_pem.encode('ascii'),
+                                                  default_backend())
+            issuer = cert.issuer.get_attributes_for_oid(
+                x509.oid.NameOID.COMMON_NAME)[0].value
+            subject = cert.subject.get_attributes_for_oid(
+                x509.oid.NameOID.COMMON_NAME)[0].value
+
+            raise UnverifiedCertificateError(
+                Certificate(
+                    pem_data=cert_pem,
+                    valid_from=cert.not_valid_before.isoformat(),
+                    valid_until=cert.not_valid_after.isoformat(),
+                    issuer=issuer,
+                    hostname=subject,
+                    fingerprint=hashlib.sha256(cert_der).hexdigest()))
 
     #
     # JSON utility methods
