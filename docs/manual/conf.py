@@ -253,17 +253,18 @@ rb_version = reviewboard.VERSION
 if rb_version[3] == 'final' or rb_version[5] > 0:
     git_branch = 'release-%s.%s' % (rb_version[0], rb_version[1])
 
-    if rb_version[2]:
-        git_branch += '.%s' % rb_version[2]
+    if reviewboard.is_release():
+        if rb_version[2]:
+            git_branch += '.%s' % rb_version[2]
 
-        if rb_version[3]:
-            git_branch += '.%s' % rb_version[3]
+            if rb_version[3]:
+                git_branch += '.%s' % rb_version[3]
 
-    if reviewboard.is_release() and version[3] != 'final':
-        git_branch += rb_version[4]
+        if version[4] != 'final':
+            git_branch += rb_version[4]
 
-        if rb_version[5]:
-            git_branch += '%d' % rb_version[5]
+            if rb_version[5]:
+                git_branch += '%d' % rb_version[5]
     else:
         git_branch += '.x'
 else:
