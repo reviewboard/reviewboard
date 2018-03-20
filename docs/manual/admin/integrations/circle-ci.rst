@@ -38,7 +38,7 @@ for which review requests will match. Because CircleCI only works with GitHub
 and Bitbucket repositories, only changes on repositories configured with those
 hosting services will trigger builds.
 
-.. image:: ci-conditions.png
+.. image:: images/ci-conditions.png
 
 :guilabel:`API Token` should be set to a valid CircleCI API Token. These can be
 created by going to CircleCI and selecting :guilabel:`User Settings` from the

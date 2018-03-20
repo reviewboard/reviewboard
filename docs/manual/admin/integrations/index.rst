@@ -20,7 +20,7 @@ have multiple "configurations" that run based on a set of conditions. This
 allows you to do things like have messages sent to different channels on a chat
 service based on the groups involved.
 
-.. image:: integrations-list.png
+.. image:: images/integrations-list.png
 
 To create a new configuration for an integration, click :guilabel:`Add a new
 configuration`.
@@ -31,9 +31,13 @@ Built-in Integrations
 
 There are several integrations which are bundled with Review Board:
 
+* :ref:`Asana <integrations-asana>`
 * :ref:`CircleCI <integrations-circle-ci>`
+* :ref:`I Done This <integrations-idonethis>`
+* :ref:`Mattermost <integrations-mattermost>`
 * :ref:`Slack <integrations-slack>`
 * :ref:`Travis CI <integrations-travis-ci>`
+* :ref:`Trello <integrations-trello>`
 
 Additional integrations may be provided by extensions.
 
@@ -42,6 +46,10 @@ Additional integrations may be provided by extensions.
    :maxdepth: 1
    :hidden:
 
+   asana
    circle-ci
+   idonethis
+   mattermost
    slack
    travis-ci
+   trello

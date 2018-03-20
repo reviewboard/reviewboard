@@ -14,7 +14,9 @@ var prevTypes = {},
         gettext('Plugin Required'),
         '</h3>',
         '<p>',
-        gettext('The <code>gerrit-reviewboard</code> plugin is required for Gerrit integration. <a href="https://github.com/reviewboard/gerrit-reviewboard-plugin/">Download</a> and install it on your Gerrit server.'),
+        interpolate(
+            gettext('The <code>gerrit-reviewboard</code> plugin is required for Gerrit integration. See the <a href="%s">instructions</a> for installing the plugin on your server.'),
+            MANUAL_URL + 'admin/configuration/repositories/gerrit/'),
         '</p>'
     ].join('');
 

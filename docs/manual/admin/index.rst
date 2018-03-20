@@ -102,6 +102,7 @@ Next, you'll want to configure your repositories, :term:`review groups`, and
      * :ref:`Bitbucket Server <repository-hosting-bitbucket-server>`
      * :ref:`Codebase <repository-hosting-codebasehq>`
      * :ref:`Fedora Hosted <repository-hosting-fedorahosted>`
+     * :ref:`Gerrit <repository-hosting-gerrit>`
      * :ref:`GitHub <repository-hosting-github>`
      * :ref:`GitHub Enterprise <repository-hosting-github-enterprise>`
      * :ref:`GitLab <repository-hosting-gitlab>`
@@ -129,9 +130,13 @@ That's not all you can set up.
 * :doc:`Manage Integrations <integrations/index>`, which can add integrations
   between Review Board and third-party services, like:
 
+  * :doc:`Asana <integrations/asana>`
   * :doc:`CircleCI <integrations/circle-ci>`
+  * :doc:`I Done This <integrations/idonethis>`
+  * :doc:`Mattermost <integrations/mattermost>`
   * :doc:`Slack <integrations/slack>`
   * :doc:`Travis CI <integrations/travis-ci>`
+  * :doc:`Trello <integrations/trello>`
 
 
 Site Maintenance

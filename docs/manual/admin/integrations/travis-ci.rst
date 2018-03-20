@@ -35,7 +35,7 @@ set this up so things don't break if you connect a second one. If needed, you
 can create complex rules for which review requests get matched with this config
 (for example, if you only want to run a test suite for certain branches).
 
-.. image:: ci-conditions.png
+.. image:: images/ci-conditions.png
 
 The :guilabel:`Build Config` allows you to specify a replacement for the
 repository's :file:`.travis.yml` file. This should define the build for your
