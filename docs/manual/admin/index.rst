@@ -130,6 +130,7 @@ That's not all you can set up.
 * :doc:`Manage Integrations <integrations/index>`, which can add integrations
   between Review Board and third-party services, like:
 
+  * :doc:`Asana <integrations/asana>`
   * :doc:`CircleCI <integrations/circle-ci>`
   * :doc:`Slack <integrations/slack>`
   * :doc:`Travis CI <integrations/travis-ci>`

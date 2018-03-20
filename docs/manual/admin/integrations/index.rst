@@ -31,6 +31,7 @@ Built-in Integrations
 
 There are several integrations which are bundled with Review Board:
 
+* :ref:`Asana <integrations-asana>`
 * :ref:`CircleCI <integrations-circle-ci>`
 * :ref:`Slack <integrations-slack>`
 * :ref:`Travis CI <integrations-travis-ci>`
@@ -42,6 +43,7 @@ Additional integrations may be provided by extensions.
    :maxdepth: 1
    :hidden:
 
+   asana
    circle-ci
    slack
    travis-ci
