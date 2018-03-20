@@ -89,9 +89,14 @@ class AccountSettingsForm(AccountPageForm):
         """Load data for the form."""
         profile = self.user.get_profile()
 
+        siteconfig = SiteConfiguration.objects.get_current()
+        diffviewer_syntax_highlighting = siteconfig.get(
+            'diffviewer_syntax_highlighting')
+
         self.set_initial({
             'open_an_issue': profile.open_an_issue,
-            'syntax_highlighting': profile.syntax_highlighting,
+            'syntax_highlighting': (profile.syntax_highlighting and
+                                    diffviewer_syntax_highlighting),
             'timezone': profile.timezone,
             'default_use_rich_text': profile.should_use_rich_text,
             'should_send_email': profile.should_send_email,
@@ -100,16 +105,17 @@ class AccountSettingsForm(AccountPageForm):
                 profile.should_enable_desktop_notifications,
         })
 
-        siteconfig = SiteConfiguration.objects.get_current()
-
-        if not siteconfig.get('diffviewer_syntax_highlighting'):
-            del self.fields['syntax_highlighting']
+        if not diffviewer_syntax_highlighting:
+            self.fields['syntax_highlighting'].widget.attrs.update({
+                'disabled': True,
+            })
 
     def save(self):
         """Save the form."""
         profile = self.user.get_profile()
+        siteconfig = SiteConfiguration.objects.get_current()
 
-        if 'syntax_highlighting' in self.cleaned_data:
+        if siteconfig.get('diffviewer_syntax_highlighting'):
             profile.syntax_highlighting = \
                 self.cleaned_data['syntax_highlighting']
 

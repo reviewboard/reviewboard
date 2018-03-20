@@ -4,6 +4,7 @@ from __future__ import print_function, unicode_literals
 
 import getpass
 import imp
+import logging
 import os
 import pkg_resources
 import platform
@@ -13,6 +14,7 @@ import sys
 import textwrap
 import subprocess
 import warnings
+from importlib import import_module
 from optparse import OptionGroup, OptionParser
 from random import choice as random_choice
 
@@ -1950,6 +1952,11 @@ def main():
     """Main application loop."""
     global site
     global ui
+
+    # Ensure we import djblets.log for it to monkey-patch the logging module.
+    import_module('djblets.log')
+
+    logging.basicConfig(level=logging.INFO)
 
     command_name, site_paths = parse_options(sys.argv[1:])
     command = COMMANDS[command_name]

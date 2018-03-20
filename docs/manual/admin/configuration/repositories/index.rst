@@ -376,6 +376,7 @@ Configuring Hosted Repositories
    bitbucket-server
    codebasehq
    fedorahosted
+   gerrit
    github
    github-enterprise
    gitlab

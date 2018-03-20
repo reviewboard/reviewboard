@@ -152,3 +152,20 @@ Review Board without supplying any authentication credentials.
 
 See :ref:`oauth2` for more information about creating applications that use
 OAuth2.
+
+
+I Done This
+===========
+
+.. versionadded:: 3.0.4
+
+If the :ref:`I Done This integration <integrations-idonethis>` is enabled,
+the :guilabel:`I Done This` section will be available, allowing you to
+configure your API Token for automatically posting status updates to `I Done
+This`_.
+
+If you don't see this section, but are using I Done This, ask your
+administrator to :ref:`enable I Done This support <integrations-idonethis>`.
+
+
+.. _I Done This: https://idonethis.com/

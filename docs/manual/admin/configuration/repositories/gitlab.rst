@@ -50,12 +50,15 @@ Fill out the following fields:
     The username used to log into your GitLab account. This is *not* your
     e-mail address.
 
-:guilabel:`Account password`:
-    The password used to log into your GitLab account.
+:guilabel:`API Token`:
+    An API token that Review Board will use to communicate with GitLab.
 
-    The password is *not* stored! Review Board will use these credentials to
-    fetch an access token with read-only permissions to repositories. This
-    token is stored for future use, and can be revoked on GitLab at any time.
+    You can create this token by going to your GitLab instance and navigating
+    to :guilabel:`Settings -> Access Tokens -> Personal Access Tokens`. The
+    token will need the ``api`` scope.
+
+    On older versions of GitLab, you can find your API token by navigating to
+    :guilabel:`Profile Settings -> Account -> Private Token`.
 
 The account will be linked when the repository is saved. If there are errors
 authenticating the user or retrieving an access token, you will be prompted to

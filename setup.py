@@ -390,6 +390,11 @@ def build_entrypoints(prefix, entrypoints):
 
 PACKAGE_NAME = 'ReviewBoard'
 
+
+with open('README.rst', 'r') as fp:
+    long_description = fp.read()
+
+
 setup(
     name=PACKAGE_NAME,
     version=get_package_version(),
@@ -398,6 +403,7 @@ setup(
         'Review Board, a fully-featured web-based code and document '
         'review tool made with love <3'
     ),
+    long_description=long_description,
     author='Beanbag, Inc.',
     author_email='reviewboard@googlegroups.com',
     url='https://www.reviewboard.org/',

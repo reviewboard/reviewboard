@@ -1,0 +1,230 @@
+.. default-intersphinx:: rb3.0
+
+
+================================
+Review Board 3.0.4 Release Notes
+================================
+
+**Release date**: March 20, 2018
+
+
+Packaging
+=========
+
+* `Djblets 1.0.4`_ is now required.
+* `rbintegrations 1.0`_ is now required.
+
+
+.. _Djblets 1.0.4:
+   https://www.reviewboard.org/docs/releasenotes/djblets/1.0.4/
+.. _rbintegrations 1.0:
+   https://www.reviewboard.org/docs/releasenotes/rbintegrations/1.0/
+
+
+New Features
+============
+
+* Added support for Gerrit_ as a hosting service.
+
+  Gerrit is a Git repository management and code review service used by
+  many open source projects and teams at companies. We've had many requests
+  from users who want to leverage Gerrit for repository management but to
+  continue using Review Board for code review.
+
+  Review Board now supports posting code for review against a Gerrit
+  repository. All code review continues to happen through Review Board. This
+  does require the use of our own gerrit-reviewboard-plugin_ for Gerrit, which
+  provides additional API needed by Review Board.
+
+* Added support for the modern GitLab_ API.
+
+  Review Board now makes use of the modern GitLab API version 4. This is a
+  more stable API, offering additional benefits like nested groups and better
+  pagination for those hosting hundreds of repositories.
+
+  Older GitLab installs using the older version 3 API will continue to work.
+  Review Board will fall back on that if version 4 is not available.
+
+* Added support for repositories with self-signed SSL certificates.
+
+  Repositories served over HTTPS and using self-signed SSL certificates will
+  now prompt you to accept the certificate when adding or updating the
+  repository. This works with self-hosted Bitbucket Server, Gerrit, GitHub
+  Enterprise, GitLab, and RB-Gateway services.
+
+  Python 2.7.9 or higher is required for working with self-signed SSL
+  certificates.
+
+* :rbintegration:`AWS CodeCommit <aws-codecommit>`,
+  :rbintegration:`Bitbucket Server <bitbucket-server>`, and
+  :rbintegration:`Visual Studio Team Services <visual-studio-team-services>`
+  now appear with instructions when configuring repositories.
+
+  Support for these services are provided by `Power Pack`_. If Power Pack is
+  not installed, we now list these services in order to help provide guidance
+  on how to download and enable support.
+
+* Added optional URL arguments for filtering the diff viewer.
+
+  The diff viewer now accepts an optional ``?filenames=`` argument in the URL
+  for specifying a comma-separated list of filenames or Unix-style filename
+  patterns to show. This allows URLs to be crafted, either by hand or from
+  an extension, that shows only a subset of the files in a diff. These filters
+  are retained when switching diff revisions or moving to other pages in a
+  multi-page diff.
+
+  There's no UI for this today, but we may add this in a future release. See
+  the :ref:`documentation <diffviewer-filter-files>` for more information
+  on using this feature.
+
+
+.. _Gerrit: https://www.gerritcodereview.com/
+.. _gerrit-reviewboard-plugin:
+   https://github.com/reviewboard/gerrit-reviewboard-plugin
+.. _GitLab: https://about.gitlab.com/
+.. _Power Pack: https://www.reviewboard.org/powerpack/
+
+
+Extensions
+==========
+
+* Added a new :command:`rbext create` command for creating extension source
+  trees.
+
+  :command:`rbext create` will generate a complete source tree for a brand new
+  extension and its packaging, optionally enabling support for static media
+  files and configuration. This lets extension authors begin iterating on an
+  extension quickly. The generated extension can immediately be installed and
+  enabled by Review Board.
+
+  See the :ref:`documentation <rbext-create>` for usage instructions.
+
+* Added new :ref:`template hooks <extensions-template-hook>` for the review
+  request box.
+
+  These allow for more fine-grained placement of information without having
+  to manipulate the DOM. The new ones added are:
+
+  * ``before-review-request-summary``
+  * ``after-review-request-summary``
+  * ``review-request-summary-pre``
+  * ``review-request-summary-post``
+  * ``before-review-request-fields``
+  * ``after-review-request-fields``
+  * ``before-review-request-extra-panes``
+  * ``after-review-request-extra-panes``
+  * ``review-request-extra-panes-pre``
+  * ``review-request-extra-panes-post``
+
+  See the :ref:`documentation <extensions-template-hook>` for details on
+  these new hook points.
+
+
+Web API
+=======
+
+* :ref:`webapi2.0-review-request-resource` no longer allows publishing
+  when reviewers aren't specified. (:bug:`4057`)
+
+  Patch by Maram El-Salamouny.
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed a deadlock that could sometimes occur during thread shutdown.
+
+  We tracked down an issue that could sometimes occur with threads that have
+  handled file attachment uploads, where they'd operate on garbage state and
+  deadlock when mod_wsgi began shutting down or replacing threads.
+
+  If you encounter issues where Apache is occassionally not responding to
+  requests after upgrading to this release, please let us know.
+
+
+Diff Viewer
+-----------
+
+* Fixed several problems with move detection not catching certain lines or
+  representing move ranges incorrectly in complex situations.
+
+
+Review Requests
+---------------
+
+* The change description field for a draft no longer appears empty when
+  first loading the page.
+
+* Extra unwanted padding no longer appears at the top of some reviews.
+
+
+Account Settings
+----------------
+
+* Improved the way we handle avatar settings and prevented additional
+  problems with custom backends.
+
+* Fixed a crash when viewing the :ref:`My Account <account-settings>` page
+  when syntax highlighting was turned off for the server.
+
+
+Integrations
+------------
+
+* Fixed a problem where integrations with custom configuration forms could
+  end up not showing the Local Site field.
+
+
+Mercurial
+---------
+
+* Fixed a crash when attempting to fetch the very first commit in a
+  repository.
+
+  Patch by André Klitzing.
+
+* Removed the need for the mercurial_ package to be installed on the server
+  when using hgweb_ for repository communication.
+
+  Patch by André Klitzing.
+
+
+.. _mercurial: https://pypi.python.org/pypi/mercurial
+.. _hgweb: https://www.mercurial-scm.org/wiki/PublishingRepositories#hgweb
+
+
+Active Directory
+----------------
+
+* Improved logging when things go wrong, to help diagnose connection problems.
+  (:bug:`4658`)
+
+
+Administration
+--------------
+
+* The user selector for groups and default reviewers no longer breaks if
+  a user doesn't have any avatars configured. (:bug:`4655`)
+
+* Fixed a bug in the ``loaddb`` management command where errors importing a
+  database dump weren't properly rolling back the transaction. (:bug:`4629`)
+
+  Patch by Jeremie Corriveau.
+
+* Fixed the help text for the :guilabel:`Media URL` and :guilabel:`Static URL`
+  fields in General Settings.
+
+
+Contributors
+============
+
+* André Klitzing
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
+* Jeremie Corriveau
+* Maram El-Salamouny
+* Zhaolin Deng

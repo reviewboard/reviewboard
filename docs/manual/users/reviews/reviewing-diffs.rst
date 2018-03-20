@@ -285,6 +285,8 @@ new comment in the comment dialog.
           other people have already said what you plan to say.
 
 
+.. _diffviewer-filter-files:
+
 Filtering the File List
 =======================
 
