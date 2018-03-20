@@ -346,7 +346,7 @@ class Gerrit(HostingService):
        https://github.com/reviewboard/gerrit-reviewboard-plugin/
     """
 
-    REQUIRED_PLUGIN_VERSION = (0, 1, 0)
+    REQUIRED_PLUGIN_VERSION = (1, 0, 0)
 
     name = _('Gerrit')
     client_class = GerritClient
