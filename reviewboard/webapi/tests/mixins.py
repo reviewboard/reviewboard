@@ -959,7 +959,7 @@ class BasicGetListTestsWithLocalSiteAndOAuthTokenMixin(object):
     @add_fixtures(['test_site'])
     @webapi_test_template
     def test_get_list_site_with_global_oauth_token_disallowed(self):
-        """Testing the GET <URL API with access to a local site using an
+        """Testing the GET <URL> API with access to a local site using an
         OAuth token for the root on a local site
         """
         user, url, mimetype, items = self._setup_test_get_list_with_site(

@@ -17,7 +17,8 @@ from reviewboard.webapi.tests.urls import (get_user_file_attachment_item_url,
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceListTests(BaseWebAPITestCase):
-    """Testing the FileAttachmentUserResource list APIs."""
+    """Testing the UserFileAttachmentResource list APIs."""
+
     fixtures = ['test_users', 'test_site']
     resource = resources.user_file_attachment
     sample_api_url = 'users/<username>/file-attachments/'
@@ -108,7 +109,8 @@ class ResourceListTests(BaseWebAPITestCase):
 
 @six.add_metaclass(BasicTestsMetaclass)
 class ResourceItemTests(BaseWebAPITestCase):
-    """Testing the FileAttachmentUserResource item APIs."""
+    """Testing the UserFileAttachmentResource item APIs."""
+
     fixtures = ['test_users']
     sample_api_url = 'users/<username>/file-attachments/<id>/'
     resource = resources.user_file_attachment
