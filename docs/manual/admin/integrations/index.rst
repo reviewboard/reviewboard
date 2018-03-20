@@ -20,7 +20,7 @@ have multiple "configurations" that run based on a set of conditions. This
 allows you to do things like have messages sent to different channels on a chat
 service based on the groups involved.
 
-.. image:: integrations-list.png
+.. image:: images/integrations-list.png
 
 To create a new configuration for an integration, click :guilabel:`Add a new
 configuration`.
