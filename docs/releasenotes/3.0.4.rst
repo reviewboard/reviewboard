@@ -5,17 +5,20 @@
 Review Board 3.0.4 Release Notes
 ================================
 
-**Release date**: TBD
+**Release date**: March 20, 2018
 
 
 Packaging
 =========
 
 * `Djblets 1.0.4`_ is now required.
+* `rbintegrations 1.0`_ is now required.
 
 
 .. _Djblets 1.0.4:
    https://www.reviewboard.org/docs/releasenotes/djblets/1.0.4/
+.. _rbintegrations 1.0:
+   https://www.reviewboard.org/docs/releasenotes/rbintegrations/1.0/
 
 
 New Features
