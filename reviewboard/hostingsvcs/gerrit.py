@@ -343,7 +343,7 @@ class Gerrit(HostingService):
     be informed of such.
 
     .. _gerrit-reviewboard-plugin:
-       https://github.com/reviewboard/gerrit-reviewboard-plugin/
+       https://downloads.reviewboard.org/releases/gerrit-reviewboard-plugin/
     """
 
     REQUIRED_PLUGIN_VERSION = (1, 0, 0)

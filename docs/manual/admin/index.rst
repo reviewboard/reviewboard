@@ -102,6 +102,7 @@ Next, you'll want to configure your repositories, :term:`review groups`, and
      * :ref:`Bitbucket Server <repository-hosting-bitbucket-server>`
      * :ref:`Codebase <repository-hosting-codebasehq>`
      * :ref:`Fedora Hosted <repository-hosting-fedorahosted>`
+     * :ref:`Gerrit <repository-hosting-gerrit>`
      * :ref:`GitHub <repository-hosting-github>`
      * :ref:`GitHub Enterprise <repository-hosting-github-enterprise>`
      * :ref:`GitLab <repository-hosting-gitlab>`
