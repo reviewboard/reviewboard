@@ -24,6 +24,63 @@ Packaging
 New Features
 ============
 
+* Added task integration with :rbintegration:`Asana <asana>`.
+
+  Asana is a task tracking tool for teams of all sizes, used to help organize,
+  schedule, and communicate priorities for software releases, user
+  on-boarding, goals, and more.
+
+  This integration adds a new field for review requests for specifying a list
+  of Asana tasks that the review request addresses. The state of each task is
+  shown, and clicking the task will take you to the task's page on Asana.
+
+  See the :ref:`documentation <integrations-asana>` for configuration
+  instructions.
+
+* Added task integration with :rbintegration:`Trello <trello>`.
+
+  Trello is a task and project management tool for teams of all sizes.
+  Unlike many task trackers, Trello represents tasks as cards placed into
+  columns on a board, helping to visually organize information, what state
+  tasks are in, and the flow of tasks.
+
+  This integration works like the Asana integration, adding a new field for
+  specifying any Trello cards that the review request addresses, and making it
+  easy to get to the card by clicking its name in the field.
+
+  See the :ref:`documentation <integrations-trello>` for configuration
+  instructions.
+
+* Added chat integration with :rbintegration:`Mattermost <mattermost>`.
+
+  Mattermost is an open source chat and collaboration service similar to and
+  largely compatible with :rbintegration:`Slack <slack>`. It can be installed
+  within a company's network, and offers Enterprise capabilities.
+
+  This integration provides the same capabilities offered in the Slack
+  integration, notifying configured channels when users create or update
+  review requests or participate in discussions.
+
+  See the :ref:`documentation <integrations-mattermost>` for configuration
+  instructions.
+
+  Patch by Giulia Mattia.
+
+* Added status report integration with
+  :rbintegration:`I Done This <idonethis>`.
+
+  I Done This is a status reporting service that's used by teams to help keep
+  track of team members' progress and goals for the day.
+
+  When the integration is enabled, Review Board can post status updates to
+  the configured team any time a user has created or updated a review request
+  or participated in a review.
+
+  See the :ref:`documentation <integrations-idonethis>` for configuration
+  instructions.
+
+  Patch by Michael Udaltsov.
+
 * Added support for Gerrit_ as a hosting service.
 
   Gerrit is a Git repository management and code review service used by
@@ -225,6 +282,9 @@ Contributors
 * Barret Rennie
 * Christian Hammond
 * David Trowbridge
+* Giulia Mattia
+* James Shephard
 * Jeremie Corriveau
 * Maram El-Salamouny
+* Michael Udaltsov
 * Zhaolin Deng
