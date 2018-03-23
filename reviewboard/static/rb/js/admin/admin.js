@@ -1,4 +1,4 @@
-$(window).load(function() {
+$(function() {
     $(".admin-widget").each(function() {
         var widget = $(this);
 

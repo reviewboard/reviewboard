@@ -212,7 +212,7 @@ $(document).ready(function() {
         return false
     });
 
-    $("#placeholder-stats .legend").live("click", function() {
+    $(document).on('click', '#placeholder-stats .legend', function() {
         $(this)
             .hide()
             .parent().parent()
@@ -220,7 +220,7 @@ $(document).ready(function() {
         return false
     });
 
-    $(".legend-btn").live("click", function() {
+    $(document).on('click', '.legend-btn', function() {
         $(this)
             .hide()
             .parent()

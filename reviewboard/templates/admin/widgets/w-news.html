@@ -7,13 +7,17 @@
 <script type="text/javascript">
 $(document).ready(function () {
     // RSS Feed Controls
-    $("a.reload-news").click(function(evt) {
-        $(".news-content-widget").load("feed/news/?reload=1");
+    $('a.reload-news').click(function(evt) {
+        $('.news-content-widget').load('feed/news/?reload=1');
             evt.preventDefault();
         });
 
-    $(".news-content-widget").load("feed/news/", function() {
-        $('#admin-extras').masonry('reload');
+    $('.news-content-widget').load('feed/news/', function() {
+        var $extras = $('#admin-extras');
+
+        if ($.data($extras[0], 'masonry')) {
+            $extras.masonry('reload');
+        }
     });
 });
 </script>
