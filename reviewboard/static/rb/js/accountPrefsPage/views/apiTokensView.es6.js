@@ -370,6 +370,8 @@ const PolicyEditorView = Backbone.View.extend({
 
             this.model.savePolicy(policy, {
                 success: () => {
+                    this.model.set('policyType', POLICY_CUSTOM);
+
                     if (closeOnSave) {
                         this.remove();
                     }
