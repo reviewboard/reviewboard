@@ -67,6 +67,7 @@ Administration
 
 
 .. _elasticsearch: https://pypi.python.org/pypi/elasticsearch/2.4.1
+.. _Haystack: https://pypi.python.org/pypi/django-haystack/2.4.1
 .. _Power Pack: https://www.reviewboard.org/powerpack/
 
 
