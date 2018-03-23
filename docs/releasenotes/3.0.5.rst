@@ -5,7 +5,7 @@
 Review Board 3.0.5 Release Notes
 ================================
 
-**Release date**: TBD
+**Release date**: March 23, 2018
 
 
 Packaging
@@ -66,7 +66,7 @@ Administration
   which is supported.
 
 
-.. _elasticsearch: https://pypi.python.org/pypi/elasticsearch/
+.. _elasticsearch: https://pypi.python.org/pypi/elasticsearch/2.4.1
 .. _Power Pack: https://www.reviewboard.org/powerpack/
 
 
