@@ -1349,11 +1349,15 @@ class SearchSettingsForm(SiteSettingsForm):
             The cleaned data.
         """
         if self.cleaned_data['search_enable']:
-            search_backend_id = self.cleaned_data['search_backend_id']
-            backend_form = self.search_backend_forms[search_backend_id]
+            search_backend_id = self.cleaned_data.get('search_backend_id')
 
-            if not backend_form.is_valid():
-                self._errors.update(backend_form.errors)
+            # The search_backend_id field is only available if the backend
+            # passed validation.
+            if search_backend_id:
+                backend_form = self.search_backend_forms[search_backend_id]
+
+                if not backend_form.is_valid():
+                    self._errors.update(backend_form.errors)
 
         return self.cleaned_data
 
