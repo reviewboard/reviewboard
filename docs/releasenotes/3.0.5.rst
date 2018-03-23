@@ -1,0 +1,78 @@
+.. default-intersphinx:: rb3.0
+
+
+================================
+Review Board 3.0.5 Release Notes
+================================
+
+**Release date**: March 23, 2018
+
+
+Packaging
+=========
+
+* `Djblets 1.0.5`_ is now required.
+
+
+.. _Djblets 1.0.5:
+   https://www.reviewboard.org/docs/releasenotes/djblets/1.0.5/
+
+
+Web API
+=======
+
+* Using ``submit-as`` in :ref:`webapi2.0-review-request-list-resource` no
+  longer logs harmless errors when using Active Directory.
+
+
+Bug Fixes
+=========
+
+My Account Page
+---------------
+
+* Fixed visual issues when attempting to save custom API token policies.
+  (:bug:`4663`)
+
+  After saving a custom API token policy, the policy selector would still
+  show :guilabel:`Full Access`, making it look like the policy wasn't saved.
+  It was then easy to accidentally set it back to full access.
+
+
+Administration
+--------------
+
+* Fixed a JavaScript error in the avatar settings page.
+
+* Fixed a JavaScript error in the repository form page.
+
+* Fixed a crash in the repository form due to a bad interaction with the new
+  Gerrit service. (:bug:`4675`)
+
+* Posting incomplete information to the repository form and then switching
+  hosting services no longer shows validation errors for their fields.
+
+* Fixed Bitbucket Server appearing twice in the repository form's hosting
+  services list if `Power Pack`_ is installed.
+
+* Fixed a crash when attempting to save an Elasticsearch configuration
+  when an elasticsearch_ module was not installed. (:bug:`4668`)
+
+* Search Settings now checks that the elasticsearch_ 2.x module is
+  installed.
+
+  Elasticsearch 5.x and higher are still not supported by Haystack_, the
+  search framework we use. We now explicitly check for the 2.x module,
+  which is supported.
+
+
+.. _elasticsearch: https://pypi.python.org/pypi/elasticsearch/2.4.1
+.. _Power Pack: https://www.reviewboard.org/powerpack/
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge

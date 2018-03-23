@@ -51,9 +51,19 @@ class ElasticsearchBackend(SearchBackend):
                 Raised if the ``elasticsearch`` module is not installed.
         """
         try:
-            import_module('elasticsearch')
+            module = import_module('elasticsearch')
         except ImportError:
+            module = None
+
+        # Check whether there's a supported version of the module available.
+        # Note that technically, elasticsearch 1.x is supported, but it's
+        # pretty old. If we're going to reference a version, we want to
+        # reference 2.x.
+        if (module is None or
+            not hasattr(module, 'VERSION') or
+            module.VERSION[0] > 2):
             raise ValidationError(ugettext(
-                'The "elasticsearch" module is required to use the '
-                'Elasticsearch search engine.'
+                'The elasticsearch 2.x Python module (and the Elasticsearch '
+                '2.x service) is required. The module can be installed by '
+                'running: pip install "elasticsearch>=2.0,<3.0"'
             ))
