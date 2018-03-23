@@ -1052,7 +1052,7 @@ class ActiveDirectoryBackend(AuthBackend):
                       'controller servers')
         return None
 
-    def get_or_create_user(self, username, request, ad_user_data):
+    def get_or_create_user(self, username, request, ad_user_data=None):
         """Get an existing user, or create one if it does not exist."""
         username = re.sub(INVALID_USERNAME_CHAR_REGEX, '', username).lower()
 
@@ -1060,6 +1060,9 @@ class ActiveDirectoryBackend(AuthBackend):
             user = User.objects.get(username=username)
             return user
         except User.DoesNotExist:
+            if ad_user_data is None:
+                return None
+
             try:
                 user_info = ad_user_data[0][1]
 
