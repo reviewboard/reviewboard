@@ -485,15 +485,26 @@ class RepositoryForm(forms.ModelForm):
         """
         plan_info = {}
 
+        # We only want to load data into the form if it's meant for this
+        # form. Check both the hosting service ID and plan for this form
+        # against what's in the submitted form data.
+        if (self.data and
+            self.data.get('hosting_type') == hosting_service_id and
+            (plan_type_id == self.DEFAULT_PLAN_ID or
+             self.data.get('repository_plan') == plan_type_id)):
+            form_data = self.data
+        else:
+            form_data = None
+
         if hosting_service.supports_repositories:
-            form = form_class(self.data or None)
+            form = form_class(form_data)
             self.repository_forms[hosting_service_id][plan_type_id] = form
 
             if self.instance:
                 form.load(self.instance)
 
         if hosting_service.supports_bug_trackers:
-            form = form_class(self.data or None, prefix='bug_tracker')
+            form = form_class(form_data, prefix='bug_tracker')
             self.bug_tracker_forms[hosting_service_id][plan_type_id] = form
 
             plan_info['bug_tracker_requires_username'] = \
