@@ -228,7 +228,13 @@ suite('rb/newReviewRequest/views/PostCommitView', function() {
                 expect(view._loadCommits).toHaveBeenCalled();
 
                 expect(view._$error).toBe(null);
-                expect(view._commitsView.$el.css('display')).toBe('block');
+
+                /*
+                 * Chrome returns an empty string, while Firefox returns
+                 * "block".
+                 */
+                const display = view._commitsView.$el.css('display');
+                expect(display === 'block' || display === '').toBe(true);
             });
         });
     });
