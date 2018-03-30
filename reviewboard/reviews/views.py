@@ -452,13 +452,10 @@ class RootView(CheckLoginRequiredViewMixin,
 
     permanent = False
 
-    def get_redirect_url(self, local_site_name=None, *args, **kwargs):
+    def get_redirect_url(self, *args, **kwargs):
         """Return the URL to redirect to.
 
         Args:
-            local_site_name (unicode, optional):
-                The Local Site being accessed, if any.
-
             *args (tuple):
                 Positional arguments passed to the view.
 
@@ -476,7 +473,7 @@ class RootView(CheckLoginRequiredViewMixin,
         else:
             url_name = 'all-review-requests'
 
-        return local_site_reverse(url_name, local_site_name=local_site_name)
+        return local_site_reverse(url_name, local_site=self.local_site)
 
 
 class NewReviewRequestView(LoginRequiredViewMixin,
