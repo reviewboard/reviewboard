@@ -760,6 +760,7 @@ RB.RichTextInlineEditorView = RB.InlineEditorView.extend({
         let origRichText;
 
         this.textEditor = new RB.TextEditorView(this.options.textEditorOptions);
+        this.textEditor.$el.on('resize', () => this.trigger('resize'));
 
         this.$el.data('text-editor', this.textEditor);
 

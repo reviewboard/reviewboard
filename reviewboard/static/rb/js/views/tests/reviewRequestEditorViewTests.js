@@ -756,6 +756,17 @@ suite('rb/views/ReviewRequestEditorView', function() {
             });
         }
 
+        function inlineEditorResizeTests() {
+            it('Propagates resizes', function() {
+                spyOn(fieldView, 'trigger').and.callThrough();
+
+                fieldView.inlineEditorView.textEditor.$el.triggerHandler(
+                    'resize');
+
+                expect(fieldView.trigger).toHaveBeenCalledWith('resize');
+            });
+        }
+
         function editCountTests() {
             describe('Edit counts', function() {
                 it('When opened', function() {
@@ -997,6 +1008,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                     });
                 });
 
+                inlineEditorResizeTests();
                 editCountTests();
                 securityTests({
                     fieldOnReviewRequest: true,
@@ -1070,6 +1082,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
             });
 
+            inlineEditorResizeTests();
             editCountTests();
             securityTests({
                 supportsRichText: true
@@ -1110,6 +1123,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
                 });
             });
 
+            inlineEditorResizeTests();
             editCountTests();
             securityTests({
                 supportsRichText: true
@@ -1255,6 +1269,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
             hasEditorTest();
             richTextSavingTest();
+            inlineEditorResizeTests();
             editCountTests();
             securityTests();
         });
@@ -1278,6 +1293,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
             hasEditorTest();
             richTextSavingTest();
+            inlineEditorResizeTests();
             editCountTests();
             securityTests();
         });
