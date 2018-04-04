@@ -121,7 +121,7 @@ class HgTool(SCMTool):
             unicode:
             Date of given data in ISO 8601 format.
         """
-        return datetime.fromtimestamp(data[0] + (data[1] * -1)).isoformat()
+        return datetime.utcfromtimestamp(data[0] + (data[1] * -1)).isoformat()
 
     @classmethod
     def check_repository(cls, path, username=None, password=None,

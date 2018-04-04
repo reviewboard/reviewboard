@@ -430,6 +430,331 @@ class GitLabTests(ServiceTests):
 
         self.assertEqual(commit.message, 'Replace sanitize with escape once')
 
+    def test_get_file_with_base_commit_v3(self):
+        """Testing GitLab.get_file with base commit ID (API v3)"""
+        def _http_get(self, *args, **kargs):
+            return b'test data', {}
+
+        account = self._get_hosting_account(use_url=True)
+        account.data['private_token'] = encrypt_password('abc123')
+
+        service = account.service
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+        self.spy_on(service._get_api_version,
+                    call_fake=lambda self, hosting_url: '3')
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data = {'gitlab_project_id': 123456}
+
+        data = service.get_file(
+            repository=repository,
+            path='path/to/file.txt',
+            revision='676502b42383c746ed899a2f4b50b4370feeea94',
+            base_commit_id='ed899a2f4b50b4370feeea94676502b42383c746')
+
+        self.assertTrue(service.client.http_get.called_with(
+            url=('https://example.com/api/v3/projects/123456/repository/'
+                 'blobs/ed899a2f4b50b4370feeea94676502b42383c746'
+                 '?filepath=path/to/file.txt'),
+            headers={
+                'PRIVATE-TOKEN': 'abc123',
+            }))
+        self.assertIsInstance(data, bytes)
+        self.assertEqual(data, b'test data')
+
+    def test_get_file_without_base_commit_v3(self):
+        """Testing GitLab.get_file without base commit ID (API v3)"""
+        def _http_get(self, *args, **kargs):
+            return b'test data', {}
+
+        account = self._get_hosting_account(use_url=True)
+        account.data['private_token'] = encrypt_password('abc123')
+
+        service = account.service
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+        self.spy_on(service._get_api_version,
+                    call_fake=lambda self, hosting_url: '3')
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data = {'gitlab_project_id': 123456}
+
+        data = service.get_file(
+            repository=repository,
+            path='path/to/file.txt',
+            revision='676502b42383c746ed899a2f4b50b4370feeea94')
+
+        self.assertTrue(service.client.http_get.called_with(
+            url=('https://example.com/api/v3/projects/123456/repository/'
+                 'raw_blobs/676502b42383c746ed899a2f4b50b4370feeea94'),
+            headers={
+                'PRIVATE-TOKEN': 'abc123',
+            }))
+        self.assertIsInstance(data, bytes)
+        self.assertEqual(data, b'test data')
+
+    def test_get_file_v4(self):
+        """Testing GitLab.get_file (API v4)"""
+        def _http_get(self, *args, **kargs):
+            return b'test data', {}
+
+        account = self._get_hosting_account(use_url=True)
+        account.data['private_token'] = encrypt_password('abc123')
+
+        service = account.service
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+        self.spy_on(service._get_api_version,
+                    call_fake=lambda self, hosting_url: '4')
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data = {'gitlab_project_id': 123456}
+
+        data = service.get_file(
+            repository=repository,
+            path='path/to/file.txt',
+            revision='676502b42383c746ed899a2f4b50b4370feeea94')
+
+        self.assertTrue(service.client.http_get.called_with(
+            url=('https://example.com/api/v4/projects/123456/repository/'
+                 'blobs/676502b42383c746ed899a2f4b50b4370feeea94/raw'),
+            headers={
+                'PRIVATE-TOKEN': 'abc123',
+            }))
+        self.assertIsInstance(data, bytes)
+        self.assertEqual(data, b'test data')
+
+    def test_get_file_exists_with_base_commit_and_exists_v3(self):
+        """Testing GitLab.get_file_exists with base commit ID and exists
+        (API v3)
+        """
+        def _http_get(self, *args, **kargs):
+            return b'test data', {}
+
+        account = self._get_hosting_account(use_url=True)
+        account.data['private_token'] = encrypt_password('abc123')
+
+        service = account.service
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+        self.spy_on(service._get_api_version,
+                    call_fake=lambda self, hosting_url: '3')
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data = {'gitlab_project_id': 123456}
+
+        self.assertTrue(service.get_file_exists(
+            repository=repository,
+            path='path/to/file.txt',
+            revision='676502b42383c746ed899a2f4b50b4370feeea94',
+            base_commit_id='ed899a2f4b50b4370feeea94676502b42383c746'))
+
+        self.assertTrue(service.client.http_get.called_with(
+            url=('https://example.com/api/v3/projects/123456/repository/'
+                 'blobs/ed899a2f4b50b4370feeea94676502b42383c746'
+                 '?filepath=path/to/file.txt'),
+            headers={
+                'PRIVATE-TOKEN': 'abc123',
+            }))
+
+    def test_get_file_exists_without_base_commit_and_exists_v3(self):
+        """Testing GitLab.get_file_exists without base commit ID and with
+        exists
+        (API v3)
+        """
+        def _http_get(self, *args, **kargs):
+            return b'test data', {}
+
+        account = self._get_hosting_account(use_url=True)
+        account.data['private_token'] = encrypt_password('abc123')
+
+        service = account.service
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+        self.spy_on(service._get_api_version,
+                    call_fake=lambda self, hosting_url: '3')
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data = {'gitlab_project_id': 123456}
+
+        self.assertTrue(service.get_file_exists(
+            repository=repository,
+            path='path/to/file.txt',
+            revision='676502b42383c746ed899a2f4b50b4370feeea94'))
+
+        self.assertTrue(service.client.http_get.called_with(
+            url=('https://example.com/api/v3/projects/123456/repository/'
+                 'raw_blobs/676502b42383c746ed899a2f4b50b4370feeea94'),
+            headers={
+                'PRIVATE-TOKEN': 'abc123',
+            }))
+
+    def test_get_file_exists_with_not_exists_v3(self):
+        """Testing GitLab.get_file_exists with not exists (API v3)"""
+        def _http_get(self, url, *args, **kargs):
+            raise HTTPError(url, 404, '', {}, StringIO())
+
+        account = self._get_hosting_account(use_url=True)
+        account.data['private_token'] = encrypt_password('abc123')
+
+        service = account.service
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+        self.spy_on(service._get_api_version,
+                    call_fake=lambda self, hosting_url: '3')
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data = {'gitlab_project_id': 123456}
+
+        self.assertFalse(service.get_file_exists(
+            repository=repository,
+            path='path/to/file.txt',
+            revision='676502b42383c746ed899a2f4b50b4370feeea94'))
+
+        self.assertTrue(service.client.http_get.called_with(
+            url=('https://example.com/api/v3/projects/123456/repository/'
+                 'raw_blobs/676502b42383c746ed899a2f4b50b4370feeea94'),
+            headers={
+                'PRIVATE-TOKEN': 'abc123',
+            }))
+
+    def test_get_file_exists_with_exists_v4(self):
+        """Testing GitLab.get_file_exists with exists (API v4)"""
+        def _http_get(self, *args, **kargs):
+            return b'test data', {}
+
+        account = self._get_hosting_account(use_url=True)
+        account.data['private_token'] = encrypt_password('abc123')
+
+        service = account.service
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+        self.spy_on(service._get_api_version,
+                    call_fake=lambda self, hosting_url: '4')
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data = {'gitlab_project_id': 123456}
+
+        self.assertTrue(service.get_file_exists(
+            repository=repository,
+            path='path/to/file.txt',
+            revision='676502b42383c746ed899a2f4b50b4370feeea94'))
+
+        self.assertTrue(service.client.http_get.called_with(
+            url=('https://example.com/api/v4/projects/123456/repository/'
+                 'blobs/676502b42383c746ed899a2f4b50b4370feeea94/raw'),
+            headers={
+                'PRIVATE-TOKEN': 'abc123',
+            }))
+
+    def test_get_file_exists_with_not_exists_v4(self):
+        """Testing GitLab.get_file_exists with not exists (API v4)"""
+        def _http_get(self, url, *args, **kargs):
+            raise HTTPError(url, 404, '', {}, StringIO())
+
+        account = self._get_hosting_account(use_url=True)
+        account.data['private_token'] = encrypt_password('abc123')
+
+        service = account.service
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+        self.spy_on(service._get_api_version,
+                    call_fake=lambda self, hosting_url: '4')
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data = {'gitlab_project_id': 123456}
+
+        self.assertFalse(service.get_file_exists(
+            repository=repository,
+            path='path/to/file.txt',
+            revision='676502b42383c746ed899a2f4b50b4370feeea94'))
+
+        self.assertTrue(service.client.http_get.called_with(
+            url=('https://example.com/api/v4/projects/123456/repository/'
+                 'blobs/676502b42383c746ed899a2f4b50b4370feeea94/raw'),
+            headers={
+                'PRIVATE-TOKEN': 'abc123',
+            }))
+
+    def _test_check_repository_v4(self, expected_user='myuser', **kwargs):
+        def _http_get(service, url, *args, **kwargs):
+            if url == 'https://example.com/api/v4/projects/mygroup%2Fmyrepo':
+                # We don't care about the contents. Just that it exists.
+                payload = {}
+            elif url == 'https://example.com/api/v4/projects/myuser%2Fmyrepo':
+                # We don't care about the contents. Just that it exists.
+                payload = {}
+            else:
+                self.fail('Unexpected URL %s' % url)
+
+            return json.dumps(payload), {}
+
+    def _test_check_repository_v3(self, expected_user='myuser', **kwargs):
+        def _http_get(service, url, *args, **kwargs):
+            if url.startswith('https://example.com/api/v3/projects?per_page='):
+                payload = [
+                    {
+                        'id': 1,
+                        'path': 'myrepo',
+                        'namespace': {
+                            'path': expected_user,
+                        },
+                    },
+                ]
+            elif url == 'https://example.com/api/v3/groups?per_page=100':
+                payload = [
+                    {
+                        'id': 1,
+                        'name': 'mygroup',
+                    },
+                ]
+            elif url == 'https://example.com/api/v3/projects/1':
+                # We don't care about the contents. Just that it exists.
+                payload = {}
+            elif url == 'https://example.com/api/v3/groups/1':
+                payload = {
+                    'projects': [
+                        {
+                            'id': 1,
+                            'name': 'myrepo',
+                        },
+                    ],
+                }
+            else:
+                self.fail('Unexpected URL %s' % url)
+
+            return json.dumps(payload), {}
+
+        account = self._get_hosting_account(use_url=True)
+        service = account.service
+        self.spy_on(service._get_api_version,
+                    call_fake=lambda self, hosting_url: '3')
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+        account.data['private_token'] = encrypt_password('abc123')
+
+        service.check_repository(**kwargs)
+        self.assertTrue(service.client.http_get.called)
+
+    def _test_check_repository_error_v4(self, expected_error, **kwargs):
+        def _http_get(service, url, *args, **kwargs):
+            error = HTTPError(url, 404, '', {}, StringIO())
+
+            if url == 'https://example.com/api/v4/projects/mygroup%2Fbadrepo':
+                raise error
+            elif url == 'https://example.com/api/v4/projects/myuser%2Fmyrepo':
+                raise error
+            else:
+                self.fail('Unexpected URL %s' % url)
+
+        account = self._get_hosting_account(use_url=True)
+        service = account.service
+        self.spy_on(service._get_api_version,
+            repository, start='ed899a2f4b50b4370feeea94676502b42383c746')
+
+        self.assertTrue(service.client.http_get.called)
+        self.assertEqual(len(commits), 3)
+
     def _test_check_repository_v4(self, expected_user='myuser', **kwargs):
         def _http_get(service, url, *args, **kwargs):
             if url == 'https://example.com/api/v4/projects/mygroup%2Fmyrepo':

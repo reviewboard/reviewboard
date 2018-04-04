@@ -388,6 +388,7 @@ class BZRClient(SCMClient):
             env={
                 b'BZR_PLUGIN_PATH': BZRClient._bzr_plugin_path,
                 b'BZR_SSH': b'rbssh',
+                b'TZ': b'UTC',
             })
 
     def _check_error(self, errmsg):

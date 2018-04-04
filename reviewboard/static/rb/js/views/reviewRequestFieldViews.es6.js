@@ -200,6 +200,9 @@ Fields.TextFieldView = Fields.BaseFieldView.extend({
         this.listenTo(this.inlineEditorView, 'beginEdit',
                       () => this.model.incr('editCount'));
 
+        this.listenTo(this.inlineEditorView, 'resize',
+                      () => this.trigger('resize'));
+
         this.listenTo(this.inlineEditorView, 'cancel', () => {
             this.trigger('resize');
             this.model.decr('editCount');
