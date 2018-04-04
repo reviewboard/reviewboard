@@ -28,7 +28,7 @@ def check_local_site_access(view_func):
                     return response
                 else:
                     return HttpResponseRedirect(
-                        '%s?next_page=%s'
+                        '%s?next=%s'
                         % (reverse('login'), request.get_full_path()))
         else:
             local_site = None

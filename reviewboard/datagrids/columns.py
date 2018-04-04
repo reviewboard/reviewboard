@@ -186,7 +186,12 @@ class UsernameColumn(Column):
             unicode:
             The URL for the user.
         """
-        return self.get_user(obj).get_absolute_url()
+        return local_site_reverse(
+            'user',
+            request=state.datagrid.request,
+            kwargs={
+                'username': self.get_user(obj).username,
+            })
 
 
 class BugsColumn(Column):

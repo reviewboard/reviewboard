@@ -288,6 +288,51 @@ class MercurialTests(SCMTestCase):
         self.assertTrue(isinstance(value, list))
         self.assertEqual(len(value), 1)
 
+    def test_get_commits_with_non_utc_server_timezone(self):
+        """Testing commit objects in HgClient.get_commits with
+        settings.TIME_ZONE != UTC
+        """
+        old_tz = os.environ[b'TZ']
+        os.environ[b'TZ'] = b'US/Pacific'
+
+        try:
+            value = self.tool.get_commits()
+        finally:
+            os.environ[b'TZ'] = old_tz
+
+        self.assertTrue(isinstance(value, list))
+        self.assertEqual(len(value), 2)
+
+        self.assertEqual(value[0].id,
+                         '661e5dd3c4938ecbe8f77e2fdfa905d70485f94c')
+        self.assertEqual(value[0].message, 'second')
+        self.assertEqual(value[0].author_name,
+                         'Michael Rowe <mike.rowe@nab.com.au>')
+        self.assertEqual(value[0].date, '2007-08-07T17:12:23')
+        self.assertEqual(value[0].parent,
+                         'f814b6e226d2ba6d26d02ca8edbff91f57ab2786')
+        self.assertEqual(value[0].base_commit_id,
+                         'f814b6e226d2ba6d26d02ca8edbff91f57ab2786')
+
+        self.assertEqual(value[1].id,
+                         'f814b6e226d2ba6d26d02ca8edbff91f57ab2786')
+        self.assertEqual(value[1].message, 'first')
+        self.assertEqual(value[1].author_name,
+                         'Michael Rowe <mike.rowe@nab.com.au>')
+        self.assertEqual(value[1].date, '2007-08-07T17:11:57')
+        self.assertEqual(value[1].parent,
+                         '0000000000000000000000000000000000000000')
+        self.assertEqual(value[1].base_commit_id,
+                         '0000000000000000000000000000000000000000')
+
+        self.assertRaisesRegexp(SCMError, 'Cannot load commits: ',
+                                lambda: self.tool.get_commits(branch='x'))
+
+        rev = 'f814b6e226d2ba6d26d02ca8edbff91f57ab2786'
+        value = self.tool.get_commits(start=rev)
+        self.assertTrue(isinstance(value, list))
+        self.assertEqual(len(value), 1)
+
     def test_get_file(self):
         """Testing HgTool.get_file"""
         rev = Revision('661e5dd3c493')

@@ -46,7 +46,8 @@ suite('rb/pages/views/DiffViewerPageView', function() {
          * Disable the router so that the page doesn't change the URL on the
          * page while tests run.
          */
-        spyOn(Backbone.history, 'start');
+        spyOn(window.history, 'pushState');
+        spyOn(window.history, 'replaceState');
 
         page = new RB.DiffViewerPage({
             checkForUpdates: false,
@@ -85,6 +86,7 @@ suite('rb/pages/views/DiffViewerPageView', function() {
 
     afterEach(function() {
         RB.DnDUploader.instance = null;
+        Backbone.history.stop();
     });
 
     describe('Anchors', function() {
@@ -487,14 +489,16 @@ suite('rb/pages/views/DiffViewerPageView', function() {
         let router;
 
         beforeEach(function() {
-            router = pageView.router;
-
             spyOn(page, 'loadDiffRevision');
 
             /*
              * Bypass all the actual history logic and get to the actual
              * router handler.
              */
+            spyOn(Backbone.history, 'matchRoot')
+                .and.returnValue(true);
+
+            router = pageView.router;
             spyOn(router, 'navigate').and.callFake((url, options) => {
                 if (!options || options.trigger !== false) {
                     Backbone.history.loadUrl(url);

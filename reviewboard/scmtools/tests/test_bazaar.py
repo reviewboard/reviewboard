@@ -77,6 +77,19 @@ class BZRTests(SCMTestCase):
         self.assertEqual(content, b'This is a test.\n')
         self.assertIsInstance(content, bytes)
 
+    def test_get_file_with_non_utc_server_timezone(self):
+        """Testing BZRTool.get_file with settings.TIME_ZONE != UTC"""
+        old_timezone = os.environ[b'TZ']
+        os.environ[b'TZ'] = b'US/Pacific'
+
+        try:
+            content = self.tool.get_file('README', '2011-02-02 02:53:04 -0800')
+        finally:
+            os.environ[b'TZ'] = old_timezone
+
+        self.assertEqual(content, b'This is a test.\n')
+        self.assertIsInstance(content, bytes)
+
     def test_get_file_with_revision_id(self):
         """Testing BZRTool.get_file with revision ID"""
         content = self.tool.get_file(
@@ -101,7 +114,7 @@ class BZRTests(SCMTestCase):
             self.tool.get_file('README', '\o/')
 
     def test_file_exists(self):
-        """Testing BZRTool.get_files_exists"""
+        """Testing BZRTool.files_exists"""
         self.assertTrue(self.tool.file_exists(
             'README',
             '2011-02-02 10:53:04 +0000'))
@@ -114,10 +127,22 @@ class BZRTests(SCMTestCase):
             '9999-02-02 10:53:04 +0000'))
 
     def test_file_exists_with_timezone_offset(self):
-        """Testing BZRTool.get_files_exists with timezone offset"""
+        """Testing BZRTool.files_exists with timezone offset"""
         self.assertTrue(self.tool.file_exists(
             'README',
             '2011-02-02 02:53:04 -0800'))
+
+    def test_file_exists_with_non_utc_server_timezone(self):
+        """Testing BZRTool.files_exists with settings.TIME_ZONE != UTC"""
+        old_timezone = os.environ[b'TZ']
+        os.environ[b'TZ'] = b'US/Pacific'
+
+        try:
+            self.assertTrue(self.tool.file_exists(
+                'README',
+                '2011-02-02 02:53:04 -0800'))
+        finally:
+            os.environ[b'TZ'] = old_timezone
 
     def test_file_exists_with_revision_id(self):
         """Testing BZRTool.files_exists with revision ID"""

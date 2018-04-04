@@ -10,7 +10,7 @@ from djblets.testing.decorators import add_fixtures
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.datagrids.builtin_items import UserGroupsItem, UserProfileItem
-from reviewboard.datagrids.columns import SummaryColumn
+from reviewboard.datagrids.columns import SummaryColumn, UsernameColumn
 from reviewboard.reviews.models import (Group,
                                         ReviewRequest,
                                         ReviewRequestDraft,
@@ -869,3 +869,27 @@ class SummaryColumnTests(BaseColumnTestCase):
             self.column.render_data(self.stateful_column, review_request),
             '<label class="label-discarded">Discarded</label>'
             '<span>Summary 1</span>')
+
+
+class UsernameColumnTests(BaseColumnTestCase):
+    """Tests for reviewboard.datagrids.columns.UsernameColumn."""
+
+    column = UsernameColumn()
+
+    @add_fixtures(['test_site'])
+    def test_render(self):
+        """Tesing UsernameColumn.render_cell"""
+        user = User.objects.get(username='doc')
+        self.assertIn(
+            'href="/users/doc/"',
+            self.column.render_cell(self.stateful_column, user, None))
+
+    @add_fixtures(['test_site'])
+    def test_render_local_site(self):
+        """Testing UsernameColumn.render_cell on a LocalSite"""
+        self.request._local_site_name = self.local_site_name
+        user = User.objects.get(username='doc')
+
+        self.assertIn(
+            'href="/s/%s/users/doc/"' % self.local_site_name,
+            self.column.render_cell(self.stateful_column, user, None))

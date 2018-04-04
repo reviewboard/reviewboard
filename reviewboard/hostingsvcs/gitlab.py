@@ -928,15 +928,21 @@ class GitLab(HostingService):
             unicode:
             The blob URL.
         """
-        # Not all versions of GitLab support a blob ID, so if a base commit ID
-        # is provided, we're going to use that instead.
-        if base_commit_id:
-            return ('%s/repository/blobs/%s?filepath=%s'
-                    % (self._get_repo_api_url(repository), base_commit_id,
-                       quote(path)))
+        repo_api_url = self._get_repo_api_url(repository)
+        api_version = self._get_api_version(self.account.hosting_url)
+
+        if api_version == '3':
+            # Not all versions of GitLab support a blob ID, so if a base commit
+            # ID is provided, we're going to use that instead.
+            if base_commit_id:
+                return ('%s/repository/blobs/%s?filepath=%s'
+                        % (repo_api_url, base_commit_id, quote(path)))
+            else:
+                return ('%s/repository/raw_blobs/%s'
+                        % (repo_api_url, revision))
         else:
-            return ('%s/repository/raw_blobs/%s'
-                    % (self._get_repo_api_url(repository), revision))
+            return ('%s/repository/blobs/%s/raw'
+                    % (repo_api_url, revision))
 
     def _get_repo_api_url(self, repository):
         """Return the base URL for a repository's API.

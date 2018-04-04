@@ -242,7 +242,12 @@ suite('rb/ui/views/TextEditorView', function() {
                     view.setRichText(true);
                     view.bindRichTextVisibility($el);
 
-                    expect($el.css('display')).toBe('block');
+                    /*
+                     * Chrome returns an empty string, while Firefox returns
+                     * "block".
+                     */
+                    const display = $el.css('display');
+                    expect(display === 'block' || display === '').toBe(true);
                 });
 
                 it('richText=false', function() {
@@ -260,13 +265,24 @@ suite('rb/ui/views/TextEditorView', function() {
                     expect($el.css('display')).toBe('none');
 
                     view.setRichText(true);
-                    expect($el.css('display')).toBe('block');
+                    /*
+                     * Chrome returns an empty string, while Firefox returns
+                     * "block".
+                     */
+                    const display = $el.css('display');
+                    expect(display === 'block' || display === '').toBe(true);
                 });
 
                 it('richText=false', function() {
                     view.setRichText(true);
                     view.bindRichTextVisibility($el);
-                    expect($el.css('display')).toBe('block');
+
+                    /*
+                     * Chrome returns an empty string, while Firefox returns
+                     * "block".
+                     */
+                    const display = $el.css('display');
+                    expect(display === 'block' || display === '').toBe(true);
 
                     view.setRichText(false);
                     expect($el.css('display')).toBe('none');
