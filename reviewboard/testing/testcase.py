@@ -527,15 +527,42 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
     def create_repository(self, with_local_site=False, name='Test Repo',
                           tool_name='Git', path=None, local_site=None,
-                          **kwargs):
-        """Creates a Repository for testing.
+                          extra_data=None, **kwargs):
+        """Create a Repository for testing.
 
-        The Repository may optionally be attached to a LocalSite. It's also
-        populated with default data that can be overridden by the caller.
+        The Repository may optionally be attached to a
+        :py:class:`~reviewboard.site.models.LocalSite`. It's also populated
+        with default data that can be overridden by the caller.
 
-        This accepts a tool_name of "Git", "Mercurial" or "Subversion".
-        The correct bundled repository path will be used for the given
-        tool_name.
+        Args:
+            with_local_site (bool, optional):
+                Whether to create the repository using a Local Site. This
+                will choose one based on :py:attr:`local_site_name`.
+
+                If ``local_site`` is provided, this argument is ignored.
+
+            name (unicode, optional):
+                The name of the repository.
+
+            tool_name (unicode, optional):
+                The name of the registered SCM Tool for the repository.
+
+            path (unicode, optional):
+                The path for the repository. If not provided, one will be
+                computed.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The explicit Local Site to attach.
+
+            extra_data (dict, optional):
+                Explicit extra_data to attach to the repository.
+
+            **kwargs (dict):
+                Additional fields to set on the repository.
+
+        Returns:
+            reviewboard.scmtools.models.Repository:
+            The new repository.
         """
         if not local_site:
             if with_local_site:
@@ -556,15 +583,23 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 path = os.path.join(testdata_dir, 'hg_repo.bundle')
             elif tool_name == 'CVS':
                 path = os.path.join(testdata_dir, 'cvs_repo')
+            elif tool_name == 'Perforce':
+                path = 'localhost:1666'
             else:
                 raise NotImplementedError
 
-        return Repository.objects.create(
-            name=name,
-            local_site=local_site,
-            tool=Tool.objects.get(name=tool_name),
-            path=path,
-            **kwargs)
+        repository = Repository(name=name,
+                                local_site=local_site,
+                                tool=Tool.objects.get(name=tool_name),
+                                path=path,
+                                **kwargs)
+
+        if extra_data is not None:
+            repository.extra_data = extra_data
+
+        repository.save()
+
+        return repository
 
     def create_review_request(self, with_local_site=False, local_site=None,
                               summary='Test Summary',

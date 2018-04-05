@@ -110,8 +110,11 @@ Hosting Service Integration
    reviewboard.hostingsvcs.errors
    reviewboard.hostingsvcs.forms
    reviewboard.hostingsvcs.hook_utils
+   reviewboard.hostingsvcs.models
    reviewboard.hostingsvcs.repository
    reviewboard.hostingsvcs.service
+   reviewboard.hostingsvcs.testing
+   reviewboard.hostingsvcs.testing.testcases
 
 
 Integrations
