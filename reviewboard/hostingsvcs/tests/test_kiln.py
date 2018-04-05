@@ -199,7 +199,8 @@ class KilnTests(ServiceTests):
 
         result = service.get_file(repository, path, revision)
         self.assertTrue(service.client.http_get.called)
-        self.assertEqual(result, 'My data')
+        self.assertIsInstance(result, bytes)
+        self.assertEqual(result, b'My data')
 
     def test_get_file_exists(self):
         """Testing Kiln.get_file_exists"""

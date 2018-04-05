@@ -170,9 +170,10 @@ class GerritTests(ServiceTests):
 
         self.spy_on(GerritClient.http_get, _http_get)
 
-        self.assertEquals(self.service.get_file(self.repository, '/bogus',
-                                                'a' * 40),
-                          'Hello, world!')
+        data = self.service.get_file(self.repository, '/bogus', 'a' * 40)
+
+        self.assertIsInstance(data, bytes)
+        self.assertEqual(data, b'Hello, world!')
 
     def test_get_file_with_404(self):
         """Testing Gerrit.get_file with a non-existent blob ID"""

@@ -94,7 +94,7 @@ class KilnClient(HostingServiceClient):
         return self.api_get('Repo/%s/Raw/File/%s?rev=%s'
                             % (repository_id, self._hex_encode(path),
                                revision),
-                            raw_content=True)
+                            raw_content=True).encode('utf-8')
 
     #
     # API wrappers around HTTP/JSON methods

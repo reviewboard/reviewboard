@@ -750,7 +750,8 @@ class BitbucketTests(BitbucketTestCase):
         result = service.get_file(repository, 'path', revision,
                                   base_commit_id)
         self.assertTrue(service.client.http_get.called)
-        self.assertEqual(result, 'My data')
+        self.assertIsInstance(result, bytes)
+        self.assertEqual(result, b'My data')
 
     def _test_get_file_exists(self, tool_name, revision, base_commit_id,
                               expected_revision, expected_found,

@@ -292,7 +292,8 @@ class CodebaseHQTests(ServiceTests):
 
         if file_exists:
             result = service.get_file(repository, 'myfile', '123')
-            self.assertEqual(result, 'My data\n')
+            self.assertIsInstance(result, bytes)
+            self.assertEqual(result, b'My data\n')
         else:
             with self.assertRaises(FileNotFoundError):
                 service.get_file(repository, 'myfile', '123')
