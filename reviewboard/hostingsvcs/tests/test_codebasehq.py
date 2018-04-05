@@ -31,18 +31,18 @@ class CodebaseHQTests(ServiceTests):
 
         self._authorize(service)
 
-        fields = self._get_repository_fields(
-            'Git',
-            hosting_account=hosting_account,
-            fields={
-                'codebasehq_project_name': 'myproj',
-                'codebasehq_repo_name': 'myrepo',
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                hosting_account=hosting_account,
+                fields={
+                    'codebasehq_project_name': 'myproj',
+                    'codebasehq_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'git@codebasehq.com:mydomain/myproj/myrepo.git',
             })
-
-        self.assertEqual(fields['path'],
-                         'git@codebasehq.com:mydomain/myproj/myrepo.git')
-        self.assertNotIn('raw_file_url', fields)
-        self.assertNotIn('mirror_path', fields)
 
     def test_get_repository_fields_for_mercurial(self):
         """Testing CodebaseHQ.get_repository_fields for Mercurial"""
@@ -51,18 +51,19 @@ class CodebaseHQTests(ServiceTests):
 
         self._authorize(service)
 
-        fields = self._get_repository_fields(
-            'Mercurial',
-            hosting_account=hosting_account,
-            fields={
-                'codebasehq_project_name': 'myproj',
-                'codebasehq_repo_name': 'myrepo',
+        self.assertEqual(
+            self.get_repository_fields(
+                'Mercurial',
+                hosting_account=hosting_account,
+                fields={
+                    'codebasehq_project_name': 'myproj',
+                    'codebasehq_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': ('https://mydomain.codebasehq.com/projects/'
+                         'myproj/repositories/myrepo/'),
             })
-        self.assertEqual(fields['path'],
-                         'https://mydomain.codebasehq.com/projects/'
-                         'myproj/repositories/myrepo/')
-        self.assertNotIn('raw_file_url', fields)
-        self.assertNotIn('mirror_path', fields)
 
     def test_get_repository_fields_for_subversion(self):
         """Testing CodebaseHQ.get_repository_fields for Subversion"""
@@ -71,17 +72,18 @@ class CodebaseHQTests(ServiceTests):
 
         self._authorize(service)
 
-        fields = self._get_repository_fields(
-            'Subversion',
-            hosting_account=hosting_account,
-            fields={
-                'codebasehq_project_name': 'myproj',
-                'codebasehq_repo_name': 'myrepo',
+        self.assertEqual(
+            self.get_repository_fields(
+                'Subversion',
+                hosting_account=hosting_account,
+                fields={
+                    'codebasehq_project_name': 'myproj',
+                    'codebasehq_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'https://mydomain.codebasehq.com/myproj/myrepo.svn',
             })
-        self.assertEqual(fields['path'],
-                         'https://mydomain.codebasehq.com/myproj/myrepo.svn')
-        self.assertNotIn('raw_file_url', fields)
-        self.assertNotIn('mirror_path', fields)
 
     def test_get_bug_tracker_field(self):
         """Testing CodebaseHQ.get_bug_tracker_field"""

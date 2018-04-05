@@ -11,7 +11,7 @@ from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.six.moves.urllib.request import urlopen
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.tests.testcases import ServiceTests
-from reviewboard.scmtools.core import Branch
+from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
 from reviewboard.scmtools.models import Repository
 
@@ -59,17 +59,39 @@ class GitLabTests(ServiceTests):
 
     def test_get_repository_fields_with_personal_plan(self):
         """Testing GitLab.get_repository_fields with plan=personal"""
-        fields = self._get_repository_fields('Git', plan='personal', fields={
-            'hosting_url': 'https://example.com',
-            'gitlab_personal_repo_name': 'myrepo',
-        })
-        self.assertEqual(fields['path'],
-                         'git@example.com:myuser/myrepo.git')
-        self.assertEqual(fields['mirror_path'],
-                         'https://example.com/myuser/myrepo.git')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                plan='personal',
+                fields={
+                    'hosting_url': 'https://example.com',
+                    'gitlab_personal_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'git@example.com:myuser/myrepo.git',
+                'mirror_path': 'https://example.com/myuser/myrepo.git',
+            })
+
+    def test_get_repository_fields_with_group_plan(self):
+        """Testing GitLab.get_repository_fields with plan=group"""
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                plan='group',
+                fields={
+                    'hosting_url': 'https://example.com',
+                    'gitlab_group_repo_name': 'myrepo',
+                    'gitlab_group_name': 'mygroup',
+                }
+            ),
+            {
+                'path': 'git@example.com:mygroup/myrepo.git',
+                'mirror_path': 'https://example.com/mygroup/myrepo.git',
+            })
 
     def test_get_bug_tracker_field_with_personal_plan(self):
-        """Testing GitLab.get_repository_fields with plan=personal"""
+        """Testing GitLab.get_bug_tracker_field with plan=personal"""
         self.assertTrue(
             self.service_class.get_bug_tracker_requires_username('personal'))
         self.assertEqual(
@@ -79,18 +101,6 @@ class GitLabTests(ServiceTests):
                 'hosting_account_username': 'myuser',
             }),
             'https://example.com/myuser/myrepo/issues/%s')
-
-    def test_get_repository_fields_with_group_plan(self):
-        """Testing GitLab.get_repository_fields with plan=group"""
-        fields = self._get_repository_fields('Git', plan='group', fields={
-            'hosting_url': 'https://example.com',
-            'gitlab_group_repo_name': 'myrepo',
-            'gitlab_group_name': 'mygroup',
-        })
-        self.assertEqual(fields['path'],
-                         'git@example.com:mygroup/myrepo.git')
-        self.assertEqual(fields['mirror_path'],
-                         'https://example.com/mygroup/myrepo.git')
 
     def test_get_bug_tracker_field_with_group_plan(self):
         """Testing GitLab.get_bug_tracker_field with plan=group"""
@@ -342,14 +352,28 @@ class GitLabTests(ServiceTests):
             repository, start='ed899a2f4b50b4370feeea94676502b42383c746')
 
         self.assertTrue(service.client.http_get.called)
-        self.assertEqual(len(commits), 3)
-        self.assertEqual(commits[0].id,
-                         'ed899a2f4b50b4370feeea94676502b42383c746')
-        self.assertNotEqual(commits[0].author_name, 'East Coast')
-        self.assertEqual(commits[1].date, '2015-03-10T09:06:12+03:00')
-        self.assertNotEqual(commits[1].message,
-                            'Replace sanitize with escape once')
-        self.assertEqual(commits[2].author_name, 'East Coast')
+        self.assertEqual(
+            commits,
+            [
+                Commit(author_name='Chester Li',
+                       date='2015-03-10T11:50:22+03:00',
+                       id='ed899a2f4b50b4370feeea94676502b42383c746',
+                       message='Replace sanitize with escape once',
+                       parent='6104942438c14ec7bd21c6cd5bd995272b3faff6'),
+                Commit(author_name='Chester Li',
+                       date='2015-03-10T09:06:12+03:00',
+                       id='6104942438c14ec7bd21c6cd5bd995272b3faff6',
+                       message='Sanitize for network graph',
+                       parent='21b3bcabcff2ab3dc3c9caa172f783aad602c0b0'),
+                Commit(author_name='East Coast',
+                       date='2015-03-04T15:31:18.000-04:00',
+                       id='21b3bcabcff2ab3dc3c9caa172f783aad602c0b0',
+                       message='Add a timer to test file',
+                       parent=''),
+            ])
+
+        for commit in commits:
+            self.assertIsNone(commit.diff)
 
     def test_get_change(self):
         """Testing GitLab.get_change"""
@@ -422,11 +446,14 @@ class GitLabTests(ServiceTests):
 
         self.assertTrue(urlopen.spy.called)
 
-        self.assertEqual(commit.date, '2015-03-10T11:50:22+03:00')
+        self.assertEqual(
+            commit,
+            Commit(author_name='Chester Li',
+                   date='2015-03-10T11:50:22+03:00',
+                   id='ed899a2f4b50b4370feeea94676502b42383c746',
+                   message='Replace sanitize with escape once',
+                   parent='ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'))
         self.assertEqual(commit.diff, diff_rsp)
-        self.assertNotEqual(commit.parent, '')
-
-        self.assertEqual(commit.message, 'Replace sanitize with escape once')
 
     def test_get_file_with_base_commit_v3(self):
         """Testing GitLab.get_file with base commit ID (API v3)"""

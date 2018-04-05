@@ -21,27 +21,33 @@ class BeanstalkTests(ServiceTests):
 
     def test_get_repository_fields_for_git(self):
         """Testing Beanstalk.get_repository_fields for Git"""
-        fields = self._get_repository_fields('Git', fields={
-            'beanstalk_account_domain': 'mydomain',
-            'beanstalk_repo_name': 'myrepo',
-        })
         self.assertEqual(
-            fields['path'],
-            'git@mydomain.beanstalkapp.com:/mydomain/myrepo.git')
-        self.assertEqual(
-            fields['mirror_path'],
-            'https://mydomain.git.beanstalkapp.com/myrepo.git')
+            self.get_repository_fields(
+                'Git',
+                fields={
+                    'beanstalk_account_domain': 'mydomain',
+                    'beanstalk_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'git@mydomain.beanstalkapp.com:/mydomain/myrepo.git',
+                'mirror_path': ('https://mydomain.git.beanstalkapp.com/'
+                                'myrepo.git'),
+            })
 
     def test_get_repository_fields_for_subversion(self):
         """Testing Beanstalk.get_repository_fields for Subversion"""
-        fields = self._get_repository_fields('Subversion', fields={
-            'beanstalk_account_domain': 'mydomain',
-            'beanstalk_repo_name': 'myrepo',
-        })
         self.assertEqual(
-            fields['path'],
-            'https://mydomain.svn.beanstalkapp.com/myrepo/')
-        self.assertNotIn('mirror_path', fields)
+            self.get_repository_fields(
+                'Subversion',
+                fields={
+                    'beanstalk_account_domain': 'mydomain',
+                    'beanstalk_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'https://mydomain.svn.beanstalkapp.com/myrepo/',
+            })
 
     def test_authorize(self):
         """Testing Beanstalk.authorize"""

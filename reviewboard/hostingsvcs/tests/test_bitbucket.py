@@ -13,6 +13,7 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError)
 from reviewboard.hostingsvcs.tests.testcases import ServiceTests
 from reviewboard.reviews.models import ReviewRequest
+from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
 from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.scmtools.models import Repository, Tool
@@ -37,91 +38,106 @@ class BitbucketTests(BitbucketTestCase):
 
     def test_get_repository_fields_with_git_and_personal_plan(self):
         """Testing Bitbucket.get_repository_fields for Git and plan=personal"""
-        fields = self._get_repository_fields(
-            'Git',
-            fields={
-                'bitbucket_repo_name': 'myrepo',
-            },
-            plan='personal')
-        self.assertEqual(fields['path'],
-                         'git@bitbucket.org:myuser/myrepo.git')
-        self.assertEqual(fields['mirror_path'],
-                         'https://myuser@bitbucket.org/myuser/myrepo.git')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                fields={
+                    'bitbucket_repo_name': 'myrepo',
+                },
+                plan='personal'
+            ),
+            {
+                'path': 'git@bitbucket.org:myuser/myrepo.git',
+                'mirror_path': ('https://myuser@bitbucket.org/myuser/'
+                                'myrepo.git'),
+            })
 
     def test_get_repository_fields_with_mercurial_and_personal_plan(self):
         """Testing Bitbucket.get_repository_fields for Mercurial and
         plan=personal
         """
-        fields = self._get_repository_fields(
-            'Mercurial',
-            fields={
-                'bitbucket_repo_name': 'myrepo',
-            },
-            plan='personal')
-        self.assertEqual(fields['path'],
-                         'https://myuser@bitbucket.org/myuser/myrepo')
-        self.assertEqual(fields['mirror_path'],
-                         'ssh://hg@bitbucket.org/myuser/myrepo')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Mercurial',
+                fields={
+                    'bitbucket_repo_name': 'myrepo',
+                },
+                plan='personal'
+            ),
+            {
+                'path': 'https://myuser@bitbucket.org/myuser/myrepo',
+                'mirror_path': 'ssh://hg@bitbucket.org/myuser/myrepo',
+            })
 
     def test_get_repository_fields_with_git_and_team_plan(self):
         """Testing Bitbucket.get_repository_fields for Git and plan=team"""
-        fields = self._get_repository_fields(
-            'Git',
-            fields={
-                'bitbucket_team_name': 'myteam',
-                'bitbucket_team_repo_name': 'myrepo',
-            },
-            plan='team')
-        self.assertEqual(fields['path'],
-                         'git@bitbucket.org:myteam/myrepo.git')
-        self.assertEqual(fields['mirror_path'],
-                         'https://myuser@bitbucket.org/myteam/myrepo.git')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                fields={
+                    'bitbucket_team_name': 'myteam',
+                    'bitbucket_team_repo_name': 'myrepo',
+                },
+                plan='team'
+            ),
+            {
+                'path': 'git@bitbucket.org:myteam/myrepo.git',
+                'mirror_path': ('https://myuser@bitbucket.org/myteam/'
+                                'myrepo.git'),
+            })
 
     def test_get_repository_fields_with_mercurial_and_team_plan(self):
         """Testing Bitbucket.get_repository_fields for Mercurial and plan=team
         """
-        fields = self._get_repository_fields(
-            'Mercurial',
-            fields={
-                'bitbucket_team_name': 'myteam',
-                'bitbucket_team_repo_name': 'myrepo',
-            },
-            plan='team')
-        self.assertEqual(fields['path'],
-                         'https://myuser@bitbucket.org/myteam/myrepo')
-        self.assertEqual(fields['mirror_path'],
-                         'ssh://hg@bitbucket.org/myteam/myrepo')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Mercurial',
+                fields={
+                    'bitbucket_team_name': 'myteam',
+                    'bitbucket_team_repo_name': 'myrepo',
+                },
+                plan='team'
+            ),
+            {
+                'path': 'https://myuser@bitbucket.org/myteam/myrepo',
+                'mirror_path': 'ssh://hg@bitbucket.org/myteam/myrepo',
+            })
 
     def test_get_repository_fields_with_git_and_other_user_plan(self):
         """Testing Bitbucket.get_repository_fields for Git and plan=other-user
         """
-        fields = self._get_repository_fields(
-            'Git',
-            fields={
-                'bitbucket_other_user_username': 'someuser',
-                'bitbucket_other_user_repo_name': 'myrepo',
-            },
-            plan='other-user')
-        self.assertEqual(fields['path'],
-                         'git@bitbucket.org:someuser/myrepo.git')
-        self.assertEqual(fields['mirror_path'],
-                         'https://myuser@bitbucket.org/someuser/myrepo.git')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                fields={
+                    'bitbucket_other_user_username': 'someuser',
+                    'bitbucket_other_user_repo_name': 'myrepo',
+                },
+                plan='other-user'
+            ),
+            {
+                'path': 'git@bitbucket.org:someuser/myrepo.git',
+                'mirror_path': ('https://myuser@bitbucket.org/someuser/'
+                                'myrepo.git'),
+            })
 
     def test_get_repository_fields_with_mercurial_and_other_user_plan(self):
         """Testing Bitbucket.get_repository_fields for Mercurial and
         plan=other-user
         """
-        fields = self._get_repository_fields(
-            'Mercurial',
-            fields={
-                'bitbucket_other_user_username': 'someuser',
-                'bitbucket_other_user_repo_name': 'myrepo',
-            },
-            plan='other-user')
-        self.assertEqual(fields['path'],
-                         'https://myuser@bitbucket.org/someuser/myrepo')
-        self.assertEqual(fields['mirror_path'],
-                         'ssh://hg@bitbucket.org/someuser/myrepo')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Mercurial',
+                fields={
+                    'bitbucket_other_user_username': 'someuser',
+                    'bitbucket_other_user_repo_name': 'myrepo',
+                },
+                plan='other-user'
+            ),
+            {
+                'path': 'https://myuser@bitbucket.org/someuser/myrepo',
+                'mirror_path': 'ssh://hg@bitbucket.org/someuser/myrepo',
+            })
 
     def test_get_bug_tracker_field_with_personal_plan(self):
         """Testing Bitbucket.get_bug_tracker_field with plan=personal"""
@@ -548,31 +564,19 @@ class BitbucketTests(BitbucketTestCase):
         self.spy_on(service.client.http_get, call_fake=_http_get)
 
         branches = service.get_branches(repository)
-        self.assertEqual(len(branches), 4)
-
-        branch = branches[0]
-        self.assertEqual(branch.name, 'branch1')
-        self.assertEqual(branch.commit,
-                         '1c44b461cebe5874a857c51a4a13a849a4d1e52d')
-        self.assertFalse(branch.default)
-
-        branch = branches[1]
-        self.assertEqual(branch.name, 'branch2')
-        self.assertEqual(branch.commit,
-                         '44568f7d33647d286691517e6325fea5c7a21d5e')
-        self.assertFalse(branch.default)
-
-        branch = branches[2]
-        self.assertEqual(branch.name, 'branch3')
-        self.assertEqual(branch.commit,
-                         'e5874a857c51a4a13a849a4d1e52d1c44b461ceb')
-        self.assertTrue(branch.default)
-
-        branch = branches[3]
-        self.assertEqual(branch.name, 'branch4')
-        self.assertEqual(branch.commit,
-                         'd286691517e6325fea5c7a21d5e44568f7d33647')
-        self.assertFalse(branch.default)
+        self.assertEqual(
+            branches,
+            [
+                Branch(id='branch1',
+                       commit='1c44b461cebe5874a857c51a4a13a849a4d1e52d'),
+                Branch(id='branch2',
+                       commit='44568f7d33647d286691517e6325fea5c7a21d5e'),
+                Branch(id='branch3',
+                       commit='e5874a857c51a4a13a849a4d1e52d1c44b461ceb',
+                       default=True),
+                Branch(id='branch4',
+                       commit='d286691517e6325fea5c7a21d5e44568f7d33647'),
+            ])
 
     def test_get_commits(self):
         """Testing Bitbucket.get_commits"""
@@ -639,25 +643,23 @@ class BitbucketTests(BitbucketTestCase):
         self.spy_on(service.client.http_get, call_fake=_http_get)
 
         commits = service.get_commits(repository)
-        self.assertEqual(len(commits), 2)
+        self.assertEqual(
+            commits,
+            [
+                Commit(author_name='Some User 1 <user1@example.com>',
+                       date='2017-01-24T13:11:22+00:00',
+                       id='1c44b461cebe5874a857c51a4a13a849a4d1e52d',
+                       message='This is commit 1.',
+                       parent='44568f7d33647d286691517e6325fea5c7a21d5e'),
+                Commit(author_name='Some User 2 <user2@example.com>',
+                       date='2017-01-23T08:09:10+00:00',
+                       id='44568f7d33647d286691517e6325fea5c7a21d5e',
+                       message='This is commit 2.',
+                       parent='e5874a857c51a4a13a849a4d1e52d1c44b461ceb'),
+            ])
 
-        commit = commits[0]
-        self.assertEqual(commit.id, '1c44b461cebe5874a857c51a4a13a849a4d1e52d')
-        self.assertEqual(commit.author_name, 'Some User 1 <user1@example.com>')
-        self.assertEqual(commit.message, 'This is commit 1.')
-        self.assertEqual(commit.date, '2017-01-24T13:11:22+00:00')
-        self.assertEqual(commit.parent,
-                         '44568f7d33647d286691517e6325fea5c7a21d5e')
-        self.assertIsNone(commit.diff)
-
-        commit = commits[1]
-        self.assertEqual(commit.id, '44568f7d33647d286691517e6325fea5c7a21d5e')
-        self.assertEqual(commit.author_name, 'Some User 2 <user2@example.com>')
-        self.assertEqual(commit.message, 'This is commit 2.')
-        self.assertEqual(commit.date, '2017-01-23T08:09:10+00:00')
-        self.assertEqual(commit.parent,
-                         'e5874a857c51a4a13a849a4d1e52d1c44b461ceb')
-        self.assertIsNone(commit.diff)
+        for commit in commits:
+            self.assertIsNone(commit.diff)
 
     def test_get_change(self):
         """Testing BitBucket.get_change"""
@@ -703,11 +705,14 @@ class BitbucketTests(BitbucketTestCase):
         self.spy_on(service.client.http_get, call_fake=_http_get)
 
         commit = service.get_change(repository, commit_sha)
-        self.assertEqual(commit.id, commit_sha)
-        self.assertEqual(commit.author_name, 'Some User <user@example.com>')
-        self.assertEqual(commit.message, 'This is a message.')
-        self.assertEqual(commit.date, '2017-01-24T13:11:22+00:00')
-        self.assertEqual(commit.parent, parent_sha)
+
+        self.assertEqual(
+            commit,
+            Commit(author_name='Some User <user@example.com>',
+                   date='2017-01-24T13:11:22+00:00',
+                   id=commit_sha,
+                   message='This is a message.',
+                   parent=parent_sha))
         self.assertEqual(commit.diff, norm_diff_api_response)
 
     def _test_get_file(self, tool_name, revision, base_commit_id,

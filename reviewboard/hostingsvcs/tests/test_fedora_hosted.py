@@ -17,34 +17,46 @@ class FedoraHosted(ServiceTests):
 
     def test_get_repository_fields_with_git(self):
         """Testing FedoraHosted.get_repository_fields for Git"""
-        fields = self._get_repository_fields('Git', fields={
-            'fedorahosted_repo_name': 'myrepo',
-        })
-        self.assertEqual(fields['path'],
-                         'git://git.fedorahosted.org/git/myrepo.git')
-        self.assertEqual(fields['raw_file_url'],
-                         'http://git.fedorahosted.org/cgit/myrepo.git/'
-                         'blob/<filename>?id=<revision>')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                fields={
+                    'fedorahosted_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'git://git.fedorahosted.org/git/myrepo.git',
+                'raw_file_url': ('http://git.fedorahosted.org/cgit/myrepo.git/'
+                                 'blob/<filename>?id=<revision>'),
+            })
 
     def test_get_repository_fields_with_mercurial(self):
         """Testing FedoraHosted.get_repository_fields for Mercurial"""
-        fields = self._get_repository_fields('Mercurial', fields={
-            'fedorahosted_repo_name': 'myrepo',
-        })
-        self.assertEqual(fields['path'],
-                         'http://hg.fedorahosted.org/hg/myrepo/')
-        self.assertEqual(fields['mirror_path'],
-                         'https://hg.fedorahosted.org/hg/myrepo/')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Mercurial',
+                fields={
+                    'fedorahosted_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'http://hg.fedorahosted.org/hg/myrepo/',
+                'mirror_path': 'https://hg.fedorahosted.org/hg/myrepo/',
+            })
 
     def test_get_repository_fields_with_subversion(self):
         """Testing FedoraHosted.get_repository_fields for Subversion"""
-        fields = self._get_repository_fields('Subversion', fields={
-            'fedorahosted_repo_name': 'myrepo',
-        })
-        self.assertEqual(fields['path'],
-                         'http://svn.fedorahosted.org/svn/myrepo/')
-        self.assertEqual(fields['mirror_path'],
-                         'https://svn.fedorahosted.org/svn/myrepo/')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Subversion',
+                fields={
+                    'fedorahosted_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'http://svn.fedorahosted.org/svn/myrepo/',
+                'mirror_path': 'https://svn.fedorahosted.org/svn/myrepo/',
+            })
 
     def test_get_bug_tracker_field(self):
         """Testing FedoraHosted.get_bug_tracker_field"""

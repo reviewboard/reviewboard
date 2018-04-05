@@ -18,14 +18,17 @@ class GitoriousTests(ServiceTests):
 
     def test_get_repository_fields(self):
         """Testing Gitorious.get_repository_fields"""
-        fields = self._get_repository_fields('Git', fields={
-            'gitorious_project_name': 'myproj',
-            'gitorious_repo_name': 'myrepo',
-        })
-        self.assertEqual(fields['path'],
-                         'git://example.com/myproj/myrepo.git')
-        self.assertEqual(fields['mirror_path'],
-                         'https://example.com/myproj/myrepo.git')
-        self.assertEqual(fields['raw_file_url'],
-                         'https://example.com/myproj/myrepo/blobs/raw/'
-                         '<revision>')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                fields={
+                    'gitorious_project_name': 'myproj',
+                    'gitorious_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'git://example.com/myproj/myrepo.git',
+                'mirror_path': 'https://example.com/myproj/myrepo.git',
+                'raw_file_url': ('https://example.com/myproj/myrepo/blobs/raw/'
+                                 '<revision>'),
+            })

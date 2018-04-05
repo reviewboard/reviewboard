@@ -25,33 +25,41 @@ class KilnTests(ServiceTests):
 
     def test_repo_field_values_git(self):
         """Testing Kiln.get_repository_fields for Git"""
-        fields = self._get_repository_fields('Git', fields={
-            'kiln_account_domain': 'mydomain',
-            'kiln_project_name': 'myproject',
-            'kiln_group_name': 'mygroup',
-            'kiln_repo_name': 'myrepo',
-        })
         self.assertEqual(
-            fields['path'],
-            'https://mydomain.kilnhg.com/Code/myproject/mygroup/myrepo.git')
-        self.assertEqual(
-            fields['mirror_path'],
-            'ssh://mydomain@mydomain.kilnhg.com/myproject/mygroup/myrepo')
+            self.get_repository_fields(
+                'Git',
+                fields={
+                    'kiln_account_domain': 'mydomain',
+                    'kiln_project_name': 'myproject',
+                    'kiln_group_name': 'mygroup',
+                    'kiln_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': ('https://mydomain.kilnhg.com/Code/myproject/mygroup/'
+                         'myrepo.git'),
+                'mirror_path': ('ssh://mydomain@mydomain.kilnhg.com/myproject/'
+                                'mygroup/myrepo'),
+            })
 
     def test_repo_field_values_mercurial(self):
         """Testing Kiln.get_repository_fields for Mercurial"""
-        fields = self._get_repository_fields('Mercurial', fields={
-            'kiln_account_domain': 'mydomain',
-            'kiln_project_name': 'myproject',
-            'kiln_group_name': 'mygroup',
-            'kiln_repo_name': 'myrepo',
-        })
         self.assertEqual(
-            fields['path'],
-            'https://mydomain.kilnhg.com/Code/myproject/mygroup/myrepo')
-        self.assertEqual(
-            fields['mirror_path'],
-            'ssh://mydomain@mydomain.kilnhg.com/myproject/mygroup/myrepo')
+            self.get_repository_fields(
+                'Mercurial',
+                fields={
+                    'kiln_account_domain': 'mydomain',
+                    'kiln_project_name': 'myproject',
+                    'kiln_group_name': 'mygroup',
+                    'kiln_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': ('https://mydomain.kilnhg.com/Code/myproject/mygroup/'
+                         'myrepo'),
+                'mirror_path': ('ssh://mydomain@mydomain.kilnhg.com/myproject/'
+                                'mygroup/myrepo'),
+            })
 
     def test_authorize(self):
         """Testing Kiln.authorize"""

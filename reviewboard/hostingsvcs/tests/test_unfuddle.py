@@ -26,31 +26,37 @@ class UnfuddleTests(ServiceTests):
 
     def test_get_repository_fields_with_git(self):
         """Testing Unfuddle.get_repository_fields for Git"""
-        fields = self._get_repository_fields('Git', fields={
-            'unfuddle_account_domain': 'mydomain',
-            'unfuddle_project_id': 1,
-            'unfuddle_repo_name': 'myrepo',
-        })
         self.assertEqual(
-            fields['path'],
-            'git@mydomain.unfuddle.com:mydomain/myrepo.git')
-        self.assertEqual(
-            fields['mirror_path'],
-            'https://mydomain.unfuddle.com/git/mydomain_myrepo/')
+            self.get_repository_fields(
+                'Git',
+                fields={
+                    'unfuddle_account_domain': 'mydomain',
+                    'unfuddle_project_id': 1,
+                    'unfuddle_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'git@mydomain.unfuddle.com:mydomain/myrepo.git',
+                'mirror_path': ('https://mydomain.unfuddle.com/git/'
+                                'mydomain_myrepo/'),
+            })
 
     def test_get_repository_fields_with_subversion(self):
         """Testing Unfuddle.get_repository_fields for Subversion"""
-        fields = self._get_repository_fields('Subversion', fields={
-            'unfuddle_account_domain': 'mydomain',
-            'unfuddle_project_id': 1,
-            'unfuddle_repo_name': 'myrepo',
-        })
         self.assertEqual(
-            fields['path'],
-            'https://mydomain.unfuddle.com/svn/mydomain_myrepo')
-        self.assertEqual(
-            fields['mirror_path'],
-            'http://mydomain.unfuddle.com/svn/mydomain_myrepo')
+            self.get_repository_fields(
+                'Subversion',
+                fields={
+                    'unfuddle_account_domain': 'mydomain',
+                    'unfuddle_project_id': 1,
+                    'unfuddle_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'https://mydomain.unfuddle.com/svn/mydomain_myrepo',
+                'mirror_path': ('http://mydomain.unfuddle.com/svn/'
+                                'mydomain_myrepo'),
+            })
 
     def test_authorize(self):
         """Testing Unfuddle.authorize"""

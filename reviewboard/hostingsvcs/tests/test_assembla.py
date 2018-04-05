@@ -30,24 +30,31 @@ class AssemblaTests(AssemblaTestCase):
 
     def test_get_repository_fields_with_perforce(self):
         """Testing Assembla.get_repository_fields for Perforce"""
-        fields = self._get_repository_fields('Perforce', fields={
-            'assembla_project_id': 'myproject',
-        })
-        self.assertEqual(fields['path'], 'perforce.assembla.com:1666')
-        self.assertNotIn('mirror_path', fields)
-        self.assertIn('encoding', fields)
-        self.assertEqual(fields['encoding'], 'utf8')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Perforce',
+                fields={
+                    'assembla_project_id': 'myproject',
+                }
+            ),
+            {
+                'path': 'perforce.assembla.com:1666',
+                'encoding': 'utf8',
+            })
 
     def test_get_repository_fields_with_subversion(self):
         """Testing Assembla.get_repository_fields for Subversion"""
-        fields = self._get_repository_fields('Subversion', fields={
-            'assembla_project_id': 'myproject',
-            'assembla_repo_name': 'myrepo',
-        })
-        self.assertEqual(fields['path'],
-                         'https://subversion.assembla.com/svn/myproject/')
-        self.assertNotIn('mirror_path', fields)
-        self.assertNotIn('encoding', fields)
+        self.assertEqual(
+            self.get_repository_fields(
+                'Subversion',
+                fields={
+                    'assembla_project_id': 'myproject',
+                    'assembla_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'https://subversion.assembla.com/svn/myproject/',
+            })
 
     def test_authorize(self):
         """Testing Assembla.authorize"""

@@ -13,7 +13,7 @@ from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.parse import urlparse
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.scmtools.core import Branch
+from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.hostingsvcs.errors import RepositoryError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.repository import RemoteRepository
@@ -42,40 +42,65 @@ class GitHubTests(GitHubTestCase):
 
     def test_get_repository_fields_with_public_plan(self):
         """Testing GitHub.get_repository_fields with the public plan"""
-        fields = self._get_repository_fields('Git', plan='public', fields={
-            'github_public_repo_name': 'myrepo',
-        })
-        self.assertEqual(fields['path'], 'git://github.com/myuser/myrepo.git')
-        self.assertEqual(fields['mirror_path'],
-                         'git@github.com:myuser/myrepo.git')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                plan='public',
+                fields={
+                    'github_public_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'git://github.com/myuser/myrepo.git',
+                'mirror_path': 'git@github.com:myuser/myrepo.git',
+            })
 
     def test_get_repository_fields_with_public_org_plan(self):
         """Testing GitHub.get_repository_fields with the public-org plan"""
-        fields = self._get_repository_fields('Git', plan='public-org', fields={
-            'github_public_org_repo_name': 'myrepo',
-            'github_public_org_name': 'myorg',
-        })
-        self.assertEqual(fields['path'], 'git://github.com/myorg/myrepo.git')
-        self.assertEqual(fields['mirror_path'],
-                         'git@github.com:myorg/myrepo.git')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                plan='public-org',
+                fields={
+                    'github_public_org_repo_name': 'myrepo',
+                    'github_public_org_name': 'myorg',
+                }
+            ),
+            {
+                'path': 'git://github.com/myorg/myrepo.git',
+                'mirror_path': 'git@github.com:myorg/myrepo.git',
+            })
 
     def test_get_repository_fields_with_private_plan(self):
         """Testing GitHub.get_repository_fields with the private plan"""
-        fields = self._get_repository_fields('Git', plan='private', fields={
-            'github_private_repo_name': 'myrepo',
-        })
-        self.assertEqual(fields['path'], 'git@github.com:myuser/myrepo.git')
-        self.assertEqual(fields['mirror_path'], '')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                plan='private',
+                fields={
+                    'github_private_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'git@github.com:myuser/myrepo.git',
+                'mirror_path': '',
+            })
 
     def test_get_repository_fields_with_private_org_plan(self):
         """Testing GitHub.get_repository_fields with the private-org plan"""
-        fields = self._get_repository_fields(
-            'Git', plan='private-org', fields={
-                'github_private_org_repo_name': 'myrepo',
-                'github_private_org_name': 'myorg',
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                plan='private-org',
+                fields={
+                    'github_private_org_repo_name': 'myrepo',
+                    'github_private_org_name': 'myorg',
+                }
+            ),
+            {
+                'path': 'git@github.com:myorg/myrepo.git',
+                'mirror_path': '',
             })
-        self.assertEqual(fields['path'], 'git@github.com:myorg/myrepo.git')
-        self.assertEqual(fields['mirror_path'], '')
 
     def test_get_repo_api_url_with_public_plan(self):
         """Testing GitHub._get_repo_api_url with the public plan"""
@@ -532,31 +557,30 @@ class GitHubTests(GitHubTestCase):
             body=None,
             headers=None))
 
-        self.assertEqual(len(commits), 3)
+        self.assertEqual(
+            commits,
+            [
+                Commit(author_name='Christian Hammond',
+                       date='2013-06-25T23:31:22Z',
+                       id='859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
+                       message=('Fixed the bug number for the '
+                                'blacktriangledown bug.'),
+                       parent='92463764015ef463b4b6d1a1825fee7aeec8cb15'),
+                Commit(author_name='Christian Hammond',
+                       date='2013-06-25T23:30:59Z',
+                       id='92463764015ef463b4b6d1a1825fee7aeec8cb15',
+                       message="Merge branch 'release-1.7.x'",
+                       parent='f5a35f1d8a8dcefb336a8e3211334f1f50ea7792'),
+                Commit(author_name='David Trowbridge',
+                       date='2013-06-25T22:41:09Z',
+                       id='f5a35f1d8a8dcefb336a8e3211334f1f50ea7792',
+                       message=('Add DIFF_PARSE_ERROR to the '
+                                'ValidateDiffResource.create error list.'),
+                       parent=''),
+            ])
 
-        commit = commits[0]
-        self.assertEqual(commit.author_name, 'Christian Hammond')
-        self.assertEqual(commit.date, '2013-06-25T23:31:22Z')
-        self.assertEqual(commit.id, '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817')
-        self.assertEqual(commit.message,
-                         'Fixed the bug number for the blacktriangledown bug.')
-        self.assertEqual(commit.parent, commits[1].id)
-
-        commit = commits[1]
-        self.assertEqual(commit.author_name, 'Christian Hammond')
-        self.assertEqual(commit.date, '2013-06-25T23:30:59Z')
-        self.assertEqual(commit.id, '92463764015ef463b4b6d1a1825fee7aeec8cb15')
-        self.assertEqual(commit.message, "Merge branch 'release-1.7.x'")
-        self.assertEqual(commit.parent, commits[2].id)
-
-        commit = commits[2]
-        self.assertEqual(commit.author_name, 'David Trowbridge')
-        self.assertEqual(commit.date, '2013-06-25T22:41:09Z')
-        self.assertEqual(commit.id, 'f5a35f1d8a8dcefb336a8e3211334f1f50ea7792')
-        self.assertEqual(commit.message,
-                         'Add DIFF_PARSE_ERROR to the '
-                         'ValidateDiffResource.create error list.')
-        self.assertEqual(commit.parent, '')
+        for commit in commits:
+            self.assertIsNone(commit.diff)
 
     def test_get_change(self):
         """Testing GitHub.get_change"""
@@ -727,13 +751,13 @@ class GitHubTests(GitHubTestCase):
             body=None,
             headers=None))
 
-        self.assertEqual(change.author_name, 'David Trowbridge')
-        self.assertEqual(change.date, '2013-06-25T23:31:22Z')
-        self.assertEqual(change.id, '1c44b461cebe5874a857c51a4a13a849a4d1e52d')
-        self.assertEqual(change.message, 'Move .clearfix to defs.less')
-        self.assertEqual(change.parent,
-                         '44568f7d33647d286691517e6325fea5c7a21d5e')
-        self.assertIsInstance(change.diff, bytes)
+        self.assertEqual(
+            change,
+            Commit(author_name='David Trowbridge',
+                   date='2013-06-25T23:31:22Z',
+                   id='1c44b461cebe5874a857c51a4a13a849a4d1e52d',
+                   message='Move .clearfix to defs.less',
+                   parent='44568f7d33647d286691517e6325fea5c7a21d5e'))
         self.assertEqual(
             change.diff,
             b'diff --git a/reviewboard/static/rb/css/defs.less'

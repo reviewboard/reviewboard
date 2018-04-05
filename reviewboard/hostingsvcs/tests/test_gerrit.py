@@ -281,33 +281,31 @@ class GerritTests(ServiceTests):
             ]).encode('utf-8'), {}
 
         self.spy_on(GerritClient.http_get, call_fake=_http_get)
-        rsp = self.service.get_commits(self.repository)
+
+        commits = self.service.get_commits(self.repository)
+
         self.assertEqual(
-            rsp,
+            commits,
             [
-                Commit(
-                    author_name='David Trowbridge',
-                    id='77c174669b7018936f16b98547445624c6738e1e',
-                    date='2016-09-05T23:28:30-07:00',
-                    message='Backport a fix for screenshot commenting.\n',
-                    parent='ecfbf578d31f550a135580cee26fa20fbaea36d9'
-                ),
-                Commit(
-                    author_name='David Trowbridge',
-                    id='8a39b87f0124f27225234014a87914e434b223a9',
-                    date='2016-09-05T22:58:29-07:00',
-                    message='Fix some issues with screenshot commenting.\n',
-                    parent='3fb32c83993cd8c07fbbb605cf0cc523010da7c8'
-                ),
-                Commit(
-                    author_name='David Trowbridge',
-                    id='3fb32c83993cd8c07fbbb605cf0cc523010da7c8',
-                    date='2016-09-05T22:47:55-07:00',
-                    message='Fix draggability of the comment dialog.\n',
-                    parent='7619f51371b55bfcdf4cb3fccf5d3c76bf5002c0'
-                ),
-            ]
-        )
+                Commit(author_name='David Trowbridge',
+                       id='77c174669b7018936f16b98547445624c6738e1e',
+                       date='2016-09-05T23:28:30-07:00',
+                       message='Backport a fix for screenshot commenting.\n',
+                       parent='ecfbf578d31f550a135580cee26fa20fbaea36d9'),
+                Commit(author_name='David Trowbridge',
+                       id='8a39b87f0124f27225234014a87914e434b223a9',
+                       date='2016-09-05T22:58:29-07:00',
+                       message='Fix some issues with screenshot commenting.\n',
+                       parent='3fb32c83993cd8c07fbbb605cf0cc523010da7c8'),
+                Commit(author_name='David Trowbridge',
+                       id='3fb32c83993cd8c07fbbb605cf0cc523010da7c8',
+                       date='2016-09-05T22:47:55-07:00',
+                       message='Fix draggability of the comment dialog.\n',
+                       parent='7619f51371b55bfcdf4cb3fccf5d3c76bf5002c0'),
+            ])
+
+        for commit in commits:
+            self.assertIsNone(commit.diff)
 
     def test_get_change(self):
         """Testing Gerrit.get_change"""
@@ -338,19 +336,18 @@ class GerritTests(ServiceTests):
 
         self.spy_on(GerritClient.http_get, _http_get)
 
+        commit = self.service.get_change(
+            self.repository,
+            '77c174669b7018936f16b98547445624c6738e1e')
+
         self.assertEqual(
-            self.service.get_change(
-                self.repository, '77c174669b7018936f16b98547445624c6738e1e'
-            ),
-            Commit(
-                author_name='David Trowbridge',
-                id='77c174669b7018936f16b98547445624c6738e1e',
-                date='2016-09-05T23:28:30-07:00',
-                message='Backport a fix for screenshot commenting.\n',
-                parent='ecfbf578d31f550a135580cee26fa20fbaea36d9',
-                diff='fake diff'
-            )
-        )
+            commit,
+            Commit(author_name='David Trowbridge',
+                   id='77c174669b7018936f16b98547445624c6738e1e',
+                   date='2016-09-05T23:28:30-07:00',
+                   message='Backport a fix for screenshot commenting.\n',
+                   parent='ecfbf578d31f550a135580cee26fa20fbaea36d9'))
+        self.assertEqual(commit.diff, b'fake diff')
 
     def _get_hosting_account(self, use_url=False, local_site=None):
         account = super(GerritTests, self)._get_hosting_account(
