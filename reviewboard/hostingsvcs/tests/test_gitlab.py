@@ -726,8 +726,7 @@ class GitLabTests(ServiceTests):
 
         account = self._get_hosting_account(use_url=True)
         service = account.service
-        self.spy_on(service._get_api_version,
-                    call_fake=lambda self, hosting_url: '3')
+        self._set_api_version(service, '3')
         self.spy_on(service.client.http_get, call_fake=_http_get)
         account.data['private_token'] = encrypt_password('abc123')
 
@@ -766,16 +765,25 @@ class GitLabTests(ServiceTests):
                 <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
         """
         def _http_get(service, url, *args, **kwargs):
-            if url == 'https://example.com/api/v4/projects/mygroup%2Fmyrepo':
-                # We don't care about the contents. Just that it exists.
-                payload = {}
-            elif url == 'https://example.com/api/v4/projects/myuser%2Fmyrepo':
-                # We don't care about the contents. Just that it exists.
-                payload = {}
+            if url == ('https://example.com/api/v4/projects/%s%%2Fmyrepo'
+                       % expected_user):
+                payload = {
+                    'id': 12345,
+                }
             else:
                 self.fail('Unexpected URL %s' % url)
 
             return json.dumps(payload), {}
+
+        account = self._get_hosting_account(use_url=True)
+        service = account.service
+
+        self._set_api_version(service, '4')
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+        account.data['private_token'] = encrypt_password('abc123')
+
+        service.check_repository(**kwargs)
+        self.assertTrue(service.client.http_get.called)
 
     def _test_check_repository_v3(self, expected_user='myuser', **kwargs):
         """Test checking for a repository using API v3.
@@ -826,8 +834,7 @@ class GitLabTests(ServiceTests):
 
         account = self._get_hosting_account(use_url=True)
         service = account.service
-        self.spy_on(service._get_api_version,
-                    call_fake=lambda self, hosting_url: '3')
+        self._set_api_version(service, '3')
         self.spy_on(service.client.http_get, call_fake=_http_get)
         account.data['private_token'] = encrypt_password('abc123')
 
@@ -858,8 +865,7 @@ class GitLabTests(ServiceTests):
 
         account = self._get_hosting_account(use_url=True)
         service = account.service
-        self.spy_on(service._get_api_version,
-                    call_fake=lambda self, hosting_url: '4')
+        self._set_api_version(service, '4')
         self.spy_on(service.client.http_get, call_fake=_http_get)
         account.data['private_token'] = encrypt_password('abc123')
 
@@ -924,3 +930,16 @@ class GitLabTests(ServiceTests):
         form.save(repository)
 
         return service._get_repo_api_url(repository)
+
+    def _set_api_version(self, service, api_version):
+        """Set the API version for a test.
+
+        Args:
+            service (reviewboard.hostingsvcs.gitlab.GitLab):
+                The GitLab hosting service instance.
+
+            api_version (unicode):
+                The API version for the test.
+        """
+        self.spy_on(service._get_api_version,
+                    call_fake=lambda self, hosting_url: api_version)
