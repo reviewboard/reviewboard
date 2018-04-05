@@ -20,11 +20,15 @@ from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
-class BitbucketTests(ServiceTests):
-    """Unit tests for the Bitbucket hosting service."""
+class BitbucketTestCase(ServiceTests):
+    """Base class for Bitbucket test suites."""
 
     service_name = 'bitbucket'
     fixtures = ['test_scmtools']
+
+
+class BitbucketTests(BitbucketTestCase):
+    """Unit tests for the Bitbucket hosting service."""
 
     def test_service_support(self):
         """Testing Bitbucket service support capabilities"""
@@ -59,43 +63,6 @@ class BitbucketTests(ServiceTests):
         self.assertEqual(fields['mirror_path'],
                          'ssh://hg@bitbucket.org/myuser/myrepo')
 
-    def test_get_bug_tracker_field_with_personal_plan(self):
-        """Testing Bitbucket.get_bug_tracker_field with plan=personal"""
-        self.assertTrue(self.service_class.get_bug_tracker_requires_username(
-            plan='personal'))
-        self.assertEqual(
-            self.service_class.get_bug_tracker_field(
-                'personal',
-                {
-                    'bitbucket_repo_name': 'myrepo',
-                    'hosting_account_username': 'myuser',
-                }),
-            'https://bitbucket.org/myuser/myrepo/issue/%s/')
-
-    def test_check_repository_with_personal_plan(self):
-        """Testing Bitbucket.check_repository with plan=personal"""
-        def _http_get(service, url, *args, **kwargs):
-            self.assertEqual(
-                url,
-                'https://bitbucket.org/api/2.0/repositories/myuser/myrepo'
-                '?fields=scm')
-            return (
-                json.dumps({
-                    'scm': 'git',
-                }),
-                {})
-
-        account = self._get_hosting_account()
-        account.data['password'] = encrypt_password('abc123')
-        service = account.service
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-
-        service.check_repository(bitbucket_repo_name='myrepo',
-                                 plan='personal',
-                                 tool_name='Git')
-        self.assertTrue(service.client.http_get.called)
-
     def test_get_repository_fields_with_git_and_team_plan(self):
         """Testing Bitbucket.get_repository_fields for Git and plan=team"""
         fields = self._get_repository_fields(
@@ -124,45 +91,6 @@ class BitbucketTests(ServiceTests):
                          'https://myuser@bitbucket.org/myteam/myrepo')
         self.assertEqual(fields['mirror_path'],
                          'ssh://hg@bitbucket.org/myteam/myrepo')
-
-    def test_get_bug_tracker_field_with_team_plan(self):
-        """Testing Bitbucket.get_bug_tracker_field with plan=team"""
-        self.assertFalse(self.service_class.get_bug_tracker_requires_username(
-            plan='team'))
-        self.assertEqual(
-            self.service_class.get_bug_tracker_field(
-                'team',
-                {
-                    'bitbucket_team_name': 'myteam',
-                    'bitbucket_team_repo_name': 'myrepo',
-                }),
-            'https://bitbucket.org/myteam/myrepo/issue/%s/')
-
-    def test_check_repository_with_team_plan(self):
-        """Testing Bitbucket.check_repository with plan=team"""
-        def _http_get(service, url, *args, **kwargs):
-            self.assertEqual(
-                url,
-                'https://bitbucket.org/api/2.0/repositories/myteam/myrepo'
-                '?fields=scm')
-            return (
-                json.dumps({
-                    'scm': 'git',
-                }),
-                {})
-
-        account = self._get_hosting_account()
-        service = account.service
-
-        account.data['password'] = encrypt_password('abc123')
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-
-        service.check_repository(bitbucket_team_name='myteam',
-                                 bitbucket_team_repo_name='myrepo',
-                                 tool_name='Git',
-                                 plan='team')
-        self.assertTrue(service.client.http_get.called)
 
     def test_get_repository_fields_with_git_and_other_user_plan(self):
         """Testing Bitbucket.get_repository_fields for Git and plan=other-user
@@ -195,6 +123,32 @@ class BitbucketTests(ServiceTests):
         self.assertEqual(fields['mirror_path'],
                          'ssh://hg@bitbucket.org/someuser/myrepo')
 
+    def test_get_bug_tracker_field_with_personal_plan(self):
+        """Testing Bitbucket.get_bug_tracker_field with plan=personal"""
+        self.assertTrue(self.service_class.get_bug_tracker_requires_username(
+            plan='personal'))
+        self.assertEqual(
+            self.service_class.get_bug_tracker_field(
+                'personal',
+                {
+                    'bitbucket_repo_name': 'myrepo',
+                    'hosting_account_username': 'myuser',
+                }),
+            'https://bitbucket.org/myuser/myrepo/issue/%s/')
+
+    def test_get_bug_tracker_field_with_team_plan(self):
+        """Testing Bitbucket.get_bug_tracker_field with plan=team"""
+        self.assertFalse(self.service_class.get_bug_tracker_requires_username(
+            plan='team'))
+        self.assertEqual(
+            self.service_class.get_bug_tracker_field(
+                'team',
+                {
+                    'bitbucket_team_name': 'myteam',
+                    'bitbucket_team_repo_name': 'myrepo',
+                }),
+            'https://bitbucket.org/myteam/myrepo/issue/%s/')
+
     def test_get_bug_tracker_field_with_other_user_plan(self):
         """Testing Bitbucket.get_bug_tracker_field with plan=other-user"""
         self.assertFalse(self.service_class.get_bug_tracker_requires_username(
@@ -207,6 +161,56 @@ class BitbucketTests(ServiceTests):
                     'bitbucket_other_user_repo_name': 'myrepo',
                 }),
             'https://bitbucket.org/someuser/myrepo/issue/%s/')
+
+    def test_check_repository_with_personal_plan(self):
+        """Testing Bitbucket.check_repository with plan=personal"""
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(
+                url,
+                'https://bitbucket.org/api/2.0/repositories/myuser/myrepo'
+                '?fields=scm')
+            return (
+                json.dumps({
+                    'scm': 'git',
+                }),
+                {})
+
+        account = self._get_hosting_account()
+        account.data['password'] = encrypt_password('abc123')
+        service = account.service
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        service.check_repository(bitbucket_repo_name='myrepo',
+                                 plan='personal',
+                                 tool_name='Git')
+        self.assertTrue(service.client.http_get.called)
+
+    def test_check_repository_with_team_plan(self):
+        """Testing Bitbucket.check_repository with plan=team"""
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(
+                url,
+                'https://bitbucket.org/api/2.0/repositories/myteam/myrepo'
+                '?fields=scm')
+            return (
+                json.dumps({
+                    'scm': 'git',
+                }),
+                {})
+
+        account = self._get_hosting_account()
+        service = account.service
+
+        account.data['password'] = encrypt_password('abc123')
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        service.check_repository(bitbucket_team_name='myteam',
+                                 bitbucket_team_repo_name='myrepo',
+                                 tool_name='Git',
+                                 plan='team')
+        self.assertTrue(service.client.http_get.called)
 
     def test_check_repository_with_other_user_plan(self):
         """Testing Bitbucket.check_repository with plan=other-user"""
@@ -706,18 +710,119 @@ class BitbucketTests(ServiceTests):
         self.assertEqual(commit.parent, parent_sha)
         self.assertEqual(commit.diff, norm_diff_api_response)
 
-    @add_fixtures(['test_users', 'test_scmtools'])
+    def _test_get_file(self, tool_name, revision, base_commit_id,
+                       expected_revision):
+        """Test file fetching.
+
+        Args:
+            tool_name (unicode):
+                The name of the SCM Tool to test with.
+
+            revision (unicode, optional):
+                The revision to check.
+
+            base_commit_id (unicode, optional):
+                The base commit to fetch against.
+
+            expected_revision (unicode, optional):
+                The revision expected in the payload.
+        """
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(
+                url,
+                'https://bitbucket.org/api/1.0/repositories/'
+                'myuser/myrepo/raw/%s/path'
+                % expected_revision)
+            return b'My data', {}
+
+        account = self._get_hosting_account()
+        service = account.service
+        repository = Repository(hosting_account=account,
+                                tool=Tool.objects.get(name=tool_name))
+        repository.extra_data = {
+            'bitbucket_repo_name': 'myrepo',
+        }
+
+        account.data['password'] = encrypt_password('abc123')
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        result = service.get_file(repository, 'path', revision,
+                                  base_commit_id)
+        self.assertTrue(service.client.http_get.called)
+        self.assertEqual(result, 'My data')
+
+    def _test_get_file_exists(self, tool_name, revision, base_commit_id,
+                              expected_revision, expected_found,
+                              expected_http_called=True):
+        """Test file existence checks.
+
+        Args:
+            tool_name (unicode):
+                The name of the SCM Tool to test with.
+
+            revision (unicode, optional):
+                The revision to check.
+
+            base_commit_id (unicode, optional):
+                The base commit to fetch against.
+
+            expected_revision (unicode, optional):
+                The revision expected in the payload.
+
+            expected_found (bool, optional):
+                Whether a truthy response should be expected.
+
+            expected_http_called (bool, optional):
+                Whether an HTTP request is expected to have been made.
+        """
+        def _http_get(service, url, *args, **kwargs):
+            self.assertEqual(
+                url,
+                'https://bitbucket.org/api/1.0/repositories/'
+                'myuser/myrepo/raw/%s/path'
+                % expected_revision)
+
+            if expected_found:
+                return b'{}', {}
+            else:
+                error = HTTPError(url, 404, 'Not Found', {}, None)
+                error.read = lambda: error.msg
+                raise error
+
+        account = self._get_hosting_account()
+        service = account.service
+        repository = Repository(hosting_account=account,
+                                tool=Tool.objects.get(name=tool_name))
+        repository.extra_data = {
+            'bitbucket_repo_name': 'myrepo',
+        }
+
+        account.data['password'] = encrypt_password('abc123')
+
+        self.spy_on(service.client.http_get, call_fake=_http_get)
+
+        result = service.get_file_exists(repository, 'path', revision,
+                                         base_commit_id)
+        self.assertEqual(service.client.http_get.called, expected_http_called)
+        self.assertEqual(result, expected_found)
+
+
+class CloseSubmittedHookTests(BitbucketTestCase):
+    """Unit tests for the Bitbucket close-submitted webhook."""
+
+    fixtures = ['test_users', 'test_scmtools']
+
     def test_close_submitted_hook(self):
         """Testing BitBucket close_submitted hook"""
         self._test_post_commit_hook()
 
-    @add_fixtures(['test_site', 'test_users', 'test_scmtools'])
+    @add_fixtures(['test_site'])
     def test_close_submitted_hook_with_local_site(self):
         """Testing BitBucket close_submitted hook with a Local Site"""
         self._test_post_commit_hook(
             LocalSite.objects.get(name=self.local_site_name))
 
-    @add_fixtures(['test_users', 'test_scmtools'])
     def test_close_submitted_hook_with_invalid_repo(self):
         """Testing BitBucket close_submitted hook with invalid repository"""
         repository = self.create_repository()
@@ -743,7 +848,7 @@ class BitbucketTests(ServiceTests):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-    @add_fixtures(['test_site', 'test_users', 'test_scmtools'])
+    @add_fixtures(['test_site'])
     def test_close_submitted_hook_with_invalid_site(self):
         """Testing BitBucket close_submitted hook with invalid Local Site"""
         local_site = LocalSite.objects.get(name=self.local_site_name)
@@ -775,7 +880,6 @@ class BitbucketTests(ServiceTests):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-    @add_fixtures(['test_users', 'test_scmtools'])
     def test_close_submitted_hook_with_invalid_service_id(self):
         """Testing BitBucket close_submitted hook with invalid hosting
         service ID
@@ -882,100 +986,3 @@ class BitbucketTests(ServiceTests):
                     ]
                 }),
             })
-
-    def _test_get_file(self, tool_name, revision, base_commit_id,
-                       expected_revision):
-        """Test file fetching.
-
-        Args:
-            tool_name (unicode):
-                The name of the SCM Tool to test with.
-
-            revision (unicode, optional):
-                The revision to check.
-
-            base_commit_id (unicode, optional):
-                The base commit to fetch against.
-
-            expected_revision (unicode, optional):
-                The revision expected in the payload.
-        """
-        def _http_get(service, url, *args, **kwargs):
-            self.assertEqual(
-                url,
-                'https://bitbucket.org/api/1.0/repositories/'
-                'myuser/myrepo/raw/%s/path'
-                % expected_revision)
-            return b'My data', {}
-
-        account = self._get_hosting_account()
-        service = account.service
-        repository = Repository(hosting_account=account,
-                                tool=Tool.objects.get(name=tool_name))
-        repository.extra_data = {
-            'bitbucket_repo_name': 'myrepo',
-        }
-
-        account.data['password'] = encrypt_password('abc123')
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-
-        result = service.get_file(repository, 'path', revision,
-                                  base_commit_id)
-        self.assertTrue(service.client.http_get.called)
-        self.assertEqual(result, 'My data')
-
-    def _test_get_file_exists(self, tool_name, revision, base_commit_id,
-                              expected_revision, expected_found,
-                              expected_http_called=True):
-        """Test file existence checks.
-
-        Args:
-            tool_name (unicode):
-                The name of the SCM Tool to test with.
-
-            revision (unicode, optional):
-                The revision to check.
-
-            base_commit_id (unicode, optional):
-                The base commit to fetch against.
-
-            expected_revision (unicode, optional):
-                The revision expected in the payload.
-
-            expected_found (bool, optional):
-                Whether a truthy response should be expected.
-
-            expected_http_called (bool, optional):
-                Whether an HTTP request is expected to have been made.
-        """
-        def _http_get(service, url, *args, **kwargs):
-            self.assertEqual(
-                url,
-                'https://bitbucket.org/api/1.0/repositories/'
-                'myuser/myrepo/raw/%s/path'
-                % expected_revision)
-
-            if expected_found:
-                return b'{}', {}
-            else:
-                error = HTTPError(url, 404, 'Not Found', {}, None)
-                error.read = lambda: error.msg
-                raise error
-
-        account = self._get_hosting_account()
-        service = account.service
-        repository = Repository(hosting_account=account,
-                                tool=Tool.objects.get(name=tool_name))
-        repository.extra_data = {
-            'bitbucket_repo_name': 'myrepo',
-        }
-
-        account.data['password'] = encrypt_password('abc123')
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-
-        result = service.get_file_exists(repository, 'path', revision,
-                                         base_commit_id)
-        self.assertEqual(service.client.http_get.called, expected_http_called)
-        self.assertEqual(result, expected_found)
