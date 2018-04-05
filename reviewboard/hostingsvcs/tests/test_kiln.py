@@ -146,14 +146,19 @@ class KilnTests(ServiceTests):
 
         self.spy_on(service.client.http_get, call_fake=_http_get)
 
-        self.assertRaises(
-            RepositoryError,
-            lambda: service.check_repository(
-                kiln_account_domain='mydomain',
-                kiln_project_name='myproject',
-                kiln_group_name='mygroup',
-                kiln_repo_name='myrepo',
-                tool_name='Mercurial'))
+        expected_message = (
+            'The repository with this project, group, and name was not found. '
+            'Please verify that the information exactly matches the '
+            'configuration on Kiln.'
+        )
+
+        with self.assertRaisesMessage(RepositoryError, expected_message):
+            service.check_repository(kiln_account_domain='mydomain',
+                                     kiln_project_name='myproject',
+                                     kiln_group_name='mygroup',
+                                     kiln_repo_name='myrepo',
+                                     tool_name='Mercurial')
+
         self.assertTrue(service.client.http_get.called)
 
     def test_get_file(self):

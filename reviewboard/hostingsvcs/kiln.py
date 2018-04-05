@@ -5,7 +5,7 @@ import json
 from django import forms
 from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext, ugettext_lazy as _
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
@@ -228,7 +228,7 @@ class Kiln(HostingService):
                                                kiln_repo_name)
 
         if not repo_info:
-            raise RepositoryError(_(
+            raise RepositoryError(ugettext(
                 'The repository with this project, group, and name was not '
                 'found. Please verify that the information exactly matches '
                 'the configuration on Kiln.'))

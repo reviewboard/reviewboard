@@ -260,13 +260,14 @@ class BitbucketTests(BitbucketTestCase):
         account.data['password'] = encrypt_password('abc123')
         service = account.service
 
-        self.assertRaisesMessage(
-            RepositoryError,
-            'Please specify just the name of the repository, not a path.',
-            lambda: service.check_repository(
+        expected_message = \
+            'Please specify just the name of the repository, not a path.'
+
+        with self.assertRaisesMessage(RepositoryError, expected_message):
+            service.check_repository(
                 bitbucket_team_name='myteam',
                 bitbucket_team_repo_name='myteam/myrepo',
-                plan='team'))
+                plan='team')
 
     def test_check_repository_with_dot_git(self):
         """Testing Bitbucket.check_repository with .git"""
@@ -274,13 +275,14 @@ class BitbucketTests(BitbucketTestCase):
         account.data['password'] = encrypt_password('abc123')
         service = account.service
 
-        self.assertRaisesMessage(
-            RepositoryError,
-            'Please specify just the name of the repository without ".git".',
-            lambda: service.check_repository(
+        expected_message = \
+            'Please specify just the name of the repository without ".git".'
+
+        with self.assertRaisesMessage(RepositoryError, expected_message):
+            service.check_repository(
                 bitbucket_team_name='myteam',
                 bitbucket_team_repo_name='myrepo.git',
-                plan='team'))
+                plan='team')
 
     def test_check_repository_with_type_mismatch(self):
         """Testing Bitbucket.check_repository with type mismatch"""
@@ -355,13 +357,14 @@ class BitbucketTests(BitbucketTestCase):
 
         self.assertFalse(service.is_authorized())
 
-        self.assertRaisesMessage(
-            AuthorizationError,
-            'Invalid Bitbucket username or password. Make sure '
-            'you are using your Bitbucket username and not e-mail '
-            'address, and are using an app password if two-factor '
-            'authentication is enabled.',
-            lambda: service.authorize('myuser', 'abc123', None))
+        expected_message = (
+            'Invalid Bitbucket username or password. Make sure you are using '
+            'your Bitbucket username and not e-mail address, and are using an '
+            'app password if two-factor authentication is enabled.'
+        )
+
+        with self.assertRaisesMessage(AuthorizationError, expected_message):
+            service.authorize('myuser', 'abc123', None)
 
         self.assertNotIn('password', account.data)
         self.assertFalse(service.is_authorized())
@@ -378,13 +381,14 @@ class BitbucketTests(BitbucketTestCase):
 
         self.assertFalse(service.is_authorized())
 
-        self.assertRaisesMessage(
-            AuthorizationError,
-            'Invalid Bitbucket username or password. Make sure '
-            'you are using your Bitbucket username and not e-mail '
-            'address, and are using an app password if two-factor '
-            'authentication is enabled.',
-            lambda: service.authorize('myuser', 'abc123', None))
+        expected_message = (
+            'Invalid Bitbucket username or password. Make sure you are using '
+            'your Bitbucket username and not e-mail address, and are using '
+            'an app password if two-factor authentication is enabled.'
+        )
+
+        with self.assertRaisesMessage(AuthorizationError, expected_message):
+            service.authorize('myuser', 'abc123', None)
 
         self.assertNotIn('password', account.data)
         self.assertFalse(service.is_authorized())
@@ -415,13 +419,11 @@ class BitbucketTests(BitbucketTestCase):
 
     def test_get_file_with_git_and_revision(self):
         """Testing Bitbucket.get_file with Git and revision"""
-        self.assertRaises(
-            FileNotFoundError,
-            self._test_get_file,
-            tool_name='Git',
-            revision='123',
-            base_commit_id=None,
-            expected_revision='123')
+        with self.assertRaises(FileNotFoundError):
+            self._test_get_file(tool_name='Git',
+                                revision='123',
+                                base_commit_id=None,
+                                expected_revision='123')
 
     def test_get_file_exists_with_mercurial_and_base_commit_id(self):
         """Testing Bitbucket.get_file_exists with Mercurial and base commit ID

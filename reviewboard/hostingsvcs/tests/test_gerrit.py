@@ -63,7 +63,13 @@ class GerritTests(ServiceTests):
 
         self.spy_on(GerritClient.http_get, call_fake=_http_get)
 
-        with self.assertRaises(AuthorizationError):
+        expected_message = (
+            'Unable to authenticate to Gerrit at '
+            'http://gerrit.example.com/a/projects/. The username or password '
+            'used may be invalid.'
+        )
+
+        with self.assertRaisesMessage(AuthorizationError, expected_message):
             self.service.authorize(
                 username=self.account.username,
                 password=self.account.data['gerrit_http_password'],
@@ -102,7 +108,12 @@ class GerritTests(ServiceTests):
 
         self.spy_on(GerritClient.http_get, _http_get)
 
-        with self.assertRaises(RepositoryError):
+        expected_message = (
+            'The project "Project" does not exist or you do not have access '
+            'to it.'
+        )
+
+        with self.assertRaisesMessage(RepositoryError, expected_message):
             self.service.check_repository('http://gerrit.example.com',
                                           'Project')
 
@@ -115,7 +126,13 @@ class GerritTests(ServiceTests):
 
         self.spy_on(GerritClient.http_get, _http_get)
 
-        with self.assertRaises(RepositoryError):
+        expected_message = (
+            'The "gerrit-reviewboard" plugin is not installed on the server. '
+            'See https://github.com/reviewboard/gerrit-reviewboard-plugin/ '
+            'for installation instructions.'
+        )
+
+        with self.assertRaisesMessage(RepositoryError, expected_message):
             self.service.check_repository('http://gerrit.example.com',
                                           'Project')
 
@@ -133,7 +150,12 @@ class GerritTests(ServiceTests):
 
         self.spy_on(GerritClient.http_get, _http_get)
 
-        with self.assertRaises(RepositoryError):
+        expected_message = (
+            'The "gerrit-reviewboard" plugin on the server is an incompatible '
+            'version: found (0, 0, 0) but version 0.1.0 or higher is required.'
+        )
+
+        with self.assertRaisesMessage(RepositoryError, expected_message):
             self.service.check_repository('http://gerrit.example.com',
                                           'Project')
 
@@ -196,7 +218,14 @@ class GerritTests(ServiceTests):
 
         self.spy_on(GerritClient.http_get, _http_get)
 
-        with self.assertRaises(HostingServiceAPIError) as e:
+        expected_message = (
+            'An error occurred while retrieving "/foo" at revision '
+            '"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" from Gerrit: the '
+            'response could not be decoded: Incorrect padding'
+        )
+
+        with self.assertRaisesMessage(HostingServiceAPIError,
+                                      expected_message) as e:
             self.service.get_file(self.repository, '/foo', 'a' * 40)
 
         self.assertIn('response could not be decoded',

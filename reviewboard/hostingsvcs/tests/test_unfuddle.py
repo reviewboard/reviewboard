@@ -124,7 +124,9 @@ class UnfuddleTests(ServiceTests):
 
         self.spy_on(service.client.http_request, call_fake=_http_request)
 
-        with self.assertRaises(RepositoryError):
+        expected_message = 'A repository with this name was not found'
+
+        with self.assertRaisesMessage(RepositoryError, expected_message):
             service.check_repository(unfuddle_account_domain='mydomain',
                                      unfuddle_repo_name='myrepo',
                                      tool_name='Git')
