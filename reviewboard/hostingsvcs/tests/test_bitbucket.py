@@ -1,3 +1,5 @@
+"""Unit tests for the Bitbucket hosting service."""
+
 from __future__ import unicode_literals
 
 import json
@@ -29,8 +31,8 @@ class BitbucketTests(ServiceTests):
         self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
 
-    def test_personal_repo_field_values_git(self):
-        """Testing Bitbucket personal repository field values for Git"""
+    def test_get_repository_fields_with_git_and_personal_plan(self):
+        """Testing Bitbucket.get_repository_fields for Git and plan=personal"""
         fields = self._get_repository_fields(
             'Git',
             fields={
@@ -42,8 +44,10 @@ class BitbucketTests(ServiceTests):
         self.assertEqual(fields['mirror_path'],
                          'https://myuser@bitbucket.org/myuser/myrepo.git')
 
-    def test_personal_repo_field_values_mercurial(self):
-        """Testing Bitbucket personal repository field values for Mercurial"""
+    def test_get_repository_fields_with_mercurial_and_personal_plan(self):
+        """Testing Bitbucket.get_repository_fields for Mercurial and
+        plan=personal
+        """
         fields = self._get_repository_fields(
             'Mercurial',
             fields={
@@ -55,8 +59,8 @@ class BitbucketTests(ServiceTests):
         self.assertEqual(fields['mirror_path'],
                          'ssh://hg@bitbucket.org/myuser/myrepo')
 
-    def test_personal_bug_tracker_field(self):
-        """Testing Bitbucket personal bug tracker field values"""
+    def test_get_bug_tracker_field_with_personal_plan(self):
+        """Testing Bitbucket.get_bug_tracker_field with plan=personal"""
         self.assertTrue(self.service_class.get_bug_tracker_requires_username(
             plan='personal'))
         self.assertEqual(
@@ -68,8 +72,8 @@ class BitbucketTests(ServiceTests):
                 }),
             'https://bitbucket.org/myuser/myrepo/issue/%s/')
 
-    def test_personal_check_repository(self):
-        """Testing Bitbucket personal check_repository"""
+    def test_check_repository_with_personal_plan(self):
+        """Testing Bitbucket.check_repository with plan=personal"""
         def _http_get(service, url, *args, **kwargs):
             self.assertEqual(
                 url,
@@ -92,8 +96,8 @@ class BitbucketTests(ServiceTests):
                                  tool_name='Git')
         self.assertTrue(service.client.http_get.called)
 
-    def test_team_repo_field_values_git(self):
-        """Testing Bitbucket team repository field values for Git"""
+    def test_get_repository_fields_with_git_and_team_plan(self):
+        """Testing Bitbucket.get_repository_fields for Git and plan=team"""
         fields = self._get_repository_fields(
             'Git',
             fields={
@@ -106,8 +110,9 @@ class BitbucketTests(ServiceTests):
         self.assertEqual(fields['mirror_path'],
                          'https://myuser@bitbucket.org/myteam/myrepo.git')
 
-    def test_team_repo_field_values_mercurial(self):
-        """Testing Bitbucket team repository field values for Mercurial"""
+    def test_get_repository_fields_with_mercurial_and_team_plan(self):
+        """Testing Bitbucket.get_repository_fields for Mercurial and plan=team
+        """
         fields = self._get_repository_fields(
             'Mercurial',
             fields={
@@ -120,8 +125,8 @@ class BitbucketTests(ServiceTests):
         self.assertEqual(fields['mirror_path'],
                          'ssh://hg@bitbucket.org/myteam/myrepo')
 
-    def test_team_bug_tracker_field(self):
-        """Testing Bitbucket team bug tracker field values"""
+    def test_get_bug_tracker_field_with_team_plan(self):
+        """Testing Bitbucket.get_bug_tracker_field with plan=team"""
         self.assertFalse(self.service_class.get_bug_tracker_requires_username(
             plan='team'))
         self.assertEqual(
@@ -133,8 +138,8 @@ class BitbucketTests(ServiceTests):
                 }),
             'https://bitbucket.org/myteam/myrepo/issue/%s/')
 
-    def test_team_check_repository(self):
-        """Testing Bitbucket team check_repository"""
+    def test_check_repository_with_team_plan(self):
+        """Testing Bitbucket.check_repository with plan=team"""
         def _http_get(service, url, *args, **kwargs):
             self.assertEqual(
                 url,
@@ -159,8 +164,9 @@ class BitbucketTests(ServiceTests):
                                  plan='team')
         self.assertTrue(service.client.http_get.called)
 
-    def test_other_user_repo_field_values_git(self):
-        """Testing Bitbucket other-user repository field values for Git"""
+    def test_get_repository_fields_with_git_and_other_user_plan(self):
+        """Testing Bitbucket.get_repository_fields for Git and plan=other-user
+        """
         fields = self._get_repository_fields(
             'Git',
             fields={
@@ -173,8 +179,9 @@ class BitbucketTests(ServiceTests):
         self.assertEqual(fields['mirror_path'],
                          'https://myuser@bitbucket.org/someuser/myrepo.git')
 
-    def test_other_user_repo_field_values_mercurial(self):
-        """Testing Bitbucket other-user repository field values for Mercurial
+    def test_get_repository_fields_with_mercurial_and_other_user_plan(self):
+        """Testing Bitbucket.get_repository_fields for Mercurial and
+        plan=other-user
         """
         fields = self._get_repository_fields(
             'Mercurial',
@@ -188,8 +195,8 @@ class BitbucketTests(ServiceTests):
         self.assertEqual(fields['mirror_path'],
                          'ssh://hg@bitbucket.org/someuser/myrepo')
 
-    def test_other_user_bug_tracker_field(self):
-        """Testing Bitbucket other-user bug tracker field values"""
+    def test_get_bug_tracker_field_with_other_user_plan(self):
+        """Testing Bitbucket.get_bug_tracker_field with plan=other-user"""
         self.assertFalse(self.service_class.get_bug_tracker_requires_username(
             plan='other-user'))
         self.assertEqual(
@@ -201,8 +208,8 @@ class BitbucketTests(ServiceTests):
                 }),
             'https://bitbucket.org/someuser/myrepo/issue/%s/')
 
-    def test_other_user_check_repository(self):
-        """Testing Bitbucket other-user check_repository"""
+    def test_check_repository_with_other_user_plan(self):
+        """Testing Bitbucket.check_repository with plan=other-user"""
         def _http_get(service, url, *args, **kwargs):
             self.assertEqual(
                 url,
@@ -228,7 +235,7 @@ class BitbucketTests(ServiceTests):
         self.assertTrue(service.client.http_get.called)
 
     def test_check_repository_with_slash(self):
-        """Testing Bitbucket check_repository with /"""
+        """Testing Bitbucket.check_repository with /"""
         account = self._get_hosting_account()
         account.data['password'] = encrypt_password('abc123')
         service = account.service
@@ -242,7 +249,7 @@ class BitbucketTests(ServiceTests):
                 plan='team'))
 
     def test_check_repository_with_dot_git(self):
-        """Testing Bitbucket check_repository with .git"""
+        """Testing Bitbucket.check_repository with .git"""
         account = self._get_hosting_account()
         account.data['password'] = encrypt_password('abc123')
         service = account.service
@@ -256,7 +263,7 @@ class BitbucketTests(ServiceTests):
                 plan='team'))
 
     def test_check_repository_with_type_mismatch(self):
-        """Testing Bitbucket check_repository with type mismatch"""
+        """Testing Bitbucket.check_repository with type mismatch"""
         error_message = (
             'The Bitbucket repository being configured does not match the '
             'type of repository you have selected.'
@@ -299,7 +306,7 @@ class BitbucketTests(ServiceTests):
                 tool_name='Git')
 
     def test_authorize(self):
-        """Testing Bitbucket authorization"""
+        """Testing Bitbucket.authorize"""
         def _http_get(self, *args, **kwargs):
             return '{}', {}
 
@@ -317,7 +324,7 @@ class BitbucketTests(ServiceTests):
         self.assertTrue(service.is_authorized())
 
     def test_authorize_with_bad_credentials(self):
-        """Testing Bitbucket authorization with bad credentials"""
+        """Testing Bitbucket.authorize with bad credentials"""
         def _http_get(service, url, *args, **kwargs):
             raise HTTPError(url, 401, '', {}, StringIO(''))
 
@@ -340,7 +347,7 @@ class BitbucketTests(ServiceTests):
         self.assertFalse(service.is_authorized())
 
     def test_authorize_with_403(self):
-        """Testing Bitbucket authorization with HTTP 403 result"""
+        """Testing Bitbucket.authorize with HTTP 403 result"""
         def _http_get(service, url, *args, **kwargs):
             raise HTTPError(url, 403, '', {}, StringIO(''))
 
@@ -363,7 +370,7 @@ class BitbucketTests(ServiceTests):
         self.assertFalse(service.is_authorized())
 
     def test_get_file_with_mercurial_and_base_commit_id(self):
-        """Testing Bitbucket get_file with Mercurial and base commit ID"""
+        """Testing Bitbucket.get_file with Mercurial and base commit ID"""
         self._test_get_file(
             tool_name='Mercurial',
             revision='123',
@@ -371,7 +378,7 @@ class BitbucketTests(ServiceTests):
             expected_revision='456')
 
     def test_get_file_with_mercurial_and_revision(self):
-        """Testing Bitbucket get_file with Mercurial and revision"""
+        """Testing Bitbucket.get_file with Mercurial and revision"""
         self._test_get_file(
             tool_name='Mercurial',
             revision='123',
@@ -379,7 +386,7 @@ class BitbucketTests(ServiceTests):
             expected_revision='123')
 
     def test_get_file_with_git_and_base_commit_id(self):
-        """Testing Bitbucket get_file with Git and base commit ID"""
+        """Testing Bitbucket.get_file with Git and base commit ID"""
         self._test_get_file(
             tool_name='Git',
             revision='123',
@@ -387,7 +394,7 @@ class BitbucketTests(ServiceTests):
             expected_revision='456')
 
     def test_get_file_with_git_and_revision(self):
-        """Testing Bitbucket get_file with Git and revision"""
+        """Testing Bitbucket.get_file with Git and revision"""
         self.assertRaises(
             FileNotFoundError,
             self._test_get_file,
@@ -397,7 +404,7 @@ class BitbucketTests(ServiceTests):
             expected_revision='123')
 
     def test_get_file_exists_with_mercurial_and_base_commit_id(self):
-        """Testing Bitbucket get_file_exists with Mercurial and base commit ID
+        """Testing Bitbucket.get_file_exists with Mercurial and base commit ID
         """
         self._test_get_file_exists(
             tool_name='Mercurial',
@@ -407,7 +414,7 @@ class BitbucketTests(ServiceTests):
             expected_found=True)
 
     def test_get_file_exists_with_mercurial_and_revision(self):
-        """Testing Bitbucket get_file_exists with Mercurial and revision"""
+        """Testing Bitbucket.get_file_exists with Mercurial and revision"""
         self._test_get_file_exists(
             tool_name='Mercurial',
             revision='123',
@@ -416,7 +423,7 @@ class BitbucketTests(ServiceTests):
             expected_found=True)
 
     def test_get_file_exists_with_git_and_base_commit_id(self):
-        """Testing Bitbucket get_file_exists with Git and base commit ID"""
+        """Testing Bitbucket.get_file_exists with Git and base commit ID"""
         self._test_get_file_exists(
             tool_name='Git',
             revision='123',
@@ -425,7 +432,7 @@ class BitbucketTests(ServiceTests):
             expected_found=True)
 
     def test_get_file_exists_with_git_and_revision(self):
-        """Testing Bitbucket get_file_exists with Git and revision"""
+        """Testing Bitbucket.get_file_exists with Git and revision"""
         self._test_get_file_exists(
             tool_name='Git',
             revision='123',
@@ -435,7 +442,7 @@ class BitbucketTests(ServiceTests):
             expected_http_called=False)
 
     def test_get_file_exists_with_git_and_404(self):
-        """Testing BitBucket get_file_exists with Git and a 404 error"""
+        """Testing BitBucket.get_file_exists with Git and a 404 error"""
         self._test_get_file_exists(
             tool_name='Git',
             revision='123',
@@ -444,7 +451,7 @@ class BitbucketTests(ServiceTests):
             expected_found=False)
 
     def test_get_branches(self):
-        """Testing Bitbucket get_branches"""
+        """Testing Bitbucket.get_branches"""
         branches_api_response_1 = json.dumps({
             'next': ('https://bitbucket.org/api/2.0/repositories/myuser/'
                      'myrepo/refs/branches?pagelen=100&page=2&'
@@ -564,7 +571,7 @@ class BitbucketTests(ServiceTests):
         self.assertFalse(branch.default)
 
     def test_get_commits(self):
-        """Testing Bitbucket get_commits"""
+        """Testing Bitbucket.get_commits"""
         commits_api_response = json.dumps({
             'values': [
                 {
@@ -649,7 +656,7 @@ class BitbucketTests(ServiceTests):
         self.assertIsNone(commit.diff)
 
     def test_get_change(self):
-        """Testing BitBucket get_change"""
+        """Testing BitBucket.get_change"""
         commit_sha = '1c44b461cebe5874a857c51a4a13a849a4d1e52d'
         parent_sha = '44568f7d33647d286691517e6325fea5c7a21d5e'
 
@@ -801,6 +808,15 @@ class BitbucketTests(ServiceTests):
         self.assertEqual(review_request.changedescs.count(), 0)
 
     def _test_post_commit_hook(self, local_site=None):
+        """Testing posting to a commit hook.
+
+        This will simulate pushing a commit and posting the resulting webhook
+        payload from Bitbucket to the handler for the hook.
+
+        Args:
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The Local Site owning the review request.
+        """
         account = self._get_hosting_account(local_site=local_site)
         account.save()
 
@@ -833,6 +849,20 @@ class BitbucketTests(ServiceTests):
         self.assertEqual(changedesc.text, 'Pushed to master (1c44b46)')
 
     def _post_commit_hook_payload(self, url, review_request):
+        """Post a payload for a hook for testing.
+
+        Args:
+            url (unicode):
+                The URL to post to.
+
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request being represented in the payload.
+
+        Results:
+            django.core.handlers.request.wsgi.WSGIRequest:
+            The post request.
+        """
         return self.client.post(
             url,
             data={
@@ -855,6 +885,21 @@ class BitbucketTests(ServiceTests):
 
     def _test_get_file(self, tool_name, revision, base_commit_id,
                        expected_revision):
+        """Test file fetching.
+
+        Args:
+            tool_name (unicode):
+                The name of the SCM Tool to test with.
+
+            revision (unicode, optional):
+                The revision to check.
+
+            base_commit_id (unicode, optional):
+                The base commit to fetch against.
+
+            expected_revision (unicode, optional):
+                The revision expected in the payload.
+        """
         def _http_get(service, url, *args, **kwargs):
             self.assertEqual(
                 url,
@@ -883,6 +928,27 @@ class BitbucketTests(ServiceTests):
     def _test_get_file_exists(self, tool_name, revision, base_commit_id,
                               expected_revision, expected_found,
                               expected_http_called=True):
+        """Test file existence checks.
+
+        Args:
+            tool_name (unicode):
+                The name of the SCM Tool to test with.
+
+            revision (unicode, optional):
+                The revision to check.
+
+            base_commit_id (unicode, optional):
+                The base commit to fetch against.
+
+            expected_revision (unicode, optional):
+                The revision expected in the payload.
+
+            expected_found (bool, optional):
+                Whether a truthy response should be expected.
+
+            expected_http_called (bool, optional):
+                Whether an HTTP request is expected to have been made.
+        """
         def _http_get(service, url, *args, **kwargs):
             self.assertEqual(
                 url,

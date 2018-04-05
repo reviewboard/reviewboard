@@ -1,3 +1,5 @@
+"""Unit tests for the Gitorious hosting service."""
+
 from __future__ import unicode_literals
 
 from reviewboard.hostingsvcs.tests.testcases import ServiceTests
@@ -9,13 +11,13 @@ class GitoriousTests(ServiceTests):
     service_name = 'gitorious'
 
     def test_service_support(self):
-        """Testing the Gitorious service support capabilities"""
+        """Testing Gitorious service support capabilities"""
         self.assertFalse(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
         self.assertTrue(self.service_class.self_hosted)
 
-    def test_repo_field_values(self):
-        """Testing the Gitorious repository field values"""
+    def test_get_repository_fields(self):
+        """Testing Gitorious.get_repository_fields"""
         fields = self._get_repository_fields('Git', fields={
             'gitorious_project_name': 'myproj',
             'gitorious_repo_name': 'myrepo',

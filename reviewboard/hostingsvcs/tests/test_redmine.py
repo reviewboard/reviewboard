@@ -1,3 +1,5 @@
+"""Unit tests for the Redmine hosting service."""
+
 from __future__ import unicode_literals
 
 from reviewboard.hostingsvcs.tests.testcases import ServiceTests
@@ -10,12 +12,12 @@ class RedmineTests(ServiceTests):
     fixtures = ['test_scmtools']
 
     def test_service_support(self):
-        """Testing the Redmine service support capabilities"""
+        """Testing Redmine service support capabilities"""
         self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertFalse(self.service_class.supports_repositories)
 
-    def test_bug_tracker_field(self):
-        """Testing the Redmine bug tracker field value"""
+    def test_get_bug_tracker_field(self):
+        """Testing Redmine.get_bug_tracker_field"""
         self.assertFalse(
             self.service_class.get_bug_tracker_requires_username())
         self.assertEqual(

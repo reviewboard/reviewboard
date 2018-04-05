@@ -1,3 +1,5 @@
+"""Unit tests for the GitLab hosting service."""
+
 from __future__ import unicode_literals
 
 import json
@@ -50,13 +52,13 @@ class GitLabTests(ServiceTests):
     service_name = 'gitlab'
 
     def test_service_support(self):
-        """Testing the GitLab service support capabilities"""
+        """Testing GitLab service support capabilities"""
         self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
         self.assertFalse(self.service_class.supports_ssh_key_association)
 
-    def test_personal_field_values(self):
-        """Testing the GitLab personal plan repository field values"""
+    def test_get_repository_fields_with_personal_plan(self):
+        """Testing GitLab.get_repository_fields with plan=personal"""
         fields = self._get_repository_fields('Git', plan='personal', fields={
             'hosting_url': 'https://example.com',
             'gitlab_personal_repo_name': 'myrepo',
@@ -66,8 +68,8 @@ class GitLabTests(ServiceTests):
         self.assertEqual(fields['mirror_path'],
                          'https://example.com/myuser/myrepo.git')
 
-    def test_personal_bug_tracker_field(self):
-        """Testing the GitLab personal repository bug tracker field value"""
+    def test_get_bug_tracker_field_with_personal_plan(self):
+        """Testing GitLab.get_repository_fields with plan=personal"""
         self.assertTrue(
             self.service_class.get_bug_tracker_requires_username('personal'))
         self.assertEqual(
@@ -78,8 +80,8 @@ class GitLabTests(ServiceTests):
             }),
             'https://example.com/myuser/myrepo/issues/%s')
 
-    def test_group_field_values(self):
-        """Testing the GitLab group plan repository field values"""
+    def test_get_repository_fields_with_group_plan(self):
+        """Testing GitLab.get_repository_fields with plan=group"""
         fields = self._get_repository_fields('Git', plan='group', fields={
             'hosting_url': 'https://example.com',
             'gitlab_group_repo_name': 'myrepo',
@@ -90,8 +92,8 @@ class GitLabTests(ServiceTests):
         self.assertEqual(fields['mirror_path'],
                          'https://example.com/mygroup/myrepo.git')
 
-    def test_group_bug_tracker_field(self):
-        """Testing the GitLab group repository bug tracker field value"""
+    def test_get_bug_tracker_field_with_group_plan(self):
+        """Testing GitLab.get_bug_tracker_field with plan=group"""
         self.assertFalse(
             self.service_class.get_bug_tracker_requires_username('group'))
         self.assertEqual(
@@ -103,31 +105,31 @@ class GitLabTests(ServiceTests):
             'https://example.com/mygroup/myrepo/issues/%s')
 
     def test_check_repository_personal_v3(self):
-        """Testing GitLab check_repository with personal repository (API v3)"""
+        """Testing GitLab.check_repository with personal repository (API v3)"""
         self._test_check_repository_v3(plan='personal',
                                        gitlab_personal_repo_name='myrepo')
 
     def test_check_repository_personal_v4(self):
-        """Testing GitLab check_repository with personal repository (API v4)"""
+        """Testing GitLab.check_repository with personal repository (API v4)"""
         self._test_check_repository_v4(plan='personal',
                                        gitlab_personal_repo_name='myrepo')
 
     def test_check_repository_group_v3(self):
-        """Testing GitLab check_repository with group repository (API v3)"""
+        """Testing GitLab.check_repository with group repository (API v3)"""
         self._test_check_repository_v3(plan='group',
                                        gitlab_group_name='mygroup',
                                        gitlab_group_repo_name='myrepo',
                                        expected_user='mygroup')
 
     def test_check_repository_group_v4(self):
-        """Testing GitLab check_repository with group repository (API v4)"""
+        """Testing GitLab.check_repository with group repository (API v4)"""
         self._test_check_repository_v4(plan='group',
                                        gitlab_group_name='mygroup',
                                        gitlab_group_repo_name='myrepo',
                                        expected_user='mygroup')
 
     def test_check_repository_personal_not_found_v4(self):
-        """Testing GitLab check_repository with not found error and personal
+        """Testing GitLab.check_repository with not found error and personal
         repository (API v4)
         """
         self._test_check_repository_error_v4(
@@ -137,7 +139,7 @@ class GitLabTests(ServiceTests):
                            'or your user may not own it.')
 
     def test_check_repository_group_repo_not_found_v4(self):
-        """Testing GitLab check_repository with not found error and
+        """Testing GitLab.check_repository with not found error and
         group repository (API v4)
         """
         self._test_check_repository_error_v4(
@@ -148,7 +150,7 @@ class GitLabTests(ServiceTests):
                            'or your user may not own it.')
 
     def test_check_repository_personal_not_found_v3(self):
-        """Testing GitLab check_repository with not found error and personal
+        """Testing GitLab.check_repository with not found error and personal
         repository (API v3)
         """
         self._test_check_repository_error_v3(
@@ -158,7 +160,7 @@ class GitLabTests(ServiceTests):
                            'or your user may not own it.')
 
     def test_check_repository_group_repo_not_found_v3(self):
-        """Testing GitLab check_repository with not found error and
+        """Testing GitLab.check_repository with not found error and
         group repository (API v3)
         """
         self._test_check_repository_error_v3(
@@ -170,7 +172,7 @@ class GitLabTests(ServiceTests):
                            'to it.')
 
     def test_check_repository_group_not_found_v3(self):
-        """Testing GitLab check_repository with an incorrect group name (API
+        """Testing GitLab.check_repository with an incorrect group name (API
         v3)
         """
         self._test_check_repository_error_v3(
@@ -180,10 +182,8 @@ class GitLabTests(ServiceTests):
             expected_error='A group with this name was not found, or your '
                            'user may not have access to it.')
 
-    def test_authorization_v4(self):
-        """Testing that GitLab APIv4 account authorization sends expected
-        data
-        """
+    def test_authorize_v4(self):
+        """Testing GitLab.authorize (API v4)"""
         def _urlopen(url, *args, **kwargs):
             return FakeResponse(url, '{}', {})
 
@@ -211,10 +211,8 @@ class GitLabTests(ServiceTests):
         self.assertEqual(request.headers, {'Private-token': 'foobarbaz'})
         self.assertIsNone(request.data)
 
-    def test_authorization_v3(self):
-        """Testing that GitLab APIv3 account authorization sends expected
-        data
-        """
+    def test_authorize_v3(self):
+        """Testing GitLab.authorize (API v3)"""
         def _urlopen(url, *args, **kwargs):
             if 'api/v4' in url._Request__original:
                 raise HTTPError
@@ -245,7 +243,7 @@ class GitLabTests(ServiceTests):
         self.assertIsNone(request.data)
 
     def test_get_branches(self):
-        """Testing GitLab get_branches implementation"""
+        """Testing GitLab.get_branches"""
         branches_api_response = json.dumps([
             {
                 'name': 'master',
@@ -305,7 +303,7 @@ class GitLabTests(ServiceTests):
             ])
 
     def test_get_commits(self):
-        """Testing GitLab get_commits implementation"""
+        """Testing GitLab.get_commits"""
         commits_api_response = json.dumps([
             {
                 'id': 'ed899a2f4b50b4370feeea94676502b42383c746',
@@ -354,7 +352,7 @@ class GitLabTests(ServiceTests):
         self.assertEqual(commits[2].author_name, 'East Coast')
 
     def test_get_change(self):
-        """Testing GitLab get_change implementation"""
+        """Testing GitLab.get_change"""
         commit_id = 'ed899a2f4b50b4370feeea94676502b42383c746'
         commit_rsp = json.dumps({
             'author_name': 'Chester Li',
@@ -756,6 +754,17 @@ class GitLabTests(ServiceTests):
         self.assertEqual(len(commits), 3)
 
     def _test_check_repository_v4(self, expected_user='myuser', **kwargs):
+        """Test checking for a repository using API v4.
+
+        Args:
+            expected_owner (unicode):
+                The expected user/group name owning the repository.
+
+            **kwargs (dict):
+                Keyword arguments to pass to
+                :py:meth:`check_repository()
+                <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
+        """
         def _http_get(service, url, *args, **kwargs):
             if url == 'https://example.com/api/v4/projects/mygroup%2Fmyrepo':
                 # We don't care about the contents. Just that it exists.
@@ -769,6 +778,17 @@ class GitLabTests(ServiceTests):
             return json.dumps(payload), {}
 
     def _test_check_repository_v3(self, expected_user='myuser', **kwargs):
+        """Test checking for a repository using API v3.
+
+        Args:
+            expected_owner (unicode):
+                The expected user/group name owning the repository.
+
+            **kwargs (dict):
+                Keyword arguments to pass to
+                :py:meth:`check_repository()
+                <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
+        """
         def _http_get(service, url, *args, **kwargs):
             if url.startswith('https://example.com/api/v3/projects?per_page='):
                 payload = [
@@ -815,6 +835,17 @@ class GitLabTests(ServiceTests):
         self.assertTrue(service.client.http_get.called)
 
     def _test_check_repository_error_v4(self, expected_error, **kwargs):
+        """Test error conditions when checking for a repository using API v4.
+
+        Args:
+            expected_error (unicode):
+                The expected error message from a raised exception.
+
+            **kwargs (dict):
+                Keyword arguments to pass to
+                :py:meth:`check_repository()
+                <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
+        """
         def _http_get(service, url, *args, **kwargs):
             error = HTTPError(url, 404, '', {}, StringIO())
 
@@ -836,6 +867,17 @@ class GitLabTests(ServiceTests):
             service.check_repository(**kwargs)
 
     def _test_check_repository_error_v3(self, expected_error, **kwargs):
+        """Test error conditions when checking for a repository using API v3.
+
+        Args:
+            expected_error (unicode):
+                The expected error message from a raised exception.
+
+            **kwargs (dict):
+                Keyword arguments to pass to
+                :py:meth:`check_repository()
+                <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
+        """
         def _http_get(service, url, *args, **kwargs):
             if url == 'https://example.com/api/v3/groups?per_page=100':
                 payload = [

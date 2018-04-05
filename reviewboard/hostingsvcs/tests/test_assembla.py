@@ -1,3 +1,5 @@
+"""Unit tests for the Assembla hosting service."""
+
 from __future__ import unicode_literals
 
 import nose
@@ -21,8 +23,8 @@ class AssemblaTests(ServiceTests):
         self.assertEqual(self.service_class.supported_scmtools,
                          ['Perforce', 'Subversion'])
 
-    def test_repo_field_values_perforce(self):
-        """Testing Assembla repository field values for Perforce"""
+    def test_get_repository_fields_with_perforce(self):
+        """Testing Assembla.get_repository_fields for Perforce"""
         fields = self._get_repository_fields('Perforce', fields={
             'assembla_project_id': 'myproject',
         })
@@ -31,8 +33,8 @@ class AssemblaTests(ServiceTests):
         self.assertIn('encoding', fields)
         self.assertEqual(fields['encoding'], 'utf8')
 
-    def test_repo_field_values_subversion(self):
-        """Testing Assembla repository field values for Subversion"""
+    def test_get_repository_fields_with_subversion(self):
+        """Testing Assembla.get_repository_fields for Subversion"""
         fields = self._get_repository_fields('Subversion', fields={
             'assembla_project_id': 'myproject',
             'assembla_repo_name': 'myrepo',
@@ -43,7 +45,7 @@ class AssemblaTests(ServiceTests):
         self.assertNotIn('encoding', fields)
 
     def test_save_form_perforce(self):
-        """Testing Assembla configuration form with Perforce"""
+        """Testing AssemblaForm with Perforce"""
         try:
             account = self._get_hosting_account()
             service = account.service
@@ -69,9 +71,7 @@ class AssemblaTests(ServiceTests):
             raise nose.SkipTest
 
     def test_save_form_perforce_with_portfolio(self):
-        """Testing Assembla configuration form with Perforce with Assembla
-        portfolio IDs
-        """
+        """Testing AssemblaForm with Perforce and Assembla portfolio IDs"""
         try:
             account = self._get_hosting_account()
             service = account.service
@@ -100,7 +100,7 @@ class AssemblaTests(ServiceTests):
             raise nose.SkipTest
 
     def test_save_form_subversion(self):
-        """Testing Assembla configuration form with Subversion"""
+        """Testing AssemblaForm with Subversion"""
         try:
             account = self._get_hosting_account()
             service = account.service
@@ -119,7 +119,7 @@ class AssemblaTests(ServiceTests):
             raise nose.SkipTest
 
     def test_authorize(self):
-        """Testing Assembla authorization password storage"""
+        """Testing Assembla.authorize"""
         account = self._get_hosting_account()
         service = account.service
 
@@ -132,7 +132,7 @@ class AssemblaTests(ServiceTests):
         self.assertTrue(service.is_authorized())
 
     def test_check_repository_perforce(self):
-        """Testing Assembla check_repository with Perforce"""
+        """Testing Assembla.check_repository with Perforce"""
         try:
             account = self._get_hosting_account()
             service = account.service
@@ -160,7 +160,7 @@ class AssemblaTests(ServiceTests):
             raise nose.SkipTest
 
     def test_check_repository_subversion(self):
-        """Testing Assembla check_repository with Subversion"""
+        """Testing Assembla.check_repository with Subversion"""
         try:
             account = self._get_hosting_account()
             service = account.service

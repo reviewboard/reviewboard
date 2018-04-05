@@ -32,7 +32,7 @@ class ReviewBoardGatewayTests(ServiceTests):
         self.assertEqual(fields['path'],
                          'https://example.com/repos/myrepo/path')
 
-    def test_authorization(self):
+    def test_authorize(self):
         """Testing ReviewBoardGateway.authorize"""
         def _http_request(client, *args, **kwargs):
             return b'{"private_token": "abc123"}', {}

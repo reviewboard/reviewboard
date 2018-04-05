@@ -1,4 +1,4 @@
-"""Tests for the Gerrit hosting service."""
+"""Unit tests for the Gerrit hosting service."""
 
 from __future__ import unicode_literals
 
@@ -21,12 +21,12 @@ from reviewboard.scmtools.models import Repository
 
 
 class GerritTests(ServiceTests):
-    """Tests for the Gerrit hosting service."""
+    """Unit tests for the Gerrit hosting service."""
 
     service_name = 'gerrit'
 
     def test_service_support(self):
-        """Testing the Gerrit service support capabilities"""
+        """Testing Gerrit service support capabilities"""
         self.assertFalse(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
         self.assertFalse(self.service_class.supports_ssh_key_association)
@@ -78,7 +78,7 @@ class GerritTests(ServiceTests):
         self.assertTrue(self.account.data['authorized'])
 
     def test_get_branches(self):
-        """Testing Gerrit.get_branches parses branches correctly"""
+        """Testing Gerrit.get_branches"""
         self._setup_api_test()
 
         def _http_get(*args, **kwargs):
@@ -120,7 +120,7 @@ class GerritTests(ServiceTests):
         )
 
     def test_get_commits(self):
-        """Testing Gerrit.get_commits parses commits correctly"""
+        """Testing Gerrit.get_commits"""
         self._setup_api_test()
 
         def _http_get(*args, **kwargs):
