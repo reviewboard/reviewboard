@@ -302,6 +302,7 @@ def prepare_reply_published_mail(user, reply, review, review_request):
         'user': reply.user,
         'review': review,
         'reply': reply,
+        'site_url': _get_server_base_url(),
     }
 
     extra_context['comment_entries'] = build_diff_comment_fragments(
@@ -360,6 +361,7 @@ def prepare_review_published_mail(user, review, review_request, request,
         'review': review,
         'has_issues': has_issues,
         'request': request,
+        'site_url': _get_server_base_url(),
     }
 
     extra_headers = {}

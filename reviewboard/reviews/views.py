@@ -16,7 +16,7 @@ from django.http import (Http404,
                          HttpResponseBadRequest,
                          HttpResponseNotFound)
 from django.shortcuts import get_object_or_404, get_list_or_404, render
-from django.template.context import RequestContext
+from django.template.context import Context, RequestContext
 from django.template.defaultfilters import date
 from django.template.loader import render_to_string
 from django.utils import six, timezone
@@ -388,7 +388,7 @@ def build_diff_comment_fragments(
                                                    first_line,
                                                    num_lines))
 
-            content = render_to_string(comment_template_name, {
+            comment_context = Context({
                 'comment': comment,
                 'header': get_last_header_before_line(context,
                                                       comment.filediff,
@@ -405,6 +405,8 @@ def build_diff_comment_fragments(
                 'lines_below': max_line - last_line,
                 'first_line': first_line,
             })
+            comment_context.update(context)
+            content = render_to_string(comment_template_name, comment_context)
         except Exception as e:
             content = exception_traceback_string(
                 None, e, error_template_name, {
