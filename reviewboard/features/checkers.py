@@ -23,6 +23,13 @@ class RBFeatureChecker(SiteConfigFeatureChecker):
     def is_feature_enabled(self, feature_id, **kwargs):
         """Return whether a feature is enabled for a given ID.
 
+        Features are strictly additive. That is, if a feature is enabled
+        globally (e.g., via
+        :py:class:`~djblets.siteconfig.models.SiteConfiguration` or via
+        :file:`settings_local.py`), disabling it for a
+        :py:class:`~reviewboard.site.models.LocalSite` will still result in the
+        feature being available (i.e., this function will return ``True``).
+
         Args:
             feature_id (unicode):
                 The unique identifier of the feature whose status is to be
@@ -53,16 +60,22 @@ class RBFeatureChecker(SiteConfigFeatureChecker):
         local_site = kwargs.get('local_site')
         request = kwargs.get('request')
 
-        if (local_site is None and
-            request is not None and
-            hasattr(request, 'local_site')):
-            local_site = request.local_site
+        local_sites = []
 
-        if local_site and local_site.extra_data:
-            try:
-                return local_site.extra_data[self.EXTRA_DATA_KEY][feature_id]
-            except KeyError:
-                pass
+        if local_site:
+            local_sites.append(local_site)
+        elif request is not None:
+            if getattr(request, 'local_site', None):
+                local_sites.append(request.local_site)
+
+            if request.user.is_authenticated():
+                local_sites.extend(request.user.local_site.all())
+
+        for local_site in local_sites:
+            if (local_site.extra_data and
+                local_site.extra_data.get(self.EXTRA_DATA_KEY,
+                                          {}).get(feature_id)):
+                return True
 
         return super(RBFeatureChecker, self).is_feature_enabled(feature_id,
                                                                 **kwargs)

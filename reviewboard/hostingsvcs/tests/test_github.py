@@ -13,7 +13,7 @@ from django.utils.six.moves.urllib.error import HTTPError
 from django.utils.six.moves.urllib.parse import urlparse
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.scmtools.core import Branch
+from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.hostingsvcs.errors import RepositoryError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.repository import RemoteRepository
@@ -25,10 +25,14 @@ from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
-class GitHubTests(ServiceTests):
-    """Unit tests for the GitHub hosting service."""
+class GitHubTestCase(ServiceTests):
+    """Base class for GitHub test suites."""
 
     service_name = 'github'
+
+
+class GitHubTests(GitHubTestCase):
+    """Unit tests for the GitHub hosting service."""
 
     def test_service_support(self):
         """Testing GitHub service support capabilities"""
@@ -38,40 +42,65 @@ class GitHubTests(ServiceTests):
 
     def test_get_repository_fields_with_public_plan(self):
         """Testing GitHub.get_repository_fields with the public plan"""
-        fields = self._get_repository_fields('Git', plan='public', fields={
-            'github_public_repo_name': 'myrepo',
-        })
-        self.assertEqual(fields['path'], 'git://github.com/myuser/myrepo.git')
-        self.assertEqual(fields['mirror_path'],
-                         'git@github.com:myuser/myrepo.git')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                plan='public',
+                fields={
+                    'github_public_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'git://github.com/myuser/myrepo.git',
+                'mirror_path': 'git@github.com:myuser/myrepo.git',
+            })
 
     def test_get_repository_fields_with_public_org_plan(self):
         """Testing GitHub.get_repository_fields with the public-org plan"""
-        fields = self._get_repository_fields('Git', plan='public-org', fields={
-            'github_public_org_repo_name': 'myrepo',
-            'github_public_org_name': 'myorg',
-        })
-        self.assertEqual(fields['path'], 'git://github.com/myorg/myrepo.git')
-        self.assertEqual(fields['mirror_path'],
-                         'git@github.com:myorg/myrepo.git')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                plan='public-org',
+                fields={
+                    'github_public_org_repo_name': 'myrepo',
+                    'github_public_org_name': 'myorg',
+                }
+            ),
+            {
+                'path': 'git://github.com/myorg/myrepo.git',
+                'mirror_path': 'git@github.com:myorg/myrepo.git',
+            })
 
     def test_get_repository_fields_with_private_plan(self):
         """Testing GitHub.get_repository_fields with the private plan"""
-        fields = self._get_repository_fields('Git', plan='private', fields={
-            'github_private_repo_name': 'myrepo',
-        })
-        self.assertEqual(fields['path'], 'git@github.com:myuser/myrepo.git')
-        self.assertEqual(fields['mirror_path'], '')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                plan='private',
+                fields={
+                    'github_private_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'git@github.com:myuser/myrepo.git',
+                'mirror_path': '',
+            })
 
     def test_get_repository_fields_with_private_org_plan(self):
         """Testing GitHub.get_repository_fields with the private-org plan"""
-        fields = self._get_repository_fields(
-            'Git', plan='private-org', fields={
-                'github_private_org_repo_name': 'myrepo',
-                'github_private_org_name': 'myorg',
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                plan='private-org',
+                fields={
+                    'github_private_org_repo_name': 'myrepo',
+                    'github_private_org_name': 'myorg',
+                }
+            ),
+            {
+                'path': 'git@github.com:myorg/myrepo.git',
+                'mirror_path': '',
             })
-        self.assertEqual(fields['path'], 'git@github.com:myorg/myrepo.git')
-        self.assertEqual(fields['mirror_path'], '')
 
     def test_get_repo_api_url_with_public_plan(self):
         """Testing GitHub._get_repo_api_url with the public plan"""
@@ -528,31 +557,30 @@ class GitHubTests(ServiceTests):
             body=None,
             headers=None))
 
-        self.assertEqual(len(commits), 3)
+        self.assertEqual(
+            commits,
+            [
+                Commit(author_name='Christian Hammond',
+                       date='2013-06-25T23:31:22Z',
+                       id='859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817',
+                       message=('Fixed the bug number for the '
+                                'blacktriangledown bug.'),
+                       parent='92463764015ef463b4b6d1a1825fee7aeec8cb15'),
+                Commit(author_name='Christian Hammond',
+                       date='2013-06-25T23:30:59Z',
+                       id='92463764015ef463b4b6d1a1825fee7aeec8cb15',
+                       message="Merge branch 'release-1.7.x'",
+                       parent='f5a35f1d8a8dcefb336a8e3211334f1f50ea7792'),
+                Commit(author_name='David Trowbridge',
+                       date='2013-06-25T22:41:09Z',
+                       id='f5a35f1d8a8dcefb336a8e3211334f1f50ea7792',
+                       message=('Add DIFF_PARSE_ERROR to the '
+                                'ValidateDiffResource.create error list.'),
+                       parent=''),
+            ])
 
-        commit = commits[0]
-        self.assertEqual(commit.author_name, 'Christian Hammond')
-        self.assertEqual(commit.date, '2013-06-25T23:31:22Z')
-        self.assertEqual(commit.id, '859d4e148ce3ce60bbda6622cdbe5c2c2f8d9817')
-        self.assertEqual(commit.message,
-                         'Fixed the bug number for the blacktriangledown bug.')
-        self.assertEqual(commit.parent, commits[1].id)
-
-        commit = commits[1]
-        self.assertEqual(commit.author_name, 'Christian Hammond')
-        self.assertEqual(commit.date, '2013-06-25T23:30:59Z')
-        self.assertEqual(commit.id, '92463764015ef463b4b6d1a1825fee7aeec8cb15')
-        self.assertEqual(commit.message, "Merge branch 'release-1.7.x'")
-        self.assertEqual(commit.parent, commits[2].id)
-
-        commit = commits[2]
-        self.assertEqual(commit.author_name, 'David Trowbridge')
-        self.assertEqual(commit.date, '2013-06-25T22:41:09Z')
-        self.assertEqual(commit.id, 'f5a35f1d8a8dcefb336a8e3211334f1f50ea7792')
-        self.assertEqual(commit.message,
-                         'Add DIFF_PARSE_ERROR to the '
-                         'ValidateDiffResource.create error list.')
-        self.assertEqual(commit.parent, '')
+        for commit in commits:
+            self.assertIsNone(commit.diff)
 
     def test_get_change(self):
         """Testing GitHub.get_change"""
@@ -723,13 +751,13 @@ class GitHubTests(ServiceTests):
             body=None,
             headers=None))
 
-        self.assertEqual(change.author_name, 'David Trowbridge')
-        self.assertEqual(change.date, '2013-06-25T23:31:22Z')
-        self.assertEqual(change.id, '1c44b461cebe5874a857c51a4a13a849a4d1e52d')
-        self.assertEqual(change.message, 'Move .clearfix to defs.less')
-        self.assertEqual(change.parent,
-                         '44568f7d33647d286691517e6325fea5c7a21d5e')
-        self.assertIsInstance(change.diff, bytes)
+        self.assertEqual(
+            change,
+            Commit(author_name='David Trowbridge',
+                   date='2013-06-25T23:31:22Z',
+                   id='1c44b461cebe5874a857c51a4a13a849a4d1e52d',
+                   message='Move .clearfix to defs.less',
+                   parent='44568f7d33647d286691517e6325fea5c7a21d5e'))
         self.assertEqual(
             change.diff,
             b'diff --git a/reviewboard/static/rb/css/defs.less'
@@ -1169,12 +1197,133 @@ class GitHubTests(ServiceTests):
             body=None,
             headers=None))
 
-    @add_fixtures(['test_users', 'test_scmtools'])
+    def _test_check_repository(self, expected_owner='myuser', **kwargs):
+        """Test checking for a repository.
+
+        Args:
+            expected_owner (unicode):
+                The expected owner of the repository.
+
+            **kwargs (dict):
+                Keyword arguments to pass to
+                :py:meth:`check_repository()
+                <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
+        """
+        def _http_request(client, url, *args, **kwargs):
+            return b'{}', {}
+
+        account = self._get_hosting_account()
+        service = account.service
+        client = service.client
+
+        account.data['authorization'] = {
+            'token': '123',
+        }
+
+        self.spy_on(service.client.http_request, call_fake=_http_request)
+
+        service.check_repository(**kwargs)
+
+        calls = client.http_request.calls
+        self.assertEqual(len(calls), 1)
+        self.assertTrue(calls[0].called_with(
+            url=('https://api.github.com/repos/%s/myrepo?access_token=123'
+                 % expected_owner),
+            method='GET',
+            username=None,
+            password=None,
+            body=None,
+            headers=None))
+
+    def _test_check_repository_error(self, http_status, payload, expected_url,
+                                     expected_error, **kwargs):
+        """Test error conditions when checking for a repository.
+
+        Args:
+            http_status (int):
+                The HTTP status to simulate returning.
+
+            payload (bytes):
+                The payload to return, if ``http_status`` is 200.
+
+            expected_url (unicode):
+                The expected URL accessed (minus any query strings).
+
+            expected_error (unicode):
+                The expected error message from a raised exception.
+
+            **kwargs (dict):
+                Keyword arguments to pass to
+                :py:meth:`check_repository()
+                <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
+        """
+        def _http_request(client, url, *args, **kwargs):
+            if http_status == 200:
+                return payload, {}
+
+            raise HTTPError(url, http_status, '', {},
+                            io.BytesIO(b'{"message": "Not Found"}'))
+
+        account = self._get_hosting_account()
+        service = account.service
+        client = service.client
+
+        self.spy_on(client.http_request, call_fake=_http_request)
+
+        account.data['authorization'] = {
+            'token': '123',
+        }
+
+        with self.assertRaisesMessage(RepositoryError, expected_error):
+            service.check_repository(**kwargs)
+
+        calls = client.http_request.calls
+        self.assertEqual(len(calls), 1)
+        self.assertTrue(calls[0].called_with(
+            url='%s?access_token=123' % expected_url,
+            method='GET',
+            username=None,
+            password=None,
+            body=None,
+            headers=None))
+
+    def _get_repo_api_url(self, plan, fields):
+        """Return the base API URL for a repository.
+
+        Args:
+            plan (unicode):
+                The name of the plan.
+
+            fields (dict):
+                Fields containing repository information.
+
+        Returns:
+            unicode:
+            The API URL for the repository.
+        """
+        account = self._get_hosting_account()
+        service = account.service
+        self.assertNotEqual(service, None)
+
+        repository = Repository(hosting_account=account)
+        repository.extra_data['repository_plan'] = plan
+
+        form = self._get_form(plan, fields)
+        form.save(repository)
+
+        return service._get_repo_api_url(repository)
+
+
+class CloseSubmittedHookTests(GitHubTestCase):
+    """Unit tests for the GitHub close-submitted webhook."""
+
+    fixtures = ['test_users', 'test_scmtools']
+
     def test_close_submitted_hook(self):
         """Testing GitHub close_submitted hook with event=push"""
         self._test_post_commit_hook()
 
-    @add_fixtures(['test_site', 'test_users', 'test_scmtools'])
+    @add_fixtures(['test_site'])
     def test_close_submitted_hook_with_local_site(self):
         """Testing GitHub close_submitted hook with event=push and using a
         Local Site
@@ -1182,14 +1331,13 @@ class GitHubTests(ServiceTests):
         self._test_post_commit_hook(
             LocalSite.objects.get(name=self.local_site_name))
 
-    @add_fixtures(['test_site', 'test_users', 'test_scmtools'])
+    @add_fixtures(['test_site'])
     def test_close_submitted_hook_with_unpublished_review_request(self):
         """Testing GitHub close_submitted hook with event=push and an
         un-published review request
         """
         self._test_post_commit_hook(publish=False)
 
-    @add_fixtures(['test_users', 'test_scmtools'])
     def test_close_submitted_hook_ping(self):
         """Testing GitHub close_submitted hook with event=ping"""
         account = self._get_hosting_account()
@@ -1219,7 +1367,6 @@ class GitHubTests(ServiceTests):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-    @add_fixtures(['test_users', 'test_scmtools'])
     def test_close_submitted_hook_with_invalid_repo(self):
         """Testing GitHub close_submitted hook with event=push and invalid
         repository
@@ -1247,7 +1394,6 @@ class GitHubTests(ServiceTests):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-    @add_fixtures(['test_users', 'test_scmtools'])
     def test_close_submitted_hook_with_invalid_site(self):
         """Testing GitHub close_submitted hook with event=push and invalid
         Local Site
@@ -1276,7 +1422,6 @@ class GitHubTests(ServiceTests):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-    @add_fixtures(['test_users', 'test_scmtools'])
     def test_close_submitted_hook_with_invalid_service_id(self):
         """Testing GitHub close_submitted hook with event=push and invalid
         hosting service ID
@@ -1308,7 +1453,6 @@ class GitHubTests(ServiceTests):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-    @add_fixtures(['test_users', 'test_scmtools'])
     def test_close_submitted_hook_with_invalid_event(self):
         """Testing GitHub close_submitted hook with invalid event"""
         account = self._get_hosting_account()
@@ -1337,7 +1481,6 @@ class GitHubTests(ServiceTests):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-    @add_fixtures(['test_users', 'test_scmtools'])
     def test_close_submitted_hook_with_invalid_signature(self):
         """Testing GitHub close_submitted hook with invalid signature"""
         account = self._get_hosting_account()
@@ -1454,119 +1597,3 @@ class GitHubTests(ServiceTests):
             content_type='application/json',
             HTTP_X_GITHUB_EVENT=event,
             HTTP_X_HUB_SIGNATURE='sha1=%s' % m.hexdigest())
-
-    def _test_check_repository(self, expected_owner='myuser', **kwargs):
-        """Test checking for a repository.
-
-        Args:
-            expected_owner (unicode):
-                The expected owner of the repository.
-
-            **kwargs (dict):
-                Keyword arguments to pass to
-                :py:meth:`check_repository()
-                <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
-        """
-        def _http_request(client, url, *args, **kwargs):
-            return b'{}', {}
-
-        account = self._get_hosting_account()
-        service = account.service
-        client = service.client
-
-        account.data['authorization'] = {
-            'token': '123',
-        }
-
-        self.spy_on(service.client.http_request, call_fake=_http_request)
-
-        service.check_repository(**kwargs)
-
-        calls = client.http_request.calls
-        self.assertEqual(len(calls), 1)
-        self.assertTrue(calls[0].called_with(
-            url=('https://api.github.com/repos/%s/myrepo?access_token=123'
-                 % expected_owner),
-            method='GET',
-            username=None,
-            password=None,
-            body=None,
-            headers=None))
-
-    def _test_check_repository_error(self, http_status, payload, expected_url,
-                                     expected_error, **kwargs):
-        """Test error conditions when checking for a repository.
-
-        Args:
-            http_status (int):
-                The HTTP status to simulate returning.
-
-            payload (bytes):
-                The payload to return, if ``http_status`` is 200.
-
-            expected_url (unicode):
-                The expected URL accessed (minus any query strings).
-
-            expected_error (unicode):
-                The expected error message from a raised exception.
-
-            **kwargs (dict):
-                Keyword arguments to pass to
-                :py:meth:`check_repository()
-                <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
-        """
-        def _http_request(client, url, *args, **kwargs):
-            if http_status == 200:
-                return payload, {}
-
-            raise HTTPError(url, http_status, '', {},
-                            io.BytesIO(b'{"message": "Not Found"}'))
-
-        account = self._get_hosting_account()
-        service = account.service
-        client = service.client
-
-        self.spy_on(client.http_request, call_fake=_http_request)
-
-        account.data['authorization'] = {
-            'token': '123',
-        }
-
-        with self.assertRaisesMessage(RepositoryError, expected_error):
-            service.check_repository(**kwargs)
-
-        calls = client.http_request.calls
-        self.assertEqual(len(calls), 1)
-        self.assertTrue(calls[0].called_with(
-            url='%s?access_token=123' % expected_url,
-            method='GET',
-            username=None,
-            password=None,
-            body=None,
-            headers=None))
-
-    def _get_repo_api_url(self, plan, fields):
-        """Return the base API URL for a repository.
-
-        Args:
-            plan (unicode):
-                The name of the plan.
-
-            fields (dict):
-                Fields containing repository information.
-
-        Returns:
-            unicode:
-            The API URL for the repository.
-        """
-        account = self._get_hosting_account()
-        service = account.service
-        self.assertNotEqual(service, None)
-
-        repository = Repository(hosting_account=account)
-        repository.extra_data['repository_plan'] = plan
-
-        form = self._get_form(plan, fields)
-        form.save(repository)
-
-        return service._get_repo_api_url(repository)

@@ -212,8 +212,9 @@ class Beanstalk(HostingService):
         If using Git, this will expect a base commit ID to be provided.
         """
         try:
-            return self._api_get_node(repository, path, revision,
-                                      base_commit_id, contents=True)
+            contents = self._api_get_node(repository, path, revision,
+                                          base_commit_id, contents=True)
+            return contents.encode('utf-8')
         except (HTTPError, URLError):
             raise FileNotFoundError(path, revision)
 

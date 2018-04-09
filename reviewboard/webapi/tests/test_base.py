@@ -102,61 +102,61 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         """Testing POST with a disabled required feature returns
         PERMISSION_DENIED
         """
-        self._test_method('post', False)
+        self._test_method('post', feature_enabled=False)
 
     def test_disabled_feature_get_list(self):
         """Testing GET with a disabled required feature returns
         PERMISSION_DENIED for a list_resource
         """
-        self._test_method('get', False)
+        self._test_method('get', feature_enabled=False)
 
     def test_disabled_feature_get(self):
         """Testing GET with a disabled required feature returns
         PERMISSION_DENIED
         """
-        self._test_method('get', False, obj_id='123')
+        self._test_method('get', feature_enabled=False, obj_id='123')
 
     def test_disabled_feature_delete(self):
         """Testing DELETE with a disabled required feature returns
         PERMISSION_DENIED
         """
-        self._test_method('delete', False, obj_id='123')
+        self._test_method('delete', feature_enabled=False, obj_id='123')
 
     def test_disabled_feature_forbidden_update(self):
         """Testing PUT with a disabled required feature returns
         PERMISSION_DENIED
         """
-        self._test_method('put', False, obj_id='123')
+        self._test_method('put', feature_enabled=False, obj_id='123')
 
     def test_enabled_feature_post(self):
         """Testing POST with an enabled required feature returns the correct
         response
         """
-        self._test_method('post', True)
+        self._test_method('post', feature_enabled=True)
 
     def test_enabled_feature_get_list(self):
         """Testing GET with an enabled required feature returns the correct
         response for a list resource
         """
-        self._test_method('get', True)
+        self._test_method('get', feature_enabled=True)
 
     def test_enabled_feature_get(self):
         """Testing GET with an enabled required feature returns the correct
         response
         """
-        self._test_method('get', True, obj_id='123')
+        self._test_method('get', feature_enabled=True, obj_id='123')
 
     def test_enabled_feature_delete(self):
         """Testing DELETE with an enabled required feature returns the correct
         response
         """
-        self._test_method('delete', True, obj_id='123')
+        self._test_method('delete', feature_enabled=True, obj_id='123')
 
     def test_enabled_feature_update(self):
         """Testing PUT with an enabled required feature returns the correct
         response
         """
-        self._test_method('put', True, obj_id='123')
+        self._test_method('put', feature_enabled=True, obj_id='123')
 
     @add_fixtures(['test_site'])
     def test_disabled_feature_post_local_site(self):
@@ -164,7 +164,9 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         PERMISSION_DENIED on a LocalSite
         """
         self._test_method(
-            'post', False,
+            'post',
+            feature_enabled=False,
+            feature_local_site_enabled=False,
             local_site=LocalSite.objects.get(name='local-site-1'))
 
     @add_fixtures(['test_site'])
@@ -172,7 +174,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         """Testing GET with a disabled required feature returns
         PERMISSION_DENIED for a list_resource on a LocalSite
         """
-        self._test_method('get', False)
+        self._test_method('get', feature_enabled=False)
 
     @add_fixtures(['test_site'])
     def test_disabled_feature_get_local_site(self):
@@ -180,7 +182,10 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         PERMISSION_DENIED on a LocalSite
         """
         self._test_method(
-            'get', False, obj_id='123',
+            'get',
+            feature_enabled=False,
+            feature_local_site_enabled=False,
+            obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
     @add_fixtures(['test_site'])
@@ -189,7 +194,10 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         PERMISSION_DENIED on a LocalSite
         """
         self._test_method(
-            'delete', False, obj_id='123',
+            'delete',
+            feature_enabled=False,
+            feature_local_site_enabled=False,
+            obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
     @add_fixtures(['test_site'])
@@ -198,7 +206,10 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         PERMISSION_DENIED on a LocalSite
         """
         self._test_method(
-            'put', False, obj_id='123',
+            'put',
+            feature_enabled=False,
+            feature_local_site_enabled=False,
+            obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
     @add_fixtures(['test_site'])
@@ -207,7 +218,20 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         response on a LocalSite
         """
         self._test_method(
-            'post', True,
+            'post',
+            feature_enabled=False,
+            feature_local_site_enabled=True,
+            local_site=LocalSite.objects.get(name='local-site-1'))
+
+    @add_fixtures(['test_site'])
+    def test_globally_enabled_feature_post_local_site(self):
+        """Testing POST with a globally enabled but locally disabled required
+        feature returns the correct response on a LocalSite
+        """
+        self._test_method(
+            'post',
+            feature_enabled=True,
+            feature_local_site_enabled=False,
             local_site=LocalSite.objects.get(name='local-site-1'))
 
     @add_fixtures(['test_site'])
@@ -216,8 +240,22 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         response for a list resource on a LocalSite
         """
         self._test_method(
-            'get', True,
+            'get',
+            feature_enabled=False,
+            feature_local_site_enabled=True,
             local_site=LocalSite.objects.get(name='local-site-1'))
+
+    @add_fixtures(['test_site'])
+    def test_globally_enabled_feature_get_list_local_site(self):
+        """Testing GET with a globally enabled but locally disabled required
+        feature returns the correct response on a LocalSite
+        """
+        self._test_method(
+            'get',
+            feature_enabled=True,
+            feature_local_site_enabled=False,
+            local_site=LocalSite.objects.get(name='local-site-1'))
+
 
     @add_fixtures(['test_site'])
     def test_enabled_feature_get_local_site(self):
@@ -225,7 +263,22 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         response on a LocalSite
         """
         self._test_method(
-            'get', True, obj_id='123',
+            'get',
+            feature_enabled=False,
+            feature_local_site_enabled=True,
+            obj_id='123',
+            local_site=LocalSite.objects.get(name='local-site-1'))
+
+    @add_fixtures(['test_site'])
+    def test_globally_enabled_feature_get_local_site(self):
+        """Testing GET with a globally enabled but locally disabled required
+        feature returns the correct response on a LocalSite
+        """
+        self._test_method(
+            'get',
+            feature_enabled=True,
+            feature_local_site_enabled=False,
+            obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
     @add_fixtures(['test_site'])
@@ -234,7 +287,22 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         response on a LocalSite
         """
         self._test_method(
-            'delete', True, obj_id='123',
+            'delete',
+            feature_enabled=False,
+            feature_local_site_enabled=True,
+            obj_id='123',
+            local_site=LocalSite.objects.get(name='local-site-1'))
+
+    @add_fixtures(['test_site'])
+    def test_globally_enabled_feature_delete_local_site(self):
+        """Testing DELETE with a globally enabled but locally disabled required
+        feature returns the correct response on a LocalSite
+        """
+        self._test_method(
+            'delete',
+            feature_enabled=True,
+            feature_local_site_enabled=False,
+            obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
     @add_fixtures(['test_site'])
@@ -243,28 +311,65 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
         response on a LocalSite
         """
         self._test_method(
-            'put', True, obj_id='123',
+            'put',
+            feature_enabled=False,
+            feature_local_site_enabled=True,
+            obj_id='123',
+            local_site=LocalSite.objects.get(name='local-site-1'))
+
+    @add_fixtures(['test_site'])
+    def test_globally_enabled_feature_put_local_site(self):
+        """Testing PUT with a globally enabled but locally disabled required
+        feature returns the correct response on a LocalSite
+        """
+        self._test_method(
+            'put',
+            feature_enabled=True,
+            feature_local_site_enabled=False,
+            obj_id='123',
             local_site=LocalSite.objects.get(name='local-site-1'))
 
     def _test_method(self, method, feature_enabled, local_site=None,
-                     obj_id=None):
+                     feature_local_site_enabled=None, obj_id=None):
+        """Test an HTTP method on the resource.
+
+        Args:
+            method (unicode):
+                The HTTP method (e.g., ``"POST"`` or ``"PUT"``).
+
+            feature_enabled (bool):
+                Whether or not the feature should be enabled globally.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                If provided, the request will be made against the API using the
+                given LocalSite.
+
+            feature_local_site_enabled (bool, optional):
+                Whether or not the feature is enabled on the given LocalSite.
+
+                This argument must be provided if ``local_site`` is provided,
+
+            obj_id (unicode, optional):
+                If provided, the request will be made against the item
+                resource. Otherwise the request is made against the list
+                resource.
+        """
         # When a LocalSite is provided, we want to enable/disable the feature
         # only for that LocalSite and do the opposite for the global settings
         # to ensure that we are picking up the setting from the LocalSite and
         # not from the global settings.
         if local_site is not None:
-            enabled_globally = not feature_enabled
+            if feature_local_site_enabled is None:
+                raise ValueError('feature_local_site_enabled must not be None')
 
             if not local_site.extra_data:
                 local_site.extra_data = {}
 
             local_site.extra_data['enabled_features'] = {
-                TestingFeature.feature_id: feature_enabled,
+                TestingFeature.feature_id: feature_local_site_enabled,
             }
 
             local_site.save(update_fields=('extra_data',))
-        else:
-            enabled_globally = feature_enabled
 
         method = getattr(self.client, method)
 
@@ -275,7 +380,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
 
         settings = {
             'ENABLED_FEATURES': {
-                TestingFeature.feature_id: enabled_globally,
+                TestingFeature.feature_id: feature_enabled,
             },
             'ROOT_URLCONF': 'reviewboard.webapi.tests.test_base',
         }
@@ -301,7 +406,7 @@ class WebAPIResourceFeatureTests(BaseWebAPITestCase):
 
         content = json.loads(rsp.content)
 
-        if feature_enabled:
+        if feature_enabled or feature_local_site_enabled:
             self.assertEqual(rsp.status_code, 418)
             self.assertEqual(content['stat'], 'ok')
             self.assertEqual(content['obj_id'], obj_id)

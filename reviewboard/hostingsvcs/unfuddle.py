@@ -6,7 +6,7 @@ from django import forms
 from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.six.moves.urllib.parse import quote
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import ugettext, ugettext_lazy as _
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError)
@@ -209,7 +209,7 @@ class Unfuddle(HostingService):
                     return repo
 
         raise RepositoryError(
-            six.text_type(_('A repository with this name was not found')))
+            ugettext('A repository with this name was not found'))
 
     def _build_api_url(self, account_domain, url):
         return 'https://%s.unfuddle.com/api/v1/%s' % (account_domain, url)
@@ -251,6 +251,6 @@ class Unfuddle(HostingService):
         except HTTPError as e:
             if e.code == 401:
                 raise AuthorizationError(
-                    _('The login or password is incorrect.'))
+                    ugettext('The login or password is incorrect.'))
 
             raise

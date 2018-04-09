@@ -225,6 +225,7 @@ try going to your site.
    should be run (as root) to avoid SELinux denials::
 
       $ setsebool -P httpd_can_sendmail 1
+      $ setsebool -P httpd_can_network_connect 1
       $ setsebool -P httpd_can_network_memcache 1
       $ setsebool -P httpd_can_network_connect_db 1
       $ setsebool -P httpd_unified 1
