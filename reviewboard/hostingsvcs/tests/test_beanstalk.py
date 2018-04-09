@@ -1,3 +1,5 @@
+"""Unit tests for the Beanstalk hosting service."""
+
 from __future__ import unicode_literals
 
 from django.utils.six.moves.urllib.error import HTTPError
@@ -17,32 +19,38 @@ class BeanstalkTests(ServiceTests):
         self.assertFalse(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
 
-    def test_repo_field_values_git(self):
-        """Testing Beanstalk repository field values for Git"""
-        fields = self._get_repository_fields('Git', fields={
-            'beanstalk_account_domain': 'mydomain',
-            'beanstalk_repo_name': 'myrepo',
-        })
+    def test_get_repository_fields_for_git(self):
+        """Testing Beanstalk.get_repository_fields for Git"""
         self.assertEqual(
-            fields['path'],
-            'git@mydomain.beanstalkapp.com:/mydomain/myrepo.git')
-        self.assertEqual(
-            fields['mirror_path'],
-            'https://mydomain.git.beanstalkapp.com/myrepo.git')
+            self.get_repository_fields(
+                'Git',
+                fields={
+                    'beanstalk_account_domain': 'mydomain',
+                    'beanstalk_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'git@mydomain.beanstalkapp.com:/mydomain/myrepo.git',
+                'mirror_path': ('https://mydomain.git.beanstalkapp.com/'
+                                'myrepo.git'),
+            })
 
-    def test_repo_field_values_subversion(self):
-        """Testing Beanstalk repository field values for Subversion"""
-        fields = self._get_repository_fields('Subversion', fields={
-            'beanstalk_account_domain': 'mydomain',
-            'beanstalk_repo_name': 'myrepo',
-        })
+    def test_get_repository_fields_for_subversion(self):
+        """Testing Beanstalk.get_repository_fields for Subversion"""
         self.assertEqual(
-            fields['path'],
-            'https://mydomain.svn.beanstalkapp.com/myrepo/')
-        self.assertNotIn('mirror_path', fields)
+            self.get_repository_fields(
+                'Subversion',
+                fields={
+                    'beanstalk_account_domain': 'mydomain',
+                    'beanstalk_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'https://mydomain.svn.beanstalkapp.com/myrepo/',
+            })
 
     def test_authorize(self):
-        """Testing Beanstalk authorization password storage"""
+        """Testing Beanstalk.authorize"""
         account = self._get_hosting_account()
         service = account.service
 
@@ -55,7 +63,7 @@ class BeanstalkTests(ServiceTests):
         self.assertTrue(service.is_authorized())
 
     def test_check_repository(self):
-        """Testing Beanstalk check_repository"""
+        """Testing Beanstalk.check_repository"""
         def _http_get(service, url, *args, **kwargs):
             self.assertEqual(
                 url,
@@ -75,7 +83,7 @@ class BeanstalkTests(ServiceTests):
         self.assertTrue(service.client.http_get.called)
 
     def test_get_file_with_svn_and_base_commit_id(self):
-        """Testing Beanstalk get_file with Subversion and base commit ID"""
+        """Testing Beanstalk.get_file with Subversion and base commit ID"""
         self._test_get_file(
             tool_name='Subversion',
             revision='123',
@@ -83,7 +91,7 @@ class BeanstalkTests(ServiceTests):
             expected_revision='123')
 
     def test_get_file_with_svn_and_revision(self):
-        """Testing Beanstalk get_file with Subversion and revision"""
+        """Testing Beanstalk.get_file with Subversion and revision"""
         self._test_get_file(
             tool_name='Subversion',
             revision='123',
@@ -91,7 +99,7 @@ class BeanstalkTests(ServiceTests):
             expected_revision='123')
 
     def test_get_file_with_git_and_base_commit_id(self):
-        """Testing Beanstalk get_file with Git and base commit ID"""
+        """Testing Beanstalk.get_file with Git and base commit ID"""
         self._test_get_file(
             tool_name='Git',
             revision='123',
@@ -99,7 +107,7 @@ class BeanstalkTests(ServiceTests):
             expected_revision='123')
 
     def test_get_file_with_git_and_revision(self):
-        """Testing Beanstalk get_file with Git and revision"""
+        """Testing Beanstalk.get_file with Git and revision"""
         self._test_get_file(
             tool_name='Git',
             revision='123',
@@ -107,7 +115,7 @@ class BeanstalkTests(ServiceTests):
             expected_revision='123')
 
     def test_get_file_exists_with_svn_and_base_commit_id(self):
-        """Testing Beanstalk get_file_exists with Subversion and base commit ID
+        """Testing Beanstalk.get_file_exists with Subversion and base commit ID
         """
         self._test_get_file_exists(
             tool_name='Subversion',
@@ -117,7 +125,7 @@ class BeanstalkTests(ServiceTests):
             expected_found=True)
 
     def test_get_file_exists_with_svn_and_revision(self):
-        """Testing Beanstalk get_file_exists with Subversion and revision"""
+        """Testing Beanstalk.get_file_exists with Subversion and revision"""
         self._test_get_file_exists(
             tool_name='Subversion',
             revision='123',
@@ -126,7 +134,7 @@ class BeanstalkTests(ServiceTests):
             expected_found=True)
 
     def test_get_file_exists_with_git_and_base_commit_id(self):
-        """Testing Beanstalk get_file_exists with Git and base commit ID"""
+        """Testing Beanstalk.get_file_exists with Git and base commit ID"""
         self._test_get_file_exists(
             tool_name='Git',
             revision='123',
@@ -135,7 +143,7 @@ class BeanstalkTests(ServiceTests):
             expected_found=True)
 
     def test_get_file_exists_with_git_and_revision(self):
-        """Testing Beanstalk get_file_exists with Git and revision"""
+        """Testing Beanstalk.get_file_exists with Git and revision"""
         self._test_get_file_exists(
             tool_name='Git',
             revision='123',
@@ -145,6 +153,21 @@ class BeanstalkTests(ServiceTests):
 
     def _test_get_file(self, tool_name, revision, base_commit_id,
                        expected_revision):
+        """Test file fetching.
+
+        Args:
+            tool_name (unicode):
+                The name of the SCM Tool to test with.
+
+            revision (unicode, optional):
+                The revision to check.
+
+            base_commit_id (unicode, optional):
+                The base commit to fetch against.
+
+            expected_revision (unicode, optional):
+                The revision expected in the payload.
+        """
         def _http_get(service, url, *args, **kwargs):
             if tool_name == 'Git':
                 self.assertEqual(
@@ -179,10 +202,29 @@ class BeanstalkTests(ServiceTests):
         result = service.get_file(repository, '/path', revision,
                                   base_commit_id)
         self.assertTrue(service.client.http_get.called)
-        self.assertEqual(result, 'My data')
+        self.assertIsInstance(result, bytes)
+        self.assertEqual(result, b'My data')
 
     def _test_get_file_exists(self, tool_name, revision, base_commit_id,
                               expected_revision, expected_found):
+        """Test file existence checks.
+
+        Args:
+            tool_name (unicode):
+                The name of the SCM Tool to test with.
+
+            revision (unicode, optional):
+                The revision to check.
+
+            base_commit_id (unicode, optional):
+                The base commit to fetch against.
+
+            expected_revision (unicode, optional):
+                The revision expected in the payload.
+
+            expected_found (bool, optional):
+                Whether a truthy response should be expected.
+        """
         def _http_get(service, url, *args, **kwargs):
             expected_url = ('https://mydomain.beanstalkapp.com/api/'
                             'repositories/myrepo/')

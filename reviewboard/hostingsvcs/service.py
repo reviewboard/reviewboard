@@ -989,7 +989,7 @@ class HostingService(object):
         # Grab the list of fields for population below. We have to do this
         # differently depending on whether or not this hosting service has
         # different repository plans.
-        fields = cls._get_field(plan, 'repository_fields')
+        fields = cls.get_field(plan, 'repository_fields')
 
         new_vars = field_vars.copy()
         new_vars['hosting_account_username'] = username
@@ -1057,7 +1057,7 @@ class HostingService(object):
             raise NotImplementedError
 
         return ('%(hosting_account_username)s' in
-                cls._get_field(plan, 'bug_tracker_field', ''))
+                cls.get_field(plan, 'bug_tracker_field', ''))
 
     @classmethod
     def get_bug_tracker_field(cls, plan, field_vars):
@@ -1081,7 +1081,7 @@ class HostingService(object):
         if not cls.supports_bug_trackers:
             raise NotImplementedError
 
-        bug_tracker_field = cls._get_field(plan, 'bug_tracker_field')
+        bug_tracker_field = cls.get_field(plan, 'bug_tracker_field')
 
         if not bug_tracker_field:
             return ''
@@ -1102,7 +1102,7 @@ class HostingService(object):
                 })
 
     @classmethod
-    def _get_field(cls, plan, name, default=None):
+    def get_field(cls, plan, name, default=None):
         """Return the value of the field for the given plan.
 
         If ``plan`` is not ``None``, the field will be looked up in the plan

@@ -1,3 +1,5 @@
+"""Unit tests for the Trac hosting service."""
+
 from __future__ import unicode_literals
 
 from reviewboard.hostingsvcs.tests.testcases import ServiceTests
@@ -10,12 +12,12 @@ class TracTests(ServiceTests):
     fixtures = ['test_scmtools']
 
     def test_service_support(self):
-        """Testing the Trac service support capabilities"""
+        """Testing Trac service support capabilities"""
         self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertFalse(self.service_class.supports_repositories)
 
-    def test_bug_tracker_field(self):
-        """Testing the Trac bug tracker field value"""
+    def test_get_bug_tracker_field(self):
+        """Testing Trac.get_bug_tracker_field"""
         self.assertFalse(
             self.service_class.get_bug_tracker_requires_username())
         self.assertEqual(

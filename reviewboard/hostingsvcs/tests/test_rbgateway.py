@@ -6,7 +6,7 @@ import json
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.tests.testcases import ServiceTests
-from reviewboard.scmtools.core import Branch
+from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
 from reviewboard.scmtools.models import Repository
 
@@ -25,14 +25,19 @@ class ReviewBoardGatewayTests(ServiceTests):
 
     def test_repo_field_values(self):
         """Testing ReviewBoardGateway.get_repository_fields for Git"""
-        fields = self._get_repository_fields('Git', fields={
-            'hosting_url': 'https://example.com',
-            'rbgateway_repo_name': 'myrepo',
-        })
-        self.assertEqual(fields['path'],
-                         'https://example.com/repos/myrepo/path')
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                fields={
+                    'hosting_url': 'https://example.com',
+                    'rbgateway_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'https://example.com/repos/myrepo/path',
+            })
 
-    def test_authorization(self):
+    def test_authorize(self):
         """Testing ReviewBoardGateway.authorize"""
         def _http_request(client, *args, **kwargs):
             return b'{"private_token": "abc123"}', {}
@@ -202,27 +207,28 @@ class ReviewBoardGatewayTests(ServiceTests):
                 'PRIVATE-TOKEN': 'abc123',
             }))
 
-        self.assertEqual(len(commits), 3)
-        commit = commits[0]
-        self.assertEqual(commit.author_name, 'Author 1')
-        self.assertEqual(commit.date, '2015-02-13 22:34:01 -0700')
-        self.assertEqual(commit.id, 'bfdde95432b3af879af969bd2377dc3e55ee46e6')
-        self.assertEqual(commit.message, 'Message 1')
-        self.assertEqual(commit.parent, commits[1].id)
+        self.assertEqual(
+            commits,
+            [
+                Commit(author_name='Author 1',
+                       date='2015-02-13 22:34:01 -0700',
+                       id='bfdde95432b3af879af969bd2377dc3e55ee46e6',
+                       message='Message 1',
+                       parent='304c53c163aedfd0c0e0933776f09c24b87f5944'),
+                Commit(author_name='Author 2',
+                       date='2015-02-13 22:32:42 -0700',
+                       id='304c53c163aedfd0c0e0933776f09c24b87f5944',
+                       message='Message 2',
+                       parent='fa1330719893098ae397356e8125c2aa45b49221'),
+                Commit(author_name='Author 3',
+                       date='2015-02-12 16:01:48 -0700',
+                       id='fa1330719893098ae397356e8125c2aa45b49221',
+                       message='Message 3',
+                       parent=''),
+            ])
 
-        commit = commits[1]
-        self.assertEqual(commit.author_name, 'Author 2')
-        self.assertEqual(commit.date, '2015-02-13 22:32:42 -0700')
-        self.assertEqual(commit.id, '304c53c163aedfd0c0e0933776f09c24b87f5944')
-        self.assertEqual(commit.message, 'Message 2')
-        self.assertEqual(commit.parent, commits[2].id)
-
-        commit = commits[2]
-        self.assertEqual(commit.author_name, 'Author 3')
-        self.assertEqual(commit.date, '2015-02-12 16:01:48 -0700')
-        self.assertEqual(commit.id, 'fa1330719893098ae397356e8125c2aa45b49221')
-        self.assertEqual(commit.message, 'Message 3')
-        self.assertEqual(commit.parent, '')
+        for commit in commits:
+            self.assertIsNone(commit.diff)
 
     def test_get_change(self):
         """Testing ReviewBoardGateway.get_change"""
@@ -279,10 +285,11 @@ class ReviewBoardGatewayTests(ServiceTests):
                 'PRIVATE-TOKEN': 'abc123',
             }))
 
-        self.assertEqual(change.author_name, 'Some Author')
-        self.assertEqual(change.id, 'bfdde95432b3af879af969bd2377dc3e55ee46e6')
-        self.assertEqual(change.date, '2015-02-13 22:34:01 -0700')
-        self.assertEqual(change.message, 'My Message')
-        self.assertEqual(change.parent,
-                         '304c53c163aedfd0c0e0933776f09c24b87f5944')
+        self.assertEqual(
+            change,
+            Commit(author_name='Some Author',
+                   date='2015-02-13 22:34:01 -0700',
+                   id='bfdde95432b3af879af969bd2377dc3e55ee46e6',
+                   message='My Message',
+                   parent='304c53c163aedfd0c0e0933776f09c24b87f5944'))
         self.assertEqual(change.diff, diff)

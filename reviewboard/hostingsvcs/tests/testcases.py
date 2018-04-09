@@ -1,82 +1,53 @@
 from __future__ import unicode_literals
 
-from kgb import SpyAgency
+import warnings
 
-from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.service import get_hosting_service
-from reviewboard.testing import TestCase
+from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 
 
-class ServiceTests(SpyAgency, TestCase):
-    service_name = None
+class ServiceTests(HostingServiceTestCase):
+    """Legacy base class for hosting service tests.
 
-    def __init__(self, *args, **kwargs):
-        super(ServiceTests, self).__init__(*args, **kwargs)
+    .. deprecated:: 3.0.4
 
-        self.assertNotEqual(self.service_name, None)
-        self.service_class = get_hosting_service(self.service_name)
+       This is an old class and should no longer be used as the base class
+       for hosting service test suites. Use :py:class:`HostingServiceTestCase`
+       instead.
+    """
 
-    def setUp(self):
-        super(ServiceTests, self).setUp()
-        self.assertNotEqual(self.service_class, None)
+    @classmethod
+    def setUpClass(cls):
+        warnings.warn('ServiceTests is deprecated. Subclass '
+                      'HostingServiceTestCase instead.',
+                      DeprecationWarning)
 
-    def _get_repository_info(self, field, plan=None):
-        if plan:
-            self.assertNotEqual(self.service_class.plans, None)
-            result = None
+        super(ServiceTests, cls).setUpClass()
 
-            for plan_type, info in self.service_class.plans:
-                if plan_type == plan:
-                    result = info[field]
-                    break
+    # Legacy private functions previously used by subclasses.
+    #
+    # These have never been documented and still aren't. They shouldn't be
+    # used, technically, and will go away in time.
+    def _get_form(self, *args, **kwargs):
+        warnings.warn(
+            'ServiceTests._get_form() is deprecated. Use '
+            'HostingServiceTestCase.get_form() instead.',
+            DeprecationWarning)
 
-            self.assertNotEqual(result, None)
-            return result
-        else:
-            self.assertEqual(self.service_class.plans, None)
-            self.assertTrue(hasattr(self.service_class, field))
+        return self.get_form(*args, **kwargs)
 
-            return getattr(self.service_class, field)
+    def _get_hosting_account(self, *args, **kwargs):
+        warnings.warn(
+            'ServiceTests._get_hosting_account() is deprecated. Use '
+            'HostingServiceTestCase.create_hosting_account() instead.',
+            DeprecationWarning)
 
-    def _get_form(self, plan=None, fields={}):
-        form = self._get_repository_info('form', plan)
-        self.assertNotEqual(form, None)
+        kwargs['data'] = {}
+        return self.create_hosting_account(*args, **kwargs)
 
-        form = form(fields)
-        self.assertTrue(form.is_valid())
+    def _get_repository_fields(self, *args, **kwargs):
+        warnings.warn(
+            'ServiceTests._get_repository_fields() is deprecated. Use '
+            'HostingServiceTestCase.get_repository_fields() instead.',
+            DeprecationWarning)
 
-        return form
-
-    def _get_hosting_account(self, use_url=False, local_site=None):
-        if use_url:
-            hosting_url = 'https://example.com'
-        else:
-            hosting_url = None
-
-        return HostingServiceAccount.objects.create(
-            service_name=self.service_name,
-            username='myuser',
-            hosting_url=hosting_url,
-            local_site=local_site)
-
-    def _get_service(self):
-        return self._get_hosting_account().service
-
-    def _get_repository_fields(self, tool_name, fields, plan=None,
-                               with_url=False, hosting_account=None):
-        form = self._get_form(plan, fields)
-
-        if not hosting_account:
-            hosting_account = self._get_hosting_account(with_url)
-
-        service = hosting_account.service
-        self.assertNotEqual(service, None)
-
-        field_vars = form.clean().copy()
-        field_vars.update(hosting_account.data)
-
-        return service.get_repository_fields(username=hosting_account.username,
-                                             hosting_url='https://example.com',
-                                             plan=plan,
-                                             tool_name=tool_name,
-                                             field_vars=field_vars)
+        return self.get_repository_fields(*args, **kwargs)

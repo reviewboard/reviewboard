@@ -1,3 +1,5 @@
+"""Unit tests for the Kiln hosting service."""
+
 from __future__ import unicode_literals
 
 import json
@@ -22,37 +24,45 @@ class KilnTests(ServiceTests):
         self.assertFalse(self.service_class.supports_two_factor_auth)
 
     def test_repo_field_values_git(self):
-        """Testing Kiln repository field values for Git"""
-        fields = self._get_repository_fields('Git', fields={
-            'kiln_account_domain': 'mydomain',
-            'kiln_project_name': 'myproject',
-            'kiln_group_name': 'mygroup',
-            'kiln_repo_name': 'myrepo',
-        })
+        """Testing Kiln.get_repository_fields for Git"""
         self.assertEqual(
-            fields['path'],
-            'https://mydomain.kilnhg.com/Code/myproject/mygroup/myrepo.git')
-        self.assertEqual(
-            fields['mirror_path'],
-            'ssh://mydomain@mydomain.kilnhg.com/myproject/mygroup/myrepo')
+            self.get_repository_fields(
+                'Git',
+                fields={
+                    'kiln_account_domain': 'mydomain',
+                    'kiln_project_name': 'myproject',
+                    'kiln_group_name': 'mygroup',
+                    'kiln_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': ('https://mydomain.kilnhg.com/Code/myproject/mygroup/'
+                         'myrepo.git'),
+                'mirror_path': ('ssh://mydomain@mydomain.kilnhg.com/myproject/'
+                                'mygroup/myrepo'),
+            })
 
     def test_repo_field_values_mercurial(self):
-        """Testing Kiln repository field values for Mercurial"""
-        fields = self._get_repository_fields('Mercurial', fields={
-            'kiln_account_domain': 'mydomain',
-            'kiln_project_name': 'myproject',
-            'kiln_group_name': 'mygroup',
-            'kiln_repo_name': 'myrepo',
-        })
+        """Testing Kiln.get_repository_fields for Mercurial"""
         self.assertEqual(
-            fields['path'],
-            'https://mydomain.kilnhg.com/Code/myproject/mygroup/myrepo')
-        self.assertEqual(
-            fields['mirror_path'],
-            'ssh://mydomain@mydomain.kilnhg.com/myproject/mygroup/myrepo')
+            self.get_repository_fields(
+                'Mercurial',
+                fields={
+                    'kiln_account_domain': 'mydomain',
+                    'kiln_project_name': 'myproject',
+                    'kiln_group_name': 'mygroup',
+                    'kiln_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': ('https://mydomain.kilnhg.com/Code/myproject/mygroup/'
+                         'myrepo'),
+                'mirror_path': ('ssh://mydomain@mydomain.kilnhg.com/myproject/'
+                                'mygroup/myrepo'),
+            })
 
     def test_authorize(self):
-        """Testing Kiln authorization token storage"""
+        """Testing Kiln.authorize"""
         def _http_post(service, url, *args, **kwargs):
             self.assertEqual(
                 url,
@@ -74,7 +84,7 @@ class KilnTests(ServiceTests):
         self.assertTrue(service.is_authorized())
 
     def test_check_repository(self):
-        """Testing Kiln check_repository"""
+        """Testing Kiln.check_repository"""
         def _http_get(service, url, *args, **kwargs):
             self.assertEqual(
                 url,
@@ -109,7 +119,7 @@ class KilnTests(ServiceTests):
         self.assertTrue(service.client.http_get.called)
 
     def test_check_repository_with_incorrect_repo_info(self):
-        """Testing Kiln check_repository with incorrect repo info"""
+        """Testing Kiln.check_repository with incorrect repo info"""
         def _http_get(service, url, *args, **kwargs):
             self.assertEqual(
                 url,
@@ -136,18 +146,23 @@ class KilnTests(ServiceTests):
 
         self.spy_on(service.client.http_get, call_fake=_http_get)
 
-        self.assertRaises(
-            RepositoryError,
-            lambda: service.check_repository(
-                kiln_account_domain='mydomain',
-                kiln_project_name='myproject',
-                kiln_group_name='mygroup',
-                kiln_repo_name='myrepo',
-                tool_name='Mercurial'))
+        expected_message = (
+            'The repository with this project, group, and name was not found. '
+            'Please verify that the information exactly matches the '
+            'configuration on Kiln.'
+        )
+
+        with self.assertRaisesMessage(RepositoryError, expected_message):
+            service.check_repository(kiln_account_domain='mydomain',
+                                     kiln_project_name='myproject',
+                                     kiln_group_name='mygroup',
+                                     kiln_repo_name='myrepo',
+                                     tool_name='Mercurial')
+
         self.assertTrue(service.client.http_get.called)
 
     def test_get_file(self):
-        """Testing Kiln get_file"""
+        """Testing Kiln.get_file"""
         def _http_get(service, url, *args, **kwargs):
             if url == ('https://mydomain.kilnhg.com/Api/1.0/Project'
                        '?token=my-token'):
@@ -197,10 +212,11 @@ class KilnTests(ServiceTests):
 
         result = service.get_file(repository, path, revision)
         self.assertTrue(service.client.http_get.called)
-        self.assertEqual(result, 'My data')
+        self.assertIsInstance(result, bytes)
+        self.assertEqual(result, b'My data')
 
     def test_get_file_exists(self):
-        """Testing Kiln get_file_exists"""
+        """Testing Kiln.get_file_exists"""
         def _http_get(service, url, *args, **kwargs):
             if url == ('https://mydomain.kilnhg.com/Api/1.0/Project'
                        '?token=my-token'):
