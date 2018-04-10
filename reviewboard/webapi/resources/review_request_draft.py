@@ -236,6 +236,13 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
                            'If a review is public, it cannot be made '
                            'private again.',
         },
+        'publish_as_owner': {
+            'type': bool,
+            'description': 'Publish on behalf of the owner of the review '
+                           'request. If setting ``submitter``, this will '
+                           'publish on behalf of the previous owner.',
+            'added_in': '3.0.6',
+        },
         'submitter': {
             'type': six.text_type,
             'description': 'The user who submitted the review request.',
@@ -388,7 +395,7 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     )
     def update(self, request, always_save=False, local_site_name=None,
                update_from_commit_id=False, trivial=None,
-               extra_fields={}, *args, **kwargs):
+               publish_as_owner=False, extra_fields={}, *args, **kwargs):
         """Updates a draft of a review request.
 
         This will update the draft with the newly provided data.
@@ -498,8 +505,23 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
             }
 
         if request.POST.get('public', False):
+            if not review_request.public and not draft.changedesc_id:
+                # This is a new review request. Publish this on behalf of the
+                # owner of the review request, rather than the current user,
+                # regardless of the original publish_as_owner in the request.
+                # This allows a review request previously created with
+                # submit-as= to be published by that user instead of the
+                # logged in user.
+                publish_as_owner = True
+
+            if publish_as_owner:
+                publish_user = review_request.owner
+            else:
+                # Default to posting as the logged in user.
+                publish_user = request.user
+
             try:
-                review_request.publish(user=request.user, trivial=trivial)
+                review_request.publish(user=publish_user, trivial=trivial)
             except NotModifiedError:
                 return NOTHING_TO_PUBLISH
             except PublishError as e:
