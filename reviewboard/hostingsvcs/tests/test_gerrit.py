@@ -91,7 +91,7 @@ class GerritTests(ServiceTests):
             return b")]}'\n%s" % json.dumps({
                 'gerrit-reviewboard': {
                     'id': 'gerrit-reviewboard',
-                    'version': '%s.%s.%s' % Gerrit.REQUIRED_PLUGIN_VERSION,
+                    'version': Gerrit.REQUIRED_PLUGIN_VERSION_STR,
                 },
             }).encode('utf-8'), {}
 
@@ -152,7 +152,8 @@ class GerritTests(ServiceTests):
 
         expected_message = (
             'The "gerrit-reviewboard" plugin on the server is an incompatible '
-            'version: found (0, 0, 0) but version 0.1.0 or higher is required.'
+            'version: found 0.0.0 but version %s.%s.%s or higher is required.'
+            % Gerrit.REQUIRED_PLUGIN_VERSION
         )
 
         with self.assertRaisesMessage(RepositoryError, expected_message):
