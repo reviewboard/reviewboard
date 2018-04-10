@@ -49,7 +49,7 @@ RB.ReviewRequestPage.ReviewView = Backbone.View.extend({
         this._$reviewComments = this.$('.review-comments');
 
         const $comment = this._$reviewComments.find(
-            '.review-comment-thread .review-comment');
+            '.review-comment-details .review-comment');
         this._$bodyTop = $comment.find('.body_top');
         this._$bodyBottom = $comment.find('.body_bottom');
 

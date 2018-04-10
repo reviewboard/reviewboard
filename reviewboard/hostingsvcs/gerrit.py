@@ -347,6 +347,7 @@ class Gerrit(HostingService):
     """
 
     REQUIRED_PLUGIN_VERSION = (1, 0, 0)
+    REQUIRED_PLUGIN_VERSION_STR = '%d.%d.%d' % REQUIRED_PLUGIN_VERSION
 
     name = _('Gerrit')
     client_class = GerritClient
@@ -436,10 +437,10 @@ class Gerrit(HostingService):
                     'plugin_url': _PLUGIN_URL,
                 })
         else:
-            version = rsp['gerrit-reviewboard']['version']
+            version_str = rsp['gerrit-reviewboard']['version']
 
             try:
-                version = self._parse_plugin_version(version)
+                version = self._parse_plugin_version(version_str)
             except Exception as e:
                 logger.exception(
                     'Could not parse gerrit-reviewboard plugin version "%s" '
@@ -460,8 +461,8 @@ class Gerrit(HostingService):
                              'is an incompatible version: found %(found)s but '
                              'version %(required)s or higher is required.')
                     % {
-                        'found': version,
-                        'required': '%d.%d.%d' % self.REQUIRED_PLUGIN_VERSION,
+                        'found': version_str,
+                        'required': self.REQUIRED_PLUGIN_VERSION_STR,
                     }
                 )
 

@@ -1,0 +1,90 @@
+.. default-intersphinx:: rb3.0
+
+
+================================
+Review Board 3.0.6 Release Notes
+================================
+
+**Release date**: April 10, 2018
+
+
+Web API
+=======
+
+* Added a new ``publish_as_owner=1`` argument to
+  :ref:`webapi2.0-review-request-draft-resource` to publish on behalf of the
+  owner instead of the logged-in user.
+
+* Publishing the first draft of a review request using
+  :ref:`webapi2.0-review-request-draft-resource` now sends
+  e-mails/notifications as the review request owner and not logged-in user.
+
+  This was a regression in 3.0.
+
+
+Bug Fixes
+=========
+
+Review Requests
+---------------
+
+* Publishing a review request after using ``rbt post --submit-as=`` no longer
+  sends e-mails as the logged-in user.
+
+  Prior to 3.0, the e-mails would be sent as the user passed to
+  ``--submit-as``, and this broke in 3.0. The original behavior has been
+  restored.
+
+* Fixed automatically growing or shrinking the size of text fields when
+  adding or removing lines.
+
+* Fixed immediately updating the "Ship It!" text on a review when revoking the
+  Ship It.
+
+
+E-Mail
+------
+
+* Fixed a regression where relative URLs instead of absolute URLs were being
+  used in some links in e-mails.
+
+
+Bazaar
+------
+
+* Fixed problems looking up revisions when the configured server timezone
+  wasn't set to UTC.
+
+
+GitLab
+------
+
+* Fixed problems fetching files using GitLab API version 4.
+
+  Depending on the criteria used to fetch files, the wrong API request was
+  being issued.
+
+
+Mercurial
+---------
+
+* Fixed showing the wrong dates/times when browsing Mercurial commits if the
+  server timezone wasn't set to UTC.
+
+
+Local Sites
+-----------
+
+* Fixed redirecting from the root of a :term:`Local Site` to the user's
+  dashboard.
+
+* Fixed linking to user pages on a :term:`Local Site` from the Dashboard and
+  other datagrid pages.
+
+
+Contributors
+============
+
+* Barret Rennie
+* Christian Hammond
+* David Trowbridge
