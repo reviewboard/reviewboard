@@ -5,7 +5,7 @@
 Review Board 3.0.6 Release Notes
 ================================
 
-**Release date**: TBD
+**Release date**: April 10, 2018
 
 
 Web API
