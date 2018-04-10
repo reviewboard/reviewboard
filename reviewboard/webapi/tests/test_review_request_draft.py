@@ -15,7 +15,8 @@ from reviewboard.reviews.fields import (BaseEditableField,
                                         BaseReviewRequestField,
                                         get_review_request_fieldset)
 from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
-from reviewboard.reviews.signals import review_request_published
+from reviewboard.reviews.signals import (review_request_published,
+                                         review_request_publishing)
 from reviewboard.webapi.errors import NOTHING_TO_PUBLISH
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
@@ -363,6 +364,80 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
             self.assertTrue(review_request.public)
         finally:
             fieldset.remove_field(CustomField)
+
+    def test_post_with_publish_with_first_draft_as_other_user(self):
+        """Testing the POST review-requests/<id>/draft/ API with first draft
+        as other user (with can_edit_reviewrequest after submit-as)
+        """
+        user = User.objects.get(username='doc')
+        self.assertNotEqual(self.user, user)
+
+        self.user.user_permissions.add(
+            Permission.objects.get(codename='can_edit_reviewrequest'))
+
+        review_request = self.create_review_request(submitter=user,
+                                                    target_people=[user])
+
+        self.spy_on(review_request_publishing.send)
+        self.spy_on(review_request_published.send)
+
+        rsp = self.api_post(
+            get_review_request_draft_url(review_request),
+            {
+                'public': True,
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request = ReviewRequest.objects.get(pk=review_request.id)
+        self.assertTrue(review_request.public)
+
+        self.assertTrue(review_request_publishing.send.called_with(
+            sender=ReviewRequest,
+            user=user))
+        self.assertTrue(review_request_published.send.called_with(
+            sender=ReviewRequest,
+            user=user))
+
+    def test_post_with_publish_with_publish_as_owner(self):
+        """Testing the POST review-requests/<id>/draft/ API with
+        publish_as_owner=
+        """
+        user = User.objects.get(username='doc')
+        self.assertNotEqual(self.user, user)
+
+        self.user.user_permissions.add(
+            Permission.objects.get(codename='can_edit_reviewrequest'))
+
+        review_request = self.create_review_request(submitter=user,
+                                                    publish=True,
+                                                    target_people=[user])
+
+        self.spy_on(review_request_publishing.send)
+        self.spy_on(review_request_published.send)
+
+        rsp = self.api_post(
+            get_review_request_draft_url(review_request),
+            {
+                'summary': 'New summary',
+                'public': True,
+                'publish_as_owner': True,
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request = ReviewRequest.objects.get(pk=review_request.id)
+        self.assertEqual(review_request.summary, 'New summary')
+        self.assertTrue(review_request.public)
+
+        self.assertTrue(review_request_publishing.send.called_with(
+            sender=ReviewRequest,
+            user=user))
+        self.assertTrue(review_request_published.send.called_with(
+            sender=ReviewRequest,
+            user=user))
 
     #
     # HTTP PUT tests
@@ -1038,6 +1113,82 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
             self.assertTrue(_on_published.spy.called)
         finally:
             review_request_published.disconnect(_on_published)
+
+    def test_put_with_publish_with_first_draft_as_other_user(self):
+        """Testing the PUT review-requests/<id>/draft/ API with first draft
+        as other user (with can_edit_reviewrequest after submit-as)
+        """
+        user = User.objects.get(username='doc')
+        self.assertNotEqual(self.user, user)
+
+        self.user.user_permissions.add(
+            Permission.objects.get(codename='can_edit_reviewrequest'))
+
+        review_request = self.create_review_request(submitter=user,
+                                                    target_people=[user])
+        ReviewRequestDraft.create(review_request)
+
+        self.spy_on(review_request_publishing.send)
+        self.spy_on(review_request_published.send)
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'public': True,
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request = ReviewRequest.objects.get(pk=review_request.id)
+        self.assertTrue(review_request.public)
+
+        self.assertTrue(review_request_publishing.send.called_with(
+            sender=ReviewRequest,
+            user=user))
+        self.assertTrue(review_request_published.send.called_with(
+            sender=ReviewRequest,
+            user=user))
+
+    def test_put_with_publish_with_publish_as_owner(self):
+        """Testing the PUT review-requests/<id>/draft/ API with
+        publish_as_owner=
+        """
+        user = User.objects.get(username='doc')
+        self.assertNotEqual(self.user, user)
+
+        self.user.user_permissions.add(
+            Permission.objects.get(codename='can_edit_reviewrequest'))
+
+        review_request = self.create_review_request(submitter=user,
+                                                    publish=True,
+                                                    target_people=[user])
+        ReviewRequestDraft.create(review_request)
+
+        self.spy_on(review_request_publishing.send)
+        self.spy_on(review_request_published.send)
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'summary': 'New summary',
+                'public': True,
+                'publish_as_owner': True,
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        review_request = ReviewRequest.objects.get(pk=review_request.id)
+        self.assertEqual(review_request.summary, 'New summary')
+        self.assertTrue(review_request.public)
+
+        self.assertTrue(review_request_publishing.send.called_with(
+            sender=ReviewRequest,
+            user=user))
+        self.assertTrue(review_request_published.send.called_with(
+            sender=ReviewRequest,
+            user=user))
 
     def test_put_with_numeric_extra_data(self):
         """Testing the PUT review-requests/<id>/draft/ API with numeric

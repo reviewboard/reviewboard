@@ -10,10 +10,12 @@ suite('rb/views/ReviewView', function() {
           <div class="body">
            <ol class="review-comments">
             <li>
-             <div class="review-comment-thread">
+             <div class="review-comment-details">
               <div class="review-comment">
                <pre class="reviewtext body_top"></pre>
               </div>
+             </div>
+             <div class="review-comment-thread">
               <div class="comment-section" data-context-type="body_top">
                <a class="add_comment_link"></a>
                <ul class="reply-comments">
@@ -34,10 +36,12 @@ suite('rb/views/ReviewView', function() {
              </div>
             </li>
             <li>
-             <div class="review-comment-thread">
+             <div class="review-comment-details">
               <div class="review-comment">
                <pre class="reviewtext body_bottom"></pre>
               </div>
+             </div>
+             <div class="review-comment-thread">
               <div class="comment-section" data-context-type="body_bottom">
                <a class="add_comment_link"></a>
                <ul class="reply-comments"></ul>
