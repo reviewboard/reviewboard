@@ -2,19 +2,24 @@
 
 from __future__ import unicode_literals
 
-import json
-
-from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.tests.testcases import ServiceTests
+from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
-from reviewboard.scmtools.models import Repository
 
 
-class ReviewBoardGatewayTests(ServiceTests):
+class ReviewBoardGatewayTests(HostingServiceTestCase):
     """Unit tests for the ReviewBoardGateway hosting service."""
 
     service_name = 'rbgateway'
+
+    default_use_hosting_url = True
+    default_account_data = {
+        'private_token': encrypt_password('abc123'),
+    }
+
+    default_repository_extra_data = {
+        'rbgateway_repo_name': 'myrepo',
+    }
 
     def test_service_support(self):
         """Testing ReviewBoardGateway service support capabilities"""
@@ -39,65 +44,46 @@ class ReviewBoardGatewayTests(ServiceTests):
 
     def test_authorize(self):
         """Testing ReviewBoardGateway.authorize"""
-        def _http_request(client, *args, **kwargs):
-            return b'{"private_token": "abc123"}', {}
+        hosting_account = self.create_hosting_account(data={})
+        self.assertFalse(hosting_account.is_authorized)
 
+        with self.setup_http_test(payload=b'{"private_token": "abc123"}',
+                                  hosting_account=hosting_account,
+                                  expected_http_calls=1) as ctx:
+            ctx.service.authorize(username='myuser',
+                                  password='mypass',
+                                  hosting_url='https://example.com')
 
-        account = HostingServiceAccount(service_name=self.service_name,
-                                        username='myuser')
-        service = account.service
-        client = service.client
+        self.assertTrue(hosting_account.is_authorized)
 
-        self.spy_on(client.http_request, call_fake=_http_request)
-
-        self.assertFalse(account.is_authorized)
-
-        service.authorize('myuser', 'mypass',
-                          hosting_url='https://example.com')
-        self.assertTrue(account.is_authorized)
-
-        calls = client.http_request.calls
-        self.assertEqual(len(calls), 1)
-        self.assertTrue(calls[0].called_with(
+        ctx.assertHTTPCall(
+            0,
             url='https://example.com/session',
             method='POST',
-            username='myuser',
-            password='mypass',
             body='',
             headers={
                 'Content-Length': '0',
-            }))
+            })
 
     def test_check_repository(self):
         """Testing ReviewBoardGateway.check_repository"""
-        def _http_request(client, *args, **kwargs):
-            return b'{}', {}
+        with self.setup_http_test(payload=b'{}',
+                                  expected_http_calls=1) as ctx:
+            ctx.service.check_repository(
+                path='https://example.com/repos/myrepo/path')
 
-        account = self._get_hosting_account(use_url=True)
-        service = account.service
-        client = service.client
-
-        self.spy_on(client.http_request, call_fake=_http_request)
-
-        account.data['private_token'] = encrypt_password('abc123')
-
-        service.check_repository(path='https://example.com/repos/myrepo/path')
-
-        calls = client.http_request.calls
-        self.assertEqual(len(calls), 1)
-        self.assertTrue(calls[0].called_with(
+        ctx.assertHTTPCall(
+            0,
             url='https://example.com/repos/myrepo/path',
-            method='GET',
             username=None,
             password=None,
-            body=None,
             headers={
                 'PRIVATE-TOKEN': 'abc123',
-            }))
+            })
 
     def test_get_branches(self):
         """Testing ReviewBoardGateway.get_branches"""
-        branches_api_response = json.dumps([
+        payload = self.dump_json([
             {
                 'name': 'master',
                 'id': 'c272edcac05b00e15440d6274723b639e3acbd7c',
@@ -108,37 +94,20 @@ class ReviewBoardGatewayTests(ServiceTests):
             }
         ])
 
-        def _http_request(client, *args, **kwargs):
-            return branches_api_response.encode('utf-8'), {}
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            repository = ctx.create_repository()
+            branches = ctx.service.get_branches(repository)
 
-        account = self._get_hosting_account(use_url=True)
-        account.data['private_token'] = encrypt_password('abc123')
-
-        repository = Repository(hosting_account=account)
-        repository.extra_data = {
-            'rbgateway_repo_name': 'myrepo',
-        }
-
-        service = account.service
-        client = service.client
-
-        self.spy_on(client.http_request, call_fake=_http_request)
-
-        branches = service.get_branches(repository)
-
-        calls = client.http_request.calls
-        self.assertEqual(len(calls), 1)
-        self.assertTrue(calls[0].called_with(
+        ctx.assertHTTPCall(
+            0,
             url='https://example.com/repos/myrepo/branches',
-            method='GET',
             username=None,
             password=None,
-            body=None,
             headers={
                 'PRIVATE-TOKEN': 'abc123',
-            }))
+            })
 
-        self.assertEqual(len(branches), 2)
         self.assertEqual(
             branches,
             [
@@ -151,7 +120,7 @@ class ReviewBoardGatewayTests(ServiceTests):
 
     def test_get_commits(self):
         """Testing ReviewBoardGateway.get_commits"""
-        commits_api_response = json.dumps([
+        payload = self.dump_json([
             {
                 'author': 'Author 1',
                 'id': 'bfdde95432b3af879af969bd2377dc3e55ee46e6',
@@ -175,37 +144,22 @@ class ReviewBoardGatewayTests(ServiceTests):
             }
         ])
 
-        def _http_request(client, *args, **kwargs):
-            return commits_api_response.encode('utf-8'), {}
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            repository = ctx.create_repository()
+            commits = ctx.service.get_commits(
+                repository=repository,
+                branch='bfdde95432b3af879af969bd2377dc3e55ee46e6')
 
-        account = self._get_hosting_account(use_url=True)
-        account.data['private_token'] = encrypt_password('abc123')
-
-        repository = Repository(hosting_account=account)
-        repository.extra_data = {
-            'rbgateway_repo_name': 'myrepo',
-        }
-
-        service = account.service
-        client = service.client
-        self.spy_on(client.http_request, call_fake=_http_request)
-
-        commits = service.get_commits(
-            repository,
-            branch='bfdde95432b3af879af969bd2377dc3e55ee46e6')
-
-        calls = client.http_request.calls
-        self.assertEqual(len(calls), 1)
-        self.assertTrue(calls[0].called_with(
+        ctx.assertHTTPCall(
+            0,
             url=('https://example.com/repos/myrepo/branches/'
                  'bfdde95432b3af879af969bd2377dc3e55ee46e6/commits'),
-            method='GET',
             username=None,
             password=None,
-            body=None,
             headers={
                 'PRIVATE-TOKEN': 'abc123',
-            }))
+            })
 
         self.assertEqual(
             commits,
@@ -233,18 +187,18 @@ class ReviewBoardGatewayTests(ServiceTests):
     def test_get_change(self):
         """Testing ReviewBoardGateway.get_change"""
         diff = (
-            b'diff --git a/test b/test\n'
-            b'index 9daeafb9864cf43055ae93beb0afd6c7d144bfa4..'
-            b'dced80a85fe1e8f13dd5ea19923e5d2e8680020d 100644\n'
-            b'--- a/test\n'
-            b'+++ b/test\n'
-            b'@@ -1 +1,3 @@\n'
-            b' test\n'
-            b'+\n'
-            b'+test\n'
+            'diff --git a/test b/test\n'
+            'index 9daeafb9864cf43055ae93beb0afd6c7d144bfa4..'
+            'dced80a85fe1e8f13dd5ea19923e5d2e8680020d 100644\n'
+            '--- a/test\n'
+            '+++ b/test\n'
+            '@@ -1 +1,3 @@\n'
+            ' test\n'
+            '+\n'
+            '+test\n'
         )
 
-        change_api_response = json.dumps({
+        payload = self.dump_json({
             'author': 'Some Author',
             'id': 'bfdde95432b3af879af969bd2377dc3e55ee46e6',
             'date': '2015-02-13 22:34:01 -0700',
@@ -253,37 +207,22 @@ class ReviewBoardGatewayTests(ServiceTests):
             'diff': diff,
         })
 
-        def _http_request(client, *args, **kwargs):
-            return change_api_response.encode('utf-8'), {}
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            repository = ctx.create_repository()
+            change = ctx.service.get_change(
+                repository=repository,
+                revision='bfdde95432b3af879af969bd2377dc3e55ee46e6')
 
-        account = self._get_hosting_account(use_url=True)
-        account.data['private_token'] = encrypt_password('abc123')
-
-        repository = Repository(hosting_account=account)
-        repository.extra_data = {
-            'rbgateway_repo_name': 'myrepo',
-        }
-
-        service = account.service
-        client = service.client
-
-        self.spy_on(client.http_request, call_fake=_http_request)
-
-        change = service.get_change(repository,
-                                    'bfdde95432b3af879af969bd2377dc3e55ee46e6')
-
-        calls = client.http_request.calls
-        self.assertEqual(len(calls), 1)
-        self.assertTrue(calls[0].called_with(
+        ctx.assertHTTPCall(
+            0,
             url=('https://example.com/repos/myrepo/commits/'
                  'bfdde95432b3af879af969bd2377dc3e55ee46e6'),
-            method='GET',
             username=None,
             password=None,
-            body=None,
             headers={
                 'PRIVATE-TOKEN': 'abc123',
-            }))
+            })
 
         self.assertEqual(
             change,
@@ -292,4 +231,4 @@ class ReviewBoardGatewayTests(ServiceTests):
                    id='bfdde95432b3af879af969bd2377dc3e55ee46e6',
                    message='My Message',
                    parent='304c53c163aedfd0c0e0933776f09c24b87f5944'))
-        self.assertEqual(change.diff, diff)
+        self.assertEqual(change.diff, diff.encode('utf-8'))
