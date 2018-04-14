@@ -123,14 +123,16 @@ class GerritForm(HostingServiceForm):
             The cleaned form data.
         """
         self.cleaned_data = super(GerritForm, self).clean()
-        gerrit_url = self.cleaned_data['gerrit_url']
 
-        gerrit_domain = urlparse(gerrit_url).netloc
+        gerrit_url = self.cleaned_data.get('gerrit_url')
 
-        if ':' in gerrit_domain:
-            gerrit_domain = gerrit_domain.split(':', 1)[0]
+        if gerrit_url:
+            gerrit_domain = urlparse(gerrit_url).netloc
 
-        self.cleaned_data['gerrit_domain'] = gerrit_domain
+            if ':' in gerrit_domain:
+                gerrit_domain = gerrit_domain.split(':', 1)[0]
+
+            self.cleaned_data['gerrit_domain'] = gerrit_domain
 
         return self.cleaned_data
 
@@ -222,6 +224,11 @@ class GerritClient(HostingServiceClient):
 
         opener = self.get_opener(url, username, password)
         request = URLRequest(url, body, headers, method=method)
+
+        # Gerrit 2.14+ require Basic Auth, so add that header. Old versions
+        # use Digest Auth, which get_opener() already prepared.
+        if username is not None and password is not None:
+            request.add_basic_auth(username, password)
 
         try:
             response = opener.open(request)

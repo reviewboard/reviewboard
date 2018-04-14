@@ -2,18 +2,28 @@
 
 from __future__ import unicode_literals
 
-import json
-
 from reviewboard.hostingsvcs.errors import RepositoryError
-from reviewboard.hostingsvcs.tests.testcases import ServiceTests
-from reviewboard.scmtools.models import Repository, Tool
+from reviewboard.hostingsvcs.service import HostingServiceClient
+from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 
 
-class KilnTests(ServiceTests):
+class KilnTests(HostingServiceTestCase):
     """Unit tests for the Kiln hosting service."""
 
     service_name = 'kiln'
     fixtures = ['test_scmtools']
+
+    default_account_data = {
+        'auth_token': 'my-token',
+        'kiln_account_domain': 'mydomain',
+    }
+
+    default_repository_extra_data = {
+        'kiln_account_domain': 'mydomain',
+        'kiln_project_name': 'myproject',
+        'kiln_group_name': 'mygroup',
+        'kiln_repo_name': 'myrepo',
+    }
 
     def test_service_support(self):
         """Testing Kiln service support capabilities"""
@@ -63,88 +73,81 @@ class KilnTests(ServiceTests):
 
     def test_authorize(self):
         """Testing Kiln.authorize"""
-        def _http_post(service, url, *args, **kwargs):
-            self.assertEqual(
-                url,
-                'https://mydomain.kilnhg.com/Api/1.0/Auth/Login')
-            return '"my-token"', {}
+        hosting_account = self.create_hosting_account(data={})
 
-        account = self._get_hosting_account()
-        service = account.service
+        self.spy_on(HostingServiceClient._make_form_data_boundary,
+                    call_fake=lambda: 'BOUNDARY')
 
-        self.assertFalse(service.is_authorized())
+        with self.setup_http_test(payload=b'"my-token"',
+                                  hosting_account=hosting_account,
+                                  expected_http_calls=1) as ctx:
+            self.assertFalse(ctx.service.is_authorized())
 
-        self.spy_on(service.client.http_post, call_fake=_http_post)
+            ctx.service.authorize(username='myuser',
+                                  password='abc123',
+                                  kiln_account_domain='mydomain')
 
-        service.authorize('myuser', 'abc123',
-                          kiln_account_domain='mydomain')
+        ctx.assertHTTPCall(
+            0,
+            url='https://mydomain.kilnhg.com/Api/1.0/Auth/Login',
+            method='POST',
+            username=None,
+            password=None,
+            body=(
+                '--BOUNDARY\r\n'
+                'Content-Disposition: form-data; name="sPassword"\r\n\r\n'
+                'abc123\r\n'
+                '--BOUNDARY\r\n'
+                'Content-Disposition: form-data; name="sUser"\r\n\r\n'
+                'myuser\r\n'
+                '--BOUNDARY--'
+            ),
+            headers={
+                'Content-Length': '152',
+                'Content-Type': 'multipart/form-data; boundary=BOUNDARY',
+            })
 
-        self.assertIn('auth_token', account.data)
-        self.assertEqual(account.data['auth_token'], 'my-token')
-        self.assertTrue(service.is_authorized())
+        self.assertIn('auth_token', hosting_account.data)
+        self.assertEqual(hosting_account.data['auth_token'], 'my-token')
+        self.assertTrue(ctx.service.is_authorized())
 
     def test_check_repository(self):
         """Testing Kiln.check_repository"""
-        def _http_get(service, url, *args, **kwargs):
-            self.assertEqual(
-                url,
-                'https://mydomain.kilnhg.com/Api/1.0/Project?token=my-token')
-
-            data = json.dumps([{
-                'sSlug': 'myproject',
-                'repoGroups': [{
-                    'sSlug': 'mygroup',
-                    'repos': [{
-                        'sSlug': 'myrepo',
-                    }]
+        payload = self.dump_json([{
+            'sSlug': 'myproject',
+            'repoGroups': [{
+                'sSlug': 'mygroup',
+                'repos': [{
+                    'sSlug': 'myrepo',
                 }]
-            }])
+            }]
+        }])
 
-            return data, {}
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            ctx.service.check_repository(kiln_account_domain='mydomain',
+                                         kiln_project_name='myproject',
+                                         kiln_group_name='mygroup',
+                                         kiln_repo_name='myrepo',
+                                         tool_name='Mercurial')
 
-        account = self._get_hosting_account()
-        service = account.service
-        account.data.update({
-            'auth_token': 'my-token',
-            'kiln_account_domain': 'mydomain',
-        })
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-
-        service.check_repository(kiln_account_domain='mydomain',
-                                 kiln_project_name='myproject',
-                                 kiln_group_name='mygroup',
-                                 kiln_repo_name='myrepo',
-                                 tool_name='Mercurial')
-        self.assertTrue(service.client.http_get.called)
+        ctx.assertHTTPCall(
+            0,
+            url='https://mydomain.kilnhg.com/Api/1.0/Project?token=my-token',
+            username=None,
+            password=None)
 
     def test_check_repository_with_incorrect_repo_info(self):
         """Testing Kiln.check_repository with incorrect repo info"""
-        def _http_get(service, url, *args, **kwargs):
-            self.assertEqual(
-                url,
-                'https://mydomain.kilnhg.com/Api/1.0/Project?token=my-token')
-
-            data = json.dumps([{
-                'sSlug': 'otherproject',
-                'repoGroups': [{
-                    'sSlug': 'othergroup',
-                    'repos': [{
-                        'sSlug': 'otherrepo',
-                    }]
+        payload = self.dump_json([{
+            'sSlug': 'otherproject',
+            'repoGroups': [{
+                'sSlug': 'othergroup',
+                'repos': [{
+                    'sSlug': 'otherrepo',
                 }]
-            }])
-
-            return data, {}
-
-        account = self._get_hosting_account()
-        service = account.service
-        account.data.update({
-            'auth_token': 'my-token',
-            'kiln_account_domain': 'mydomain',
-        })
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
+            }]
+        }])
 
         expected_message = (
             'The repository with this project, group, and name was not found. '
@@ -152,21 +155,26 @@ class KilnTests(ServiceTests):
             'configuration on Kiln.'
         )
 
-        with self.assertRaisesMessage(RepositoryError, expected_message):
-            service.check_repository(kiln_account_domain='mydomain',
-                                     kiln_project_name='myproject',
-                                     kiln_group_name='mygroup',
-                                     kiln_repo_name='myrepo',
-                                     tool_name='Mercurial')
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            with self.assertRaisesMessage(RepositoryError, expected_message):
+                ctx.service.check_repository(kiln_account_domain='mydomain',
+                                             kiln_project_name='myproject',
+                                             kiln_group_name='mygroup',
+                                             kiln_repo_name='myrepo',
+                                             tool_name='Mercurial')
 
-        self.assertTrue(service.client.http_get.called)
+        ctx.assertHTTPCall(
+            0,
+            url='https://mydomain.kilnhg.com/Api/1.0/Project?token=my-token',
+            username=None,
+            password=None)
 
     def test_get_file(self):
         """Testing Kiln.get_file"""
-        def _http_get(service, url, *args, **kwargs):
-            if url == ('https://mydomain.kilnhg.com/Api/1.0/Project'
-                       '?token=my-token'):
-                data = json.dumps([{
+        paths = {
+            '/Api/1.0/Project': {
+                'payload': self.dump_json([{
                     'sSlug': 'myproject',
                     'repoGroups': [{
                         'sSlug': 'mygroup',
@@ -175,52 +183,42 @@ class KilnTests(ServiceTests):
                             'ixRepo': 123,
                         }]
                     }]
-                }])
-            else:
-                self.assertEqual(
-                    url,
-                    'https://mydomain.kilnhg.com/Api/1.0/Repo/123/Raw/File/'
-                    '%s?rev=%s&token=my-token'
-                    % (encoded_path, revision))
-
-                data = 'My data'
-
-            return data, {}
-
-        path = '/path'
-        encoded_path = '2F70617468'
-        revision = 123
-
-        account = self._get_hosting_account()
-        service = account.service
-        repository = Repository(hosting_account=account,
-                                tool=Tool.objects.get(name='Mercurial'))
-        repository.extra_data = {
-            'kiln_account_domain': 'mydomain',
-            'kiln_project_name': 'myproject',
-            'kiln_group_name': 'mygroup',
-            'kiln_repo_name': 'myrepo',
+                }]),
+            },
+            '/Api/1.0/Repo/123/Raw/File/2F70617468': {
+                'payload': b'My data',
+            },
         }
-        repository.save()
 
-        account.data.update({
-            'auth_token': 'my-token',
-            'kiln_account_domain': 'mydomain',
-        })
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=2) as ctx:
+            repository = ctx.create_repository(tool_name='Mercurial')
+            result = ctx.service.get_file(repository=repository,
+                                          path='/path',
+                                          revision='123')
 
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-
-        result = service.get_file(repository, path, revision)
-        self.assertTrue(service.client.http_get.called)
         self.assertIsInstance(result, bytes)
         self.assertEqual(result, b'My data')
 
+        ctx.assertHTTPCall(
+            0,
+            url='https://mydomain.kilnhg.com/Api/1.0/Project?token=my-token',
+            method='GET',
+            username=None,
+            password=None)
+
+        ctx.assertHTTPCall(
+            1,
+            url=('https://mydomain.kilnhg.com/Api/1.0/Repo/123/Raw/File/'
+                 '2F70617468?rev=123&token=my-token'),
+            username=None,
+            password=None)
+
     def test_get_file_exists(self):
         """Testing Kiln.get_file_exists"""
-        def _http_get(service, url, *args, **kwargs):
-            if url == ('https://mydomain.kilnhg.com/Api/1.0/Project'
-                       '?token=my-token'):
-                data = json.dumps([{
+        paths = {
+            '/Api/1.0/Project': {
+                'payload': self.dump_json([{
                     'sSlug': 'myproject',
                     'repoGroups': [{
                         'sSlug': 'mygroup',
@@ -229,41 +227,31 @@ class KilnTests(ServiceTests):
                             'ixRepo': 123,
                         }]
                     }]
-                }])
-            else:
-                self.assertEqual(
-                    url,
-                    'https://mydomain.kilnhg.com/Api/1.0/Repo/123/Raw/File/'
-                    '%s?rev=%s&token=my-token'
-                    % (encoded_path, revision))
-
-                data = 'My data'
-
-            return data, {}
-
-        path = '/path'
-        encoded_path = '2F70617468'
-        revision = 123
-
-        account = self._get_hosting_account()
-        service = account.service
-        repository = Repository(hosting_account=account,
-                                tool=Tool.objects.get(name='Mercurial'))
-        repository.extra_data = {
-            'kiln_account_domain': 'mydomain',
-            'kiln_project_name': 'myproject',
-            'kiln_group_name': 'mygroup',
-            'kiln_repo_name': 'myrepo',
+                }]),
+            },
+            '/Api/1.0/Repo/123/Raw/File/2F70617468': {
+                'payload': b'My data',
+            },
         }
-        repository.save()
 
-        account.data.update({
-            'auth_token': 'my-token',
-            'kiln_account_domain': 'mydomain',
-        })
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=2) as ctx:
+            repository = ctx.create_repository()
+            result = ctx.service.get_file_exists(repository=repository,
+                                                 path='/path',
+                                                 revision='123')
 
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-
-        result = service.get_file_exists(repository, path, revision)
-        self.assertTrue(service.client.http_get.called)
         self.assertTrue(result)
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://mydomain.kilnhg.com/Api/1.0/Project?token=my-token',
+            username=None,
+            password=None)
+
+        ctx.assertHTTPCall(
+            1,
+            url=('https://mydomain.kilnhg.com/Api/1.0/Repo/123/Raw/File/'
+                 '2F70617468?rev=123&token=my-token'),
+            username=None,
+            password=None)

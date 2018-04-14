@@ -3,9 +3,12 @@
 from __future__ import unicode_literals
 
 import io
+import json
 from contextlib import contextmanager
 
+from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError
+from django.utils.six.moves.urllib.parse import urlparse
 from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -175,7 +178,7 @@ class HostingServiceTestCase(SpyAgency, TestCase):
 
     @contextmanager
     def setup_http_test(self, http_request_func=None, payload=None,
-                        status_code=None, hosting_account=None,
+                        headers=None, status_code=None, hosting_account=None,
                         expected_http_calls=None):
         """Set up state for HTTP-related tests.
 
@@ -201,6 +204,9 @@ class HostingServiceTestCase(SpyAgency, TestCase):
 
             payload (bytes, optional):
                 An explicit payload to return to the client.
+
+            headers (dict, optional):
+                Headers to send along with the result.
 
             status_code (int, optional):
                 An explicit HTTP status code. Only values >= 400 are used.
@@ -234,17 +240,13 @@ class HostingServiceTestCase(SpyAgency, TestCase):
                     'http_request_func and status_code cannot both be '
                     'provided')
         else:
-            if payload is None:
-                payload = b''
-            elif not isinstance(payload, bytes):
-                raise TypeError('payload must be a byte string or None')
-
-            def http_request_func(client, url, *args, **kwargs):
-                if status_code is not None and status_code >= 400:
-                    raise HTTPError(url, status_code, '', {},
-                                    io.BytesIO(payload))
-
-                return payload, {}
+            http_request_func = self.make_handler_for_paths({
+                None: {
+                    'status_code': status_code,
+                    'payload': payload,
+                    'headers': headers,
+                },
+            })
 
         client = hosting_account.service.client
 
@@ -260,6 +262,97 @@ class HostingServiceTestCase(SpyAgency, TestCase):
 
         if expected_http_calls is not None:
             self.assertEqual(len(ctx.http_calls), expected_http_calls)
+
+    def make_handler_for_paths(self, paths):
+        """Return an HTTP handler function for serving the supplied paths.
+
+        This is meant to be passed to :py:meth:`setup_http_test`.
+
+        This takes a dictionary matching paths to information to return. Each
+        key is a path relative to the domain, which may optionally contain a
+        full query string to match. It may also be ``None``, which is the
+        fallback.
+
+        Each value is a dictionary containing optional ``payload``,
+        ``status_code``, or ``headers`` values.
+
+        Args:
+            paths (dict):
+                The dictionary of paths.
+
+        Returns:
+            callable:
+            The resulting HTTP handler function.
+
+        Example:
+            .. code-block:: python
+
+               handler = make_handler_for_paths({
+                   '/api/1/diffs/': {
+                       'payload': b'...',
+                       'headers': {
+                           b'My-Header': b'value',
+                        },
+                   },
+                   '/api/1/bad/': {
+                       'status_code': 404,
+                       'payload': b'Not found.',
+                   },
+                   None: {
+                       'payload': b'fallback data...',
+                   },
+               })
+        """
+        # Validate the paths to make sure payloads are in the right format.
+        for path, path_info in six.iteritems(paths):
+            payload = path_info.get('payload')
+
+            if payload is not None and not isinstance(payload, bytes):
+                raise TypeError('payload must be a byte string or None')
+
+        def _handler(client, url, *args, **kwargs):
+            parts = urlparse(url)
+
+            path_info = paths.get('%s?%s' % (parts.path, parts.query))
+
+            if path_info is None:
+                path_info = paths.get(parts.path)
+
+                if path_info is None:
+                    path_info = paths.get(None)
+
+                    if path_info is None:
+                        self.fail('Unexpected path "%s"' % parts.path)
+
+            status_code = path_info.get('status_code')
+            payload = path_info.get('payload') or b''
+            headers = path_info.get('headers') or {}
+
+            if status_code is not None and status_code >= 400:
+                raise HTTPError(url, status_code, '', headers,
+                                io.BytesIO(payload))
+            else:
+                return payload, headers
+
+        return _handler
+
+    def dump_json(self, data):
+        """Dump JSON-compatible data to a byte string.
+
+        Args:
+            data (object):
+                The data to dump.
+
+        Returns:
+            bytes:
+            The serialized byte string.
+        """
+        result = json.dumps(data)
+
+        if isinstance(result, six.text_type):
+            result = result.encode('utf-8')
+
+        return result
 
     def get_form(self, plan=None, fields={}):
         """Return the configuration form for the hosting service.

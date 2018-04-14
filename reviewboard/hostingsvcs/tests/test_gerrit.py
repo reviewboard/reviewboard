@@ -3,27 +3,141 @@
 from __future__ import unicode_literals
 
 import base64
-import json
 
-from django.utils import six
-from django.utils.six.moves.urllib.parse import urlparse
+from django.utils.six.moves.urllib.request import (HTTPDigestAuthHandler,
+                                                   OpenerDirector)
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceAPIError,
                                             HostingServiceError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.gerrit import Gerrit, GerritClient
-from reviewboard.hostingsvcs.tests.testcases import ServiceTests
+from reviewboard.hostingsvcs.gerrit import GerritForm
+from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
 from reviewboard.scmtools.errors import FileNotFoundError
-from reviewboard.scmtools.models import Repository
 
 
-class GerritTests(ServiceTests):
+class GerritTestCase(HostingServiceTestCase):
+    """Base class for Gerrit unit tests."""
+
+    service_name = 'gerrit'
+
+    default_account_data = {
+        'authorized': False,
+        'gerrit_http_password': encrypt_password('mypass'),
+        'gerrit_ssh_port': 1234,
+    }
+
+    default_repository_tool_name = 'Git'
+
+    default_repository_extra_data = {
+        'gerrit_url': 'http://gerrit.example.com/',
+        'gerrit_project_name': 'Project',
+    }
+
+
+class GerritFormTests(GerritTestCase):
+    """Unit tests for GerritForm."""
+
+    def test_clean(self):
+        """Testing GerritForm.clean"""
+        form = GerritForm({
+            'gerrit_project_name': 'test-project',
+            'gerrit_ssh_port': 12345,
+            'gerrit_url': 'http://gerrit.example.com:8080',
+        })
+
+        self.assertTrue(form.is_valid())
+        self.assertEqual(
+            form.cleaned_data,
+            {
+                'gerrit_domain': 'gerrit.example.com',
+                'gerrit_project_name': 'test-project',
+                'gerrit_ssh_port': 12345,
+                'gerrit_url': 'http://gerrit.example.com:8080/',
+            })
+
+    def test_clean_with_errors(self):
+        """Testing GerritForm.clean with errors"""
+        form = GerritForm({
+            'gerrit_url': 'invalid',
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.cleaned_data, {})
+        self.assertIn('gerrit_project_name', form.errors)
+        self.assertIn('gerrit_ssh_port', form.errors)
+        self.assertIn('gerrit_url', form.errors)
+        self.assertEqual(form.errors['gerrit_project_name'],
+                         ['This field is required.'])
+        self.assertEqual(form.errors['gerrit_ssh_port'],
+                         ['This field is required.'])
+        self.assertEqual(form.errors['gerrit_url'],
+                         ['Enter a valid URL.'])
+
+
+class GerritClientTests(GerritTestCase):
+    """Unit tests for GerritClient."""
+
+    def setUp(self):
+        super(GerritClientTests, self).setUp()
+
+        hosting_account = self.create_hosting_account()
+        self.client = hosting_account.service.client
+
+    def test_auth_headers(self):
+        """Testing GerritClient.http_request sets auth headers"""
+        class DummyResponse(object):
+            headers = {}
+
+            def read(self):
+                return b''
+
+        def _open(*args, **kwargs):
+            _open_args.extend(args)
+
+            return DummyResponse()
+
+        _open_args = []
+        self.spy_on(OpenerDirector.open, call_fake=_open)
+
+        self.client.http_request(url='http://gerrit.example.com/',
+                                 username='test-user',
+                                 password='test-pass')
+
+        opener, request = _open_args
+        handler = opener.handlers[0]
+        self.assertIsInstance(handler, HTTPDigestAuthHandler)
+        self.assertEqual(
+            handler.passwd.find_user_password(None,
+                                              'http://gerrit.example.com/'),
+            ('test-user', 'test-pass'))
+
+        self.assertEqual(
+            request.headers,
+            {
+                'Authorization': 'Basic dGVzdC11c2VyOnRlc3QtcGFzcw==',
+            })
+
+
+class GerritTests(GerritTestCase):
     """Unit tests for the Gerrit hosting service."""
 
     service_name = 'gerrit'
+
+    default_account_data = {
+        'authorized': False,
+        'gerrit_http_password': encrypt_password('mypass'),
+        'gerrit_ssh_port': 1234,
+    }
+
+    default_repository_tool_name = 'Git'
+
+    default_repository_extra_data = {
+        'gerrit_url': 'http://gerrit.example.com/',
+        'gerrit_project_name': 'Project',
+    }
 
     def test_service_support(self):
         """Testing Gerrit service support capabilities"""
@@ -34,239 +148,277 @@ class GerritTests(ServiceTests):
 
     def test_authorize(self):
         """Testing Gerrit.authorize"""
-        self._setup_api_test()
+        hosting_account = self.create_hosting_account(data={})
 
-        def _http_get(*args, **kwargs):
-            return '', {}
+        with self.setup_http_test(hosting_account=hosting_account,
+                                  expected_http_calls=1) as ctx:
+            ctx.service.authorize(
+                username='myuser',
+                password='mypass',
+                hosting_url='',
+                credentials={
+                    'username': 'myuser',
+                    'password': 'mypass',
+                },
+                local_site_name=None,
+                gerrit_url='http://gerrit.example.com')
 
-        self.spy_on(GerritClient.http_get, call_fake=_http_get)
-        self.service.authorize(
-            username=self.account.username,
-            password=self.account.data['gerrit_http_password'],
-            hosting_url='',
-            credentials={
-                'username': self.account.username,
-                'password': self.account.data['gerrit_http_password'],
-            },
-            local_site_name=None,
-            gerrit_url='http://gerrit.example.com')
+        self.assertIn('authorized', hosting_account.data)
+        self.assertTrue(hosting_account.data['authorized'])
 
-        self.assertIn('authorized', self.account.data)
-        self.assertTrue(self.account.data['authorized'])
+        ctx.assertHTTPCall(0, url='http://gerrit.example.com/a/projects/')
 
     def test_authorize_with_error(self):
-        """Testing Gerrit.authorize handles authentication failures"""
-        self._setup_api_test()
-
-        def _http_get(*args, **kwargs):
-            raise HostingServiceError('', http_code=401)
-
-        self.spy_on(GerritClient.http_get, call_fake=_http_get)
-
+        """Testing Gerrit.authorize handles authentication failure"""
         expected_message = (
             'Unable to authenticate to Gerrit at '
             'http://gerrit.example.com/a/projects/. The username or password '
             'used may be invalid.'
         )
 
-        with self.assertRaisesMessage(AuthorizationError, expected_message):
-            self.service.authorize(
-                username=self.account.username,
-                password=self.account.data['gerrit_http_password'],
-                hosting_url='',
-                credentials={
-                    'username': self.account.username,
-                    'password': self.account.data['gerrit_http_password'],
-                },
-                local_site_name=None,
-                gerrit_url='http://gerrit.example.com')
+        def _http_request(client, *args, **kwargs):
+            raise HostingServiceError('', http_code=401)
 
-        self.assertFalse(self.account.data['authorized'])
+        with self.setup_http_test(_http_request, expected_http_calls=1) as ctx:
+            with self.assertRaisesMessage(AuthorizationError,
+                                          expected_message):
+                ctx.service.authorize(
+                    username='myuser',
+                    password='mypass',
+                    hosting_url='',
+                    credentials={
+                        'username': 'myuser',
+                        'password': 'mypass',
+                    },
+                    local_site_name=None,
+                    gerrit_url='http://gerrit.example.com')
+
+        ctx.assertHTTPCall(0, url='http://gerrit.example.com/a/projects/')
+
+        self.assertFalse(ctx.hosting_account.data['authorized'])
 
     def test_check_repository(self):
         """Testing Gerrit.check_repository"""
-        self._setup_api_test()
+        payload = self._make_json_rsp({
+            'gerrit-reviewboard': {
+                'id': 'gerrit-reviewboard',
+                'version': self.service_class.REQUIRED_PLUGIN_VERSION_STR,
+            },
+        })
 
-        def _http_get(*args, **kwargs):
-            return b")]}'\n%s" % json.dumps({
-                'gerrit-reviewboard': {
-                    'id': 'gerrit-reviewboard',
-                    'version': Gerrit.REQUIRED_PLUGIN_VERSION_STR,
-                },
-            }).encode('utf-8'), {}
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=2) as ctx:
+            ctx.service.check_repository(
+                gerrit_url='http://gerrit.example.com',
+                gerrit_project_name='Project')
 
-        self.spy_on(GerritClient.http_get, _http_get)
-        self.service.check_repository('http://gerrit.example.com',
-                                      'Project')
+        ctx.assertHTTPCall(0,
+                           url='http://gerrit.example.com/a/projects/Project')
+        ctx.assertHTTPCall(1, url='http://gerrit.example.com/a/plugins/')
 
     def test_check_repository_with_404(self):
         """Testing Gerrit.check_repository with a non-existent repository"""
-        self._setup_api_test()
-
-        def _http_get(*args, **kwargs):
+        def _http_request(client, *args, **kwargs):
             raise HostingServiceAPIError('', 404)
-
-        self.spy_on(GerritClient.http_get, _http_get)
 
         expected_message = (
             'The project "Project" does not exist or you do not have access '
             'to it.'
         )
 
-        with self.assertRaisesMessage(RepositoryError, expected_message):
-            self.service.check_repository('http://gerrit.example.com',
-                                          'Project')
+        with self.setup_http_test(_http_request,
+                                  expected_http_calls=1) as ctx:
+            with self.assertRaisesMessage(RepositoryError, expected_message):
+                ctx.service.check_repository(
+                    gerrit_url='http://gerrit.example.com',
+                    gerrit_project_name='Project')
+
+        ctx.assertHTTPCall(0,
+                           url='http://gerrit.example.com/a/projects/Project')
 
     def test_check_repository_with_no_plugin(self):
         """Testing Gerrit.check_repository with no plugin"""
-        self._setup_api_test()
-
-        def _http_get(*args, **kwargs):
-            return b")]}'\n{}", {}
-
-        self.spy_on(GerritClient.http_get, _http_get)
-
         expected_message = (
             'The "gerrit-reviewboard" plugin is not installed on the server. '
             'See https://github.com/reviewboard/gerrit-reviewboard-plugin/ '
             'for installation instructions.'
         )
 
-        with self.assertRaisesMessage(RepositoryError, expected_message):
-            self.service.check_repository('http://gerrit.example.com',
-                                          'Project')
+        with self.setup_http_test(payload=self._make_json_rsp({}),
+                                  expected_http_calls=2) as ctx:
+            with self.assertRaisesMessage(RepositoryError, expected_message):
+                ctx.service.check_repository(
+                    gerrit_url='http://gerrit.example.com',
+                    gerrit_project_name='Project')
+
+        ctx.assertHTTPCall(0,
+                           url='http://gerrit.example.com/a/projects/Project')
+        ctx.assertHTTPCall(1, url='http://gerrit.example.com/a/plugins/')
 
     def test_check_repository_with_bad_plugin_version(self):
         """Testing Gerrit.check_repository with an outdated plugin"""
-        self._setup_api_test()
-
-        def _http_get(*args, **kwargs):
-            return b")]}'\n%s" % json.dumps({
-                'gerrit-reviewboard': {
-                    'id': 'gerrit-reviewboard',
-                    'version': '0.0.0',
-                },
-            }).encode('utf-8'), {}
-
-        self.spy_on(GerritClient.http_get, _http_get)
+        payload = self._make_json_rsp({
+            'gerrit-reviewboard': {
+                'id': 'gerrit-reviewboard',
+                'version': '0.0.0',
+            },
+        })
 
         expected_message = (
             'The "gerrit-reviewboard" plugin on the server is an incompatible '
-            'version: found 0.0.0 but version %s.%s.%s or higher is required.'
-            % Gerrit.REQUIRED_PLUGIN_VERSION
+            'version: found 0.0.0 but version %s or higher is required.'
+            % self.service_class.REQUIRED_PLUGIN_VERSION_STR
         )
 
-        with self.assertRaisesMessage(RepositoryError, expected_message):
-            self.service.check_repository('http://gerrit.example.com',
-                                          'Project')
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=2) as ctx:
+            with self.assertRaisesMessage(RepositoryError, expected_message):
+                ctx.service.check_repository(
+                    gerrit_url='http://gerrit.example.com',
+                    gerrit_project_name='Project')
+
+        ctx.assertHTTPCall(0,
+                           url='http://gerrit.example.com/a/projects/Project')
+        ctx.assertHTTPCall(1, url='http://gerrit.example.com/a/plugins/')
 
     def test_get_file_exists(self):
         """Testing Gerrit.get_file_exists"""
-        self._setup_api_test()
+        blob_id = 'a' * 40
 
-        def _http_get(*args, **kwargs):
-            return b")]}'\n%s" % json.dumps({
-                'blobId': 'a' * 40,
-            }).encode('utf-8'), {}
+        payload = self._make_json_rsp({
+            'blobId': blob_id,
+        })
 
-        self.spy_on(GerritClient.http_get, _http_get)
-        self.assertTrue(self.service.get_file_exists(
-            self.repository, '/bogus', 'a' * 40))
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            self.assertTrue(ctx.service.get_file_exists(
+                repository=ctx.create_repository(),
+                path='/bogus',
+                revision=blob_id))
+
+        ctx.assertHTTPCall(
+            0,
+            url=('http://gerrit.example.com/a/projects/Project/blobs/%s/'
+                 % blob_id))
 
     def test_get_file_exists_with_404(self):
         """Testing Gerrit.get_file_exists with a non-existant file"""
-        self._setup_api_test()
-
-        def _http_get(*args, **kwargs):
+        def _http_request(client, *args, **kwargs):
             raise HostingServiceAPIError('', http_code=404)
 
-        self.spy_on(GerritClient.http_get, _http_get)
-        self.assertFalse(self.service.get_file_exists(
-            self.repository, '/bogus', 'a' * 40))
+        blob_id = 'a' * 40
+
+        with self.setup_http_test(_http_request, expected_http_calls=1) as ctx:
+            self.assertFalse(ctx.service.get_file_exists(
+                repository=ctx.create_repository(),
+                path='/bogus',
+                revision=blob_id))
+
+        ctx.assertHTTPCall(
+            0,
+            url=('http://gerrit.example.com/a/projects/Project/blobs/%s/'
+                 % blob_id))
 
     def test_get_file(self):
         """Testing Gerrit.get_file"""
-        self._setup_api_test()
+        blob_id = 'a' * 40
 
-        def _http_get(*args, **kwargs):
-            return base64.b64encode(b'Hello, world!'), {}
-
-        self.spy_on(GerritClient.http_get, _http_get)
-
-        data = self.service.get_file(self.repository, '/bogus', 'a' * 40)
+        with self.setup_http_test(payload=base64.b64encode(b'Hello, world!'),
+                                  expected_http_calls=1) as ctx:
+            data = ctx.service.get_file(repository=ctx.create_repository(),
+                                        path='/bogus',
+                                        revision=blob_id)
 
         self.assertIsInstance(data, bytes)
         self.assertEqual(data, b'Hello, world!')
 
+        ctx.assertHTTPCall(
+            0,
+            url=('http://gerrit.example.com/a/projects/Project/blobs/%s/'
+                 'content/'
+                 % blob_id))
+
     def test_get_file_with_404(self):
         """Testing Gerrit.get_file with a non-existent blob ID"""
-        self._setup_api_test()
-
-        def _http_get(*args, **kwargs):
+        def _http_request(client, *args, **kwargs):
             raise HostingServiceAPIError('', http_code=404)
 
-        self.spy_on(GerritClient.http_get, _http_get)
+        blob_id = 'a' * 40
 
-        with self.assertRaises(FileNotFoundError):
-            self.service.get_file(self.repository, '/bogus', 'a' * 40)
+        with self.setup_http_test(_http_request, expected_http_calls=1) as ctx:
+            with self.assertRaises(FileNotFoundError):
+                ctx.service.get_file(repository=ctx.create_repository(),
+                                     path='/bogus',
+                                     revision=blob_id)
+
+        ctx.assertHTTPCall(
+            0,
+            url=('http://gerrit.example.com/a/projects/Project/blobs/%s/'
+                 'content/'
+                 % blob_id))
 
     def test_get_file_with_undecodable_response(self):
         """Testing Gerrit.get_file with an undecodable response"""
-        self._setup_api_test()
-
-        def _http_get(*args, **kwargs):
-            return b'?Invalid base64', {}
-
-        self.spy_on(GerritClient.http_get, _http_get)
-
+        blob_id = 'a' * 40
         expected_message = (
             'An error occurred while retrieving "/foo" at revision '
             '"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" from Gerrit: the '
             'response could not be decoded: Incorrect padding'
         )
 
-        with self.assertRaisesMessage(HostingServiceAPIError,
-                                      expected_message) as e:
-            self.service.get_file(self.repository, '/foo', 'a' * 40)
+        with self.setup_http_test(payload=b'?Invalid base64',
+                                  expected_http_calls=1) as ctx:
+            with self.assertRaisesMessage(HostingServiceAPIError,
+                                          expected_message):
+                ctx.service.get_file(repository=ctx.create_repository(),
+                                     path='/foo',
+                                     revision=blob_id)
 
-        self.assertIn('response could not be decoded',
-                      six.text_type(e.exception))
+        ctx.assertHTTPCall(
+            0,
+            url=('http://gerrit.example.com/a/projects/Project/blobs/%s/'
+                 'content/'
+                 % blob_id))
 
     def test_get_branches(self):
         """Testing Gerrit.get_branches"""
-        self._setup_api_test()
+        payload = self._make_json_rsp([
+            {
+                'ref': 'HEAD',
+                'revision': 'master'
+            },
+            {
+                'ref': 'refs/meta/config',
+                'revision': '7a59a483aeefc8c7d4082f1081c42db817176071'
+            },
+            {
+                'ref': 'refs/heads/master',
+                'revision': '6854734ef5fc8b2b9d291bf42aa59c344abf5a73'
+            },
+            {
+                'ref': 'refs/heads/release-2.0.x',
+                'revision': '7f68a001f8e5b77e7355c11385bfbcd2a6d3c077'
+            },
+            {
+                'ref': 'refs/heads/release-2.5.x',
+                'revision': 'fc8a7ecf288d835ecd9ded086ffaee9412d1da9c'
+            },
+        ])
 
-        def _http_get(*args, **kwargs):
-            return b")]}'\n%s" % json.dumps([
-                {
-                    'ref': 'HEAD',
-                    'revision': 'master'
-                },
-                {
-                    'ref': 'refs/meta/config',
-                    'revision': '7a59a483aeefc8c7d4082f1081c42db817176071'
-                },
-                {
-                    'ref': 'refs/heads/master',
-                    'revision': '6854734ef5fc8b2b9d291bf42aa59c344abf5a73'
-                },
-                {
-                    'ref': 'refs/heads/release-2.0.x',
-                    'revision': '7f68a001f8e5b77e7355c11385bfbcd2a6d3c077'
-                },
-                {
-                    'ref': 'refs/heads/release-2.5.x',
-                    'revision': 'fc8a7ecf288d835ecd9ded086ffaee9412d1da9c'
-                },
-            ]).encode('utf-8'), {}
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            branches = ctx.service.get_branches(ctx.create_repository())
 
-        self.spy_on(GerritClient.http_get, call_fake=_http_get)
-        rsp = self.service.get_branches(self.repository)
+        ctx.assertHTTPCall(
+            0,
+            url='http://gerrit.example.com/a/projects/Project/branches/')
+
         self.assertEqual(
-            rsp,
+            branches,
             [
                 Branch(commit='6854734ef5fc8b2b9d291bf42aa59c344abf5a73',
-                       id='master', default=True),
+                       id='master',
+                       default=True),
                 Branch(commit='7f68a001f8e5b77e7355c11385bfbcd2a6d3c077',
                        id='release-2.0.x'),
                 Branch(commit='fc8a7ecf288d835ecd9ded086ffaee9412d1da9c',
@@ -276,43 +428,44 @@ class GerritTests(ServiceTests):
 
     def test_get_commits(self):
         """Testing Gerrit.get_commits"""
-        self._setup_api_test()
+        payload = self._make_json_rsp([
+            {
+                'message': 'Backport a fix for screenshot commenting.\n',
+                'revision': '77c174669b7018936f16b98547445624c6738e1e',
+                'author': 'David Trowbridge',
+                'parents': [
+                    'ecfbf578d31f550a135580cee26fa20fbaea36d9',
+                ],
+                'time': '2016-09-05T23:28:30-07:00',
+            },
+            {
+                'message': 'Fix some issues with screenshot commenting.'
+                           '\n',
+                'revision': '8a39b87f0124f27225234014a87914e434b223a9',
+                'author': 'David Trowbridge',
+                'parents': [
+                    '3fb32c83993cd8c07fbbb605cf0cc523010da7c8',
+                ],
+                'time': '2016-09-05T22:58:29-07:00',
+            },
+            {
+                'message': 'Fix draggability of the comment dialog.\n',
+                'revision': '3fb32c83993cd8c07fbbb605cf0cc523010da7c8',
+                'author': 'David Trowbridge',
+                'parents': [
+                    '7619f51371b55bfcdf4cb3fccf5d3c76bf5002c0',
+                ],
+                'time': '2016-09-05T22:47:55-07:00',
+            },
+        ])
 
-        def _http_get(*args, **kwargs):
-            return b")]}'\n%s" % json.dumps([
-                {
-                    'message': 'Backport a fix for screenshot commenting.\n',
-                    'revision': '77c174669b7018936f16b98547445624c6738e1e',
-                    'author': 'David Trowbridge',
-                    'parents': [
-                        'ecfbf578d31f550a135580cee26fa20fbaea36d9',
-                    ],
-                    'time': '2016-09-05T23:28:30-07:00',
-                },
-                {
-                    'message': 'Fix some issues with screenshot commenting.'
-                               '\n',
-                    'revision': '8a39b87f0124f27225234014a87914e434b223a9',
-                    'author': 'David Trowbridge',
-                    'parents': [
-                        '3fb32c83993cd8c07fbbb605cf0cc523010da7c8',
-                    ],
-                    'time': '2016-09-05T22:58:29-07:00',
-                },
-                {
-                    'message': 'Fix draggability of the comment dialog.\n',
-                    'revision': '3fb32c83993cd8c07fbbb605cf0cc523010da7c8',
-                    'author': 'David Trowbridge',
-                    'parents': [
-                        '7619f51371b55bfcdf4cb3fccf5d3c76bf5002c0',
-                    ],
-                    'time': '2016-09-05T22:47:55-07:00',
-                },
-            ]).encode('utf-8'), {}
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            commits = ctx.service.get_commits(ctx.create_repository())
 
-        self.spy_on(GerritClient.http_get, call_fake=_http_get)
-
-        commits = self.service.get_commits(self.repository)
+        ctx.assertHTTPCall(
+            0,
+            url='http://gerrit.example.com/a/projects/Project/all-commits/')
 
         self.assertEqual(
             commits,
@@ -339,17 +492,13 @@ class GerritTests(ServiceTests):
 
     def test_get_change(self):
         """Testing Gerrit.get_change"""
-        self._setup_api_test()
-
         revision = '77c174669b7018936f16b98547445624c6738e1e'
-
-        def _http_get(self, url, *args, **kwargs):
-            parts = urlparse(url)
-
-            if parts.path == '/a/projects/Project/commits/%s/diff/' % revision:
-                rsp = b'fake diff'
-            elif parts.path == '/a/projects/Project/all-commits/':
-                rsp = b")]}'\n%s" % json.dumps([{
+        paths = {
+            '/a/projects/Project/commits/%s/diff/' % revision: {
+                'payload': b'fake diff',
+            },
+            '/a/projects/Project/all-commits/': {
+                'payload': self._make_json_rsp([{
                     'message': 'Backport a fix for screenshot '
                                'commenting.\n',
                     'revision': '77c174669b7018936f16b98547445624c6738e1e',
@@ -358,17 +507,15 @@ class GerritTests(ServiceTests):
                         'ecfbf578d31f550a135580cee26fa20fbaea36d9',
                     ],
                     'time': '2016-09-05T23:28:30-07:00',
-                }]).encode('utf-8')
-            else:
-                raise AssertionError('Unexpected url: "%s"' % url)
+                }]),
+            },
+        }
 
-            return rsp, {}
-
-        self.spy_on(GerritClient.http_get, _http_get)
-
-        commit = self.service.get_change(
-            self.repository,
-            '77c174669b7018936f16b98547445624c6738e1e')
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=2) as ctx:
+            commit = ctx.service.get_change(
+                repository=ctx.create_repository(),
+                revision='77c174669b7018936f16b98547445624c6738e1e')
 
         self.assertEqual(
             commit,
@@ -379,27 +526,25 @@ class GerritTests(ServiceTests):
                    parent='ecfbf578d31f550a135580cee26fa20fbaea36d9'))
         self.assertEqual(commit.diff, b'fake diff')
 
-    def _get_hosting_account(self, use_url=False, local_site=None):
-        account = super(GerritTests, self)._get_hosting_account(
-            use_url=use_url, local_site=local_site)
-        account.data = {
-            'authorized': False,
-            'gerrit_http_password': encrypt_password('foo'),
-            'gerrit_ssh_port': 1234,
-        }
+        ctx.assertHTTPCall(
+            0,
+            url=('http://gerrit.example.com/a/projects/Project/all-commits/'
+                 '?start=77c174669b7018936f16b98547445624c6738e1e&limit=1'))
 
-        return account
+        ctx.assertHTTPCall(
+            1,
+            url=('http://gerrit.example.com/a/projects/Project/commits/'
+                 '77c174669b7018936f16b98547445624c6738e1e/diff/'))
 
-    def _setup_api_test(self):
-        self.account = self._get_hosting_account()
-        self.service = Gerrit(self.account)
+    def _make_json_rsp(self, data):
+        """Return a Gerrit JSON response payload for the given data.
 
-        repository = Repository(name='bogus',
-                                path='bogus',
-                                hosting_account=self.account)
-        repository.extra_data = {
-            'gerrit_url': 'http://gerrit.example.com/',
-            'gerrit_project_name': 'Project',
-        }
+        Args:
+            data (object):
+                The data to serialize.
 
-        self.repository = repository
+        Returns:
+            bytes:
+            The serialized payload data.
+        """
+        return b")]}'\n%s" % self.dump_json(data)

@@ -2,30 +2,33 @@
 
 from __future__ import unicode_literals
 
-import json
-
-from django.utils.six.moves import cStringIO as StringIO
-from django.utils.six.moves.urllib.error import HTTPError
-from django.utils.six.moves.urllib.parse import parse_qs, urlparse
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.tests.testcases import ServiceTests
+from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.core import Branch, Commit
-from reviewboard.scmtools.crypto_utils import encrypt_password
+from reviewboard.scmtools.crypto_utils import (decrypt_password,
+                                               encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
-from reviewboard.scmtools.models import Repository, Tool
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
 
-class BitbucketTestCase(ServiceTests):
+class BitbucketTestCase(HostingServiceTestCase):
     """Base class for Bitbucket test suites."""
 
     service_name = 'bitbucket'
     fixtures = ['test_scmtools']
+
+    default_account_data = {
+        'password': encrypt_password(HostingServiceTestCase.default_password),
+    }
+
+    default_repository_extra_data = {
+        'bitbucket_repo_name': 'myrepo',
+    }
 
 
 class BitbucketTests(BitbucketTestCase):
@@ -180,109 +183,69 @@ class BitbucketTests(BitbucketTestCase):
 
     def test_check_repository_with_personal_plan(self):
         """Testing Bitbucket.check_repository with plan=personal"""
-        def _http_get(service, url, *args, **kwargs):
-            self.assertEqual(
-                url,
-                'https://bitbucket.org/api/2.0/repositories/myuser/myrepo'
-                '?fields=scm')
-            return (
-                json.dumps({
-                    'scm': 'git',
-                }),
-                {})
+        with self.setup_http_test(payload=b'{"scm": "git"}',
+                                  expected_http_calls=1) as ctx:
+            ctx.service.check_repository(bitbucket_repo_name='myrepo',
+                                         plan='personal',
+                                         tool_name='Git')
 
-        account = self._get_hosting_account()
-        account.data['password'] = encrypt_password('abc123')
-        service = account.service
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-
-        service.check_repository(bitbucket_repo_name='myrepo',
-                                 plan='personal',
-                                 tool_name='Git')
-        self.assertTrue(service.client.http_get.called)
+        ctx.assertHTTPCall(
+            0,
+            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo'
+                 '?fields=scm'))
 
     def test_check_repository_with_team_plan(self):
         """Testing Bitbucket.check_repository with plan=team"""
-        def _http_get(service, url, *args, **kwargs):
-            self.assertEqual(
-                url,
-                'https://bitbucket.org/api/2.0/repositories/myteam/myrepo'
-                '?fields=scm')
-            return (
-                json.dumps({
-                    'scm': 'git',
-                }),
-                {})
+        with self.setup_http_test(payload=b'{"scm": "git"}',
+                                  expected_http_calls=1) as ctx:
+            ctx.service.check_repository(bitbucket_team_name='myteam',
+                                         bitbucket_team_repo_name='myrepo',
+                                         tool_name='Git',
+                                         plan='team')
 
-        account = self._get_hosting_account()
-        service = account.service
-
-        account.data['password'] = encrypt_password('abc123')
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-
-        service.check_repository(bitbucket_team_name='myteam',
-                                 bitbucket_team_repo_name='myrepo',
-                                 tool_name='Git',
-                                 plan='team')
-        self.assertTrue(service.client.http_get.called)
+        ctx.assertHTTPCall(
+            0,
+            url=('https://bitbucket.org/api/2.0/repositories/myteam/myrepo'
+                 '?fields=scm'))
 
     def test_check_repository_with_other_user_plan(self):
         """Testing Bitbucket.check_repository with plan=other-user"""
-        def _http_get(service, url, *args, **kwargs):
-            self.assertEqual(
-                url,
-                'https://bitbucket.org/api/2.0/repositories/someuser/myrepo'
-                '?fields=scm')
-            return (
-                json.dumps({
-                    'scm': 'git',
-                }),
-                {})
+        with self.setup_http_test(payload=b'{"scm": "git"}',
+                                  expected_http_calls=1) as ctx:
+            ctx.service.check_repository(
+                bitbucket_other_user_username='someuser',
+                bitbucket_other_user_repo_name='myrepo',
+                plan='other-user',
+                tool_name='Git')
 
-        account = self._get_hosting_account()
-        service = account.service
-
-        account.data['password'] = encrypt_password('abc123')
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-
-        service.check_repository(bitbucket_other_user_username='someuser',
-                                 bitbucket_other_user_repo_name='myrepo',
-                                 plan='other-user',
-                                 tool_name='Git')
-        self.assertTrue(service.client.http_get.called)
+        ctx.assertHTTPCall(
+            0,
+            url=('https://bitbucket.org/api/2.0/repositories/someuser/myrepo'
+                 '?fields=scm'))
 
     def test_check_repository_with_slash(self):
         """Testing Bitbucket.check_repository with /"""
-        account = self._get_hosting_account()
-        account.data['password'] = encrypt_password('abc123')
-        service = account.service
-
         expected_message = \
             'Please specify just the name of the repository, not a path.'
 
-        with self.assertRaisesMessage(RepositoryError, expected_message):
-            service.check_repository(
-                bitbucket_team_name='myteam',
-                bitbucket_team_repo_name='myteam/myrepo',
-                plan='team')
+        with self.setup_http_test(expected_http_calls=0) as ctx:
+            with self.assertRaisesMessage(RepositoryError, expected_message):
+                ctx.service.check_repository(
+                    bitbucket_team_name='myteam',
+                    bitbucket_team_repo_name='myteam/myrepo',
+                    plan='team')
 
     def test_check_repository_with_dot_git(self):
         """Testing Bitbucket.check_repository with .git"""
-        account = self._get_hosting_account()
-        account.data['password'] = encrypt_password('abc123')
-        service = account.service
-
         expected_message = \
             'Please specify just the name of the repository without ".git".'
 
-        with self.assertRaisesMessage(RepositoryError, expected_message):
-            service.check_repository(
-                bitbucket_team_name='myteam',
-                bitbucket_team_repo_name='myrepo.git',
-                plan='team')
+        with self.setup_http_test(expected_http_calls=0) as ctx:
+            with self.assertRaisesMessage(RepositoryError, expected_message):
+                ctx.service.check_repository(
+                    bitbucket_team_name='myteam',
+                    bitbucket_team_repo_name='myrepo.git',
+                    plan='team')
 
     def test_check_repository_with_type_mismatch(self):
         """Testing Bitbucket.check_repository with type mismatch"""
@@ -290,108 +253,115 @@ class BitbucketTests(BitbucketTestCase):
             'The Bitbucket repository being configured does not match the '
             'type of repository you have selected.'
         )
-        repository_type = 'git'
 
-        def _http_get(service, url, *args, **kwargs):
-            self.assertEqual(
-                url,
-                'https://bitbucket.org/api/2.0/repositories/myteam/myrepo'
-                '?fields=scm')
-            return (
-                json.dumps({
-                    'scm': repository_type,
-                }),
-                {})
+        with self.setup_http_test(payload=b'{"scm": "git"}',
+                                  expected_http_calls=1) as ctx:
+            # Check Git repositories.
+            with self.assertRaisesMessage(RepositoryError, error_message):
+                ctx.service.check_repository(
+                    bitbucket_team_name='myteam',
+                    bitbucket_team_repo_name='myrepo',
+                    plan='team',
+                    tool_name='Mercurial')
 
-        account = self._get_hosting_account()
-        service = account.service
-        account.data['password'] = encrypt_password('abc123')
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-
-        # Check Git repositories.
-        with self.assertRaisesMessage(RepositoryError, error_message):
-            service.check_repository(
-                bitbucket_team_name='myteam',
-                bitbucket_team_repo_name='myrepo',
-                plan='team',
-                tool_name='Mercurial')
+        ctx.assertHTTPCall(
+            0,
+            url=('https://bitbucket.org/api/2.0/repositories/myteam/myrepo'
+                 '?fields=scm'))
 
         # Now check Mercurial repositories.
-        repository_type = 'hg'
+        with self.setup_http_test(payload=b'{"scm": "hg"}',
+                                  expected_http_calls=1) as ctx:
+            with self.assertRaisesMessage(RepositoryError, error_message):
+                ctx.service.check_repository(
+                    bitbucket_team_name='myteam',
+                    bitbucket_team_repo_name='myrepo',
+                    plan='team',
+                    tool_name='Git')
 
-        with self.assertRaisesMessage(RepositoryError, error_message):
-            service.check_repository(
-                bitbucket_team_name='myteam',
-                bitbucket_team_repo_name='myrepo',
-                plan='team',
-                tool_name='Git')
+        ctx.assertHTTPCall(
+            0,
+            url=('https://bitbucket.org/api/2.0/repositories/myteam/myrepo'
+                 '?fields=scm'))
 
     def test_authorize(self):
         """Testing Bitbucket.authorize"""
-        def _http_get(self, *args, **kwargs):
-            return '{}', {}
+        hosting_account = self.create_hosting_account(data={})
 
-        account = self._get_hosting_account()
-        service = account.service
+        with self.setup_http_test(payload=b'{}',
+                                  hosting_account=hosting_account,
+                                  expected_http_calls=1) as ctx:
+            self.assertFalse(ctx.service.is_authorized())
+            ctx.service.authorize(username='myuser',
+                                  password='abc123')
 
-        self.spy_on(service.client.http_get, call_fake=_http_get)
+        self.assertIn('password', hosting_account.data)
+        self.assertNotEqual(hosting_account.data['password'], 'abc123')
+        self.assertEqual(decrypt_password(hosting_account.data['password']),
+                         'abc123')
+        self.assertTrue(ctx.service.is_authorized())
 
-        self.assertFalse(service.is_authorized())
-
-        service.authorize('myuser', 'abc123', None)
-
-        self.assertIn('password', account.data)
-        self.assertNotEqual(account.data['password'], 'abc123')
-        self.assertTrue(service.is_authorized())
+        ctx.assertHTTPCall(
+            0,
+            url='https://bitbucket.org/api/2.0/user',
+            username='myuser',
+            password='abc123')
 
     def test_authorize_with_bad_credentials(self):
         """Testing Bitbucket.authorize with bad credentials"""
-        def _http_get(service, url, *args, **kwargs):
-            raise HTTPError(url, 401, '', {}, StringIO(''))
-
-        account = self._get_hosting_account()
-        service = account.service
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-
-        self.assertFalse(service.is_authorized())
-
+        hosting_account = self.create_hosting_account(data={})
         expected_message = (
             'Invalid Bitbucket username or password. Make sure you are using '
             'your Bitbucket username and not e-mail address, and are using an '
             'app password if two-factor authentication is enabled.'
         )
 
-        with self.assertRaisesMessage(AuthorizationError, expected_message):
-            service.authorize('myuser', 'abc123', None)
+        with self.setup_http_test(status_code=401,
+                                  hosting_account=hosting_account,
+                                  expected_http_calls=1) as ctx:
+            self.assertFalse(ctx.service.is_authorized())
 
-        self.assertNotIn('password', account.data)
-        self.assertFalse(service.is_authorized())
+            with self.assertRaisesMessage(AuthorizationError,
+                                          expected_message):
+                ctx.service.authorize(username='myuser',
+                                      password='abc123')
+
+        self.assertNotIn('password', hosting_account.data)
+        self.assertFalse(ctx.service.is_authorized())
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://bitbucket.org/api/2.0/user',
+            username='myuser',
+            password='abc123')
 
     def test_authorize_with_403(self):
         """Testing Bitbucket.authorize with HTTP 403 result"""
-        def _http_get(service, url, *args, **kwargs):
-            raise HTTPError(url, 403, '', {}, StringIO(''))
-
-        account = self._get_hosting_account()
-        service = account.service
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-
-        self.assertFalse(service.is_authorized())
-
+        hosting_account = self.create_hosting_account(data={})
         expected_message = (
             'Invalid Bitbucket username or password. Make sure you are using '
             'your Bitbucket username and not e-mail address, and are using '
             'an app password if two-factor authentication is enabled.'
         )
 
-        with self.assertRaisesMessage(AuthorizationError, expected_message):
-            service.authorize('myuser', 'abc123', None)
+        with self.setup_http_test(status_code=403,
+                                  hosting_account=hosting_account,
+                                  expected_http_calls=1) as ctx:
+            self.assertFalse(ctx.service.is_authorized())
 
-        self.assertNotIn('password', account.data)
-        self.assertFalse(service.is_authorized())
+            with self.assertRaisesMessage(AuthorizationError,
+                                          expected_message):
+                ctx.service.authorize(username='myuser',
+                                      password='abc123')
+
+        self.assertNotIn('password', hosting_account.data)
+        self.assertFalse(ctx.service.is_authorized())
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://bitbucket.org/api/2.0/user',
+            username='myuser',
+            password='abc123')
 
     def test_get_file_with_mercurial_and_base_commit_id(self):
         """Testing Bitbucket.get_file with Mercurial and base commit ID"""
@@ -474,7 +444,7 @@ class BitbucketTests(BitbucketTestCase):
 
     def test_get_branches(self):
         """Testing Bitbucket.get_branches"""
-        branches_api_response_1 = json.dumps({
+        branches_api_response_1 = self.dump_json({
             'next': ('https://bitbucket.org/api/2.0/repositories/myuser/'
                      'myrepo/refs/branches?pagelen=100&page=2&'
                      'fields=values.name%2Cvalues.target.hash%2Cnext'),
@@ -494,7 +464,7 @@ class BitbucketTests(BitbucketTestCase):
             ],
         })
 
-        branches_api_response_2 = json.dumps({
+        branches_api_response_2 = self.dump_json({
             'values': [
                 {
                     'name': 'branch3',
@@ -511,61 +481,49 @@ class BitbucketTests(BitbucketTestCase):
             ],
         })
 
-        get_repository_api_response = json.dumps({
+        get_repository_api_response = self.dump_json({
             'mainbranch': {
                 'name': 'branch3',
             },
         })
 
-        def _http_get(service, url, *args, **kwargs):
-            url_parts = urlparse(url)
-            path = url_parts.path
-            query = parse_qs(url_parts.query)
-
-            if path == '/api/2.0/repositories/myuser/myrepo/':
-                self.assertEqual(
-                    query,
-                    {
-                        'fields': ['mainbranch.name'],
-                    })
-
-                return get_repository_api_response, None
-            elif path == '/api/2.0/repositories/myuser/myrepo/refs/branches':
-                if 'page' in query:
-                    self.assertEqual(
-                        query,
-                        {
-                            'fields': ['values.name,values.target.hash,next'],
-                            'pagelen': ['100'],
-                            'page': ['2'],
-                        })
-
-                    return branches_api_response_2, None
-                else:
-                    self.assertEqual(
-                        query,
-                        {
-                            'fields': ['values.name,values.target.hash,next'],
-                            'pagelen': ['100'],
-                        })
-
-                    return branches_api_response_1, None
-            else:
-                self.fail('Unexpected URL %s' % url)
-
-        account = self._get_hosting_account()
-        service = account.service
-        repository = Repository(hosting_account=account,
-                                tool=Tool.objects.get(name='Git'))
-        repository.extra_data = {
-            'bitbucket_repo_name': 'myrepo',
+        paths = {
+            '/api/2.0/repositories/myuser/myrepo/': {
+                'payload': get_repository_api_response,
+            },
+            ('/api/2.0/repositories/myuser/myrepo/refs/branches'
+             '?pagelen=100&fields=values.name%2Cvalues.target.hash%2Cnext'): {
+                 'payload': branches_api_response_1,
+            },
+            ('/api/2.0/repositories/myuser/myrepo/refs/branches'
+             '?pagelen=100&page=2&fields=values.name%2Cvalues.target.hash'
+             '%2Cnext'): {
+                 'payload': branches_api_response_2,
+            },
         }
 
-        account.data['password'] = encrypt_password('abc123')
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=3) as ctx:
+            repository = self.create_repository(tool_name='Git')
+            branches = ctx.service.get_branches(repository)
 
-        self.spy_on(service.client.http_get, call_fake=_http_get)
+        ctx.assertHTTPCall(
+            0,
+            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+                 '?fields=mainbranch.name'))
 
-        branches = service.get_branches(repository)
+        ctx.assertHTTPCall(
+            1,
+            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+                 'refs/branches?pagelen=100&fields=values.name'
+                 '%2Cvalues.target.hash%2Cnext'))
+
+        ctx.assertHTTPCall(
+            2,
+            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+                 'refs/branches?pagelen=100&page=2&fields=values.name'
+                 '%2Cvalues.target.hash%2Cnext'))
+
         self.assertEqual(
             branches,
             [
@@ -582,7 +540,7 @@ class BitbucketTests(BitbucketTestCase):
 
     def test_get_commits(self):
         """Testing Bitbucket.get_commits"""
-        commits_api_response = json.dumps({
+        payload = self.dump_json({
             'values': [
                 {
                     'hash': '1c44b461cebe5874a857c51a4a13a849a4d1e52d',
@@ -613,38 +571,17 @@ class BitbucketTests(BitbucketTestCase):
             ],
         })
 
-        def _http_get(service, url, *args, **kwargs):
-            url_parts = urlparse(url)
-            path = url_parts.path
-            query = parse_qs(url_parts.query)
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            repository = ctx.create_repository(tool_name='Git')
+            commits = ctx.service.get_commits(repository)
 
-            if path == '/api/2.0/repositories/myuser/myrepo/commits':
-                self.assertEqual(
-                    query,
-                    {
-                        'pagelen': ['20'],
-                        'fields': ['values.author.raw,values.hash,'
-                                   'values.date,values.message,'
-                                   'values.parents.hash'],
-                    })
+        ctx.assertHTTPCall(
+            0,
+            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+                 'commits?pagelen=20&fields=values.author.raw%2Cvalues.hash'
+                 '%2Cvalues.date%2Cvalues.message%2Cvalues.parents.hash'))
 
-                return commits_api_response, None
-            else:
-                self.fail('Unexpected URL %s' % url)
-
-        account = self._get_hosting_account()
-        service = account.service
-        repository = Repository(hosting_account=account,
-                                tool=Tool.objects.get(name='Git'))
-        repository.extra_data = {
-            'bitbucket_repo_name': 'myrepo',
-        }
-
-        account.data['password'] = encrypt_password('abc123')
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-
-        commits = service.get_commits(repository)
         self.assertEqual(
             commits,
             [
@@ -668,45 +605,38 @@ class BitbucketTests(BitbucketTestCase):
         commit_sha = '1c44b461cebe5874a857c51a4a13a849a4d1e52d'
         parent_sha = '44568f7d33647d286691517e6325fea5c7a21d5e'
 
-        commits_api_response = json.dumps({
-            'hash': commit_sha,
-            'author': {
-                'raw': 'Some User <user@example.com>',
+        paths = {
+            '/api/2.0/repositories/myuser/myrepo/commit/%s' % commit_sha: {
+                'payload': self.dump_json({
+                    'hash': commit_sha,
+                    'author': {
+                        'raw': 'Some User <user@example.com>',
+                    },
+                    'date': '2017-01-24T13:11:22+00:00',
+                    'message': 'This is a message.',
+                    'parents': [{'hash': parent_sha}],
+                }),
             },
-            'date': '2017-01-24T13:11:22+00:00',
-            'message': 'This is a message.',
-            'parents': [{'hash': parent_sha}],
-        })
-
-        diff_api_response = b'This is a test \xc7.'
-        norm_diff_api_response = b'This is a test \xc7.\n'
-
-        def _http_get(service, url, *args, **kwargs):
-            if url == ('https://bitbucket.org/api/2.0/repositories/'
-                       'myuser/myrepo/commit/%s?'
-                       'fields=author.raw%%2Chash%%2Cdate%%2C'
-                       'message%%2Cparents.hash'
-                       % commit_sha):
-                return commits_api_response, None
-            elif url == ('https://bitbucket.org/api/2.0/repositories/'
-                         'myuser/myrepo/diff/%s' % commit_sha):
-                return diff_api_response, None
-            else:
-                self.fail('Unexpected URL %s' % url)
-
-        account = self._get_hosting_account()
-        service = account.service
-        repository = Repository(hosting_account=account,
-                                tool=Tool.objects.get(name='Git'))
-        repository.extra_data = {
-            'bitbucket_repo_name': 'myrepo',
+            '/api/2.0/repositories/myuser/myrepo/diff/%s' % commit_sha: {
+                'payload': b'This is a test \xc7.',
+            },
         }
 
-        account.data['password'] = encrypt_password('abc123')
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=2) as ctx:
+            repository = ctx.create_repository(tool_name='Git')
+            commit = ctx.service.get_change(repository, commit_sha)
 
-        self.spy_on(service.client.http_get, call_fake=_http_get)
+        ctx.assertHTTPCall(
+            0,
+            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+                 'commit/1c44b461cebe5874a857c51a4a13a849a4d1e52d'
+                 '?fields=author.raw%2Chash%2Cdate%2Cmessage%2Cparents.hash'))
 
-        commit = service.get_change(repository, commit_sha)
+        ctx.assertHTTPCall(
+            1,
+            url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo/'
+                 'diff/1c44b461cebe5874a857c51a4a13a849a4d1e52d'))
 
         self.assertEqual(
             commit,
@@ -715,7 +645,7 @@ class BitbucketTests(BitbucketTestCase):
                    id=commit_sha,
                    message='This is a message.',
                    parent=parent_sha))
-        self.assertEqual(commit.diff, norm_diff_api_response)
+        self.assertEqual(commit.diff, b'This is a test \xc7.\n')
 
     def _test_get_file(self, tool_name, revision, base_commit_id,
                        expected_revision):
@@ -734,29 +664,20 @@ class BitbucketTests(BitbucketTestCase):
             expected_revision (unicode, optional):
                 The revision expected in the payload.
         """
-        def _http_get(service, url, *args, **kwargs):
-            self.assertEqual(
-                url,
-                'https://bitbucket.org/api/1.0/repositories/'
-                'myuser/myrepo/raw/%s/path'
-                % expected_revision)
-            return b'My data', {}
+        with self.setup_http_test(payload=b'My data',
+                                  expected_http_calls=1) as ctx:
+            repository = ctx.create_repository(tool_name=tool_name)
+            result = ctx.service.get_file(repository=repository,
+                                          path='path',
+                                          revision=revision,
+                                          base_commit_id=base_commit_id)
 
-        account = self._get_hosting_account()
-        service = account.service
-        repository = Repository(hosting_account=account,
-                                tool=Tool.objects.get(name=tool_name))
-        repository.extra_data = {
-            'bitbucket_repo_name': 'myrepo',
-        }
+        ctx.assertHTTPCall(
+            0,
+            url=('https://bitbucket.org/api/1.0/repositories/myuser/myrepo/'
+                 'raw/%s/path'
+                 % expected_revision))
 
-        account.data['password'] = encrypt_password('abc123')
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-
-        result = service.get_file(repository, 'path', revision,
-                                  base_commit_id)
-        self.assertTrue(service.client.http_get.called)
         self.assertIsInstance(result, bytes)
         self.assertEqual(result, b'My data')
 
@@ -784,35 +705,34 @@ class BitbucketTests(BitbucketTestCase):
             expected_http_called (bool, optional):
                 Whether an HTTP request is expected to have been made.
         """
-        def _http_get(service, url, *args, **kwargs):
-            self.assertEqual(
-                url,
-                'https://bitbucket.org/api/1.0/repositories/'
-                'myuser/myrepo/raw/%s/path'
-                % expected_revision)
+        if expected_found:
+            payload = b'{}'
+            status_code = None
+        else:
+            payload = b'Not Found'
+            status_code = 404
 
-            if expected_found:
-                return b'{}', {}
-            else:
-                error = HTTPError(url, 404, 'Not Found', {}, None)
-                error.read = lambda: error.msg
-                raise error
+        if expected_http_called:
+            expected_calls = 1
+        else:
+            expected_calls = 0
 
-        account = self._get_hosting_account()
-        service = account.service
-        repository = Repository(hosting_account=account,
-                                tool=Tool.objects.get(name=tool_name))
-        repository.extra_data = {
-            'bitbucket_repo_name': 'myrepo',
-        }
+        with self.setup_http_test(payload=payload,
+                                  status_code=status_code,
+                                  expected_http_calls=expected_calls) as ctx:
+            repository = ctx.create_repository(tool_name=tool_name)
+            result = ctx.service.get_file_exists(repository=repository,
+                                                 path='path',
+                                                 revision=revision,
+                                                 base_commit_id=base_commit_id)
 
-        account.data['password'] = encrypt_password('abc123')
+        if expected_http_called:
+            ctx.assertHTTPCall(
+                0,
+                url=('https://bitbucket.org/api/1.0/repositories/myuser/'
+                     'myrepo/raw/%s/path'
+                     % expected_revision))
 
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-
-        result = service.get_file_exists(repository, 'path', revision,
-                                         base_commit_id)
-        self.assertEqual(service.client.http_get.called, expected_http_called)
         self.assertEqual(result, expected_found)
 
 
@@ -860,7 +780,7 @@ class CloseSubmittedHookTests(BitbucketTestCase):
     def test_close_submitted_hook_with_invalid_site(self):
         """Testing BitBucket close_submitted hook with invalid Local Site"""
         local_site = LocalSite.objects.get(name=self.local_site_name)
-        account = self._get_hosting_account(local_site=local_site)
+        account = self.create_hosting_account(local_site=local_site)
         account.save()
 
         repository = self.create_repository(hosting_account=account,
@@ -893,9 +813,10 @@ class CloseSubmittedHookTests(BitbucketTestCase):
         service ID
         """
         # We'll test against GitHub for this test.
-        account = self._get_hosting_account()
+        account = self.create_hosting_account()
         account.service_name = 'github'
         account.save()
+
         repository = self.create_repository(hosting_account=account)
 
         review_request = self.create_review_request(repository=repository,
@@ -929,9 +850,7 @@ class CloseSubmittedHookTests(BitbucketTestCase):
             local_site (reviewboard.site.models.LocalSite, optional):
                 The Local Site owning the review request.
         """
-        account = self._get_hosting_account(local_site=local_site)
-        account.save()
-
+        account = self.create_hosting_account(local_site=local_site)
         repository = self.create_repository(hosting_account=account,
                                             local_site=local_site)
 
@@ -978,7 +897,7 @@ class CloseSubmittedHookTests(BitbucketTestCase):
         return self.client.post(
             url,
             data={
-                'payload': json.dumps({
+                'payload': self.dump_json({
                     # NOTE: This payload only contains the content we make
                     #       use of in the hook.
                     'commits': [
