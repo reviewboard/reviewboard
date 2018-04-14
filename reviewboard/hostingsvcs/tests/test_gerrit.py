@@ -4,17 +4,124 @@ from __future__ import unicode_literals
 
 import base64
 
+from django.utils.six.moves.urllib.request import (HTTPDigestAuthHandler,
+                                                   OpenerDirector)
+
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceAPIError,
                                             HostingServiceError,
                                             RepositoryError)
+from reviewboard.hostingsvcs.gerrit import GerritForm
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
 from reviewboard.scmtools.errors import FileNotFoundError
 
 
-class GerritTests(HostingServiceTestCase):
+class GerritTestCase(HostingServiceTestCase):
+    """Base class for Gerrit unit tests."""
+
+    service_name = 'gerrit'
+
+    default_account_data = {
+        'authorized': False,
+        'gerrit_http_password': encrypt_password('mypass'),
+        'gerrit_ssh_port': 1234,
+    }
+
+    default_repository_tool_name = 'Git'
+
+    default_repository_extra_data = {
+        'gerrit_url': 'http://gerrit.example.com/',
+        'gerrit_project_name': 'Project',
+    }
+
+
+class GerritFormTests(GerritTestCase):
+    """Unit tests for GerritForm."""
+
+    def test_clean(self):
+        """Testing GerritForm.clean"""
+        form = GerritForm({
+            'gerrit_project_name': 'test-project',
+            'gerrit_ssh_port': 12345,
+            'gerrit_url': 'http://gerrit.example.com:8080',
+        })
+
+        self.assertTrue(form.is_valid())
+        self.assertEqual(
+            form.cleaned_data,
+            {
+                'gerrit_domain': 'gerrit.example.com',
+                'gerrit_project_name': 'test-project',
+                'gerrit_ssh_port': 12345,
+                'gerrit_url': 'http://gerrit.example.com:8080/',
+            })
+
+    def test_clean_with_errors(self):
+        """Testing GerritForm.clean with errors"""
+        form = GerritForm({
+            'gerrit_url': 'invalid',
+        })
+
+        self.assertFalse(form.is_valid())
+        self.assertEqual(form.cleaned_data, {})
+        self.assertIn('gerrit_project_name', form.errors)
+        self.assertIn('gerrit_ssh_port', form.errors)
+        self.assertIn('gerrit_url', form.errors)
+        self.assertEqual(form.errors['gerrit_project_name'],
+                         ['This field is required.'])
+        self.assertEqual(form.errors['gerrit_ssh_port'],
+                         ['This field is required.'])
+        self.assertEqual(form.errors['gerrit_url'],
+                         ['Enter a valid URL.'])
+
+
+class GerritClientTests(GerritTestCase):
+    """Unit tests for GerritClient."""
+
+    def setUp(self):
+        super(GerritClientTests, self).setUp()
+
+        hosting_account = self.create_hosting_account()
+        self.client = hosting_account.service.client
+
+    def test_auth_headers(self):
+        """Testing GerritClient.http_request sets auth headers"""
+        class DummyResponse(object):
+            headers = {}
+
+            def read(self):
+                return b''
+
+        def _open(*args, **kwargs):
+            _open_args.extend(args)
+
+            return DummyResponse()
+
+        _open_args = []
+        self.spy_on(OpenerDirector.open, call_fake=_open)
+
+        self.client.http_request(url='http://gerrit.example.com/',
+                                 username='test-user',
+                                 password='test-pass')
+
+        opener, request = _open_args
+        handler = opener.handlers[0]
+        self.assertIsInstance(handler, HTTPDigestAuthHandler)
+        self.assertEqual(
+            handler.passwd.find_user_password(None,
+                                              'http://gerrit.example.com/'),
+            ('test-user', 'test-pass'))
+
+        self.assertEqual(
+            request.headers,
+            {
+                'Authorization': 'Basic dGVzdC11c2VyOnRlc3QtcGFzcw==',
+            })
+
+
+class GerritTests(GerritTestCase):
     """Unit tests for the Gerrit hosting service."""
 
     service_name = 'gerrit'
