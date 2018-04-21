@@ -93,7 +93,7 @@ patterns. For example:
 
 .. code-block:: python
 
-   from django.conf.urls.defaults import url
+   from django.conf.urls import url
 
    from sample_extension.views import my_configure
 
@@ -142,7 +142,7 @@ And here is an example URL pattern for the form:
 
 .. code-block:: python
 
-   from django.conf.urls.defaults import patterns, url
+   from django.conf.urls import url
    from reviewboard.extensions.views import configure_extension
 
    from sample_extension.extension import SampleExtension
