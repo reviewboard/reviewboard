@@ -98,7 +98,7 @@ class UserInfoboxView(CheckLoginRequiredViewMixin,
 
         try:
             profile = user.get_profile()
-            self._show_profile = not profile.is_private
+            self._show_profile = user.is_profile_visible(request.user)
             self._timezone = profile.timezone
         except Profile.DoesNotExist:
             self._show_profile = True

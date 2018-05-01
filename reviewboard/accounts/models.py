@@ -390,11 +390,28 @@ class Trophy(models.Model):
 #
 
 def _is_user_profile_visible(self, user=None):
-    """Get whether or not a User's profile is viewable by a given user.
+    """Return whether or not the given user can view this user's profile.
 
-    A profile is viewable if it's not marked as private, or the viewing
-    user owns the profile, or the user is a staff member.
+    Profiles are hidden from unauthenticated users. For authenticated users, a
+    profile is visible if one of the following is true:
+
+    * The profile is not marked as private.
+    * The viewing user owns the profile.
+    * The viewing user is a staff member.
+    * The viewing user is an administrator on a Local Site which the viewed
+      user is a member.
+
+    Args:
+        user (django.contrib.auth.models.User, optional):
+            The user for which visibility to the profile is to be determined.
+
+    Returns:
+        bool:
+        Whether or not the given user can view the profile.
     """
+    if user is None or not user.is_authenticated():
+        return False
+
     try:
         if hasattr(self, 'is_private'):
             # This is an optimization used by the web API. It will set
@@ -407,8 +424,13 @@ def _is_user_profile_visible(self, user=None):
         else:
             is_private = self.get_profile().is_private
 
-        return ((user and (user == self or user.is_staff)) or
-                not is_private)
+        return (
+            not is_private or
+            (user and
+             (user == self or
+              user.is_staff or
+              LocalSite.objects.filter(admins=user, users=self).exists()))
+        )
     except Profile.DoesNotExist:
         return True
 

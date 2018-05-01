@@ -350,10 +350,32 @@ class ResourceItemTests(AvatarServicesTestMixin, BaseWebAPITestCase):
         self._testHttpCaching(get_user_item_url('doc'),
                               check_etags=True)
 
-    @add_fixtures(['test_site'])
     def test_get_with_site_and_profile_private(self):
-        """Testing the GET users/<username>/ API
-        with a local site and private profile
+        """Testing the GET users/<username>/ API with a local site and private
+        profile
+        """
+        username = 'admin'
+        user = User.objects.get(username=username)
+
+        site = LocalSite.objects.create(name=self.local_site_name)
+        site.users = [user, self.user]
+
+        profile, is_new = Profile.objects.get_or_create(user=user)
+        profile.is_private = True
+        profile.save()
+
+        rsp = self.api_get(get_user_item_url(username, self.local_site_name),
+                           expected_mimetype=user_item_mimetype)
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['user']['username'], user.username)
+        self.assertNotIn('first_name', rsp['user'])
+        self.assertNotIn('last_name', rsp['user'])
+        self.assertNotIn('email', rsp['user'])
+
+    @add_fixtures(['test_site'])
+    def test_get_with_site_and_profile_private_as_site_admin(self):
+        """Testing the GET users/<username>/ API with a local site and private
+        profile as a LocalSite admin
         """
         self._login_user(local_site=True)
 
@@ -367,10 +389,11 @@ class ResourceItemTests(AvatarServicesTestMixin, BaseWebAPITestCase):
         rsp = self.api_get(get_user_item_url(username, self.local_site_name),
                            expected_mimetype=user_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
-        self.assertEqual(rsp['user']['username'], user.username)
-        self.assertNotIn('first_name', rsp['user'])
-        self.assertNotIn('last_name', rsp['user'])
-        self.assertNotIn('email', rsp['user'])
+        item_rsp = rsp['user']
+        self.assertEqual(item_rsp['username'], user.username)
+        self.assertEqual(item_rsp['first_name'], user.first_name)
+        self.assertEqual(item_rsp['last_name'], user.last_name)
+        self.assertEqual(item_rsp['email'], user.email)
 
     @add_fixtures(['test_site'])
     def test_get_missing_user_with_site(self):
