@@ -101,8 +101,8 @@ class RelatedUserWidget(HiddenInput):
                         avatar_services.for_user(user)
                         .get_avatar_urls_uncached(user, 40)
                     )['1x']
-                except KeyError:
-                    pass
+                except (AttributeError, KeyError):
+                    data['avatarURL'] = None
 
             user_data.append(data)
 
