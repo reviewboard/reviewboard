@@ -2,22 +2,31 @@
 
 from __future__ import unicode_literals
 
-import io
-
 from django.utils.six.moves.urllib.error import HTTPError
 
 from reviewboard.hostingsvcs.errors import RepositoryError
-from reviewboard.hostingsvcs.tests.testcases import ServiceTests
-from reviewboard.scmtools.crypto_utils import encrypt_password
+from reviewboard.hostingsvcs.testing import HostingServiceTestCase
+from reviewboard.scmtools.crypto_utils import (decrypt_password,
+                                               encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
-from reviewboard.scmtools.models import Repository, Tool
 
 
-class UnfuddleTests(ServiceTests):
+class UnfuddleTests(HostingServiceTestCase):
     """Unit tests for the Unfuddle hosting service."""
 
     service_name = 'unfuddle'
     fixtures = ['test_scmtools']
+
+    default_account_data = {
+        'password': encrypt_password(HostingServiceTestCase.default_password),
+    }
+
+    default_repository_extra_data = {
+        'unfuddle_account_domain': 'mydomain',
+        'unfuddle_project_id': 1,
+        'unfuddle_repo_id': 2,
+        'unfuddle_repo_name': 'myrepo',
+    }
 
     def test_service_support(self):
         """Testing Unfuddle service support capabilities"""
@@ -60,86 +69,77 @@ class UnfuddleTests(ServiceTests):
 
     def test_authorize(self):
         """Testing Unfuddle.authorize"""
-        def _http_request(service, *args, **kwargs):
-            return b'{}', {}
+        hosting_account = self.create_hosting_account(data={})
 
-        account = self._get_hosting_account()
-        service = account.service
+        with self.setup_http_test(payload=b'{}',
+                                  hosting_account=hosting_account,
+                                  expected_http_calls=1) as ctx:
+            self.assertFalse(ctx.service.is_authorized())
 
-        self.assertFalse(service.is_authorized())
+            ctx.service.authorize(username='myuser',
+                                  password='abc123',
+                                  unfuddle_account_domain='mydomain')
 
-        self.spy_on(service.client.http_request, call_fake=_http_request)
-
-        service.authorize('myuser', 'abc123',
-                          unfuddle_account_domain='mydomain')
-
-        self.assertTrue(service.client.http_request.last_called_with(
+        ctx.assertHTTPCall(
+            0,
             url='https://mydomain.unfuddle.com/api/v1/account/',
-            method='GET',
             username='myuser',
             password='abc123',
-            body=None,
             headers={
                 'Accept': 'application/json',
-            }))
+            })
 
-        self.assertIn('password', account.data)
-        self.assertNotEqual(account.data['password'], 'abc123')
-        self.assertTrue(service.is_authorized())
+        self.assertIn('password', hosting_account.data)
+        self.assertNotEqual(hosting_account.data['password'], 'abc123')
+        self.assertEqual(decrypt_password(hosting_account.data['password']),
+                         'abc123')
+        self.assertTrue(ctx.service.is_authorized())
 
     def test_check_repository(self):
         """Testing Unfuddle.check_repository"""
-        def _http_request(service, *args, **kwargs):
-            return (b'[{"id": 2, "abbreviation": "myrepo", "system": "git"}]',
-                    {})
+        payload = self.dump_json([{
+            'id': 2,
+            'abbreviation': 'myrepo',
+            'system': 'git',
+        }])
 
-        account = self._get_hosting_account()
-        service = account.service
-        account.data['password'] = encrypt_password('password')
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            ctx.service.check_repository(unfuddle_account_domain='mydomain',
+                                         unfuddle_repo_name='myrepo',
+                                         tool_name='Git')
 
-        self.spy_on(service.client.http_request, call_fake=_http_request)
-
-        service.check_repository(unfuddle_account_domain='mydomain',
-                                 unfuddle_repo_name='myrepo',
-                                 tool_name='Git')
-        self.assertTrue(service.client.http_request.last_called_with(
+        ctx.assertHTTPCall(
+            0,
             url='https://mydomain.unfuddle.com/api/v1/repositories/',
-            method='GET',
-            username='myuser',
-            password='password',
-            body=None,
             headers={
                 'Accept': 'application/json',
-            }))
+            })
 
     def test_check_repository_with_wrong_repo_type(self):
         """Testing Unfuddle.check_repository with wrong repo type"""
-        def _http_request(service, *args, **kwargs):
-            return (b'[{"id": 1, "abbreviation": "myrepo", "system": "svn"}]',
-                    {})
-
-        account = self._get_hosting_account()
-        service = account.service
-        account.data['password'] = encrypt_password('password')
-
-        self.spy_on(service.client.http_request, call_fake=_http_request)
+        payload = self.dump_json([{
+            'id': 2,
+            'abbreviation': 'myrepo',
+            'system': 'svn',
+        }])
 
         expected_message = 'A repository with this name was not found'
 
-        with self.assertRaisesMessage(RepositoryError, expected_message):
-            service.check_repository(unfuddle_account_domain='mydomain',
-                                     unfuddle_repo_name='myrepo',
-                                     tool_name='Git')
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            with self.assertRaisesMessage(RepositoryError, expected_message):
+                ctx.service.check_repository(
+                    unfuddle_account_domain='mydomain',
+                    unfuddle_repo_name='myrepo',
+                    tool_name='Git')
 
-        self.assertTrue(service.client.http_request.last_called_with(
+        ctx.assertHTTPCall(
+            0,
             url='https://mydomain.unfuddle.com/api/v1/repositories/',
-            method='GET',
-            username='myuser',
-            password='password',
-            body=None,
             headers={
                 'Accept': 'application/json',
-            }))
+            })
 
     def test_get_file_with_svn_and_base_commit_id(self):
         """Testing Unfuddle.get_file with Subversion and base commit ID"""
@@ -260,45 +260,38 @@ class UnfuddleTests(ServiceTests):
                 Whether this test expects the file existence check to return
                 an error.
         """
-        def _http_request(service, *args, **kwargs):
-            return b'My data', {}
-
-        path = '/path'
-        account = self._get_hosting_account()
-        service = account.service
-        client = service.client
-        repository = Repository(hosting_account=account,
-                                tool=Tool.objects.get(name=tool_name))
-        repository.extra_data = {
-            'unfuddle_account_domain': 'mydomain',
-            'unfuddle_project_id': 1,
-            'unfuddle_repo_id': 2,
-            'unfuddle_repo_name': 'myrepo',
-        }
-
-        account.data['password'] = encrypt_password('password')
-
-        self.spy_on(client.http_request, call_fake=_http_request)
-
         if expected_error:
-            with self.assertRaises(FileNotFoundError):
-                service.get_file(repository, path, revision, base_commit_id)
-
-            self.assertFalse(client.http_request.called)
+            expected_http_calls = 0
         else:
-            result = service.get_file(repository, path, revision,
-                                      base_commit_id)
-            self.assertTrue(client.http_request.last_called_with(
+            expected_http_calls = 1
+
+        with self.setup_http_test(expected_http_calls=expected_http_calls,
+                                  payload=b'My data') as ctx:
+            repository = ctx.create_repository(tool_name=tool_name)
+            get_file_kwargs = {
+                'repository': repository,
+                'path': '/path',
+                'revision': revision,
+                'base_commit_id': base_commit_id,
+            }
+
+            if expected_error:
+                with self.assertRaises(FileNotFoundError):
+                    ctx.service.get_file(**get_file_kwargs)
+
+                result = None
+            else:
+                result = ctx.service.get_file(**get_file_kwargs)
+
+        if not expected_error:
+            ctx.assertHTTPCall(
+                0,
                 url=('https://mydomain.unfuddle.com/api/v1/repositories/2/'
-                     'download/?path=%s&commit=%s'
-                     % (path, expected_revision)),
-                method='GET',
-                username='myuser',
-                password='password',
+                     'download/?path=/path&commit=%s'
+                     % expected_revision),
                 headers={
                     'Accept': 'application/json',
-                },
-                body=None))
+                })
 
             self.assertIsInstance(result, bytes)
             self.assertEqual(result, b'My data')
@@ -329,49 +322,42 @@ class UnfuddleTests(ServiceTests):
                 Whether this test expects the file existence check to return
                 an error.
         """
-        def _http_request(service, url, *args, **kwargs):
-            if expected_found:
-                return b'{}', {}
-            else:
-                raise HTTPError(url, 404, '', {}, io.BytesIO())
-
-        account = self._get_hosting_account()
-        service = account.service
-        client = service.client
-        repository = Repository(hosting_account=account,
-                                tool=Tool.objects.get(name=tool_name))
-        repository.extra_data = {
-            'unfuddle_account_domain': 'mydomain',
-            'unfuddle_project_id': 1,
-            'unfuddle_repo_id': 2,
-            'unfuddle_repo_name': 'myrepo',
-        }
-
-        account.data['password'] = encrypt_password('password')
-
-        self.spy_on(client.http_request, call_fake=_http_request)
-
-        result = service.get_file_exists(repository, '/path', revision,
-                                         base_commit_id)
+        if expected_found:
+            payload = b'{}'
+            status_code = None
+        else:
+            payload = None
+            status_code = 404
 
         if expected_error:
-            self.assertFalse(client.http_request.called)
+            expected_http_calls = 0
+        else:
+            expected_http_calls = 1
+
+        with self.setup_http_test(expected_http_calls=expected_http_calls,
+                                  payload=payload,
+                                  status_code=status_code) as ctx:
+            repository = ctx.create_repository(tool_name=tool_name)
+            result = ctx.service.get_file_exists(repository=repository,
+                                                 path='/path',
+                                                 revision=revision,
+                                                 base_commit_id=base_commit_id)
+
+        if expected_error:
+            self.assertEqual(len(ctx.http_calls), 0)
             self.assertFalse(result)
         else:
-            self.assertTrue(client.http_request.last_called_with(
+            ctx.assertHTTPCall(
+                0,
                 url=('https://mydomain.unfuddle.com/api/v1/repositories/2/'
                      'history/?path=/path&commit=%s&count=0'
                      % expected_revision),
-                method='GET',
-                username='myuser',
-                password='password',
                 headers={
                     'Accept': 'application/json',
-                },
-                body=None))
+                })
 
             if expected_found:
                 self.assertTrue(result)
             else:
-                self.assertTrue(client.http_request.last_raised(HTTPError))
+                self.assertTrue(ctx.http_calls[0].raised(HTTPError))
                 self.assertFalse(result)

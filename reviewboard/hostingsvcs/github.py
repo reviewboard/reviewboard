@@ -673,7 +673,7 @@ class GitHub(HostingService, BugTracker):
                     ugettext('This is a public repository, but you have '
                              'selected a private plan.'))
 
-    def authorize(self, username, password, hosting_url,
+    def authorize(self, username, password, hosting_url=None,
                   two_factor_auth_code=None, local_site_name=None,
                   *args, **kwargs):
         site = Site.objects.get_current()

@@ -1265,8 +1265,8 @@ class SearchSettingsForm(SiteSettingsForm):
 
     search_enable = forms.BooleanField(
         label=_('Enable search'),
-        help_text=_('If enabled, provides a search field for quickly searching'
-                    'through review requests, diffs, and users.'),
+        help_text=_('If enabled, provides a search field for quickly '
+                    'searching through review requests, diffs, and users.'),
         required=False)
 
     search_results_per_page = forms.IntegerField(

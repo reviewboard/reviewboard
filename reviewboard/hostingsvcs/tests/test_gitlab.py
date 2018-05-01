@@ -2,54 +2,25 @@
 
 from __future__ import unicode_literals
 
-import json
-from textwrap import dedent
-
-from django.utils.six.moves import cStringIO as StringIO
-from django.utils.six.moves.urllib.error import HTTPError
-from django.utils.six.moves.urllib.parse import urlparse
-from django.utils.six.moves.urllib.request import urlopen
-from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.hostingsvcs.tests.testcases import ServiceTests
+from reviewboard.hostingsvcs.errors import RepositoryError
+from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
-from reviewboard.scmtools.models import Repository
 
 
-class FakeResponse(object):
-    """A fake HTTP response."""
-
-    def __init__(self, request, body, headers):
-        """Initialize the response.
-
-        Args:
-            request (reviewboard.hostingsvcs.service.URLRequest):
-                The request that triggered this response.
-
-            body (bytes):
-                The response body.
-
-            headers (dict):
-                The response headers.
-        """
-        self.request = request
-        self.body = body
-        self.headers = headers
-
-    def read(self):
-        """Read the response.
-
-        Returns:
-            bytes:
-            The response body this instance was initialized with.
-        """
-        return self.body
-
-
-class GitLabTests(ServiceTests):
+class GitLabTests(HostingServiceTestCase):
     """Unit tests for the GitLab hosting service."""
 
     service_name = 'gitlab'
+
+    default_use_hosting_url = True
+    default_account_data = {
+        'private_token': encrypt_password('abc123'),
+    }
+
+    default_repository_extra_data = {
+        'gitlab_project_id': 123456,
+    }
 
     def test_service_support(self):
         """Testing GitLab service support capabilities"""
@@ -116,145 +87,632 @@ class GitLabTests(ServiceTests):
 
     def test_check_repository_personal_v3(self):
         """Testing GitLab.check_repository with personal repository (API v3)"""
-        self._test_check_repository_v3(plan='personal',
-                                       gitlab_personal_repo_name='myrepo')
+        ctx = self._test_check_repository_v3(
+            plan='personal',
+            gitlab_personal_repo_name='myrepo',
+            expected_http_calls=1)
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://example.com/api/v3/projects?per_page=100',
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
 
     def test_check_repository_personal_v4(self):
         """Testing GitLab.check_repository with personal repository (API v4)"""
-        self._test_check_repository_v4(plan='personal',
-                                       gitlab_personal_repo_name='myrepo')
+        ctx = self._test_check_repository_v4(
+            plan='personal',
+            gitlab_personal_repo_name='myrepo',
+            expected_http_calls=1)
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://example.com/api/v4/projects/myuser%2Fmyrepo',
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
 
     def test_check_repository_group_v3(self):
         """Testing GitLab.check_repository with group repository (API v3)"""
-        self._test_check_repository_v3(plan='group',
-                                       gitlab_group_name='mygroup',
-                                       gitlab_group_repo_name='myrepo',
-                                       expected_user='mygroup')
+        ctx = self._test_check_repository_v3(
+            plan='group',
+            gitlab_group_name='mygroup',
+            gitlab_group_repo_name='myrepo',
+            expected_owner='mygroup',
+            expected_http_calls=2)
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://example.com/api/v3/groups?per_page=100',
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        ctx.assertHTTPCall(
+            1,
+            url='https://example.com/api/v3/groups/1',
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
 
     def test_check_repository_group_v4(self):
         """Testing GitLab.check_repository with group repository (API v4)"""
-        self._test_check_repository_v4(plan='group',
-                                       gitlab_group_name='mygroup',
-                                       gitlab_group_repo_name='myrepo',
-                                       expected_user='mygroup')
+        ctx = self._test_check_repository_v4(plan='group',
+                                             gitlab_group_name='mygroup',
+                                             gitlab_group_repo_name='myrepo',
+                                             expected_owner='mygroup',
+                                             expected_http_calls=1)
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://example.com/api/v4/projects/mygroup%2Fmyrepo',
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
 
     def test_check_repository_personal_not_found_v4(self):
         """Testing GitLab.check_repository with not found error and personal
         repository (API v4)
         """
-        self._test_check_repository_error_v4(
+        ctx = self._test_check_repository_error_v4(
             plan='personal',
             gitlab_personal_repo_name='myrepo',
             expected_error='A repository with this name was not found, '
-                           'or your user may not own it.')
+                           'or your user may not own it.',
+            expected_http_calls=1)
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://example.com/api/v4/projects/myuser%2Fmyrepo',
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
 
     def test_check_repository_group_repo_not_found_v4(self):
         """Testing GitLab.check_repository with not found error and
         group repository (API v4)
         """
-        self._test_check_repository_error_v4(
+        ctx = self._test_check_repository_error_v4(
             plan='group',
             gitlab_group_name='mygroup',
             gitlab_group_repo_name='badrepo',
             expected_error='A repository with this name was not found, '
-                           'or your user may not own it.')
+                           'or your user may not own it.',
+            expected_http_calls=1)
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://example.com/api/v4/projects/mygroup%2Fbadrepo',
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
 
     def test_check_repository_personal_not_found_v3(self):
         """Testing GitLab.check_repository with not found error and personal
         repository (API v3)
         """
-        self._test_check_repository_error_v3(
+        ctx = self._test_check_repository_error_v3(
             plan='personal',
             gitlab_personal_repo_name='myrepo',
             expected_error='A repository with this name was not found, '
-                           'or your user may not own it.')
+                           'or your user may not own it.',
+            expected_http_calls=1)
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://example.com/api/v3/projects?per_page=100',
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
 
     def test_check_repository_group_repo_not_found_v3(self):
         """Testing GitLab.check_repository with not found error and
         group repository (API v3)
         """
-        self._test_check_repository_error_v3(
+        ctx = self._test_check_repository_error_v3(
             plan='group',
             gitlab_group_name='mygroup',
             gitlab_group_repo_name='badrepo',
             expected_error='A repository with this name was not found on '
                            'this group, or your user may not have access '
-                           'to it.')
+                           'to it.',
+            expected_http_calls=2)
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://example.com/api/v3/groups?per_page=100',
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+        ctx.assertHTTPCall(
+            1,
+            url='https://example.com/api/v3/groups/1',
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
 
     def test_check_repository_group_not_found_v3(self):
         """Testing GitLab.check_repository with an incorrect group name (API
         v3)
         """
-        self._test_check_repository_error_v3(
+        ctx = self._test_check_repository_error_v3(
             plan='group',
             gitlab_group_name='badgroup',
             gitlab_group_repo_name='myrepo',
             expected_error='A group with this name was not found, or your '
-                           'user may not have access to it.')
+                           'user may not have access to it.',
+            expected_http_calls=1)
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://example.com/api/v3/groups?per_page=100',
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
 
     def test_authorize_v4(self):
         """Testing GitLab.authorize (API v4)"""
-        def _urlopen(url, *args, **kwargs):
-            return FakeResponse(url, '{}', {})
-
-        self.spy_on(urlopen, call_fake=_urlopen)
-
-        account = HostingServiceAccount(service_name=self.service_name,
-                                        username='myuser')
-        service = account.service
-        self.assertFalse(account.is_authorized)
-
-        service.authorize(
-            'myuser',
-            credentials={
-                'username': 'myuser',
-                'private_token': 'foobarbaz',
-            },
-            hosting_url='https://example.com')
-        self.assertTrue(account.is_authorized)
-
-        self.assertTrue(urlopen.spy.called)
-        request = urlopen.spy.last_call.return_value.request
-        self.assertEqual(request.get_full_url(),
-                         'https://example.com/api/v4/projects?per_page=1')
-
-        self.assertEqual(request.headers, {'Private-token': 'foobarbaz'})
-        self.assertIsNone(request.data)
+        ctx = self._test_check_authorize(payload=b'{}',
+                                         expected_http_calls=1)
+        ctx.assertHTTPCall(
+            0,
+            url='https://example.com/api/v4/projects?per_page=1',
+            username=None,
+            password=None,
+            headers={
+                'PRIVATE-TOKEN': 'foobarbaz',
+            })
 
     def test_authorize_v3(self):
         """Testing GitLab.authorize (API v3)"""
-        def _urlopen(url, *args, **kwargs):
-            if 'api/v4' in url._Request__original:
-                raise HTTPError
+        paths = {
+            '/api/v4/projects': {
+                'status_code': 404,
+            },
+            '/api/v3/projects': {
+                'payload': b'{}',
+            },
+        }
 
-            return FakeResponse(url, '{}', {})
+        ctx = self._test_check_authorize(self.make_handler_for_paths(paths),
+                                         expected_http_calls=2)
 
-        self.spy_on(urlopen, call_fake=_urlopen)
+        ctx.assertHTTPCall(
+            0,
+            url='https://example.com/api/v4/projects?per_page=1',
+            username=None,
+            password=None,
+            headers={
+                'PRIVATE-TOKEN': 'foobarbaz',
+            })
 
-        account = HostingServiceAccount(service_name=self.service_name,
-                                        username='myuser')
-        service = account.service
-        self.assertFalse(account.is_authorized)
+        ctx.assertHTTPCall(
+            1,
+            url='https://example.com/api/v3/projects?per_page=1',
+            username=None,
+            password=None,
+            headers={
+                'PRIVATE-TOKEN': 'foobarbaz',
+            })
 
-        service.authorize('myuser',
-                          credentials={
-                              'username': 'myuser',
-                              'private_token': 'foobarbaz',
-                          },
-                          hosting_url='https://example.com')
-        self.assertTrue(account.is_authorized)
+    def test_get_branches_v4(self):
+        """Testing GitLab.get_branches (API v4)"""
+        self._test_get_branches(api_version='4')
 
-        self.assertTrue(urlopen.spy.called)
-        request = urlopen.spy.last_call.return_value.request
-        self.assertEqual(request.get_full_url(),
-                         'https://example.com/api/v3/projects?per_page=1')
+    def test_get_branches_v3(self):
+        """Testing GitLab.get_branches (API v3)"""
+        self._test_get_branches(api_version='3')
 
-        self.assertEqual(request.headers, {'Private-token': 'foobarbaz'})
-        self.assertIsNone(request.data)
+    def test_get_commits_v4(self):
+        """Testing GitLab.get_commits (API v4)"""
+        self._test_get_commits(api_version='4')
 
-    def test_get_branches(self):
-        """Testing GitLab.get_branches"""
-        branches_api_response = json.dumps([
+    def test_get_commits_v3(self):
+        """Testing GitLab.get_commits (API v3)"""
+        self._test_get_commits(api_version='3')
+
+    def test_get_change_v4(self):
+        """Testing GitLab.get_change (API v4)"""
+        self._test_get_change(api_version='4')
+
+    def test_get_change_v3(self):
+        """Testing GitLab.get_change (API v3)"""
+        self._test_get_change(api_version='3')
+
+    def test_get_file_v4(self):
+        """Testing GitLab.get_file (API v4)"""
+        self._test_get_file(
+            api_version='4',
+            expected_url=(
+                'https://example.com/api/v4/projects/123456/repository/'
+                'blobs/676502b42383c746ed899a2f4b50b4370feeea94/raw'))
+
+    def test_get_file_with_base_commit_v3(self):
+        """Testing GitLab.get_file with base commit ID (API v3)"""
+        self._test_get_file(
+            api_version='3',
+            base_commit_id='ed899a2f4b50b4370feeea94676502b42383c746',
+            expected_url=(
+                'https://example.com/api/v3/projects/123456/repository/'
+                'blobs/ed899a2f4b50b4370feeea94676502b42383c746'
+                '?filepath=path/to/file.txt'))
+
+    def test_get_file_without_base_commit_v3(self):
+        """Testing GitLab.get_file without base commit ID (API v3)"""
+        self._test_get_file(
+            api_version='3',
+            expected_url=(
+                'https://example.com/api/v3/projects/123456/repository/'
+                'raw_blobs/676502b42383c746ed899a2f4b50b4370feeea94'))
+
+    def test_get_file_exists_with_exists_v4(self):
+        """Testing GitLab.get_file_exists with exists (API v4)"""
+        self._test_get_file_exists(
+            api_version='4',
+            should_exist=True,
+            expected_url=(
+                'https://example.com/api/v4/projects/123456/repository/'
+                'blobs/676502b42383c746ed899a2f4b50b4370feeea94/raw'))
+
+    def test_get_file_exists_with_not_exists_v4(self):
+        """Testing GitLab.get_file_exists with not exists (API v4)"""
+        self._test_get_file_exists(
+            api_version='4',
+            should_exist=False,
+            expected_url=(
+                'https://example.com/api/v4/projects/123456/repository/'
+                'blobs/676502b42383c746ed899a2f4b50b4370feeea94/raw'))
+
+    def test_get_file_exists_with_base_commit_and_exists_v3(self):
+        """Testing GitLab.get_file_exists with base commit ID and exists
+        (API v3)
+        """
+        self._test_get_file_exists(
+            api_version='3',
+            should_exist=True,
+            base_commit_id='ed899a2f4b50b4370feeea94676502b42383c746',
+            expected_url=(
+                'https://example.com/api/v3/projects/123456/repository/'
+                'blobs/ed899a2f4b50b4370feeea94676502b42383c746'
+                '?filepath=path/to/file.txt'))
+
+    def test_get_file_exists_without_base_commit_and_exists_v3(self):
+        """Testing GitLab.get_file_exists without base commit ID and with
+        exists
+        (API v3)
+        """
+        self._test_get_file_exists(
+            api_version='3',
+            should_exist=True,
+            expected_url=(
+                'https://example.com/api/v3/projects/123456/repository/'
+                'raw_blobs/676502b42383c746ed899a2f4b50b4370feeea94'))
+
+    def test_get_file_exists_with_not_exists_v3(self):
+        """Testing GitLab.get_file_exists with not exists (API v3)"""
+        self._test_get_file_exists(
+            api_version='3',
+            should_exist=False,
+            expected_url=(
+                'https://example.com/api/v3/projects/123456/repository/'
+                'raw_blobs/676502b42383c746ed899a2f4b50b4370feeea94'))
+
+    def _test_check_authorize(self, *args, **kwargs):
+        """Test authorizing a new account.
+
+        Args:
+            *args (tuple):
+                Positional arguments for the HTTP test.
+
+            **kwargs (dict):
+                Keyword arguments for the HTTP test.
+
+        Returns:
+            reviewboard.hostingsvcs.testing.testcases.HttpTestContext:
+            The context used for this test.
+        """
+        hosting_account = self.create_hosting_account(data={})
+        self.assertFalse(hosting_account.is_authorized)
+
+        with self.setup_http_test(hosting_account=hosting_account,
+                                  *args, **kwargs) as ctx:
+            ctx.service.authorize(
+                'myuser',
+                credentials={
+                    'username': 'myuser',
+                    'private_token': 'foobarbaz',
+                },
+                hosting_url='https://example.com')
+
+        self.assertTrue(hosting_account.is_authorized)
+
+        return ctx
+
+    def _test_check_repository_v4(self, expected_owner='myuser', **kwargs):
+        """Test checking for a repository using API v4.
+
+        Args:
+            expected_owner (unicode):
+                The expected user/group name owning the repository.
+
+            **kwargs (dict):
+                Keyword arguments to pass to
+                :py:meth:`check_repository()
+                <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
+
+        Returns:
+            reviewboard.hostingsvcs.testing.testcases.HttpTestContext:
+            The context used for this test.
+        """
+        with self.setup_http_test(payload=b'{"id": 12345}') as ctx:
+            self._set_api_version(ctx.service, '4')
+            ctx.service.check_repository(**kwargs)
+
+        return ctx
+
+    def _test_check_repository_v3(self, expected_owner='myuser', **kwargs):
+        """Test checking for a repository using API v3.
+
+        Args:
+            expected_owner (unicode):
+                The expected user/group name owning the repository.
+
+            **kwargs (dict):
+                Keyword arguments to pass to
+                :py:meth:`check_repository()
+                <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
+
+        Returns:
+            reviewboard.hostingsvcs.testing.testcases.HttpTestContext:
+            The context used for this test.
+        """
+        paths = {
+            '/api/v3/projects': {
+                'payload': self.dump_json([
+                    {
+                        'id': 1,
+                        'path': 'myrepo',
+                        'namespace': {
+                            'path': expected_owner,
+                        },
+                    },
+                ]),
+            },
+            '/api/v3/groups': {
+                'payload': self.dump_json([
+                    {
+                        'id': 1,
+                        'name': 'mygroup',
+                    },
+                ]),
+            },
+            '/api/v3/groups/1': {
+                'payload': self.dump_json({
+                    'projects': [
+                        {
+                            'id': 1,
+                            'name': 'myrepo',
+                        }
+                    ],
+                }),
+            },
+        }
+
+        with self.setup_http_test(self.make_handler_for_paths(paths)) as ctx:
+            self._set_api_version(ctx.service, '3')
+            ctx.service.check_repository(**kwargs)
+
+        return ctx
+
+    def _test_check_repository_error_v4(self, expected_error,
+                                        expected_http_calls, **kwargs):
+        """Test error conditions when checking for a repository using API v4.
+
+        Args:
+            expected_error (unicode):
+                The expected error message from a raised exception.
+
+            expected_http_calls (int):
+                The number of expected HTTP calls.
+
+            **kwargs (dict):
+                Keyword arguments to pass to
+                :py:meth:`check_repository()
+                <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
+
+        Returns:
+            reviewboard.hostingsvcs.testing.testcases.HttpTestContext:
+            The context used for this test.
+        """
+        with self.setup_http_test(expected_http_calls=expected_http_calls,
+                                  status_code=404) as ctx:
+            with self.assertRaisesMessage(RepositoryError, expected_error):
+                self._set_api_version(ctx.service, '4')
+                ctx.service.check_repository(**kwargs)
+
+        return ctx
+
+    def _test_check_repository_error_v3(self, expected_error,
+                                        expected_http_calls, **kwargs):
+        """Test error conditions when checking for a repository using API v3.
+
+        Args:
+            expected_error (unicode):
+                The expected error message from a raised exception.
+
+            expected_http_calls (int):
+                The number of expected HTTP calls.
+
+            **kwargs (dict):
+                Keyword arguments to pass to
+                :py:meth:`check_repository()
+                <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
+
+        Returns:
+            reviewboard.hostingsvcs.testing.testcases.HttpTestContext:
+            The context used for this test.
+        """
+        paths = {
+            '/api/v3/groups': {
+                'payload': self.dump_json([
+                    {
+                        'id': 1,
+                        'name': 'mygroup',
+                    },
+                ]),
+            },
+            '/api/v3/projects': {
+                'payload': self.dump_json([]),
+            },
+            '/api/v3/groups/1': {
+                'payload': self.dump_json({
+                    'projects': [
+                        {
+                            'id': 1,
+                            'name': 'myrepo',
+                        },
+                    ],
+                }),
+            },
+        }
+
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=expected_http_calls,
+                                  ) as ctx:
+            self._set_api_version(ctx.service, '3')
+
+            with self.assertRaisesMessage(RepositoryError, expected_error):
+                ctx.service.check_repository(**kwargs)
+
+        return ctx
+
+    def _test_get_file(self, api_version, expected_url, base_commit_id=None):
+        """Common test for file retrieval.
+
+        Args:
+            api_version (unicode):
+                The API version to test against.
+
+            expected_url (unicode):
+                The expected URL to fetch for the request.
+
+            base_commit_id (unicode, optional):
+                An optional base commit ID to specify during file retrieval.
+        """
+        with self.setup_http_test(payload=b'test data',
+                                  expected_http_calls=1) as ctx:
+            self._set_api_version(ctx.service, api_version)
+
+            repository = ctx.create_repository()
+            data = ctx.service.get_file(
+                repository=repository,
+                path='path/to/file.txt',
+                revision='676502b42383c746ed899a2f4b50b4370feeea94',
+                base_commit_id=base_commit_id)
+
+        self.assertIsInstance(data, bytes)
+        self.assertEqual(data, b'test data')
+
+        ctx.assertHTTPCall(
+            0,
+            url=expected_url,
+            username=None,
+            password=None,
+            headers={
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+    def _test_get_file_exists(self, api_version, should_exist, expected_url,
+                              base_commit_id=None):
+        """Common test for file existence checks.
+
+        Args:
+            api_version (unicode):
+                The API version to test against.
+
+            should_exist (bool):
+                Whether this should simulate that the file exists.
+
+            expected_url (unicode):
+                The expected URL to fetch for the request.
+
+            base_commit_id (unicode, optional):
+                An optional base commit ID to specify during file existence
+                checks.
+        """
+        if should_exist:
+            test_kwargs = {
+                'payload': b'test data'
+            }
+        else:
+            test_kwargs = {
+                'status_code': 400,
+            }
+
+        with self.setup_http_test(expected_http_calls=1, **test_kwargs) as ctx:
+            self._set_api_version(ctx.service, api_version)
+
+            repository = ctx.create_repository()
+            result = ctx.service.get_file_exists(
+                repository=repository,
+                path='path/to/file.txt',
+                revision='676502b42383c746ed899a2f4b50b4370feeea94',
+                base_commit_id=base_commit_id)
+
+        self.assertEqual(result, should_exist)
+
+        ctx.assertHTTPCall(
+            0,
+            url=expected_url,
+            username=None,
+            password=None,
+            headers={
+                'PRIVATE-TOKEN': 'abc123',
+            })
+
+    def _test_get_branches(self, api_version):
+        """Common test for fetching branches.
+
+        Args:
+            api_version (unicode):
+                The API version to test against.
+        """
+        payload = self.dump_json([
             {
                 'name': 'master',
                 'commit': {
@@ -281,23 +739,25 @@ class GitLabTests(ServiceTests):
             }
         ])
 
-        def _urlopen(url, *args, **kwargs):
-            return FakeResponse(url, branches_api_response, None)
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            self._set_api_version(ctx.service, api_version)
 
-        self.spy_on(urlopen, call_fake=_urlopen)
+            repository = ctx.create_repository()
+            branches = ctx.service.get_branches(repository)
 
-        account = self._get_hosting_account(use_url=True)
-        account.data['private_token'] = encrypt_password('abc123')
+        ctx.assertHTTPCall(
+            0,
+            url=('https://example.com/api/v%s/projects/123456/repository/'
+                 'branches'
+                 % api_version),
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
 
-        service = account.service
-
-        repository = Repository(hosting_account=account)
-        repository.extra_data = {'gitlab_project_id': 123456}
-
-        branches = service.get_branches(repository)
-
-        self.assertTrue(urlopen.spy.called)
-        self.assertEqual(len(branches), 3)
         self.assertEqual(
             branches,
             [
@@ -312,9 +772,14 @@ class GitLabTests(ServiceTests):
                        default=False)
             ])
 
-    def test_get_commits(self):
-        """Testing GitLab.get_commits"""
-        commits_api_response = json.dumps([
+    def _test_get_commits(self, api_version):
+        """Common test for fetching lists of commits.
+
+        Args:
+            api_version (unicode):
+                The API version to test against.
+        """
+        payload = self.dump_json([
             {
                 'id': 'ed899a2f4b50b4370feeea94676502b42383c746',
                 'author_name': 'Chester Li',
@@ -335,23 +800,28 @@ class GitLabTests(ServiceTests):
             }
         ])
 
-        def _http_get(self, *args, **kargs):
-            return commits_api_response, None
+        with self.setup_http_test(payload=payload,
+                                  expected_http_calls=1) as ctx:
+            self._set_api_version(ctx.service, api_version)
 
-        account = self._get_hosting_account(use_url=True)
-        account.data['private_token'] = encrypt_password('abc123')
+            repository = ctx.create_repository()
+            commits = ctx.service.get_commits(
+                repository=repository,
+                start='ed899a2f4b50b4370feeea94676502b42383c746')
 
-        service = account.service
+        ctx.assertHTTPCall(
+            0,
+            url=('https://example.com/api/v%s/projects/123456/repository/'
+                 'commits?per_page=21&ref_name='
+                 'ed899a2f4b50b4370feeea94676502b42383c746'
+                 % api_version),
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
 
-        repository = Repository(hosting_account=account)
-        repository.extra_data = {'gitlab_project_id': 123456}
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-
-        commits = service.get_commits(
-            repository, start='ed899a2f4b50b4370feeea94676502b42383c746')
-
-        self.assertTrue(service.client.http_get.called)
         self.assertEqual(
             commits,
             [
@@ -375,588 +845,108 @@ class GitLabTests(ServiceTests):
         for commit in commits:
             self.assertIsNone(commit.diff)
 
-    def test_get_change(self):
-        """Testing GitLab.get_change"""
-        commit_id = 'ed899a2f4b50b4370feeea94676502b42383c746'
-        commit_rsp = json.dumps({
-            'author_name': 'Chester Li',
-            'id': commit_id,
-            'created_at': '2015-03-10T11:50:22+03:00',
-            'message': 'Replace sanitize with escape once',
-            'parent_ids': ['ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'],
-        })
+    def _test_get_change(self, api_version):
+        """Common test for fetching individual commits.
 
-        diff_rsp = dedent(
-            b'''\
-            ---
-            f1 | 1 +
-            f2 | 1 +
-            2 files changed, 2 insertions(+), 0 deletions(-)
-
-            diff --git a/f1 b/f1
-            index 11ac561..3ea0691 100644
-            --- a/f1
-            +++ b/f1
-            @@ -1 +1,2 @@
-            this is f1
-            +add one line to f1
-            diff --git a/f2 b/f2
-            index c837441..9302ecd 100644
-            --- a/f2
-            +++ b/f2
-            @@ -1 +1,2 @@
-            this is f2
-            +add one line to f2 with Unicode\xe2\x9d\xb6
-            '''
+        Args:
+            api_version (unicode):
+                The API version to test against.
+        """
+        commit_sha = 'ed899a2f4b50b4370feeea94676502b42383c746'
+        diff_rsp = (
+            b'---\n'
+            b'f1 | 1 +\n'
+            b'f2 | 1 +\n'
+            b'2 files changed, 2 insertions(+), 0 deletions(-)\n'
+            b'\n'
+            b'diff --git a/f1 b/f1\n'
+            b'index 11ac561..3ea0691 100644\n'
+            b'--- a/f1\n'
+            b'+++ b/f1\n'
+            b'@@ -1 +1,2 @@\n'
+            b' this is f1\n'
+            b'+add one line to f1\n'
+            b'diff --git a/f2 b/f2\n'
+            b'index c837441..9302ecd 100644\n'
+            b'--- a/f2\n'
+            b'+++ b/f2\n'
+            b'@@ -1 +1,2 @@\n'
+            b' this is f2\n'
+            b'+add one line to f2 with Unicode\xe2\x9d\xb6\n'
         )
 
-        project_rsp = json.dumps({
-            'path_with_namespace': 'username/project_name',
-        })
+        paths = {
+            '/api/v%s/projects/123456/repository/commits/%s' % (api_version,
+                                                                commit_sha): {
+                'payload': self.dump_json({
+                    'author_name': 'Chester Li',
+                    'id': commit_sha,
+                    'created_at': '2015-03-10T11:50:22+03:00',
+                    'message': 'Replace sanitize with escape once',
+                    'parent_ids': ['ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'],
+                }),
+            },
+            '/api/v%s/projects/123456' % api_version: {
+                'payload': self.dump_json({
+                    'path_with_namespace': 'myuser/myproject',
+                }),
+            },
+            '/myuser/myproject/commit/%s.diff' % commit_sha: {
+                'payload': diff_rsp,
+            },
+        }
 
-        def _urlopen(url, *args, **kwargs):
-            url = url.get_full_url()
-            parse_result = urlparse(url)
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=3) as ctx:
+            self._set_api_version(ctx.service, api_version)
 
-            if (parse_result.path.startswith('/api/v4/projects') and
-                parse_result.query == 'per_page=1'):
-                rsp = ''
-            elif parse_result.path.startswith('/api/v4/projects/123456/'
-                                              'repository/commits'):
-                rsp = commit_rsp
-            elif parse_result.path == '/api/v4/projects/123456':
-                rsp = project_rsp
-            elif parse_result.path.endswith('.diff'):
-                rsp = diff_rsp
-            else:
-                self.fail('Unexpected HTTP request URL: %s' % url)
+            repository = ctx.create_repository()
+            commit = ctx.service.get_change(repository=repository,
+                                            revision=commit_sha)
 
-            return FakeResponse(url, rsp, {})
+        ctx.assertHTTPCall(
+            0,
+            url=('https://example.com/api/v%s/projects/123456/repository/'
+                 'commits/%s'
+                 % (api_version, commit_sha)),
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
 
-        self.spy_on(urlopen, call_fake=_urlopen)
+        ctx.assertHTTPCall(
+            1,
+            url=('https://example.com/api/v%s/projects/123456'
+                 '?private_token=abc123'
+                 % api_version),
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'application/json',
+                'PRIVATE-TOKEN': 'abc123',
+            })
 
-        account = self._get_hosting_account(use_url=True)
-        account.data['private_token'] = encrypt_password('abc123')
-        service = account.service
-
-        repository = Repository(hosting_account=account)
-        repository.extra_data = {'gitlab_project_id': 123456}
-
-        commit = service.get_change(repository, commit_id)
-
-        self.assertTrue(urlopen.spy.called)
+        ctx.assertHTTPCall(
+            2,
+            url=('https://example.com/myuser/myproject/commit/'
+                 '%s.diff?private_token=abc123'
+                 % commit_sha),
+            username=None,
+            password=None,
+            headers={
+                'Accept': 'text/plain',
+            })
 
         self.assertEqual(
             commit,
             Commit(author_name='Chester Li',
                    date='2015-03-10T11:50:22+03:00',
-                   id='ed899a2f4b50b4370feeea94676502b42383c746',
+                   id=commit_sha,
                    message='Replace sanitize with escape once',
                    parent='ae1d9fb46aa2b07ee9836d49862ec4e2c46fbbba'))
         self.assertEqual(commit.diff, diff_rsp)
-
-    def test_get_file_with_base_commit_v3(self):
-        """Testing GitLab.get_file with base commit ID (API v3)"""
-        def _http_get(self, *args, **kargs):
-            return b'test data', {}
-
-        account = self._get_hosting_account(use_url=True)
-        account.data['private_token'] = encrypt_password('abc123')
-
-        service = account.service
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-        self.spy_on(service._get_api_version,
-                    call_fake=lambda self, hosting_url: '3')
-
-        repository = Repository(hosting_account=account)
-        repository.extra_data = {'gitlab_project_id': 123456}
-
-        data = service.get_file(
-            repository=repository,
-            path='path/to/file.txt',
-            revision='676502b42383c746ed899a2f4b50b4370feeea94',
-            base_commit_id='ed899a2f4b50b4370feeea94676502b42383c746')
-
-        self.assertTrue(service.client.http_get.called_with(
-            url=('https://example.com/api/v3/projects/123456/repository/'
-                 'blobs/ed899a2f4b50b4370feeea94676502b42383c746'
-                 '?filepath=path/to/file.txt'),
-            headers={
-                'PRIVATE-TOKEN': 'abc123',
-            }))
-        self.assertIsInstance(data, bytes)
-        self.assertEqual(data, b'test data')
-
-    def test_get_file_without_base_commit_v3(self):
-        """Testing GitLab.get_file without base commit ID (API v3)"""
-        def _http_get(self, *args, **kargs):
-            return b'test data', {}
-
-        account = self._get_hosting_account(use_url=True)
-        account.data['private_token'] = encrypt_password('abc123')
-
-        service = account.service
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-        self.spy_on(service._get_api_version,
-                    call_fake=lambda self, hosting_url: '3')
-
-        repository = Repository(hosting_account=account)
-        repository.extra_data = {'gitlab_project_id': 123456}
-
-        data = service.get_file(
-            repository=repository,
-            path='path/to/file.txt',
-            revision='676502b42383c746ed899a2f4b50b4370feeea94')
-
-        self.assertTrue(service.client.http_get.called_with(
-            url=('https://example.com/api/v3/projects/123456/repository/'
-                 'raw_blobs/676502b42383c746ed899a2f4b50b4370feeea94'),
-            headers={
-                'PRIVATE-TOKEN': 'abc123',
-            }))
-        self.assertIsInstance(data, bytes)
-        self.assertEqual(data, b'test data')
-
-    def test_get_file_v4(self):
-        """Testing GitLab.get_file (API v4)"""
-        def _http_get(self, *args, **kargs):
-            return b'test data', {}
-
-        account = self._get_hosting_account(use_url=True)
-        account.data['private_token'] = encrypt_password('abc123')
-
-        service = account.service
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-        self.spy_on(service._get_api_version,
-                    call_fake=lambda self, hosting_url: '4')
-
-        repository = Repository(hosting_account=account)
-        repository.extra_data = {'gitlab_project_id': 123456}
-
-        data = service.get_file(
-            repository=repository,
-            path='path/to/file.txt',
-            revision='676502b42383c746ed899a2f4b50b4370feeea94')
-
-        self.assertTrue(service.client.http_get.called_with(
-            url=('https://example.com/api/v4/projects/123456/repository/'
-                 'blobs/676502b42383c746ed899a2f4b50b4370feeea94/raw'),
-            headers={
-                'PRIVATE-TOKEN': 'abc123',
-            }))
-        self.assertIsInstance(data, bytes)
-        self.assertEqual(data, b'test data')
-
-    def test_get_file_exists_with_base_commit_and_exists_v3(self):
-        """Testing GitLab.get_file_exists with base commit ID and exists
-        (API v3)
-        """
-        def _http_get(self, *args, **kargs):
-            return b'test data', {}
-
-        account = self._get_hosting_account(use_url=True)
-        account.data['private_token'] = encrypt_password('abc123')
-
-        service = account.service
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-        self.spy_on(service._get_api_version,
-                    call_fake=lambda self, hosting_url: '3')
-
-        repository = Repository(hosting_account=account)
-        repository.extra_data = {'gitlab_project_id': 123456}
-
-        self.assertTrue(service.get_file_exists(
-            repository=repository,
-            path='path/to/file.txt',
-            revision='676502b42383c746ed899a2f4b50b4370feeea94',
-            base_commit_id='ed899a2f4b50b4370feeea94676502b42383c746'))
-
-        self.assertTrue(service.client.http_get.called_with(
-            url=('https://example.com/api/v3/projects/123456/repository/'
-                 'blobs/ed899a2f4b50b4370feeea94676502b42383c746'
-                 '?filepath=path/to/file.txt'),
-            headers={
-                'PRIVATE-TOKEN': 'abc123',
-            }))
-
-    def test_get_file_exists_without_base_commit_and_exists_v3(self):
-        """Testing GitLab.get_file_exists without base commit ID and with
-        exists
-        (API v3)
-        """
-        def _http_get(self, *args, **kargs):
-            return b'test data', {}
-
-        account = self._get_hosting_account(use_url=True)
-        account.data['private_token'] = encrypt_password('abc123')
-
-        service = account.service
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-        self.spy_on(service._get_api_version,
-                    call_fake=lambda self, hosting_url: '3')
-
-        repository = Repository(hosting_account=account)
-        repository.extra_data = {'gitlab_project_id': 123456}
-
-        self.assertTrue(service.get_file_exists(
-            repository=repository,
-            path='path/to/file.txt',
-            revision='676502b42383c746ed899a2f4b50b4370feeea94'))
-
-        self.assertTrue(service.client.http_get.called_with(
-            url=('https://example.com/api/v3/projects/123456/repository/'
-                 'raw_blobs/676502b42383c746ed899a2f4b50b4370feeea94'),
-            headers={
-                'PRIVATE-TOKEN': 'abc123',
-            }))
-
-    def test_get_file_exists_with_not_exists_v3(self):
-        """Testing GitLab.get_file_exists with not exists (API v3)"""
-        def _http_get(self, url, *args, **kargs):
-            raise HTTPError(url, 404, '', {}, StringIO())
-
-        account = self._get_hosting_account(use_url=True)
-        account.data['private_token'] = encrypt_password('abc123')
-
-        service = account.service
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-        self.spy_on(service._get_api_version,
-                    call_fake=lambda self, hosting_url: '3')
-
-        repository = Repository(hosting_account=account)
-        repository.extra_data = {'gitlab_project_id': 123456}
-
-        self.assertFalse(service.get_file_exists(
-            repository=repository,
-            path='path/to/file.txt',
-            revision='676502b42383c746ed899a2f4b50b4370feeea94'))
-
-        self.assertTrue(service.client.http_get.called_with(
-            url=('https://example.com/api/v3/projects/123456/repository/'
-                 'raw_blobs/676502b42383c746ed899a2f4b50b4370feeea94'),
-            headers={
-                'PRIVATE-TOKEN': 'abc123',
-            }))
-
-    def test_get_file_exists_with_exists_v4(self):
-        """Testing GitLab.get_file_exists with exists (API v4)"""
-        def _http_get(self, *args, **kargs):
-            return b'test data', {}
-
-        account = self._get_hosting_account(use_url=True)
-        account.data['private_token'] = encrypt_password('abc123')
-
-        service = account.service
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-        self.spy_on(service._get_api_version,
-                    call_fake=lambda self, hosting_url: '4')
-
-        repository = Repository(hosting_account=account)
-        repository.extra_data = {'gitlab_project_id': 123456}
-
-        self.assertTrue(service.get_file_exists(
-            repository=repository,
-            path='path/to/file.txt',
-            revision='676502b42383c746ed899a2f4b50b4370feeea94'))
-
-        self.assertTrue(service.client.http_get.called_with(
-            url=('https://example.com/api/v4/projects/123456/repository/'
-                 'blobs/676502b42383c746ed899a2f4b50b4370feeea94/raw'),
-            headers={
-                'PRIVATE-TOKEN': 'abc123',
-            }))
-
-    def test_get_file_exists_with_not_exists_v4(self):
-        """Testing GitLab.get_file_exists with not exists (API v4)"""
-        def _http_get(self, url, *args, **kargs):
-            raise HTTPError(url, 404, '', {}, StringIO())
-
-        account = self._get_hosting_account(use_url=True)
-        account.data['private_token'] = encrypt_password('abc123')
-
-        service = account.service
-
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-        self.spy_on(service._get_api_version,
-                    call_fake=lambda self, hosting_url: '4')
-
-        repository = Repository(hosting_account=account)
-        repository.extra_data = {'gitlab_project_id': 123456}
-
-        self.assertFalse(service.get_file_exists(
-            repository=repository,
-            path='path/to/file.txt',
-            revision='676502b42383c746ed899a2f4b50b4370feeea94'))
-
-        self.assertTrue(service.client.http_get.called_with(
-            url=('https://example.com/api/v4/projects/123456/repository/'
-                 'blobs/676502b42383c746ed899a2f4b50b4370feeea94/raw'),
-            headers={
-                'PRIVATE-TOKEN': 'abc123',
-            }))
-
-    def _test_check_repository_v4(self, expected_user='myuser', **kwargs):
-        def _http_get(service, url, *args, **kwargs):
-            if url == 'https://example.com/api/v4/projects/mygroup%2Fmyrepo':
-                # We don't care about the contents. Just that it exists.
-                payload = {}
-            elif url == 'https://example.com/api/v4/projects/myuser%2Fmyrepo':
-                # We don't care about the contents. Just that it exists.
-                payload = {}
-            else:
-                self.fail('Unexpected URL %s' % url)
-
-            return json.dumps(payload), {}
-
-    def _test_check_repository_v3(self, expected_user='myuser', **kwargs):
-        def _http_get(service, url, *args, **kwargs):
-            if url.startswith('https://example.com/api/v3/projects?per_page='):
-                payload = [
-                    {
-                        'id': 1,
-                        'path': 'myrepo',
-                        'namespace': {
-                            'path': expected_user,
-                        },
-                    },
-                ]
-            elif url == 'https://example.com/api/v3/groups?per_page=100':
-                payload = [
-                    {
-                        'id': 1,
-                        'name': 'mygroup',
-                    },
-                ]
-            elif url == 'https://example.com/api/v3/projects/1':
-                # We don't care about the contents. Just that it exists.
-                payload = {}
-            elif url == 'https://example.com/api/v3/groups/1':
-                payload = {
-                    'projects': [
-                        {
-                            'id': 1,
-                            'name': 'myrepo',
-                        },
-                    ],
-                }
-            else:
-                self.fail('Unexpected URL %s' % url)
-
-            return json.dumps(payload), {}
-
-        account = self._get_hosting_account(use_url=True)
-        service = account.service
-        self._set_api_version(service, '3')
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-        account.data['private_token'] = encrypt_password('abc123')
-
-        service.check_repository(**kwargs)
-        self.assertTrue(service.client.http_get.called)
-
-    def _test_check_repository_error_v4(self, expected_error, **kwargs):
-        def _http_get(service, url, *args, **kwargs):
-            error = HTTPError(url, 404, '', {}, StringIO())
-
-            if url == 'https://example.com/api/v4/projects/mygroup%2Fbadrepo':
-                raise error
-            elif url == 'https://example.com/api/v4/projects/myuser%2Fmyrepo':
-                raise error
-            else:
-                self.fail('Unexpected URL %s' % url)
-
-        account = self._get_hosting_account(use_url=True)
-        service = account.service
-        self.spy_on(service._get_api_version,
-            repository, start='ed899a2f4b50b4370feeea94676502b42383c746')
-
-        self.assertTrue(service.client.http_get.called)
-        self.assertEqual(len(commits), 3)
-
-    def _test_check_repository_v4(self, expected_user='myuser', **kwargs):
-        """Test checking for a repository using API v4.
-
-        Args:
-            expected_owner (unicode):
-                The expected user/group name owning the repository.
-
-            **kwargs (dict):
-                Keyword arguments to pass to
-                :py:meth:`check_repository()
-                <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
-        """
-        def _http_get(service, url, *args, **kwargs):
-            if url == ('https://example.com/api/v4/projects/%s%%2Fmyrepo'
-                       % expected_user):
-                payload = {
-                    'id': 12345,
-                }
-            else:
-                self.fail('Unexpected URL %s' % url)
-
-            return json.dumps(payload), {}
-
-        account = self._get_hosting_account(use_url=True)
-        service = account.service
-
-        self._set_api_version(service, '4')
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-        account.data['private_token'] = encrypt_password('abc123')
-
-        service.check_repository(**kwargs)
-        self.assertTrue(service.client.http_get.called)
-
-    def _test_check_repository_v3(self, expected_user='myuser', **kwargs):
-        """Test checking for a repository using API v3.
-
-        Args:
-            expected_owner (unicode):
-                The expected user/group name owning the repository.
-
-            **kwargs (dict):
-                Keyword arguments to pass to
-                :py:meth:`check_repository()
-                <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
-        """
-        def _http_get(service, url, *args, **kwargs):
-            if url.startswith('https://example.com/api/v3/projects?per_page='):
-                payload = [
-                    {
-                        'id': 1,
-                        'path': 'myrepo',
-                        'namespace': {
-                            'path': expected_user,
-                        },
-                    },
-                ]
-            elif url == 'https://example.com/api/v3/groups?per_page=100':
-                payload = [
-                    {
-                        'id': 1,
-                        'name': 'mygroup',
-                    },
-                ]
-            elif url == 'https://example.com/api/v3/projects/1':
-                # We don't care about the contents. Just that it exists.
-                payload = {}
-            elif url == 'https://example.com/api/v3/groups/1':
-                payload = {
-                    'projects': [
-                        {
-                            'id': 1,
-                            'name': 'myrepo',
-                        },
-                    ],
-                }
-            else:
-                self.fail('Unexpected URL %s' % url)
-
-            return json.dumps(payload), {}
-
-        account = self._get_hosting_account(use_url=True)
-        service = account.service
-        self._set_api_version(service, '3')
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-        account.data['private_token'] = encrypt_password('abc123')
-
-        service.check_repository(**kwargs)
-        self.assertTrue(service.client.http_get.called)
-
-    def _test_check_repository_error_v4(self, expected_error, **kwargs):
-        """Test error conditions when checking for a repository using API v4.
-
-        Args:
-            expected_error (unicode):
-                The expected error message from a raised exception.
-
-            **kwargs (dict):
-                Keyword arguments to pass to
-                :py:meth:`check_repository()
-                <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
-        """
-        def _http_get(service, url, *args, **kwargs):
-            error = HTTPError(url, 404, '', {}, StringIO())
-
-            if url == 'https://example.com/api/v4/projects/mygroup%2Fbadrepo':
-                raise error
-            elif url == 'https://example.com/api/v4/projects/myuser%2Fmyrepo':
-                raise error
-            else:
-                self.fail('Unexpected URL %s' % url)
-
-        account = self._get_hosting_account(use_url=True)
-        service = account.service
-        self._set_api_version(service, '4')
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-        account.data['private_token'] = encrypt_password('abc123')
-
-        with self.assertRaisesMessage(Exception, expected_error):
-            service.check_repository(**kwargs)
-
-    def _test_check_repository_error_v3(self, expected_error, **kwargs):
-        """Test error conditions when checking for a repository using API v3.
-
-        Args:
-            expected_error (unicode):
-                The expected error message from a raised exception.
-
-            **kwargs (dict):
-                Keyword arguments to pass to
-                :py:meth:`check_repository()
-                <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
-        """
-        def _http_get(service, url, *args, **kwargs):
-            if url == 'https://example.com/api/v3/groups?per_page=100':
-                payload = [
-                    {
-                        'id': 1,
-                        'name': 'mygroup',
-                    }
-                ]
-            elif url == 'https://example.com/api/v3/projects?per_page=100':
-                payload = []
-            elif url == 'https://example.com/api/v3/groups/1':
-                payload = {
-                    'projects': [
-                        {
-                            'id': 1,
-                            'name': 'myrepo',
-                        },
-                    ],
-                }
-            else:
-                self.fail('Unexpected URL %s' % url)
-
-            return json.dumps(payload), {}
-
-        account = self._get_hosting_account(use_url=True)
-        service = account.service
-        self.spy_on(service._get_api_version,
-                    call_fake=lambda self, hosting_url: '3')
-        self.spy_on(service.client.http_get, call_fake=_http_get)
-        account.data['private_token'] = encrypt_password('abc123')
-
-        with self.assertRaisesMessage(Exception, expected_error):
-            service.check_repository(**kwargs)
-
-    def _get_repo_api_url(self, plan, fields):
-        account = self._get_hosting_account(use_url=True)
-        service = account.service
-        self.assertNotEqual(service, None)
-
-        repository = Repository(hosting_account=account)
-        repository.extra_data['repository_plan'] = plan
-
-        form = self._get_form(plan, fields)
-        form.save(repository)
-
-        return service._get_repo_api_url(repository)
 
     def _set_api_version(self, service, api_version):
         """Set the API version for a test.

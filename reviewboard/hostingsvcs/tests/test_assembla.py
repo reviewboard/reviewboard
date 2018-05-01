@@ -5,16 +5,20 @@ from __future__ import unicode_literals
 import nose
 
 from reviewboard.admin.server import get_hostname
-from reviewboard.hostingsvcs.tests.testcases import ServiceTests
+from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.crypto_utils import encrypt_password
 from reviewboard.scmtools.models import Repository, Tool
 
 
-class AssemblaTestCase(ServiceTests):
+class AssemblaTestCase(HostingServiceTestCase):
     """Base class for Assembla test suites."""
 
     service_name = 'assembla'
     fixtures = ['test_scmtools']
+
+    default_account_data = {
+        'password': encrypt_password('abc123'),
+    }
 
 
 class AssemblaTests(AssemblaTestCase):
@@ -58,7 +62,7 @@ class AssemblaTests(AssemblaTestCase):
 
     def test_authorize(self):
         """Testing Assembla.authorize"""
-        account = self._get_hosting_account()
+        account = self.create_hosting_account(data={})
         service = account.service
 
         self.assertFalse(service.is_authorized())
@@ -72,7 +76,7 @@ class AssemblaTests(AssemblaTestCase):
     def test_check_repository_perforce(self):
         """Testing Assembla.check_repository with Perforce"""
         try:
-            account = self._get_hosting_account()
+            account = self.create_hosting_account()
             service = account.service
 
             service.authorize('myuser', 'abc123', None)
@@ -100,7 +104,7 @@ class AssemblaTests(AssemblaTestCase):
     def test_check_repository_subversion(self):
         """Testing Assembla.check_repository with Subversion"""
         try:
-            account = self._get_hosting_account()
+            account = self.create_hosting_account()
             service = account.service
 
             service.authorize('myuser', 'abc123', None)
@@ -130,22 +134,15 @@ class AssemblaFormTests(AssemblaTestCase):
     def setUp(self):
         super(AssemblaFormTests, self).setUp()
 
-        self.account = self._get_hosting_account()
-        self.account.data = {
-            'password': encrypt_password('abc123'),
-        }
+        self.account = self.create_hosting_account()
 
     def test_save_form_perforce(self):
         """Testing AssemblaForm with Perforce"""
         try:
-            account = self._get_hosting_account()
-            service = account.service
-            service.authorize('myuser', 'abc123', None)
+            repository = self.create_repository(hosting_account=self.account,
+                                                tool_name='Perforce')
 
-            repository = Repository(hosting_account=account,
-                                    tool=Tool.objects.get(name='Perforce'))
-
-            form = self._get_form(fields={'assembla_project_id': 'myproject'})
+            form = self.get_form(fields={'assembla_project_id': 'myproject'})
             self.spy_on(get_hostname,
                         call_fake=lambda: 'myhost.example.com')
 
@@ -159,19 +156,15 @@ class AssemblaFormTests(AssemblaTestCase):
             self.assertEqual(repository.extra_data['p4_client'],
                              'myhost.example.com-myproject')
         except ImportError:
-            raise nose.SkipTest
+            raise nose.SkipTest('Perforce support is not installed')
 
     def test_save_form_perforce_with_portfolio(self):
         """Testing AssemblaForm with Perforce and Assembla portfolio IDs"""
         try:
-            account = self._get_hosting_account()
-            service = account.service
-            service.authorize('myuser', 'abc123', None)
+            repository = self.create_repository(hosting_account=self.account,
+                                                tool_name='Perforce')
 
-            repository = Repository(hosting_account=account,
-                                    tool=Tool.objects.get(name='Perforce'))
-
-            form = self._get_form(fields={
+            form = self.get_form(fields={
                 'assembla_project_id': 'myportfolio/myproject',
             })
             self.spy_on(get_hostname,
@@ -188,20 +181,17 @@ class AssemblaFormTests(AssemblaTestCase):
             self.assertEqual(repository.extra_data['p4_client'],
                              'myhost.example.com-myportfolio-myproject')
         except ImportError:
-            raise nose.SkipTest
+            raise nose.SkipTest('Perforce support is not installed')
 
     def test_save_form_subversion(self):
         """Testing AssemblaForm with Subversion"""
         try:
-            account = self._get_hosting_account()
-            service = account.service
-            service.authorize('myuser', 'abc123', None)
+            repository = self.create_repository(
+                path='https://svn.example.com/',
+                hosting_account=self.account,
+                tool_name='Subversion')
 
-            repository = Repository(path='https://svn.example.com/',
-                                    hosting_account=account,
-                                    tool=Tool.objects.get(name='Subversion'))
-
-            form = self._get_form(fields={'assembla_project_id': 'myproject'})
+            form = self.get_form(fields={'assembla_project_id': 'myproject'})
             form.save(repository)
 
             self.assertNotIn('use_ticket_auth', repository.extra_data)

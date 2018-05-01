@@ -490,10 +490,11 @@ class HostingServiceClient(object):
             * The request content (:py:class:`unicode`).
             * The request content type (:py:class:`unicode`).
         """
-        boundary = mimetools.choose_boundary()
+        boundary = HostingServiceClient._make_form_data_boundary()
         content_parts = []
 
-        for key, value in six.iteritems(fields):
+        for key, value in sorted(six.iteritems(fields),
+                                 key=lambda pair: pair[0]):
             if isinstance(key, six.text_type):
                 key = key.encode('utf-8')
 
@@ -513,7 +514,8 @@ class HostingServiceClient(object):
             )
 
         if files:
-            for key, data in six.iteritems(files):
+            for key, data in sorted(six.iteritems(files),
+                                    key=lambda pair: pair[0]['filename']):
                 filename = data['filename']
                 content = data['content']
 
@@ -546,6 +548,16 @@ class HostingServiceClient(object):
         content_type = b'multipart/form-data; boundary=%s' % boundary
 
         return content, content_type
+
+    @staticmethod
+    def _make_form_data_boundary():
+        """Return a unique boundary to use for HTTP form data.
+
+        Returns:
+            bytes:
+            The boundary for use in the form data.
+        """
+        return mimetools.choose_boundary()
 
 
 class HostingService(object):
