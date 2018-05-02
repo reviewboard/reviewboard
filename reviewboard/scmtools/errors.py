@@ -60,16 +60,16 @@ class FileNotFoundError(SCMError):
             msg = (_("The file '%s' could not be found in the repository")
                    % path)
         elif base_commit_id is not None and base_commit_id != revision:
-            msg = _("The file '%(path)s' (r%(revision)s, commit "
-                    "%(base_commit_id)s) could not be found in the "
-                    "repository") % {
+            msg = _('The file "%(path)s" (revision %(revision)s, commit '
+                    '%(base_commit_id)s) could not be found in the '
+                    'repository') % {
                 'path': path,
                 'revision': revision,
                 'base_commit_id': base_commit_id,
             }
         else:
-            msg = _("The file '%(path)s' (r%(revision)s) could not be found "
-                    "in the repository") % {
+            msg = _('The file "%(path)s" (revision %(revision)s) could not be '
+                    'found in the repository') % {
                 'path': path,
                 'revision': revision,
             }

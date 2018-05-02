@@ -380,17 +380,23 @@ class DiffFragmentView(View):
                     'patch_output': e.error_output,
                     'rejects': mark_safe(rejects),
                 })))
+        except FileNotFoundError as e:
+            return HttpResponseServerError(render_to_string(
+                self.error_template_name,
+                RequestContext(request, {
+                    'error': e,
+                    'file': diff_info_or_response['diff_file'],
+                })))
         except Exception as e:
-            if not isinstance(e, FileNotFoundError):
-                logging.exception('%s.get: Error when rendering diffset for '
-                                  'filediff ID=%s, interfilediff ID=%s, '
-                                  'chunkindex=%s: %s',
-                                  self.__class__.__name__,
-                                  filediff_id,
-                                  interfilediff_id,
-                                  chunk_index,
-                                  e,
-                                  request=request)
+            logging.exception('%s.get: Error when rendering diffset for '
+                              'filediff ID=%s, interfilediff ID=%s, '
+                              'chunkindex=%s: %s',
+                              self.__class__.__name__,
+                              filediff_id,
+                              interfilediff_id,
+                              chunk_index,
+                              e,
+                              request=request)
 
             return exception_traceback(
                 self.request, e, self.error_template_name,
