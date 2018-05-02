@@ -46,6 +46,9 @@ class RBFeatureChecker(SiteConfigFeatureChecker):
                 Either this argument or ``local_site`` must be provided to
                 enable checking against a LocalSite.
 
+                If provided, it will be used to cache the results of the
+                :py:class:`~reviewboard.site.models.LocalSite` lookup.
+
             local_site (reviewboard.site.models.LocalSite):
                 An optional local site. If provided, this LocalSite will be
                 used to look up the status of the requested feature.
@@ -69,7 +72,13 @@ class RBFeatureChecker(SiteConfigFeatureChecker):
                 local_sites.append(request.local_site)
 
             if request.user.is_authenticated():
-                local_sites.extend(request.user.local_site.all())
+                if not hasattr(request, '_user_local_sites_cache'):
+                    if request.user.is_authenticated():
+                        local_sites.extend(request.user.local_site.all())
+
+                    request._user_local_sites_cache = local_sites
+                else:
+                    local_sites = request._user_local_sites_cache
 
         for local_site in local_sites:
             if (local_site.extra_data and
