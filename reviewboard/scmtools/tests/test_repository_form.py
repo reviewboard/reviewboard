@@ -687,9 +687,9 @@ class RepositoryFormTests(TestCase):
         form = RepositoryForm(instance=repository)
         self.assertTrue(form._get_field_data('bug_tracker_use_hosting'))
 
-    def test_bound_forms_with_post_with_service(self):
+    def test_bound_forms_with_post_with_repository_service(self):
         """Testing RepositoryForm binds hosting service forms only if matching
-        posted hosting_service using default plan
+        posted repository hosting_service using default plan
         """
         form = RepositoryForm({
             'name': 'test',
@@ -703,19 +703,43 @@ class RepositoryFormTests(TestCase):
                                  hosting_type == 'test' and
                                  plan_id == form.DEFAULT_PLAN_ID)
 
+        # Bug tracker info wasn't set in the form above.
+        for hosting_type, bug_forms in six.iteritems(form.bug_tracker_forms):
+            for plan_id, bug_form in six.iteritems(bug_forms):
+                self.assertFalse(bug_form.is_bound)
+
+        # Auth forms are never bound on initialize.
+        for hosting_type, auth_form in six.iteritems(form.hosting_auth_forms):
+            self.assertFalse(auth_form.is_bound)
+
+    def test_bound_forms_with_post_with_bug_tracker_service(self):
+        """Testing RepositoryForm binds hosting service forms only if matching
+        posted bug tracker hosting_service using default plan
+        """
+        form = RepositoryForm({
+            'name': 'test',
+            'bug_tracker_type': 'test',
+        })
+
+        # Make sure only the relevant forms are bound.
         for hosting_type, bug_forms in six.iteritems(form.bug_tracker_forms):
             for plan_id, bug_form in six.iteritems(bug_forms):
                 self.assertEqual(bug_form.is_bound,
                                  hosting_type == 'test' and
                                  plan_id == form.DEFAULT_PLAN_ID)
 
+        # Repository info wasn't set in the form above.
+        for hosting_type, repo_forms in six.iteritems(form.repository_forms):
+            for plan_id, repo_form in six.iteritems(repo_forms):
+                self.assertFalse(repo_form.is_bound)
+
         # Auth forms are never bound on initialize.
         for hosting_type, auth_form in six.iteritems(form.hosting_auth_forms):
             self.assertFalse(auth_form.is_bound)
 
-    def test_bound_forms_with_post_with_service_and_plan(self):
+    def test_bound_forms_with_post_with_repo_service_and_plan(self):
         """Testing RepositoryForm binds hosting service forms only if matching
-        posted hosting_service with specific plans
+        posted repository hosting_service with specific plans
         """
         form = RepositoryForm({
             'name': 'test',
@@ -730,11 +754,36 @@ class RepositoryFormTests(TestCase):
                                  hosting_type == 'github' and
                                  plan_id == 'public')
 
+        # Bug tracker info wasn't set in the form above.
+        for hosting_type, bug_forms in six.iteritems(form.bug_tracker_forms):
+            for plan_id, bug_form in six.iteritems(bug_forms):
+                self.assertFalse(bug_form.is_bound)
+
+        # Auth forms are never bound on initialize.
+        for hosting_type, auth_form in six.iteritems(form.hosting_auth_forms):
+            self.assertFalse(auth_form.is_bound)
+
+    def test_bound_forms_with_post_with_bug_tracker_service_and_plan(self):
+        """Testing RepositoryForm binds hosting service forms only if matching
+        posted bug tracker hosting_service with specific plans
+        """
+        form = RepositoryForm({
+            'name': 'test',
+            'bug_tracker_type': 'github',
+            'bug_tracker_plan': 'public',
+        })
+
+        # Make sure only the relevant forms are bound.
         for hosting_type, bug_forms in six.iteritems(form.bug_tracker_forms):
             for plan_id, bug_form in six.iteritems(bug_forms):
                 self.assertEqual(bug_form.is_bound,
                                  hosting_type == 'github' and
                                  plan_id == 'public')
+
+        # Repository info wasn't set in the form above.
+        for hosting_type, repo_forms in six.iteritems(form.repository_forms):
+            for plan_id, repo_form in six.iteritems(repo_forms):
+                self.assertFalse(repo_form.is_bound)
 
         # Auth forms are never bound on initialize.
         for hosting_type, auth_form in six.iteritems(form.hosting_auth_forms):
