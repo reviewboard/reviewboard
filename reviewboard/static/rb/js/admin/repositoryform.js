@@ -296,6 +296,7 @@ $(document).ready(function() {
             $repoPlan.triggerHandler('change');
 
             if (isCustom ||
+                isFake ||
                 !HOSTING_SERVICES[hostingType].supports_bug_trackers) {
                 $bugTrackerUseHosting
                     .prop({
@@ -329,7 +330,6 @@ $(document).ready(function() {
                     .text($hostingType.find(':selected').text());
             }
 
-            $bugTrackerTypeRow.setVisible(!isFake);
             $hostingAccountRow.setVisible(!isFake);
             $toolRow.setVisible(!isFake);
 

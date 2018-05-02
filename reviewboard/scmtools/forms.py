@@ -39,6 +39,9 @@ from reviewboard.ssh.errors import (BadHostKeyError,
                                     UnknownHostKeyError)
 
 
+logger = logging.getLogger(__name__)
+
+
 class HostingAccountWidget(Select):
     """A widget for selecting and modifying an assigned hosting account.
 
@@ -375,23 +378,32 @@ class RepositoryForm(forms.ModelForm):
         last_tool_pk = 0
 
         for tool in Tool.objects.order_by('pk'):
-            scmtool_choices.append((tool.pk, tool.name))
-            available_scmtools.add(tool.class_name)
+            last_tool_pk = tool.pk
 
+            # Build a list of fields to show when the tool is selected.
             tool_fields = ['username', 'password']
 
-            if tool.supports_raw_file_urls:
-                tool_fields.append('raw_file_url')
+            try:
+                if tool.supports_raw_file_urls:
+                    tool_fields.append('raw_file_url')
 
-            if tool.supports_ticket_auth:
-                tool_fields.append('use_ticket_auth')
+                if tool.supports_ticket_auth:
+                    tool_fields.append('use_ticket_auth')
+            except Exception as e:
+                # The SCMTool registration exists in the database, but might
+                # not be installed anymore. Skip it.
+                logger.exception('Unable to load SCMTool "%s" (ID %s) for '
+                                 'repository form: %s',
+                                 tool.class_name, tool.pk, e)
+                continue
 
             self.tool_info[tool.id] = {
                 'fields': tool_fields,
                 'help_text': tool.field_help_text,
             }
 
-            last_tool_pk = tool.pk
+            scmtool_choices.append((tool.pk, tool.name))
+            available_scmtools.add(tool.class_name)
 
         for pk, (class_name, name) in enumerate(six.iteritems(FAKE_SCMTOOLS),
                                                 start=last_tool_pk + 1):
@@ -485,26 +497,37 @@ class RepositoryForm(forms.ModelForm):
         """
         plan_info = {}
 
-        # We only want to load data into the form if it's meant for this
-        # form. Check both the hosting service ID and plan for this form
-        # against what's in the submitted form data.
-        if (self.data and
-            self.data.get('hosting_type') == hosting_service_id and
-            (plan_type_id == self.DEFAULT_PLAN_ID or
-             self.data.get('repository_plan') == plan_type_id)):
-            form_data = self.data
-        else:
-            form_data = None
-
         if hosting_service.supports_repositories:
-            form = form_class(form_data)
+            # We only want to load repository data into the form if it's meant
+            # for this form. Check the hosting service ID and plan against
+            # what's in the submitted form data.
+            if (self.data and
+                self.data.get('hosting_type') == hosting_service_id and
+                (not hosting_service.plans or
+                 self.data.get('repository_plan') == plan_type_id)):
+                repo_form_data = self.data
+            else:
+                repo_form_data = None
+
+            form = form_class(repo_form_data)
             self.repository_forms[hosting_service_id][plan_type_id] = form
 
             if self.instance:
                 form.load(self.instance)
 
         if hosting_service.supports_bug_trackers:
-            form = form_class(form_data, prefix='bug_tracker')
+            # We only want to load repository data into the form if it's meant
+            # for this form. Check the hosting service ID and plan against
+            # what's in the submitted form data.
+            if (self.data and
+                self.data.get('bug_tracker_type') == hosting_service_id and
+                (not hosting_service.plans or
+                 self.data.get('bug_tracker_plan') == plan_type_id)):
+                bug_tracker_form_data = self.data
+            else:
+                bug_tracker_form_data = None
+
+            form = form_class(bug_tracker_form_data, prefix='bug_tracker')
             self.bug_tracker_forms[hosting_service_id][plan_type_id] = form
 
             plan_info['bug_tracker_requires_username'] = \
@@ -787,6 +810,12 @@ class RepositoryForm(forms.ModelForm):
                 # We have a valid hosting account linked up, so we can
                 # process this and copy over the account information.
                 form = self.repository_forms[hosting_type][plan]
+
+                if not form.is_valid():
+                    # Skip the rest of this. There's no sense building a URL if
+                    # the form's going to display errors.
+                    return
+
                 hosting_account = self.cleaned_data['hosting_account']
 
                 new_data = self.cleaned_data.copy()
@@ -795,8 +824,12 @@ class RepositoryForm(forms.ModelForm):
                 new_data['hosting_account_username'] = hosting_account.username
                 new_data['hosting_url'] = hosting_account.hosting_url
 
-                bug_tracker_url = hosting_service_cls.get_bug_tracker_field(
-                    plan, new_data)
+                try:
+                    bug_tracker_url = \
+                        hosting_service_cls.get_bug_tracker_field(plan,
+                                                                  new_data)
+                except KeyError as e:
+                    raise ValidationError([six.text_type(e)])
         elif bug_tracker_type == self.CUSTOM_BUG_TRACKER_ID:
             # bug_tracker_url should already be in cleaned_data.
             return
@@ -814,21 +847,25 @@ class RepositoryForm(forms.ModelForm):
 
             form = self.bug_tracker_forms[bug_tracker_type][plan]
 
-            new_data = {
-                'hosting_account_username':
-                    self.cleaned_data['bug_tracker_hosting_account_username'],
-                'hosting_url':
-                    self.cleaned_data['bug_tracker_hosting_url'],
-            }
+            if not form.is_valid():
+                # Skip the rest of this. There's no sense building a URL if
+                # the form's going to display errors.
+                return
 
-            if form.is_valid():
+            new_data = dict({
+                key: self.cleaned_data['bug_tracker_%s' % key]
+                for key in ('hosting_account_username', 'hosting_url')
+            }, **{
                 # Strip the prefix from each bit of cleaned data in the form.
-                for key, value in six.iteritems(form.cleaned_data):
-                    key = key.replace(form.prefix, '')
-                    new_data[key] = value
+                key.replace(form.prefix, ''): value
+                for key, value in six.iteritems(form.cleaned_data)
+            })
 
-            bug_tracker_url = hosting_service_cls.get_bug_tracker_field(
-                plan, new_data)
+            try:
+                bug_tracker_url = hosting_service_cls.get_bug_tracker_field(
+                    plan, new_data)
+            except KeyError as e:
+                raise ValidationError([six.text_type(e)])
 
         self.cleaned_data['bug_tracker'] = bug_tracker_url
         self.data['bug_tracker'] = bug_tracker_url

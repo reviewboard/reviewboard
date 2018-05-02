@@ -47,6 +47,7 @@ from reviewboard.accounts.pages import (AccountPage,
                                         register_account_page_class,
                                         unregister_account_page_class)
 from reviewboard.extensions.tests import set_siteconfig_settings
+from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
 
@@ -503,14 +504,14 @@ class ProfileTests(TestCase):
     fixtures = ['test_users']
 
     def test_is_profile_visible_with_public(self):
-        """Testing User.is_profile_public with public profiles."""
+        """Testing User.is_profile_visible with public profiles"""
         user1 = User.objects.get(username='admin')
         user2 = User.objects.get(username='doc')
 
         self.assertTrue(user1.is_profile_visible(user2))
 
     def test_is_profile_visible_with_private(self):
-        """Testing User.is_profile_public with private profiles."""
+        """Testing User.is_profile_visible with private profiles"""
         user1 = User.objects.get(username='admin')
         user2 = User.objects.get(username='doc')
 
@@ -524,9 +525,99 @@ class ProfileTests(TestCase):
         user2.is_staff = True
         self.assertTrue(user1.is_profile_visible(user2))
 
+    def test_is_profile_visible_unauthenticated(self):
+        """Testing User.is_profile_visible with an unauthenticated user"""
+        user = User.objects.get(username='doc')
+
+        self.assertFalse(user.is_profile_visible(AnonymousUser()))
+
+    def test_is_profile_visible_no_user(self):
+        """Testing User.is_profile_visible with no user"""
+        user = User.objects.get(username='doc')
+
+        self.assertFalse(user.is_profile_visible(None))
+
+    def test_is_profile_visible_staff(self):
+        """Testing User.is_profile_public with a staff user"""
+        user = User.objects.get(username='doc')
+        admin = User.objects.get(username='admin')
+
+        profile = user.get_profile()
+        profile.is_private = True
+        profile.save()
+
+        self.assertTrue(user.is_profile_visible(admin))
+
+    def test_is_profile_visible_owner(self):
+        """Testing User.is_profile_visible for the profile owner"""
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = True
+        profile.save()
+
+        self.assertTrue(user.is_profile_visible(user))
+
+    def test_is_profile_visible_local_site_member(self):
+        """Testing User.is_profile_visible for a LocalSite member viewing a
+        LocalSite member with a public profile
+        """
+        to_view = User.objects.get(username='doc')
+        viewer = User.objects.get(username='grumpy')
+
+        site = LocalSite.objects.create()
+        site.users = [to_view, viewer]
+
+        self.assertTrue(to_view.is_profile_visible(viewer))
+
+    def test_is_profile_visible_local_site_member_private(self):
+        """Testing User.is_profile_visible for a LocalSite member viewing a
+        LocalSite member with a private profile
+        """
+        to_view = User.objects.get(username='doc')
+        viewer = User.objects.get(username='grumpy')
+
+        profile = to_view.get_profile()
+        profile.is_private = True
+        profile.save()
+
+        site = LocalSite.objects.create()
+        site.users = [to_view, viewer]
+
+        self.assertFalse(to_view.is_profile_visible(viewer))
+
+    def test_is_profile_visible_local_site_admin(self):
+        """Testing user.is_profile_visible for a LocalSite admin viewing a
+        LocalSite member with a public profile
+        """
+        to_view = User.objects.get(username='doc')
+        viewer = User.objects.get(username='grumpy')
+
+        site = LocalSite.objects.create()
+        site.users = [to_view, viewer]
+        site.admins = [viewer]
+
+        self.assertTrue(to_view.is_profile_visible(viewer))
+
+    def test_is_profile_visible_local_site_admin_private(self):
+        """Testing user.is_profile_visible for a LocalSite admin viewing a
+        LocalSite member with a private profile
+        """
+        to_view = User.objects.get(username='doc')
+        viewer = User.objects.get(username='grumpy')
+
+        profile = to_view.get_profile()
+        profile.is_private = True
+        profile.save()
+
+        site = LocalSite.objects.create()
+        site.users = [to_view, viewer]
+        site.admins = [viewer]
+
+        self.assertTrue(to_view.is_profile_visible(viewer))
+
     @add_fixtures(['test_scmtools', 'test_site'])
     def test_is_star_unstar_updating_count_correctly(self):
-        """Testing if star, unstar affect review request counts correctly."""
+        """Testing if star, unstar affect review request counts correctly"""
         user1 = User.objects.get(username='admin')
         profile1 = user1.get_profile()
         review_request = self.create_review_request(publish=True)

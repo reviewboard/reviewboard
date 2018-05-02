@@ -2,7 +2,7 @@
 
 from __future__ import unicode_literals
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User
 from django.test.client import RequestFactory
 from djblets.features import Feature, get_features_registry
 from djblets.testing.decorators import add_fixtures
@@ -134,3 +134,40 @@ class RBFeatureCheckerTests(TestCase):
             self.assertTrue(RBFeatureChecker().is_feature_enabled(
                 DummyFeature.feature_id,
                 request=request))
+
+    @add_fixtures(['test_users'])
+    def test_cache_localsite_queries(self):
+        """Testing RBFeatureChecker.is_feature_enabled caches LocalSite
+        membership to reduce query count
+        """
+        self.local_site.extra_data = {
+            RBFeatureChecker.EXTRA_DATA_KEY: self.FEATURE_ENABLED_SETTINGS,
+        }
+        self.local_site.save()
+
+        request = self.request_factory.get('/')
+        request.user = User.objects.get(username='doc')
+
+        with self.assertNumQueries(1):
+            for _ in range(3):
+                self.assertTrue(RBFeatureChecker().is_feature_enabled(
+                    DummyFeature.feature_id,
+                    request=request))
+
+    def test_no_queries_anonymous(self):
+        """Testing RBFeatureChecker.is_feature_enabled does not query when the
+        user is anonymous
+        """
+        self.local_site.extra_data = {
+            RBFeatureChecker.EXTRA_DATA_KEY: self.FEATURE_ENABLED_SETTINGS,
+        }
+        self.local_site.save()
+
+        request = self.request_factory.get('/')
+        request.user = AnonymousUser()
+
+        with self.assertNumQueries(0):
+            for _ in range(3):
+                self.assertFalse(RBFeatureChecker().is_feature_enabled(
+                    DummyFeature.feature_id,
+                    request=request))
