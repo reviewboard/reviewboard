@@ -333,7 +333,12 @@ class ProfileForm(AccountPageForm):
         required=True)
     profile_private = forms.BooleanField(
         required=False,
-        label=_("Keep profile information private"))
+        label=_('Keep profile information private'),
+        help_text=_(
+            'By default, profile information (full name, e-mail address, and '
+            'timezone) is only hidden from users who are not logged in. With '
+            'this setting enabled, it will also be hidden from '
+            'non-administrators.'))
 
     def load(self):
         """Load data for the form."""
