@@ -1004,7 +1004,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                                      old_status=old_status,
                                      old_public=old_public)
 
-    def publish(self, user, trivial=False):
+    def publish(self, user, trivial=False, validate_fields=True):
         """Publishes the current draft attached to this review request.
 
         The review request will be mark as public, and signals will be
@@ -1033,7 +1033,8 @@ class ReviewRequest(BaseReviewRequestDetails):
             # This will in turn save the review request, so we'll be done.
             try:
                 changes = draft.publish(self, send_notification=False,
-                                        user=user)
+                                        user=user,
+                                        validate_fields=validate_fields)
             except Exception:
                 # The draft failed to publish, for one reason or another.
                 # Check if we need to re-increment those counters we

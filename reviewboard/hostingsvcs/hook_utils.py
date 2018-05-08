@@ -85,10 +85,10 @@ def close_review_request(review_request, review_request_id, description):
         return
 
     # Closing as submitted will fail if the review request was never public. In
-    # this case, publish first (which will generate an e-mail, but that's
-    # probably desirable anyway).
+    # this case, publish first.
     if not review_request.public:
-        review_request.publish(review_request.submitter)
+        review_request.publish(review_request.submitter, trivial=True,
+                               validate_fields=False)
 
     review_request.close(ReviewRequest.SUBMITTED, description=description)
     logging.debug('Review request #%s is set to %s.',
