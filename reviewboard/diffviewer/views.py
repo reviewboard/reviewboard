@@ -8,6 +8,7 @@ from zipfile import ZipFile
 
 from django.conf import settings
 from django.core.paginator import InvalidPage, Paginator
+from django.core.urlresolvers import NoReverseMatch
 from django.http import (HttpResponse,
                          HttpResponseNotFound,
                          HttpResponseNotModified,
@@ -353,16 +354,23 @@ class DiffFragmentView(View):
                 e,
                 request=request)
 
-            url_kwargs = {
-                key: kwargs[key]
-                for key in ('chunk_index', 'interfilediff_id',
-                            'review_request_id', 'filediff_id',
-                            'revision', 'interdiff_revision')
-                if key in kwargs and kwargs[key] is not None
-            }
-            bundle_url = local_site_reverse('patch-error-bundle',
-                                            kwargs=url_kwargs,
-                                            request=request)
+            try:
+                url_kwargs = {
+                    key: kwargs[key]
+                    for key in ('chunk_index', 'interfilediff_id',
+                                'review_request_id', 'filediff_id',
+                                'revision', 'interdiff_revision')
+                    if key in kwargs and kwargs[key] is not None
+                }
+
+                bundle_url = local_site_reverse('patch-error-bundle',
+                                                kwargs=url_kwargs,
+                                                request=request)
+            except NoReverseMatch:
+                # We'll sometimes see errors about this failing to resolve when
+                # web crawlers start accessing fragment URLs without the proper
+                # attributes. Ignore them.
+                bundle_url = ''
 
             if e.rejects:
                 lexer = get_lexer_by_name('diff')

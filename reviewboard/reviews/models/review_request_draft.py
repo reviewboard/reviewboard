@@ -193,7 +193,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         return draft
 
     def publish(self, review_request=None, user=None, trivial=False,
-                send_notification=True):
+                send_notification=True, validate_fields=True):
         """Publishes this draft.
 
         This updates and returns the draft's ChangeDescription, which
@@ -260,16 +260,20 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         if self.changedesc and not self.changedesc.has_modified_fields():
             raise NotModifiedError()
 
-        if not (self.target_groups.exists() or self.target_people.exists()):
-            raise PublishError(
-                ugettext('There must be at least one reviewer before this '
-                         'review request can be published.'))
+        if validate_fields:
+            if not (self.target_groups.exists() or
+                    self.target_people.exists()):
+                raise PublishError(
+                    ugettext('There must be at least one reviewer before this '
+                             'review request can be published.'))
 
-        if not review_request.summary.strip():
-            raise PublishError(ugettext('The draft must have a summary.'))
+            if not review_request.summary.strip():
+                raise PublishError(
+                    ugettext('The draft must have a summary.'))
 
-        if not review_request.description.strip():
-            raise PublishError(ugettext('The draft must have a description.'))
+            if not review_request.description.strip():
+                raise PublishError(
+                    ugettext('The draft must have a description.'))
 
         if self.changedesc:
             self.changedesc.user = user
