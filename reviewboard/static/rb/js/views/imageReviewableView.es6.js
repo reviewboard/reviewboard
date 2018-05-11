@@ -967,9 +967,10 @@ RB.ImageReviewableView = RB.FileAttachmentReviewableView.extend({
          * Reposition the selection area on page resize or loaded, so that
          * comments are in the right locations.
          */
-        $(window)
-            .resize(this._adjustPos)
-            .load(this._adjustPos);
+        $(window).on({
+            'load': this._adjustPos,
+            'resize': this._adjustPos,
+        });
 
         const $header = $('<div />')
             .addClass('review-ui-header')
