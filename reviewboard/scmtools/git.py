@@ -650,7 +650,7 @@ class GitClient(SCMClient):
 
         if failure:
             if errmsg.startswith("fatal: Not a valid object name"):
-                raise FileNotFoundError(commit)
+                raise FileNotFoundError(path, revision=commit)
             else:
                 raise SCMError(errmsg)
 
