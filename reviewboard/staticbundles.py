@@ -384,7 +384,7 @@ PIPELINE_STYLESHEETS = dict({
         'source_filenames': (
             'lib/css/codemirror.css',
             'lib/css/jquery-ui-1.8.24.min.css',
-            'lib/css/font-awesome-4.3.0.min.css',
+            'lib/css/fontawesome.less',
             'lib/css/selectize.default-0.12.1.css',
             'rb/css/assets/icons.less',
             'rb/css/layout/helpers.less',
