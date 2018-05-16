@@ -33,6 +33,7 @@ from reviewboard.accounts.backends import (AuthBackend, auth_backends,
 from reviewboard.accounts.forms.pages import (AccountPageForm,
                                               AccountSettingsForm,
                                               ChangePasswordForm,
+                                              PrivacyForm,
                                               ProfileForm)
 from reviewboard.accounts.mixins import (CheckLoginRequiredViewMixin,
                                          LoginRequiredViewMixin,
@@ -43,9 +44,11 @@ from reviewboard.accounts.models import (LocalSiteProfile,
                                          Trophy)
 from reviewboard.accounts.pages import (AccountPage,
                                         AccountSettingsPage,
+                                        PrivacyPage,
                                         get_page_classes,
                                         register_account_page_class,
                                         unregister_account_page_class)
+from reviewboard.accounts.views import MyAccountView
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
@@ -1200,3 +1203,76 @@ class UserInfoboxViewTests(TestCase):
         user.save()
 
         self.client.get(local_site_reverse('user-infobox', args=['test']))
+
+
+class PrivacyFormTests(TestCase):
+    """Unit tests for reviewboard.accounts.forms.pages.PrivacyForm."""
+
+    def setUp(self):
+        super(PrivacyFormTests, self).setUp()
+
+        self.user = User.objects.create(username='test-user')
+
+        self.request = RequestFactory().get('/account/preferences/')
+        self.request.user = self.user
+
+        self.page = PrivacyPage(config_view=MyAccountView(),
+                                request=self.request,
+                                user=self.user)
+
+    def test_init_with_privacy_enable_user_consent_true(self):
+        """Testing PrivacyForm with privacy_enable_user_consent=True"""
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            form = PrivacyForm(page=self.page,
+                               request=self.request,
+                               user=self.user)
+            self.assertIn('consent', form.fields)
+            self.assertEqual(form.save_label, 'Save')
+
+    def test_init_with_privacy_enable_user_consent_false(self):
+        """Testing PrivacyForm with privacy_enable_user_consent=False"""
+        with self.siteconfig_settings({'privacy_enable_user_consent': False}):
+            form = PrivacyForm(page=self.page,
+                               request=self.request,
+                               user=self.user)
+            self.assertNotIn('consent', form.fields)
+            self.assertIsNone(form.save_label)
+
+    def test_is_visible_with_no_privacy(self):
+        """Testing PrivacyForm.is_visible with no privacy details"""
+        settings = {
+            'privacy_enable_user_consent': False,
+            'privacy_info_html': '',
+        }
+
+        with self.siteconfig_settings(settings):
+            form = PrivacyForm(page=self.page,
+                               request=self.request,
+                               user=self.user)
+            self.assertFalse(form.is_visible())
+
+    def test_is_visible_with_consent(self):
+        """Testing PrivacyForm.is_visible with consent option enabled"""
+        settings = {
+            'privacy_enable_user_consent': True,
+            'privacy_info_html': '',
+        }
+
+        with self.siteconfig_settings(settings):
+            form = PrivacyForm(page=self.page,
+                               request=self.request,
+                               user=self.user)
+            self.assertTrue(form.is_visible())
+
+    def test_is_visible_with_privacy_info(self):
+        """Testing PrivacyForm.is_visible with privacy_info_html set"""
+        settings = {
+            'privacy_enable_user_consent': False,
+            'privacy_info_html': 'Test.',
+        }
+
+        with self.siteconfig_settings(settings):
+            form = PrivacyForm(page=self.page,
+                               request=self.request,
+                               user=self.user)
+            self.assertTrue(form.is_visible())

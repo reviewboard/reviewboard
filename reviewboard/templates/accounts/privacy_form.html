@@ -1,0 +1,8 @@
+{% extends "configforms/config_page_form.html" %}
+{% load i18n %}
+
+{% block pre_fields %}
+{%  if privacy_info_html %}
+{{privacy_info_html|safe}}
+{%  endif %}
+{% endblock pre_fields %}

@@ -10,9 +10,10 @@ from django.utils.datastructures import SortedDict
 from django.utils.translation import ugettext_lazy as _
 from djblets.avatars.forms import (
     AvatarSettingsForm as DjbletsAvatarSettingsForm)
-from djblets.forms.fields import TimeZoneField
-from djblets.siteconfig.models import SiteConfiguration
 from djblets.configforms.forms import ConfigPageForm
+from djblets.forms.fields import TimeZoneField
+from djblets.privacy.consent.forms import ConsentConfigPageFormMixin
+from djblets.siteconfig.models import SiteConfiguration
 from oauth2_provider.models import AccessToken
 
 from reviewboard.accounts.backends import get_enabled_auth_backends
@@ -596,4 +597,63 @@ class OAuthTokensForm(AccountPageForm):
                 },
             ),
             'application': token.application.name,
+        }
+
+
+class PrivacyForm(ConsentConfigPageFormMixin, AccountPageForm):
+    """A form for displaying privacy information and gathering consent.
+
+    This will display a user's privacy rights, link to any configured
+    Privacy Policy document, and display a form for gathering consent for
+    features that make use of the user's personally identifying information.
+    """
+
+    form_title = _('My Privacy Rights')
+    template_name = 'accounts/privacy_form.html'
+
+    def __init__(self, *args, **kwargs):
+        """Initialize the form.
+
+        Args:
+            *args (tuple):
+                Positional arguments to pass to the parent form.
+
+            **kwargs (dict):
+                Keyword arguments to pass to the parent form.
+        """
+        super(PrivacyForm, self).__init__(*args, **kwargs)
+
+        siteconfig = SiteConfiguration.objects.get_current()
+
+        if not siteconfig.get('privacy_enable_user_consent'):
+            del self.fields[self.consent_field_name]
+            self.save_label = None
+
+    def is_visible(self):
+        """Return whether or not the form should be rendered.
+
+        This will check if there's any information to display in this form.
+        It's only displayed if consent requirements are enabled or there's
+        any privacy information configured in Admin Settings.
+
+        Returns
+            bool:
+            Whether or not the form should be rendered.
+        """
+        siteconfig = SiteConfiguration.objects.get_current()
+
+        return (siteconfig.get('privacy_enable_user_consent') or
+                bool(siteconfig.get('privacy_info_html')))
+
+    def get_extra_context(self):
+        """Return extra context for the template.
+
+        Returns:
+            dict:
+            Context used for rendering the form's template.
+        """
+        siteconfig = SiteConfiguration.objects.get_current()
+
+        return {
+            'privacy_info_html': siteconfig.get('privacy_info_html'),
         }
