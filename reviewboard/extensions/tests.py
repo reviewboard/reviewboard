@@ -66,35 +66,6 @@ from reviewboard.webapi.tests.mimetypes import root_item_mimetype
 from reviewboard.webapi.tests.urls import get_root_url
 
 
-@contextmanager
-def set_siteconfig_settings(settings):
-    """A context manager to toggle site configuration settings.
-
-    Args:
-        settings (dict):
-            The new site configuration settings.
-    """
-    siteconfig = SiteConfiguration.objects.get_current()
-
-    old_settings = {}
-
-    for setting, value in six.iteritems(settings):
-        old_settings[setting] = siteconfig.get(setting)
-        siteconfig.set(setting, value)
-
-    siteconfig.save()
-    load_site_config()
-
-    try:
-        yield
-    finally:
-        for setting, value in six.iteritems(old_settings):
-            siteconfig.set(setting, value)
-
-        siteconfig.save()
-        load_site_config()
-
-
 class ExtensionManagerMixin(object):
     """Mixin used to setup a default ExtensionManager for tests."""
 
@@ -1603,7 +1574,7 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
             'review_request': review_request,
         }
 
-        with set_siteconfig_settings({'mail_send_review_mail': True}):
+        with self.siteconfig_settings({'mail_send_review_mail': True}):
             review_request.publish(admin)
 
         self.assertEqual(len(mail.outbox), 1)
@@ -1641,7 +1612,7 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
             'to_owner_only': False,
         }
 
-        with set_siteconfig_settings({'mail_send_review_mail': True}):
+        with self.siteconfig_settings({'mail_send_review_mail': True}):
             review.publish(admin)
 
         self.assertEqual(len(mail.outbox), 1)
@@ -1680,7 +1651,7 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
             'reply': reply,
         }
 
-        with set_siteconfig_settings({'mail_send_review_mail': True}):
+        with self.siteconfig_settings({'mail_send_review_mail': True}):
             reply.publish(admin)
 
         self.assertEqual(len(mail.outbox), 1)
@@ -1714,7 +1685,7 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
             'close_type': ReviewRequest.SUBMITTED,
         }
 
-        with set_siteconfig_settings({'mail_send_review_close_mail': True}):
+        with self.siteconfig_settings({'mail_send_review_close_mail': True}):
             review_request.close(ReviewRequest.SUBMITTED, admin)
 
         self.assertEqual(len(mail.outbox), 1)
@@ -1748,7 +1719,7 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
             'close_type': ReviewRequest.DISCARDED,
         }
 
-        with set_siteconfig_settings({'mail_send_review_close_mail': True}):
+        with self.siteconfig_settings({'mail_send_review_close_mail': True}):
             review_request.close(ReviewRequest.DISCARDED, admin)
 
         self.assertEqual(len(mail.outbox), 1)
@@ -1781,7 +1752,7 @@ class EmailHookTests(ExtensionManagerMixin, SpyAgency, TestCase):
             'mail_send_review_close_mail': True,
         }
 
-        with set_siteconfig_settings(siteconfig_settings):
+        with self.siteconfig_settings(siteconfig_settings):
             self.assertEqual(len(mail.outbox), 0)
 
             review.publish()

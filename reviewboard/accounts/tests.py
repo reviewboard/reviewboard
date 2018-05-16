@@ -46,7 +46,6 @@ from reviewboard.accounts.pages import (AccountPage,
                                         get_page_classes,
                                         register_account_page_class,
                                         unregister_account_page_class)
-from reviewboard.extensions.tests import set_siteconfig_settings
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
@@ -1089,7 +1088,7 @@ class AccountSettingsFormTests(TestCase):
 
         settings = {'diffviewer_syntax_highlighting': False}
 
-        with set_siteconfig_settings(settings):
+        with self.siteconfig_settings(settings):
             form = AccountSettingsForm(page, request, user, data={
                 'syntax_highlighting': False,
                 'timezone': profile.timezone,
