@@ -543,6 +543,9 @@ class UserPageReviewRequestDataGrid(UserPageDataGridMixin,
             request,
             queryset=queryset,
             title=_("%s's Review Requests") % user.username,
+            extra_context={
+                'pii_safe_title': _("User's Review Requests"),
+            },
             *args, **kwargs)
 
         self.groups = user.review_groups.accessible(request.user)
@@ -571,6 +574,9 @@ class UserPageReviewsDataGrid(UserPageDataGridMixin, ReviewDataGrid):
             request,
             queryset=queryset,
             title=_("%s's Reviews") % user.username,
+            extra_context={
+                'pii_safe_title': _("User's Reviews"),
+            },
             *args, **kwargs)
 
         self.groups = user.review_groups.accessible(request.user)
