@@ -1,0 +1,12 @@
+{% extends "admin/settings.html" %}
+
+{% block scripts-post %}
+{{block.super}}
+<script>
+  $(function() {
+      CodeMirror.fromTextArea($('#id_privacy_info_html')[0], {
+          mode: 'text/html'
+      });
+  });
+</script>
+{% endblock scripts-post %}

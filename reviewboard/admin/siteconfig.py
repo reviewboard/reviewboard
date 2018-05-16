@@ -160,6 +160,10 @@ defaults.update({
     'send_support_usage_stats': True,
     'site_domain_method': 'http',
 
+    'privacy_enable_user_consent': False,
+    'privacy_info_html': None,
+    'privacy_policy_url': None,
+
     'search_results_per_page': 20,
     'search_backend_id': WhooshBackend.search_backend_id,
     'search_backend_settings': {},
