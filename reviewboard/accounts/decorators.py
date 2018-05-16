@@ -1,10 +1,13 @@
 from __future__ import unicode_literals
 
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseRedirect
+from djblets.privacy.consent import get_consent_tracker
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import simple_decorator
 
 from reviewboard.accounts.models import Profile
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 @simple_decorator
@@ -39,10 +42,22 @@ def valid_prefs_required(view_func):
     be used with @check_login_required.
     """
     def _check_valid_prefs(request, *args, **kwargs):
-        # Fetch the profile. If it exists, we're done, and it's cached for
-        # later. If not, try to create it.
-        if request.user.is_authenticated():
-            Profile.objects.get_or_create(user=request.user)
+        user = request.user
+
+        # Fetch the profile. If it doesn't exist, create it.
+        if user.is_authenticated():
+            profile, is_new = Profile.objects.get_or_create(user=user)
+            siteconfig = SiteConfiguration.objects.get_current()
+            consent_tracker = get_consent_tracker()
+
+            # Check if there are any privacy consent requirements that the
+            # user needs to decide on before we can continue.
+            if (siteconfig.get('privacy_enable_user_consent') and
+                (is_new or
+                 consent_tracker.get_pending_consent_requirements(user))):
+                return HttpResponseRedirect(
+                    '%s#privacy' % local_site_reverse('user-preferences',
+                                                      request=request))
 
         return view_func(request, *args, **kwargs)
 

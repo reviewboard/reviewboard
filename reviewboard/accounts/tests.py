@@ -12,6 +12,8 @@ from django.core.exceptions import ValidationError
 from django.http import HttpResponse, HttpResponseRedirect
 from django.test.client import RequestFactory
 from django.views.generic.base import View
+from djblets.privacy.consent import (get_consent_requirements_registry,
+                                     get_consent_tracker)
 from djblets.registries.errors import RegistrationError
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
@@ -30,6 +32,7 @@ from reviewboard.accounts.backends import (AuthBackend, auth_backends,
                                            LDAPBackend,
                                            StandardAuthBackend,
                                            unregister_auth_backend)
+from reviewboard.accounts.decorators import valid_prefs_required
 from reviewboard.accounts.forms.pages import (AccountPageForm,
                                               AccountSettingsForm,
                                               ChangePasswordForm,
@@ -1276,3 +1279,87 @@ class PrivacyFormTests(TestCase):
                                request=self.request,
                                user=self.user)
             self.assertTrue(form.is_visible())
+
+
+class ValidPrefsRequiredTests(TestCase):
+    """Unit tests for reviewboard.accounts.decorators.valid_prefs_required."""
+
+    def setUp(self):
+        super(ValidPrefsRequiredTests, self).setUp()
+
+        self.user = User.objects.create(username='test-user')
+
+        self.request = RequestFactory().get('/')
+        self.request.user = self.user
+
+    def test_with_anonymous_user(self):
+        """Testing @valid_prefs_required with anonymous user"""
+        self.request.user = AnonymousUser()
+
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            response = self._view_func(self.request)
+
+        self.assertIs(type(response), HttpResponse)
+
+    def test_with_consent_not_required(self):
+        """Testing @valid_prefs_required with privacy_enable_user_consent=False
+        """
+        with self.siteconfig_settings({'privacy_enable_user_consent': False}):
+            response = self._view_func(self.request)
+
+        self.assertIs(type(response), HttpResponse)
+
+    def test_with_consent_required_and_new_profile(self):
+        """Testing @valid_prefs_required with privacy_enable_user_consent=True
+        and new user profile
+        """
+        self.assertFalse(Profile.objects.filter(user=self.user).exists())
+
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            response = self._view_func(self.request)
+
+        self.assertIs(type(response), HttpResponseRedirect)
+        self.assertEqual(response.url, '/account/preferences/#privacy')
+
+    def test_with_consent_required_and_consent_pending(self):
+        """Testing @valid_prefs_required with privacy_enable_user_consent=True
+        and pending consent
+        """
+        Profile.objects.create(user=self.user)
+
+        consent_tracker = get_consent_tracker()
+        all_consent = consent_tracker.get_all_consent(self.user)
+        self.assertEqual(all_consent, {})
+
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            response = self._view_func(self.request)
+
+        self.assertIs(type(response), HttpResponseRedirect)
+        self.assertEqual(response.url, '/account/preferences/#privacy')
+
+    def test_with_consent_required_and_no_consent_pending(self):
+        """Testing @valid_prefs_required with privacy_enable_user_consent=True
+        and no pending consent
+        """
+        Profile.objects.create(user=self.user)
+
+        consent_tracker = get_consent_tracker()
+        consent_tracker.record_consent_data_list(
+            self.user,
+            [
+                consent_requirement.build_consent_data(granted=True)
+                for consent_requirement in get_consent_requirements_registry()
+            ])
+
+        all_consent = consent_tracker.get_all_consent(self.user)
+        self.assertNotEqual(all_consent, {})
+
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            response = self._view_func(self.request)
+
+        self.assertIs(type(response), HttpResponse)
+
+    @staticmethod
+    @valid_prefs_required
+    def _view_func(request):
+        return HttpResponse()

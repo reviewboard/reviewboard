@@ -21,6 +21,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 
 @check_login_required
 @check_local_site_access
+@valid_prefs_required
 def all_review_requests(request,
                         local_site=None,
                         template_name='datagrids/datagrid.html'):
@@ -63,6 +64,7 @@ def dashboard(request,
 
 @check_login_required
 @check_local_site_access
+@valid_prefs_required
 def group(request,
           name,
           template_name='datagrids/datagrid.html',
@@ -90,6 +92,7 @@ def group(request,
 
 @check_login_required
 @check_local_site_access
+@valid_prefs_required
 def group_list(request,
                local_site=None,
                template_name='datagrids/datagrid.html'):
@@ -100,6 +103,7 @@ def group_list(request,
 
 @check_login_required
 @check_local_site_access
+@valid_prefs_required
 def group_members(request,
                   name,
                   template_name='datagrids/datagrid.html',
@@ -123,6 +127,7 @@ def group_members(request,
 
 @check_login_required
 @check_local_site_access
+@valid_prefs_required
 def submitter(request,
               username,
               grid=None,
@@ -167,6 +172,7 @@ def submitter(request,
 
 @check_login_required
 @check_local_site_access
+@valid_prefs_required
 def users_list(request,
                local_site=None,
                template_name='datagrids/datagrid.html'):
