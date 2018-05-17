@@ -42,6 +42,7 @@ from django.utils import six
 from django.utils.six.moves.urllib.parse import urlparse
 from django.utils.translation import (ugettext,
                                       ugettext_lazy as _)
+from djblets.avatars.registry import AvatarServiceRegistry
 from djblets.cache.backend_compat import normalize_cache_backend
 from djblets.cache.forwarding_backend import DEFAULT_FORWARD_CACHE_ALIAS
 from djblets.forms.fields import TimeZoneField
@@ -956,6 +957,13 @@ class PrivacySettingsForm(SiteSettingsForm):
                     'identifiable information (usernames, e-mail addresses, '
                     'etc.) for when talking to third-party services, like '
                     'Gravatar. This is required for EU GDPR compliance.'))
+
+    def save(self):
+        """Save the privacy settings form."""
+        self.siteconfig.set(AvatarServiceRegistry.ENABLE_CONSENT_CHECKS,
+                            self.cleaned_data['privacy_enable_user_consent'])
+
+        super(PrivacySettingsForm, self).save()
 
     class Meta:
         title = _('User Privacy Settings')
