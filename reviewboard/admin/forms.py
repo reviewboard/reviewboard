@@ -931,6 +931,15 @@ class LoggingSettingsForm(SiteSettingsForm):
 class PrivacySettingsForm(SiteSettingsForm):
     """Site-wide user privacy settings for Review Board."""
 
+    terms_of_service_url = forms.URLField(
+        label=_('Terms of service URL'),
+        required=False,
+        help_text=_('URL to your terms of service. This will be displayed on '
+                    'the My Account page and during login and registration.'),
+        widget=forms.widgets.URLInput(attrs={
+            'size': 80,
+        }))
+
     privacy_policy_url = forms.URLField(
         label=_('Privacy policy URL'),
         required=False,
@@ -971,6 +980,7 @@ class PrivacySettingsForm(SiteSettingsForm):
             {
                 'classes': ('wide',),
                 'fields': (
+                    'terms_of_service_url',
                     'privacy_policy_url',
                     'privacy_info_html',
                     'privacy_enable_user_consent',

@@ -2,7 +2,8 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseRedirect
-from djblets.privacy.consent import get_consent_tracker
+from djblets.privacy.consent import Consent, get_consent_tracker
+from djblets.privacy.consent.common import PolicyConsentRequirement
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import simple_decorator
 
@@ -52,12 +53,20 @@ def valid_prefs_required(view_func):
 
             # Check if there are any privacy consent requirements that the
             # user needs to decide on before we can continue.
-            if (siteconfig.get('privacy_enable_user_consent') and
-                (is_new or
-                 consent_tracker.get_pending_consent_requirements(user))):
-                return HttpResponseRedirect(
-                    '%s#privacy' % local_site_reverse('user-preferences',
-                                                      request=request))
+            if siteconfig.get('privacy_enable_user_consent'):
+                needs_consent = \
+                    consent_tracker.get_pending_consent_requirements(user)
+                needs_accept_policies = (
+                    (siteconfig.get('privacy_policy_url') or
+                     siteconfig.get('terms_of_service_url')) and
+                    (consent_tracker.get_consent(
+                        user, PolicyConsentRequirement.requirement_id) !=
+                     Consent.GRANTED))
+
+                if is_new or needs_consent or needs_accept_policies:
+                    return HttpResponseRedirect(
+                        '%s#privacy' % local_site_reverse('user-preferences',
+                                                          request=request))
 
         return view_func(request, *args, **kwargs)
 
