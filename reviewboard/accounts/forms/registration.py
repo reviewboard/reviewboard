@@ -5,8 +5,11 @@ from djblets.auth.forms import RegistrationForm as DjbletsRegistrationForm
 from djblets.recaptcha.mixins import RecaptchaFormMixin
 from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.accounts.mixins import PolicyConsentFormMixin
 
-class RegistrationForm(RecaptchaFormMixin, DjbletsRegistrationForm):
+
+class RegistrationForm(RecaptchaFormMixin, PolicyConsentFormMixin,
+                       DjbletsRegistrationForm):
     """A registration form with reCAPTCHA support.
 
     This is a version of the Djblets RegistrationForm which knows how to
@@ -26,6 +29,8 @@ class RegistrationForm(RecaptchaFormMixin, DjbletsRegistrationForm):
             user.first_name = self.cleaned_data['first_name']
             user.last_name = self.cleaned_data['last_name']
             user.save()
+
+            self.accept_policies(user)
 
         return user
 
