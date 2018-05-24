@@ -1,4 +1,4 @@
-{% load avatars djblets_utils i18n reviewtags tz %}
+{% load accounts avatars djblets_utils i18n reviewtags tz %}
 
 <li{% attr "class" %}{% if draft %}draft{% elif reply_is_new %}new-reply{% endif %}{% endattr %}{% if comment_id %} data-comment-id="{{comment_id}}"{% endif %} id="{{anchor_name}}">
  <a class="comment-anchor" name="{{anchor_name}}"></a>
@@ -14,7 +14,7 @@
 {% if reply_is_new %}
     <div class="rb-icon rb-icon-new-updates" title="{% trans 'New reply' %}"></div>
 {% endif %}
-    <a href="{% url 'user' reply_user %}" class="user">{{reply_user|user_displayname}}</a>
+    <a href="{% url 'user' reply_user %}" class="user">{% user_profile_display_name reply_user %}</a>
     <a href="#{{anchor_name}}" class="timestamp">
      {% localtime on %}{% blocktrans with timestamp as timestamp and timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</a>
    </div>

@@ -194,6 +194,50 @@ class UsernameColumn(Column):
             })
 
 
+class FullNameColumn(Column):
+    """Shows the full name of the user when appropriate."""
+
+    def augment_queryset(self, state, queryset):
+        """Add additional queries to the queryset.
+
+        This will select fields for the user and the user's profile, to
+        help with query performance.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
+        return queryset.select_related('profile')
+
+    def render_data(self, state, user):
+        """Render the full name, or blank if not visible to the user.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            user (django.contrib.auth.models.User):
+                The user whose full name is to be rendered.
+
+        Returns:
+            unicode:
+            Either the full name (if visible to the user) or an empty string.
+        """
+        profile = user.get_profile()
+
+        if user.is_profile_visible(state.datagrid.request.user):
+            return profile.get_display_name(state.datagrid.request.user)
+
+        return ''
+
+
 class BugsColumn(Column):
     """Shows the list of bugs specified on a review request.
 

@@ -19,6 +19,7 @@ from reviewboard.datagrids.columns import (BugsColumn,
                                            DiffSizeColumn,
                                            DiffUpdatedColumn,
                                            DiffUpdatedSinceColumn,
+                                           FullNameColumn,
                                            GroupMemberCountColumn,
                                            GroupsColumn,
                                            MyCommentsColumn,
@@ -409,8 +410,7 @@ class UsersDataGrid(AlphanumericDataGrid):
     """A datagrid showing a list of users registered on Review Board."""
 
     username = UsernameColumn(label=_('Username'))
-    fullname = Column(_('Full Name'), field_name='get_full_name',
-                      link=True, expand=True)
+    fullname = FullNameColumn(label=_('Full Name'), link=True, expand=True)
     pending_count = PendingCountColumn(_('Open Review Requests'),
                                        field_name='directed_review_requests',
                                        shrink=True)

@@ -599,6 +599,116 @@ class ProfileTests(TestCase):
                          profile1.starred_review_requests.all())
         self.assertEqual(site_profile.starred_public_request_count, 0)
 
+    def test_get_display_name_unauthenticated_public(self):
+        """Testing Profile.get_display_name with a public profile"""
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = False
+
+        self.assertEqual(profile.get_display_name(AnonymousUser()),
+                         user.username)
+
+    def test_get_display_name_unauthenticated_private(self):
+        """Testing Profile.get_display_name for an unauthenticated user viewing
+        a private profile
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = True
+
+        self.assertEqual(profile.get_display_name(AnonymousUser()),
+                         user.username)
+
+    def test_get_display_name_public(self):
+        """Testing Profile.get_display_name for an authenticated user viewing a
+        public profile
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = False
+
+        self.assertEqual(
+            profile.get_display_name(User.objects.get(username='grumpy')),
+            user.get_full_name())
+
+    def test_get_display_name_private(self):
+        """Testing Profile.get_display_name for an authenticated user viewing a
+        private profile
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = True
+
+        self.assertEqual(
+            profile.get_display_name(User.objects.get(username='grumpy')),
+            user.username)
+
+    def test_get_display_name_admin_private(self):
+        """Testing Profile.get_display_name for an admin viewing a private
+        profile
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = True
+
+        self.assertEqual(
+            profile.get_display_name(User.objects.get(username='admin')),
+            user.get_full_name())
+
+    @add_fixtures(['test_site'])
+    def test_get_display_name_localsite_member_private(self):
+        """Testing Profile.get_display_name for a LocalSite member viewing
+        a LocalSite member with a private profile
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = True
+
+        viewer = User.objects.get(username='grumpy')
+        site = LocalSite.objects.get(pk=1)
+        site.users.add(viewer)
+
+        self.assertEqual(profile.get_display_name(viewer), user.username)
+
+    @add_fixtures(['test_site'])
+    def test_get_display_name_localsite_admin_private(self):
+        """Testing Profile.get_display_name for a LocalSite admin viewing
+        a LocalSite member with a private profile
+        """
+        user = User.objects.get(username='admin')
+        profile = user.get_profile()
+        profile.is_private = True
+
+        self.assertEqual(
+            profile.get_display_name(User.objects.get(username='doc')),
+            user.get_full_name())
+
+    @add_fixtures(['test_site'])
+    def test_get_display_name_localsite_admin_private_other_site(self):
+        """Testing Profile.get_display_name for a LocalSite admin viewing a
+        member of another LocalSite with a private profile
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = True
+
+        viewer = User.objects.get(username='grumpy')
+        site = LocalSite.objects.create(name='site-3')
+        site.users.add(viewer)
+        site.admins.add(viewer)
+
+        self.assertEqual(profile.get_display_name(viewer), user.username)
+
+    def test_get_display_name_self_private(self):
+        """Testing Profile.get_display_name for a user viewing themselves with
+        a private profile
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = True
+
+        self.assertEqual(profile.get_display_name(user), user.get_full_name())
+
 
 class AccountPageTests(TestCase):
     """Test account page functionality."""
@@ -1363,3 +1473,74 @@ class ValidPrefsRequiredTests(TestCase):
     @valid_prefs_required
     def _view_func(request):
         return HttpResponse()
+
+
+class UserTests(TestCase):
+    """Tests for mixin methods on User."""
+
+    fixtures = ['test_users']
+
+    def test_is_admin_for_user_admin_vs_user(self):
+        """Testing User.is_admin_for_user for an admin"""
+        admin = User.objects.get(username='admin')
+        user = User.objects.get(username='doc')
+
+        with self.assertNumQueries(0):
+            self.assertTrue(admin.is_admin_for_user(user))
+
+    def test_is_admin_for_user_admin_vs_none(self):
+        """Testing User.is_admin_for_user for an admin when the user is None"""
+        admin = User.objects.get(username='admin')
+
+        with self.assertNumQueries(0):
+            self.assertTrue(admin.is_admin_for_user(None))
+
+    def test_is_admin_for_user_admin_vs_anonymous(self):
+        """Testing User.is_admin_for_user for an admin when the user is
+        anonymous
+        """
+        admin = User.objects.get(username='admin')
+
+        with self.assertNumQueries(0):
+            self.assertTrue(admin.is_admin_for_user(AnonymousUser()))
+
+    def test_is_admin_for_user_user_vs_user(self):
+        """Testing User.is_admin_for_user for a regular user"""
+        user = User.objects.get(username='doc')
+
+        with self.assertNumQueries(1):
+            self.assertFalse(user.is_admin_for_user(user))
+
+        with self.assertNumQueries(0):
+            self.assertFalse(user.is_admin_for_user(user))
+
+    @add_fixtures(['test_site'])
+    def test_is_admin_for_user_localsite_admin_vs_localsite_user(self):
+        """Testing User.is_admin_for_user for a LocalSite admin when the user
+        is a member of that LocalSite
+        """
+        site_admin = User.objects.get(username='doc')
+        site_user = User.objects.get(username='admin')
+
+        with self.assertNumQueries(1):
+            self.assertTrue(site_admin.is_admin_for_user(site_user))
+
+        with self.assertNumQueries(0):
+            self.assertTrue(site_admin.is_admin_for_user(site_user))
+
+    @add_fixtures(['test_site'])
+    def test_is_admin_for_user_localsite_admin_vs_other_localsite_user(self):
+        """Testing User.is_admin_for_user for a LocalSite admin when the user
+        is a member of another LocalSite
+        """
+        site_admin = User.objects.get(username='doc')
+        site_user = User.objects.get(username='grumpy')
+        site = LocalSite.objects.create(name='local-site-3')
+        site.users.add(site_admin)
+        site.users.add(site_user)
+
+        with self.assertNumQueries(1):
+            self.assertFalse(site_admin.is_admin_for_user(site_user))
+
+        with self.assertNumQueries(0):
+            self.assertFalse(site_admin.is_admin_for_user(site_user))
