@@ -155,6 +155,47 @@ class TrophyType(object):
         """
         raise NotImplementedError
 
+    def format_display_text(self, request, trophy, **kwargs):
+        """Format the display text for the trophy.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            trophy (reviewboard.accounts.models.Trophy):
+                The trophy instance.
+
+            **kwargs (dict):
+                Additional keyword arguments to use for formatting.
+
+        Returns:
+            unicode:
+            The rendered text.
+        """
+        if getattr(self, 'display_format_str', None) is None:
+            # In this case we may be dealing with a custom old-style trophy
+            # that has implemented get_display_text. We need to check if
+            # that has been implemented and, if so, use that.
+            try:
+                text = self.get_display_text(trophy)
+            except NotImplementedError:
+                raise NotImplementedError(
+                    '%s does not define the format_display_text attribute.'
+                    % type(self).__name__
+                )
+            else:
+                warnings.warn(
+                    'TrophyType.get_display_text has been deprecated in favor '
+                    'of TrophyType.format_display_text.',
+                    DeprecationWarning)
+                return text
+
+        return self.display_format_str % dict(kwargs, **{
+            'recipient': trophy.user.get_profile().get_display_name(
+                getattr(request, 'user', None)),
+            'review_request_id': trophy.review_request.display_id,
+        })
+
 
 class MilestoneTrophy(TrophyType):
     """A milestone trophy.
@@ -174,21 +215,9 @@ class MilestoneTrophy(TrophyType):
     image_width = 33
     image_height = 35
 
-    def get_display_text(self, trophy):
-        """Return the text to display in the trophy banner.
-
-        Args:
-            trophy (reviewboard.accounts.models.Trophy):
-                The stored trophy information.
-
-        Returns:
-            unicode:
-            The display text for the trophy banner.
-        """
-        return _('%(user)s got review request #%(rid)s!') % {
-            'user': trophy.user.get_full_name() or trophy.user.username,
-            'rid': trophy.review_request.display_id
-        }
+    display_format_str = _(
+        '%(recipient)s got review request #%(review_request_id)d!'
+    )
 
     def qualifies(self, review_request):
         """Return whether this trophy should be given to this review request.
@@ -224,6 +253,8 @@ class FishTrophy(TrophyType):
     image_width = 33
     image_height = 37
 
+    display_format_str = _('%(recipient)s got a fish trophy!')
+
     def qualifies(self, review_request):
         """Return whether this trophy should be given to this review request.
 
@@ -239,21 +270,6 @@ class FishTrophy(TrophyType):
 
         return (review_request.display_id >= 1000 and
                 id_str == ''.join(reversed(id_str)))
-
-    def get_display_text(self, trophy):
-        """Return the text to display in the trophy banner.
-
-        Args:
-            trophy (reviewboard.accounts.models.Trophy):
-                The stored trophy information.
-
-        Returns:
-            unicode:
-            The display text for the trophy banner.
-        """
-        return _('%(user)s got a fish trophy!') % {
-            'user': trophy.user.get_full_name() or trophy.user.username,
-        }
 
 
 class UnknownTrophy(TrophyType):

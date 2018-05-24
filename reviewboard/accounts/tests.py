@@ -51,6 +51,7 @@ from reviewboard.accounts.pages import (AccountPage,
                                         get_page_classes,
                                         register_account_page_class,
                                         unregister_account_page_class)
+from reviewboard.accounts.trophies import TrophyType
 from reviewboard.accounts.views import MyAccountView
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -952,6 +953,29 @@ class TrophyTests(TestCase):
                                                     submitter=user1)
         trophies = Trophy.objects.compute_trophies(review_request)
         self.assertFalse(trophies)
+
+    def test_get_display_text_deprecated(self):
+        """Testing TrophyType.format_display_text for an old-style trophy warns
+        that get_display_text it is deprecated
+        """
+        class OldTrophyType(TrophyType):
+            image_width = 1
+            image_height = 1
+            category = 'old-n-busted'
+
+            def get_display_text(self, trophy):
+                return 'A trophy for you.'
+
+        review_request = self.create_review_request()
+        trophy = Trophy(category=OldTrophyType.category,
+                        review_request=review_request,
+                        user=review_request.submitter)
+
+        with self.assert_warns():
+            text = OldTrophyType().format_display_text(
+                trophy, RequestFactory().get('/'))
+
+        self.assertEqual(text, 'A trophy for you.')
 
 
 class SandboxAuthBackend(AuthBackend):
