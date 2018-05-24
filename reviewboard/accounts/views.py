@@ -28,7 +28,8 @@ from reviewboard.accounts.backends import get_enabled_auth_backends
 from reviewboard.accounts.forms.registration import RegistrationForm
 from reviewboard.accounts.mixins import CheckLoginRequiredViewMixin
 from reviewboard.accounts.models import Profile
-from reviewboard.accounts.pages import AccountPage, OAuth2Page
+from reviewboard.accounts.pages import AccountPage, OAuth2Page, PrivacyPage
+from reviewboard.accounts.privacy import is_consent_missing
 from reviewboard.avatars import avatar_services
 from reviewboard.notifications.email.decorators import preview_email
 from reviewboard.notifications.email.message import \
@@ -244,13 +245,37 @@ class MyAccountView(ConfigPagesView):
 
     @property
     def page_classes(self):
-        """Get the list of page classes for this view."""
+        """The list of page classes for this view.
+
+        If the user is missing any consent requirements or has not accepted
+        the privacy policy/terms of service, only the privacy page will be
+        shown.
+        """
+        if self.is_user_missing_consent:
+            return [AccountPage.registry.get('page_id', PrivacyPage.page_id)]
+
         return list(AccountPage.registry)
 
     @cached_property
     def ordered_user_local_sites(self):
         """Get the user's local sites, ordered by name."""
         return self.request.user.local_site.order_by('name')
+
+    @property
+    def render_sidebar(self):
+        """Whether or not to render the sidebar.
+
+        If the user is missing any consent requirements or has not accepted
+        the privacy policy/terms of service, the sidebar will not render.
+        This is to prevent the user from navigating away from the privacy page
+        before making decisions.
+        """
+        return not self.is_user_missing_consent
+
+    @cached_property
+    def is_user_missing_consent(self):
+        """Whether or not the user is missing consent."""
+        return is_consent_missing(self.request.user)
 
 
 @login_required

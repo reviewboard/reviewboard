@@ -6,7 +6,9 @@ from django import forms
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.forms import widgets
+from django.http import HttpResponseRedirect
 from django.utils.datastructures import SortedDict
+from django.utils.six.moves.urllib.parse import unquote
 from django.utils.translation import ugettext_lazy as _
 from djblets.avatars.forms import (
     AvatarSettingsForm as DjbletsAvatarSettingsForm)
@@ -608,6 +610,9 @@ class PrivacyForm(ConsentConfigPageFormMixin, AccountPageForm):
     features that make use of the user's personally identifying information.
     """
 
+    next_url = forms.CharField(required=False,
+                               widget=forms.HiddenInput)
+
     form_title = _('My Privacy Rights')
     template_name = 'accounts/privacy_form.html'
 
@@ -628,6 +633,20 @@ class PrivacyForm(ConsentConfigPageFormMixin, AccountPageForm):
         if not siteconfig.get('privacy_enable_user_consent'):
             del self.fields[self.consent_field_name]
             self.save_label = None
+
+    def load(self):
+        """Load the form data.
+
+        If a ``?next`` query argument is provided, it will be loaded into the
+        initial value for the ``next_url`` so that it will persist through
+        page submission.
+        """
+        super(PrivacyForm, self).load()
+
+        next_url = self.request.GET.get('next')
+
+        if next_url:
+            self.set_initial({'next_url': unquote(next_url)})
 
     def is_visible(self):
         """Return whether or not the form should be rendered.
@@ -657,3 +676,29 @@ class PrivacyForm(ConsentConfigPageFormMixin, AccountPageForm):
         return {
             'privacy_info_html': siteconfig.get('privacy_info_html'),
         }
+
+    def clean_next_url(self):
+        """Clean the next_url field.
+
+        Returns:
+            unicode:
+            The URL to redirect to, if any.
+        """
+        return self.cleaned_data.get('next_url', '').strip() or None
+
+    def save(self):
+        """Save the privacy form.
+
+        This may redirect the user to the next URL if it is specified.
+
+        Returns:
+            django.http.HttpResponseRedirect:
+            A redirect to the next URL if given and ``None`` otherwise.
+        """
+        next_url = self.cleaned_data.get('next_url')
+
+        if next_url:
+            self.save_consent(self.request.user)
+            return HttpResponseRedirect(next_url)
+        else:
+            return super(PrivacyForm, self).save()

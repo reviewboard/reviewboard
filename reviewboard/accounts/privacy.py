@@ -4,7 +4,9 @@ from __future__ import unicode_literals
 
 from django.utils.translation import ugettext_lazy as _
 
-from djblets.privacy.consent import get_consent_requirements_registry
+from djblets.privacy.consent import (Consent,
+                                     get_consent_requirements_registry,
+                                     get_consent_tracker)
 from djblets.privacy.consent.common import (BaseGravatarConsentRequirement,
                                             PolicyConsentRequirement)
 from djblets.registries.errors import ItemLookupError
@@ -68,3 +70,35 @@ def register_privacy_consents(force=False):
         registry.register(GravatarConsentRequirement())
 
         _registered = True
+
+
+def is_consent_missing(user):
+    """Return whether the user is missing any consent requirements.
+
+    Args:
+        user (django.contrib.auth.models.User):
+            The user in question.
+
+    Returns:
+        bool:
+        Whether or not the user is missing any consent requirements.
+    """
+    siteconfig = SiteConfiguration.objects.get_current()
+
+    if not siteconfig.get('privacy_enable_user_consent'):
+        return False
+
+    consent_tracker = get_consent_tracker()
+    pending_consent = consent_tracker.get_pending_consent_requirements(
+        user)
+
+    needs_accept_policies = (
+        (siteconfig.get('privacy_policy_url') or
+         siteconfig.get('terms_of_service_url')) and
+        (consent_tracker.get_consent(
+            user,
+            PolicyConsentRequirement.requirement_id) !=
+         Consent.GRANTED)
+    )
+
+    return needs_accept_policies or pending_consent
