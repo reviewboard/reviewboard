@@ -2,7 +2,6 @@
 
 from __future__ import unicode_literals
 
-from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
 
 from djblets.privacy.consent import get_consent_requirements_registry
@@ -11,10 +10,11 @@ from djblets.privacy.consent.common import (BaseGravatarConsentRequirement,
 from djblets.registries.errors import ItemLookupError
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.urls.staticfiles import static_lazy
+from djblets.util.html import mark_safe_lazy
 
 
 class GravatarConsentRequirement(BaseGravatarConsentRequirement):
-    intent_description = mark_safe(_(
+    intent_description = mark_safe_lazy(_(
         "Gravatar is used by many services and applications to manage and "
         "serve <b>avatars</b>. We use Gravatars by default for your "
         "avatar. If you don't want to use it, you can block that here, "
