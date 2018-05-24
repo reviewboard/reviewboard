@@ -5,6 +5,6 @@
 {{object.testing_done}}
 {{object.bugs_closed}}
 {{object.submitter.username}}
-{{object.submitter.get_full_name}}
+{% if not object.submitter.get_profile.is_private %}{{object.submitter.get_full_name}}{% endif %}
 {{object.get_all_diff_filenames}}
 {{object.commit_id}}

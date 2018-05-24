@@ -1,4 +1,6 @@
 {# Haystack data template for UserIndex #}
 {{object.username}}
+{% if not object.get_profile.is_private %}
 {{object.email}}
 {{object.get_full_name}}
+{% endif %}

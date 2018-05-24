@@ -2,7 +2,6 @@ from __future__ import unicode_literals
 
 from django.contrib.auth.models import AnonymousUser
 from django.db.models import Q
-from djblets.util.templatetags.djblets_utils import user_displayname
 from haystack import indexes
 
 from reviewboard.reviews.models import ReviewRequest
@@ -23,8 +22,7 @@ class ReviewRequestIndex(BaseSearchIndex, indexes.Indexable):
     commit_id = indexes.EdgeNgramField(model_attr='commit', null=True)
     bug = indexes.CharField(model_attr='bugs_closed')
     username = indexes.CharField(model_attr='submitter__username')
-    user_display_name = indexes.CharField()
-    author = indexes.CharField(model_attr='submitter__get_full_name')
+    author = indexes.CharField()
     last_updated = indexes.DateTimeField(model_attr='last_updated')
     url = indexes.CharField(model_attr='get_absolute_url')
     file = indexes.CharField()
@@ -54,7 +52,8 @@ class ReviewRequestIndex(BaseSearchIndex, indexes.Indexable):
             .select_related('diffset_history',
                             'local_site',
                             'repository',
-                            'submitter')
+                            'submitter',
+                            'submitter__profile')
             .prefetch_related('diffset_history__diffsets__files',
                               'target_groups',
                               'target_people')
@@ -111,5 +110,23 @@ class ReviewRequestIndex(BaseSearchIndex, indexes.Indexable):
             for user in review_request.target_people.all()
         ] or [0]
 
-    def prepare_user_display_name(self, obj):
-        return user_displayname(obj.submitter)
+    def prepare_author(self, review_request):
+        """Prepare the author field.
+
+        Args:
+            review_request (reviewboard.reviews.models.review_request.
+                            ReviewRequest):
+                The review request being indexed.
+
+        Returns:
+            unicode:
+            Either the author's full name (if their profile is public) or an
+            empty string.
+        """
+        user = review_request.submitter
+        profile = user.get_profile(cached_only=True)
+
+        if profile is None or profile.is_private:
+            return ''
+
+        return user.get_full_name()

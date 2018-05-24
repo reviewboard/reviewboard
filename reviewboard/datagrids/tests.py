@@ -594,7 +594,7 @@ class UsersDataGridTests(BaseViewTestCase):
 
         self.client.logout()
 
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(3):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -677,7 +677,7 @@ class UsersDataGridTests(BaseViewTestCase):
         Profile.objects.all().update(is_private=True)
         self.client.logout()
 
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(3):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
