@@ -1614,12 +1614,18 @@ class MyAccountViewTests(TestCase):
 class ValidPrefsRequiredTests(TestCase):
     """Unit tests for reviewboard.accounts.decorators.valid_prefs_required."""
 
+    @classmethod
+    def setUpClass(cls):
+        super(ValidPrefsRequiredTests, cls).setUpClass()
+
+        cls.request_factory = RequestFactory()
+
     def setUp(self):
         super(ValidPrefsRequiredTests, self).setUp()
 
         self.user = User.objects.create(username='test-user')
 
-        self.request = RequestFactory().get('/')
+        self.request = self.request_factory.get('/')
         self.request.user = self.user
 
     def test_with_anonymous_user(self):
@@ -1686,6 +1692,56 @@ class ValidPrefsRequiredTests(TestCase):
 
         with self.siteconfig_settings({'privacy_enable_user_consent': True}):
             response = self._view_func(self.request)
+
+        self.assertIs(type(response), HttpResponse)
+
+    def test_with_consent_required_pending_consent_enabled_decorator(self):
+        """Testing @valid_prefs_required with disbled_consent_checks= set to a
+        function that always returns False
+        """
+        @valid_prefs_required(disable_consent_checks=lambda request: False)
+        def view_func(request):
+            return HttpResponse()
+
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            response = view_func(self.request)
+
+        self.assertIs(type(response), HttpResponseRedirect)
+
+    def test_with_consent_required_pending_consent_disabled_decorator(self):
+        """Testing @valid_prefs_required with disbled_consent_checks= set to a
+        function that always returns True
+        """
+        @valid_prefs_required(disable_consent_checks=lambda request: True)
+        def view_func(request):
+            return HttpResponse()
+
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            response = view_func(self.request)
+
+        self.assertIs(type(response), HttpResponse)
+
+    def test_with_consent_required_pending_consent_decorator_function(self):
+        """Testing @valid_prefs_required with disbled_consent_checks= set to a
+        function
+        """
+        def disable_consent_checks(request):
+            return 'disable-consent-checks' in request.GET
+
+        @valid_prefs_required(disable_consent_checks=disable_consent_checks)
+        def view_func(request):
+            return HttpResponse()
+
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            response = view_func(self.request)
+
+        self.assertIs(type(response), HttpResponseRedirect)
+
+        request = self.request_factory.get('/?disable-consent-checks')
+        request.user = self.user
+
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            response = view_func(request)
 
         self.assertIs(type(response), HttpResponse)
 
