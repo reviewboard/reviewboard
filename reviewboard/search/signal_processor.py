@@ -10,6 +10,7 @@ from django.db.models.signals import post_delete, post_save, m2m_changed
 from django.utils import six
 from haystack.signals import BaseSignalProcessor
 
+from reviewboard.accounts.models import Profile
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.signals import review_request_published
 from reviewboard.search import search_backend_registry
@@ -31,6 +32,7 @@ class SignalProcessor(BaseSignalProcessor):
     save_signals = [
         (ReviewRequest, review_request_published, 'review_request'),
         (User, post_save, 'instance'),
+        (Profile, post_save, 'instance'),
     ]
 
     delete_signals = [
@@ -103,6 +105,11 @@ class SignalProcessor(BaseSignalProcessor):
         backend = search_backend_registry.current_backend
 
         if backend and search_backend_registry.on_the_fly_indexing_enabled:
+            if isinstance(instance, Profile):
+                # When we save a Profile, we want to update the User index.
+                kwargs['sender'] = User
+                instance = instance.user
+
             self.handle_save(instance=instance, **kwargs)
 
     def check_handle_delete(self, **kwargs):

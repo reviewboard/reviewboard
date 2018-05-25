@@ -8,12 +8,92 @@ from django.test import RequestFactory
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
+from reviewboard.accounts.trophies import TrophyType, trophies_registry
 from reviewboard.reviews.fields import (BaseReviewRequestField,
                                         BaseReviewRequestFieldSet,
                                         register_review_request_fieldset,
                                         unregister_review_request_fieldset)
 from reviewboard.reviews.models import Comment
 from reviewboard.testing import TestCase
+
+
+class DisplayReviewRequestTrophiesTests(TestCase):
+    fixtures = ['test_users']
+
+    @classmethod
+    def setUpClass(cls):
+        super(DisplayReviewRequestTrophiesTests, cls).setUpClass()
+
+        cls._request_factory = RequestFactory()
+
+    def tearDown(self):
+        super(DisplayReviewRequestTrophiesTests, self).tearDown()
+
+        trophies_registry.reset()
+
+    def test_old_style_trophy(self):
+        """Testing {% display_review_request_trophies %} for old-style
+        TrophyType
+        """
+        class OldTrophy(TrophyType):
+            category = 'old'
+            image_width = 1
+            image_height = 1
+
+            def get_display_text(self, trophy):
+                return 'Trophy get!'
+
+            def qualifies(self, review_request):
+                return True
+
+        trophies_registry.register(OldTrophy)
+
+        review_request = self.create_review_request(publish=True)
+
+        t = Template(
+            '{% load reviewtags %}'
+            '{% display_review_request_trophies review_request %}')
+
+        request = self._request_factory.get('/')
+        request.user = review_request.submitter
+
+        with self.assert_warns():
+            text = t.render(RequestContext(request, {
+                'review_request': review_request,
+            }))
+
+        self.assertIn('Trophy get!', text)
+
+    def test_new_style_trophy(self):
+        """Testing {% display_review_request_trophies %} for new-style
+        TrophyType
+        """
+        class SomeTrophy(TrophyType):
+            category = 'trophy'
+            image_width = 1
+            image_height = 1
+
+            display_format_str = 'Trophy get!'
+
+            def qualifies(self, review_request):
+                return True
+
+        trophies_registry.register(SomeTrophy)
+
+        review_request = self.create_review_request(publish=True)
+
+        t = Template(
+            '{% load reviewtags %}'
+            '{% display_review_request_trophies review_request %}')
+
+        request = self._request_factory.get('/')
+        request.user = review_request.submitter
+
+        text = t.render(RequestContext(request, {
+            'review_request': review_request,
+        }))
+
+        self.assertIn('Trophy get!', text)
 
 
 class ForReviewRequestFieldTests(SpyAgency, TestCase):

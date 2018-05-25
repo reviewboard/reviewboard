@@ -38,8 +38,8 @@ from reviewboard.site.urlresolvers import local_site_reverse
 register = template.Library()
 
 
-@register.simple_tag(takes_context=False)
-def display_review_request_trophies(review_request):
+@register.simple_tag(takes_context=True)
+def display_review_request_trophies(context, review_request):
     """Returns the HTML for the trophies awarded to a review request."""
     trophy_models = Trophy.objects.get_trophies(review_request)
 
@@ -54,12 +54,15 @@ def display_review_request_trophies(review_request):
         if trophy_type_cls is not UnknownTrophy:
             try:
                 trophy_type = trophy_type_cls()
+                text = trophy_type.format_display_text(context['request'],
+                                                       trophy_model)
+
                 trophies.append({
                     'image_urls': trophy_type.image_urls,
                     'image_width': trophy_type.image_width,
                     'image_height': trophy_type.image_height,
                     'name': trophy_type.name,
-                    'text': trophy_type.get_display_text(trophy_model),
+                    'text': text,
                 })
             except Exception as e:
                 logging.error('Error when rendering trophy %r (%r): %s',

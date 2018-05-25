@@ -19,6 +19,7 @@ from reviewboard.datagrids.columns import (BugsColumn,
                                            DiffSizeColumn,
                                            DiffUpdatedColumn,
                                            DiffUpdatedSinceColumn,
+                                           FullNameColumn,
                                            GroupMemberCountColumn,
                                            GroupsColumn,
                                            MyCommentsColumn,
@@ -409,8 +410,7 @@ class UsersDataGrid(AlphanumericDataGrid):
     """A datagrid showing a list of users registered on Review Board."""
 
     username = UsernameColumn(label=_('Username'))
-    fullname = Column(_('Full Name'), field_name='get_full_name',
-                      link=True, expand=True)
+    fullname = FullNameColumn(label=_('Full Name'), link=True, expand=True)
     pending_count = PendingCountColumn(_('Open Review Requests'),
                                        field_name='directed_review_requests',
                                        shrink=True)
@@ -543,6 +543,9 @@ class UserPageReviewRequestDataGrid(UserPageDataGridMixin,
             request,
             queryset=queryset,
             title=_("%s's Review Requests") % user.username,
+            extra_context={
+                'pii_safe_title': _("User's Review Requests"),
+            },
             *args, **kwargs)
 
         self.groups = user.review_groups.accessible(request.user)
@@ -571,6 +574,9 @@ class UserPageReviewsDataGrid(UserPageDataGridMixin, ReviewDataGrid):
             request,
             queryset=queryset,
             title=_("%s's Reviews") % user.username,
+            extra_context={
+                'pii_safe_title': _("User's Reviews"),
+            },
             *args, **kwargs)
 
         self.groups = user.review_groups.accessible(request.user)

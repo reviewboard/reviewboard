@@ -16,6 +16,7 @@ from reviewboard.accounts.forms.pages import (AccountSettingsForm,
                                               APITokensForm,
                                               AvatarSettingsForm,
                                               ChangePasswordForm,
+                                              PrivacyForm,
                                               GroupsForm,
                                               OAuthApplicationsForm,
                                               OAuthTokensForm,
@@ -33,7 +34,7 @@ class AccountPageRegistry(ExceptionFreeGetterMixin, ConfigPageRegistry):
         Returns:
             type: The page classes, as subclasses of :py:class:`AccountPage`.
         """
-        return (ProfilePage, AccountSettingsPage, GroupsPage,
+        return (PrivacyPage, ProfilePage, AccountSettingsPage, GroupsPage,
                 AuthenticationPage, OAuth2Page)
 
     def unregister(self, page_class):
@@ -126,6 +127,14 @@ class OAuth2Page(AccountPage):
     page_id = 'oauth2'
     page_title = 'OAuth2 Applications'
     form_classes = [OAuthApplicationsForm]
+
+
+class PrivacyPage(AccountPage):
+    """A page containing information on a user's privacy rights."""
+
+    page_id = 'privacy'
+    page_title = _('My Privacy Rights')
+    form_classes = [PrivacyForm]
 
 
 def register_account_page_class(cls):

@@ -18,6 +18,7 @@ from oauth2_provider.models import AccessToken
 
 from reviewboard import scmtools, initialize
 from reviewboard.accounts.models import ReviewRequestVisit
+from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff
@@ -1332,6 +1333,32 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             scope=scope,
             user=user,
         )
+
+    @contextmanager
+    def siteconfig_settings(self, settings, reload_settings=True):
+        """Temporarily sets siteconfig settings for a test.
+
+        Args:
+            settings (dict):
+                The new siteconfig settings to set.
+
+            reload_settings (bool, optional):
+                Whether to reload and recompute all settings, applying them
+                to Django and other objects.
+
+        Context:
+            The current site configuration will contain the new settings for
+            this test.
+        """
+        try:
+            with super(TestCase, self).siteconfig_settings(settings):
+                if reload_settings:
+                    load_site_config()
+
+                yield
+        finally:
+            if reload_settings:
+                load_site_config()
 
     @contextmanager
     def override_siteconfig(self, **kwargs):

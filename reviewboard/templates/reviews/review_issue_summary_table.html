@@ -1,4 +1,4 @@
-{% load avatars djblets_utils i18n reviewtags %}
+{% load accounts avatars djblets_utils i18n reviewtags %}
 
 <div id="issue-summary" class="review-request-section"{% if issue_counts.total == 0 %} style="display: none;"{% endif %}>
  <a name="issue-summary"></a>
@@ -49,7 +49,7 @@
    </thead>
    <tbody>
 {% for comment in issues %}
-{%  definevar 'reviewer_name' %}{{comment.review_obj.user|user_displayname}}{% enddefinevar %}
+{%  definevar 'reviewer_name' %}{% user_profile_display_name comment.review_obj.user %}{% enddefinevar %}
     <tr id="summary-table-entry-{{comment.id}}"
         class="issue {{comment.issue_status|pretty_print_issue_status}}{% if comment.issue_status != 'O' %} hidden{% endif %}"
         data-issue-id="{{comment.pk}}"

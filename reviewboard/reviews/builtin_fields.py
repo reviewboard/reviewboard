@@ -436,7 +436,7 @@ class OwnerField(BuiltinFieldMixin, BaseEditableField):
                 'user',
                 local_site=self.review_request_details.local_site,
                 args=[user]),
-            user.get_full_name() or user.username)
+            user.get_profile().get_display_name(self.request.user))
 
     def record_change_entry(self, changedesc, old_value, new_value):
         """Record information on the changed values in a ChangeDescription.

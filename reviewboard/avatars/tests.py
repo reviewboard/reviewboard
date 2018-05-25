@@ -439,7 +439,6 @@ class TemplateTagTests(AvatarServicesTestMixin, TestCase):
 
     def test_avatar_specific_service(self):
         """Testing {% avatar %} template tag using a specific avatar service"""
-
         avatar_services.register(DummyAvatarService)
         avatar_services.enable_service(DummyAvatarService)
 
@@ -455,7 +454,7 @@ class TemplateTagTests(AvatarServicesTestMixin, TestCase):
             ('<img src="http://example.com/avatar.png" alt="%s" width="32"'
              ' height="32" srcset="http://example.com/avatar.png 1x"'
              ' class="avatar">\n'
-             % self.user.get_full_name() or self.user.username)
+             % self.user.username)
         )
 
     def test_avatar_invalid_service(self):
@@ -480,6 +479,8 @@ class TemplateTagTests(AvatarServicesTestMixin, TestCase):
         t = Template('{% load avatars %}'
                      '{% avatar target_user 32 avatar_service_id %}')
 
+        self.request.user = User.objects.get(username='admin')
+
         user = User.objects.create_user(
             first_name='<b>Bad',
             last_name='User</b>',
@@ -487,8 +488,6 @@ class TemplateTagTests(AvatarServicesTestMixin, TestCase):
             email='bad_user@example.com')
 
         Profile.objects.create(user=user)
-
-        escaped_user = escape(user.get_full_name())
 
         avatar_services.register(DummyAvatarService)
         avatar_services.enable_service(DummyAvatarService)
@@ -501,7 +500,7 @@ class TemplateTagTests(AvatarServicesTestMixin, TestCase):
             '<img src="http://example.com/avatar.png" alt="%s" width="32"'
             ' height="32" srcset="http://example.com/avatar.png 1x"'
             ' class="avatar">\n'
-            % escaped_user)
+            % '&lt;b&gt;Bad User&lt;/b&gt;')
 
 
 class FileUploadServiceTests(SpyAgency, AvatarServicesTestMixin, TestCase):

@@ -273,13 +273,29 @@ RB.DiffFragmentQueueView = Backbone.View.extend({
 
                 const onFragmentLoaded = (commentID, html) => {
                     /* Set the HTML in the container. */
-                    const view = this._renderFragment(
-                        $(`#${containerPrefix}_${commentID}`),
-                        commentID,
-                        html);
+                    const containerID = `#${containerPrefix}_${commentID}`;
+                    const $container = $(containerID);
 
-                    if (onFragmentRendered) {
-                        onFragmentRendered(commentID, view);
+                    if ($container.length === 0) {
+                        /*
+                         * This doesn't actually exist. We may be dealing with
+                         * inconsistent state due to something missing in the
+                         * database. We don't want to break the page if this
+                         * happens, so log and skip the entry.
+                         */
+                        console.error('Unable to find container %s for ' +
+                                      'comment ID %s. There may be missing ' +
+                                      'state in the database.',
+                                      containerID, commentID);
+                    } else {
+                        const view = this._renderFragment(
+                            $(`#${containerPrefix}_${commentID}`),
+                            commentID,
+                            html);
+
+                        if (onFragmentRendered) {
+                            onFragmentRendered(commentID, view);
+                        }
                     }
 
                     totalRenders++;

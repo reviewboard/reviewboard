@@ -60,11 +60,19 @@
   {{form.errors.last_name}}
  </div>
 
-{% if siteconfig_settings.auth_registration_show_captcha %}
+{%  if form.agree_to_policies %}
+ <div class="auth-form-row auth-field-row checkbox-row">
+  {{form.agree_to_policies}}
+  {{form.agree_to_policies.label_tag}}
+  {{form.errors.agree_to_policies}}
+ </div>
+{%  endif %}
+
+{%  if siteconfig_settings.auth_registration_show_captcha %}
  <div class="auth-form-row register-captcha-row clearfix">
   {% recaptcha_form_field form %}
  </div>
-{% endif %}
+{%  endif %}
 
  <div class="auth-form-row">
   <div class="auth-button-container">

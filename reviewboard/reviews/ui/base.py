@@ -495,7 +495,7 @@ class ReviewUI(object):
                                                 comment.rich_text),
             'user': {
                 'username': review.user.username,
-                'name': review.user.get_full_name() or review.user.username,
+                'name': review.user.get_profile().get_display_name(user),
             },
             'url': comment.get_review_url(),
             'localdraft': review.user == user and not review.public,

@@ -8,6 +8,7 @@ from djblets.testing.decorators import add_fixtures
 from djblets.webapi.testing.decorators import webapi_test_template
 from kgb import SpyAgency
 
+from reviewboard.accounts.models import Profile
 from reviewboard.search.testing import reindex_search, search_enabled
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.resources import resources
@@ -966,7 +967,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         self.assertEqual(len(rsp['search']['review_requests']), 1)
 
     @webapi_test_template
-    def testing_get_serializing_unindexed(self):
+    def test_get_serializing_unindexed(self):
         """Testing the GET <URL> API with the search index disabled"""
         self.create_review_request(
             submitter=self.user,
@@ -989,6 +990,90 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase):
         self.assertTrue(resources.user.serialize_object.spy.called)
 
     @webapi_test_template
+    def test_get_user_public_profile_unindexed(self):
+        """Testing the GET <URL> API with the search index disabled for a user
+        with a public profile
+        """
+        rsp = self.api_get(get_search_url(),
+                           query={'q': 'doc'},
+                           expected_mimetype=search_mimetype)
+
+        search_results = rsp['search']
+        self.assertEqual(len(search_results['groups']), 0)
+        self.assertEqual(len(search_results['review_requests']), 0)
+        self.assertEqual(len(search_results['users']), 1)
+
+        item_rsp = search_results['users'][0]
+        self.assertIn('first_name', item_rsp)
+        self.assertIn('last_name', item_rsp)
+        self.assertIn('fullname', item_rsp)
+
+    @webapi_test_template
+    def test_get_user_public_profile_indexed(self):
+        """Testing the GET <URL> API with the search index enabled and
+        on-the-fly indexing enabled for a user with a public profile
+        """
+        with search_enabled(on_the_fly_indexing=True):
+            reindex_search()
+            rsp = self.api_get(get_search_url(),
+                               query={'q': 'doc'},
+                               expected_mimetype=search_mimetype)
+
+        search_results = rsp['search']
+        self.assertEqual(len(search_results['groups']), 0)
+        self.assertEqual(len(search_results['review_requests']), 0)
+        self.assertEqual(len(search_results['users']), 1)
+
+        item_rsp = search_results['users'][0]
+        self.assertIn('fullname', item_rsp)
+
+    @webapi_test_template
+    def test_get_private_user_unindexed(self):
+        """Testing the GET <URL> API with the search index disabled for a user
+        with a private profile
+        """
+        profile = Profile.objects.get(user__username='doc')
+        profile.is_private = True
+        profile.save()
+
+        rsp = self.api_get(get_search_url(),
+                           query={'q': 'doc'},
+                           expected_mimetype=search_mimetype)
+
+        search_results = rsp['search']
+        self.assertEqual(len(search_results['groups']), 0)
+        self.assertEqual(len(search_results['review_requests']), 0)
+        self.assertEqual(len(search_results['users']), 1)
+
+        item_rsp = search_results['users'][0]
+        self.assertNotIn('first_name', item_rsp)
+        self.assertNotIn('last_name', item_rsp)
+        self.assertNotIn('fullname', item_rsp)
+
+    @webapi_test_template
+    def test_get_private_user_indexed(self):
+        """Testing the GET <URL> API with the search index enabled and
+        on-the-fly indexing enabled for a user with a private profile
+        """
+        profile = Profile.objects.get(user__username='doc')
+        profile.is_private = True
+        profile.save()
+
+        with search_enabled(on_the_fly_indexing=True):
+            reindex_search()
+            rsp = self.api_get(get_search_url(),
+                               query={'q': 'doc'},
+                               expected_mimetype=search_mimetype)
+
+        search_results = rsp['search']
+        self.assertEqual(len(search_results['groups']), 0)
+        self.assertEqual(len(search_results['review_requests']), 0)
+        self.assertEqual(len(search_results['users']), 1)
+
+        profile = Profile.objects.get(user__username='doc')
+        item_rsp = search_results['users'][0]
+        self.assertNotIn('fullname', item_rsp)
+
     def test_get_from_search_index(self):
         """Testing the GET <URL> API with the search index enabled and
         on-the-fly indexing disabled

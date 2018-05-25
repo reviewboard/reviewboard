@@ -458,6 +458,193 @@ class SearchTests(SpyAgency, TestCase):
         self.assertEqual(result.username, 'not_doc')
         self.assertEqual(result.full_name, 'Not Doc Dwarf')
 
+    def test_on_the_fly_indexing_profile(self):
+        """Testing on-the-fly indexing for user profiles"""
+        reindex_search()
+
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.set('search_on_the_fly_indexing', True)
+        siteconfig.save()
+
+        try:
+            self.spy_on(signal_processor.handle_save)
+
+            user = User.objects.get(username='doc')
+            profile = user.get_profile()
+            profile.is_private = True
+            profile.save()
+
+            rsp = self.search('doc')
+        finally:
+            siteconfig = SiteConfiguration.objects.get_current()
+            siteconfig.set('search_on_the_fly_indexing', False)
+            siteconfig.save()
+
+        self.assertEqual(len(signal_processor.handle_save.spy.calls), 1)
+
+        self.assertEqual(rsp.context['hits_returned'], 1)
+        result = rsp.context['result']
+
+        self.assertEqual(result.groups, '')
+        self.assertEqual(result.url, '/users/doc/')
+        self.assertEqual(result.username, 'doc')
+        self.assertEqual(result.full_name, '')
+
+    def test_search_by_full_name_public_profile(self):
+        """Testing searching by full name for users with public profiles"""
+        user = User.objects.get(username='doc')
+        self.create_review_request(submitter=user,
+                                   publish=True)
+
+        reindex_search()
+
+        rsp = self.search('Doc Dwarf')
+        self.assertEqual(rsp.context['hits_returned'], 2)
+
+        actual_results = {
+            key.id
+            for key in rsp.context['page_obj']
+        }
+
+        expected_results = {
+            'auth.user.2',
+            'reviews.reviewrequest.1',
+        }
+
+        self.assertEqual(expected_results, actual_results)
+
+    def test_search_by_full_name_private_profile(self):
+        """Testing searching by full name for users with private profiles"""
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = True
+        profile.save()
+
+        self.create_review_request(submitter=user, publish=True)
+
+        reindex_search()
+
+        rsp = self.search('Doc Dwarf')
+        self.assertEqual(rsp.context['hits_returned'], 0)
+
+    def test_search_by_name_public_profile(self):
+        """Testing searching by first/last name with public profiles"""
+        user = User.objects.get(username='doc')
+        user.first_name = 'Doctor'
+        user.save()
+        self.create_review_request(submitter=user, publish=True)
+
+        reindex_search()
+
+        rsp = self.search('Doctor')
+        self.assertEqual(rsp.context['hits_returned'], 2)
+
+        actual_results = {
+            key.id
+            for key in rsp.context['page_obj']
+        }
+
+        expected_results = {
+            'auth.user.2',
+            'reviews.reviewrequest.1',
+        }
+
+        self.assertEqual(expected_results, actual_results)
+
+        rsp = self.search('Dwarf')
+        self.assertEqual(rsp.context['hits_returned'], 4)
+
+        actual_results = {
+            key.id
+            for key in rsp.context['page_obj']
+        }
+
+        expected_results = {
+            'auth.user.2',
+            'auth.user.3',
+            'auth.user.4',
+            'reviews.reviewrequest.1',
+        }
+
+        self.assertEqual(expected_results, actual_results)
+
+    def test_search_by_name_private_profile(self):
+        """Testing searching by first/last name with private profiles"""
+        user = User.objects.get(username='doc')
+        user.first_name = 'Doctor'
+        user.save()
+        profile = user.get_profile()
+        profile.is_private = True
+        profile.save()
+
+        self.create_review_request(submitter=user, publish=True)
+
+        reindex_search()
+
+        rsp = self.search('Doctor')
+        self.assertEqual(rsp.context['hits_returned'], 0)
+
+        rsp = self.search('Dwarf')
+        self.assertEqual(rsp.context['hits_returned'], 2)
+
+        actual_results = {
+            key.id
+            for key in rsp.context['page_obj']
+        }
+
+        expected_results = {
+            'auth.user.3',
+            'auth.user.4',
+        }
+
+        self.assertEqual(expected_results, actual_results)
+
+    def test_search_by_email_public_profile(self):
+        """Testing searching by e-mail address with public profiles"""
+        reindex_search()
+
+        rsp = self.search('@example.com')
+        self.assertEqual(rsp.context['hits_returned'], 4)
+
+        actual_results = {
+            key.id
+            for key in rsp.context['page_obj']
+        }
+
+        expected_results = {
+            'auth.user.1',
+            'auth.user.2',
+            'auth.user.3',
+            'auth.user.4',
+        }
+
+        self.assertEqual(expected_results, actual_results)
+
+    def test_search_by_email_private_profile(self):
+        """Testing searching by e-mail address with private profiles"""
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = True
+        profile.save()
+
+        reindex_search()
+
+        rsp = self.search('@example.com')
+        self.assertEqual(rsp.context['hits_returned'], 3)
+
+        actual_results = {
+            key.id
+            for key in rsp.context['page_obj']
+        }
+
+        expected_results = {
+            'auth.user.1',
+            'auth.user.3',
+            'auth.user.4',
+        }
+
+        self.assertEqual(expected_results, actual_results)
+
 
 class ViewTests(TestCase):
     """Tests for the search view."""

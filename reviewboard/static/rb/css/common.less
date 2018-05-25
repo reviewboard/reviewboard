@@ -251,7 +251,7 @@
     margin: 1.5em 0;
     padding-left: @auth-label-width;
 
-    &.auth-field-row {
+    &.auth-field-row:not(.checkbox-row) {
       padding-left: 0;
 
       label {
@@ -272,6 +272,17 @@
           font-weight: normal;
           font-size: 9pt;
         }
+      }
+    }
+
+    &.auth-field-row.checkbox-row {
+      input {
+        vertical-align: top;
+      }
+
+      label {
+        display: inline-block;
+        width: @auth-field-width;
       }
     }
   }

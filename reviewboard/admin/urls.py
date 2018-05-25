@@ -111,6 +111,14 @@ urlpatterns = [
             },
             name='settings-logging'),
 
+        url(r'^privacy/$',
+            views.site_settings,
+            kwargs={
+                'form_class': forms.PrivacySettingsForm,
+                'template_name': 'admin/privacy_settings.html',
+            },
+            name='settings-privacy'),
+
         url(r'^ssh/$',
             views.ssh_settings,
             name='settings-ssh'),
