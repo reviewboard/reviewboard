@@ -152,7 +152,7 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
                 Ignored keyword arguments.
 
         Returns:
-            django.db.models.query.QuerySet:
+            django.db.models.query.QuerySet or list:
             A query set for users matching the given arguments.
         """
         if (search_backend_registry.search_enabled and
@@ -168,15 +168,21 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
                 }
             )
 
-            return [
-                {
+            results = []
+
+            for result in form.search()[:max_results]:
+                raw_user = {
                     'id': result.pk,
                     'username': result.username,
-                    'fullname': result.full_name,
                     'url': result.url,
                 }
-                for result in form.search()[:max_results]
-            ]
+
+                if not result.is_profile_private:
+                    raw_user['fullname'] = result.full_name
+
+                results.append(raw_user)
+
+            return results
 
         # If search is disabled, we will fall back to using database queries.
         if local_site:
@@ -198,10 +204,13 @@ class SearchResource(WebAPIResource, DjbletsUserResource):
                 if fullname:
                     query |= (Q(first_name__istartswith=q) |
                               Q(last_name__istartswith=q))
+
+                query &= Q(profile__is_private=False)
             else:
                 query = (Q(username__istartswith=q) |
-                         Q(first_name__istartswith=q) |
-                         Q(last_name__istartswith=q))
+                         (Q(profile__is_private=False) &
+                          (Q(first_name__istartswith=q) |
+                           Q(last_name__istartswith=q))))
 
             users = users.filter(query)
 

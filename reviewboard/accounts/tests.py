@@ -8,10 +8,14 @@ from django.contrib import messages
 from django.contrib.auth.models import AnonymousUser, User
 from django.contrib.messages.middleware import MessageMiddleware
 from django.contrib.sessions.middleware import SessionMiddleware
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.http import HttpResponse, HttpResponseRedirect
 from django.test.client import RequestFactory
 from django.views.generic.base import View
+from djblets.privacy.consent import (get_consent_requirements_registry,
+                                     get_consent_tracker)
+from djblets.privacy.consent.common import PolicyConsentRequirement
 from djblets.registries.errors import RegistrationError
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
@@ -30,9 +34,11 @@ from reviewboard.accounts.backends import (AuthBackend, auth_backends,
                                            LDAPBackend,
                                            StandardAuthBackend,
                                            unregister_auth_backend)
+from reviewboard.accounts.decorators import valid_prefs_required
 from reviewboard.accounts.forms.pages import (AccountPageForm,
                                               AccountSettingsForm,
                                               ChangePasswordForm,
+                                              PrivacyForm,
                                               ProfileForm)
 from reviewboard.accounts.mixins import (CheckLoginRequiredViewMixin,
                                          LoginRequiredViewMixin,
@@ -43,10 +49,12 @@ from reviewboard.accounts.models import (LocalSiteProfile,
                                          Trophy)
 from reviewboard.accounts.pages import (AccountPage,
                                         AccountSettingsPage,
+                                        PrivacyPage,
                                         get_page_classes,
                                         register_account_page_class,
                                         unregister_account_page_class)
-from reviewboard.extensions.tests import set_siteconfig_settings
+from reviewboard.accounts.trophies import TrophyType
+from reviewboard.accounts.views import MyAccountView
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
@@ -638,6 +646,116 @@ class ProfileTests(TestCase):
                          profile1.starred_review_requests.all())
         self.assertEqual(site_profile.starred_public_request_count, 0)
 
+    def test_get_display_name_unauthenticated_public(self):
+        """Testing Profile.get_display_name with a public profile"""
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = False
+
+        self.assertEqual(profile.get_display_name(AnonymousUser()),
+                         user.username)
+
+    def test_get_display_name_unauthenticated_private(self):
+        """Testing Profile.get_display_name for an unauthenticated user viewing
+        a private profile
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = True
+
+        self.assertEqual(profile.get_display_name(AnonymousUser()),
+                         user.username)
+
+    def test_get_display_name_public(self):
+        """Testing Profile.get_display_name for an authenticated user viewing a
+        public profile
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = False
+
+        self.assertEqual(
+            profile.get_display_name(User.objects.get(username='grumpy')),
+            user.get_full_name())
+
+    def test_get_display_name_private(self):
+        """Testing Profile.get_display_name for an authenticated user viewing a
+        private profile
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = True
+
+        self.assertEqual(
+            profile.get_display_name(User.objects.get(username='grumpy')),
+            user.username)
+
+    def test_get_display_name_admin_private(self):
+        """Testing Profile.get_display_name for an admin viewing a private
+        profile
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = True
+
+        self.assertEqual(
+            profile.get_display_name(User.objects.get(username='admin')),
+            user.get_full_name())
+
+    @add_fixtures(['test_site'])
+    def test_get_display_name_localsite_member_private(self):
+        """Testing Profile.get_display_name for a LocalSite member viewing
+        a LocalSite member with a private profile
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = True
+
+        viewer = User.objects.get(username='grumpy')
+        site = LocalSite.objects.get(pk=1)
+        site.users.add(viewer)
+
+        self.assertEqual(profile.get_display_name(viewer), user.username)
+
+    @add_fixtures(['test_site'])
+    def test_get_display_name_localsite_admin_private(self):
+        """Testing Profile.get_display_name for a LocalSite admin viewing
+        a LocalSite member with a private profile
+        """
+        user = User.objects.get(username='admin')
+        profile = user.get_profile()
+        profile.is_private = True
+
+        self.assertEqual(
+            profile.get_display_name(User.objects.get(username='doc')),
+            user.get_full_name())
+
+    @add_fixtures(['test_site'])
+    def test_get_display_name_localsite_admin_private_other_site(self):
+        """Testing Profile.get_display_name for a LocalSite admin viewing a
+        member of another LocalSite with a private profile
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = True
+
+        viewer = User.objects.get(username='grumpy')
+        site = LocalSite.objects.create(name='site-3')
+        site.users.add(viewer)
+        site.admins.add(viewer)
+
+        self.assertEqual(profile.get_display_name(viewer), user.username)
+
+    def test_get_display_name_self_private(self):
+        """Testing Profile.get_display_name for a user viewing themselves with
+        a private profile
+        """
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+        profile.is_private = True
+
+        self.assertEqual(profile.get_display_name(user), user.get_full_name())
+
 
 class AccountPageTests(TestCase):
     """Test account page functionality."""
@@ -881,6 +999,29 @@ class TrophyTests(TestCase):
                                                     submitter=user1)
         trophies = Trophy.objects.compute_trophies(review_request)
         self.assertFalse(trophies)
+
+    def test_get_display_text_deprecated(self):
+        """Testing TrophyType.format_display_text for an old-style trophy warns
+        that get_display_text it is deprecated
+        """
+        class OldTrophyType(TrophyType):
+            image_width = 1
+            image_height = 1
+            category = 'old-n-busted'
+
+            def get_display_text(self, trophy):
+                return 'A trophy for you.'
+
+        review_request = self.create_review_request()
+        trophy = Trophy(category=OldTrophyType.category,
+                        review_request=review_request,
+                        user=review_request.submitter)
+
+        with self.assert_warns():
+            text = OldTrophyType().format_display_text(
+                trophy, RequestFactory().get('/'))
+
+        self.assertEqual(text, 'A trophy for you.')
 
 
 class SandboxAuthBackend(AuthBackend):
@@ -1133,7 +1274,7 @@ class AccountSettingsFormTests(TestCase):
 
         settings = {'diffviewer_syntax_highlighting': False}
 
-        with set_siteconfig_settings(settings):
+        with self.siteconfig_settings(settings):
             form = AccountSettingsForm(page, request, user, data={
                 'syntax_highlighting': False,
                 'timezone': profile.timezone,
@@ -1245,3 +1386,481 @@ class UserInfoboxViewTests(TestCase):
         user.save()
 
         self.client.get(local_site_reverse('user-infobox', args=['test']))
+
+
+class PrivacyFormTests(TestCase):
+    """Unit tests for reviewboard.accounts.forms.pages.PrivacyForm."""
+
+    def setUp(self):
+        super(PrivacyFormTests, self).setUp()
+
+        self.user = User.objects.create(username='test-user')
+
+        self.request = RequestFactory().get('/account/preferences/')
+        self.request.user = self.user
+
+        self.page = PrivacyPage(config_view=MyAccountView(),
+                                request=self.request,
+                                user=self.user)
+
+    def test_init_with_privacy_enable_user_consent_true(self):
+        """Testing PrivacyForm with privacy_enable_user_consent=True"""
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            form = PrivacyForm(page=self.page,
+                               request=self.request,
+                               user=self.user)
+            self.assertIn('consent', form.fields)
+            self.assertEqual(form.save_label, 'Save')
+
+    def test_init_with_privacy_enable_user_consent_false(self):
+        """Testing PrivacyForm with privacy_enable_user_consent=False"""
+        with self.siteconfig_settings({'privacy_enable_user_consent': False}):
+            form = PrivacyForm(page=self.page,
+                               request=self.request,
+                               user=self.user)
+            self.assertNotIn('consent', form.fields)
+            self.assertIsNone(form.save_label)
+
+    def test_is_visible_with_no_privacy(self):
+        """Testing PrivacyForm.is_visible with no privacy details"""
+        settings = {
+            'privacy_enable_user_consent': False,
+            'privacy_info_html': '',
+        }
+
+        with self.siteconfig_settings(settings):
+            form = PrivacyForm(page=self.page,
+                               request=self.request,
+                               user=self.user)
+            self.assertFalse(form.is_visible())
+
+    def test_is_visible_with_consent(self):
+        """Testing PrivacyForm.is_visible with consent option enabled"""
+        settings = {
+            'privacy_enable_user_consent': True,
+            'privacy_info_html': '',
+        }
+
+        with self.siteconfig_settings(settings):
+            form = PrivacyForm(page=self.page,
+                               request=self.request,
+                               user=self.user)
+            self.assertTrue(form.is_visible())
+
+    def test_is_visible_with_privacy_info(self):
+        """Testing PrivacyForm.is_visible with privacy_info_html set"""
+        settings = {
+            'privacy_enable_user_consent': False,
+            'privacy_info_html': 'Test.',
+        }
+
+        with self.siteconfig_settings(settings):
+            form = PrivacyForm(page=self.page,
+                               request=self.request,
+                               user=self.user)
+            self.assertTrue(form.is_visible())
+
+
+class MyAccountViewTests(TestCase):
+    """Unit tests for MyAccountView."""
+
+    fixtures = ['test_users']
+
+    def tearDown(self):
+        super(MyAccountViewTests, self).tearDown()
+
+        cache.clear()
+
+    def test_render_all_accept_requirements(self):
+        """Testing MyAccountView renders all forms when a user has accepted all
+        requirements
+        """
+        settings = {
+            'privacy_enable_user_consent': True,
+        }
+        user = User.objects.get(username='doc')
+        get_consent_tracker().record_consent_data_list(
+            user,
+            [
+                requirement.build_consent_data(granted=True)
+                for requirement in get_consent_requirements_registry()
+            ])
+
+        self.client.login(username='doc', password='doc')
+
+        with self.siteconfig_settings(settings):
+            rsp = self.client.get('/account/preferences/')
+
+        self.assertEqual(rsp.status_code, 200)
+        context = rsp.context
+
+        self.assertEqual(context['render_sidebar'], True)
+        self.assertEqual(
+            {
+                type(form)
+                for form in context['forms']
+            },
+            {
+                form
+                for account_page in AccountPage.registry
+                for form in account_page.form_classes
+            })
+
+    def test_render_all_reject_requirements(self):
+        """Testing MyAccountView renders all forms when a user has rejected all
+        consent decisions
+        """
+        settings = {
+            'privacy_enable_user_consent': True,
+        }
+        user = User.objects.get(username='doc')
+        get_consent_tracker().record_consent_data_list(
+            user,
+            [
+                requirement.build_consent_data(granted=False)
+                for requirement in get_consent_requirements_registry()
+            ])
+
+        self.client.login(username='doc', password='doc')
+
+        with self.siteconfig_settings(settings):
+            rsp = self.client.get('/account/preferences/')
+
+        self.assertEqual(rsp.status_code, 200)
+        context = rsp.context
+
+        self.assertEqual(context['render_sidebar'], True)
+        self.assertEqual(
+            {
+                type(form)
+                for form in context['forms']
+            },
+            {
+                form
+                for account_page in AccountPage.registry
+                for form in account_page.form_classes
+            })
+
+    def test_render_only_privacy_form_if_missing_consent(self):
+        """Testing MyAccountView only renders privacy form when a user has
+        pending consent decisions
+        """
+        settings = {
+            'privacy_enable_user_consent': True,
+        }
+
+        self.client.login(username='doc', password='doc')
+
+        with self.siteconfig_settings(settings):
+            rsp = self.client.get('/account/preferences/')
+
+        self.assertEqual(rsp.status_code, 200)
+        context = rsp.context
+
+        self.assertEqual(context['render_sidebar'], False)
+        self.assertEqual(len(context['forms']), 1)
+        self.assertIsInstance(context['forms'][0], PrivacyForm)
+
+    def test_render_only_privacy_form_if_reject_policy_grant_others(self):
+        """Testing MyAccountView only renders privacy policy when a user has
+        rejected the privacy policy/terms of service and granted all other
+        requirements
+        """
+        settings = {
+            'privacy_enable_user_consent': True,
+            'privacy_policy_url': 'https://example.com',
+            'terms_of_service_url': 'https://example.com',
+        }
+
+        user = User.objects.get(username='doc')
+
+        # Accept all consent requirements *except* the policy.
+        get_consent_tracker().record_consent_data_list(
+            user,
+            [
+                requirement.build_consent_data(
+                    granted=not isinstance(requirement,
+                                           PolicyConsentRequirement))
+                for requirement in get_consent_requirements_registry()
+            ])
+
+        self.client.login(username='doc', password='doc')
+
+        with self.siteconfig_settings(settings):
+            rsp = self.client.get('/account/preferences/')
+
+        self.assertEqual(rsp.status_code, 200)
+        context = rsp.context
+
+        self.assertEqual(context['render_sidebar'], False)
+        self.assertEqual(len(context['forms']), 1)
+        self.assertIsInstance(context['forms'][0], PrivacyForm)
+
+    def test_render_only_privacy_form_if_reject_policy_reject_others(self):
+        """Testing MyAccountView only renders privacy policy when a user has
+        rejected the privacy policy/terms of service and rejected all other
+        requirements
+        """
+        settings = {
+            'privacy_enable_user_consent': True,
+            'privacy_policy_url': 'https://example.com',
+            'terms_of_service_url': 'https://example.com',
+        }
+
+        user = User.objects.get(username='doc')
+
+        # Accept all consent requirements *except* the policy.
+        get_consent_tracker().record_consent_data_list(
+            user,
+            [
+                requirement.build_consent_data(granted=False)
+                for requirement in get_consent_requirements_registry()
+            ])
+
+        self.client.login(username='doc', password='doc')
+
+        with self.siteconfig_settings(settings):
+            rsp = self.client.get('/account/preferences/')
+
+        self.assertEqual(rsp.status_code, 200)
+        context = rsp.context
+
+        self.assertEqual(context['render_sidebar'], False)
+        self.assertEqual(len(context['forms']), 1)
+        self.assertIsInstance(context['forms'][0], PrivacyForm)
+
+    def test_redirect_privacy_form(self):
+        """Testing MyAccountView redirects to previous URL when saving the
+        privacy form if a next URL is provided
+        """
+        settings = {
+            'privacy_enable_user_consent': True,
+        }
+
+        self.client.login(username='doc', password='doc')
+
+        with self.siteconfig_settings(settings):
+            rsp = self.client.post(
+                '/account/preferences/',
+                dict({
+                    'next_url': '/some-page/',
+                    'form_target': PrivacyForm.form_id,
+                }, **{
+                    'consent_%s_choice' % requirement.requirement_id: 'allow'
+                    for requirement in get_consent_requirements_registry()
+
+                }))
+
+        self.assertEqual(rsp.status_code, 302)
+        self.assertEqual(rsp.url, 'http://testserver/some-page/')
+
+
+class ValidPrefsRequiredTests(TestCase):
+    """Unit tests for reviewboard.accounts.decorators.valid_prefs_required."""
+
+    @classmethod
+    def setUpClass(cls):
+        super(ValidPrefsRequiredTests, cls).setUpClass()
+
+        cls.request_factory = RequestFactory()
+
+    def setUp(self):
+        super(ValidPrefsRequiredTests, self).setUp()
+
+        self.user = User.objects.create(username='test-user')
+
+        self.request = self.request_factory.get('/')
+        self.request.user = self.user
+
+    def test_with_anonymous_user(self):
+        """Testing @valid_prefs_required with anonymous user"""
+        self.request.user = AnonymousUser()
+
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            response = self._view_func(self.request)
+
+        self.assertIs(type(response), HttpResponse)
+
+    def test_with_consent_not_required(self):
+        """Testing @valid_prefs_required with privacy_enable_user_consent=False
+        """
+        with self.siteconfig_settings({'privacy_enable_user_consent': False}):
+            response = self._view_func(self.request)
+
+        self.assertIs(type(response), HttpResponse)
+
+    def test_with_consent_required_and_new_profile(self):
+        """Testing @valid_prefs_required with privacy_enable_user_consent=True
+        and new user profile
+        """
+        self.assertFalse(Profile.objects.filter(user=self.user).exists())
+
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            response = self._view_func(self.request)
+
+        self.assertIs(type(response), HttpResponseRedirect)
+        self.assertEqual(response.url, '/account/preferences/?next=/')
+
+    def test_with_consent_required_and_consent_pending(self):
+        """Testing @valid_prefs_required with privacy_enable_user_consent=True
+        and pending consent
+        """
+        Profile.objects.create(user=self.user)
+
+        consent_tracker = get_consent_tracker()
+        all_consent = consent_tracker.get_all_consent(self.user)
+        self.assertEqual(all_consent, {})
+
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            response = self._view_func(self.request)
+
+        self.assertIs(type(response), HttpResponseRedirect)
+        self.assertEqual(response.url, '/account/preferences/?next=/')
+
+    def test_with_consent_required_and_no_consent_pending(self):
+        """Testing @valid_prefs_required with privacy_enable_user_consent=True
+        and no pending consent
+        """
+        Profile.objects.create(user=self.user)
+
+        consent_tracker = get_consent_tracker()
+        consent_tracker.record_consent_data_list(
+            self.user,
+            [
+                consent_requirement.build_consent_data(granted=True)
+                for consent_requirement in get_consent_requirements_registry()
+            ])
+
+        all_consent = consent_tracker.get_all_consent(self.user)
+        self.assertNotEqual(all_consent, {})
+
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            response = self._view_func(self.request)
+
+        self.assertIs(type(response), HttpResponse)
+
+    def test_with_consent_required_pending_consent_enabled_decorator(self):
+        """Testing @valid_prefs_required with disbled_consent_checks= set to a
+        function that always returns False
+        """
+        @valid_prefs_required(disable_consent_checks=lambda request: False)
+        def view_func(request):
+            return HttpResponse()
+
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            response = view_func(self.request)
+
+        self.assertIs(type(response), HttpResponseRedirect)
+
+    def test_with_consent_required_pending_consent_disabled_decorator(self):
+        """Testing @valid_prefs_required with disbled_consent_checks= set to a
+        function that always returns True
+        """
+        @valid_prefs_required(disable_consent_checks=lambda request: True)
+        def view_func(request):
+            return HttpResponse()
+
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            response = view_func(self.request)
+
+        self.assertIs(type(response), HttpResponse)
+
+    def test_with_consent_required_pending_consent_decorator_function(self):
+        """Testing @valid_prefs_required with disbled_consent_checks= set to a
+        function
+        """
+        def disable_consent_checks(request):
+            return 'disable-consent-checks' in request.GET
+
+        @valid_prefs_required(disable_consent_checks=disable_consent_checks)
+        def view_func(request):
+            return HttpResponse()
+
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            response = view_func(self.request)
+
+        self.assertIs(type(response), HttpResponseRedirect)
+
+        request = self.request_factory.get('/?disable-consent-checks')
+        request.user = self.user
+
+        with self.siteconfig_settings({'privacy_enable_user_consent': True}):
+            response = view_func(request)
+
+        self.assertIs(type(response), HttpResponse)
+
+    @staticmethod
+    @valid_prefs_required
+    def _view_func(request):
+        return HttpResponse()
+
+
+class UserTests(TestCase):
+    """Tests for mixin methods on User."""
+
+    fixtures = ['test_users']
+
+    def test_is_admin_for_user_admin_vs_user(self):
+        """Testing User.is_admin_for_user for an admin"""
+        admin = User.objects.get(username='admin')
+        user = User.objects.get(username='doc')
+
+        with self.assertNumQueries(0):
+            self.assertTrue(admin.is_admin_for_user(user))
+
+    def test_is_admin_for_user_admin_vs_none(self):
+        """Testing User.is_admin_for_user for an admin when the user is None"""
+        admin = User.objects.get(username='admin')
+
+        with self.assertNumQueries(0):
+            self.assertTrue(admin.is_admin_for_user(None))
+
+    def test_is_admin_for_user_admin_vs_anonymous(self):
+        """Testing User.is_admin_for_user for an admin when the user is
+        anonymous
+        """
+        admin = User.objects.get(username='admin')
+
+        with self.assertNumQueries(0):
+            self.assertTrue(admin.is_admin_for_user(AnonymousUser()))
+
+    def test_is_admin_for_user_user_vs_user(self):
+        """Testing User.is_admin_for_user for a regular user"""
+        user = User.objects.get(username='doc')
+
+        with self.assertNumQueries(1):
+            self.assertFalse(user.is_admin_for_user(user))
+
+        with self.assertNumQueries(0):
+            self.assertFalse(user.is_admin_for_user(user))
+
+    @add_fixtures(['test_site'])
+    def test_is_admin_for_user_localsite_admin_vs_localsite_user(self):
+        """Testing User.is_admin_for_user for a LocalSite admin when the user
+        is a member of that LocalSite
+        """
+        site_admin = User.objects.get(username='doc')
+        site_user = User.objects.get(username='admin')
+
+        with self.assertNumQueries(1):
+            self.assertTrue(site_admin.is_admin_for_user(site_user))
+
+        with self.assertNumQueries(0):
+            self.assertTrue(site_admin.is_admin_for_user(site_user))
+
+    @add_fixtures(['test_site'])
+    def test_is_admin_for_user_localsite_admin_vs_other_localsite_user(self):
+        """Testing User.is_admin_for_user for a LocalSite admin when the user
+        is a member of another LocalSite
+        """
+        site_admin = User.objects.get(username='doc')
+        site_user = User.objects.get(username='grumpy')
+        site = LocalSite.objects.create(name='local-site-3')
+        site.users.add(site_admin)
+        site.users.add(site_user)
+
+        with self.assertNumQueries(1):
+            self.assertFalse(site_admin.is_admin_for_user(site_user))
+
+        with self.assertNumQueries(0):
+            self.assertFalse(site_admin.is_admin_for_user(site_user))

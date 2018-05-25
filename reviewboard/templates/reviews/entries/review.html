@@ -1,5 +1,5 @@
 {% extends "reviews/entries/base.html" %}
-{% load djblets_utils i18n %}
+{% load accounts djblets_utils i18n %}
 
 
 {% block entry_classes %}review has-avatar{% endblock %}
@@ -29,7 +29,7 @@
 
 
 {% block entry_title %}
-<a href="{% url 'user' entry.review.user %}" class="user">{{entry.review.user|user_displayname}}</a>
+<a href="{% url 'user' entry.review.user %}" class="user">{% user_profile_display_name entry.review.user %}</a>
 {% endblock entry_title %}
 
 

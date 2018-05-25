@@ -147,6 +147,7 @@ RB_BUILTIN_APPS = [
     'djblets.integrations',
     'djblets.log',
     'djblets.pipeline',
+    'djblets.privacy',
     'djblets.recaptcha',
     'djblets.siteconfig',
     'djblets.util',

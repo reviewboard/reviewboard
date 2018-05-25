@@ -8,6 +8,7 @@ from django.utils.encoding import python_2_unicode_compatible
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 from djblets.auth.signals import user_registered
+from djblets.cache.backend import cache_memoize
 from djblets.db.fields import CounterField, JSONField
 from djblets.forms.fields import TIMEZONE_CHOICES
 from djblets.siteconfig.models import SiteConfiguration
@@ -290,6 +291,37 @@ class Profile(models.Model):
         self.settings.setdefault('avatars', {})['avatar_service_id'] = \
             service.avatar_service_id
 
+    def get_display_name(self, viewing_user):
+        """Return the name to display to the given user.
+
+        If any of the following is True and the user this profile belongs to
+        has a full name set, the display name will be the the user's full name:
+
+        * The viewing user is authenticated and this profile is public.
+        * The viewing user is the user this profile belongs to.
+        * The viewing user is an administrator.
+        * The viewing user is a LocalSite administrator on any LocalSite for
+          which the user whose this profile belongs to is a user.
+
+        Otherwise the display name will be the user's username.
+
+        Args:
+            viewing_user (django.contrib.auth.models.User):
+                The user who is viewing the profile.
+
+        Returns:
+            unicode:
+            The name to display.
+        """
+        if (viewing_user is not None and
+            viewing_user.is_authenticated() and
+            (not self.is_private or
+             viewing_user == self.user or
+             viewing_user.is_admin_for_user(self.user))):
+            return self.user.get_full_name() or self.user.username
+        else:
+            return self.user.username
+
     def save(self, *args, **kwargs):
         """Save the profile to the database.
 
@@ -426,7 +458,7 @@ def _is_user_profile_visible(self, user=None):
         bool:
         Whether or not the given user can view the profile.
     """
-    if user is None or not user.is_authenticated():
+    if user is None or user.is_anonymous():
         return False
 
     try:
@@ -441,13 +473,9 @@ def _is_user_profile_visible(self, user=None):
         else:
             is_private = self.get_profile().is_private
 
-        return (
-            not is_private or
-            (user and
-             (user == self or
-              user.is_staff or
-              LocalSite.objects.filter(admins=user, users=self).exists()))
-        )
+        return (not is_private or
+                user == self or
+                user.is_admin_for_user(self))
     except Profile.DoesNotExist:
         return True
 
@@ -476,16 +504,27 @@ def _should_send_own_updates(self):
         return True
 
 
-def _get_profile(self):
+def _get_profile(self, cached_only=False):
     """Get the profile for the User.
 
     The profile will be cached, preventing queries for future lookups.
+
+    Args:
+        cached_only (bool, optional):
+            Whether we should only return the profile cached for the user.
+
+            If True, this function will not retrieve an uncached profile or
+            create one that doesn't exist. Instead, it will return ``None``.
+
+    Returns:
+        Profile:
+        The user's profile.
     """
     # Note that we use the same cache variable that a select_related() call
     # would use, ensuring that we benefit from Django's caching when possible.
     profile = getattr(self, '_profile_set_cache', None)
 
-    if profile is None:
+    if profile is None and not cached_only:
         profile = Profile.objects.get_or_create(user=self)[0]
         profile.user = self
         self._profile_set_cache = profile
@@ -493,10 +532,11 @@ def _get_profile(self):
     # While modern versions of Review Board set this to an empty dictionary,
     # old versions would initialize this to None. Since we don't want to litter
     # our code with extra None checks everywhere we use it, normalize it here.
-    if profile.extra_data is None:
+    if profile is not None and profile.extra_data is None:
         profile.extra_data = {}
 
     return profile
+
 
 def _get_site_profile(self, local_site):
     """Get the LocalSiteProfile for a given LocalSite for the User.
@@ -516,11 +556,43 @@ def _get_site_profile(self, local_site):
     return self._site_profiles[local_site.pk]
 
 
+def _is_admin_for_user(self, user):
+    """Return whether or not this user is an administrator for the given user.
+
+    Results will be cached for this user so that at most one query is done.
+
+    Args:
+        user (django.contrib.auth.models.User):
+            The user to check.
+
+    Returns:
+        bool:
+        Whether or not this user is an administrator for the given user.
+    """
+    if self.is_staff:
+        return True
+
+    if not user or user.is_anonymous():
+        return False
+
+    if not hasattr(self, '_cached_admin_for_users'):
+        self._cached_admin_for_users = cache_memoize(
+            '%s-admin-for-users' % self.pk,
+            lambda: tuple(
+                User.objects
+                .filter(local_site__admins=self)
+                .values_list('pk', flat=True)
+            ))
+
+    return user.pk in self._cached_admin_for_users
+
+
 User.is_profile_visible = _is_user_profile_visible
 User.get_profile = _get_profile
 User.get_site_profile = _get_site_profile
 User.should_send_email = _should_send_email
 User.should_send_own_updates = _should_send_own_updates
+User.is_admin_for_user = _is_admin_for_user
 User._meta.ordering = ('username',)
 
 

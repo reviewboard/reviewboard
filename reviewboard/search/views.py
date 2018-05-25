@@ -10,7 +10,8 @@ from django.shortcuts import render
 from django.utils import six
 from haystack.generic_views import SearchView
 
-from reviewboard.accounts.mixins import CheckLoginRequiredViewMixin
+from reviewboard.accounts.mixins import (CheckLoginRequiredViewMixin,
+                                         UserProfileRequiredViewMixin)
 from reviewboard.avatars import avatar_services
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.search import search_backend_registry
@@ -19,7 +20,9 @@ from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
 
 
-class RBSearchView(CheckLoginRequiredViewMixin, CheckLocalSiteAccessViewMixin,
+class RBSearchView(CheckLoginRequiredViewMixin,
+                   CheckLocalSiteAccessViewMixin,
+                   UserProfileRequiredViewMixin,
                    SearchView):
     """The Review Board search view."""
 

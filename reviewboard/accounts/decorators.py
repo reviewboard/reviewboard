@@ -1,10 +1,16 @@
 from __future__ import unicode_literals
 
+from functools import wraps
+
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseRedirect
+from django.utils.six.moves.urllib.parse import quote
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import simple_decorator
 
 from reviewboard.accounts.models import Profile
+from reviewboard.accounts.privacy import is_consent_missing
+from reviewboard.site.urlresolvers import local_site_reverse
 
 
 @simple_decorator
@@ -27,8 +33,7 @@ def check_login_required(view_func):
     return _check
 
 
-@simple_decorator
-def valid_prefs_required(view_func):
+def valid_prefs_required(view_func=None, disable_consent_checks=None):
     """Check whether the profile object exists.
 
     Several views assume that the user profile object exists, and will break if
@@ -37,13 +42,48 @@ def valid_prefs_required(view_func):
 
     If the user is not logged in, this will do nothing. That allows it to
     be used with @check_login_required.
+
+    Args:
+        view_func (callable, optional):
+            The view to decorate.
+
+            If this is not specified, this function returns a decorator that
+            accepts a view to decorate.
+
+        disable_consent_checks (callable, optional):
+            A callable that will determine whether or not consent checks should
+            be disabled.
+
+    Returns:
+        callable:
+        If ``view_func`` was provided, this returns a decorated version of that
+        view. Otherwise a decorator is returned.
     """
-    def _check_valid_prefs(request, *args, **kwargs):
-        # Fetch the profile. If it exists, we're done, and it's cached for
-        # later. If not, try to create it.
-        if request.user.is_authenticated():
-            Profile.objects.get_or_create(user=request.user)
+    def decorator(view_func):
+        @wraps(view_func)
+        def decorated(request, *args, **kwargs):
+            user = request.user
 
-        return view_func(request, *args, **kwargs)
+            if user.is_authenticated():
+                profile, is_new = Profile.objects.get_or_create(user=user)
+                siteconfig = SiteConfiguration.objects.get_current()
 
-    return _check_valid_prefs
+                if (siteconfig.get('privacy_enable_user_consent') and
+                    not (callable(disable_consent_checks) and
+                         disable_consent_checks(request)) and
+                    (is_new or is_consent_missing(user))):
+                    return HttpResponseRedirect(
+                        '%s?next=%s'
+                        % (local_site_reverse('user-preferences',
+                                              request=request),
+                           quote(request.get_full_path()))
+                    )
+
+            return view_func(request, *args, **kwargs)
+
+        return decorated
+
+    if view_func is not None:
+        return decorator(view_func)
+
+    return decorator

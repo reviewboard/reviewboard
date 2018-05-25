@@ -483,6 +483,7 @@ class RootView(CheckLoginRequiredViewMixin,
 
 class NewReviewRequestView(LoginRequiredViewMixin,
                            CheckLocalSiteAccessViewMixin,
+                           UserProfileRequiredViewMixin,
                            CheckReadOnlyViewMixin,
                            TemplateView):
     """View for the New Review Request page.
@@ -550,7 +551,9 @@ class NewReviewRequestView(LoginRequiredViewMixin,
         }
 
 
-class ReviewRequestDetailView(ReviewRequestViewMixin, ETagViewMixin,
+class ReviewRequestDetailView(ReviewRequestViewMixin,
+                              UserProfileRequiredViewMixin,
+                              ETagViewMixin,
                               TemplateView):
     """A view for the main review request page.
 
@@ -1075,7 +1078,9 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
         payload.write(html)
 
 
-class ReviewsDiffViewerView(ReviewRequestViewMixin, DiffViewerView):
+class ReviewsDiffViewerView(ReviewRequestViewMixin,
+                            UserProfileRequiredViewMixin,
+                            DiffViewerView):
     """Renders the diff viewer for a review request.
 
     This wraps the base
@@ -1988,7 +1993,9 @@ class PreviewReplyEmailView(ReviewRequestViewMixin, BasePreviewEmailView):
         }
 
 
-class ReviewFileAttachmentView(ReviewRequestViewMixin, View):
+class ReviewFileAttachmentView(ReviewRequestViewMixin,
+                               UserProfileRequiredViewMixin,
+                               View):
     """Displays a file attachment with a review UI."""
 
     def get(self, request, file_attachment_id, file_attachment_diff_id=None,
@@ -2060,7 +2067,9 @@ class ReviewFileAttachmentView(ReviewRequestViewMixin, View):
             raise Http404
 
 
-class ReviewScreenshotView(ReviewRequestViewMixin, View):
+class ReviewScreenshotView(ReviewRequestViewMixin,
+                           UserProfileRequiredViewMixin,
+                           View):
     """Displays a review UI for a screenshot.
 
     Screenshots are a legacy feature, predating file attachments. While they

@@ -96,6 +96,9 @@ class MarkdownFieldsMixin(object):
             extra_data = data['extra_data']
             all_text_types_extra_data = {}
 
+            if obj.extra_data is None:
+                obj.extra_data = {}
+
             # Work on a copy of extra_data, in case we change it.
             for field, value in six.iteritems(obj.extra_data.copy()):
                 if not self.get_extra_data_field_supports_markdown(obj, field):

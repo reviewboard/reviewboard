@@ -49,6 +49,7 @@ from djblets.webapi.auth.backends import reset_auth_backends
 from haystack import connections
 
 from reviewboard.accounts.backends import auth_backends
+from reviewboard.accounts.privacy import register_privacy_consents
 from reviewboard.avatars import avatar_services
 from reviewboard.oauth.features import oauth2_service_feature
 from reviewboard.search import search_backend_registry
@@ -160,6 +161,11 @@ defaults.update({
     'send_support_usage_stats': True,
     'site_domain_method': 'http',
     'site_read_only': False,
+
+    'privacy_enable_user_consent': False,
+    'privacy_info_html': None,
+    'privacy_policy_url': None,
+    'terms_of_service_url': None,
 
     'search_results_per_page': 20,
     'search_backend_id': WhooshBackend.search_backend_id,
@@ -433,6 +439,9 @@ def load_site_config(full_reload=False):
     # Save back changes if they have been made
     if dirty:
         siteconfig.save()
+
+    # Reload privacy consent requirements
+    register_privacy_consents(force=True)
 
     site_settings_loaded.send(sender=None)
 

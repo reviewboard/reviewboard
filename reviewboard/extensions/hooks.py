@@ -17,6 +17,7 @@ from djblets.extensions.hooks import (AppliesToURLMixin,
                                       TemplateHook,
                                       URLHook)
 from djblets.integrations.hooks import BaseIntegrationHook
+from djblets.privacy.consent.hooks import ConsentRequirementHook
 from djblets.registries.errors import ItemLookupError
 
 from reviewboard.accounts.backends import auth_backends
@@ -1889,6 +1890,7 @@ __all__ = [
     'AvatarServiceHook',
     'BaseReviewRequestActionHook',
     'CommentDetailDisplayHook',
+    'ConsentRequirementHook',
     'DashboardColumnsHook',
     'DashboardSidebarItemsHook',
     'DataGridColumnsHook',
