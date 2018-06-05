@@ -1486,25 +1486,30 @@ class MyAccountViewTests(TestCase):
                 for requirement in get_consent_requirements_registry()
             ])
 
+        request = RequestFactory().get('/account/preferences')
+        request.user = User.objects.get(username='doc')
+        view = MyAccountView()
+
         self.client.login(username='doc', password='doc')
 
         with self.siteconfig_settings(settings):
             rsp = self.client.get('/account/preferences/')
 
-        self.assertEqual(rsp.status_code, 200)
-        context = rsp.context
+            self.assertEqual(rsp.status_code, 200)
+            context = rsp.context
 
-        self.assertEqual(context['render_sidebar'], True)
-        self.assertEqual(
-            {
-                type(form)
-                for form in context['forms']
-            },
-            {
-                form
-                for account_page in AccountPage.registry
-                for form in account_page.form_classes
-            })
+            self.assertEqual(context['render_sidebar'], True)
+            self.assertEqual(
+                {
+                    type(page)
+                    for page in context['pages']
+                    if page.is_visible()
+                },
+                {
+                    account_page
+                    for account_page in AccountPage.registry
+                    if account_page(view, request, request.user).is_visible()
+                })
 
     def test_render_all_reject_requirements(self):
         """Testing MyAccountView renders all forms when a user has rejected all
@@ -1521,25 +1526,29 @@ class MyAccountViewTests(TestCase):
                 for requirement in get_consent_requirements_registry()
             ])
 
+        request = RequestFactory().get('/account/preferences')
+        request.user = User.objects.get(username='doc')
+        view = MyAccountView()
+
         self.client.login(username='doc', password='doc')
 
         with self.siteconfig_settings(settings):
             rsp = self.client.get('/account/preferences/')
 
-        self.assertEqual(rsp.status_code, 200)
-        context = rsp.context
+            self.assertEqual(rsp.status_code, 200)
+            context = rsp.context
 
-        self.assertEqual(context['render_sidebar'], True)
-        self.assertEqual(
-            {
-                type(form)
-                for form in context['forms']
-            },
-            {
-                form
-                for account_page in AccountPage.registry
-                for form in account_page.form_classes
-            })
+            self.assertEqual(context['render_sidebar'], True)
+            self.assertEqual(
+                {
+                    type(page)
+                    for page in context['pages']
+                },
+                {
+                    account_page
+                    for account_page in AccountPage.registry
+                    if account_page(view, request, request.user).is_visible()
+                })
 
     def test_render_only_privacy_form_if_missing_consent(self):
         """Testing MyAccountView only renders privacy form when a user has
