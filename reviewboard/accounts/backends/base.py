@@ -4,111 +4,197 @@ from __future__ import unicode_literals
 
 import re
 
-from django.contrib.auth.models import User
-from djblets.db.query import get_object_or_none
-
 
 class BaseAuthBackend(object):
-    """The base class for Review Board authentication backends."""
+    """Base class for a Review Board authentication backend."""
 
+    #: The unique ID for the authentication backend.
     backend_id = None
+
+    #: The display name for the authentication backend.
+    #:
+    #: This will be shown in the list of backends in the administration UI.
     name = None
+
+    #: The form class used for authentication settings.
+    #:
+    #: This must be a subclass of
+    #: :py:class:`~djblets.siteconfig.forms.SiteSettingsForm`.
     settings_form = None
-    supports_anonymous_user = True
-    supports_object_permissions = True
+
+    #: Whether this backend supports registering new users.
     supports_registration = False
+
+    #: Whether this backend supports changing the user's full name.
     supports_change_name = False
+
+    #: Whether this backend supports changing the user's e-mail address.
     supports_change_email = False
+
+    #: Whether this backend supports changing the user's password.
     supports_change_password = False
+
+    #: Authentication instructions to display above the Login form.
     login_instructions = None
 
+    supports_anonymous_user = True
+    supports_object_permissions = True
+
+    #: A regex for matching invalid characters in usernames.
     INVALID_USERNAME_CHAR_REGEX = re.compile(r'[^\w.@+-]')
 
     def authenticate(self, **credentials):
-        """Authenticate the user.
+        """Authenticate a user.
 
-        This will authenticate the username and return the appropriate User
+        This will authenticate a user identified by the provided credentials.
         object, or None.
+
+        This must be implemented by subclasses.
+
+        Args:
+            **credentials (dict):
+                The credentials passed to the backend. This will often
+                contain ``username`` and ``password`` keys.
+
+        Returns:
+            django.contrib.auth.models.User:
+            The authenticated user, or ``None`` if the user could not be
+            authenticated for any reason.
         """
         raise NotImplementedError
 
-    def get_or_create_user(self, username, request):
-        """Get an existing user, or create one if it does not exist."""
+    def get_or_create_user(self, username, request=None):
+        """Return an existing user or create one if it doesn't exist.
+
+        This does not authenticate the user.
+
+        If the user does not exist in the database, but does in the backend,
+        its information will be stored in the database for later lookup.
+        Subclasses can impose restrictions on this.
+
+        This must be implemented by subclasses.
+
+        Args:
+            username (unicode):
+                The username to fetch or create.
+
+            request (django.http.HttpRequest, optional):
+                The HTTP request from the client.
+
+        Returns:
+            django.contrib.auth.models.User:
+            The resulting user, or ``None`` if one could not be found.
+        """
         raise NotImplementedError
 
-    def get_user(self, user_id):
-        """Get an existing user, or None if it does not exist."""
-        return get_object_or_none(User, pk=user_id)
-
     def update_password(self, user, password):
-        """Update the user's password on the backend.
+        """Update a user's password on the backend.
 
         Authentication backends can override this to update the password
-        on the backend. This will only be called if
+        on the backend. By default, this is not supported.
+
+        Callers should only call this after checking whether
         :py:attr:`supports_change_password` is ``True``.
 
-        By default, this will raise NotImplementedError.
+        Args:
+            user (django.contrib.auth.models.User):
+                The user whose password will be changed.
+
+            password (unicode):
+                The new password.
+
+        Raises:
+            NotImplementedError:
+                The backend does not support changing passwords.
         """
         raise NotImplementedError
 
     def update_name(self, user):
-        """Update the user's name on the backend.
+        """Update a user's full name on the backend.
 
-        The first name and last name will already be stored in the provided
-        ``user`` object.
+        Authentication backends can override this to update the name on the
+        backend based on the
+        :py:attr:`~django.contrib.auth.models.User.first_name` and
+        :py:attr:`~django.contrib.auth.models.User.last_name` values in
+        ``user``. By default, this will do nothing.
 
-        Authentication backends can override this to update the name
-        on the backend based on the values in ``user``. This will only be
-        called if :py:attr:`supports_change_name` is ``True``.
+        Callers should only call this after checking whether
+        :py:attr:`supports_change_name` is ``True``.
 
-        By default, this will do nothing.
+        Args:
+            user (django.contrib.auth.models.User):
+                The user whose full name will be changed.
         """
         pass
 
     def update_email(self, user):
-        """Update the user's e-mail address on the backend.
-
-        The e-mail address will already be stored in the provided
-        ``user`` object.
+        """Update a user's e-mail address on the backend.
 
         Authentication backends can override this to update the e-mail
-        address on the backend based on the values in ``user``. This will only
-        be called if :py:attr:`supports_change_email` is ``True``.
+        address on the backend based on the
+        :py:attr:`~django.contrib.auth.models.User.email` value in ``user``.
+        NBy default, this will do nothing.
 
-        By default, this will do nothing.
+        Callers should only call this after checking whether
+        :py:attr:`supports_change_email` is ``True``.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user whose full name will be changed.
         """
         pass
 
     def query_users(self, query, request):
-        """Search for users on the back end.
+        """Populate users from the backend into the database based on a query.
 
-        This call is executed when the User List web API resource is called,
-        before the database is queried.
+        Authentication backends can override this to add users stored on the
+        backend into the local database, based on a query string representing
+        a full or partial first name, last name, or username. Each result
+        that's found based on the query should be stored in the database by
+        the backend, generally using the same creation logic as in
+        :py:meth:`get_or_create_user`.
 
-        Authentication backends can override this to perform an external
-        query. Results should be written to the database as standard
-        Review Board users, which will be matched and returned by the web API
-        call.
+        Callers should use this when they need to look up all available users
+        from a backend. After calling this, they should look up the results
+        from the database.
 
-        The ``query`` parameter contains the value of the ``q`` search
-        parameter of the web API call (e.g. /users/?q=foo), if any.
+        Args:
+            query (unicode):
+                A search query for matching users. This will match the entirety
+                or prefix of a username. It's expected that the match will be
+                case-insensitive.
 
-        Errors can be passed up to the web API layer by raising a
-        reviewboard.accounts.errors.UserQueryError exception.
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
 
-        By default, this will do nothing.
+        Raises:
+            reviewboard.accounts.errors.UserQueryError:
+                There was an error processing the query or looking up users.
+                Details will be in the error message.
         """
         pass
 
     def search_users(self, query, request):
-        """Custom user-database search.
+        """Build a query for searching users in the database.
 
-        This call is executed when the User List web API resource is called
-        and the ``q`` search parameter is provided, indicating a search
-        query.
+        This allows backends to construct specialized search queries (
+        for use in :py:meth:`QuerySet.filter()
+        <django.db.models.query.QuerySet.filter>` when searching for users
+        via the :ref:`webapi2.0-user-list-resource`.
 
-        It must return either a django.db.models.Q object or None.  All
-        enabled backends are called until a Q object is returned.  If one
-        isn't returned, a default search is executed.
+        Args:
+            query (unicode):
+                A search query for matching users. This will match the entirety
+                or prefix of a username. It's expected that the match will be
+                case-insensitive.
+
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            django.db.models.Q:
+            The resulting query for the queryset, or ``None`` to use the
+            query for the next available backend (eventually defaulting to
+            the standard search query).
         """
         return None
