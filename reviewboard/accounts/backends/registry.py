@@ -10,7 +10,6 @@ from django.contrib.auth import get_backends
 from django.utils.translation import ugettext_lazy as _
 from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
                                          NOT_REGISTERED, UNREGISTER)
-from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.backends.standard import StandardAuthBackend
@@ -46,8 +45,9 @@ class AuthBackendRegistry(EntryPointRegistry):
     def process_value_from_entry_point(self, entry_point):
         """Load the class from the entry point.
 
-        If the class lacks a ``backend_id``, it will be set as the entry
-        point's name.
+        If the class lacks a value for
+        :py:attr:`~reviewboard.accounts.backends.base.BaseAuthBackend
+        .backend_id`, it will be set as the entry point's name.
 
         Args:
            entry_point (pkg_resources.EntryPoint):
@@ -55,7 +55,8 @@ class AuthBackendRegistry(EntryPointRegistry):
 
         Returns:
             type:
-            The :py:class:`AuthBackend` subclass.
+            The :py:class:`~reviewboard.accounts.backends.base.BaseAuthBackend`
+            subclass.
         """
 
         cls = entry_point.load()
@@ -73,11 +74,12 @@ class AuthBackendRegistry(EntryPointRegistry):
     def get_defaults(self):
         """Yield the authentication backends.
 
-        This will make sure the StandardAuthBackend is always registered.
+        This will make sure the standard authentication backend is always
+        registered and returned first.
 
         Yields:
             type:
-            The :py:class:`~reviewboard.accounts.backends.AuthBackend`
+            The :py:class:`~reviewboard.accounts.backends.base.BaseAuthBackend`
             subclasses.
         """
         yield StandardAuthBackend
@@ -90,7 +92,9 @@ class AuthBackendRegistry(EntryPointRegistry):
 
         Args:
             backend_class (type):
-                The class of the backend to unregister.
+                The class of the backend to unregister. This must be a subclass
+                of :py:class:`~reviewboard.accounts.backends.base
+                .BaseAuthBackend`.
 
         Raises:
             djblets.registries.errors.ItemLookupError:
@@ -111,12 +115,14 @@ class AuthBackendRegistry(EntryPointRegistry):
 
         Args:
             auth_backend_id (unicode):
-                The unique ID of the :py:class:`AuthBackend` class.
+                The unique ID of the
+                :py:class:`~reviewboard.accounts.backends.base.BaseAuthBackend`
+                class.
 
         Returns:
             type:
-            The :py:class:`AuthBackend` subclass, or ``None`` if it is not
-            registered.
+            The :py:class:`~reviewboard.accounts.backends.base.BaseAuthBackend`
+            subclass, or ``None`` if it is not registered.
         """
         return self.get('auth_backend_id', auth_backend_id)
 
@@ -126,6 +132,12 @@ def get_enabled_auth_backends():
 
     The returned list contains every authentication backend that Review Board
     will try, in order.
+
+    Returns:
+        list of type:
+        The list of registered
+        :py:class:`~reviewboard.accounts.backends.base.BaseAuthBackend`
+        subclasses.
     """
     global _enabled_auth_backends
     global _auth_backend_setting
@@ -137,8 +149,10 @@ def get_enabled_auth_backends():
         for backend in get_backends():
             if not isinstance(backend, BaseAuthBackend):
                 warn('Authentication backends should inherit from '
-                     'reviewboard.accounts.backends.AuthBackend. Please '
-                     'update %s.' % backend.__class__)
+                     'reviewboard.accounts.backends.base.BaseAuthBackend. '
+                     'Please update %s.'
+                     % backend.__class__,
+                     DeprecationWarning)
 
                 for field, default in (('name', None),
                                        ('supports_registration', False),
@@ -148,7 +162,10 @@ def get_enabled_auth_backends():
                     if not hasattr(backend, field):
                         warn("Authentication backends should define a '%s' "
                              "attribute. Please define it in %s or inherit "
-                             "from AuthBackend." % (field, backend.__class__))
+                             "from BaseAuthBackend."
+                             % (field, backend.__class__),
+                             DeprecationWarning)
+
                         setattr(backend, field, False)
 
             _enabled_auth_backends.append(backend)
@@ -158,10 +175,5 @@ def get_enabled_auth_backends():
     return _enabled_auth_backends
 
 
-def set_enabled_auth_backend(backend_id):
-    """Set the authentication backend to be used."""
-    siteconfig = SiteConfiguration.objects.get_current()
-    siteconfig.set('auth_backend', backend_id)
-
-
+#: Registry instance for working with available authentication backends.
 auth_backends = AuthBackendRegistry()
