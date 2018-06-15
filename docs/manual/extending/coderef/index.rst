@@ -23,6 +23,14 @@ User Accounts
    :toctree: python
 
    reviewboard.accounts.backends
+   reviewboard.accounts.backends.ad
+   reviewboard.accounts.backends.base
+   reviewboard.accounts.backends.http_digest
+   reviewboard.accounts.backends.ldap
+   reviewboard.accounts.backends.nis
+   reviewboard.accounts.backends.registry
+   reviewboard.accounts.backends.standard
+   reviewboard.accounts.backends.x509
    reviewboard.accounts.decorators
    reviewboard.accounts.errors
    reviewboard.accounts.managers

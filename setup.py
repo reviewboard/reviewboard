@@ -461,11 +461,11 @@ setup(
         'reviewboard.auth_backends': build_entrypoints(
             'reviewboard.accounts.backends',
             [
-                ('ad', 'ActiveDirectoryBackend'),
-                ('ldap', 'LDAPBackend'),
-                ('nis', 'NISBackend'),
-                ('x509', 'X509Backend'),
-                ('digest', 'HTTPDigestBackend'),
+                ('ad', 'ad:ActiveDirectoryBackend'),
+                ('ldap', 'ldap:LDAPBackend'),
+                ('nis', 'nis:NISBackend'),
+                ('x509', 'x509:X509Backend'),
+                ('digest', 'http_digest:HTTPDigestBackend'),
             ]
         ),
     },
