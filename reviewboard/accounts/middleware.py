@@ -1,8 +1,14 @@
+"""Middleware for account-related functionality."""
+
 from __future__ import unicode_literals
 
 import pytz
+from django.conf import settings
+from django.contrib import auth
 from django.utils import timezone
+from djblets.siteconfig.models import SiteConfiguration
 
+from reviewboard.accounts.backends import X509Backend
 from reviewboard.accounts.models import Profile
 
 
@@ -17,3 +23,49 @@ class TimezoneMiddleware(object):
                 timezone.activate(pytz.timezone(user.timezone))
             except (Profile.DoesNotExist, pytz.UnknownTimeZoneError):
                 pass
+
+
+class X509AuthMiddleware(object):
+    """Middleware that authenticates a user using X.509 certificates.
+
+    If Review Board is configured to use the X.509 authentication backend, this
+    will automatically authenticate the user using the environment variables
+    set by mod_ssl.
+
+    Apache needs to be configured with mod_ssl. For Review Board to be usable
+    with X.509 client certificate authentication, the ``SSLVerifyClient``
+    configuration directive should be set to ``optional``. This will ensure
+    that basic authentication will still work, allowing clients to work with a
+    username and password.
+    """
+
+    def process_request(self, request):
+        """Log in users by their certificate if using X.509 authentication.
+
+        This will only log in a user if the request environment (*not* the
+        headers) are populated with a pre-verified username, and the request
+        is being handled over HTTPS.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+        """
+        if not request.is_secure():
+            return
+
+        siteconfig = SiteConfiguration.objects.get_current()
+
+        if siteconfig.get('auth_backend') != X509Backend.backend_id:
+            return
+
+        x509_settings_field = getattr(settings, 'X509_USERNAME_FIELD', None)
+
+        if x509_settings_field:
+            x509_field = request.environ.get(x509_settings_field)
+
+            if x509_field:
+                user = auth.authenticate(x509_field=x509_field)
+
+                if user:
+                    request.user = user
+                    auth.login(request, user)

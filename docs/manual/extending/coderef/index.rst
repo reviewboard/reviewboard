@@ -26,6 +26,7 @@ User Accounts
    reviewboard.accounts.decorators
    reviewboard.accounts.errors
    reviewboard.accounts.managers
+   reviewboard.accounts.middleware
    reviewboard.accounts.mixins
    reviewboard.accounts.models
    reviewboard.accounts.pages
