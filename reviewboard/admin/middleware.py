@@ -1,18 +1,9 @@
 from __future__ import unicode_literals
 
 import logging
-import os
 
 from django.conf import settings
-from django.contrib import auth
-from django.core.handlers.wsgi import WSGIRequest
 from djblets.siteconfig.models import SiteConfiguration
-
-try:
-    from django.core.handlers.modpython import ModPythonRequest
-except ImportError:
-    class ModPythonRequest:
-        """Mock definition."""
 
 from reviewboard import initialize
 from reviewboard.admin.checks import check_updates_required
@@ -108,51 +99,3 @@ class ExtraExceptionInfoMiddleware(object):
 
         if hasattr(request, '_local_site_name'):
             request.META['LOCAL_SITE'] = request._local_site_name
-
-
-class X509AuthMiddleware(object):
-    """Middleware that authenticates a user using X509 certificates.
-
-    If Review Board is configured to use the X509 authentication backend, this
-    will automatically authenticate the user using the environment variables
-    set by mod_ssl.
-
-    Apache needs to be configured with mod_ssl. For Review Board to be usable
-    with X.509 client certificate authentication, the 'SSLVerifyClient'
-    configuration directive should be set to 'optional'. This will ensure that
-    basic authentication will still work, allowing the post-review tool to work
-    with a username and password.
-    """
-
-    def process_request(self, request):
-        """If using X509 authentication, log users in by their certificate."""
-        if ('reviewboard.accounts.backends.X509Backend'
-                not in settings.AUTHENTICATION_BACKENDS):
-            return None
-
-        if not request.is_secure():
-            return None
-
-        if isinstance(request, ModPythonRequest):
-            env = os.environ
-        elif isinstance(request, WSGIRequest):
-            env = request.environ
-        else:
-            # Unknown request type; bail out gracefully.
-            logging.error("X509AuthMiddleware: unknown request type '%s'" %
-                          type(request))
-            env = {}
-
-        x509_settings_field = getattr(settings, 'X509_USERNAME_FIELD', None)
-
-        if x509_settings_field:
-            x509_field = env.get(x509_settings_field)
-
-            if x509_field:
-                user = auth.authenticate(x509_field=x509_field)
-
-                if user:
-                    request.user = user
-                    auth.login(request, user)
-
-        return None
