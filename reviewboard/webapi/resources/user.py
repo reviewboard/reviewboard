@@ -72,9 +72,10 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
         for backend in get_enabled_auth_backends():
             try:
-                backend.query_users(search_q, request)
+                backend.populate_users(query=search_q,
+                                       request=request)
             except Exception as e:
-                logging.error('Error when calling query_users for auth '
+                logging.error('Error when calling populate_users for auth '
                               'backend %r: %s',
                               backend, e, exc_info=1)
 
@@ -98,14 +99,17 @@ class UserResource(WebAPIResource, DjbletsUserResource):
 
             # Auth backends may have special naming conventions for users that
             # they'd like to be represented in search. If any auth backends
-            # implement search_users, prefer that over the built-in searching.
+            # implement build_search_users_query(), prefer that over the
+            # built-in searching.
             for backend in get_enabled_auth_backends():
                 try:
-                    q = backend.search_users(search_q, request)
+                    q = backend.build_search_users_query(query=search_q,
+                                                         request=request)
                 except Exception as e:
-                    logging.error('Error when calling search_users for auth '
-                                  'backend %r: %s',
-                                  backend, e, exc_info=1)
+                    logging.exception(
+                        'Error when calling build_search_users_query for '
+                        'auth backend %r: %s',
+                        backend, e)
 
                 if q:
                     break

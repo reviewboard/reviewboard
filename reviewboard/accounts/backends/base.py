@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 import re
+import warnings
 
 
 class BaseAuthBackend(object):
@@ -36,9 +37,6 @@ class BaseAuthBackend(object):
 
     #: Authentication instructions to display above the Login form.
     login_instructions = None
-
-    supports_anonymous_user = True
-    supports_object_permissions = True
 
     #: A regex for matching invalid characters in usernames.
     INVALID_USERNAME_CHAR_REGEX = re.compile(r'[^\w.@+-]')
@@ -144,7 +142,7 @@ class BaseAuthBackend(object):
         """
         pass
 
-    def query_users(self, query, request):
+    def populate_users(self, query, request, **kwargs):
         """Populate users from the backend into the database based on a query.
 
         Authentication backends can override this to add users stored on the
@@ -158,6 +156,11 @@ class BaseAuthBackend(object):
         from a backend. After calling this, they should look up the results
         from the database.
 
+        If a legacy :py:meth:`query_users` method exists on the class, then
+        this will default to calling that with the same parameters (as this was
+        the older name for this method). Otherwise, by default, this will do
+        nothing.
+
         Args:
             query (unicode):
                 A search query for matching users. This will match the entirety
@@ -167,14 +170,24 @@ class BaseAuthBackend(object):
             request (django.http.HttpRequest):
                 The HTTP request from the client.
 
+            **kwargs (dict):
+                Extra positional arguments, for future use.
+
         Raises:
             reviewboard.accounts.errors.UserQueryError:
                 There was an error processing the query or looking up users.
                 Details will be in the error message.
         """
-        pass
+        if hasattr(self, 'query_users'):
+            warnings.warn('%s.query_users is a deprecated name. Please '
+                          'rename it and change the function signature to '
+                          'that of query_users().'
+                          % self.__class__.__name__,
+                          DeprecationWarning)
 
-    def search_users(self, query, request):
+            self.query_users(query, request)
+
+    def build_search_users_query(self, query, request, **kwargs):
         """Build a query for searching users in the database.
 
         This allows backends to construct specialized search queries (
@@ -182,6 +195,11 @@ class BaseAuthBackend(object):
         <django.db.models.query.QuerySet.filter>` when searching for users
         via the :ref:`webapi2.0-user-list-resource`.
 
+        If a legacy :py:meth:`search_users` method exists on the class, then
+        this will default to calling that with the same parameters (as this
+        was the older name for this method). Otherwise, by default, this will
+        return ``None``.
+
         Args:
             query (unicode):
                 A search query for matching users. This will match the entirety
@@ -191,10 +209,22 @@ class BaseAuthBackend(object):
             request (django.http.HttpRequest):
                 The HTTP request from the client.
 
+            **kwargs (dict):
+                Extra positional arguments, for future use.
+
         Returns:
             django.db.models.Q:
             The resulting query for the queryset, or ``None`` to use the
             query for the next available backend (eventually defaulting to
             the standard search query).
         """
+        if hasattr(self, 'search_users'):
+            warnings.warn('%s.search_users is a deprecated name. Please '
+                          'rename it and change the function signature to '
+                          'that of build_search_users_query().'
+                          % self.__class__.__name__,
+                          DeprecationWarning)
+
+            return self.search_users(query, request)
+
         return None
