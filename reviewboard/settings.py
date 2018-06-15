@@ -90,7 +90,7 @@ MIDDLEWARE_CLASSES = [
     'djblets.log.middleware.LoggingMiddleware',
     'reviewboard.accounts.middleware.TimezoneMiddleware',
     'reviewboard.admin.middleware.CheckUpdatesRequiredMiddleware',
-    'reviewboard.admin.middleware.X509AuthMiddleware',
+    'reviewboard.accounts.middleware.X509AuthMiddleware',
     'reviewboard.site.middleware.LocalSiteMiddleware',
 
     # Keep this second to last so that everything is initialized before
