@@ -127,7 +127,8 @@ class RBSearchView(CheckLoginRequiredViewMixin,
                           min(paginator.num_pages,
                               page_obj.number + self.ADJACENT_PAGES) + 1)
 
-        active_filters = form.cleaned_data.get('filter', [form.FILTER_ALL])
+        active_filters = form.cleaned_data.get('model_filter',
+                                               [form.FILTER_ALL])
 
         context.update({
             'filter_types': OrderedDict(
