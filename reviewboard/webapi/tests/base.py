@@ -9,7 +9,7 @@ from django.utils import six
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.testing.testcases import WebAPITestCaseMixin
 
-from reviewboard.notifications.tests import EmailTestHelper
+from reviewboard.notifications.tests.test_email_sending import EmailTestHelper
 from reviewboard.reviews.models import Review
 from reviewboard.testing import TestCase
 from reviewboard.webapi.tests.mimetypes import (

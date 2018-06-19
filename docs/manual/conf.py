@@ -69,6 +69,7 @@ extensions = [
     'beanbag_docutils.sphinx.ext.django_utils',
     'beanbag_docutils.sphinx.ext.extlinks',
     'beanbag_docutils.sphinx.ext.http_role',
+    'beanbag_docutils.sphinx.ext.ref_utils',
     'beanbag_docutils.sphinx.ext.retina_images',
     'webapidocs',
 ]
