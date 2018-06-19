@@ -6,7 +6,7 @@
 {% block content %}
 <div id="search_results">
  <div class="search-results-filters">
-{%  for filter_id, filter_type in filter_types %}
+{%  for filter_id, filter_type in filter_types.items %}
   <a href="?q={{query}}{% if filter_id %}&model_filter={{filter_id}}{% endif %}"{% if filter_type.active %} class="active"{% endif %}>{{filter_type.name}}</a>
 {%  endfor %}
  </div>
