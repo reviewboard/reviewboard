@@ -12,7 +12,7 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError)
 from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.service import HostingService
-from reviewboard.scmtools.core import Branch, Commit
+from reviewboard.scmtools.core import Branch, Commit, UNKNOWN
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
@@ -50,12 +50,15 @@ class ReviewBoardGateway(HostingService):
     needs_authorization = True
     supports_repositories = True
     supports_post_commit = True
-    supported_scmtools = ['Git']
+    supported_scmtools = ['Git', 'Mercurial']
 
     repository_fields = {
         'Git': {
-            'path': '%(hosting_url)s/repos/%(rbgateway_repo_name)s/path'
-        }
+            'path': '%(hosting_url)s/repos/%(rbgateway_repo_name)s/path',
+        },
+        'Mercurial': {
+            'path': '%(hosting_url)s/repos/%(rbgateway_repo_name)s/path',
+        },
     }
 
     def check_repository(self, path, *args, **kwargs):
@@ -139,9 +142,33 @@ class ReviewBoardGateway(HostingService):
                 raise SCMError(six.text_type(e))
 
     def get_branches(self, repository):
+        """Return the branches for the repository.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to fetch branches for.
+
+        Returns:
+            list of reviewboard.scmtools.core.Branch:
+            The branches returned from the Review Board Gateway API.
+
+        Raises:
+            SCMError:
+                The branches could not be retrieved from Review Board Gateway.
+        """
         url = ('%s/repos/%s/branches' %
                (self.account.hosting_url,
                 repository.extra_data['rbgateway_repo_name']))
+
+        tool_name = repository.scmtool_class.name
+
+        if tool_name == 'Git':
+            default_branch = 'master'
+        elif tool_name == 'Mercurial':
+            default_branch = 'default'
+        else:
+            raise SCMError('Review Board Gateway does not support %s',
+                           tool_name)
 
         try:
             data, headers = self._api_get(url)
@@ -150,9 +177,11 @@ class ReviewBoardGateway(HostingService):
             results = []
 
             for branch in branches:
-                results.append(Branch(id=branch['name'],
-                                      commit=branch['id'],
-                                      default=(branch['name'] == 'master')))
+                results.append(Branch(
+                    id=branch['name'],
+                    commit=branch['id'],
+                    default=(branch['name'] == default_branch)
+                ))
 
             return results
         except Exception as e:
@@ -220,7 +249,7 @@ class ReviewBoardGateway(HostingService):
         By default, this will return the URL based on the revision, if both
         are provided.
         """
-        if revision:
+        if revision and revision != UNKNOWN:
             return ('%s/repos/%s/file/%s'
                     % (self.account.hosting_url,
                        repository.extra_data['rbgateway_repo_name'],
