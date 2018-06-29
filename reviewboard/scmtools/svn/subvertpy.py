@@ -6,7 +6,11 @@ import os
 from datetime import datetime
 
 try:
-    from subvertpy import ra, SubversionException, __version__
+    from subvertpy import (AUTH_PARAM_DEFAULT_PASSWORD,
+                           AUTH_PARAM_DEFAULT_USERNAME,
+                           ra,
+                           SubversionException,
+                           __version__)
     from subvertpy.client import Client as SVNClient, api_version, get_config
 
     has_svn_backend = (__version__ >= (0, 9, 1))
@@ -55,10 +59,10 @@ class Client(base.Client):
         self.auth = ra.Auth(auth_providers)
 
         if username:
-            self.auth.set_parameter(B('svn:auth:username'), B(username))
+            self.auth.set_parameter(AUTH_PARAM_DEFAULT_USERNAME, B(username))
 
         if password:
-            self.auth.set_parameter(B('svn:auth:password'), B(password))
+            self.auth.set_parameter(AUTH_PARAM_DEFAULT_PASSWORD, B(password))
 
         cfg = get_config(self.config_dir)
         self.client = SVNClient(cfg, auth=self.auth)
@@ -187,6 +191,17 @@ class Client(base.Client):
             ra.get_ssl_server_trust_file_provider(),
             ra.get_ssl_server_trust_prompt_provider(_accept_trust_prompt),
         ])
+
+        username = self.auth.get_parameter(AUTH_PARAM_DEFAULT_USERNAME)
+
+        if username:
+            auth.set_parameter(AUTH_PARAM_DEFAULT_USERNAME, B(username))
+
+        password = self.auth.get_parameter(AUTH_PARAM_DEFAULT_PASSWORD)
+
+        if password:
+            auth.set_parameter(AUTH_PARAM_DEFAULT_PASSWORD, B(password))
+
         cfg = get_config(self.config_dir)
         client = SVNClient(cfg, auth)
 
