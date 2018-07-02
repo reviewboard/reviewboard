@@ -116,18 +116,28 @@ RB.ReviewRequestPage.ReviewReplyEditor = Backbone.Model.extend({
      */
     resetStateIfEmpty: function() {
         var text = this.get('text'),
-            replyObject = this.get('replyObject');
+            replyObject,
+            contextType;
 
         if (text.strip() !== '') {
             return;
         }
 
+        replyObject = this.get('replyObject');
+
         if (!replyObject || replyObject.isNew()) {
             this._resetState();
         } else {
-            replyObject.destroy({
-                success: this._resetState
-            }, this);
+            contextType = this.get('contextType');
+
+            if (contextType === 'body_top' ||
+                contextType === 'body_bottom') {
+                this._resetState(true);
+            } else {
+                replyObject.destroy({
+                    success: this._resetState
+                }, this);
+            }
         }
     },
 
