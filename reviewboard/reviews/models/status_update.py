@@ -151,9 +151,9 @@ class StatusUpdate(models.Model):
             return 'done-success'
         elif state == StatusUpdate.DONE_FAILURE:
             return 'done-failure'
-        elif state is StatusUpdate.ERROR:
+        elif state == StatusUpdate.ERROR:
             return 'error'
-        elif state is StatusUpdate.TIMEOUT:
+        elif state == StatusUpdate.TIMEOUT:
             return 'timed-out'
         else:
             raise ValueError('Invalid state "%s"' % state)
