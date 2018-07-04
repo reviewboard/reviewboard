@@ -367,6 +367,63 @@ suite('rb/reviewRequestPage/models/ReviewReplyEditor', function() {
                     expect(editor.get('hasDraft')).toBe(false);
                     expect(editor.trigger).toHaveBeenCalledWith('resetState');
                 });
+
+                describe('With context type', function() {
+                    beforeEach(function() {
+                        replyObject.id = 123;
+
+                        spyOn(editor, '_resetState');
+                        spyOn(reviewReply, 'discardIfEmpty')
+                    });
+
+                    it('body_top', function() {
+                        editor.set('contextType', 'body_top');
+                        editor.resetStateIfEmpty();
+
+                        expect(replyObject.destroy).not.toHaveBeenCalled();
+                        expect(editor._resetState).toHaveBeenCalledWith(true);
+                    });
+
+                    it('body_bottom', function() {
+                        editor.set('contextType', 'body_bottom');
+                        editor.resetStateIfEmpty();
+
+                        expect(replyObject.destroy).not.toHaveBeenCalled();
+                        expect(editor._resetState).toHaveBeenCalledWith(true);
+                    });
+
+                    it('diff_comments', function() {
+                        editor.set('contextType', 'diff_comments');
+                        editor.resetStateIfEmpty();
+
+                        expect(replyObject.destroy).toHaveBeenCalled();
+                        expect(editor._resetState).toHaveBeenCalledWith();
+                    });
+
+                    it('file_attachment_comments', function() {
+                        editor.set('contextType', 'file_attachment_comments');
+                        editor.resetStateIfEmpty();
+
+                        expect(replyObject.destroy).toHaveBeenCalled();
+                        expect(editor._resetState).toHaveBeenCalledWith();
+                    });
+
+                    it('general_comments', function() {
+                        editor.set('contextType', 'general_comments');
+                        editor.resetStateIfEmpty();
+
+                        expect(replyObject.destroy).toHaveBeenCalled();
+                        expect(editor._resetState).toHaveBeenCalledWith();
+                    });
+
+                    it('screenshot_comments', function() {
+                        editor.set('contextType', 'screenshot_comments');
+                        editor.resetStateIfEmpty();
+
+                        expect(replyObject.destroy).toHaveBeenCalled();
+                        expect(editor._resetState).toHaveBeenCalledWith();
+                    });
+                });
             });
         });
     });

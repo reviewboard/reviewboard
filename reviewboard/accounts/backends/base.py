@@ -5,6 +5,9 @@ from __future__ import unicode_literals
 import re
 import warnings
 
+from django.contrib.auth.models import User
+from djblets.db.query import get_object_or_none
+
 
 class BaseAuthBackend(object):
     """Base class for a Review Board authentication backend."""
@@ -84,6 +87,19 @@ class BaseAuthBackend(object):
             The resulting user, or ``None`` if one could not be found.
         """
         raise NotImplementedError
+
+    def get_user(self, user_id):
+        """Return an existing user given a numeric user ID.
+
+        Args:
+            user_id (int):
+                The ID of the user to retrieve.
+
+        Returns:
+            django.contrib.auth.models.User:
+            The resulting user, or ``None`` if one could not be found.
+        """
+        return get_object_or_none(User, pk=user_id)
 
     def update_password(self, user, password):
         """Update a user's password on the backend.
