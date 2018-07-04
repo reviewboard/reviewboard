@@ -1,16 +1,25 @@
 from __future__ import unicode_literals
 
+import hashlib
+import hmac
 import json
 import logging
+from collections import defaultdict
 
 from django import forms
+from django.conf.urls import url
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils import six
 from django.utils.six.moves.urllib.error import HTTPError, URLError
 from django.utils.translation import ugettext_lazy as _, ugettext
 
+from reviewboard.admin.server import get_server_url
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError)
 from reviewboard.hostingsvcs.forms import HostingServiceForm
+from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
+                                                get_repository_for_hook,
+                                                get_review_request_id)
 from reviewboard.hostingsvcs.service import HostingService
 from reviewboard.scmtools.core import Branch, Commit, UNKNOWN
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
@@ -19,6 +28,91 @@ from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 
 
 logger = logging.getLogger(__name__)
+
+
+def hook_close_submitted(request, local_site_name=None,
+                         repository_id=None,
+                         hosting_service_id=None):
+    """Close review requests as submitted after a push.
+
+    Args:
+        request (django.http.HttpRequest):
+            The request from the RB Gateway webhook.
+
+        local_site_name (unicode, optional):
+            The local site name, if available.
+
+        repository_id (int, optional):
+            The ID of the repository, if available.
+
+        hosting_service_id (unicode, optional):
+            The ID of the hosting service.
+
+    Returns:
+        django.http.HttpResponse;
+        A response for the request.
+    """
+    hook_event = request.META.get('HTTP_X_RBG_EVENT')
+
+    if hook_event == 'ping':
+        return HttpResponse()
+    elif hook_event != 'push':
+        return HttpResponseBadRequest(
+            'Only "ping" and "push" events are supported.')
+
+    repository = get_repository_for_hook(repository_id, hosting_service_id,
+                                         local_site_name)
+
+    sig = request.META.get('HTTP_X_RBG_SIGNATURE', '')
+    m = hmac.new(bytes(repository.get_or_create_hooks_uuid()),
+                 request.body, hashlib.sha1)
+
+    if not hmac.compare_digest(m.hexdigest(), sig):
+        return HttpResponseBadRequest('Bad signature.')
+
+    try:
+        payload = json.loads(request.body)
+    except ValueError as e:
+        logging.error('The payload is not in JSON format: %s', e)
+        return HttpResponseBadRequest('Invalid payload format.')
+
+    if 'commits' not in payload:
+        return HttpResponseBadRequest('Invalid payload; expected "commits".')
+
+    server_url = get_server_url(request=request)
+    review_request_ids_to_commits = defaultdict(list)
+
+    for commit in payload['commits']:
+        commit_id = commit.get('id')
+        commit_message = commit.get('message')
+        review_request_id = get_review_request_id(
+            commit_message, server_url, commit_id, repository)
+
+        targets = commit['target']
+
+        if 'tags' in targets and targets['tags']:
+            target = targets['tags'][0]
+        elif 'bookmarks' in targets and targets['bookmarks']:
+            target = targets['bookmarks'][0]
+        elif 'branch' in targets:
+            target = targets['branch']
+        else:
+            target = ''
+
+        if target:
+            target_str = '%s (%s)' % (target, commit_id[:7])
+        else:
+            target_str = commit_id[:7]
+
+        review_request_ids_to_commits[review_request_id].append(target_str)
+
+    if review_request_ids_to_commits:
+        close_all_review_requests(review_request_ids_to_commits,
+                                  local_site_name,
+                                  repository,
+                                  hosting_service_id)
+
+    return HttpResponse()
 
 
 class ReviewBoardGatewayForm(HostingServiceForm):
@@ -60,6 +154,12 @@ class ReviewBoardGateway(HostingService):
             'path': '%(hosting_url)s/repos/%(rbgateway_repo_name)s/path',
         },
     }
+
+    repository_url_patterns = [
+        url(r'^hooks/close-submitted/$',
+            hook_close_submitted,
+            name='rbgateway-hooks-close-submitted'),
+    ]
 
     def check_repository(self, path, *args, **kwargs):
         """Check whether the repository exists."""
